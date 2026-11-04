@@ -230,7 +230,25 @@
       "sources": [
         "https://help.fundednext.com/en/articles/17252927-stellar-1-step-account",
         "https://help.fundednext.com/en/articles/10701585-how-often-will-i-receive-my-performance-reward"
-      ]
+      ],
+      "sizesUSD": [
+        6000,
+        15000,
+        25000,
+        50000,
+        100000,
+        200000
+      ],
+      "pricesUSD": {
+        "6000": 65.99,
+        "15000": 129.99,
+        "25000": 219.99,
+        "50000": 329.99,
+        "100000": 569.99,
+        "200000": 1099.99
+      },
+      "pricingNote": "Approximate global USD base pricing from the Stellar 1-Step official help page. USA pricing and optional add-ons differ; confirm at checkout.",
+      "pricingRegion": "Global / approximate; not US"
     },
     "fundednext-lite": {
       "status": "reviewed-partial",
@@ -299,8 +317,30 @@
       },
       "sources": [
         "https://help.fundednext.com/en/articles/17253243-stellar-instant-account",
-        "https://help.fundednext.com/en/articles/11641381-what-will-be-my-performance-reward-from-the-stellar-instant-account"
-      ]
+        "https://help.fundednext.com/en/articles/11641381-what-will-be-my-performance-reward-from-the-stellar-instant-account",
+        "https://help.fundednext.com/en/articles/11641161-how-much-does-each-stellar-instant-account-cost",
+        "https://help.fundednext.com/en/articles/11641300-what-are-the-commission-charges-for-the-stellar-instant-account"
+      ],
+      "sizesUSD": [
+        2000,
+        5000,
+        10000,
+        20000
+      ],
+      "pricesUSD": {
+        "2000": 59.99,
+        "5000": 149.99,
+        "10000": 299.99,
+        "20000": 599.99
+      },
+      "pricingNote": "One-time base prices. Swap-free add-on 10% extra; no recurring monthly fee. Region and checkout may differ.",
+      "limits": {
+        "maxActiveAllocationUSD": 20000,
+        "accountMergingAllowed": false
+      },
+      "margin": {
+        "commission": "Forex $7/lot; commodities 0.0016% of opening price; indices zero; crypto 0.04%; stocks 0.004%. Broker instrument specification still needed for margin."
+      }
     },
     "the5ers-high": {
       "status": "reviewed-partial",
@@ -319,12 +359,36 @@
         "payouts": "Every 14 days; caps $3,000/$4,000 for $50K/$100K per cited official FAQ"
       },
       "restrictions": {
-        "news": "No order executions within 2 min before/after high-impact news; profits deducted, losses still charged"
+        "news": "No order execution 2 minutes before or after high-impact news; profits removed, losses retained",
+        "inactivity": "30 evaluation days or 60 funded days",
+        "minimumProfitableDays": "3 days in each challenge stage, 0.5% initial balance profit threshold per day"
       },
       "sources": [
         "https://the5ers.com/faqs/what-is-the-drawdown-rule-for-high-stakes/",
-        "https://the5ers.com/faqs/what-are-the-general-rules-for-the-high-stakes-program/"
-      ]
+        "https://the5ers.com/faqs/what-are-the-general-rules-for-the-high-stakes-program/",
+        "https://the5ers.com/high-stakes/",
+        "https://the5ers.com/faqs/how-many-high-stakes-accounts-can-i-have/"
+      ],
+      "sizesUSD": [
+        2500,
+        5000,
+        10000,
+        25000,
+        50000,
+        100000
+      ],
+      "pricesUSD": {
+        "2500": 19
+      },
+      "pricingNote": "Official $2.5K base price only; larger sizes and Classic/New variants require checkout-specific verification.",
+      "variants": [
+        "High Stakes Classic",
+        "High Stakes New"
+      ],
+      "margin": {
+        "leverage": "Published 1:100; instrument and account platform limitations apply",
+        "platform": "MT5 Hedge"
+      }
     },
     "apex": {
       "status": "reviewed-partial",
@@ -438,8 +502,33 @@
       },
       "sources": [
         "https://helpfutures.fundednext.com/en/articles/17230292-daily-loss-limit-and-maximum-loss-limit-at-fundednext-futures",
-        "https://helpfutures.fundednext.com/en/articles/14255818-what-types-and-sizes-of-challenges-are-available-at-fundednext-futures"
-      ]
+        "https://helpfutures.fundednext.com/en/articles/14255818-what-types-and-sizes-of-challenges-are-available-at-fundednext-futures",
+        "https://helpfutures.fundednext.com/en/articles/17228899-what-are-the-available-account-sizes-and-their-prices-in-fundednext-futures"
+      ],
+      "sizesUSD": [
+        25000,
+        50000,
+        100000,
+        150000
+      ],
+      "priceVariantsUSD": {
+        "Rapid Pro or Daily base": {
+          "25000": 159.98,
+          "50000": 299.98,
+          "100000": 499.98
+        },
+        "Flex base": {
+          "50000": 133.99,
+          "100000": 264.99,
+          "150000": 483.99
+        },
+        "Legacy": {
+          "25000": 79.99,
+          "50000": 199.99,
+          "100000": 239.99
+        }
+      },
+      "pricingNote": "Futures price varies by selected Rapid Pro, Rapid Daily, Flex or Legacy plan; promotional 'offer' prices and add-on prices excluded. No single price is applicable to this grouped program."
     },
     "tradeify-growth": {
       "status": "reviewed-partial",
@@ -555,7 +644,14 @@
       "sources": [
         "https://help.tradeify.co/en/articles/10495938-lightning-funded-accounts",
         "https://help.tradeify.co/en/articles/14369021-tradeify-pricing-reference"
-      ]
+      ],
+      "pricesUSD": {
+        "25000": 345,
+        "50000": 492,
+        "100000": 660,
+        "150000": 796
+      },
+      "pricingNote": "Official one-time Lightning pricing; no reset purchases for failed funded accounts."
     },
     "mff-builder": {
       "status": "reviewed-partial",
@@ -719,7 +815,10 @@
       "loss": {
         "dailyPercent": 4,
         "maximumPercent": 6,
-        "type": "trailing"
+        "type": "trailing",
+        "dailyReset": "5pm EST (consult daylight-saving and firm server clock)",
+        "dailyReference": "Higher of balance or equity at daily reset less 4% of initial balance",
+        "trailingLock": "On 6% account profit, overall floor locks to starting balance; funded withdrawals leave 1% fixed buffer"
       },
       "funded": {
         "split": "85% base; 90% add-on",
@@ -732,11 +831,28 @@
         "ea": "Allowed",
         "copy": "Only own accounts",
         "overnight": "Allowed",
-        "guardianShield": "Funded trades auto-close at 2% floating loss"
+        "guardianShield": "Funded trades auto-close at 2% floating loss",
+        "guardianShieldPenalty": "First funded Guardian Shield breach permanently reduces split to 50%; second breach terminates account",
+        "newsInstrument": "XAUUSD affected by USD high-impact news"
       },
       "sources": [
-        "https://help.blueguardian.com/en/articles/14062186-1-step-standard-rules"
-      ]
+        "https://help.blueguardian.com/en/articles/14062186-1-step-standard-rules",
+        "https://help.blueguardian.com/en/articles/15618204-general-information-rules"
+      ],
+      "limits": {
+        "publishedFirmWideSizesUSD": [
+          5000,
+          10000,
+          25000,
+          50000,
+          100000,
+          150000,
+          200000,
+          300000,
+          400000
+        ],
+        "accountTypeSpecificAvailability": "Must confirm selected Standard product at checkout; the nine sizes are a firm-wide list"
+      }
     },
     "blueguardian-nano": {
       "status": "reviewed-partial",
@@ -763,8 +879,23 @@
         "overnight": "Allowed"
       },
       "sources": [
-        "https://help.blueguardian.com/en/articles/16444654-1-step-nano-rules"
-      ]
+        "https://help.blueguardian.com/en/articles/16444654-1-step-nano-rules",
+        "https://help.blueguardian.com/en/articles/15618204-general-information-rules"
+      ],
+      "limits": {
+        "publishedFirmWideSizesUSD": [
+          5000,
+          10000,
+          25000,
+          50000,
+          100000,
+          150000,
+          200000,
+          300000,
+          400000
+        ],
+        "accountTypeSpecificAvailability": "Do not assume all firm-wide sizes exist for Nano at checkout"
+      }
     }
   },
   "safetyChecklist": [
