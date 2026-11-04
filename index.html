@@ -564,6 +564,7 @@ function applyPhaseVisibility(){
  :m.phase2?'Two evaluation phases → Funded. In every stage, Strategy 2 only follows a loss on Strategy 1.'
  :'One evaluation phase → Funded. In every stage, Strategy 2 only follows a loss on Strategy 1.';
 }
+function accountDisplayName(key){const parts=String(key||'').split(':'),id=parts[0],raw=Number(parts.find((p,i)=>i>0&&/^\d+$/.test(p))||0),size=raw>=1000?(raw%1000===0?raw/1000:(raw/1000).toFixed(1))+'K':raw?String(raw):'';const names={ftmo2:'FTMO 2-Step',ftmo1:'FTMO 1-Step',instant:'FTMO Instant',holaPrime:'Hola Prime',holaPro:'Hola Pro',topstep:'Topstep Trading Combine'};return[names[id]||id,size].filter(Boolean).join(' · ')}
 function profileKey(id,size){return String(id)+':'+String(size)}
 function storedProfile(key){try{const item=JSON.parse(localStorage.getItem(PROFILE_PREFIX+key)||'null');return item&&item.v===1&&item.state&&typeof item.state==='object'?item:null}catch(e){return null}}
 function writeProfile(){if(!activeProgramKey)return;try{localStorage.setItem(PROFILE_PREFIX+activeProgramKey,JSON.stringify({v:1,updatedAt:new Date().toISOString(),state:{...state}}));localStorage.setItem(PROFILE_ACTIVE,activeProgramKey);window.fourDsQueueCloudSave?.()}catch(e){console.warn('Account profile could not be saved',e)}}
@@ -1340,7 +1341,7 @@ function useSelectedAccount(x,force=false){
   const btn=$('simulate');if(btn)btn.disabled=!selectedAccountSupportsSimulation;
   applyPhaseVisibility();
   const note=$('firmStrategyStatus');if(note)note.textContent=(x.label||newKey)+(phaseModel().topstep?' · Topstep Standard first-payout estimate available; some broker restrictions remain approximate.':' · Saved settings restored for this account.');
-  const badge=$('activeAccountProfile');if(badge)badge.textContent='Selected account: '+(x.label||newKey);
+  const badge=$('activeAccountProfile');if(badge)badge.textContent='Selected account: '+accountDisplayName(newKey);
   return;
  }
  if(isNew&&activeProgramKey)writeProfile();
@@ -1375,7 +1376,7 @@ function useSelectedAccount(x,force=false){
  const btn=$('simulate');if(btn)btn.disabled=!selectedAccountSupportsSimulation;
  applyPhaseVisibility();
  const simNotice=$('simulationStatus');if(simNotice)simNotice.textContent=selectedAccountSupportsSimulation?'Ready for approximate simulation':'Simulation unavailable for selected challenge';
- const badge=$('activeAccountProfile');if(badge)badge.textContent='Selected account: '+label+' · Personal trading settings saved automatically in this browser.';const ps=$('profileAccountStatus');if(ps)ps.textContent='Active challenge: '+label+' · Profile: '+activeUser+'.';
+ const badge=$('activeAccountProfile');if(badge)badge.textContent='Selected account: '+accountDisplayName(newKey)+' · Personal trading settings saved automatically in this browser.';const ps=$('profileAccountStatus');if(ps)ps.textContent='Active challenge: '+accountDisplayName(newKey)+' · Profile: '+activeUser+'.';
 }
 let overviewCatalog=null;
 function overviewOption(value,label){const o=document.createElement('option');o.value=value;o.textContent=label;return o;}
@@ -1516,7 +1517,7 @@ const firmFrame=$('firmsFrame');if(firmFrame){
  firmFrame.addEventListener('load',()=>{firmFrame.dataset.accountFrameReady='no'});
  if(firmFrame.dataset.src){firmFrame.dataset.accountFrameReady='no';firmFrame.src=firmFrame.dataset.src;}
 }
-$('activeUserSelect').value=activeUser;$('activeUserSelect').addEventListener('change',()=>{const v=$('activeUserSelect').value;if(!FOUR_DS_USERS.some(u=>u.id===v))return;writeProfile();try{localStorage.setItem(FOUR_DS_ACTIVE,v)}catch(_){}location.reload()});const profileSelect=$('profileUserSelect');profileSelect.value=activeUser;profileSelect.addEventListener('change',()=>{$('activeUserSelect').value=profileSelect.value;$('activeUserSelect').dispatchEvent(new Event('change'));});$('profileAccountStatus').textContent=activeProgramKey?'Active challenge: '+activeProgramKey+' · Settings saved for '+activeUser+'.':'No challenge selected yet for '+activeUser+'. Choose one under Prop firms.';{const el=$('activeAccountProfile');if(el)el.textContent=activeProgramKey?'Saved account profile: '+activeProgramKey+' · Changes to trading parameters are saved automatically on this device.':'No account profile selected. Choose a firm, program and account size in Prop firms.';}
+$('activeUserSelect').value=activeUser;$('activeUserSelect').addEventListener('change',()=>{const v=$('activeUserSelect').value;if(!FOUR_DS_USERS.some(u=>u.id===v))return;writeProfile();try{localStorage.setItem(FOUR_DS_ACTIVE,v)}catch(_){}location.reload()});const profileSelect=$('profileUserSelect');profileSelect.value=activeUser;profileSelect.addEventListener('change',()=>{$('activeUserSelect').value=profileSelect.value;$('activeUserSelect').dispatchEvent(new Event('change'));});$('profileAccountStatus').textContent=activeProgramKey?'Active challenge: '+accountDisplayName(activeProgramKey)+' · Settings saved for '+activeUser+'.':'No challenge selected yet for '+activeUser+'. Choose one under Prop firms.';{const el=$('activeAccountProfile');if(el)el.textContent=activeProgramKey?'Saved account profile: '+accountDisplayName(activeProgramKey)+' · Changes to trading parameters are saved automatically on this device.':'No account profile selected. Choose a firm, program and account size in Prop firms.';}
 document.querySelectorAll('[data-page]').forEach(el=>el.addEventListener('click',()=>goPage(el.dataset.page)));document.querySelectorAll('[data-nav]').forEach(el=>el.addEventListener('click',()=>goPage(el.dataset.nav)));
 $('preset40').addEventListener('click',()=>applyPreset(40));$('preset50').addEventListener('click',()=>applyPreset(50));$('simulate').addEventListener('click',()=>{const b=$('simulate');if(!selectedAccountSupportsSimulation){notify('Choose a challenge supported by the evaluation simulator.');return;}b.disabled=true;b.classList.add('is-calculating');b.textContent='Calculating…';setTimeout(()=>{try{runSimulation();}catch(e){console.error(e);notify('Simulation error: check your inputs.');}b.textContent='Run strategy simulation';b.classList.remove('is-calculating');updateSimulationAvailability();},25);});
 $('useManual').addEventListener('click',()=>{mode='manual';lastSim=null;dirtySim=false;render();notify('Manual pass-rate mode enabled.');});$('resetQuick').addEventListener('click',()=>{for(const k of ['budget','extraCost'])state[k]=DEFAULT[k];save();syncControls();render();});
