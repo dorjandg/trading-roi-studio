@@ -40,17 +40,18 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;background:rad
 @media(max-width:740px){.preset-grid{grid-template-columns:1fr}}
 </style>
 <script>window.FOUR_DS_CLOUD_ENDPOINT = "https://script.google.com/macros/s/AKfycbyZW792ZLBPxusQwthCJr0bVdZwCjXyeNaklq4Dk-BuSQ8P9gdg2zdTiWFKEmYuy5sY9Q/exec";</script>
+<script src="cloud-bootstrap.js?v=4ds-auto-first-20261104-a"></script>
 </head>
 <body>
 <div class="shell">
 <header class="top">
   <div class="brand"><div class="mark">F<span style="font-size:15px;margin-left:2px">↗</span></div><div><strong>4Ds Trading Studio</strong><small>STRATEGY · PAYOUTS · CAPITAL ALLOCATION</small></div></div>
-  <div class="top-right"><label for="activeUserSelect" style="font-size:12px;color:var(--muted)">User <select id="activeUserSelect" aria-label="Select 4Ds user" style="display:inline-block;margin-left:7px;padding:7px 10px;background:#142033;color:white;border:1px solid #35455b;border-radius:8px"><option value="doen">Doen</option><option value="dori">Dori</option><option value="dona">Dona</option><option value="dion">Dion</option></select></label><span class="pill" title="Cloud synchronization has not been connected yet.">● SAVED ON THIS DEVICE</span><button class="btn small quiet hide-mobile" id="exportTop">Export scenario</button></div>
+  <div class="top-right"><label for="activeUserSelect" style="font-size:12px;color:var(--muted)">User <select id="activeUserSelect" aria-label="Select 4Ds user" style="display:inline-block;margin-left:7px;padding:7px 10px;background:#142033;color:white;border:1px solid #35455b;border-radius:8px"><option value="doen">Doen</option><option value="dori">Dori</option><option value="dona">Dona</option><option value="dion">Dion</option></select></label><span class="pill" title="Settings are saved locally first and synchronized with Google Cloud when connected.">● AUTO-SAVE ENABLED</span><button class="btn small quiet hide-mobile" id="exportTop">Export scenario</button></div>
 </header>
 <nav class="nav" aria-label="Pages"><button data-page="firms">Prop firms</button><button class="active" data-page="dashboard">Overview</button><button data-page="scaling">Scaling & targets</button><button data-page="presets">My presets</button><button data-page="settings">Export & help</button></nav>
 
 <main>
-<section id="page-firms" class="page"><div class="panel" style="padding:0;overflow:hidden"><iframe id="firmsFrame" title="Prop firm account selector and rules" src="rules.html?embedded=1" loading="lazy" style="display:block;width:100%;height:1250px;border:0;background:#080d16"></iframe></div><div class="notice" id="firmStrategyStatus" style="margin:16px 0">Select a firm, program and account size above to load this account's saved trading parameters.</div>
+<section id="page-firms" class="page"><div class="panel" style="padding:0;overflow:hidden"><iframe id="firmsFrame" title="Prop firm account selector and rules" src="about:blank" data-src="rules.html?embedded=1" loading="lazy" style="display:block;width:100%;height:1250px;border:0;background:#080d16"></iframe></div><div class="notice" id="firmStrategyStatus" style="margin:16px 0">Select a firm, program and account size above to load this account's saved trading parameters.</div>
 <div id="firmTradingWorkspace">
   <div class="panel" style="margin-bottom:19px"><div class="panel-header"><div><div class="eyebrow" style="margin-bottom:7px">Selected challenge · XAUUSD</div><h2>Trading-rule laboratory</h2><p>Set risk tiers, loss limits and entry capacity. Run simulated trade outcomes to estimate stage success rates.</p></div><span class="tag">ONE SET · ONE ACCOUNT PER IDEA</span></div><div class="actionrow"><button class="btn primary" id="simulate">Run strategy simulation</button><button class="btn" id="useManual">Use manual pass rates</button><span class="status" id="simulationStatus">Ready to simulate</span></div><p class="caption">Simulation is intentionally simplified: independent fixed-R wins/losses, constant gold price/stop distance, and no intrabar equity path. It is not a historical backtest.</p></div>
   <div class="two-up">
@@ -142,6 +143,7 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;background:rad
 <div class="footer">FTMO ROI Studio · Standalone offline calculator · Private and stored on your device · No API or broker connection</div>
 </div>
 <script>
+window.FOUR_DS_BOOTSTRAP.then(()=>{
 (()=>{'use strict';
 const FOUR_DS_USERS=[{id:'doen',name:'Doen'},{id:'dori',name:'Dori'},{id:'dona',name:'Dona'},{id:'dion',name:'Dion'}];
 const FOUR_DS_ACTIVE='4ds:active-user:v1';
@@ -318,7 +320,17 @@ let selectedAccountSupportsSimulation=true;
 function useSelectedAccount(x,force=false){
  if(!x||x.v!==1||!x.programId||!Number.isFinite(Number(x.size))||Number(x.size)<=0)return;
  const newKey=profileKey(x.programId,x.size),isNew=activeProgramKey!==newKey;
- // Restore the visible workspace even when this selected profile was already active.
+ // Repeated selection broadcasts are not user edits. Keep the saved profile untouched.
+ if(!isNew&&!force){
+  selectedAccountSupportsSimulation=x.compatible===true;
+  const btn=$('simulate');if(btn)btn.disabled=!selectedAccountSupportsSimulation;
+  const panel1=$('phase1Fields')?.closest('.panel'),panel2=$('phase2Fields')?.closest('.panel');
+  if(panel1)panel1.style.display=x.programId==='instant'?'none':'';
+  if(panel2)panel2.style.display=['ftmo2','holaPrime','holaPro'].includes(x.programId)?'':'none';
+  const note=$('firmStrategyStatus');if(note)note.textContent=(x.label||newKey)+' · Saved settings restored for this account.';
+  const badge=$('activeAccountProfile');if(badge)badge.textContent='Selected account: '+(x.label||newKey);
+  return;
+ }
  if(isNew&&activeProgramKey)writeProfile();
  const profile=storedProfile(newKey);
  if(isNew){state=profile?{...DEFAULT,...profile.state}:{...DEFAULT};}
@@ -361,7 +373,8 @@ window.addEventListener('message',event=>{
  if(msg.type==='studio-program-select'){useSelectedAccount(msg.payload,true);$('firmTradingWorkspace').scrollIntoView({behavior:'smooth',block:'start'});}
 });
 function goPage(name){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id==='page-'+name));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===name));window.scrollTo({top:0,behavior:'smooth'});}
-makeFields();render();$('activeUserSelect').value=activeUser;$('activeUserSelect').addEventListener('change',()=>{const v=$('activeUserSelect').value;if(!FOUR_DS_USERS.some(u=>u.id===v))return;writeProfile();try{localStorage.setItem(FOUR_DS_ACTIVE,v)}catch(_){}location.reload()});{const el=$('activeAccountProfile');if(el)el.textContent=activeProgramKey?'Saved account profile: '+activeProgramKey+' · Changes to trading parameters are saved automatically on this device.':'No account profile selected. Choose a firm, program and account size in Prop firms.';}
+makeFields();render();const firmFrame=$('firmsFrame');if(firmFrame?.dataset?.src){firmFrame.src=firmFrame.dataset.src;}
+$('activeUserSelect').value=activeUser;$('activeUserSelect').addEventListener('change',()=>{const v=$('activeUserSelect').value;if(!FOUR_DS_USERS.some(u=>u.id===v))return;writeProfile();try{localStorage.setItem(FOUR_DS_ACTIVE,v)}catch(_){}location.reload()});{const el=$('activeAccountProfile');if(el)el.textContent=activeProgramKey?'Saved account profile: '+activeProgramKey+' · Changes to trading parameters are saved automatically on this device.':'No account profile selected. Choose a firm, program and account size in Prop firms.';}
 document.querySelectorAll('[data-page]').forEach(el=>el.addEventListener('click',()=>goPage(el.dataset.page)));document.querySelectorAll('[data-nav]').forEach(el=>el.addEventListener('click',()=>goPage(el.dataset.nav)));
 $('preset40').addEventListener('click',()=>applyPreset(40));$('preset50').addEventListener('click',()=>applyPreset(50));$('simulate').addEventListener('click',()=>{const b=$('simulate');b.disabled=true;b.textContent='Calculating…';setTimeout(()=>{try{runSimulation();}catch(e){console.error(e);notify('Simulation error: check your inputs.');}b.textContent='Run strategy simulation';b.disabled=false;},25);});
 $('useManual').addEventListener('click',()=>{mode='manual';lastSim=null;dirtySim=false;render();notify('Manual pass-rate mode enabled.');});$('useBudget').addEventListener('click',()=>{const unit=positive(state.price)+positive(state.extraCost);if(unit>0){state.accounts=Math.max(1,Math.min(1000,Math.floor(state.budget/unit)));save();syncControls();render();}});
@@ -380,8 +393,9 @@ $('compareA').addEventListener('change',e=>{compareA=e.target.value;renderPreset
 $('compareB').addEventListener('change',e=>{compareB=e.target.value;renderPresetComparison();});
 
 })();
+});
 </script>
 <script>window.FOUR_DS_CURRENT_USER=(function(){const u=localStorage.getItem("4ds:active-user:v1");return ["doen","dori","dona","dion"].includes(u)?u:"dori"})();</script>
-<script src="cloud-sync.js?v=4ds-cloud-20261104-4"></script>
+<script>window.FOUR_DS_BOOTSTRAP.then(()=>{const el=document.createElement('script');el.src='cloud-sync.js?v=4ds-auto-first-20261104-a';document.body.appendChild(el);});</script>
 </body>
 </html>
