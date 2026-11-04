@@ -64,6 +64,12 @@ table{width:100%;border-collapse:collapse;text-align:left;min-width:550px}th,td{
 .field textarea:focus{outline:2px solid var(--green);outline-offset:1px}
 .preset-select{background:#131f30;border:1px solid #35465c;border-radius:10px;height:42px;color:var(--text);width:100%;padding:8px 12px}
 @media(max-width:740px){.preset-grid{grid-template-columns:1fr}}
+.overview-progression-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.overview-mode-switch{display:inline-flex;gap:3px;padding:3px;border:1px solid var(--border);border-radius:10px;background:var(--panel2)}
+.overview-mode-switch .btn{min-height:30px;padding:5px 10px;font-size:11px;border-radius:7px}
+.overview-mode-switch .btn.active{background:var(--green);color:#061c15;border-color:var(--green)}
+#overviewModeCaption{margin:0 0 10px;font-size:11px}
+@media(max-width:600px){.overview-progression-controls{justify-content:flex-start}.overview-mode-switch .btn{font-size:11px;padding:5px 9px}}
 </style>
 <script>window.FOUR_DS_CLOUD_ENDPOINT = "https://script.google.com/macros/s/AKfycbyZW792ZLBPxusQwthCJr0bVdZwCjXyeNaklq4Dk-BuSQ8P9gdg2zdTiWFKEmYuy5sY9Q/exec";</script>
 <script src="cloud-bootstrap.js?v=4ds-auto-first-20261104-a"></script>
@@ -413,7 +419,7 @@ html[data-theme="light"] #page-firms .cash-risk-table td:nth-child(4){background
 
   <div class="cols">
     <div>
-      <div class="panel"><div class="panel-header"><div><h2>Progress through evaluation stages</h2><p id="pipelineDescription">Conditional rates are multiplied across the three stages.</p></div><span class="section-tag">02 / Pipeline</span></div><div id="funnel"></div><div id="topstepPipelineFinance" style="display:none;margin-top:18px"></div><div class="divider"></div><div class="probrow"><div class="prob"><small>Chance ≥1 payout</small><strong id="pOne">—</strong></div><div class="prob"><small>Chance ≥3× net</small><strong id="pThree">—</strong></div><div class="prob"><small>Chance ≥4× net</small><strong id="pFour">—</strong></div></div><p class="caption">Multiple accounts can share the same trade signal. Mirrored accounts are modeled as perfectly correlated within each mirrored group; groups are assumed independent. Other correlations are not modeled.</p></div>
+      <div class="panel"><div class="panel-header"><div><h2>Progress through evaluation stages</h2><p id="pipelineDescription">Conditional rates are multiplied across the three stages.</p></div><div class="overview-progression-controls"><span class="section-tag">02 / Pipeline</span><div class="overview-mode-switch" role="group" aria-label="Progress display"><button type="button" id="overviewShowPct" class="btn small active" aria-pressed="true">Percentages</button><button type="button" id="overviewShowTrades" class="btn small" aria-pressed="false">Accounts</button></div></div></div><p class="caption" id="overviewModeCaption">Percentage of purchased accounts at each stage (modeled, not published firm statistics).</p><div id="funnel"></div><div id="topstepPipelineFinance" style="display:none;margin-top:18px"></div><div class="divider"></div><div class="probrow"><div class="prob"><small>Chance ≥1 payout</small><strong id="pOne">—</strong></div><div class="prob"><small>Chance ≥3× net</small><strong id="pThree">—</strong></div><div class="prob"><small>Chance ≥4× net</small><strong id="pFour">—</strong></div></div><p class="caption">Multiple accounts can share the same trade signal. Mirrored accounts are modeled as perfectly correlated within each mirrored group; groups are assumed independent. Other correlations are not modeled.</p></div>
     </div>
     <div>
       <div class="panel"><div class="panel-header"><div><h2 id="economicsTitle">Economics per successful payout</h2><p id="economicsDescription">These include challenge losses averaged across all purchases.</p></div></div><div class="metric-row"><div><span id="unitRewardLabel">Reward paid to trader</span><small id="unitRewardDetail">After split and payout fees</small></div><strong id="unitReward">—</strong></div><div class="metric-row"><div><span id="unitRefundLabel">Fee refund on a paid account</span></div><strong id="unitRefund">—</strong></div><div class="metric-row"><div><span id="unitCostLabel">Effective cost per paid account</span><small id="unitCostDetail">Expected purchase fees / payout count − refund</small></div><strong id="unitCost">—</strong></div><div class="metric-row"><div><span id="breakEvenLabel">Break-even payout probability</span></div><strong id="breakEven">—</strong></div><div class="metric-row"><div><span id="needed4Label">Minimum payouts for 4× net</span></div><strong id="needed4">—</strong></div><div class="metric-row"><div><span id="payoutTimingLabel">Optimistic first cash timing</span><small id="payoutTimingDetail">Calendar-day approximation; excludes weekends, delays and trading losses</small></div><strong id="payoutTiming">—</strong></div></div>
@@ -962,7 +968,29 @@ function initScenarioTable(){
  });
 }
 
-function funnelRow(name,value,total){const v=total>0?Math.max(0,Math.min(100,value/total*100)):0;return `<div class="funnel-line"><div class="funnel-head"><span>${name}</span><strong>${value.toFixed(2)}</strong></div><div class="bar-track"><div class="bar-fill" style="width:${v.toFixed(2)}%"></div></div></div>`;}
+let overviewProgressMode='percent';
+function overviewStageValue(value,total){
+ if(value===null||value===undefined||!Number.isFinite(Number(value)))return 'Run estimate';
+ return overviewProgressMode==='percent'?(total>0?(100*value/total).toFixed(1)+'%':'—'):Number(value).toFixed(2);
+}
+function funnelRow(name,value,total){const v=total>0?Math.max(0,Math.min(100,value/total*100)):0;return `<div class="funnel-line"><div class="funnel-head"><span>${name}</span><strong>${overviewStageValue(value,total)}</strong></div><div class="bar-track"><div class="bar-fill" style="width:${v.toFixed(2)}%"></div></div></div>`;}
+document.addEventListener('click',event=>{
+ const button=event.target.closest?.('#overviewShowPct,#overviewShowTrades');
+ if(!button)return;
+ const next=button.id==='overviewShowPct'?'percent':'accounts';
+ if(overviewProgressMode===next)return;
+ overviewProgressMode=next;
+ render();
+});
+function syncOverviewProgressMode(){
+ const pctButton=$('overviewShowPct'),countButton=$('overviewShowTrades');
+ if(!pctButton||!countButton)return;
+ const percent=overviewProgressMode==='percent';
+ pctButton.classList.toggle('active',percent);countButton.classList.toggle('active',!percent);
+ pctButton.setAttribute('aria-pressed',String(percent));countButton.setAttribute('aria-pressed',String(!percent));
+ $('overviewModeCaption').textContent=percent?'Percentage of purchased accounts at each stage (modeled, not published firm statistics).':'Expected number of accounts at each stage (probability-weighted, not whole actual accounts).';
+}
+
 function marginForRisk(risk){return positionForRisk(risk).margin;}
 function showWarnings(c){let items=[];if(c.cost>positive(state.budget))items.push(`Planned challenge purchases ${money(c.cost)} exceed the available budget ${money(state.budget)}.`);if(c.unit<=0)items.push('Set a positive challenge price/cost for meaningful ROI.');if(positive(state.dailyLoss)+positive(state.buffer)>positive(state.accountSize))items.push('Daily loss plus buffer exceeds account size.');if(positive(state.overallLoss)+positive(state.buffer)>positive(state.accountSize))items.push('Total loss plus buffer exceeds account size.');if(instrumentReady()&&positionForRisk(state.fundedBase).qty===0)items.push('The funded USD stop loss is too small for the minimum contract/lot with the optional broker settings. Cash simulation does not test executable order size.');if(instrumentReady()&&positive(state.fundedBoost)>0&&marginForRisk(state.fundedBoost)>positive(state.accountSize)*prob(state.marginCeiling))items.push('Full funded boost does not fit your margin ceiling at starting equity; it may fit only after profits.');if(dirtySim&&lastSim)items.push('Strategy parameters changed after the last simulation. Rerun to refresh pass rates.');const box=$('warningBox');if(items.length){box.style.display='block';box.textContent=items.join('  •  ')}else box.style.display='none';}
 function topstepReserveFee(){return phaseModel().topstep&&state.topstepPath!=="noactivation"?149:0;}
@@ -971,7 +999,7 @@ function deriveBudgetAccounts(){
  const unit=positive(state.price)+positive(state.extraCost)+topstepReserveFee();
  state.accounts=unit>0?Math.max(0,Math.min(1000,Math.floor(positive(state.budget)/unit))):0;
 }
-function render(){if(phaseModel().topstep)state.topstepActivationFee=topstepReserveFee();deriveBudgetAccounts();applyPhaseVisibility();
+function render(){syncOverviewProgressMode();if(phaseModel().topstep)state.topstepActivationFee=topstepReserveFee();deriveBudgetAccounts();applyPhaseVisibility();
  const p1=document.querySelector('[data-phase-meta="p1"]'),p2=document.querySelector('[data-phase-meta="p2"]'),fund=document.querySelector('[data-phase-meta="funded"]');
  if(p1)p1.textContent='Profit target: '+money(state.p1Target)+' · Minimum trading days: '+state.p1MinDays+' · Set by selected firm rules above.';
  if(p2)p2.textContent='Profit target: '+money(state.p2Target)+' · Minimum trading days: '+state.p2MinDays+' · Set by selected firm rules above.';
@@ -1024,8 +1052,8 @@ if(scenarioRows?.length)for(const row of scenarioRows)updateScenarioMetrics(row)
   topstepCounts.style.display=model.topstep?'block':'none';
   if(model.topstep){
    const n=state.accounts,t=topstep&&!topstep.error?topstep:null;
-   topstepCounts.innerHTML='<h3 style="margin:0 0 10px">Account progression — using your stage-specific Strategy 1 and Strategy 2</h3><div class="tablewrap"><table><thead><tr><th>Stage outcome</th><th class="num">Estimated accounts</th></tr></thead><tbody>'+
-    [['Purchased',n],['Evaluation passed',t?n*t.combine:null],['Evaluation breached',t?n*t.combineBurned:null],['Evaluation unfinished by deadline',t?n*t.combineTimeout:null],['Entered XFA',t?n*t.combine:null],['XFA first payout reached',t?n*t.probability:null],['XFA second payout reached',t?n*t.secondProbability:null],['XFA breached before payout',t?n*t.fundedBurned:null],['XFA unfinished by deadline',t?n*t.fundedTimeout:null]].map(([label,value])=>'<tr><td>'+label+'</td><td class="num">'+(value===null?'Run estimate':value.toFixed(1))+'</td></tr>').join('')+
+   topstepCounts.innerHTML='<h3 style="margin:0 0 10px">Account progression — using your stage-specific Strategy 1 and Strategy 2</h3><div class="tablewrap"><table><thead><tr><th>Stage outcome</th><th class="num">'+(overviewProgressMode==='percent'?'% of purchased':'Estimated accounts')+'</th></tr></thead><tbody>'+
+    [['Purchased',n],['Evaluation passed',t?n*t.combine:null],['Evaluation breached',t?n*t.combineBurned:null],['Evaluation unfinished by deadline',t?n*t.combineTimeout:null],['Entered XFA',t?n*t.combine:null],['XFA first payout reached',t?n*t.probability:null],['XFA second payout reached',t?n*t.secondProbability:null],['XFA breached before payout',t?n*t.fundedBurned:null],['XFA unfinished by deadline',t?n*t.fundedTimeout:null]].map(([label,value])=>'<tr><td>'+label+'</td><td class="num">'+overviewStageValue(value,n)+'</td></tr>').join('')+
     '</tbody></table></div><p class="caption" style="margin-top:10px">Expected counts are averages over '+(t?t.count.toLocaleString():'—')+' independent account paths, not exact whole-account outcomes. Each stage uses its own two risk amounts and RR values, your win rate, and its configured trade/day limits. Strategy 2 only follows a Strategy 1 loss. The 50% win rate is applied to each eligible trade, not to an entire account.</p>';
   }
  }
@@ -1084,8 +1112,8 @@ if(scenarioRows?.length)for(const row of scenarioRows)updateScenarioMetrics(row)
      ];
      const signed=v=>(v>0?'+':'−')+money(Math.abs(v));
      finance.innerHTML='<h3 style="margin:0 0 9px">Financial progression · '+money(state.budget)+' budget</h3>'+
-       '<div class="tablewrap"><table style="min-width:540px"><thead><tr><th>Stage</th><th class="num">Expected accounts</th><th class="num">Cost / payout</th><th class="num">Cumulative net</th></tr></thead><tbody>'+
-       steps.map(s=>'<tr><td>'+s.name+'</td><td class="num">'+s.accounts.toFixed(2)+'</td><td class="num '+(s.change>=0?'green':'red')+'">'+signed(s.change)+'</td><td class="num '+(s.net>=0?'green':'red')+'">'+signed(s.net)+'</td></tr>').join('')+
+       '<div class="tablewrap"><table style="min-width:540px"><thead><tr><th>Stage</th><th class="num">'+(overviewProgressMode==='percent'?'% of purchased':'Expected accounts')+'</th><th class="num">Cost / payout</th><th class="num">Cumulative net</th></tr></thead><tbody>'+
+       steps.map(s=>'<tr><td>'+s.name+'</td><td class="num">'+overviewStageValue(s.accounts,a)+'</td><td class="num '+(s.change>=0?'green':'red')+'">'+signed(s.change)+'</td><td class="num '+(s.net>=0?'green':'red')+'">'+signed(s.net)+'</td></tr>').join('')+
        '<tr><th>Total expected net profit</th><th class="num">—</th><th class="num">'+money(payoutOne+payoutTwo)+'</th><th class="num '+(steps[3].net>=0?'green':'red')+'">'+signed(steps[3].net)+'</th></tr></tbody></table></div>'+
        '<p class="caption">Costs are negative and payouts are positive. First/second payout figures are expected trader receipts after the modeled 90/10 split. XFA activation costs apply only to estimated Combine passes. Cumulative net deducts costs; remaining cash in the investment budget is not treated as a loss. Values are probability-weighted averages, not guaranteed account counts or receipts.</p>';
    }
