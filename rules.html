@@ -513,7 +513,7 @@ function renderResearchProgram(){
  chosen=null;showResearchMode(true);
  if(!item){e('status').textContent='Research source unavailable. This program cannot be used in calculations.';return}
  window.fourDsRenderResearchAccount?.(item,window.fourDsOfficialCatalog?.asOf);window.fourDsRenderAudit?.(id);
- const amount=Number(e('size').value),audit=window.fourDsOfficialAudit?.programs?.[id];const publishedPrice=audit?.pricesUSD?.[amount];e('stats').innerHTML='<div class="stat"><span>Selected size</span><b>'+(amount?cash(amount):'Unverified')+'</b></div><div class="stat"><span>Published fee</span><b>'+(publishedPrice!=null?cash(publishedPrice):'Unverified')+'</b></div><div class="stat"><span>Model</span><b>Research only</b></div>';
+ const amount=Number(e('size').value),audit=window.fourDsOfficialAudit?.programs?.[id];const publishedPrice=audit?.pricesUSD?.[amount];e('stats').innerHTML='<div class="stat"><span>Selected size</span><b>'+(amount?cash(amount):'Not confirmed')+'</b></div><div class="stat"><span>Published fee</span><b>'+(publishedPrice!=null?cash(publishedPrice):'Not confirmed')+'</b></div><div class="stat"><span>Rules status</span><b>'+(audit?.status==='reviewed-partial'?'Source reviewed':'Variant required')+'</b></div><div class="stat"><span>Simulation</span><b>Not yet supported</b></div>';
  const hasSize=Boolean(audit?.sizesUSD?.length),hasPrice=publishedPrice!=null;e('status').textContent=item.firm+' '+item.program+' · '+(hasSize?'Published account sizes loaded':'Account sizes not yet documented')+' · '+(hasPrice?'Published base fee available (verify checkout)':'Fee not confirmed')+'. Exact funded rules, options and provider approval still require verification. Simulation remains disabled.';
  sendParentHeight();
 }
