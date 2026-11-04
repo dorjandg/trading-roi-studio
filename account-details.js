@@ -2,6 +2,35 @@
 "use strict";
 function rows(id,items){const host=document.getElementById(id);if(!host)return;host.replaceChildren();for(const [label,value] of items){const item=document.createElement('div');item.className='item';const l=document.createElement('span');l.textContent=label;const v=document.createElement('strong');v.textContent=value===undefined||value===null||value===''?'Not verified in reference':String(value);item.append(l,v);host.append(item);}}
 function money(v){return v===null||v===undefined||!Number.isFinite(Number(v))?'Not verified':'$'+Number(v).toLocaleString('en-US');}
+window.fourDsRenderAudit=function(id){
+ const host=document.getElementById('officialAuditDetails');if(!host)return;
+ const audit=window.fourDsOfficialAudit?.programs?.[id];
+ host.replaceChildren();
+ if(!audit){const p=document.createElement('p');p.className='muted';p.textContent='Official audit is still loading, or is unavailable. Do not rely on missing details.';host.append(p);return;}
+ const status=document.getElementById('officialAuditStatus');
+ if(status)status.textContent=audit.status==='requires-variant-selection'?'VARIANT REQUIRED · not fully verified':'SOURCE-REVIEWED · verification incomplete';
+ const intro=document.createElement('p');intro.className='muted';intro.textContent='Reference checked '+window.fourDsOfficialAudit.asOf+'. Review the exact account size, purchase date, market, platform and phase. This is not a broker risk controller.';host.append(intro);
+ const sections=[['Pricing & sizes',{sizesUSD:audit.sizesUSD,pricesUSD:audit.pricesUSD,pricingNote:audit.pricingNote}],['Evaluation',audit.evaluation],['Maximum losses & daily breaches',audit.loss],['Margin, leverage & position caps',audit.margin],['Funded payouts and restrictions',audit.funded],['Trading restrictions & exceptions',audit.restrictions]];
+ const friendly=k=>k.replace(/([a-z])([A-Z])/g,'$1 $2').replace(/USD/g,' USD').replace(/Percent/g,' %').replace(/^./,x=>x.toUpperCase());
+ const value=v=>Array.isArray(v)?v.join(' / '):typeof v==='object'?Object.entries(v).map(([k,x])=>k+': '+String(x)).join(' | '):v===null?'Not specified in this source':String(v);
+ for(const [title,obj] of sections){
+  if(!obj||!Object.keys(obj).length)continue;
+  const d=document.createElement('details');d.className='audit-subsection';if(title==='Maximum losses & daily breaches')d.open=true;
+  const s=document.createElement('summary');s.textContent=title;d.append(s);
+  for(const [key,val] of Object.entries(obj)){
+   if(val===undefined)continue;
+   const line=document.createElement('div');line.className='item';
+   const k=document.createElement('span');k.textContent=friendly(key);
+   const v=document.createElement('strong');v.textContent=value(val);
+   v.style.whiteSpace='normal';v.style.overflowWrap='anywhere';
+   line.append(k,v);d.append(line);
+  }
+  host.append(d);
+ }
+ const heading=document.createElement('p');heading.textContent='Official source references';heading.style.fontWeight='700';host.append(heading);
+ for(const url of audit.sources||[]){if(!url.startsWith('https://'))continue;const a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener noreferrer';a.textContent=new URL(url).hostname+' · '+new URL(url).pathname.split('/').pop().replaceAll('-',' ');const p=document.createElement('p');p.append(a);host.append(p)}
+ const warn=document.createElement('p');warn.className='notice';warn.textContent='Unverified fields, exact futures contracts, broker margin, live instrument specifications, purchase-date variations and funded terms may still be missing. Do not infer trading permission or safety from this reference.';host.append(warn);
+};
 window.fourDsRenderResearchAccount=function(item,asOf){
 if(!item)return;const rules=item.rules||{},limits=item.limits||{};
 const name=item.firm+' · '+item.program+' · '+item.market;
