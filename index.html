@@ -303,7 +303,7 @@ let selectedAccountSupportsSimulation=true;
 function useSelectedAccount(x,force=false){
  if(!x||x.v!==1||!x.programId||!Number.isFinite(Number(x.size))||Number(x.size)<=0)return;
  const newKey=profileKey(x.programId,x.size),isNew=activeProgramKey!==newKey;
- if(!isNew&&!force){selectedAccountSupportsSimulation=x.compatible===true;const btn=$('simulate');if(btn)btn.disabled=!selectedAccountSupportsSimulation;return;}
+ // Restore the visible workspace even when this selected profile was already active.
  if(isNew&&activeProgramKey)writeProfile();
  const profile=storedProfile(newKey);
  if(isNew){state=profile?{...DEFAULT,...profile.state}:{...DEFAULT};}
