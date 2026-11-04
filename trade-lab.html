@@ -44,7 +44,7 @@ html[data-theme="light"]{color-scheme:light;--bg:#f3f6fa;--panel:#fff;--panel2:#
 <section class="panel"><h2>Outcome distribution</h2><p class="hint">Distribution of final net P/L across all paths.</p><div class="bars" id="histogram"></div><div class="selectors" style="justify-content:space-between;margin-top:8px"><span class="hint" id="histMin">—</span><span class="hint" id="histMax">—</span></div></section>
 <section class="panel"><h2>Selected path breakdown</h2><div class="stats" id="pathStats"></div></section>
 </div>
-<section class="panel"><div class="selectors" style="justify-content:space-between;margin-bottom:10px"><div><h2>Individual trades</h2><p class="hint">Up to 3,000 rows for the selected simulation.</p></div><span class="hint" id="tradeCount"></span></div><div class="tablewrap"><table><thead><tr><th>Trade</th><th>Month</th><th>Result</th><th class="num">R</th><th class="num">P/L</th><th class="num">Equity</th><th class="num">Drawdown</th></tr></thead><tbody id="tradeRows"></tbody></table></div></section>
+<section class="panel"><div class="selectors" style="justify-content:space-between;margin-bottom:10px"><div><h2>Individual trades</h2><p class="hint">Browse all completed trades without scrolling through the entire history.</p></div><div class="selectors"><label class="hint" for="tradePageSize">Rows</label><select id="tradePageSize"><option value="10" selected>10</option><option value="50">50</option><option value="100">100</option></select><span class="hint" id="tradeCount"></span></div></div><div class="tablewrap"><table><thead><tr><th>Trade</th><th>Month</th><th>Result</th><th class="num">R</th><th class="num">P/L</th><th class="num">Equity</th><th class="num">Drawdown</th></tr></thead><tbody id="tradeRows"></tbody></table></div><div class="actionrow" style="justify-content:space-between"><span class="hint" id="tradeRange" aria-live="polite">—</span><div class="selectors"><button class="btn" id="tradePrev" type="button">← Previous</button><span class="hint mono" id="tradePageNumber" aria-live="polite">Page 1 of 1</span><button class="btn" id="tradeNext" type="button">Next →</button></div></div></section>
 <section class="panel" id="portfolioMode">
 <div class="eyebrow">Multiple accounts · Rotation · Portfolio cash flow</div><h2>Portfolio mode</h2><p class="muted">Route trading opportunities across challenges and funded accounts. Accounts stop receiving signals after reaching their chosen daily risk budget. Watch transitions, account failures and combined outcomes.</p>
 <div class="fields">
@@ -110,6 +110,21 @@ function stat(name,value){return'<div class="stat"><span>'+name+'</span><b>'+val
 function selectedPath(){if(!paths.length)return null;const key=$('pick').value;const sorted=paths.slice().sort((a,b)=>a.net-b.net);if(key==='worst')return sorted[0];if(key==='best')return sorted[sorted.length-1];if(key==='p10')return sorted[Math.floor((sorted.length-1)*.1)];if(key==='p90')return sorted[Math.floor((sorted.length-1)*.9)];if(key==='random')return paths[Math.floor(paths.length*.61)];return sorted[Math.floor((sorted.length-1)*.5)]}
 function coords(values,width,height,min,max){const left=50,right=12,top=18,bottom=30,innerW=width-left-right,innerH=height-top-bottom;return values.map((v,i)=>[(left+(values.length===1?0:i/(values.length-1)*innerW)),top+(max-v)/(max-min||1)*innerH])}
 function plotSeries(points,stroke,width,opacity=1,step=false){const d=points.map((p,i)=>i?(step?'H'+p[0]+'V'+p[1]:'L'+p[0]+' '+p[1]):'M'+p[0]+' '+p[1]).join(' ');return'<path d="'+d+'" fill="none" stroke="'+stroke+'" stroke-width="'+width+'" opacity="'+opacity+'" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/>'}
+let tradePage=0,tradePath=null;
+function renderTradePage(){
+ const p=current;if(!p)return;
+ if(p!==tradePath){tradePage=0;tradePath=p;}
+ const total=p.trades.length,size=Number($('tradePageSize').value)||10,pages=Math.max(1,Math.ceil(total/size));
+ tradePage=clamp(tradePage,0,pages-1);const start=tradePage*size,end=Math.min(total,start+size);
+ $('tradeRows').innerHTML=p.trades.slice(start,end).map(t=>'<tr><td>'+t.id+'</td><td>M'+t.month+' · D'+t.day+'</td><td class="'+(t.result==='W'?'good':t.result==='L'?'bad':'')+'">'+t.result+'</td><td class="num">'+t.r.toFixed(1)+'</td><td class="num '+(t.pl>=0?'good':'bad')+'">'+money(t.pl)+'</td><td class="num">'+money(t.equity)+'</td><td class="num">'+money(t.dd)+'</td></tr>').join('');
+ $('tradeCount').textContent=fmt(total)+' completed';
+ $('tradeRange').textContent=total?'Showing '+fmt(start+1)+'–'+fmt(end)+' of '+fmt(total):'No trades';
+ $('tradePageNumber').textContent='Page '+(tradePage+1)+' of '+pages;
+ $('tradePrev').disabled=tradePage===0;$('tradeNext').disabled=tradePage>=pages-1;
+}
+$('tradePageSize').addEventListener('change',()=>{tradePage=0;renderTradePage()});
+$('tradePrev').addEventListener('click',()=>{tradePage--;renderTradePage()});
+$('tradeNext').addEventListener('click',()=>{tradePage++;renderTradePage()});
 function draw(){const p=selectedPath();if(!p)return;current=p;const kind=$('view').value,W=940,H=350,isDD=kind==='drawdown',isCandle=kind==='candles',isPaths=kind==='paths';let data=isDD?p.drawdowns.map(x=>-x):p.eq;let other=[];
  if(isPaths){other=paths.filter((x,i)=>i%Math.max(1,Math.floor(paths.length/60))===0).map(x=>x.eq);data=p.eq}
  if(isCandle)data=p.days.flatMap(x=>[x.low,x.high]);
@@ -126,8 +141,7 @@ function draw(){const p=selectedPath();if(!p)return;current=p;const kind=$('view
  $('graphNote').textContent=isCandle?'Daily OHLC candles show simulated account equity (not market-price candles).':isPaths?'Thin lines are simulated paths; blue is median equity, green is the selected path.':'This chart uses the actual sequence of outcomes from the selected simulated path.';
  $('monthRows').innerHTML=p.monthly.map(m=>'<tr><td>Month '+m.month+'</td><td class="num">'+m.trades+'</td><td class="num '+(m.pl>=0?'good':'bad')+'">'+money(m.pl)+'</td><td class="num">'+money(m.close)+'</td><td class="num">'+money(m.dd)+'</td></tr>').join('');
  $('pathStats').innerHTML=[stat('Completed trades',fmt(p.trades.length)),stat('Wins / losses / BE',p.wins+' / '+p.losses+' / '+p.be),stat('Profit factor',p.lossSum<0?(-p.winSum/p.lossSum).toFixed(2):'—'),stat('Max drawdown',money(p.maxDD)),stat('Longest win streak',p.maxW),stat('Longest loss streak',p.maxL),stat('Account breached?',p.breached?'Yes':'No'),stat('Stage passed?',p.passed?'Yes':'No'),stat('Best profitable day',money(p.bestDay)),stat('Adjusted profit target',config.target>0?money(p.adjustedTarget):'—'),stat('Daily stop events',fmt(p.dailyStops))].join('');
- $('tradeRows').innerHTML=p.trades.slice(0,3000).map(t=>'<tr><td>'+t.id+'</td><td>M'+t.month+' · D'+t.day+'</td><td class="'+(t.result==='W'?'good':t.result==='L'?'bad':'')+'">'+t.result+'</td><td class="num">'+t.r.toFixed(1)+'</td><td class="num '+(t.pl>=0?'good':'bad')+'">'+money(t.pl)+'</td><td class="num">'+money(t.equity)+'</td><td class="num">'+money(t.dd)+'</td></tr>').join('');
- $('tradeCount').textContent=fmt(p.trades.length)+' completed';
+ renderTradePage();
 }
 function run(){const c=cfg();const chosenPaths=c.paths;c.paths=Math.min(chosenPaths,Math.max(50,Math.floor(240000/(c.months*c.trades))));if(c.wr+c.be>1+1e-10){$('progress').textContent='Win rate + BE percentage must not exceed 100%.';return}config=c;paths=[];for(let n=0;n<c.paths;n++)paths.push(simulate(n,c));
  const nets=paths.map(p=>p.net),ends=paths.map(p=>p.final),dd=paths.map(p=>p.maxDD),mean=x=>x.reduce((a,b)=>a+b,0)/x.length,ruin=paths.filter(p=>p.breached).length/c.paths,profit=paths.filter(p=>p.net>0).length/c.paths;
