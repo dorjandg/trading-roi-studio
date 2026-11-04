@@ -369,7 +369,7 @@ try{activeProgramKey=localStorage.getItem(PROFILE_ACTIVE)||null}catch(e){}
 try{const x=JSON.parse(sessionStorage.getItem('studio-program-selection')||'null');if(x&&x.v===1&&Array.isArray(x.targets)&&x.targets.length===2&&x.feeUSD>0){
   const incomingKey=profileKey(x.programId||x.label,x.size);if(activeProgramKey&&activeProgramKey!==incomingKey)writeProfile();
   const profile=storedProfile(incomingKey);
-  if(profile){state={...DEFAULT,...profile.state}}else{state={...DEFAULT,...state};state.accountSize=x.size;state.dailyLoss=x.daily*x.size/100;state.overallLoss=x.max*x.size/100;state.p1Target=x.targets[0]*x.size/100;state.p2Target=x.targets[1]*x.size/100;state.p1MinDays=x.days[0];state.p2MinDays=x.days[1];state.price=x.feeUSD;if(x.fundedRisk){const cap=x.size*x.fundedRisk/100;state.fundedBase=Math.min(state.fundedBase,cap);state.fundedRecovery=Math.min(state.fundedRecovery,cap);state.fundedBoost=Math.min(state.fundedBoost,cap);}if(x.trading&&typeof x.trading==='object'){for(const k of ['winRate','rr','weeklySignals','p1Base','p2Base','fundedBase'])if(Number.isFinite(Number(x.trading[k]))&&Number(x.trading[k])>=0)state[k]=Number(x.trading[k]);}}
+  if(profile){const investmentBudget=positive(state.budget);state={...DEFAULT,...profile.state};state.budget=investmentBudget;}else{state={...DEFAULT,...state};state.accountSize=x.size;state.dailyLoss=x.daily*x.size/100;state.overallLoss=x.max*x.size/100;state.p1Target=x.targets[0]*x.size/100;state.p2Target=x.targets[1]*x.size/100;state.p1MinDays=x.days[0];state.p2MinDays=x.days[1];state.price=x.feeUSD;if(x.fundedRisk){const cap=x.size*x.fundedRisk/100;state.fundedBase=Math.min(state.fundedBase,cap);state.fundedRecovery=Math.min(state.fundedRecovery,cap);state.fundedBoost=Math.min(state.fundedBoost,cap);}if(x.trading&&typeof x.trading==='object'){for(const k of ['winRate','rr','weeklySignals','p1Base','p2Base','fundedBase'])if(Number.isFinite(Number(x.trading[k]))&&Number(x.trading[k])>=0)state[k]=Number(x.trading[k]);}}
   // Apply updated account rules on every transfer while retaining user trading parameters.
   state.accountSize=x.size;if(x.daily!=null)state.dailyLoss=x.daily*x.size/100;if(x.max!=null)state.overallLoss=x.max*x.size/100;if(x.maxLossUSD!=null)state.overallLoss=x.maxLossUSD;if(x.targets[0]!=null)state.p1Target=x.targets[0]*x.size/100;if(x.targets[1]!=null)state.p2Target=x.targets[1]*x.size/100;state.p1MinDays=x.days[0];state.p2MinDays=x.days[1];state.price=x.feeUSD;
   activeProgramKey=incomingKey;sessionStorage.removeItem('studio-program-selection');try{localStorage.setItem(STORAGE,JSON.stringify(state))}catch(e){}writeProfile();
@@ -776,6 +776,7 @@ function render(){if(phaseModel().topstep)state.topstepActivationFee=topstepRese
 if(scenarioRows?.length)for(const row of scenarioRows)updateScenarioMetrics(row);const src=$('investmentAccountSource');if(src)src.textContent=activeProgramKey||'No account selected — sample defaults in use';const c=calc();const model=phaseModel();const unsupportedModel=!selectedAccountSupportsSimulation;const topstep=model.topstep?refreshTopstepEstimate():null;const payoutUnsupported=model.topstep&&!topstep;const reserve=topstepReserveFee(),budgetUnit=c.unit+reserve;const affordable=budgetUnit>0?Math.max(0,Math.floor(positive(state.budget)/budgetUnit)):0;
  const budgetInput=$('overviewBudget');
  if(budgetInput&&document.activeElement!==budgetInput)budgetInput.value=state.budget;
+  const quickBudget=$('f-budget');if(quickBudget&&document.activeElement!==quickBudget)quickBudget.value=state.budget;
  $('overviewDerivedCount').textContent=String(state.accounts);
  $('overviewUnitCost').textContent=money(c.unit);$('overviewUnitCostLabel').textContent=model.topstep?'Evaluation challenge fee':'Cost per challenge';
  $('overviewAffordable').textContent=String(affordable);
@@ -855,7 +856,7 @@ if(scenarioRows?.length)for(const row of scenarioRows)updateScenarioMetrics(row)
 
   // The Topstep panel uses actual modeled Combine → XFA first-payout rates, not generic prop-firm assumptions.
   $('economicsTitle').textContent=model.topstep?'Topstep · first XFA payout economics':'Economics per successful payout';
-  $('economicsDescription').textContent=model.topstep?'Expected costs include unsuccessful Combine purchases and XFA activation on passed Combines.':'These include challenge losses averaged across all purchases.';
+  $('economicsDescription').textContent=model.topstep?'Investment budget '+money(state.budget)+'. Expected costs include unsuccessful Combine purchases and XFA activation on passed Combines.':'These include challenge losses averaged across all purchases.';
   $('unitRewardLabel').textContent=model.topstep?'Average reward per successful first payout':'Reward paid to trader';
   $('unitRewardDetail').textContent=model.topstep?'After 90/10 split; conditional on first payout':'After split and payout fees';
   $('unitRefundLabel').textContent=model.topstep?'Routine Combine fee refund':'Fee refund on a paid account';
@@ -877,6 +878,7 @@ if(scenarioRows?.length)for(const row of scenarioRows)updateScenarioMetrics(row)
     $('unitCost').textContent=t&&paid>0?money(fees/paid):'—';
     $('breakEven').textContent=Number.isFinite(breakEven)?pct(breakEven):'—';
     $('needed4').textContent=Number.isFinite(minPayouts)?String(minPayouts)+(minPayouts>n?' (exceeds '+n+' challenges)':''):'—';
+    $('needed4Label').textContent='Payouts for 4× net on '+money(state.budget)+' budget';
     $('payoutTiming').textContent='Not modeled';
     $('pFour').textContent='—';
   }
@@ -1070,6 +1072,8 @@ let selectedAccountSupportsSimulation=true;
 function useSelectedAccount(x,force=false){
  if(!x||x.v!==1||!x.programId||!Number.isFinite(Number(x.size))||Number(x.size)<=0)return;
  const newKey=profileKey(x.programId,x.size),isNew=activeProgramKey!==newKey;
+  // Investment budget belongs to the current investment plan, not to the selected account type.
+  const currentInvestmentBudget=positive(state.budget);
  // Repeated selection broadcasts are not user edits. Keep the saved profile untouched.
  if(!isNew&&!force){
   selectedAccountSupportsSimulation=x.compatible===true||x.programId==='topstep';
@@ -1081,7 +1085,7 @@ function useSelectedAccount(x,force=false){
  }
  if(isNew&&activeProgramKey)writeProfile();
  const profile=storedProfile(newKey);
- if(isNew){state=profile?{...DEFAULT,...profile.state}:{...DEFAULT};}
+ if(isNew){state=profile?{...DEFAULT,...profile.state}:{...DEFAULT};state.budget=currentInvestmentBudget;}
  if(x.programId==='topstep'&&Number(state.topstepActivationFee)===0){try{const migration='4ds:topstep-fee-default-v1:'+newKey;if(!localStorage.getItem(migration)){state.topstepActivationFee=149;localStorage.setItem(migration,'1');}}catch(e){state.topstepActivationFee=149;}}
  const n=Number(x.size);
  state.accountSize=n;
