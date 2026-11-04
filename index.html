@@ -973,7 +973,7 @@ function overviewStageValue(value,total){
  if(value===null||value===undefined||!Number.isFinite(Number(value)))return 'Run estimate';
  return overviewProgressMode==='percent'?(total>0?(100*value/total).toFixed(1)+'%':'—'):Number(value).toFixed(2);
 }
-function funnelRow(name,value,total){const v=total>0?Math.max(0,Math.min(100,value/total*100)):0;return `<div class="funnel-line"><div class="funnel-head"><span>${name}</span><strong>${overviewStageValue(value,total)}</strong></div><div class="bar-track"><div class="bar-fill" style="width:${v.toFixed(2)}%"></div></div></div>`;}
+function funnelRow(name,value,total){const v=total>0&&value!==null&&Number.isFinite(value)?Math.max(0,Math.min(100,value/total*100)):0;return `<div class="funnel-line"><div class="funnel-head"><span>${name}</span><strong>${overviewStageValue(value,total)}</strong></div><div class="bar-track"><div class="bar-fill" style="width:${v.toFixed(2)}%"></div></div></div>`;}
 document.addEventListener('click',event=>{
  const button=event.target.closest?.('#overviewShowPct,#overviewShowTrades');
  if(!button)return;
@@ -1091,7 +1091,7 @@ if(scenarioRows?.length)for(const row of scenarioRows)updateScenarioMetrics(row)
  }
  const formula=$('overviewStageFormula');if(formula)formula.textContent=model.topstep?'Combine × XFA Standard payout':phaseModel().phase2?'Phase 1 × Phase 2 × Funded × Collection':phaseModel().phase1?'Evaluation × Funded × Collection':'Funded × Collection';
  const m=phaseModel(),a=state.accounts,b=a*(m.phase1?prob(state.p1):1),d=b*phase2Rate(),e=d*prob(state.pf),f=e*prob(state.pc);
- $('funnel').innerHTML=model.topstep?(funnelRow('Purchased challenges',a,a)+funnelRow('Estimated Combine passes',topstep&&!topstep.error?a*topstep.combine:0,a)+funnelRow('Estimated first XFA payouts',topstep&&!topstep.error?a*topstep.probability:0,a)+funnelRow('Estimated second XFA payouts',topstep&&!topstep.error?a*topstep.secondProbability:0,a)):funnelRow('Purchased challenges',a,a)+(m.phase1?funnelRow(m.topstep?'Passed Trading Combine':'Passed Phase 1',b,a):'')+(m.phase2?funnelRow('Passed Phase 2',d,a):'')+funnelRow(m.topstep?'XFA payout-planning proxy':m.instant?'Funded reward-planning proxy':'Reached funded profit target (estimate)',e,a)+funnelRow('Expected collected payouts',f,a);
+ $('funnel').innerHTML=model.topstep?(funnelRow('Purchased challenges',a,a)+funnelRow('Estimated Combine passes',topstep&&!topstep.error?a*topstep.combine:null,a)+funnelRow('Estimated first XFA payouts',topstep&&!topstep.error?a*topstep.probability:null,a)+funnelRow('Estimated second XFA payouts',topstep&&!topstep.error?a*topstep.secondProbability:null,a)):funnelRow('Purchased challenges',a,a)+(m.phase1?funnelRow(m.topstep?'Passed Trading Combine':'Passed Phase 1',b,a):'')+(m.phase2?funnelRow('Passed Phase 2',d,a):'')+funnelRow(m.topstep?'XFA payout-planning proxy':m.instant?'Funded reward-planning proxy':'Reached funded profit target (estimate)',e,a)+funnelRow('Expected collected payouts',f,a);
  $('pipelineDescription').textContent=model.topstep?'Expected account progression and cash flows from the selected Topstep two-payout simulation.':'Conditional rates are multiplied across the three stages.';
  const finance=$('topstepPipelineFinance');
  if(finance){
