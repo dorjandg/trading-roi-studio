@@ -1,0 +1,24 @@
+name: Studio financial-model invariant checks
+on:
+  push:
+    paths:
+      - 'trade-lab.html'
+      - 'tests/**'
+      - '.github/workflows/studio-model-tests.yml'
+  pull_request:
+    paths:
+      - 'trade-lab.html'
+      - 'tests/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  trade-lab:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run portfolio model and runtime invariants
+        run: node tests/trade-lab-checks.cjs
