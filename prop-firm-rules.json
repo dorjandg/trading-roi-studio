@@ -1,0 +1,237 @@
+{
+  "asOf": "2026-11-04",
+  "disclaimer": "Research snapshot. Verify all conditions at source before trading. Fees vary by region and promotion.",
+  "programs": {
+    "ftmo2": {
+      "firm": "FTMO",
+      "name": "2-Step",
+      "sizes": [
+        10000,
+        25000,
+        50000,
+        100000,
+        200000
+      ],
+      "targets": [
+        10,
+        5
+      ],
+      "days": [
+        4,
+        4
+      ],
+      "daily": 5,
+      "max": 10,
+      "loss": "Static overall; daily equity reset at midnight CE(S)T",
+      "market": "Forex/CFD",
+      "split": "Up to 90%",
+      "refund": "100% with first reward",
+      "fees": {
+        "10000": 89,
+        "25000": 250,
+        "50000": 345,
+        "100000": 439,
+        "200000": 1080
+      },
+      "currency": "EUR",
+      "notes": [
+        "No funded profit target.",
+        "Evaluation has 4 trading days in each phase.",
+        "Daily equity limit recalculates using balance at midnight CE(S)T."
+      ],
+      "source": "https://ftmo.com/en/2-step-challenge/",
+      "compatible": true
+    },
+    "ftmo1": {
+      "firm": "FTMO",
+      "name": "1-Step",
+      "sizes": [
+        10000,
+        25000,
+        50000,
+        100000,
+        200000
+      ],
+      "targets": [
+        10
+      ],
+      "days": [
+        0
+      ],
+      "daily": 3,
+      "max": 10,
+      "loss": "End-of-day trailing balance-based maximum loss",
+      "market": "Forex/CFD",
+      "split": "90%",
+      "refund": "No",
+      "fees": {
+        "10000": 79,
+        "25000": 199,
+        "50000": 319
+      },
+      "currency": "EUR",
+      "notes": [
+        "50% best-day consistency for accounts ordered on/after 12 Oct 2026; legacy differs.",
+        "No minimum trading days.",
+        "Maximum loss is trailing, not static."
+      ],
+      "source": "https://ftmo.com/en/trading-objectives/",
+      "compatible": false
+    },
+    "instant": {
+      "firm": "FTMO",
+      "name": "Instant",
+      "sizes": [
+        5000,
+        10000,
+        25000,
+        50000,
+        100000
+      ],
+      "targets": [],
+      "days": [],
+      "daily": 3,
+      "max": 10,
+      "loss": "Intraday trailing closed-balance-based loss threshold",
+      "market": "Forex/CFD",
+      "split": "90%",
+      "refund": "No",
+      "fees": {
+        "5000": 169,
+        "10000": 339,
+        "25000": 749,
+        "50000": 1499,
+        "100000": 2999
+      },
+      "currency": "EUR",
+      "notes": [
+        "No evaluation phase.",
+        "Best-day consistency must not exceed 30% of cumulative profit for rewards.",
+        "Trailing loss threshold does not reset after reward withdrawal."
+      ],
+      "source": "https://ftmo.com/en/instant-account/",
+      "compatible": false
+    },
+    "holaPrime": {
+      "firm": "Hola Prime",
+      "name": "2-Step Prime",
+      "sizes": [
+        2000,
+        5000,
+        10000,
+        25000,
+        50000,
+        100000,
+        200000
+      ],
+      "targets": [
+        8,
+        5
+      ],
+      "days": [
+        3,
+        3
+      ],
+      "daily": 5,
+      "max": 10,
+      "loss": "Static maximum; daily loss based on previous day close",
+      "market": "Forex/CFD",
+      "split": "80% biweekly/on demand; 95% monthly",
+      "refund": "Verify offer",
+      "fees": {},
+      "currency": "USD",
+      "fundedRisk": 2,
+      "notes": [
+        "$200K uses 4% daily and 8% overall loss limits.",
+        "Funded maximum combined risk per trade idea: 2% of initial equity.",
+        "Prime allows news and weekend trading subject to terms.",
+        "Biweekly: 14 days and 3 profitable days at least 0.5% each. Monthly: 30 days and 7 such days. On-demand: 40% consistency and 2% minimum reward.",
+        "Processing fee applies to payouts."
+      ],
+      "source": "https://holaprime.com/terms-conditions/",
+      "compatible": true
+    },
+    "holaPro": {
+      "firm": "Hola Prime",
+      "name": "2-Step Pro",
+      "sizes": [
+        5000,
+        10000,
+        25000,
+        50000,
+        100000,
+        200000
+      ],
+      "targets": [
+        8,
+        5
+      ],
+      "days": [
+        2,
+        2
+      ],
+      "daily": 5,
+      "max": 10,
+      "loss": "Static maximum; daily loss based on previous day close",
+      "market": "Forex/CFD",
+      "split": "80% biweekly/on demand; 95% monthly",
+      "refund": "Verify offer",
+      "fees": {},
+      "currency": "USD",
+      "fundedRisk": 2,
+      "notes": [
+        "$200K uses 4% daily and 8% overall loss limits.",
+        "Funded combined risk per trade idea capped at 2%.",
+        "Funded news trading restricted 5 minutes before/after high-impact events.",
+        "Funded weekend holding prohibited.",
+        "Position-size limits apply to some sizes; verify official conditions."
+      ],
+      "source": "https://holaprime.com/terms-conditions/",
+      "compatible": true
+    },
+    "topstep": {
+      "firm": "Topstep",
+      "name": "Trading Combine",
+      "sizes": [
+        50000,
+        100000,
+        150000
+      ],
+      "targets": [
+        6
+      ],
+      "days": [
+        2
+      ],
+      "daily": null,
+      "max": null,
+      "loss": "End-of-day trailing MLL; threshold locks at starting balance",
+      "market": "Futures",
+      "split": "See Express Funded Account payout policies",
+      "refund": "No",
+      "fees": {
+        "50000": 49,
+        "100000": 99,
+        "150000": 199
+      },
+      "noActivation": {
+        "50000": 95,
+        "100000": 149,
+        "150000": 229
+      },
+      "currency": "USD/month",
+      "fundedRisk": null,
+      "notes": [
+        "Profit targets: $3,000 / $6,000 / $9,000.",
+        "Trailing Maximum Loss Limit: $2,000 / $3,000 / $4,500.",
+        "55% Trading Combine consistency objective.",
+        "Max contracts: 5 / 10 / 15 minis or 50 / 100 / 150 micros.",
+        "Standard Path includes $149 Express Funded Account activation fee; no-activation path has higher monthly charge.",
+        "Express Funded Standard payouts require 5 winning days of $150 or more and positive net profit since prior payout.",
+        "No separately published Trading Combine daily loss limit; intraday MLL breach fails account."
+      ],
+      "source": "https://help.topstep.com/en/articles/8284197-trading-combine-parameters",
+      "compatible": false
+    }
+  }
+}
