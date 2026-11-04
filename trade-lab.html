@@ -63,6 +63,7 @@ function simulate(n,c){let rng=random((c.seed+n*1610612741)>>>0),equity=c.balanc
  }
  monthly.push({month:m+1,trades:monthTrades,pl:equity-monthStart,close:equity,dd:monthMaxDD});
  }
+ while(eq.length<c.months*c.trades+1){eq.push(equity);drawdowns.push(Math.max(0,peak-equity));}
  return{trades,eq,drawdowns,days,monthly,final:equity,net:equity-c.balance,maxDD:ddMax,wins,losses,be,maxW,maxL,streak3,streak5,streak7,breached,winSum,lossSum};
 }
 function stat(name,value){return'<div class="stat"><span>'+name+'</span><b>'+value+'</b></div>'}
@@ -88,14 +89,14 @@ function draw(){const p=selectedPath();if(!p)return;current=p;const kind=$('view
  $('tradeRows').innerHTML=p.trades.slice(0,3000).map(t=>'<tr><td>'+t.id+'</td><td>M'+t.month+' · D'+t.day+'</td><td class="'+(t.result==='W'?'good':t.result==='L'?'bad':'')+'">'+t.result+'</td><td class="num">'+t.r.toFixed(1)+'</td><td class="num '+(t.pl>=0?'good':'bad')+'">'+money(t.pl)+'</td><td class="num">'+money(t.equity)+'</td><td class="num">'+money(t.dd)+'</td></tr>').join('');
  $('tradeCount').textContent=fmt(p.trades.length)+' completed';
 }
-function run(){const c=cfg();if(c.wr+c.be>1+1e-10){$('progress').textContent='Win rate + BE percentage must not exceed 100%.';return}config=c;paths=[];for(let n=0;n<c.paths;n++)paths.push(simulate(n,c));
+function run(){const c=cfg();const chosenPaths=c.paths;c.paths=Math.min(chosenPaths,Math.max(50,Math.floor(240000/(c.months*c.trades))));if(c.wr+c.be>1+1e-10){$('progress').textContent='Win rate + BE percentage must not exceed 100%.';return}config=c;paths=[];for(let n=0;n<c.paths;n++)paths.push(simulate(n,c));
  const nets=paths.map(p=>p.net),ends=paths.map(p=>p.final),dd=paths.map(p=>p.maxDD),mean=x=>x.reduce((a,b)=>a+b,0)/x.length,ruin=paths.filter(p=>p.breached).length/c.paths,profit=paths.filter(p=>p.net>0).length/c.paths;
  const cards=[['Median net P/L',money(quantile(nets,.5))],['Expected net P/L',money(mean(nets))],['Median closing equity',money(quantile(ends,.5))],['Breach probability',pct(ruin)],['Median max drawdown',money(quantile(dd,.5))],['Worst 10% net boundary',money(quantile(nets,.1))],['Profitable path chance',pct(profit)],['Median losing streak',quantile(paths.map(x=>x.maxL),.5).toFixed(0)]];
  $('kpis').innerHTML=cards.map(([label,v])=>'<div class="kpi"><small>'+label+'</small><strong>'+v+'</strong></div>').join('');
  $('streakStats').innerHTML=[stat('Longest loss streak (median path)',quantile(paths.map(x=>x.maxL),.5).toFixed(0)),stat('Longest win streak (median path)',quantile(paths.map(x=>x.maxW),.5).toFixed(0)),stat('At least 3 losses in a row',pct(paths.filter(x=>x.streak3).length/c.paths)),stat('At least 5 losses in a row',pct(paths.filter(x=>x.streak5).length/c.paths)),stat('At least 7 losses in a row',pct(paths.filter(x=>x.streak7).length/c.paths)),stat('Max drawdown P90',money(quantile(dd,.9))),stat('Breach frequency',pct(ruin))].join('');
  let low=Math.min(...nets),high=Math.max(...nets),bins=16,counts=Array(bins).fill(0);for(const n of nets){let index=high===low?0:clamp(Math.floor((n-low)/(high-low)*bins),0,bins-1);counts[index]++}const max=Math.max(1,...counts);
  $('histogram').innerHTML=counts.map((n,i)=>'<div class="bar" title="'+n+' simulations" style="height:'+Math.max(2,Math.round(135*n/max))+'px;opacity:'+(.32+.68*n/max)+'"></div>').join('');$('histMin').textContent=money(low);$('histMax').textContent=money(high);
- $('progress').textContent=fmt(c.paths)+' paths completed · '+fmt(c.months*c.trades)+' maximum trades per path';draw();
+ $('progress').textContent=fmt(c.paths)+' paths completed'+(c.paths<chosenPaths?' (mobile-safe limit; '+fmt(chosenPaths)+' requested)':'')+' · '+fmt(c.months*c.trades)+' maximum trades per path';draw();
 }
 let timer;function schedule(){clearTimeout(timer);timer=setTimeout(run,450)}
 for(const input of document.querySelectorAll('.fields input,.fields select')){input.addEventListener('change',schedule);input.addEventListener('input',schedule)}
