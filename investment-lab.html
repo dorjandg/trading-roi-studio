@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#080d16">
+<title>Investment Strategy Lab · 4Ds Trading Studio</title>
+<style>
+:root{color-scheme:dark;--bg:#080d16;--panel:#101927;--panel2:#142033;--line:#29374a;--text:#f0f5fc;--muted:#90a2b8;--green:#54e3b4;--blue:#81aaff;--red:#ff8494;--amber:#efbc71;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}.wrap{max-width:1300px;margin:auto;padding:22px 24px 60px}
+header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px}.brand{display:flex;align-items:center;gap:12px}.mark{background:linear-gradient(135deg,#42d2b6,#357bbd);width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:#07141e;font-size:22px;font-weight:900}
+h1{font-size:clamp(24px,3.5vw,36px);margin:0 0 6px}h2{font-size:19px;margin:0 0 7px}h3{font-size:15px;margin:0 0 7px}p{margin:4px 0 14px}.sub{color:var(--muted)}.eyebrow{font-size:11px;text-transform:uppercase;font-weight:750;letter-spacing:1px;color:var(--green)}
+.panel{border:1px solid var(--line);border-radius:15px;padding:20px;background:var(--panel);margin-bottom:16px}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}.fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px}.field{min-width:0}.field label{display:block;color:var(--muted);font-size:12px;font-weight:650;margin:0 0 5px}.field input,.field select{display:block;width:100%;min-height:44px;border:1px solid #35465c;background:#131f30;color:var(--text);padding:10px;border-radius:10px;font:inherit;font-size:16px}.field input:focus,.field select:focus{outline:2px solid var(--blue)}.btn{border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--text);padding:10px 14px;min-height:44px;font:inherit;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}.btn.primary{background:var(--green);color:#071e19;border-color:var(--green)}.btn:hover{filter:brightness(1.12)}.buttons{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-top:14px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.kpi{min-width:0;background:var(--panel2);border-radius:12px;padding:15px}.kpi small{display:block;color:var(--muted);font-size:11px}.kpi strong{display:block;margin-top:7px;font-size:clamp(19px,2vw,26px);font-variant-numeric:tabular-nums;white-space:nowrap}.good{color:var(--green)}.bad{color:var(--red)}.hint{color:var(--muted);font-size:12px}.tablewrap{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:12px}table{width:100%;border-collapse:collapse;min-width:730px}td,th{padding:13px 12px;border-bottom:1px solid var(--line)}th{color:var(--muted);font-size:11px;text-align:left;font-weight:700;background:var(--panel2)}td.num,th.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}tr:last-child td{border:0}tr.recommended{background:rgba(84,227,180,.065)}.tag{display:inline-block;color:var(--green);font-size:10px;font-weight:800;border:1px solid rgba(84,227,180,.35);border-radius:50px;padding:3px 8px;margin-left:6px}
+.chart{display:flex;align-items:flex-end;gap:8px;min-height:195px;border-bottom:1px solid var(--line);padding:24px 10px 0;overflow-x:auto}.barcol{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:65px;flex:1;gap:8px}.bar{width:70%;border-radius:6px 6px 0 0;background:linear-gradient(180deg,var(--green),#1d8c79);min-height:2px}.barcol span{font-size:11px;color:var(--muted)}.notice{padding:13px;background:var(--panel2);border:1px solid var(--line);border-radius:11px}.split{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.75fr);gap:16px}.metric{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}.metric:last-child{border:0}.metric b{font-variant-numeric:tabular-nums;white-space:nowrap}
+details{border:1px solid var(--line);border-radius:12px;padding:13px}summary{cursor:pointer;font-weight:700}
+html[data-theme="light"]{color-scheme:light;--bg:#f3f6fa;--panel:#fff;--panel2:#eef3f9;--line:#cbd7e5;--text:#172638;--muted:#53677e;--green:#087c60;--blue:#215fbd;--red:#b42338;--amber:#925600}html[data-theme="light"] .field input,html[data-theme="light"] .field select{background:#fff;color:var(--text);border-color:var(--line)}html[data-theme="light"] .btn.primary{color:#fff}
+@media(max-width:900px){.fields{grid-template-columns:repeat(3,minmax(0,1fr))}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.split{grid-template-columns:1fr}.grid{grid-template-columns:1fr}}
+@media(max-width:620px){.wrap{padding:14px 12px 38px}.panel{padding:15px}.fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}header{align-items:flex-start;flex-wrap:wrap}.brand{width:100%}.kpis{gap:9px}.kpi{padding:12px}.kpi strong{font-size:clamp(18px,5vw,24px)}.buttons .btn{flex:1 1 140px}.tablewrap{margin:0 -3px}h2{font-size:17px}}
+@media(max-width:360px){.fields{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.kpi strong{font-size:18px}}
+</style></head><body><div class="wrap">
+<header><div class="brand"><div class="mark">↗</div><div><strong>4Ds Trading Studio</strong><div class="sub">Investment Strategy Lab · Separate research workspace</div></div></div><a href="./" class="btn">← Back to Studio</a></header>
+<section class="panel"><div class="eyebrow">Capital allocation · Risk · Probabilities</div><h1>Investment Strategy Lab</h1><p class="sub">Compare how to deploy capital over 1, 3, 6 or 12 months. This lab reads your local Studio settings when available, but never modifies account profiles, budgets, presets, or trading calculations.</p><div class="notice" id="source">Loading the selected account settings…</div></section>
+<section class="panel"><h2>Investment assumptions</h2><p class="hint">Editable scenario inputs. Probabilities and durations below are assumptions for planning, not predictions or live-broker simulations.</p>
+<div class="fields">
+<div class="field"><label for="budget">Investment capital ($)</label><input id="budget" type="number" min="0" step="1000" value="100000"></div>
+<div class="field"><label for="months">Investment horizon</label><select id="months"><option value="1">1 month</option><option value="3" selected>3 months</option><option value="6">6 months</option><option value="12">12 months</option></select></div>
+<div class="field"><label for="target">Target net profit ($)</label><input id="target" type="number" min="0" step="1000" value="50000"></div>
+<div class="field"><label for="reserve">Protected cash reserve (%)</label><input id="reserve" type="number" min="0" max="95" value="20"></div>
+<div class="field"><label for="evaluationFee">Evaluation price ($)</label><input id="evaluationFee" type="number" min="1" value="49"></div>
+<div class="field"><label for="activationFee">Activation fee ($)</label><input id="activationFee" type="number" min="0" value="149"></div>
+<div class="field"><label for="evalRate">Evaluation pass chance (%)</label><input id="evalRate" type="number" min="0" max="100" step=".1" value="36"></div>
+<div class="field"><label for="payoutRate">Payout chance after passing (%)</label><input id="payoutRate" type="number" min="0" max="100" step=".1" value="50"></div>
+<div class="field"><label for="secondRate">Second payout chance after first (%)</label><input id="secondRate" type="number" min="0" max="100" step=".1" value="50"></div>
+<div class="field"><label for="firstPayout">First payout received ($)</label><input id="firstPayout" type="number" min="0" value="1800"></div>
+<div class="field"><label for="secondPayout">Second payout received ($)</label><input id="secondPayout" type="number" min="0" value="900"></div>
+<div class="field"><label for="cycles">Months from purchase to first payout</label><input id="cycles" type="number" min="1" max="12" value="1"></div>
+</div><div class="buttons"><button id="run" class="btn primary">Run 4 strategies</button><button id="restore" class="btn">Reload selected Studio account</button><span class="hint">Deterministic seeded Monte Carlo · 1,200 trials per strategy</span></div></section>
+<section class="panel"><h2>Allocation comparison</h2><p class="hint">The same capital and account assumptions across all four approaches. “Best” means highest median profit among the strategies that meet the selected loss-risk constraint.</p><div class="fields" style="margin-bottom:14px;grid-template-columns:repeat(2,minmax(0,1fr))"><div class="field"><label for="tolerance">Maximum acceptable 50% capital-loss probability</label><select id="tolerance"><option value="5">5%</option><option value="10" selected>10%</option><option value="20">20%</option><option value="35">35%</option><option value="100">No risk constraint</option></select></div><div class="field"><label for="reuse">Reinvest received payouts?</label><select id="reuse"><option value="0" selected>No · keep proceeds in cash</option><option value="1">Yes · use proceeds for future cohorts</option></select></div></div><div class="tablewrap"><table><thead><tr><th>Allocation method</th><th class="num">Median net</th><th class="num">P10 / P90 net</th><th class="num">Chance of goal</th><th class="num">Chance of ≥50% loss</th><th class="num">Median payout cash</th></tr></thead><tbody id="strategies"><tr><td colspan="6">Calculating…</td></tr></tbody></table></div></section>
+<section class="split">
+<div class="panel"><h2>Median net outcome by month</h2><p class="hint">Currently selected strategy: <strong id="chosen">—</strong></p><div class="chart" id="chart"></div><p class="hint">End-of-month median cumulative net profit. Charts are based on simplified payout timelines, not tick-level price paths.</p></div>
+<div class="panel"><h2>Selected strategy summary</h2><div class="kpis"><div class="kpi"><small>Median net profit</small><strong id="median">—</strong></div><div class="kpi"><small>Chance of goal</small><strong id="goal">—</strong></div><div class="kpi"><small>Chance of ≥50% loss</small><strong id="ruin">—</strong></div><div class="kpi"><small>Worst 10% boundary</small><strong id="tail">—</strong></div></div><p class="hint" style="margin-top:14px">“Ruin” in this first version means losing at least half your starting capital by the horizon; it is not an account-level drawdown breach probability.</p></div>
+</section>
+<section class="panel"><details><summary>Model rules and important limitations</summary><div style="margin-top:12px" class="sub">
+<p>Each monthly cohort buys evaluations from its available investment cash; passing accounts pay the modeled activation fee and may collect the first payout after the specified number of months. A second payout is modeled one month later, conditional on surviving and becoming eligible. Returned cash is kept separate from protected reserve; reinvestment can be enabled.</p>
+<p>Outcomes within a cohort use independent Bernoulli trials. Correlation between mirrored accounts, challenge renewal subscriptions, prop-firm account allocation limits, slippage, payout minimums, account-level trailing drawdown, taxes, refund rules, trading-day eligibility, and payment delays are <strong>not</strong> enforced. They can materially affect outcomes. Do not use this model to establish broker or firm compliance.</p>
+<p>The “adaptive” schedule invests progressively depending on realized monthly surplus. All simulated numbers are hypothetical. This is an exploratory allocation model, not an optimizer that guarantees profit. This lab does not send orders or access trading accounts.</p>
+</div></details></section>
+</div>
+<script>
+(()=>{'use strict';
+try{document.documentElement.dataset.theme=localStorage.getItem('4ds:theme:v1')==='light'?'light':'dark'}catch(e){}
+const $=id=>document.getElementById(id),money=v=>(v<0?'−':'')+'$'+Math.abs(v).toLocaleString('en-US',{maximumFractionDigits:0}),pct=v=>(100*v).toFixed(1)+'%',num=(id,d=0)=>Math.max(0,Number($(id).value)||d),clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const schedules=[{id:'front',name:'Upfront · invest early'},{id:'balanced',name:'Balanced · over 3 months'},{id:'staged',name:'Gradual · over horizon'},{id:'adaptive',name:'Adaptive · scale on results'}];
+function readStudio(){
+ let user='dori';try{user=localStorage.getItem('4ds:active-user:v1')||user}catch(e){}
+ let s=null,key='',profile=null;try{
+ const pre='4ds:v1:'+user+':';
+ key=localStorage.getItem(pre+'studio-active-profile-v1')||'';
+ const raw=key?localStorage.getItem(pre+'studio-account-profile-v1:'+key):null;
+ profile=raw?JSON.parse(raw)?.state:null;
+ const base=localStorage.getItem(pre+'ftmo-roi-studio-v1');
+ s=base?JSON.parse(base):null;
+ }catch(e){}
+ const d={...(s||{}),...(profile||{})};
+ if(!s&&!profile){$('source').textContent='No local Studio profile detected. Example assumptions are loaded; edit all fields before interpreting results.';return}
+ $('source').textContent='Read-only local settings from '+user+(key?' · '+key:'')+'. Review the payout probabilities and dates below; they are scenario assumptions, not verified firm forecasts.';
+ $('budget').value=Math.max(0,Number(s?.budget??d.budget??100000));
+ $('evaluationFee').value=Math.max(1,Number(d.price||49)+Number(d.extraCost||0));
+ const top=key.startsWith('topstep:');
+ $('activationFee').value=top?(d.topstepPath==='noactivation'?0:149):0;
+ $('evalRate').value=top?clamp(Number(d.p1||36),0,100):clamp((Number(d.p1||100)/100)*(Number(d.p2||100)/100)*100,0,100);
+ $('payoutRate').value=clamp(Number(d.pf||50)*Number(d.pc??100)/100,0,100);
+ $('firstPayout').value=top?1800:Math.max(0,Math.round((Number(d.profitTarget)||3000)*((Number(d.split)||80)/100)));
+ $('secondPayout').value=top?900:0;
+ $('secondRate').value=top?50:0;
+}
+function rngFactory(seed){return()=>{seed=(seed+0x6D2B79F5)|0;let t=Math.imul(seed^(seed>>>15),1|seed);t^=t+Math.imul(t^(t>>>7),61|t);return ((t^(t>>>14))>>>0)/4294967296}}
+function sample(n,p,rng){if(n<=0)return 0;if(p<=0)return 0;if(p>=1)return n;let sum=0;for(let j=0;j<n;j++)if(rng()<p)sum++;return sum}
+function quantile(arr,p){const a=arr.slice().sort((x,y)=>x-y),pos=(a.length-1)*p,l=Math.floor(pos),f=pos-l;return a[l]*(1-f)+a[Math.min(a.length-1,l+1)]*f}
+function run(){
+ const budget=num('budget'),h=clamp(Math.round(num('months',3)),1,12),target=num('target'),reserve=budget*clamp(num('reserve'),0,95)/100;
+ const price=Math.max(1,num('evaluationFee',49)),activation=num('activationFee'),pE=clamp(num('evalRate'),0,100)/100,pF=clamp(num('payoutRate'),0,100)/100,p2=clamp(num('secondRate'),0,100)/100;
+ const pay1=num('firstPayout'),pay2=num('secondPayout'),delay=clamp(Math.round(num('cycles',1)),1,12),reinvest=$('reuse').value==='1',tolerance=num('tolerance')/100;
+ const available=budget-reserve;
+ if(!Number.isFinite(budget)||budget<=0||price<=0){$('strategies').innerHTML='<tr><td colspan="6">Enter a positive budget and evaluation price.</td></tr>';return}
+ const all=schedules.map((strategy,si)=>{
+ const net=[],payouts=[],paths=Array.from({length:h},()=>[]),ruinCount={v:0},goalCount={v:0};
+ for(let run=0;run<1200;run++){
+   const rng=rngFactory((99173+run*2047+si*1000003)>>>0);
+   let spendable=available,protectedCash=reserve,proceeds=0,expenses=0,received=0;
+   let pending=Array(h+3).fill(0).map(()=>({first:0,second:0}));
+   let allocated=0;
+   let capacity=available;
+   let lastNet=0;
+   for(let month=0;month<h;month++){
+     const arriving=pending[month];
+     const cashIn=arriving.first*pay1+arriving.second*pay2;
+     received+=cashIn;
+     if(reinvest)spendable+=cashIn;else proceeds+=cashIn;
+     let amount=0;
+     if(strategy.id==='front')amount=month===0?available:0;
+     else if(strategy.id==='balanced')amount=month<Math.min(h,3)?available/Math.min(h,3):0;
+     else if(strategy.id==='staged')amount=available/h;
+     else amount=month===0?available*.1:Math.max(0,Math.min(available*.35,available*.12+(lastNet>0?available*.10:0)));
+     amount=Math.min(amount,Math.max(0,capacity));
+     const count=Math.min(25000,Math.max(0,Math.floor(Math.min(spendable,amount)/price)));
+     const cost=count*price;spendable-=cost;expenses+=cost;capacity-=cost;allocated+=cost;
+     const passed=sample(count,pE,rng);
+     const activationCount=Math.min(passed,Math.floor(spendable/Math.max(activation,0.000001)));
+     const activationCost=activationCount*activation;spendable-=activationCost;expenses+=activationCost;
+     const first=sample(activationCount,pF,rng),second=sample(first,p2,rng);
+     if(month+delay<h)pending[month+delay].first+=first;
+     if(month+delay+1<h)pending[month+delay+1].second+=second;
+     lastNet=received-expenses;
+     paths[month].push(lastNet);
+   }
+   const value=received-expenses;
+   net.push(value);payouts.push(received);
+   if(value<=-budget*.5)ruinCount.v++;
+   if(value>=target)goalCount.v++;
+ }
+ const median=quantile(net,.5),p10=quantile(net,.1),p90=quantile(net,.9),ruin=ruinCount.v/1200,goal=goalCount.v/1200;
+ return {name:strategy.name,id:strategy.id,median,p10,p90,ruin,goal,payout:quantile(payouts,.5),path:paths.map(p=>quantile(p,.5))};
+ });
+ const eligible=all.filter(x=>x.ruin<=tolerance);
+ const recommended=(eligible.length?eligible:all).slice().sort((a,b)=>b.median-a.median)[0];
+ $('strategies').innerHTML=all.map(x=>'<tr class="'+(x.id===recommended.id?'recommended':'')+'"><td><b>'+x.name+'</b>'+(x.id===recommended.id?'<span class="tag">'+(eligible.length?'Best within risk limit':'Lowest constraint unmet')+'</span>':'')+'</td><td class="num">'+money(x.median)+'</td><td class="num">'+money(x.p10)+' / '+money(x.p90)+'</td><td class="num">'+pct(x.goal)+'</td><td class="num '+(x.ruin>.1?'bad':'')+'">'+pct(x.ruin)+'</td><td class="num">'+money(x.payout)+'</td></tr>').join('');
+ $('chosen').textContent=recommended.name;
+ $('median').textContent=money(recommended.median);$('median').className=recommended.median>=0?'good':'bad';
+ $('goal').textContent=pct(recommended.goal);$('ruin').textContent=pct(recommended.ruin);$('tail').textContent=money(recommended.p10);
+ const path=recommended.path,low=Math.min(0,...path),high=Math.max(0,...path),range=Math.max(1,high-low);
+ $('chart').innerHTML=path.map((v,i)=>'<div class="barcol"><b style="font-size:11px;white-space:nowrap">'+money(v)+'</b><div class="bar" title="Month '+(i+1)+' · '+money(v)+'" style="height:'+Math.max(3,Math.round((v-low)/range*145))+'px;opacity:'+(v>=0?1:.45)+'"></div><span>M'+(i+1)+'</span></div>').join('');
+}
+let timer;
+document.querySelectorAll('input,select').forEach(el=>{el.addEventListener('change',()=>{clearTimeout(timer);timer=setTimeout(run,120)});el.addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(run,400)})});
+$('run').addEventListener('click',run);$('restore').addEventListener('click',()=>{readStudio();run()});
+readStudio();run();
+})();
+</script></body></html>
