@@ -86,7 +86,7 @@ html[data-theme="light"] .btn.primary{color:#fff;background:#087c60}
 html[data-theme="light"] .btn.primary:hover{background:#096c55}
 html[data-theme="light"] #modeLabel{color:#36536d}
 .theme-toolbar{display:flex;justify-content:flex-end;align-items:center;gap:10px;padding:10px 0 0;color:var(--muted);font-size:12px;font-weight:700}
-#themeToggle{white-space:nowrap;border:1px solid var(--green);color:var(--text);background:var(--panel2);min-width:125px}
+#themeToggle{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--border);color:var(--text);background:var(--panel2);width:38px;height:38px;min-width:38px;padding:0;border-radius:10px;font-size:21px;line-height:1}
 #themeToggle:hover{border-color:var(--blue)}
 html[data-theme="light"] #themeToggle{background:#fff;color:#172638}
 </style><script id="theme-init">
@@ -96,7 +96,7 @@ html[data-theme="light"] #themeToggle{background:#fff;color:#172638}
   const theme=value==='light'?'light':'dark';
   document.documentElement.dataset.theme=theme;
   const button=document.getElementById('themeToggle');
-  if(button){button.textContent=theme==='dark'?'☀ Light mode':'☾ Dark mode';button.setAttribute('aria-pressed',String(theme==='light'));}
+  if(button){button.textContent=theme==='dark'?'☀':'☾';button.setAttribute('aria-label',theme==='dark'?'Switch to light mode':'Switch to dark mode');button.title=theme==='dark'?'Switch to light mode':'Switch to dark mode';button.setAttribute('aria-pressed',String(theme==='light'));}
   const frame=document.getElementById('firmsFrame');
   if(frame?.contentWindow)frame.contentWindow.postMessage({type:'studio-theme',theme},window.location.origin);
  }
@@ -120,7 +120,7 @@ html[data-theme="light"] #themeToggle{background:#fff;color:#172638}
   <div class="brand"><div class="mark">F<span style="font-size:15px;margin-left:2px">↗</span></div><div><strong>4Ds Trading Studio</strong><small>STRATEGY · PAYOUTS · CAPITAL ALLOCATION</small></div></div>
   <div class="top-right"><label for="activeUserSelect" style="font-size:12px;color:var(--muted)">User <select id="activeUserSelect" aria-label="Select 4Ds user" style="display:inline-block;margin-left:7px;padding:7px 10px;background:#142033;color:white;border:1px solid #35455b;border-radius:8px"><option value="doen">Doen</option><option value="dori">Dori</option><option value="dona">Dona</option><option value="dion">Dion</option></select></label><span class="pill" title="Settings are saved locally first and synchronized with Google Cloud when connected.">● AUTO-SAVE ENABLED</span><button class="btn small quiet hide-mobile" id="exportTop">Export scenario</button></div>
 </header>
-<div class="theme-toolbar"><span>Appearance</span><button type="button" class="btn small" id="themeToggle" aria-label="Switch color theme">☀ Light</button></div>
+<div class="theme-toolbar"><button type="button" class="btn small" id="themeToggle" aria-label="Switch to light mode" title="Switch to light mode">☀</button></div>
 <nav class="nav" aria-label="Pages"><button class="active" data-page="dashboard">Overview</button><button data-page="profile">Profile</button><button data-page="firms">Prop firms</button><button data-page="scaling">Investments & ROI</button><button data-page="presets">My presets</button><button data-page="settings">Export & help</button></nav>
 
 <main>
