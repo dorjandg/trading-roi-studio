@@ -1036,7 +1036,16 @@ function goPage(name){if(name==='firms')overviewRequestedKey=null;document.query
 }window.scrollTo({top:0,behavior:'smooth'});}
 makeFields();initSymbols();render();initScenarioTable();setupFirmFit();
  for(const [id,key,minimum] of [['overviewBudget','budget',0],['overviewAccounts','accounts',1]]){
-  $(id).addEventListener('change',()=>{const v=Number($(id).value);if(!Number.isFinite(v))return;state[key]=key==='accounts'?Math.max(1,Math.floor(v)):Math.max(minimum,v);save();render()});
+  const el=$(id);
+  const update=()=>{
+   if(el.value.trim()==='')return;
+   const v=Number(el.value);
+   if(!Number.isFinite(v)||v<minimum)return;
+   state[key]=key==='accounts'?Math.floor(v):v;
+   save();render();
+  };
+  el.addEventListener('input',update);
+  el.addEventListener('change',()=>{update();render()});
  }
  $('overviewSimulate').addEventListener('click',()=>{
  if(!selectedAccountSupportsSimulation){goPage('firms');return;}
