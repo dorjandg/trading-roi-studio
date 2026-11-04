@@ -1,0 +1,174 @@
+{
+  "asOf": "2026-11-04",
+  "purpose": "Research-only prop-firm catalog; entries without verified account fees are excluded from active financial simulations.",
+  "entries": [
+    {
+      "id": "ftmo2",
+      "firm": "FTMO",
+      "program": "2-Step",
+      "market": "CFD",
+      "status": "existing-model",
+      "url": "https://ftmo.com/en/2-step-challenge/",
+      "rules": {
+        "p1": 10,
+        "p2": 5,
+        "daily": 5,
+        "max": 10,
+        "minDays": 4
+      },
+      "notes": "Rules depend on phase, platform, region and current terms; verify funded restrictions."
+    },
+    {
+      "id": "ftmo1",
+      "firm": "FTMO",
+      "program": "1-Step",
+      "market": "CFD",
+      "status": "existing-model",
+      "url": "https://ftmo.com/en/",
+      "notes": "Detailed restrictions and prices remain account/region-specific."
+    },
+    {
+      "id": "instant",
+      "firm": "FTMO",
+      "program": "Instant",
+      "market": "CFD",
+      "status": "existing-model",
+      "url": "https://ftmo.com/en/",
+      "notes": "Verify current Instant offer and funded conditions."
+    },
+    {
+      "id": "holaPrime",
+      "firm": "Hola Prime",
+      "program": "2-Step Prime",
+      "market": "CFD",
+      "status": "existing-model",
+      "url": "https://holaprime.com/",
+      "notes": "Existing model; current prices and limitations require verification."
+    },
+    {
+      "id": "holaPro",
+      "firm": "Hola Prime",
+      "program": "2-Step Pro",
+      "market": "CFD",
+      "status": "existing-model",
+      "url": "https://holaprime.com/",
+      "notes": "Existing model; current prices and limitations require verification."
+    },
+    {
+      "id": "topstep",
+      "firm": "Topstep",
+      "program": "Trading Combine",
+      "market": "Futures",
+      "status": "existing-model",
+      "url": "https://help.topstep.com/en/articles/8284197-trading-combine-parameters",
+      "rules": {
+        "consistency": 55,
+        "profitTargetsUSD": {
+          "50000": 3000,
+          "100000": 6000,
+          "150000": 9000
+        }
+      },
+      "notes": "Standard Trading Combine; XFA and payout stages have separate rules."
+    },
+    {
+      "id": "fundednext-stellar2",
+      "firm": "FundedNext",
+      "program": "Stellar 2-Step",
+      "market": "CFD",
+      "status": "research-only",
+      "url": "https://help.fundednext.com/en/articles/17255124-stellar-2-step-challenge",
+      "rules": {
+        "p1": 8,
+        "p2": 5,
+        "daily": 5,
+        "max": 10,
+        "minDays": 5,
+        "lossType": "static"
+      },
+      "notes": "Official terms mention a 3% funded risk rule and news profit treatment; fees and regional add-ons require verification before simulations."
+    },
+    {
+      "id": "fundednext-stellar1",
+      "firm": "FundedNext",
+      "program": "Stellar 1-Step",
+      "market": "CFD",
+      "status": "research-only",
+      "url": "https://fundednext.com/apidocs/general-rules/cfds/trading-objectives",
+      "rules": {
+        "p1": 10,
+        "daily": 3,
+        "max": 6,
+        "minDays": 2,
+        "lossType": "static"
+      },
+      "notes": "Basic objectives only. Not integrated into ROI or payout models."
+    },
+    {
+      "id": "fundednext-lite",
+      "firm": "FundedNext",
+      "program": "Stellar Lite",
+      "market": "CFD",
+      "status": "research-only",
+      "url": "https://fundednext.com/apidocs/general-rules/cfds/trading-objectives",
+      "rules": {
+        "p1": 8,
+        "p2": 4,
+        "daily": 4,
+        "max": 8,
+        "minDays": 5,
+        "lossType": "static"
+      },
+      "notes": "Basic objectives only. Not integrated into ROI or payout models."
+    },
+    {
+      "id": "fundednext-instant",
+      "firm": "FundedNext",
+      "program": "Stellar Instant",
+      "market": "CFD",
+      "status": "research-only",
+      "url": "https://fundednext.com/apidocs/general-rules/cfds/trading-objectives",
+      "rules": {
+        "max": 6,
+        "lossType": "trailing"
+      },
+      "notes": "Funded model and withdrawal restrictions need separate verification."
+    },
+    {
+      "id": "the5ers-high",
+      "firm": "The5ers",
+      "program": "High Stakes",
+      "market": "CFD",
+      "status": "research-only",
+      "url": "https://the5ers.com/faqs/what-are-the-general-rules-for-the-high-stakes-program/",
+      "notes": "2-Step evaluation, 30-day challenge inactivity and news execution restrictions. Specific size/fees/targets require verification."
+    },
+    {
+      "id": "apex",
+      "firm": "Apex Trader Funding",
+      "program": "Evaluation",
+      "market": "Futures",
+      "status": "research-only",
+      "url": "https://apextraderfunding.com/",
+      "notes": "Plan-specific trailing drawdown, contracts, and payout consistency require verification."
+    },
+    {
+      "id": "takeprofit",
+      "firm": "Take Profit Trader",
+      "program": "Evaluation",
+      "market": "Futures",
+      "status": "research-only",
+      "url": "https://takeprofittrader.com/",
+      "notes": "Evaluation and PRO funded rules require separate verification."
+    },
+    {
+      "id": "fundednext-futures",
+      "firm": "FundedNext",
+      "program": "Futures",
+      "market": "Futures",
+      "status": "research-only",
+      "url": "https://fundednext.com/",
+      "notes": "Separate futures offerings and payout rules, not the CFD Stellar rules."
+    }
+  ]
+}
