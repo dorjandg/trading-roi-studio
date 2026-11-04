@@ -326,7 +326,7 @@ winRate:40,rr:3,simulations:4000,randomSeed:24717,weeklySignals:22,tradeCost:0,
 accountSize:10000,dailyLoss:500,overallLoss:1000,buffer:50,leverage:50,goldPrice:4400,stopDist:5,marginCeiling:90,minRisk:25,
 p1Target:1000,p1Base:350,p1Recovery:250,p1RecoverAfter:2,p1DailyCap:1,p1Days:24,p1MinDays:4,
 p2Target:500,p2Base:200,p2Recovery:200,p2DailyCap:2,p2Days:24,p2MinDays:4,
-topstepDLL:false,topstepActivationFee:149,fundedBase:250,fundedRecovery:200,fundedBoost:500,boostUnlock:750,fundedDailyCap:3,fundedDays:20,
+topstepDLL:false,topstepPath:"standard",topstepActivationFee:149,fundedBase:250,fundedRecovery:200,fundedBoost:500,boostUnlock:750,fundedDailyCap:3,fundedDays:20,
  symbolId:'XAUUSD',customSymbol:'',symbolSpecs:{},rrByTier:{}};
 const FIELDS={
  quickFields:[['budget','Investment budget','USD',1],['price','Challenge price — from Prop firms','USD',1],['extraCost','Additional cost per challenge','USD',1]],
@@ -762,12 +762,13 @@ function initScenarioTable(){
 function funnelRow(name,value,total){const v=total>0?Math.max(0,Math.min(100,value/total*100)):0;return `<div class="funnel-line"><div class="funnel-head"><span>${name}</span><strong>${value.toFixed(2)}</strong></div><div class="bar-track"><div class="bar-fill" style="width:${v.toFixed(2)}%"></div></div></div>`;}
 function marginForRisk(risk){return positionForRisk(risk).margin;}
 function showWarnings(c){let items=[];if(c.cost>positive(state.budget))items.push(`Planned challenge purchases ${money(c.cost)} exceed the available budget ${money(state.budget)}.`);if(c.unit<=0)items.push('Set a positive challenge price/cost for meaningful ROI.');if(positive(state.dailyLoss)+positive(state.buffer)>positive(state.accountSize))items.push('Daily loss plus buffer exceeds account size.');if(positive(state.overallLoss)+positive(state.buffer)>positive(state.accountSize))items.push('Total loss plus buffer exceeds account size.');if(instrumentReady()&&positionForRisk(state.fundedBase).qty===0)items.push('The funded USD stop loss is too small for the minimum contract/lot with the optional broker settings. Cash simulation does not test executable order size.');if(instrumentReady()&&positive(state.fundedBoost)>0&&marginForRisk(state.fundedBoost)>positive(state.accountSize)*prob(state.marginCeiling))items.push('Full funded boost does not fit your margin ceiling at starting equity; it may fit only after profits.');if(dirtySim&&lastSim)items.push('Strategy parameters changed after the last simulation. Rerun to refresh pass rates.');const box=$('warningBox');if(items.length){box.style.display='block';box.textContent=items.join('  •  ')}else box.style.display='none';}
-function topstepReserveFee(){return phaseModel().topstep?Math.max(149,positive(state.topstepActivationFee)):0;}
+function topstepReserveFee(){return phaseModel().topstep&&state.topstepPath!=="noactivation"?149:0;}
+function topstepMonthlyFee(){const n=Number(state.accountSize);return state.topstepPath==="noactivation"?(n===50000?95:n===100000?149:229):(n===50000?49:n===100000?99:199);}
 function deriveBudgetAccounts(){
  const unit=positive(state.price)+positive(state.extraCost)+topstepReserveFee();
  state.accounts=unit>0?Math.max(0,Math.min(1000,Math.floor(positive(state.budget)/unit))):0;
 }
-function render(){if(phaseModel().topstep&&positive(state.topstepActivationFee)<149)state.topstepActivationFee=149;deriveBudgetAccounts();applyPhaseVisibility();
+function render(){if(phaseModel().topstep)state.topstepActivationFee=topstepReserveFee();deriveBudgetAccounts();applyPhaseVisibility();
  const p1=document.querySelector('[data-phase-meta="p1"]'),p2=document.querySelector('[data-phase-meta="p2"]'),fund=document.querySelector('[data-phase-meta="funded"]');
  if(p1)p1.textContent='Profit target: '+money(state.p1Target)+' · Minimum trading days: '+state.p1MinDays+' · Set by selected firm rules above.';
  if(p2)p2.textContent='Profit target: '+money(state.p2Target)+' · Minimum trading days: '+state.p2MinDays+' · Set by selected firm rules above.';
@@ -787,7 +788,25 @@ if(scenarioRows?.length)for(const row of scenarioRows)updateScenarioMetrics(row)
   breakdown.style.display=model.topstep?'block':'none';
   if(model.topstep){
    const evalCost=state.accounts*c.unit,activationReserve=state.accounts*reserve,remaining=Math.max(0,state.budget-evalCost-activationReserve);
-   breakdown.innerHTML='<strong>One investment budget — both stages</strong><div class="stats" style="margin-top:10px"><div><span>Evaluation purchases</span><b>'+money(evalCost)+'</b></div><div><span>XFA activation reserved</span><b>'+money(activationReserve)+'</b></div><div><span>Unallocated cash</span><b>'+money(remaining)+'</b></div></div><p class="caption" style="margin-top:10px">Each challenge uses '+money(c.unit)+' now, plus '+money(reserve)+' reserved for activation if it passes. Maximum funded accounts that can be activated from the reserved money: '+state.accounts+'. Activation is paid only for accounts that pass. Funds reserved for accounts that fail remain unspent and can be reused. This does not include future monthly renewals.</p>';
+   const standard=state.topstepPath!=="noactivation",monthly=c.unit,firstMonth=state.accounts*monthly,activationFee=standard?149:0;
+   breakdown.innerHTML='<h3 style="margin:0 0 8px">Topstep costs · '+(standard?'Standard':'No Activation Fee')+' path</h3>'+
+    '<p class="caption" style="margin-bottom:12px">Evaluation is billed monthly. Activation is a separate one-time charge only when an account passes. Change the subscription path below.</p>'+
+    '<div class="tablewrap"><table><thead><tr><th>Starting budget allocation</th><th class="num">Per account</th><th class="num">For '+state.accounts+' challenges</th></tr></thead><tbody>'+
+    '<tr><td>Initial Trading Combine subscription (month 1)</td><td class="num">'+money(monthly)+'</td><td class="num">'+money(firstMonth)+'</td></tr>'+
+    '<tr><td>XFA activation reserve (only charged when passed)</td><td class="num">'+money(activationFee)+'</td><td class="num">'+money(activationReserve)+'</td></tr>'+
+    '<tr><th>Total allocated from budget</th><th class="num">'+money(monthly+activationFee)+'</th><th class="num">'+money(firstMonth+activationReserve)+'</th></tr>'+
+    '<tr><th>Cash still unallocated</th><td class="num">—</td><th class="num">'+money(remaining)+'</th></tr></tbody></table></div>'+
+    '<h4 style="margin:18px 0 8px">Possible additional costs (not in starting budget or ROI model)</h4>'+
+    '<div class="tablewrap"><table><thead><tr><th>Charge</th><th class="num">Per account</th><th class="num">If every challenge needs it</th></tr></thead><tbody>'+
+    '<tr><td>One additional month of evaluation subscription</td><td class="num">'+money(monthly)+'</td><td class="num">'+money(firstMonth)+'</td></tr>'+
+    '<tr><td>One paid Combine reset</td><td class="num">'+money(monthly)+'</td><td class="num">'+money(firstMonth)+'</td></tr>'+
+    '<tr><td>XFA monthly subscription after passing</td><td class="num">$0</td><td class="num">$0</td></tr></tbody></table></div>'+
+    '<h4 style="margin:18px 0 8px">Trading Combine purchase path comparison</h4>'+
+    '<div class="tablewrap"><table><thead><tr><th>Account size</th><th>Standard monthly / activation</th><th>No Activation Fee monthly / activation</th></tr></thead><tbody>'+
+    '<tr><td>50K</td><td>$49 / $149</td><td>$95 / $0</td></tr>'+
+    '<tr><td>100K</td><td>$99 / $149</td><td>$149 / $0</td></tr>'+
+    '<tr><td>150K</td><td>$199 / $149</td><td>$229 / $0</td></tr></tbody></table></div>'+
+    '<p class="caption" style="margin-top:12px"><strong>Account limit:</strong> Topstep allows at most 5 active XFAs simultaneously. '+state.accounts+' purchased challenges does not mean '+state.accounts+' active funded accounts. Paid resets, additional months, taxes, promotions, optional data and reactivation are not included in your initial investment plan. Check <a href="https://help.topstep.com/en/articles/14289835-topstep-pricing-and-payment-questions" target="_blank" rel="noopener">official pricing</a> and <a href="https://help.topstep.com/en/articles/8284217-express-funded-account-activation" target="_blank" rel="noopener">XFA activation limits</a>.</p>';
   }
  }
 
@@ -812,10 +831,13 @@ if(scenarioRows?.length)for(const row of scenarioRows)updateScenarioMetrics(row)
  if(help){
   help.style.display=model.topstep||c.unit<=0||state.accounts===0?'block':'none';
   if(model.topstep){
-   help.innerHTML='<h3 style="margin:0 0 8px">Topstep Standard — first payout model</h3><p class="caption">Includes: Combine target and 55% best-day objective, end-of-day trailing MLL, XFA 5 days of $150+ net profit, 50% payout cap by account size, 90% trader split and sequential Strategy 1 → Strategy 2 after a loss.</p><div class="formgrid" style="margin-top:10px"><label><input type="checkbox" id="topstepDLLOption" '+(state.topstepDLL?'checked':'')+'> Optional Topstep Daily Loss Limit (doubles payout cap)</label><label>Activation fee (USD)<input type="number" id="topstepActivationInput" min="149" step="1" value="'+positive(state.topstepActivationFee)+'"></label></div><p class="caption" style="margin-top:10px">Limitations: one first payout only; account-level independent trials, not a concurrent XFA portfolio. Subscription renewals, activation fee eligibility, contract scaling, intratrade drawdown and slippage are not validated. Model uses your configured trading-day horizons. Confirm rules and fees with Topstep before trading.</p>'+(topstep?.error?'<p class="caption">'+topstep.error+'</p>':'');
-   const dllInput=$('topstepDLLOption'),activation=$('topstepActivationInput');
+   help.innerHTML='<h3 style="margin:0 0 8px">Topstep · subscription path & simulation</h3>'+
+     '<div class="formgrid" style="margin:10px 0 12px"><label>Trading Combine subscription path<select id="topstepPathInput"><option value="standard" '+(state.topstepPath!=="noactivation"?'selected':'')+'>Standard · lower monthly fee + $149 XFA activation</option><option value="noactivation" '+(state.topstepPath==="noactivation"?'selected':'')+'>No Activation Fee · higher monthly fee + $0 activation</option></select></label><label><input type="checkbox" id="topstepDLLOption" '+(state.topstepDLL?'checked':'')+'> Optional Topstep Daily Loss Limit (simulator setting)</label></div>'+
+     '<p class="caption">Simulation: Combine $3K/$6K/$9K target, 55% consistency, trailing MLL, then XFA first payout (Standard payout route). Strategy 2 follows Strategy 1 only after a loss. The purchase subscription path is separate from the XFA payout route.</p>'+
+     '<p class="caption" style="margin-top:10px">Independent account-path estimates are not a concurrent funded portfolio: up to 5 active XFAs at once. Excludes renewals, resets, tax, optional data, reactivation, contract scaling, intratrade drawdown and slippage. Verify current official terms.</p>'+(topstep?.error?'<p class="caption">'+topstep.error+'</p>':'');
+   const dllInput=$('topstepDLLOption'),path=$('topstepPathInput');
    dllInput.onchange=()=>{state.topstepDLL=dllInput.checked;topstepEstimate=null;save();render();};
-   activation.onchange=()=>{state.topstepActivationFee=Math.max(149,positive(activation.value));topstepEstimate=null;deriveBudgetAccounts();save();render();};
+   path.onchange=()=>{state.topstepPath=path.value;state.price=topstepMonthlyFee();state.topstepActivationFee=topstepReserveFee();topstepEstimate=null;dirtySim=true;lastSim=null;deriveBudgetAccounts();save();render();};
   }else{
    help.innerHTML=c.unit<=0?'<strong>Action needed:</strong> Select an account with a valid challenge fee in Prop firms.': '<strong>Action needed:</strong> Increase the investment budget or select a lower-cost account to afford at least one challenge.';
   }
@@ -824,7 +846,7 @@ if(scenarioRows?.length)for(const row of scenarioRows)updateScenarioMetrics(row)
  $('overviewSimulate').textContent=model.topstep?'Run Topstep estimate':selectedAccountSupportsSimulation?'Run trading simulation':'Simulation unavailable for this program';$('kpiCost').textContent=money(c.cost);$('kpiBudget').textContent=model.topstep?money(state.accounts*reserve)+' reserved for XFA activation · '+money(Math.max(0,state.budget-state.accounts*budgetUnit))+' unallocated':c.cost<=state.budget?money(state.budget-c.cost)+' budget unspent':money(c.cost-state.budget)+' above budget';$('kpiReceipts').textContent=money(c.receipts);$('kpiNet').textContent=money(c.net);$('kpiNet').className='val '+(c.net>=0?'green':'red');$('kpiROI').textContent=pct(c.roi);$('kpiROI').className='val '+(c.roi>=0?'green':'red');$('kpiROIx').textContent=c.roi.toFixed(2)+'× initial spending as NET profit';
  if(model.topstep){
   if(topstep&&!topstep.error){
-   const count=state.accounts,activation=positive(state.topstepActivationFee),expense=c.cost+count*topstep.combine*activation;
+   const count=state.accounts,activation=topstepReserveFee(),expense=c.cost+count*topstep.combine*activation;
    const receipts=count*topstep.rawPerChallenge;
    const net=receipts-expense;
    $('kpiReceipts').textContent=money(receipts);
@@ -854,7 +876,7 @@ function mulberry32(seed){let a=seed>>>0;return function(){a=(a+0x6D2B79F5)|0;le
    Intratrade excursion, contract scaling, activation fees and subscriptions
    beyond initial purchase are not modeled. */
 let topstepEstimate=null,topstepSignature='';
-function topstepInputs(){return JSON.stringify([activeProgramKey,state.accountSize,state.winRate,state.weeklySignals,state.tradeCost,state.p1Target,state.p1Days,state.p1DailyCap,state.p1Base,state.p1Recovery,tierRR('p1Base'),tierRR('p1Recovery'),state.fundedBase,state.fundedRecovery,tierRR('fundedBase'),tierRR('fundedRecovery'),state.fundedDays,state.fundedDailyCap,state.simulations,state.randomSeed,state.topstepDLL,state.topstepActivationFee,state.price,state.extraCost,state.budget]);}
+function topstepInputs(){return JSON.stringify([activeProgramKey,state.accountSize,state.winRate,state.weeklySignals,state.tradeCost,state.p1Target,state.p1Days,state.p1DailyCap,state.p1Base,state.p1Recovery,tierRR('p1Base'),tierRR('p1Recovery'),state.fundedBase,state.fundedRecovery,tierRR('fundedBase'),tierRR('fundedRecovery'),state.fundedDays,state.fundedDailyCap,state.simulations,state.randomSeed,state.topstepDLL,state.topstepPath,topstepReserveFee(),state.price,state.extraCost,state.budget]);}
 function topstepSimulate(){
  const size=Number(state.accountSize),limit=size===50000?2000:size===100000?3000:size===150000?4500:0;
  if(!limit)return {error:'Choose a Topstep 50K, 100K or 150K account.'};
@@ -1046,6 +1068,7 @@ function useSelectedAccount(x,force=false){
  const n=Number(x.size);
  state.accountSize=n;
  if(Number.isFinite(Number(x.feeUSD))&&Number(x.feeUSD)>0)state.price=Number(x.feeUSD);
+ if(x.programId==="topstep")state.price=topstepMonthlyFee();
  if(Array.isArray(x.targets)){
   if(x.targets[0]!=null&&Number.isFinite(Number(x.targets[0])))state.p1Target=n*Number(x.targets[0])/100;
   if(x.targets[1]!=null&&Number.isFinite(Number(x.targets[1])))state.p2Target=n*Number(x.targets[1])/100;
