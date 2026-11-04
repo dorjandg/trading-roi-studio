@@ -1,8 +1,302 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Prop Firms & Rules — Trading ROI Studio</title><style>
 :root{color-scheme:dark;--bg:#080d16;--p:#101927;--line:#29374a;--muted:#92a5bc;--green:#54e3b4}*{box-sizing:border-box}body{background:var(--bg);color:#f0f5fc;font:15px/1.55 system-ui,-apple-system,Segoe UI,sans-serif;margin:0}.wrap{max-width:1120px;margin:auto;padding:22px 18px 65px}header,.row{display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap}header{margin-bottom:45px}a{color:var(--green)}header a{text-decoration:none}.eyebrow{color:var(--green);text-transform:uppercase;letter-spacing:2px;font-size:12px;font-weight:700}h1{font-size:clamp(32px,5vw,50px);line-height:1.1;margin:12px 0 18px}h2{font-size:20px;margin:0 0 17px}p,.muted{color:var(--muted)}.intro{max-width:760px;margin-bottom:30px}.panel{background:var(--p);border:1px solid var(--line);border-radius:15px;padding:22px;margin-bottom:18px}.selectors,.stats,.cols{display:grid;gap:14px}.selectors{grid-template-columns:repeat(3,1fr)}.stats{grid-template-columns:repeat(4,1fr);margin:21px 0}.cols{grid-template-columns:1fr 1fr}label{display:block;font-size:12px;color:var(--muted);font-weight:700;margin-bottom:8px}select,input{background:#0a1320;color:#fff;border:1px solid #35455b;border-radius:9px;width:100%;padding:12px;font:inherit}.stat{padding:16px;background:#0b1523;border:1px solid var(--line);border-radius:11px}.stat span{display:block;color:var(--muted);font-size:12px}.stat b{display:block;font-size:23px;margin-top:4px}.item{border-bottom:1px solid var(--line);padding:12px 0;display:flex;justify-content:space-between;gap:14px}.item span{color:var(--muted)}.item strong{text-align:right;max-width:60%}.notice{padding:14px;border-radius:10px;background:#30291b;color:#edcf91;border:1px solid #66532d;margin:17px 0}.btn{background:var(--green);color:#05130f;border:0;border-radius:10px;padding:12px 18px;font:inherit;font-weight:700;cursor:pointer}.btn:disabled{opacity:.45;cursor:not-allowed}.secondary{border:1px solid var(--line);background:#1b293b;color:white;text-decoration:none}li{margin-bottom:10px}details{border:1px solid var(--line);border-radius:9px;padding:12px;margin-top:22px}summary{cursor:pointer;font-weight:700}.footer{font-size:12px;border-top:1px solid var(--line);margin-top:28px;padding-top:18px;color:var(--muted)}@media(max-width:710px){.selectors,.cols{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.wrap{padding:16px 12px}}
-</style></head><body><div class="wrap"><header><div><strong>Trading ROI Studio</strong><div class="muted">Prop firm rules · Updated 4 Nov 2026</div></div><a id="backCalculator" href="index.html">← Back to calculator</a></header><div class="eyebrow">Program library</div><h1>Choose the firm.<br><span style="color:var(--green)">Know the rules.</span></h1><p class="intro">Select a firm, program and account size. View all published rules below, edit your personal planning overrides, and save a separate profile for every account. Official source rules remain unchanged.</p><div class="panel"><div class="selectors"><div><label for="firm">Prop firm</label><select id="firm"></select></div><div><label for="program">Program / account type</label><select id="program"></select></div><div><label for="size">Account size</label><select id="size"></select></div></div><div class="stats" id="stats"></div><div class="notice" id="status"></div><div class="row"><button class="btn" id="apply" disabled>Load into calculator</button><a href="index.html" class="btn secondary">Existing ROI calculator</a></div><p class="muted">The existing financial simulator supports only approximate two-stage evaluation inputs. Other rule types are shown for comparison only, not simulated with incorrect formulas.</p></div><section class="panel" id="editableRulesPanel"><div class="row"><div><h2 style="margin:0">Challenge rules & targets</h2><p class="muted" style="margin:5px 0 0">Official source values are shown in the reference cards below. Change only your own saved assumptions here.</p></div><span class="muted" id="rulesSaveStatus">Saved per account</span></div><div class="selectors" style="margin-top:18px"><div><label for="rule-target1">Phase 1 target (%)</label><input id="rule-target1" type="number" min="0" max="100" step=".1"></div><div><label for="rule-target2">Phase 2 target (%)</label><input id="rule-target2" type="number" min="0" max="100" step=".1"></div><div><label for="rule-daily">Daily loss limit (%)</label><input id="rule-daily" type="number" min="0" max="100" step=".1"></div><div><label for="rule-max">Maximum loss (%)</label><input id="rule-max" type="number" min="0" max="100" step=".1"></div><div><label for="rule-days1">Phase 1 min trading days</label><input id="rule-days1" type="number" min="0" step="1"></div><div><label for="rule-days2">Phase 2 min trading days</label><input id="rule-days2" type="number" min="0" step="1"></div></div><p class="muted" id="rulesApplicability" style="margin:14px 0">Choose an account to see which values apply.</p><div class="row"><button class="btn" type="button" id="saveRules">Save this account's rules</button><button class="btn secondary" type="button" id="resetRules">Restore official defaults</button></div><p class="muted" style="font-size:12px;margin:14px 0 0">Personal overrides are planning assumptions only; they do not change the firm's actual requirements. Where a percentage field is not applicable, it is disabled. Trailing and daily drawdown mechanics cannot be represented by percentages alone.</p></section><section class="panel"><div class="row"><h2 style="margin:0">Your trading plan for this account</h2><span class="muted" id="prefsStatus">Saved on this device</span></div><p class="muted">These are your strategy assumptions, not official firm rules. Each program and account size remembers its own values.</p><div class="selectors"><div><label for="pref-winRate">Win rate (%)</label><input id="pref-winRate" type="number" min="0" max="100" step=".5"></div><div><label for="pref-rr">Reward / risk (R)</label><input id="pref-rr" type="number" min="0" step=".1"></div><div><label for="pref-weeklySignals">Trades per week</label><input id="pref-weeklySignals" type="number" min="0" step="1"></div><div><label for="pref-p1Base">Phase 1 risk / trade (USD)</label><input id="pref-p1Base" type="number" min="0" step="1"></div><div><label for="pref-p2Base">Phase 2 risk / trade (USD)</label><input id="pref-p2Base" type="number" min="0" step="1"></div><div><label for="pref-fundedBase">Funded risk / trade (USD)</label><input id="pref-fundedBase" type="number" min="0" step="1"></div></div><p class="muted" style="margin-top:14px">Firm rules and targets are kept in the dated rules library; your trading plan is saved separately. Exporting or clearing browser data may affect saved personal profiles.</p></section><section class="panel" id="specificTradingRules"><div class="row"><div><h2 style="margin:0">Trading rules — this challenge</h2><p class="muted" style="margin:5px 0 0">Different parameters for each firm, challenge type and account size. Enter your own values, or add custom rules.</p></div><span id="specificStatus" class="muted">Loading…</span></div><div id="specificRuleFields" class="selectors" style="margin:20px 0"></div><details><summary>Custom trading parameters</summary><div id="customRuleFields" style="margin-top:15px"></div><div class="selectors" style="margin-top:16px"><div><label for="customName">New parameter name</label><input id="customName" type="text" maxlength="70" placeholder="e.g. Max trades per day"></div><div><label for="customValue">Initial value</label><input id="customValue" type="text" maxlength="120" placeholder="e.g. 2"></div><div><label for="customStage">Stage</label><select id="customStage"><option value="General">General</option><option value="Evaluation">Evaluation</option><option value="Funded">Funded</option></select></div></div><div class="row" style="margin-top:12px"><button class="btn secondary" id="addCustomRule" type="button">Add parameter</button></div></details><div class="row" style="justify-content:flex-start;margin-top:18px"><button class="btn" id="saveSpecificRules" type="button">Save trading rules</button><button class="btn secondary" id="resetSpecificRules" type="button">Reset this account</button><button class="btn secondary" id="exportSpecificRules" type="button">Export all trading profiles</button><button class="btn secondary" id="importSpecificRules" type="button">Import profiles</button><input id="specificImportFile" type="file" accept=".json,application/json" style="display:none"></div><p class="muted" style="font-size:12px;margin:12px 0 0">These are your own trading parameters, separate from published firm rules. Saved in this browser and restored by firm + program + account size. Export a backup before changing devices or clearing browser data.</p></section><div class="cols"><section class="panel"><h2>Evaluation & drawdown</h2><div id="evaluation"></div></section><section class="panel"><h2>Cost & payout</h2><div id="costs"></div><p class="notice" id="priceWarn"></p></section></div><div class="panel"><h2>Important firm-specific conditions</h2><ul id="notes"></ul><details><summary>What is not yet modeled?</summary><p>Intraday and end-of-day trailing loss limits, daily equity-floor resets, broker/instrument rules, payout-cycle eligibility, contract limits, consistency by day, rule changes, and correlated accounts. Never use this research page as a compliance engine.</p></details><p class="muted">Read the <a id="official" target="_blank" rel="noopener noreferrer">official provider rules</a> before purchasing or trading.</p></div><div class="footer">Independent rule reference, dated 4 November 2026. Prices may change. No firm endorses this website. Simulations are estimates, not guaranteed payouts.</div></div><script>
+</style></head><body><div class="wrap"><header><div><strong>Trading ROI Studio</strong><div class="muted">Prop firm rules · Updated 4 Nov 2026</div></div><a id="backCalculator" href="index.html">← Back to calculator</a></header><div class="eyebrow">Program library</div><h1>Choose the firm.<br><span style="color:var(--green)">Know the rules.</span></h1><p class="intro">Select a firm, program and account size. View all published rules below, edit your personal planning overrides, and save a separate profile for every account. Official source rules remain unchanged.</p><div class="panel"><div class="selectors"><div><label for="firm">Prop firm</label><select id="firm"></select></div><div><label for="program">Program / account type</label><select id="program"></select></div><div><label for="size">Account size</label><select id="size"></select></div></div><div class="stats" id="stats"></div><div class="notice" id="status"></div><div class="row"><button class="btn" id="apply" disabled>Load into calculator</button><a href="index.html" class="btn secondary">Existing ROI calculator</a></div><p class="muted">The existing financial simulator supports only approximate two-stage evaluation inputs. Other rule types are shown for comparison only, not simulated with incorrect formulas.</p></div><section class="panel" id="editableRulesPanel"><div class="row"><div><h2 style="margin:0">Challenge rules & targets</h2><p class="muted" style="margin:5px 0 0">Official source values are shown in the reference cards below. Change only your own saved assumptions here.</p></div><span class="muted" id="rulesSaveStatus">Saved per account</span></div><div class="selectors" style="margin-top:18px"><div><label for="rule-target1">Phase 1 target (%)</label><input id="rule-target1" type="number" min="0" max="100" step=".1"></div><div><label for="rule-target2">Phase 2 target (%)</label><input id="rule-target2" type="number" min="0" max="100" step=".1"></div><div><label for="rule-daily">Daily loss limit (%)</label><input id="rule-daily" type="number" min="0" max="100" step=".1"></div><div><label for="rule-max">Maximum loss (%)</label><input id="rule-max" type="number" min="0" max="100" step=".1"></div><div><label for="rule-days1">Phase 1 min trading days</label><input id="rule-days1" type="number" min="0" step="1"></div><div><label for="rule-days2">Phase 2 min trading days</label><input id="rule-days2" type="number" min="0" step="1"></div></div><p class="muted" id="rulesApplicability" style="margin:14px 0">Choose an account to see which values apply.</p><div class="row"><button class="btn" type="button" id="saveRules">Save this account's rules</button><button class="btn secondary" type="button" id="resetRules">Restore official defaults</button></div><p class="muted" style="font-size:12px;margin:14px 0 0">Personal overrides are planning assumptions only; they do not change the firm's actual requirements. Where a percentage field is not applicable, it is disabled. Trailing and daily drawdown mechanics cannot be represented by percentages alone.</p></section><section class="panel"><div class="row"><h2 style="margin:0">Your trading plan for this account</h2><span class="muted" id="prefsStatus">Saved on this device</span></div><p class="muted">These are your strategy assumptions, not official firm rules. Each program and account size remembers its own values.</p><div class="selectors"><div><label for="pref-winRate">Win rate (%)</label><input id="pref-winRate" type="number" min="0" max="100" step=".5"></div><div><label for="pref-rr">Reward / risk (R)</label><input id="pref-rr" type="number" min="0" step=".1"></div><div><label for="pref-weeklySignals">Trades per week</label><input id="pref-weeklySignals" type="number" min="0" step="1"></div><div><label for="pref-p1Base">Phase 1 risk / trade (USD)</label><input id="pref-p1Base" type="number" min="0" step="1"></div><div><label for="pref-p2Base">Phase 2 risk / trade (USD)</label><input id="pref-p2Base" type="number" min="0" step="1"></div><div><label for="pref-fundedBase">Funded risk / trade (USD)</label><input id="pref-fundedBase" type="number" min="0" step="1"></div></div><p class="muted" style="margin-top:14px">Firm rules and targets are kept in the dated rules library; your trading plan is saved separately. Exporting or clearing browser data may affect saved personal profiles.</p></section><section class="panel" id="specificTradingRules"><div class="row"><div><h2 style="margin:0">Trading rules — this challenge</h2><p class="muted" style="margin:5px 0 0">Different parameters for each firm, challenge type and account size. Enter your own values, or add custom rules.</p></div><span id="specificStatus" class="muted">Loading…</span></div><div style="margin-top:19px;border:1px solid #35455b;border-radius:12px;padding:16px;background:#0c1827"><div class="row"><div><strong>Detailed rules by stage</strong><p class="muted" style="margin:4px 0 0">Choose a stage. Save your entries independently for each challenge.</p></div><span id="stageSummary" class="muted"></span></div><div class="row" style="justify-content:flex-start;margin:14px 0 12px"><label style="margin:0;min-width:180px">Stage<select id="stageSelect" style="margin-top:7px"></select></label><label style="margin:0;min-width:190px">Review status<select id="stageReview" style="margin-top:7px"><option value="Not reviewed">Not reviewed</option><option value="Needs verification">Needs verification</option><option value="Reviewed">Reviewed</option></select></label></div><div id="stageOfficialInfo" class="notice" style="margin:12px 0"></div><div id="stageDetailFields"></div><label for="stageNotes" style="margin-top:15px">Notes, exceptions, and the exact official source</label><textarea id="stageNotes" rows="3" style="display:block;width:100%;background:#0a1320;border:1px solid #35455b;color:#fff;border-radius:9px;padding:12px;resize:vertical" placeholder="Enter your custom interpretation, source URL, or outstanding questions"></textarea><p class="muted" style="font-size:12px">Blank means not entered or not verified. These planning fields are not yet enforcement logic in the ROI simulator.</p></div><div id="specificRuleFields" class="selectors" style="margin:20px 0"></div><details><summary>Custom trading parameters</summary><div id="customRuleFields" style="margin-top:15px"></div><div class="selectors" style="margin-top:16px"><div><label for="customName">New parameter name</label><input id="customName" type="text" maxlength="70" placeholder="e.g. Max trades per day"></div><div><label for="customValue">Initial value</label><input id="customValue" type="text" maxlength="120" placeholder="e.g. 2"></div><div><label for="customStage">Stage</label><select id="customStage"><option value="General">General</option><option value="Evaluation">Evaluation</option><option value="Funded">Funded</option></select></div></div><div class="row" style="margin-top:12px"><button class="btn secondary" id="addCustomRule" type="button">Add parameter</button></div></details><div class="row" style="justify-content:flex-start;margin-top:18px"><button class="btn" id="saveSpecificRules" type="button">Save trading rules</button><button class="btn secondary" id="resetSpecificRules" type="button">Reset this account</button><button class="btn secondary" id="exportSpecificRules" type="button">Export all trading profiles</button><button class="btn secondary" id="importSpecificRules" type="button">Import profiles</button><input id="specificImportFile" type="file" accept=".json,application/json" style="display:none"></div><p class="muted" style="font-size:12px;margin:12px 0 0">These are your own trading parameters, separate from published firm rules. Saved in this browser and restored by firm + program + account size. Export a backup before changing devices or clearing browser data.</p></section><div class="cols"><section class="panel"><h2>Evaluation & drawdown</h2><div id="evaluation"></div></section><section class="panel"><h2>Cost & payout</h2><div id="costs"></div><p class="notice" id="priceWarn"></p></section></div><div class="panel"><h2>Important firm-specific conditions</h2><ul id="notes"></ul><details><summary>What is not yet modeled?</summary><p>Intraday and end-of-day trailing loss limits, daily equity-floor resets, broker/instrument rules, payout-cycle eligibility, contract limits, consistency by day, rule changes, and correlated accounts. Never use this research page as a compliance engine.</p></details><p class="muted">Read the <a id="official" target="_blank" rel="noopener noreferrer">official provider rules</a> before purchasing or trading.</p></div><div class="footer">Independent rule reference, dated 4 November 2026. Prices may change. No firm endorses this website. Simulations are estimates, not guaranteed payouts.</div></div><script>
 if(new URLSearchParams(location.search).has('embedded')){document.querySelector('header').style.display='none';document.querySelector('.wrap').style.paddingTop='8px'}
 let library,chosen;
+
+
+const STAGE_RULE_FIELDS=[
+ ['Targets & timing',[
+ ['profitTarget','Profit target / threshold','USD or %'],
+ ['minTradingDays','Minimum trading days','days'],
+ ['maxStageDays','Stage expiry / deadline','days'],
+ ['consistency','Best-day / consistency threshold','%'],
+ ['progressRequirement','Minimum profitable days or trade count','details']
+ ]],
+ ['Drawdown & risk mechanics',[
+ ['dailyLoss','Daily loss cap','USD or %'],
+ ['dailyReset','Daily loss reset time & timezone','time / zone'],
+ ['overallLoss','Maximum overall loss','USD or %'],
+ ['drawdownBasis','Loss calculation basis','static / trailing / equity / balance'],
+ ['trailingLock','Trailing drawdown lock / floor','details'],
+ ['maxTradeRisk','Maximum risk per trade idea','USD or %'],
+ ['dailyStop','Your maximum daily loss / stop','USD']
+ ]],
+ ['Trading restrictions',[
+ ['news','News trading and blackout window','details'],
+ ['overnight','Overnight positions allowed','yes / no / conditional'],
+ ['weekends','Weekend holding allowed','yes / no / conditional'],
+ ['instruments','Allowed instruments / symbols','details'],
+ ['platform','Platform / order routing restrictions','details'],
+ ['eaCopy','EAs, copy trading and account grouping','details'],
+ ['maxPositions','Open positions / contract / lot limit','details'],
+ ['hedging','Hedging and opposite positions','details']
+ ]],
+ ['Payouts & transition',[
+ ['stageTransition','How the stage is passed and approved','details'],
+ ['fees','Activation / recurring / hidden fees','USD'],
+ ['refund','Challenge fee refund conditions','details'],
+ ['split','Profit split','%'],
+ ['payoutEligibility','First withdrawal eligibility','days / conditions'],
+ ['payoutFrequency','Next payout frequency','days / conditions'],
+ ['payoutCap','Minimum / maximum payout cap','USD'],
+ ['payoutDrawdown','Drawdown after payout / reset','details']
+ ]]
+];
+let activeStage='phase1';
+function stageList(p){
+ if(p.firm==='Topstep')return [{id:'phase1',name:'Trading Combine'},{id:'funded',name:'Express Funded'}];
+ if(!p.targets.length)return [{id:'funded',name:'Instant / Funded'}];
+ const a=[{id:'phase1',name:p.targets.length===1?'Evaluation':'Phase 1'}];
+ if(p.targets.length>=2)a.push({id:'phase2',name:'Phase 2'});
+ a.push({id:'funded',name:'Funded'});
+ return a;
+}
+function stageFieldId(id){return 'stage.'+activeStage+'.'+id}
+function knownStageInfo(p,n,stage){
+ const pos=stage==='phase2'?1:0;
+ const target=stage==='funded'?'No fixed evaluation profit target':p.firm==='Topstep'?(''studio-specific-trading-rules-v1:';
+const SPEC_BACKUP_VERSION=1;
+const commonTrading=[
+ ['maxTradesDay','Maximum trades per day','2','Evaluation'],
+ ['maxDailyRiskUsd','Maximum planned daily risk (USD)','','General'],
+ ['maxTradeRiskPct','Maximum planned risk per trade (%)','','General'],
+ ['newsBlackoutMin','News blackout before high-impact events (minutes)','120','General'],
+ ['newsRecoveryMin','Resume after high-impact events (minutes)','30','General'],
+ ['stopAfterLoss','Stop after one losing trade?','Yes','General']
+];
+const firmTrading={
+ ftmo2:[['phaseOneDeadline','Phase 1 time limit (days)','Unlimited','Evaluation'],['phaseTwoDeadline','Phase 2 time limit (days)','Unlimited','Evaluation'],['allowNews','Trade through restricted news?','Review FTMO restrictions','General'],['weekendHolding','Weekend holding','Review account rules','Funded'],['payoutInterval','Target payout cycle (days)','14','Funded']],
+ ftmo1:[['bestDayConsistency','Best-day consistency maximum (%)','50','Evaluation'],['trailingDrawdown','Trailing drawdown rule','End-of-day balance','General'],['payoutInterval','Payout review cycle (days)','14','Funded']],
+ instant:[['bestDayConsistency','Best-day consistency maximum (%)','30','Funded'],['trailingDrawdown','Trailing drawdown rule','Intraday closed balance','General'],['payoutInterval','Target payout cycle (days)','14','Funded']],
+ holaPrime:[['combinedIdeaRisk','Combined funded risk per trade idea (%)','2','Funded'],['payoutCycle','Payout cycle','Biweekly','Funded'],['fundedNews','High-impact news restrictions','Review current terms','Funded'],['weekendHolding','Weekend holding','Review current terms','Funded'],['consistency','Payout consistency rule','Depends on payout cycle','Funded']],
+ holaPro:[['combinedIdeaRisk','Combined funded risk per trade idea (%)','2','Funded'],['payoutCycle','Payout cycle','Biweekly','Funded'],['fundedNews','High-impact news restriction window','5 minutes each side','Funded'],['weekendHolding','Weekend holding','Restricted','Funded'],['consistency','Payout consistency rule','Depends on payout cycle','Funded']],
+ topstep:[['maxContracts','Maximum mini contracts', '', 'Evaluation'],['maxMicroContracts','Maximum micro contracts','','Evaluation'],['trailingMllUSD','Maximum loss limit (USD)','','Evaluation'],['consistencyLimit','Trading Combine best-day consistency (%)','55','Evaluation'],['feePath','Payment path','Standard activation','General'],['subscriptionMonths','Expected paid subscription months','1','Evaluation'],['minWinningDays','Winning days for funded payout','5','Funded'],['winningDayThresholdUSD','Minimum qualifying profit per day (USD)','150','Funded']]
+};
+function specKey(){return e('program').value+':'+e('size').value}
+function readSpecific(){try{const p=JSON.parse(localStorage.getItem(SPEC_PREFIX+specKey())||'null');return p&&p.version===SPEC_BACKUP_VERSION&&p.values&&typeof p.values==='object'?p:{version:1,values:{},custom:[],stageMeta:{}}}catch(_){return {version:1,values:{},custom:[]}}}
+function specificDefs(){
+ const pid=e('program').value;const n=Number(e('size').value);
+ const defaults=[...commonTrading,...(firmTrading[pid]||[])].map(([id,name,def,stage])=>({id,name,def,stage}));
+ if(pid==='topstep'){
+  const c={50000:[5,50,2000],100000:[10,100,3000],150000:[15,150,4500]}[n]||[];
+  for(const [id,val] of [['maxContracts',c[0]],['maxMicroContracts',c[1]],['trailingMllUSD',c[2]]]){const field=defaults.find(x=>x.id===id);if(field)field.def=String(val??'');}
+ }
+ return defaults;
+}
+function makeSpecificInput(id,label,value,stage,custom=false){
+ const wrap=document.createElement('div');wrap.className='field';const lbl=document.createElement('label');lbl.htmlFor=id;lbl.textContent=label+' · '+stage;const input=document.createElement('input');input.id=id;input.type='text';input.maxLength=120;input.value=value??'';input.dataset.specific=custom?'custom':'standard';wrap.append(lbl,input);return wrap;
+}
+function renderSpecific(){
+ const record=readSpecific(),defs=specificDefs();const container=e('specificRuleFields');container.replaceChildren();
+ for(const d of defs)container.append(makeSpecificInput('spec-'+d.id,d.name,record.values[d.id]??d.def,d.stage));
+ const customs=e('customRuleFields');customs.replaceChildren();
+ for(const item of record.custom||[]){const line=document.createElement('div');line.className='row';line.style.marginBottom='9px';const f=makeSpecificInput('custom-'+item.id,item.name,item.value,item.stage,true);f.style.flex='1';const rm=document.createElement('button');rm.className='btn secondary';rm.textContent='Remove';rm.type='button';rm.onclick=()=>{const current=collectSpecific();current.custom=current.custom.filter(x=>x.id!==item.id);persistSpecific(current);renderSpecific()};line.append(f,rm);customs.append(line)}
+ renderStage();
+ e('specificStatus').textContent=record.updatedAt?'Saved '+new Date(record.updatedAt).toLocaleString():'Default suggestions — not yet saved';
+ for(const inp of container.querySelectorAll('input'))inp.addEventListener('input',debouncedSaveSpecific);
+ for(const inp of customs.querySelectorAll('input'))inp.addEventListener('input',debouncedSaveSpecific);
+}
+function collectSpecific(){const old=readSpecific(),values={};for(const d of specificDefs())values[d.id]=e('spec-'+d.id).value;
+ const custom=(old.custom||[]).map(x=>({...x,value:e('custom-'+x.id)?.value??x.value}));
+ for(const [k,v] of Object.entries(old.values||{}))if(k.startsWith('stage.'))values[k]=v;
+ return {version:1,values,custom,stageMeta:old.stageMeta||{},updatedAt:new Date().toISOString()}}
+function persistSpecific(obj){try{localStorage.setItem(SPEC_PREFIX+specKey(),JSON.stringify(obj));e('specificStatus').textContent='Saved for this account · '+new Date().toLocaleTimeString()}catch(err){e('specificStatus').textContent='Save failed — check browser storage';}}
+let specificSavePending=false;
+function debouncedSaveSpecific(){// input events save immediately to prevent lost edits when switching accounts
+ persistSpecific(collectSpecific());
+}
+function addSpecificCustom(){
+ const name=e('customName').value.trim(),value=e('customValue').value.trim(),stage=e('customStage').value;
+ if(!name){e('customName').focus();return}
+ const obj=collectSpecific();if(obj.custom.length>=40){e('specificStatus').textContent='Maximum of 40 custom fields';return}
+ obj.custom.push({id:'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name:name.slice(0,70),value:value.slice(0,120),stage});
+ persistSpecific(obj);e('customName').value='';e('customValue').value='';renderSpecific();
+}
+function resetSpecific(){if(!confirm('Reset your custom trading settings for this account size and program? Official firm rules will not change.'))return;try{localStorage.removeItem(SPEC_PREFIX+specKey())}catch(_){}renderSpecific();}
+function exportSpecific(){
+ const data={schema:'trading-roi-studio-trading-profiles',version:1,exportedAt:new Date().toISOString(),profiles:{}};
+ for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith(SPEC_PREFIX)){try{data.profiles[k.slice(SPEC_PREFIX.length)]=JSON.parse(localStorage.getItem(k))}catch(_){}}}
+ const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='trading-roi-studio-profiles.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
+function importSpecific(file){
+ if(!file)return;const reader=new FileReader();reader.onload=()=>{
+  try{const data=JSON.parse(reader.result);if(data.schema!=='trading-roi-studio-trading-profiles'||data.version!==1||!data.profiles||typeof data.profiles!=='object')throw Error('Wrong file format');
+  const entries=Object.entries(data.profiles);if(entries.length>500)throw Error('Too many profiles');let n=0;
+  for(const [k,p] of entries){if(!/^[a-zA-Z0-9_-]+:[0-9]{3,8}$/.test(k)||!p||p.version!==1||!p.values||typeof p.values!=='object'||!Array.isArray(p.custom)||p.custom.length>40)continue;
+   const cleanVals={};for(const [id,v] of Object.entries(p.values)){if(/^[A-Za-z0-9_-]{1,64}$/.test(id)&&['string','number'].includes(typeof v))cleanVals[id]=String(v).slice(0,120)}
+   const cleanCustom=p.custom.filter(x=>x&&typeof x.name==='string'&&typeof x.id==='string'&&/^[A-Za-z0-9_-]{1,64}$/.test(x.id)).slice(0,40).map(x=>({id:x.id,name:x.name.slice(0,70),value:String(x.value??'').slice(0,120),stage:['General','Evaluation','Funded'].includes(x.stage)?x.stage:'General'}));
+   localStorage.setItem(SPEC_PREFIX+k,JSON.stringify({version:1,values:cleanVals,custom:cleanCustom,stageMeta:Object.fromEntries(Object.entries(p.stageMeta||{}).filter(([k,v])=>['phase1','phase2','funded'].includes(k)&&v&&typeof v==='object').map(([k,v])=>[k,{review:['Not reviewed','Needs verification','Reviewed'].includes(v.review)?v.review:'Not reviewed',notes:String(v.notes||'').slice(0,3000)}])),updatedAt:new Date().toISOString()}));n++;
+  }renderSpecific();e('specificStatus').textContent='Imported '+n+' account profiles';
+  }catch(err){e('specificStatus').textContent='Import failed: '+err.message}
+ };reader.readAsText(file);
+}
+
+const OVERRIDE_PREFIX='studio-rules-override-v1:';
+const overrideFields=['target1','target2','daily','max','days1','days2'];
+function ruleDefaults(p,n){
+ const top=p.firm==='Topstep';
+ return {target1:p.targets[0]??null,target2:p.targets[1]??null,
+ daily:p.daily==null?null:(p.firm==='Hola Prime'&&n===200000?4:p.daily),
+ max:top?null:(p.max==null?null:p.firm==='Hola Prime'&&n===200000?8:p.max),
+ days1:p.days[0]??null,days2:p.days[1]??null};
+}
+function readOverride(){try{const x=JSON.parse(localStorage.getItem(OVERRIDE_PREFIX+prefsKey())||'null');return x&&x.v===1&&x.values?x.values:{};}catch(_){return {}}}
+function effectiveRules(){if(!chosen)return null;const d=ruleDefaults(chosen.p,chosen.n),o=readOverride();const v={...d};for(const k of overrideFields){if(d[k]!==null&&Number.isFinite(Number(o[k]))&&o[k]!==null&&o[k]!==''&&Number(o[k])>=0)v[k]=Number(o[k]);}return v;}
+function renderRuleEditor(){const p=chosen.p,n=chosen.n,d=ruleDefaults(p,n),v=effectiveRules();
+ for(const k of overrideFields){const field=e('rule-'+k);field.disabled=d[k]===null;field.value=d[k]===null?'':v[k];field.placeholder=d[k]===null?'Not applicable':String(d[k]);}
+ e('rulesApplicability').textContent=p.firm==='Topstep'?'Topstep uses dollar-based trailing Maximum Loss Limit; its drawdown cannot be edited using a static percentage. The calculator is disabled for Topstep.':p.targets.length<2?'This plan does not have two evaluation phases; unused Phase 2 fields are disabled. The existing two-step simulator is not applicable.':'The fields initially match the published rules. Your edits are stored separately as planning overrides; the original source rules remain visible below.';
+ e('rulesSaveStatus').textContent=Object.keys(readOverride()).length?'Custom settings saved in this browser':'Using published rule defaults';}
+function saveRules(){if(!chosen)return;const d=ruleDefaults(chosen.p,chosen.n),v={};
+ for(const k of overrideFields){if(d[k]===null)continue;const raw=e('rule-'+k).value.trim(),num=Number(raw);if(!raw||!Number.isFinite(num)||num<0||(k.startsWith('days')&&!Number.isInteger(num))||(!k.startsWith('days')&&num>100)){e('rulesSaveStatus').textContent='Check '+k+': enter a valid nonnegative value';e('rule-'+k).focus();return;}v[k]=num;}
+ try{localStorage.setItem(OVERRIDE_PREFIX+prefsKey(),JSON.stringify({v:1,values:v,savedAt:new Date().toISOString()}));renderRuleEditor();e('rulesSaveStatus').textContent='Saved for this account';}catch(err){e('rulesSaveStatus').textContent='Could not save in this browser';}
+}
+function resetRules(){if(!chosen)return;try{localStorage.removeItem(OVERRIDE_PREFIX+prefsKey());}catch(_){}renderRuleEditor();}
+const PREFS_PREFIX="studio-trading-preferences-v1:";function prefsKey(){return e("program").value+":"+e("size").value}function getPrefs(){try{return JSON.parse(localStorage.getItem(PREFS_PREFIX+prefsKey())||"null")||{}}catch(_){return {}}}function savePrefs(){let v={};for(const id of ["winRate","rr","weeklySignals","p1Base","p2Base","fundedBase"]){let val=Number(e("pref-"+id).value);if(Number.isFinite(val)&&val>=0)v[id]=val}try{localStorage.setItem(PREFS_PREFIX+prefsKey(),JSON.stringify(v));e("prefsStatus").textContent="Saved automatically for this program and account size."}catch(_){e("prefsStatus").textContent="Browser storage unavailable; settings may not persist."}}function renderPrefs(){let v=getPrefs();const defaults={winRate:40,rr:3,weeklySignals:22,p1Base:350,p2Base:200,fundedBase:250};for(const id of Object.keys(defaults))e("pref-"+id).value=v[id]??defaults[id];e("prefsStatus").textContent="Settings are independent for each program and account size, stored in this browser."}const e=id=>document.getElementById(id),cash=n=>'$'+Number(n).toLocaleString('en-US'),row=(k,v)=>'<div class="item"><span>'+k+'</span><strong>'+v+'</strong></div>';function options(id,arr){e(id).replaceChildren(...arr.map(([val,label])=>{let o=document.createElement('option');o.value=val;o.textContent=label;return o}))}
+function selectFirm(){let firm=e('firm').value;options('program',Object.entries(library.programs).filter(([id,p])=>p.firm===firm).map(([id,p])=>[id,p.name]));selectProgram()}
+function selectProgram(){let p=library.programs[e('program').value];options('size',p.sizes.map(x=>[x,cash(x)]));render()}
+function render(){const p=library.programs[e('program').value],n=Number(e('size').value);if(!p)return;let daily=p.firm==='Hola Prime'&&n===200000?4:p.daily,max=p.firm==='Hola Prime'&&n===200000?8:p.max;const mll=p.firm==='Topstep'?({50000:2000,100000:3000,150000:4500})[n]:null;const first=p.firm==='Topstep'?({50000:3000,100000:6000,150000:9000})[n]:(p.targets.length?n*p.targets[0]/100:0);const overall=mll??(max==null?null:n*max/100);chosen={p,n,daily,max};let stats=[['First profit target',p.targets.length?cash(first):'None'],['Initial loss allowance',overall==null?'See rules':cash(overall)],['Daily loss',daily==null?'No separate DLL':cash(n*daily/100)],['Evaluation',p.targets.length+' phase'+(p.targets.length===1?'':'s')]];e('stats').innerHTML=stats.map(([k,v])=>'<div class="stat"><span>'+k+'</span><b>'+v+'</b></div>').join('');e('evaluation').innerHTML=row('Market',p.market)+row('Profit targets',p.targets.length?p.targets.join('% → ')+'%':'No evaluation')+row('Minimum trading days',p.days.length?p.days.join(' / '):'None')+row('Daily loss limit',daily==null?'Not separately specified':daily+'%')+row('Maximum loss',mll!=null?cash(mll)+' trailing':max+'%')+row('Loss calculation',p.loss);const fee=p.pricesUSD?.[n],extra=p.noActivation?.[n];e('costs').innerHTML=row('Published USD base fee',fee==null?'Not verified':cash(fee)+(p.firm==='Topstep'?'/month':''))+(extra!=null?row('No activation-fee path',cash(extra)+'/month'):'')+row('Refund',p.refund)+row('Reward split',p.split)+row('Funded risk per idea',p.fundedRisk?p.fundedRisk+'%':'See rules')+'<div class="item" style="display:block"><label for="purchasePrice">Cost used for ROI (USD) — editable</label><input id="purchasePrice" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="USD checkout cost" value="'+(fee??'')+'"></div>';e('notes').replaceChildren(...p.notes.map(s=>{let li=document.createElement('li');li.textContent=s;return li}));e('official').href=p.source;renderPrefs();renderRuleEditor();renderSpecific();e('apply').disabled=!p.compatible;e('status').textContent=p.compatible?'Available: transfer initial two-step targets, limits and the account size into the existing simulator. It will NOT fully enforce this firm’s rules.':'Reference only: this program cannot be accurately modeled with the current FTMO-style two-step simulator.';e('priceWarn').textContent=p.priceNote||'Check provider checkout price in USD.';const link=document.createElement('a');link.href=p.priceSource||p.source;link.target='_blank';link.rel='noopener noreferrer';link.textContent=' View price source';e('priceWarn').append(link);}
+e('apply').onclick=()=>{if(!chosen||!chosen.p.compatible)return;const raw=e('purchasePrice').value.trim();const fee=Number(raw);if(!raw||!Number.isFinite(fee)||fee<=0){e('purchasePrice').focus();e('priceWarn').textContent='Enter a valid positive USD price from checkout before loading the calculator.';return}let {p,n,daily,max}=chosen;const payload={v:1,label:p.firm+' '+p.name+' '+cash(n),size:n,programId:e('program').value,trading:getPrefs(),targets:[effectiveRules().target1,effectiveRules().target2],days:[effectiveRules().days1,effectiveRules().days2],daily:effectiveRules().daily,max:effectiveRules().max,feeUSD:fee,fundedRisk:p.fundedRisk||0};if(window.parent!==window){window.parent.postMessage({type:'studio-program-select',payload},window.location.origin)}else{sessionStorage.setItem('studio-program-selection',JSON.stringify(payload));location.href='index.html'}};
+fetch('prop-firm-rules.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Could not load rules');return r.json()}).then(x=>{library=x;options('firm',[...new Set(Object.values(x.programs).map(p=>p.firm))].map(x=>[x,x]));selectFirm();e('firm').onchange=selectFirm;e('program').onchange=selectProgram;e('size').onchange=render;e('saveRules').onclick=saveRules;e('resetRules').onclick=resetRules;e('saveSpecificRules').onclick=()=>{saveStage();persistSpecific(collectSpecific())};e('resetSpecificRules').onclick=resetSpecific;e('stageSelect').onchange=()=>{activeStage=e('stageSelect').value;renderStage()};e('stageReview').onchange=saveStage;e('stageNotes').oninput=saveStage;e('addCustomRule').onclick=addSpecificCustom;e('exportSpecificRules').onclick=exportSpecific;e('importSpecificRules').onclick=()=>e('specificImportFile').click();e('specificImportFile').onchange=ev=>{importSpecific(ev.target.files[0]);ev.target.value=''};for(const el of document.querySelectorAll('[id^="pref-"]'))el.addEventListener('input',savePrefs)}).catch(err=>{e('status').textContent='Rules unavailable: '+err.message});
+</script></body></html>+({50000:3000,100000:6000,150000:9000}[n]||'—')):p.targets[pos]!=null?(p.targets[pos]+'% = 'studio-specific-trading-rules-v1:';
+const SPEC_BACKUP_VERSION=1;
+const commonTrading=[
+ ['maxTradesDay','Maximum trades per day','2','Evaluation'],
+ ['maxDailyRiskUsd','Maximum planned daily risk (USD)','','General'],
+ ['maxTradeRiskPct','Maximum planned risk per trade (%)','','General'],
+ ['newsBlackoutMin','News blackout before high-impact events (minutes)','120','General'],
+ ['newsRecoveryMin','Resume after high-impact events (minutes)','30','General'],
+ ['stopAfterLoss','Stop after one losing trade?','Yes','General']
+];
+const firmTrading={
+ ftmo2:[['phaseOneDeadline','Phase 1 time limit (days)','Unlimited','Evaluation'],['phaseTwoDeadline','Phase 2 time limit (days)','Unlimited','Evaluation'],['allowNews','Trade through restricted news?','Review FTMO restrictions','General'],['weekendHolding','Weekend holding','Review account rules','Funded'],['payoutInterval','Target payout cycle (days)','14','Funded']],
+ ftmo1:[['bestDayConsistency','Best-day consistency maximum (%)','50','Evaluation'],['trailingDrawdown','Trailing drawdown rule','End-of-day balance','General'],['payoutInterval','Payout review cycle (days)','14','Funded']],
+ instant:[['bestDayConsistency','Best-day consistency maximum (%)','30','Funded'],['trailingDrawdown','Trailing drawdown rule','Intraday closed balance','General'],['payoutInterval','Target payout cycle (days)','14','Funded']],
+ holaPrime:[['combinedIdeaRisk','Combined funded risk per trade idea (%)','2','Funded'],['payoutCycle','Payout cycle','Biweekly','Funded'],['fundedNews','High-impact news restrictions','Review current terms','Funded'],['weekendHolding','Weekend holding','Review current terms','Funded'],['consistency','Payout consistency rule','Depends on payout cycle','Funded']],
+ holaPro:[['combinedIdeaRisk','Combined funded risk per trade idea (%)','2','Funded'],['payoutCycle','Payout cycle','Biweekly','Funded'],['fundedNews','High-impact news restriction window','5 minutes each side','Funded'],['weekendHolding','Weekend holding','Restricted','Funded'],['consistency','Payout consistency rule','Depends on payout cycle','Funded']],
+ topstep:[['maxContracts','Maximum mini contracts', '', 'Evaluation'],['maxMicroContracts','Maximum micro contracts','','Evaluation'],['trailingMllUSD','Maximum loss limit (USD)','','Evaluation'],['consistencyLimit','Trading Combine best-day consistency (%)','55','Evaluation'],['feePath','Payment path','Standard activation','General'],['subscriptionMonths','Expected paid subscription months','1','Evaluation'],['minWinningDays','Winning days for funded payout','5','Funded'],['winningDayThresholdUSD','Minimum qualifying profit per day (USD)','150','Funded']]
+};
+function specKey(){return e('program').value+':'+e('size').value}
+function readSpecific(){try{const p=JSON.parse(localStorage.getItem(SPEC_PREFIX+specKey())||'null');return p&&p.version===SPEC_BACKUP_VERSION&&p.values&&typeof p.values==='object'?p:{version:1,values:{},custom:[]}}catch(_){return {version:1,values:{},custom:[]}}}
+function specificDefs(){
+ const pid=e('program').value;const n=Number(e('size').value);
+ const defaults=[...commonTrading,...(firmTrading[pid]||[])].map(([id,name,def,stage])=>({id,name,def,stage}));
+ if(pid==='topstep'){
+  const c={50000:[5,50,2000],100000:[10,100,3000],150000:[15,150,4500]}[n]||[];
+  for(const [id,val] of [['maxContracts',c[0]],['maxMicroContracts',c[1]],['trailingMllUSD',c[2]]]){const field=defaults.find(x=>x.id===id);if(field)field.def=String(val??'');}
+ }
+ return defaults;
+}
+function makeSpecificInput(id,label,value,stage,custom=false){
+ const wrap=document.createElement('div');wrap.className='field';const lbl=document.createElement('label');lbl.htmlFor=id;lbl.textContent=label+' · '+stage;const input=document.createElement('input');input.id=id;input.type='text';input.maxLength=120;input.value=value??'';input.dataset.specific=custom?'custom':'standard';wrap.append(lbl,input);return wrap;
+}
+function renderSpecific(){
+ const record=readSpecific(),defs=specificDefs();const container=e('specificRuleFields');container.replaceChildren();
+ for(const d of defs)container.append(makeSpecificInput('spec-'+d.id,d.name,record.values[d.id]??d.def,d.stage));
+ const customs=e('customRuleFields');customs.replaceChildren();
+ for(const item of record.custom||[]){const line=document.createElement('div');line.className='row';line.style.marginBottom='9px';const f=makeSpecificInput('custom-'+item.id,item.name,item.value,item.stage,true);f.style.flex='1';const rm=document.createElement('button');rm.className='btn secondary';rm.textContent='Remove';rm.type='button';rm.onclick=()=>{const current=collectSpecific();current.custom=current.custom.filter(x=>x.id!==item.id);persistSpecific(current);renderSpecific()};line.append(f,rm);customs.append(line)}
+ e('specificStatus').textContent=record.updatedAt?'Saved '+new Date(record.updatedAt).toLocaleString():'Default suggestions — not yet saved';
+ for(const inp of container.querySelectorAll('input'))inp.addEventListener('input',debouncedSaveSpecific);
+ for(const inp of customs.querySelectorAll('input'))inp.addEventListener('input',debouncedSaveSpecific);
+}
+function collectSpecific(){const old=readSpecific(),values={};for(const d of specificDefs())values[d.id]=e('spec-'+d.id).value;
+ const custom=(old.custom||[]).map(x=>({...x,value:e('custom-'+x.id)?.value??x.value}));
+ return {version:1,values,custom,updatedAt:new Date().toISOString()}}
+function persistSpecific(obj){try{localStorage.setItem(SPEC_PREFIX+specKey(),JSON.stringify(obj));e('specificStatus').textContent='Saved for this account · '+new Date().toLocaleTimeString()}catch(err){e('specificStatus').textContent='Save failed — check browser storage';}}
+let specificSavePending=false;
+function debouncedSaveSpecific(){// input events save immediately to prevent lost edits when switching accounts
+ persistSpecific(collectSpecific());
+}
+function addSpecificCustom(){
+ const name=e('customName').value.trim(),value=e('customValue').value.trim(),stage=e('customStage').value;
+ if(!name){e('customName').focus();return}
+ const obj=collectSpecific();if(obj.custom.length>=40){e('specificStatus').textContent='Maximum of 40 custom fields';return}
+ obj.custom.push({id:'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name:name.slice(0,70),value:value.slice(0,120),stage});
+ persistSpecific(obj);e('customName').value='';e('customValue').value='';renderSpecific();
+}
+function resetSpecific(){if(!confirm('Reset your custom trading settings for this account size and program? Official firm rules will not change.'))return;try{localStorage.removeItem(SPEC_PREFIX+specKey())}catch(_){}renderSpecific();}
+function exportSpecific(){
+ const data={schema:'trading-roi-studio-trading-profiles',version:1,exportedAt:new Date().toISOString(),profiles:{}};
+ for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith(SPEC_PREFIX)){try{data.profiles[k.slice(SPEC_PREFIX.length)]=JSON.parse(localStorage.getItem(k))}catch(_){}}}
+ const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='trading-roi-studio-profiles.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
+function importSpecific(file){
+ if(!file)return;const reader=new FileReader();reader.onload=()=>{
+  try{const data=JSON.parse(reader.result);if(data.schema!=='trading-roi-studio-trading-profiles'||data.version!==1||!data.profiles||typeof data.profiles!=='object')throw Error('Wrong file format');
+  const entries=Object.entries(data.profiles);if(entries.length>500)throw Error('Too many profiles');let n=0;
+  for(const [k,p] of entries){if(!/^[a-zA-Z0-9_-]+:[0-9]{3,8}$/.test(k)||!p||p.version!==1||!p.values||typeof p.values!=='object'||!Array.isArray(p.custom)||p.custom.length>40)continue;
+   const cleanVals={};for(const [id,v] of Object.entries(p.values)){if(/^[A-Za-z0-9_-]{1,64}$/.test(id)&&['string','number'].includes(typeof v))cleanVals[id]=String(v).slice(0,120)}
+   const cleanCustom=p.custom.filter(x=>x&&typeof x.name==='string'&&typeof x.id==='string'&&/^[A-Za-z0-9_-]{1,64}$/.test(x.id)).slice(0,40).map(x=>({id:x.id,name:x.name.slice(0,70),value:String(x.value??'').slice(0,120),stage:['General','Evaluation','Funded'].includes(x.stage)?x.stage:'General'}));
+   localStorage.setItem(SPEC_PREFIX+k,JSON.stringify({version:1,values:cleanVals,custom:cleanCustom,updatedAt:new Date().toISOString()}));n++;
+  }renderSpecific();e('specificStatus').textContent='Imported '+n+' account profiles';
+  }catch(err){e('specificStatus').textContent='Import failed: '+err.message}
+ };reader.readAsText(file);
+}
+
+const OVERRIDE_PREFIX='studio-rules-override-v1:';
+const overrideFields=['target1','target2','daily','max','days1','days2'];
+function ruleDefaults(p,n){
+ const top=p.firm==='Topstep';
+ return {target1:p.targets[0]??null,target2:p.targets[1]??null,
+ daily:p.daily==null?null:(p.firm==='Hola Prime'&&n===200000?4:p.daily),
+ max:top?null:(p.max==null?null:p.firm==='Hola Prime'&&n===200000?8:p.max),
+ days1:p.days[0]??null,days2:p.days[1]??null};
+}
+function readOverride(){try{const x=JSON.parse(localStorage.getItem(OVERRIDE_PREFIX+prefsKey())||'null');return x&&x.v===1&&x.values?x.values:{};}catch(_){return {}}}
+function effectiveRules(){if(!chosen)return null;const d=ruleDefaults(chosen.p,chosen.n),o=readOverride();const v={...d};for(const k of overrideFields){if(d[k]!==null&&Number.isFinite(Number(o[k]))&&o[k]!==null&&o[k]!==''&&Number(o[k])>=0)v[k]=Number(o[k]);}return v;}
+function renderRuleEditor(){const p=chosen.p,n=chosen.n,d=ruleDefaults(p,n),v=effectiveRules();
+ for(const k of overrideFields){const field=e('rule-'+k);field.disabled=d[k]===null;field.value=d[k]===null?'':v[k];field.placeholder=d[k]===null?'Not applicable':String(d[k]);}
+ e('rulesApplicability').textContent=p.firm==='Topstep'?'Topstep uses dollar-based trailing Maximum Loss Limit; its drawdown cannot be edited using a static percentage. The calculator is disabled for Topstep.':p.targets.length<2?'This plan does not have two evaluation phases; unused Phase 2 fields are disabled. The existing two-step simulator is not applicable.':'The fields initially match the published rules. Your edits are stored separately as planning overrides; the original source rules remain visible below.';
+ e('rulesSaveStatus').textContent=Object.keys(readOverride()).length?'Custom settings saved in this browser':'Using published rule defaults';}
+function saveRules(){if(!chosen)return;const d=ruleDefaults(chosen.p,chosen.n),v={};
+ for(const k of overrideFields){if(d[k]===null)continue;const raw=e('rule-'+k).value.trim(),num=Number(raw);if(!raw||!Number.isFinite(num)||num<0||(k.startsWith('days')&&!Number.isInteger(num))||(!k.startsWith('days')&&num>100)){e('rulesSaveStatus').textContent='Check '+k+': enter a valid nonnegative value';e('rule-'+k).focus();return;}v[k]=num;}
+ try{localStorage.setItem(OVERRIDE_PREFIX+prefsKey(),JSON.stringify({v:1,values:v,savedAt:new Date().toISOString()}));renderRuleEditor();e('rulesSaveStatus').textContent='Saved for this account';}catch(err){e('rulesSaveStatus').textContent='Could not save in this browser';}
+}
+function resetRules(){if(!chosen)return;try{localStorage.removeItem(OVERRIDE_PREFIX+prefsKey());}catch(_){}renderRuleEditor();}
+const PREFS_PREFIX="studio-trading-preferences-v1:";function prefsKey(){return e("program").value+":"+e("size").value}function getPrefs(){try{return JSON.parse(localStorage.getItem(PREFS_PREFIX+prefsKey())||"null")||{}}catch(_){return {}}}function savePrefs(){let v={};for(const id of ["winRate","rr","weeklySignals","p1Base","p2Base","fundedBase"]){let val=Number(e("pref-"+id).value);if(Number.isFinite(val)&&val>=0)v[id]=val}try{localStorage.setItem(PREFS_PREFIX+prefsKey(),JSON.stringify(v));e("prefsStatus").textContent="Saved automatically for this program and account size."}catch(_){e("prefsStatus").textContent="Browser storage unavailable; settings may not persist."}}function renderPrefs(){let v=getPrefs();const defaults={winRate:40,rr:3,weeklySignals:22,p1Base:350,p2Base:200,fundedBase:250};for(const id of Object.keys(defaults))e("pref-"+id).value=v[id]??defaults[id];e("prefsStatus").textContent="Settings are independent for each program and account size, stored in this browser."}const e=id=>document.getElementById(id),cash=n=>'$'+Number(n).toLocaleString('en-US'),row=(k,v)=>'<div class="item"><span>'+k+'</span><strong>'+v+'</strong></div>';function options(id,arr){e(id).replaceChildren(...arr.map(([val,label])=>{let o=document.createElement('option');o.value=val;o.textContent=label;return o}))}
+function selectFirm(){let firm=e('firm').value;options('program',Object.entries(library.programs).filter(([id,p])=>p.firm===firm).map(([id,p])=>[id,p.name]));selectProgram()}
+function selectProgram(){let p=library.programs[e('program').value];options('size',p.sizes.map(x=>[x,cash(x)]));render()}
+function render(){const p=library.programs[e('program').value],n=Number(e('size').value);if(!p)return;let daily=p.firm==='Hola Prime'&&n===200000?4:p.daily,max=p.firm==='Hola Prime'&&n===200000?8:p.max;const mll=p.firm==='Topstep'?({50000:2000,100000:3000,150000:4500})[n]:null;const first=p.firm==='Topstep'?({50000:3000,100000:6000,150000:9000})[n]:(p.targets.length?n*p.targets[0]/100:0);const overall=mll??(max==null?null:n*max/100);chosen={p,n,daily,max};let stats=[['First profit target',p.targets.length?cash(first):'None'],['Initial loss allowance',overall==null?'See rules':cash(overall)],['Daily loss',daily==null?'No separate DLL':cash(n*daily/100)],['Evaluation',p.targets.length+' phase'+(p.targets.length===1?'':'s')]];e('stats').innerHTML=stats.map(([k,v])=>'<div class="stat"><span>'+k+'</span><b>'+v+'</b></div>').join('');e('evaluation').innerHTML=row('Market',p.market)+row('Profit targets',p.targets.length?p.targets.join('% → ')+'%':'No evaluation')+row('Minimum trading days',p.days.length?p.days.join(' / '):'None')+row('Daily loss limit',daily==null?'Not separately specified':daily+'%')+row('Maximum loss',mll!=null?cash(mll)+' trailing':max+'%')+row('Loss calculation',p.loss);const fee=p.pricesUSD?.[n],extra=p.noActivation?.[n];e('costs').innerHTML=row('Published USD base fee',fee==null?'Not verified':cash(fee)+(p.firm==='Topstep'?'/month':''))+(extra!=null?row('No activation-fee path',cash(extra)+'/month'):'')+row('Refund',p.refund)+row('Reward split',p.split)+row('Funded risk per idea',p.fundedRisk?p.fundedRisk+'%':'See rules')+'<div class="item" style="display:block"><label for="purchasePrice">Cost used for ROI (USD) — editable</label><input id="purchasePrice" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="USD checkout cost" value="'+(fee??'')+'"></div>';e('notes').replaceChildren(...p.notes.map(s=>{let li=document.createElement('li');li.textContent=s;return li}));e('official').href=p.source;renderPrefs();renderRuleEditor();renderSpecific();e('apply').disabled=!p.compatible;e('status').textContent=p.compatible?'Available: transfer initial two-step targets, limits and the account size into the existing simulator. It will NOT fully enforce this firm’s rules.':'Reference only: this program cannot be accurately modeled with the current FTMO-style two-step simulator.';e('priceWarn').textContent=p.priceNote||'Check provider checkout price in USD.';const link=document.createElement('a');link.href=p.priceSource||p.source;link.target='_blank';link.rel='noopener noreferrer';link.textContent=' View price source';e('priceWarn').append(link);}
+e('apply').onclick=()=>{if(!chosen||!chosen.p.compatible)return;const raw=e('purchasePrice').value.trim();const fee=Number(raw);if(!raw||!Number.isFinite(fee)||fee<=0){e('purchasePrice').focus();e('priceWarn').textContent='Enter a valid positive USD price from checkout before loading the calculator.';return}let {p,n,daily,max}=chosen;const payload={v:1,label:p.firm+' '+p.name+' '+cash(n),size:n,programId:e('program').value,trading:getPrefs(),targets:[effectiveRules().target1,effectiveRules().target2],days:[effectiveRules().days1,effectiveRules().days2],daily:effectiveRules().daily,max:effectiveRules().max,feeUSD:fee,fundedRisk:p.fundedRisk||0};if(window.parent!==window){window.parent.postMessage({type:'studio-program-select',payload},window.location.origin)}else{sessionStorage.setItem('studio-program-selection',JSON.stringify(payload));location.href='index.html'}};
+fetch('prop-firm-rules.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Could not load rules');return r.json()}).then(x=>{library=x;options('firm',[...new Set(Object.values(x.programs).map(p=>p.firm))].map(x=>[x,x]));selectFirm();e('firm').onchange=selectFirm;e('program').onchange=selectProgram;e('size').onchange=render;e('saveRules').onclick=saveRules;e('resetRules').onclick=resetRules;e('saveSpecificRules').onclick=()=>persistSpecific(collectSpecific());e('resetSpecificRules').onclick=resetSpecific;e('addCustomRule').onclick=addSpecificCustom;e('exportSpecificRules').onclick=exportSpecific;e('importSpecificRules').onclick=()=>e('specificImportFile').click();e('specificImportFile').onchange=ev=>{importSpecific(ev.target.files[0]);ev.target.value=''};for(const el of document.querySelectorAll('[id^="pref-"]'))el.addEventListener('input',savePrefs)}).catch(err=>{e('status').textContent='Rules unavailable: '+err.message});
+</script></body></html>+(n*p.targets[pos]/100).toLocaleString()):'Not specified';
+ const min=stage==='funded'?'See payout eligibility conditions':p.days[pos]!=null?String(p.days[pos])+' days':'Not specified';
+ return 'Published reference: Target: '+target+' · Minimum trading days: '+min+' · Loss method: '+p.loss+'. For exact timing, exceptions and payout conditions, consult the linked official rules.';
+}
+function stageCurrentRecord(){return readSpecific()}
+function renderStage(){
+ if(!chosen)return;const p=chosen.p,n=chosen.n,stages=stageList(p);
+ if(!stages.some(x=>x.id===activeStage))activeStage=stages[0].id;
+ options('stageSelect',stages.map(x=>[x.id,x.name]));e('stageSelect').value=activeStage;
+ const rec=stageCurrentRecord(),values=rec.values||{},meta=rec.stageMeta||{};
+ e('stageOfficialInfo').textContent=knownStageInfo(p,n,activeStage);
+ e('stageReview').value=meta[activeStage]?.review||'Not reviewed';
+ e('stageNotes').value=meta[activeStage]?.notes||'';
+ const box=e('stageDetailFields');box.replaceChildren();
+ for(const [group,items] of STAGE_RULE_FIELDS){
+  const d=document.createElement('details');d.open=['Targets & timing','Drawdown & risk mechanics'].includes(group);
+  const summary=document.createElement('summary');summary.textContent=group;d.append(summary);
+  const g=document.createElement('div');g.className='selectors';g.style.marginTop='14px';
+  for(const [key,title,unit] of items){
+   const id=stageFieldId(key);const f=makeSpecificInput('detail-'+activeStage+'-'+key,title,values[id]??'',unit,true);
+   const input=f.querySelector('input');input.dataset.stagefield=id;input.placeholder='Enter or verify';input.addEventListener('input',saveStage);
+   g.append(f);
+  }
+  d.append(g);box.append(d);
+ }
+ const filled=STAGE_RULE_FIELDS.flatMap(x=>x[1]).filter(([k])=>String(values[stageFieldId(k)]??'').trim()).length;
+ const total=STAGE_RULE_FIELDS.flatMap(x=>x[1]).length;
+ e('stageSummary').textContent=filled+'/'+total+' details entered · '+e('stageReview').value;
+}
+function saveStage(){
+ if(!chosen)return;const obj=collectSpecific();const meta={...(obj.stageMeta||{})};
+ meta[activeStage]={review:e('stageReview').value,notes:e('stageNotes').value.slice(0,3000)};
+ obj.stageMeta=meta;
+ for(const field of document.querySelectorAll('[data-stagefield]'))obj.values[field.dataset.stagefield]=field.value.slice(0,120);
+ persistSpecific(obj);
+ const filled=STAGE_RULE_FIELDS.flatMap(x=>x[1]).filter(([k])=>String(obj.values[stageFieldId(k)]??'').trim()).length;
+ e('stageSummary').textContent=filled+'/'+STAGE_RULE_FIELDS.flatMap(x=>x[1]).length+' details entered · '+e('stageReview').value;
+}
 
 const SPEC_PREFIX='studio-specific-trading-rules-v1:';
 const SPEC_BACKUP_VERSION=1;
