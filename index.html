@@ -99,7 +99,7 @@ table{width:100%;border-collapse:collapse;text-align:left;min-width:550px}th,td{
   </div>
   <div class="panel"><h2>4Ds cloud synchronization</h2><p class="subtle">One shared website, with separate profiles for Doen, Dori, Dona and Dion. No logins: anyone with access can select any name and change that profile.</p><div class="notice" id="cloudSyncStatus" role="status">Checking cloud connection…</div><div class="actionrow" style="margin-top:12px"><button type="button" class="btn" id="cloudUpload">Overwrite cloud with this device</button><button type="button" class="btn" id="cloudDownload">Load cloud onto this device</button></div><p class="caption">Settings are saved on this device first. When connected, cloud synchronization transfers them between devices. Keep a JSON backup for important configurations.</p></div>
 </section>
-<section id="page-firms" class="page"><div class="panel" style="padding:0;overflow:hidden"><iframe id="firmsFrame" title="Prop firm account selector and rules" src="about:blank" data-src="rules.html?embedded=1&v=fit-symbols-20261104" loading="lazy" style="display:block;width:100%;height:1px;min-height:0;border:0;background:#080d16;overflow:hidden"></iframe></div><div class="notice" id="firmStrategyStatus" style="margin:16px 0">Select a firm, program and account size above to load this account's saved trading parameters.</div>
+<section id="page-firms" class="page"><div class="panel" style="padding:0;overflow:hidden"><iframe id="firmsFrame" title="Prop firm account selector and rules" src="about:blank" data-src="rules.html?embedded=1&v=fit-symbols-20261104" loading="eager" style="display:block;width:100%;height:1px;min-height:0;border:0;background:#080d16;overflow:hidden"></iframe></div><div class="notice" id="firmStrategyStatus" style="margin:16px 0">Select a firm, program and account size above to load this account's saved trading parameters.</div>
 <div id="firmTradingWorkspace">
 <div class="panel" id="symbolPanel" style="margin-bottom:19px">
  <div class="panel-header"><div><div class="eyebrow" style="margin-bottom:6px">Cash-based trade planning</div><h2>Trading stages & order risk — USD</h2>
@@ -913,7 +913,7 @@ function populateOverviewChoices(changed='all'){
  program.replaceChildren(...matchingPrograms.map(([id,p])=>overviewOption(id,p.name)));
  if(matchingPrograms.some(([id])=>id===oldProgram)&&changed==='size')program.value=oldProgram;
  else if(changed==='all'&&matchingPrograms.some(([id])=>id===activeProgram))program.value=activeProgram;
- if(hint)hint.textContent='Selected: '+firm.value+' · '+(size.selectedOptions[0]?.textContent||'')+' · '+(program.selectedOptions[0]?.textContent||'')+'. Overview uses this account’s saved parameters.';
+ if(hint&&!pendingOverviewAccount)hint.textContent='Selected: '+firm.value+' · '+(size.selectedOptions[0]?.textContent||'')+' · '+(program.selectedOptions[0]?.textContent||'')+'. Overview uses this account’s saved parameters.';
 }
 function updateOverviewFromActive(){
  const key=String(activeProgramKey||''),p=overviewCatalog?.programs?.[key.split(':')[0]];
@@ -990,9 +990,13 @@ window.addEventListener('message',event=>{
  const msg=event.data;
  if(msg.type==='studio-rules-height'){requestAnimationFrame(fitFirmFrame);return;}
  if(msg.type==='studio-open-trading-workspace'){$('firmTradingWorkspace').scrollIntoView({behavior:'smooth',block:'start'});return;}
+ if(msg.type==='studio-rules-ready'){$('firmsFrame').dataset.accountFrameReady='yes';sendPendingOverviewAccount();return;}
  if(msg.type==='studio-program-change'){
-  if(pendingOverviewAccount&&profileKey(msg.payload?.programId,msg.payload?.size)!==profileKey(pendingOverviewAccount.programId,pendingOverviewAccount.size))return;
+  if(pendingOverviewAccount&&profileKey(msg.payload?.programId,msg.payload?.size)!==profileKey(pendingOverviewAccount.programId,pendingOverviewAccount.size)){
+   $('firmsFrame').dataset.accountFrameReady='yes';sendPendingOverviewAccount();return;
+  }
   pendingOverviewAccount=null;
+  $('firmsFrame').dataset.accountFrameReady='yes';
   useSelectedAccount(msg.payload);updateOverviewFromActive();return;
  }
  if(msg.type==='studio-program-rules-updated'){useSelectedAccount(msg.payload,true);window.fourDsQueueCloudSave?.();return;}
@@ -1006,8 +1010,8 @@ $('overviewSizeSelect').addEventListener('change',()=>{populateOverviewChoices('
 $('overviewProgramSelect').addEventListener('change',()=>{populateOverviewChoices('program');chooseOverviewAccount()});
 syncOverviewAccountSelector();
 const firmFrame=$('firmsFrame');if(firmFrame){
- firmFrame.addEventListener('load',()=>{firmFrame.dataset.accountFrameReady='yes';sendPendingOverviewAccount()});
- if(firmFrame.dataset.src)firmFrame.src=firmFrame.dataset.src;
+ firmFrame.addEventListener('load',()=>{firmFrame.dataset.accountFrameReady='no'});
+ if(firmFrame.dataset.src){firmFrame.dataset.accountFrameReady='no';firmFrame.src=firmFrame.dataset.src;}
 }
 $('activeUserSelect').value=activeUser;$('activeUserSelect').addEventListener('change',()=>{const v=$('activeUserSelect').value;if(!FOUR_DS_USERS.some(u=>u.id===v))return;writeProfile();try{localStorage.setItem(FOUR_DS_ACTIVE,v)}catch(_){}location.reload()});const profileSelect=$('profileUserSelect');profileSelect.value=activeUser;profileSelect.addEventListener('change',()=>{$('activeUserSelect').value=profileSelect.value;$('activeUserSelect').dispatchEvent(new Event('change'));});$('profileAccountStatus').textContent=activeProgramKey?'Active challenge: '+activeProgramKey+' · Settings saved for '+activeUser+'.':'No challenge selected yet for '+activeUser+'. Choose one under Prop firms.';{const el=$('activeAccountProfile');if(el)el.textContent=activeProgramKey?'Saved account profile: '+activeProgramKey+' · Changes to trading parameters are saved automatically on this device.':'No account profile selected. Choose a firm, program and account size in Prop firms.';}
 document.querySelectorAll('[data-page]').forEach(el=>el.addEventListener('click',()=>goPage(el.dataset.page)));document.querySelectorAll('[data-nav]').forEach(el=>el.addEventListener('click',()=>goPage(el.dataset.nav)));
