@@ -164,7 +164,22 @@ function loadSavedAccounts(){let user='dori';try{user=localStorage.getItem('4ds:
  const id='saved:'+key;presets[id]=config;const option=document.createElement('option');option.value=id;option.textContent='Saved · '+accountDisplayName(key);$('account').append(option);
 }}catch(e){console.warn('Saved account lookup unavailable',e)}}
 loadSavedAccounts();
-function applyAccount(){const key=$('account').value,base=presets[key];$('stage').disabled=!(key.startsWith('ftmo')||key.startsWith('saved:ftmo2:'));if(!base){$('ruleNote').textContent='Custom account. Set rules manually; zero disables target, consistency, or daily loss checks.';run();return;}const x={...base};if((key.startsWith('ftmo')||key.startsWith('saved:ftmo2:'))&&$('stage').value==='phase2')x.target=x.balance*.05;for(const field of ['balance','target','dd','model','dailyLimit','consistency','minDays'])$(field).value=x[field];$('ruleNote').textContent=(key.startsWith('topstep')||key.startsWith('saved:topstep:'))?'Topstep Trading Combine: 55% of total profit maximum best-day share. End-of-day trailing floor locks at starting equity. Daily loss limit is optional and defaults to off.':'FTMO 2-Step: '+($('stage').value==='phase2'?'Verification (5% target)':'Challenge (10% target)')+'. Static overall loss floor and approximate start-of-day daily loss limit. Stage modeled separately.';run();}
+function applyAccount(){const key=$('account').value,base=presets[key];const ftmo2=key.startsWith('ftmo')||key.startsWith('saved:ftmo2:')||key.startsWith('official:ftmo2:');const topstep=key.startsWith('topstep')||key.startsWith('saved:topstep:')||key.startsWith('official:topstep:');$('stage').disabled=!ftmo2;if(!base){$('ruleNote').textContent='Custom account. Set rules manually; zero disables target, consistency, or daily loss checks.';run();return;}const x={...base};if(ftmo2&&$('stage').value==='phase2')x.target=x.balance*.05;for(const field of ['balance','target','dd','model','dailyLimit','consistency','minDays'])$(field).value=x[field];if(Number.isFinite(x.price))$('pfBudget').value=x.price;if(Number.isFinite(x.activation))$('pfActivation').value=x.activation;if($('pfFeeSource'))$('pfFeeSource').textContent=x.priceSource||'Manual estimate; confirm before buying.';$('ruleNote').textContent=topstep?'Topstep Trading Combine: 55% of total profit maximum best-day share. End-of-day trailing floor locks at starting equity. Daily loss limit is optional and defaults to off.':'FTMO 2-Step: '+($('stage').value==='phase2'?'Verification (5% target)':'Challenge (10% target)')+'. Static overall loss floor and approximate start-of-day daily loss limit. Stage modeled separately.';run();}
+// Display authoritative program objectives and listed fees without updating the source file or saved profiles.
+fetch('prop-firm-rules.json',{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject(Error('Rule source unavailable'))).then(doc=>{
+ const group=document.createElement('optgroup');group.label='Official-source rule templates · checkout fee indicative';
+ for(const id of ['ftmo2','topstep']){const p=doc.programs?.[id];if(!p)continue;for(const size of p.sizes||[]){
+  const max=id==='topstep'?({50000:2000,100000:3000,150000:4500})[size]:size*(p.max||0)/100;
+  const price=Number(p.pricesUSD?.[size]);
+  const obj={balance:size,target:id==='topstep'?({50000:3000,100000:6000,150000:9000})[size]:size*p.targets[0]/100,
+   dd:max,model:id==='topstep'?'eod':'static',dailyLimit:id==='topstep'?0:size*p.daily/100,
+   consistency:id==='topstep'?55:0,minDays:id==='topstep'?2:p.days[0],
+   price:Number.isFinite(price)&&price>0?price:undefined,activation:id==='topstep'?149:0,
+   priceSource: 'Published fee snapshot ('+(doc.asOf||'undated')+'); verify checkout and selected program.'};
+  const key='official:'+id+':'+size;presets[key]=obj;
+  const option=document.createElement('option');option.value=key;option.textContent=accountDisplayName(id+':'+size);group.append(option);
+ }}$('account').append(group);
+}).catch(e=>console.warn('Official account templates unavailable',e));
 $('account').addEventListener('change',applyAccount);$('stage').addEventListener('change',applyAccount);
 run();
 })();
