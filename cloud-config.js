@@ -1,2 +1,2 @@
-window.FOUR_DS_CLOUD_ENDPOINT = '';
-// Enter the Google Apps Script Web App /exec URL here after deploying cloud-backend.gs.
+window.FOUR_DS_CLOUD_ENDPOINT = "https://script.google.com/macros/s/AKfycbyZW792ZLBPxusQwthCJr0bVdZwCjXyeNaklq4Dk-BuSQ8P9gdg2zdTiWFKEmYuy5sY9Q/exec";
+// Public passwordless shared workspace: Doen, Dori, Dona and Dion.
