@@ -63,6 +63,7 @@ html[data-theme="light"]{color-scheme:light;--bg:#f3f6fa;--panel:#fff;--panel2:#
 </div><div class="actionrow"><button class="btn primary" id="pfRun">Run portfolio</button><span class="hint" id="pfStatus">Uses the Trade Lab's account selection, horizon, WR, RR, risk and loss rules.</span></div>
 <div class="note" style="margin-top:12px">This is a simplified routing model—not an instruction to risk an account's full daily loss allowance. Signals are not duplicated to every account: one trade idea is allocated to one eligible account. Risk headroom and stage progress are approximate; choosing a priority changes which accounts receive signals but does not prove that policy is optimal. Selected firm limits, trailing excursion rules, account caps, evaluation transitions and payout requirements are not all enforced. The 20 accounts here are not assumed to be simultaneously permitted by any particular firm.</div>
 <div class="kpis" id="pfKpis" style="margin-top:15px"></div>
+<div style="margin-top:20px"><h3>Routing comparison</h3><p class="hint">Tests each routing policy with the same starting accounts, trade assumptions, horizon, and random seeds. Ranked by modeled net withdrawal cash, not unpaid evaluation profit. Rankings are sensitive to the assumed win rate and payout conditions.</p><div class="tablewrap"><table><thead><tr><th>Allocation policy</th><th class="num">Mean net cash</th><th class="num">P10 net cash</th><th class="num">Chance cash positive</th><th class="num">Mean failed</th><th class="num">Mean funded</th></tr></thead><tbody id="pfCompare"></tbody></table></div><p class="hint" id="pfCompareNote"></p></div>
 <div style="margin-top:19px"><h3>Portfolio cash-equity path</h3><p class="hint">Modeled net cash = funded withdrawals minus challenge purchase and activation fees. Evaluation profits are not paid cash and are excluded. Trading P/L is tracked separately.</p><div class="graph" id="pfGraph"></div></div>
 <div class="grid" style="margin-top:18px">
 <div><h3>Account-by-account status · sample path</h3><div class="tablewrap"><table><thead><tr><th>Account</th><th>Stage</th><th class="num">Trades</th><th class="num">Net trading P/L</th><th class="num">Daily usage</th><th class="num">Loss headroom</th><th class="num">Stage progress</th><th class="num">Withdrawals</th></tr></thead><tbody id="pfRows"></tbody></table></div></div>
@@ -248,7 +249,18 @@ function run(){const c=config();if(c.win+c.be>1){el('pfStatus').textContent='Win
  }).join('');
  const group={};for(const a of example.accounts){const state=a.nextStage?'Passed':a.status;group[state]=(group[state]||0)+1;}
  el('pfSummary').innerHTML=Object.entries(group).map(([key,value])=>'<div class="stat"><span>'+key+'</span><b>'+value+'</b></div>').join('')+ '<div class="stat"><span>Evaluation & activation fees</span><b>'+money(example.fees)+'</b></div><div class="stat"><span>Withdrawals (cash only)</span><b>'+money(example.withdrawals)+'</b></div>';
- showChart(example.curve);el('pfStatus').textContent=n+' portfolio simulations complete · '+c.n+' accounts · '+c.months+' month(s).';
+ showChart(example.curve);
+ const policies=[['rotate','Round robin'],['fresh','Lowest daily loss'],['headroom','Most loss headroom'],['progress','Closest to target'],['funded','Funded first']];
+ const comparisonTrials=Math.min(90,n);
+ const scores=policies.map(([key,label])=>{
+  const pc={...c,rotate:key},arr=[];
+  for(let i=0;i<comparisonTrials;i++)arr.push(sample(pc,(c.seed+19231*i)>>>0));
+  const mean=arr.reduce((sum,x)=>sum+x.net,0)/arr.length;
+  return{key,label,mean,p10:q(arr.map(x=>x.net),.1),positive:arr.filter(x=>x.net>0).length/arr.length,failed:arr.reduce((s,x)=>s+x.breaches,0)/arr.length,funded:arr.reduce((s,x)=>s+x.passed,0)/arr.length};
+ }).sort((a,b)=>b.mean-a.mean);
+ el('pfCompare').innerHTML=scores.map(x=>'<tr><td>'+x.label+(x.key===c.rotate?' · Selected':'')+'</td><td class="num">'+money(x.mean)+'</td><td class="num">'+money(x.p10)+'</td><td class="num">'+pct(x.positive)+'</td><td class="num">'+x.failed.toFixed(1)+'</td><td class="num">'+x.funded.toFixed(1)+'</td></tr>').join('');
+ el('pfCompareNote').textContent=comparisonTrials+' common-seed paths per routing method; statistical rankings may vary. Accounts are not independently acquired at each trade opportunity.';
+ el('pfStatus').textContent=n+' portfolio simulations complete · '+c.n+' accounts · '+c.months+' month(s).';
 }
 let timer;for(const id of ['pfTotal','pfFunded','pfCount','pfRoute','pfDailyBudget','pfBudget','pfActivation','pfPayout','pfPayoutDays','pfPayoutMin','pfTrials','account','stage','balance','months','wr','be','rr','risk','fee','target','dd','dailyLimit','consistency','minDays','model','seed']){el(id)?.addEventListener('change',()=>{clearTimeout(timer);timer=setTimeout(run,250)});}
 el('pfRun').addEventListener('click',run);run();
