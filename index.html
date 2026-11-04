@@ -16,6 +16,13 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;background:rad
 .metric-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid #223247}.metric-row:last-child{border:0}.metric-row small{display:block;color:var(--muted);font-size:11px;margin-top:2px}.metric-row strong{font-size:17px;font-variant-numeric:tabular-nums;white-space:nowrap}.bar-track{background:#253448;border-radius:99px;height:10px;overflow:hidden}.bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#279e96,#55e3b4);transition:width .35s}.funnel-line{margin:14px 0}.funnel-head{display:flex;justify-content:space-between;margin:0 0 6px;font-size:12px}.funnel-head strong{font-variant-numeric:tabular-nums}.probrow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}.prob{border:1px solid var(--border);border-radius:13px;background:#142235;padding:13px 11px}.prob small{color:var(--muted);font-size:11px;display:block}.prob strong{display:block;font-size:24px;letter-spacing:-1px;margin-top:3px;font-variant-numeric:tabular-nums}.smalltext{font-size:11px;line-height:1.55;color:var(--muted)}
 .formgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.formgrid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.field label{display:block;color:#b3c2d4;font-size:12px;font-weight:650;margin-bottom:6px}.field label .hint{color:var(--faint);font-weight:500}.field input,.field select{width:100%;height:42px;color:var(--text);border:1px solid #35465c;border-radius:10px;padding:9px 12px;background:#131f30;font-variant-numeric:tabular-nums;outline:none}.field input:focus,.field select:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(84,227,180,.08)}.field input[type=number]{appearance:textfield}.field input::-webkit-inner-spin-button,.field input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}.field .help{color:var(--faint);font-size:11px;margin:5px 0 0}.section{margin:25px 0 0;padding-top:20px;border-top:1px solid #253348}.section:first-child{margin-top:0;padding-top:0;border-top:0}.section h3{margin-bottom:15px}.actionrow{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.toggle-buttons{display:flex;gap:8px;flex-wrap:wrap}.seg{border:1px solid var(--border);border-radius:10px;background:#142034;color:var(--muted);font-size:12px;padding:9px 13px;font-weight:800}.seg.active{color:var(--green);border-color:#337964;background:#12372f}.card-columns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}.info-card{background:var(--panel2);border:1px solid var(--border);border-radius:13px;padding:17px}.info-card .value{font-size:24px;font-weight:850;letter-spacing:-.6px;margin:8px 0 0}.info-card p{color:var(--muted);margin:5px 0 0;font-size:12px}.tag{border-radius:6px;background:#25394a;padding:3px 7px;font-size:10px;color:#bfdeed;font-weight:750}.status{font-size:11px;font-weight:700;color:var(--amber)}
 .tablewrap{overflow:auto;border-radius:12px;border:1px solid var(--border)}
+.cash-risk-table{min-width:540px}
+.cash-risk-table td,.cash-risk-table th{padding:10px 12px}
+.cash-risk-table input{width:100%;max-width:185px;min-width:95px;display:block;margin-left:auto;padding:8px 10px;border-radius:8px;border:1px solid #40536d;background:#111f31;color:var(--text);font-size:14px;font-variant-numeric:tabular-nums;text-align:right}
+.cash-risk-table td[data-risk-profit]{font-variant-numeric:tabular-nums;font-weight:700;color:var(--green)}
+.contract-detail{padding:11px 14px;border:1px solid var(--border);border-radius:10px;background:var(--panel2)}
+.contract-detail summary{cursor:pointer;color:var(--text);font-weight:700}
+.contract-detail:not([open]){padding-bottom:11px}
 .scenario-table{min-width:760px}
 .scenario-table th,.scenario-table td{padding:9px 9px;vertical-align:middle}
 .scenario-table td:first-child{min-width:145px}
@@ -95,27 +102,47 @@ table{width:100%;border-collapse:collapse;text-align:left;min-width:550px}th,td{
 <section id="page-firms" class="page"><div class="panel" style="padding:0;overflow:hidden"><iframe id="firmsFrame" title="Prop firm account selector and rules" src="about:blank" data-src="rules.html?embedded=1&v=fit-symbols-20261104" loading="lazy" style="display:block;width:100%;height:1px;min-height:0;border:0;background:#080d16;overflow:hidden"></iframe></div><div class="notice" id="firmStrategyStatus" style="margin:16px 0">Select a firm, program and account size above to load this account's saved trading parameters.</div>
 <div id="firmTradingWorkspace">
 <div class="panel" id="symbolPanel" style="margin-bottom:19px">
- <div class="panel-header"><div><div class="eyebrow" style="margin-bottom:6px">Account instrument</div><h2>Symbols & contract settings</h2>
- <p>Choose Gold, NQ, or enter your own symbol. Specifications are saved with this user's selected challenge.</p></div>
- <span class="section-tag">BROKER SPECS ARE EDITABLE</span></div>
- <div class="formgrid" id="instrumentFields">
+ <div class="panel-header"><div><div class="eyebrow" style="margin-bottom:6px">Cash-based trade planning</div><h2>Stop loss & symbols — USD</h2>
+ <p>Set the amount of money you are prepared to lose if a trade hits its stop. Targets and stop losses are shown in USD, for any trading symbol.</p></div>
+ <span class="section-tag">RISK IN DOLLARS</span></div>
+ <div class="formgrid">
   <div class="field"><label for="symbolSelect">Trading symbol</label><select id="symbolSelect">
-   <option value="XAUUSD">Gold — XAUUSD (spot/CFD)</option><option value="NQ">NQ — E-mini Nasdaq-100 futures</option><option value="CUSTOM">Custom symbol</option></select></div>
-  <div class="field" id="customSymbolField" hidden><label for="customSymbolInput">Custom symbol / broker label</label>
+   <option value="XAUUSD">Gold — XAUUSD</option><option value="NQ">NQ — Nasdaq futures</option><option value="CUSTOM">Custom symbol</option></select></div>
+  <div class="field" id="customSymbolField" hidden><label for="customSymbolInput">Custom symbol / broker name</label>
    <input id="customSymbolInput" type="text" placeholder="e.g. US100, GC, MNQ" maxlength="40"></div>
-  <div class="field"><label for="symbolMarket">Instrument type</label><select id="symbolMarket"><option value="cfd">Spot / CFD (leverage based)</option><option value="futures">Exchange-traded futures (margin per contract)</option></select></div>
-  <div class="field"><label for="symbol-price">Reference price (USD / index points)</label><input id="symbol-price" data-symbol-setting="price" type="number" min="0" step="0.01"></div>
-  <div class="field"><label for="symbol-stop">Stop distance (price points)</label><input id="symbol-stop" data-symbol-setting="stop" type="number" min="0" step="0.25"></div>
-  <div class="field"><label for="symbol-pointValue">USD per 1-point move per unit</label><input id="symbol-pointValue" data-symbol-setting="pointValue" type="number" min="0" step="0.01"></div>
-  <div class="field"><label for="symbol-tickSize">Minimum tick size (points)</label><input id="symbol-tickSize" data-symbol-setting="tickSize" type="number" min="0" step="0.01"></div>
-  <div class="field"><label for="symbol-qtyStep">Minimum order increment (lots / contracts)</label><input id="symbol-qtyStep" data-symbol-setting="qtyStep" type="number" min="0" step="0.01"></div>
-  <div class="field" id="symbolLeverageField"><label for="symbol-leverage">Leverage (1 : X)</label><input id="symbol-leverage" data-symbol-setting="leverage" type="number" min="1" step="1"></div>
-  <div class="field" id="symbolMarginField"><label for="symbol-marginPerUnit">Required margin per contract (USD)</label><input id="symbol-marginPerUnit" data-symbol-setting="marginPerUnit" type="number" min="0" step="1"></div>
  </div>
- <div class="notice" id="symbolSummary" style="margin-top:16px" aria-live="polite">Choose an instrument to see a risk and margin estimate.</div>
- <p class="caption">NQ means the full CME E-mini future, not MNQ or a Nasdaq CFD. NQ uses $20 per point and a 0.25-point tick ($5). Margin per contract depends on your broker and must be entered. XAUUSD specifications vary by broker; check the symbol's contract size, volume step, leverage and currency. Neither selector verifies instrument permission at your prop firm.</p>
+ <div class="tablewrap" style="margin-top:16px">
+  <table class="cash-risk-table" aria-label="Planned stop loss and take profit in US dollars">
+   <thead><tr><th>Trade stage</th><th class="num">Stop loss / trade (USD)</th><th class="num">Winning trade at selected RR (USD)</th></tr></thead>
+   <tbody>
+    <tr><td>Phase 1 — initial</td><td><input type="number" inputmode="decimal" min="0" step="1" aria-label="Phase 1 stop loss in USD" data-risk-field="p1Base"></td><td class="num" data-risk-profit="p1Base">—</td></tr>
+    <tr><td>Phase 1 — after loss threshold</td><td><input type="number" inputmode="decimal" min="0" step="1" aria-label="Phase 1 recovery stop loss in USD" data-risk-field="p1Recovery"></td><td class="num" data-risk-profit="p1Recovery">—</td></tr>
+    <tr><td>Phase 2 — initial</td><td><input type="number" inputmode="decimal" min="0" step="1" aria-label="Phase 2 stop loss in USD" data-risk-field="p2Base"></td><td class="num" data-risk-profit="p2Base">—</td></tr>
+    <tr><td>Phase 2 — after first daily loss</td><td><input type="number" inputmode="decimal" min="0" step="1" aria-label="Phase 2 recovery stop loss in USD" data-risk-field="p2Recovery"></td><td class="num" data-risk-profit="p2Recovery">—</td></tr>
+    <tr><td>Funded — initial</td><td><input type="number" inputmode="decimal" min="0" step="1" aria-label="Funded stop loss in USD" data-risk-field="fundedBase"></td><td class="num" data-risk-profit="fundedBase">—</td></tr>
+    <tr><td>Funded — after first daily loss</td><td><input type="number" inputmode="decimal" min="0" step="1" aria-label="Funded recovery stop loss in USD" data-risk-field="fundedRecovery"></td><td class="num" data-risk-profit="fundedRecovery">—</td></tr>
+    <tr><td>Funded — boosted</td><td><input type="number" inputmode="decimal" min="0" step="1" aria-label="Funded boosted stop loss in USD" data-risk-field="fundedBoost"></td><td class="num" data-risk-profit="fundedBoost">—</td></tr>
+   </tbody>
+  </table>
+ </div>
+ <div class="notice" id="symbolSummary" style="margin-top:16px" aria-live="polite">A losing trade costs the selected stop-loss amount in USD in the cash-risk model.</div>
+ <details class="contract-detail" style="margin-top:16px">
+  <summary>Optional: advanced contract sizing & broker margin</summary>
+  <p class="caption" style="margin:10px 0 14px">Only needed to estimate actual order quantity and margin. These technical settings do not change your planned dollar stop loss. Without them, the strategy simulation uses the dollar risk directly and does not verify whether a real order fits.</p>
+  <div class="formgrid" id="instrumentFields">
+   <div class="field"><label for="symbolMarket">Instrument type</label><select id="symbolMarket"><option value="cfd">Spot / CFD (leverage based)</option><option value="futures">Exchange-traded futures (margin per contract)</option></select></div>
+   <div class="field"><label for="symbol-price">Reference market price</label><input id="symbol-price" data-symbol-setting="price" type="number" min="0" step="0.01"></div>
+   <div class="field"><label for="symbol-stop">Entry-to-stop market-price difference</label><input id="symbol-stop" data-symbol-setting="stop" type="number" min="0" step="0.25"></div>
+   <div class="field"><label for="symbol-pointValue">USD value of a 1-unit price move per lot / contract</label><input id="symbol-pointValue" data-symbol-setting="pointValue" type="number" min="0" step="0.01"></div>
+   <div class="field"><label for="symbol-tickSize">Minimum market price increment</label><input id="symbol-tickSize" data-symbol-setting="tickSize" type="number" min="0" step="0.01"></div>
+   <div class="field"><label for="symbol-qtyStep">Minimum order increment (lots / contracts)</label><input id="symbol-qtyStep" data-symbol-setting="qtyStep" type="number" min="0" step="0.01"></div>
+   <div class="field" id="symbolLeverageField"><label for="symbol-leverage">Leverage (1 : X)</label><input id="symbol-leverage" data-symbol-setting="leverage" type="number" min="1" step="1"></div>
+   <div class="field" id="symbolMarginField"><label for="symbol-marginPerUnit">Broker margin per contract (USD)</label><input id="symbol-marginPerUnit" data-symbol-setting="marginPerUnit" type="number" min="0" step="1"></div>
+  </div>
+  <p class="caption">NQ futures use a $20 value per index unit per contract, but broker margin must be entered. Gold contract size, volume increments and leverage vary by broker. Margin and executable order risk cannot be inferred from the dollar stop loss alone.</p>
+ </details>
 </div>
-  <div class="panel" style="margin-bottom:19px"><div class="panel-header"><div><div class="eyebrow" style="margin-bottom:7px">Selected challenge · XAUUSD</div><h2>Trading-rule laboratory</h2><p>Set risk tiers, loss limits and entry capacity. Run simulated trade outcomes to estimate stage success rates.</p></div><span class="tag">ONE SET · ONE ACCOUNT PER IDEA</span></div><div class="actionrow"><button class="btn primary" id="simulate">Run strategy simulation</button><button class="btn" id="useManual">Use manual pass rates</button><span class="status" id="simulationStatus">Ready to simulate</span></div><p class="caption">Simulation is intentionally simplified: independent fixed-R wins/losses, constant gold price/stop distance, and no intrabar equity path. It is not a historical backtest.</p></div>
+  <div class="panel" style="margin-bottom:19px"><div class="panel-header"><div><div class="eyebrow" style="margin-bottom:7px">Selected challenge · USD risk model</div><h2>Trading-rule laboratory</h2><p>Set risk tiers, loss limits and entry capacity. Run simulated trade outcomes to estimate stage success rates.</p></div><span class="tag">ONE SET · ONE ACCOUNT PER IDEA</span></div><div class="actionrow"><button class="btn primary" id="simulate">Run strategy simulation</button><button class="btn" id="useManual">Use manual pass rates</button><span class="status" id="simulationStatus">Ready to simulate</span></div><p class="caption">Simulation uses stop-loss risk in USD and winning profit = risk × RR. It does not enforce executable lot sizes, exchange margin, intrabar drawdown or broker fills. This is a cash-risk planning model, not a historical backtest.</p></div>
   <div class="two-up">
     <div>
       <div class="panel"><div class="panel-header"><div><h2>Performance assumptions</h2><p>These inputs drive the simulated pass rates.</p></div></div><div id="performanceFields" class="formgrid"></div></div>
@@ -124,7 +151,7 @@ table{width:100%;border-collapse:collapse;text-align:left;min-width:550px}th,td{
     <div>
       <div class="panel"><div class="panel-header"><div><h2>Phase 1 — Evaluation</h2><p>Reach the first target and stop full-risk trading.</p></div></div><div id="phase1Fields" class="formgrid"></div></div>
       <div class="panel"><div class="panel-header"><div><h2>Phase 2 — Verification</h2><p>Target the smaller second-stage requirement.</p></div></div><div id="phase2Fields" class="formgrid"></div></div>
-      <div class="panel"><div class="panel-header"><div><h2>Funded — Dynamic $500 boost</h2><p>Start small; boost only after a realized same-day win with sufficient margin and drawdown headroom.</p></div></div><div id="fundedFields" class="formgrid"></div></div>
+      <div class="panel"><div class="panel-header"><div><h2>Funded — Adjustable dollar-risk tiers</h2><p>Choose your initial, recovery and boosted stop-loss amounts in USD. The simplified simulation applies the same-day profit threshold and drawdown headroom, but does not verify broker margin.</p></div></div><div id="fundedFields" class="formgrid"></div></div>
     </div>
   </div>
   <div class="panel" style="margin-top:19px"><div class="panel-header"><div><h2>Payout settings and timing</h2><p>Profit split, fees, refund and payout timing saved for this selected challenge.</p></div></div><div id="payoutFields" class="formgrid"></div></div>
@@ -265,10 +292,10 @@ const FIELDS={
  quickFields:[['budget','Available budget','USD',1],['accounts','Challenges purchased','count',1],['price','Challenge purchase price','USD',1],['extraCost','Extra cost per challenge','USD',1]],
  probFields:[['p1','Phase 1 pass rate','%',.1],['p2','Phase 2 pass rate','%',.1],['pf','Funded target hit','%',.1],['pc','Payout collected if eligible','%',.1]],
  performanceFields:[['winRate','Trade win rate','%',.5],['rr','Winning multiple','R',.1],['weeklySignals','Trade ideas available / week','count',1],['simulations','Trials per phase','count',100],['randomSeed','Repeatable random seed','count',1],['tradeCost','Cost per executed trade','USD',.25]],
- safetyFields:[['accountSize','Starting account equity','USD',1000],['dailyLoss','Daily maximum loss','USD',25],['overallLoss','Maximum overall loss','USD',25],['buffer','Risk reserve / buffer','USD',5],['marginCeiling','Maximum margin utilization','%',1],['minRisk','Minimum trade risk','USD',1]],
- phase1Fields:[['p1Target','Phase 1 profit target','USD',50],['p1Base','Initial risk per trade','USD',25],['p1Recovery','Risk after loss threshold','USD',25],['p1RecoverAfter','Losses before recovery tier','count',1],['p1DailyCap','Maximum trades / day','count',1],['p1Days','Maximum trading days to pass','days',1],['p1MinDays','Minimum required trading days','days',1]],
- phase2Fields:[['p2Target','Phase 2 profit target','USD',50],['p2Base','Initial risk per trade','USD',25],['p2Recovery','Risk after first daily loss','USD',25],['p2DailyCap','Maximum trades / day','count',1],['p2Days','Maximum trading days to pass','days',1],['p2MinDays','Minimum required trading days','days',1]],
- fundedFields:[['profitTarget','Funded profit target','USD',250],['fundedBase','Starting risk each day','USD',25],['fundedRecovery','After first daily loss','USD',25],['fundedBoost','Maximum boosted risk','USD',25],['boostUnlock','Daily realized profit to boost','USD',50],['fundedDailyCap','Maximum trades / day','count',1],['fundedDays','Funded trading-day horizon','days',1]],
+ safetyFields:[['accountSize','Starting account equity','USD',1000],['dailyLoss','Daily maximum loss','USD',25],['overallLoss','Maximum overall loss','USD',25],['buffer','Risk reserve / buffer','USD',5],['marginCeiling','Maximum margin utilization','%',1],['minRisk','Minimum planned stop loss / trade','USD',1]],
+ phase1Fields:[['p1Target','Phase 1 profit target','USD',50],['p1Base','Initial stop loss / trade','USD',25],['p1Recovery','Stop loss after loss threshold','USD',25],['p1RecoverAfter','Losses before recovery tier','count',1],['p1DailyCap','Maximum trades / day','count',1],['p1Days','Maximum trading days to pass','days',1],['p1MinDays','Minimum required trading days','days',1]],
+ phase2Fields:[['p2Target','Phase 2 profit target','USD',50],['p2Base','Initial stop loss / trade','USD',25],['p2Recovery','Stop loss after first daily loss','USD',25],['p2DailyCap','Maximum trades / day','count',1],['p2Days','Maximum trading days to pass','days',1],['p2MinDays','Minimum required trading days','days',1]],
+ fundedFields:[['profitTarget','Funded profit target','USD',250],['fundedBase','Initial stop loss / trade','USD',25],['fundedRecovery','Stop loss after first daily loss','USD',25],['fundedBoost','Boosted stop loss / trade','USD',25],['boostUnlock','Daily realized profit to boost','USD',50],['fundedDailyCap','Maximum trades / day','count',1],['fundedDays','Funded trading-day horizon','days',1]],
  scalingFields:[['mirror','Accounts sharing each signal','count',1]],
  payoutFields:[['split','Reward/profit split','%',1],['payoutPct','Processing fee on reward','%',.1],['payoutFixed','Fixed cost per payment','USD',1],['refund','Challenge fee refunded','%',5],['daysBeforeRequest','Funded reward eligibility wait','calendar days',1],['reviewDays','Review between evaluation stages','days',1],['payoutProcessingDays','Reward processing assumption','days',1]]
 };
@@ -340,25 +367,31 @@ function instrumentLabel(){
 }
 function updateSimulationAvailability(){
  const btn=$('simulate');
- if(btn&&!btn.classList.contains('is-calculating'))btn.disabled=!selectedAccountSupportsSimulation||!instrumentReady();
+ if(btn&&!btn.classList.contains('is-calculating'))btn.disabled=!selectedAccountSupportsSimulation;
+}
+function renderDollarRiskRows(){
+ for(const field of document.querySelectorAll('[data-risk-field]')){
+  const key=field.dataset.riskField,value=positive(state[key]);
+  if(document.activeElement!==field)field.value=String(value);
+ }
+ for(const cell of document.querySelectorAll('[data-risk-profit]')){
+  cell.textContent=money2(positive(state[cell.dataset.riskProfit])*positive(state.rr));
+ }
 }
 function renderSymbolSummary(){
  const box=$('symbolSummary');if(!box)return;
- const spec=currentSymbolSpec(),id=instrumentLabel(),ready=instrumentReady();
- const tick=positive(spec.pointValue)*positive(spec.tickSize);
- if(!ready){
-  box.textContent=id+' · Complete the stop distance, USD point value, minimum increment, and '+(spec.market==='futures'?'broker margin per contract.':'price and leverage.')+' These must be supplied before running a margin-aware strategy simulation.';
+ renderDollarRiskRows();
+ const id=instrumentLabel();
+ const loss='A losing trade costs '+money(state.p1Base)+' in Phase 1, '+money(state.p2Base)+' in Phase 2, or '+money(state.fundedBase)+' when funded (initial risk).';
+ const profit=' At '+Number(state.rr).toLocaleString('en-US',{maximumFractionDigits:2})+'R, a funded winning trade earns '+money(state.fundedBase*state.rr)+' before trade costs.';
+ if(!instrumentReady()){
+  box.textContent=id+' · '+loss+profit+' Optional order-size and margin estimates are not verified. Use Advanced contract sizing only if needed.';
   updateSimulationAvailability();return;
  }
  const base=positionForRisk(state.fundedBase),boost=positionForRisk(state.fundedBoost);
- const priceUnit=spec.market==='futures'?'contract':'lot';
- const request=money(state.fundedBase);
- const one=positive(spec.stop)*positive(spec.pointValue)*positive(spec.qtyStep);
- box.textContent=id+' · Tick '+spec.tickSize+' points = '+money2(tick)+' per '+priceUnit
-  +' · Minimum position risk at this stop: '+money2(one)
-  +' · Funded plan '+request+' → '+base.qty.toLocaleString('en-US',{maximumFractionDigits:4})+' '+priceUnit+'(s), actual risk '+money2(base.risk)
-  +', estimated margin '+money(base.margin)
-  +' · Boosted planned risk '+money(state.fundedBoost)+' → '+money2(boost.risk)+' executable risk. These are examples, not broker quotes.';
+ const unit=currentSymbolSpec().market==='futures'?'contract':'lot';
+ const margin=base.qty>0?money(base.margin):'not available (below minimum order size)';
+ box.textContent=id+' · '+loss+profit+' Broker-sized estimate for the funded stop: '+money2(base.risk)+' loss at '+base.qty.toLocaleString('en-US',{maximumFractionDigits:4})+' '+unit+'(s); margin '+margin+'. A planned dollar risk may not be executable exactly at the selected contract size.';
  updateSimulationAvailability();
 }
 function renderSymbolControls(){
@@ -395,6 +428,16 @@ function initSymbols(){
   state.customSymbol=$('customSymbolInput').value.slice(0,40);
   save();renderSymbolSummary();
  });
+ for(const field of document.querySelectorAll('[data-risk-field]')){
+  field.addEventListener('input',()=>{
+   if(field.value.trim()===''||!Number.isFinite(Number(field.value)))return;
+   const key=field.dataset.riskField,val=positive(Number(field.value),0,1e8);
+   state[key]=val;dirtySim=true;lastSim=null;save();
+   const counterpart=$('f-'+key);if(counterpart)counterpart.value=String(val);
+   render();
+  });
+  field.addEventListener('change',()=>{field.value=String(positive(state[field.dataset.riskField]));});
+ }
  $('symbolMarket').addEventListener('change',()=>{updateSymbolSetting('market',$('symbolMarket').value);renderSymbolControls()});
  for(const field of document.querySelectorAll('[data-symbol-setting]')){
   field.addEventListener('input',()=>{
@@ -623,15 +666,15 @@ function initScenarioTable(){
 
 function funnelRow(name,value,total){const v=total>0?Math.max(0,Math.min(100,value/total*100)):0;return `<div class="funnel-line"><div class="funnel-head"><span>${name}</span><strong>${value.toFixed(2)}</strong></div><div class="bar-track"><div class="bar-fill" style="width:${v.toFixed(2)}%"></div></div></div>`;}
 function marginForRisk(risk){return positionForRisk(risk).margin;}
-function showWarnings(c){let items=[];if(c.cost>positive(state.budget))items.push(`Planned challenge purchases ${money(c.cost)} exceed the available budget ${money(state.budget)}.`);if(c.unit<=0)items.push('Set a positive challenge price/cost for meaningful ROI.');if(positive(state.dailyLoss)+positive(state.buffer)>positive(state.accountSize))items.push('Daily loss plus buffer exceeds account size.');if(positive(state.overallLoss)+positive(state.buffer)>positive(state.accountSize))items.push('Total loss plus buffer exceeds account size.');if(!instrumentReady())items.push('Instrument specifications are incomplete; trade sizing and strategy simulation are disabled.');if(instrumentReady()&&positionForRisk(state.fundedBase).qty===0)items.push('Funded risk per trade is below the minimum executable order size for the selected symbol and stop distance.');if(instrumentReady()&&positive(state.fundedBoost)>0&&marginForRisk(state.fundedBoost)>positive(state.accountSize)*prob(state.marginCeiling))items.push('Full funded boost does not fit your margin ceiling at starting equity; it may fit only after profits.');if(dirtySim&&lastSim)items.push('Strategy parameters changed after the last simulation. Rerun to refresh pass rates.');const box=$('warningBox');if(items.length){box.style.display='block';box.textContent=items.join('  •  ')}else box.style.display='none';}
+function showWarnings(c){let items=[];if(c.cost>positive(state.budget))items.push(`Planned challenge purchases ${money(c.cost)} exceed the available budget ${money(state.budget)}.`);if(c.unit<=0)items.push('Set a positive challenge price/cost for meaningful ROI.');if(positive(state.dailyLoss)+positive(state.buffer)>positive(state.accountSize))items.push('Daily loss plus buffer exceeds account size.');if(positive(state.overallLoss)+positive(state.buffer)>positive(state.accountSize))items.push('Total loss plus buffer exceeds account size.');if(instrumentReady()&&positionForRisk(state.fundedBase).qty===0)items.push('The funded USD stop loss is too small for the minimum contract/lot with the optional broker settings. Cash simulation does not test executable order size.');if(instrumentReady()&&positive(state.fundedBoost)>0&&marginForRisk(state.fundedBoost)>positive(state.accountSize)*prob(state.marginCeiling))items.push('Full funded boost does not fit your margin ceiling at starting equity; it may fit only after profits.');if(dirtySim&&lastSim)items.push('Strategy parameters changed after the last simulation. Rerun to refresh pass rates.');const box=$('warningBox');if(items.length){box.style.display='block';box.textContent=items.join('  •  ')}else box.style.display='none';}
 function render(){const c=calc();$('heroRate').textContent=pct(c.pass);$('modeLabel').textContent=mode==='simulation'?'Trading-rule Monte Carlo estimates':'Manual stage estimates';$('kpiCost').textContent=money(c.cost);$('kpiBudget').textContent=c.cost<=state.budget?money(state.budget-c.cost)+' budget unspent':money(c.cost-state.budget)+' above budget';$('kpiReceipts').textContent=money(c.receipts);$('kpiNet').textContent=money(c.net);$('kpiNet').className='val '+(c.net>=0?'green':'red');$('kpiROI').textContent=pct(c.roi);$('kpiROI').className='val '+(c.roi>=0?'green':'red');$('kpiROIx').textContent=c.roi.toFixed(2)+'× initial spending as NET profit';
  const a=state.accounts,b=a*prob(state.p1),d=b*prob(state.p2),e=d*prob(state.pf),f=e*prob(state.pc);$('funnel').innerHTML=funnelRow('Purchased challenges',a,a)+funnelRow('Passed Phase 1',b,a)+funnelRow('Passed Phase 2',d,a)+funnelRow('Reached funded profit target',e,a)+funnelRow('Expected collected payouts',f,a);
  $('pOne').textContent=pct(c.atLeast);$('pThree').textContent=pct(c.chance(3));$('pFour').textContent=pct(c.chance(4));$('unitReward').textContent=money(c.reward);$('unitRefund').textContent=money(c.refund);$('unitCost').textContent=money(c.avgCost);$('breakEven').textContent=pct(c.breakEven);$('needed4').textContent=Number.isFinite(c.needed4)?c.needed4:'—';$('payoutTiming').textContent='~'+Math.ceil(state.p1MinDays+state.p2MinDays+state.reviewDays*2+state.daysBeforeRequest+state.payoutProcessingDays)+' days';
  $('scenarioNote').textContent=mode==='simulation'?(dirtySim?'Simulation estimates may be stale. Rerun after editing trading rules.':'Stage rates derived from simplified Monte Carlo paths. Payout collection remains a manual assumption.'):'These pass rates are manual planning estimates, including prior illustrative 40%/50% presets—not verified live account success rates.';
- $('marginNotice').textContent=instrumentReady()?instrumentLabel()+' · Planned funded base '+money(state.fundedBase)+' → estimated margin '+money(marginForRisk(state.fundedBase))+'; boost '+money(state.fundedBoost)+' → estimated margin '+money(marginForRisk(state.fundedBoost))+'. Starting-equity margin ceiling: '+money(state.accountSize*prob(state.marginCeiling))+'. Actual broker/exchange margin may differ.':'Select the symbol above and complete its broker-specific contract and margin assumptions before using margin estimates.';renderSymbolSummary();
- const preview=[['Phase 1 winner',state.p1Base*state.rr,`Target ${money(state.p1Target)}`,state.p1Base*state.rr>=state.p1Target],['Phase 2 winner',state.p2Base*state.rr,`Target ${money(state.p2Target)}`,state.p2Base*state.rr>=state.p2Target],['Funded base winner',state.fundedBase*state.rr,`Boost eligibility depends on same-day profit`,false],['Funded boosted winner',state.fundedBoost*state.rr,`Margin at ${money(marginForRisk(state.fundedBoost))}`,false]];
+ $('marginNotice').textContent=instrumentReady()?instrumentLabel()+' · Planned funded base '+money(state.fundedBase)+' → estimated margin '+money(marginForRisk(state.fundedBase))+'; boost '+money(state.fundedBoost)+' → estimated margin '+money(marginForRisk(state.fundedBoost))+'. Starting-equity margin ceiling: '+money(state.accountSize*prob(state.marginCeiling))+'. Actual broker/exchange margin may differ.':'Planned initial stop-loss risk: Phase 1 '+money(state.p1Base)+'; Phase 2 '+money(state.p2Base)+'; Funded '+money(state.fundedBase)+'. Dollar-risk simulation works without contract settings; executable lot size and broker margin are not yet checked.';renderSymbolSummary();
+ const preview=[['Phase 1 winner',state.p1Base*state.rr,`Target ${money(state.p1Target)}`,state.p1Base*state.rr>=state.p1Target],['Phase 2 winner',state.p2Base*state.rr,`Target ${money(state.p2Target)}`,state.p2Base*state.rr>=state.p2Target],['Funded base winner',state.fundedBase*state.rr,`Boost eligibility depends on same-day profit`,false],['Funded boosted winner',state.fundedBoost*state.rr,`Stop loss ${money(state.fundedBoost)} · Margin check optional`,false]];
  $('tradePreview').innerHTML=preview.map(([name,val,note,passes])=>`<div class="info-card"><span class="section-tag">${name}</span><div class="value ${passes?'green':''}">${money(val)}</div><p>${note}${passes?' · One win hits target':''}</p></div>`).join('');
- renderScaling();showWarnings(c);if(lastSim)renderSim();else{$('simResults').className='notice';$('simResults').textContent='Run the simulation to generate stage probabilities. Complete the selected symbol specifications first.';}renderPresetLibrary();}
+ renderScaling();showWarnings(c);if(lastSim)renderSim();else{$('simResults').className='notice';$('simResults').textContent='Run the USD stop-loss simulation for illustrative stage pass rates. Contract sizing and broker margin are not modeled.';}renderPresetLibrary();}
 function renderScaling(){const budgets=[250,500,1000,2000,4000,8000,16000];const c=calc();const unit=c.unit;const selected=positive(state.budget);if(!budgets.includes(selected))budgets.push(selected);budgets.sort((x,y)=>x-y);
  $('budgetRows').innerHTML=budgets.map(b=>{const n=unit>0?Math.floor(b/unit):0;if(n<=0)return `<tr><td>${money(b)}</td><td colspan="6" class="subtle">Budget below one challenge</td></tr>`;const x=calc(Math.min(n,1000));return `<tr><td>${money(b)}</td><td class="num">${x.count}</td><td class="num">${money(x.cost)}</td><td class="num">${x.successes.toFixed(2)}</td><td class="num ${x.net>=0?'green':'red'}">${money(x.net)}</td><td class="num">${pct(x.roi)}</td><td class="num">${pct(x.chance(4))}</td></tr>`;}).join('');
  $('mirrorRows').innerHTML=[1,2,3,4,5].map(m=>{const x=calc(state.accounts,m);return `<tr><td>${m} account${m===1?'':'s'} / signal ${m===state.mirror?'<span class="tag">selected</span>':''}</td><td class="num">${money(x.net)}</td><td class="num">${pct(x.atLeast)}</td><td class="num">${pct(x.chance(3))}</td><td class="num">${pct(x.chance(4))}</td></tr>`;}).join('');}
@@ -639,7 +682,7 @@ function mulberry32(seed){let a=seed>>>0;return function(){a=(a+0x6D2B79F5)|0;le
 function simulateStage(which,rng){const s=state;const size=s.accountSize,overallFloor=size-s.overallLoss,winrate=prob(s.winRate);let balance=size,losses=0,tradeCount=0,daysTraded=0,boostTrades=0;
  const target=which==='p1'?s.p1Target:which==='p2'?s.p2Target:s.profitTarget;
  const maxDays=Math.max(1,Math.round(which==='p1'?s.p1Days:which==='p2'?s.p2Days:s.fundedDays));const dailyCap=Math.max(1,Math.round(which==='p1'?s.p1DailyCap:which==='p2'?s.p2DailyCap:s.fundedDailyCap));
- const minRisk=Math.max(.01,s.minRisk);const maxMargin=s.marginCeiling/100;let status='timeout';
+ const minRisk=Math.max(.01,s.minRisk);let status='timeout';
  for(let day=0;day<maxDays;day++){const dayStart=balance;let did=0,wonToday=false,dayLosses=0;const avg=Math.max(0,s.weeklySignals/5);let signals=Math.floor(avg)+(rng()<avg%1?1:0);signals=Math.min(Math.max(0,signals),dailyCap);
  for(let t=0;t<signals;t++){
   if(balance-size>=target-1e-6){status='pass';break;}
@@ -651,17 +694,17 @@ function simulateStage(which,rng){const s=state;const size=s.accountSize,overall
   const costs=Math.max(0,s.tradeCost);const dailyRoom=balance-(dayStart-s.dailyLoss+s.buffer)-costs;
   const overallRoom=balance-(overallFloor+s.buffer)-costs;
   const room=Math.min(dailyRoom,overallRoom);
-  const marginRisk=maxRiskByMargin(balance*maxMargin);
-  // A boosted order is all-or-nothing: if $500 does not fit, return to base instead.
-  if(which==='funded'&&planned===s.fundedBoost&&planned>Math.min(room,marginRisk)+1e-7)planned=s.fundedBase;
-  let risk=Math.min(planned,room,marginRisk);
+  // Cash-risk simulation: stop loss is the USD amount lost, not a price move.
+  // Only drawdown headroom caps this conceptual risk; live contract/margin rules are not simulated.
+  if(which==='funded'&&planned===s.fundedBoost&&planned>room+1e-7)planned=s.fundedBase;
+  let risk=Math.min(planned,room);
   // Once close to target, a smaller trade can close the remaining gap, while the first trade stays at the normal risk.
   const remaining=target-(balance-size);if(remaining>0&&remaining<s.rr*risk*.65)risk=Math.min(risk,Math.max(minRisk,remaining/Math.max(.1,s.rr)));
-  risk=quantizedTradeRisk(risk);
+  risk=Math.floor(risk*100+1e-8)/100;
   if(risk<minRisk){
     // Reaching the *daily* loss reserve means stop for today, not lose the account.
-    // Only the overall cap or inability to size even the minimum order retires it.
-    if(dailyRoom<minRisk&&overallRoom>=minRisk&&marginRisk>=minRisk){break;}
+    // Only the overall cash-loss cap retires the scenario; an exhausted daily limit pauses it.
+    if(dailyRoom<minRisk&&overallRoom>=minRisk){break;}
     status='exhausted';break;
   }
   const wasBoost=which==='funded'&&planned===s.fundedBoost&&risk>s.fundedBase+.01;
@@ -675,7 +718,7 @@ function simulateStage(which,rng){const s=state;const size=s.accountSize,overall
  if(status==='pass'||status==='breached'||status==='exhausted')break;
  }
  return {success:status==='pass',status,tradeCount,daysTraded,boostTrades};}
-function runSimulation(){if(!selectedAccountSupportsSimulation||!instrumentReady()){notify('This program requires a supported evaluation model and completed symbol specifications before simulation.');return;}const count=Math.max(250,Math.min(20000,Math.floor(state.simulations)));const keys=['p1','p2','funded'];const results={};
+function runSimulation(){if(!selectedAccountSupportsSimulation){notify('This challenge type does not support the current cash-risk evaluation model.');return;}const count=Math.max(250,Math.min(20000,Math.floor(state.simulations)));const keys=['p1','p2','funded'];const results={};
  let seed=state.randomSeed>>>0;for(const key of keys){const rng=mulberry32(seed++);let wins=0,trades=0,tradesSuccess=0,successTotal=0,daysSuccess=0,boost=0,exhausted=0;
   for(let i=0;i<count;i++){const r=simulateStage(key==='funded'?'funded':key,rng);wins+=r.success?1:0;trades+=r.tradeCount;boost+=r.boostTrades;if(r.success){tradesSuccess+=r.tradeCount;successTotal++;daysSuccess+=r.daysTraded;}if(r.status==='exhausted'||r.status==='breached')exhausted++;}
   results[key]={pass:wins/count,tradesMean:trades/count,tradesSuccess:successTotal?tradesSuccess/successTotal:null,daysSuccess:successTotal?daysSuccess/successTotal:null,exhausted:exhausted/count,boostAverage:boost/count};}
@@ -750,7 +793,7 @@ function useSelectedAccount(x,force=false){
  // Repeated selection broadcasts are not user edits. Keep the saved profile untouched.
  if(!isNew&&!force){
   selectedAccountSupportsSimulation=x.compatible===true;
-  const btn=$('simulate');if(btn)btn.disabled=!selectedAccountSupportsSimulation||!instrumentReady();
+  const btn=$('simulate');if(btn)btn.disabled=!selectedAccountSupportsSimulation;
   const panel1=$('phase1Fields')?.closest('.panel'),panel2=$('phase2Fields')?.closest('.panel');
   if(panel1)panel1.style.display=x.programId==='instant'?'none':'';
   if(panel2)panel2.style.display=['ftmo2','holaPrime','holaPro'].includes(x.programId)?'':'none';
@@ -784,7 +827,7 @@ function useSelectedAccount(x,force=false){
  const label=x.label||newKey;
  const notice=$('firmStrategyStatus');
  if(notice)notice.textContent=label+' · '+(profile?'Saved trading settings restored.':'New trading profile created.')+(selectedAccountSupportsSimulation?' Existing simulation is approximate and does not enforce all firm rules.':' Rule reference only: this simulator does not support this program.');
- const btn=$('simulate');if(btn)btn.disabled=!selectedAccountSupportsSimulation||!instrumentReady();
+ const btn=$('simulate');if(btn)btn.disabled=!selectedAccountSupportsSimulation;
  const phase1Panel=$('phase1Fields')?.closest('.panel'),phase2Panel=$('phase2Fields')?.closest('.panel');if(phase1Panel)phase1Panel.style.display=x.programId==='instant'?'none':'';if(phase2Panel)phase2Panel.style.display=['ftmo2','holaPrime','holaPro'].includes(x.programId)?'':'none';
  const simNotice=$('simulationStatus');if(simNotice)simNotice.textContent=selectedAccountSupportsSimulation?'Ready for approximate simulation':'Simulation unavailable for selected challenge';
  const badge=$('activeAccountProfile');if(badge)badge.textContent='Selected account: '+label+' · Personal trading settings saved automatically in this browser.';const ps=$('profileAccountStatus');if(ps)ps.textContent='Active challenge: '+label+' · Profile: '+activeUser+'.';
@@ -841,7 +884,7 @@ function goPage(name){document.querySelectorAll('.page').forEach(x=>x.classList.
 makeFields();initSymbols();render();initScenarioTable();setupFirmFit();const firmFrame=$('firmsFrame');if(firmFrame?.dataset?.src){firmFrame.src=firmFrame.dataset.src;}
 $('activeUserSelect').value=activeUser;$('activeUserSelect').addEventListener('change',()=>{const v=$('activeUserSelect').value;if(!FOUR_DS_USERS.some(u=>u.id===v))return;writeProfile();try{localStorage.setItem(FOUR_DS_ACTIVE,v)}catch(_){}location.reload()});const profileSelect=$('profileUserSelect');profileSelect.value=activeUser;profileSelect.addEventListener('change',()=>{$('activeUserSelect').value=profileSelect.value;$('activeUserSelect').dispatchEvent(new Event('change'));});$('profileAccountStatus').textContent=activeProgramKey?'Active challenge: '+activeProgramKey+' · Settings saved for '+activeUser+'.':'No challenge selected yet for '+activeUser+'. Choose one under Prop firms.';{const el=$('activeAccountProfile');if(el)el.textContent=activeProgramKey?'Saved account profile: '+activeProgramKey+' · Changes to trading parameters are saved automatically on this device.':'No account profile selected. Choose a firm, program and account size in Prop firms.';}
 document.querySelectorAll('[data-page]').forEach(el=>el.addEventListener('click',()=>goPage(el.dataset.page)));document.querySelectorAll('[data-nav]').forEach(el=>el.addEventListener('click',()=>goPage(el.dataset.nav)));
-$('preset40').addEventListener('click',()=>applyPreset(40));$('preset50').addEventListener('click',()=>applyPreset(50));$('simulate').addEventListener('click',()=>{const b=$('simulate');if(!selectedAccountSupportsSimulation||!instrumentReady()){notify('Select a supported challenge and complete the symbol specifications.');return;}b.disabled=true;b.classList.add('is-calculating');b.textContent='Calculating…';setTimeout(()=>{try{runSimulation();}catch(e){console.error(e);notify('Simulation error: check your inputs.');}b.textContent='Run strategy simulation';b.classList.remove('is-calculating');updateSimulationAvailability();},25);});
+$('preset40').addEventListener('click',()=>applyPreset(40));$('preset50').addEventListener('click',()=>applyPreset(50));$('simulate').addEventListener('click',()=>{const b=$('simulate');if(!selectedAccountSupportsSimulation){notify('Choose a challenge supported by the evaluation simulator.');return;}b.disabled=true;b.classList.add('is-calculating');b.textContent='Calculating…';setTimeout(()=>{try{runSimulation();}catch(e){console.error(e);notify('Simulation error: check your inputs.');}b.textContent='Run strategy simulation';b.classList.remove('is-calculating');updateSimulationAvailability();},25);});
 $('useManual').addEventListener('click',()=>{mode='manual';lastSim=null;dirtySim=false;render();notify('Manual pass-rate mode enabled.');});$('useBudget').addEventListener('click',()=>{const unit=positive(state.price)+positive(state.extraCost);if(unit>0){state.accounts=Math.max(1,Math.min(1000,Math.floor(state.budget/unit)));save();syncControls();render();}});
 $('resetQuick').addEventListener('click',()=>{for(const k of ['budget','accounts','price','extraCost'])state[k]=DEFAULT[k];save();syncControls();render();});
 $('exportTop').addEventListener('click',exportSettings);$('exportSettings').addEventListener('click',exportSettings);$('importSettings').addEventListener('click',()=>$('importFile').click());$('importFile').addEventListener('change',e=>{importSettings(e.target.files[0]);e.target.value='';});$('exportCSV').addEventListener('click',exportCSV);$('copySummary').addEventListener('click',copySummary);
