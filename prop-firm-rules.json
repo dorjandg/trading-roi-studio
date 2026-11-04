@@ -1,6 +1,6 @@
 {
   "asOf": "2026-11-04",
-  "disclaimer": "Research snapshot. Verify all conditions at source before trading. Fees vary by region and promotion.",
+  "disclaimer": "USD list prices/snapshots, not a live checkout feed. Region, promotions, program variations, payout selection and add-ons can change the amount. Confirm before payment.",
   "programs": {
     "ftmo2": {
       "firm": "FTMO",
@@ -40,7 +40,16 @@
         "Daily equity limit recalculates using balance at midnight CE(S)T."
       ],
       "source": "https://ftmo.com/en/2-step-challenge/",
-      "compatible": true
+      "compatible": true,
+      "pricesUSD": {
+        "10000": 99,
+        "25000": 289,
+        "50000": 399,
+        "100000": 619,
+        "200000": 1249
+      },
+      "priceSource": "https://promo.ftmo.com/let-your-profits-run/us/",
+      "priceNote": "USD US-region standard listed fees; $100K may have an eligibility-limited $499 offer. Your region/checkout may differ."
     },
     "ftmo1": {
       "firm": "FTMO",
@@ -76,7 +85,16 @@
         "Maximum loss is trailing, not static."
       ],
       "source": "https://ftmo.com/en/trading-objectives/",
-      "compatible": false
+      "compatible": false,
+      "pricesUSD": {
+        "10000": 89,
+        "25000": 229,
+        "50000": 359,
+        "100000": 579,
+        "200000": 1149
+      },
+      "priceSource": "https://promo.ftmo.com/m26a-max-focus-1-step/us/",
+      "priceNote": "USD US-region fee table; promotional 100K $463 is excluded. Checkout prices may differ."
     },
     "instant": {
       "firm": "FTMO",
@@ -110,7 +128,16 @@
         "Trailing loss threshold does not reset after reward withdrawal."
       ],
       "source": "https://ftmo.com/en/instant-account/",
-      "compatible": false
+      "compatible": false,
+      "pricesUSD": {
+        "5000": 189,
+        "10000": 379,
+        "25000": 849,
+        "50000": 1699,
+        "100000": 3399
+      },
+      "priceSource": "https://promo.ftmo.com/instant-account/us/",
+      "priceNote": "USD US-region published price; check availability and regional checkout."
     },
     "holaPrime": {
       "firm": "Hola Prime",
@@ -149,7 +176,18 @@
         "Processing fee applies to payouts."
       ],
       "source": "https://holaprime.com/terms-conditions/",
-      "compatible": true
+      "compatible": true,
+      "pricesUSD": {
+        "2000": 9,
+        "5000": 39,
+        "10000": 69,
+        "25000": 179,
+        "50000": 319,
+        "100000": 569,
+        "200000": 1079
+      },
+      "priceSource": "https://www.fundedenigma.com/firms/hola-prime/plans/2-step-prime",
+      "priceNote": "USD bi-weekly 80% base list from third-party snapshot; not confirmed at official live checkout. $2K base reported elsewhere. Promotions/add-ons/other payout schedules vary."
     },
     "holaPro": {
       "firm": "Hola Prime",
@@ -187,7 +225,17 @@
         "Position-size limits apply to some sizes; verify official conditions."
       ],
       "source": "https://holaprime.com/terms-conditions/",
-      "compatible": true
+      "compatible": true,
+      "pricesUSD": {
+        "5000": 59,
+        "10000": 109,
+        "25000": 229,
+        "50000": 384,
+        "100000": 681,
+        "200000": 1199
+      },
+      "priceSource": "https://www.fundedenigma.com/firms/hola-prime/plans/2-step-pro",
+      "priceNote": "USD bi-weekly 80% third-party list snapshot; verify official checkout for current pricing and selected payout schedule."
     },
     "topstep": {
       "firm": "Topstep",
@@ -231,7 +279,14 @@
         "No separately published Trading Combine daily loss limit; intraday MLL breach fails account."
       ],
       "source": "https://help.topstep.com/en/articles/8284197-trading-combine-parameters",
-      "compatible": false
+      "compatible": false,
+      "pricesUSD": {
+        "50000": 49,
+        "100000": 99,
+        "150000": 199
+      },
+      "priceSource": "https://help.topstep.com/en/articles/14289835-topstep-pricing-and-payment-questions",
+      "priceNote": "USD standard monthly subscription, plus $149 activation fee if funded. No Activation Fee Path costs $95/$149/$229 monthly instead."
     }
   }
 }
