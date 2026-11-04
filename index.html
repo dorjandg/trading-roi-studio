@@ -781,32 +781,21 @@ if(scenarioRows?.length)for(const row of scenarioRows)updateScenarioMetrics(row)
  $('overviewAffordable').textContent=String(affordable);
 
  const budgetStatus=$('overviewBudgetStatus');
- budgetStatus.textContent=budgetUnit<=0?'A valid challenge fee is needed to calculate the account count.':state.accounts===0?'Your budget cannot cover one challenge plus its reserved activation fee ('+money(budgetUnit)+').':model.topstep?state.accounts+' challenges funded within your budget: '+money(c.cost)+' evaluation purchases + '+money(state.accounts*reserve)+' XFA activation reserve; '+money(Math.max(0,state.budget-state.accounts*budgetUnit))+' left. Activation is charged only for accounts that pass evaluation.':state.accounts+' challenges × '+money(c.unit)+' = '+money(c.cost)+' invested; '+money(Math.max(0,state.budget-c.cost))+' unspent.';
+ budgetStatus.textContent=budgetUnit<=0?'A valid challenge fee is needed to calculate the account count.':state.accounts===0?'Your budget cannot cover one challenge plus its reserved activation fee ('+money(budgetUnit)+').':model.topstep?state.accounts+' challenges · '+money(c.cost)+' evaluation + '+money(state.accounts*reserve)+' activation reserve · '+money(Math.max(0,state.budget-state.accounts*budgetUnit))+' remaining.':state.accounts+' challenges × '+money(c.unit)+' = '+money(c.cost)+' invested; '+money(Math.max(0,state.budget-c.cost))+' unspent.';
  budgetStatus.style.color=c.cost>state.budget?'#f5b76c':'';
  const breakdown=$('topstepBudgetBreakdown');
  if(breakdown){
   breakdown.style.display=model.topstep?'block':'none';
   if(model.topstep){
    const evalCost=state.accounts*c.unit,activationReserve=state.accounts*reserve,remaining=Math.max(0,state.budget-evalCost-activationReserve);
-   const standard=state.topstepPath!=="noactivation",monthly=c.unit,firstMonth=state.accounts*monthly,activationFee=standard?149:0;
-   breakdown.innerHTML='<h3 style="margin:0 0 8px">Topstep costs · '+(standard?'Standard':'No Activation Fee')+' path</h3>'+
-    '<p class="caption" style="margin-bottom:12px">Evaluation is billed monthly. Activation is a separate one-time charge only when an account passes. Change the subscription path below.</p>'+
-    '<div class="tablewrap"><table><thead><tr><th>Starting budget allocation</th><th class="num">Per account</th><th class="num">For '+state.accounts+' challenges</th></tr></thead><tbody>'+
-    '<tr><td>Initial Trading Combine subscription (month 1)</td><td class="num">'+money(monthly)+'</td><td class="num">'+money(firstMonth)+'</td></tr>'+
-    '<tr><td>XFA activation reserve (only charged when passed)</td><td class="num">'+money(activationFee)+'</td><td class="num">'+money(activationReserve)+'</td></tr>'+
-    '<tr><th>Total allocated from budget</th><th class="num">'+money(monthly+activationFee)+'</th><th class="num">'+money(firstMonth+activationReserve)+'</th></tr>'+
-    '<tr><th>Cash still unallocated</th><td class="num">—</td><th class="num">'+money(remaining)+'</th></tr></tbody></table></div>'+
-    '<h4 style="margin:18px 0 8px">Possible additional costs (not in starting budget or ROI model)</h4>'+
-    '<div class="tablewrap"><table><thead><tr><th>Charge</th><th class="num">Per account</th><th class="num">If every challenge needs it</th></tr></thead><tbody>'+
-    '<tr><td>One additional month of evaluation subscription</td><td class="num">'+money(monthly)+'</td><td class="num">'+money(firstMonth)+'</td></tr>'+
-    '<tr><td>One paid Combine reset</td><td class="num">'+money(monthly)+'</td><td class="num">'+money(firstMonth)+'</td></tr>'+
-    '<tr><td>XFA monthly subscription after passing</td><td class="num">$0</td><td class="num">$0</td></tr></tbody></table></div>'+
-    '<h4 style="margin:18px 0 8px">Trading Combine purchase path comparison</h4>'+
-    '<div class="tablewrap"><table><thead><tr><th>Account size</th><th>Standard monthly / activation</th><th>No Activation Fee monthly / activation</th></tr></thead><tbody>'+
-    '<tr><td>50K</td><td>$49 / $149</td><td>$95 / $0</td></tr>'+
-    '<tr><td>100K</td><td>$99 / $149</td><td>$149 / $0</td></tr>'+
-    '<tr><td>150K</td><td>$199 / $149</td><td>$229 / $0</td></tr></tbody></table></div>'+
-    '<p class="caption" style="margin-top:12px"><strong>Account limit:</strong> Topstep allows at most 5 active XFAs simultaneously. '+state.accounts+' purchased challenges does not mean '+state.accounts+' active funded accounts. Paid resets, additional months, taxes, promotions, optional data and reactivation are not included in your initial investment plan. Check <a href="https://help.topstep.com/en/articles/14289835-topstep-pricing-and-payment-questions" target="_blank" rel="noopener">official pricing</a> and <a href="https://help.topstep.com/en/articles/8284217-express-funded-account-activation" target="_blank" rel="noopener">XFA activation limits</a>.</p>';
+   const monthly=c.unit,initial=state.accounts*monthly;
+   breakdown.innerHTML='<h3 style="margin:0 0 12px">Costs · selected '+Math.round(state.accountSize/1000)+'K account</h3>'+
+    '<div class="tablewrap"><table><thead><tr><th>Cost</th><th class="num">Per account</th><th class="num">Total ('+state.accounts+')</th></tr></thead><tbody>'+
+    '<tr><td>Evaluation (first month)</td><td class="num">'+money(monthly)+'</td><td class="num">'+money(initial)+'</td></tr>'+
+    '<tr><td>XFA activation reserve</td><td class="num">'+money(reserve)+'</td><td class="num">'+money(activationReserve)+'</td></tr>'+
+    '<tr><th>Allocated budget</th><th class="num">'+money(monthly+reserve)+'</th><th class="num">'+money(initial+activationReserve)+'</th></tr>'+
+    '<tr><td>Remaining cash</td><td class="num">—</td><td class="num">'+money(remaining)+'</td></tr></tbody></table></div>'+
+    '<p class="caption" style="margin-top:10px">Extra month: '+money(monthly)+'/account · Paid reset: '+money(monthly)+'/account. Not included above. Activation is paid only if an account passes.</p>';
   }
  }
 
@@ -831,10 +820,7 @@ if(scenarioRows?.length)for(const row of scenarioRows)updateScenarioMetrics(row)
  if(help){
   help.style.display=model.topstep||c.unit<=0||state.accounts===0?'block':'none';
   if(model.topstep){
-   help.innerHTML='<h3 style="margin:0 0 8px">Topstep · subscription path & simulation</h3>'+
-     '<div class="formgrid" style="margin:10px 0 12px"><label>Trading Combine subscription path<select id="topstepPathInput"><option value="standard" '+(state.topstepPath!=="noactivation"?'selected':'')+'>Standard · lower monthly fee + $149 XFA activation</option><option value="noactivation" '+(state.topstepPath==="noactivation"?'selected':'')+'>No Activation Fee · higher monthly fee + $0 activation</option></select></label><label><input type="checkbox" id="topstepDLLOption" '+(state.topstepDLL?'checked':'')+'> Optional Topstep Daily Loss Limit (simulator setting)</label></div>'+
-     '<p class="caption">Simulation: Combine $3K/$6K/$9K target, 55% consistency, trailing MLL, then XFA first payout (Standard payout route). Strategy 2 follows Strategy 1 only after a loss. The purchase subscription path is separate from the XFA payout route.</p>'+
-     '<p class="caption" style="margin-top:10px">Independent account-path estimates are not a concurrent funded portfolio: up to 5 active XFAs at once. Excludes renewals, resets, tax, optional data, reactivation, contract scaling, intratrade drawdown and slippage. Verify current official terms.</p>'+(topstep?.error?'<p class="caption">'+topstep.error+'</p>':'');
+   help.innerHTML='<div class="formgrid"><label>Topstep purchase path<select id="topstepPathInput"><option value="standard" '+(state.topstepPath!=="noactivation"?'selected':'')+'>Standard</option><option value="noactivation" '+(state.topstepPath==="noactivation"?'selected':'')+'>No activation fee</option></select></label><label><input type="checkbox" id="topstepDLLOption" '+(state.topstepDLL?'checked':'')+'> Optional daily loss limit</label></div>'+(topstep?.error?'<p class="caption">'+topstep.error+'</p>':'');
    const dllInput=$('topstepDLLOption'),path=$('topstepPathInput');
    dllInput.onchange=()=>{state.topstepDLL=dllInput.checked;topstepEstimate=null;save();render();};
    path.onchange=()=>{state.topstepPath=path.value;state.price=topstepMonthlyFee();state.topstepActivationFee=topstepReserveFee();topstepEstimate=null;dirtySim=true;lastSim=null;deriveBudgetAccounts();save();render();};
