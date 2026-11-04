@@ -60,10 +60,24 @@
    if(JSON.stringify(snap).length>900000)throw new Error('Profile too large; export a backup first');
    const req=new URLSearchParams({user,expectedRevision:force?'':(remoteRev||''),force:force?'yes':'no',snapshot:JSON.stringify(snap)});
    setStatus('Saving to Google cloud…');
-   await fetch(endpoint,{method:'POST',mode:'no-cors',body:req,cache:'no-store'});
-   await new Promise(ok=>setTimeout(ok,800));
-   const check=await getRemote();
-   if(check.snapshot?.nonce!==snap.nonce)throw new Error('Cloud did not confirm the save. Your local data is safe.');
+   const controller=new AbortController();
+   const timeout=setTimeout(()=>controller.abort(),15000);
+   let postError=null;
+   try {
+    await fetch(endpoint,{method:'POST',mode:'no-cors',body:req,cache:'no-store',signal:controller.signal});
+   } catch(err) {postError=err;}
+   finally {clearTimeout(timeout);}
+   // no-cors POST responses are opaque and may follow redirects. Verify by reading
+   // the stored nonce: never claim a successful save based on the POST alone.
+   setStatus('Checking whether Google saved your changes…');
+   let check;
+   try {check=await getRemote()}catch(err){
+    throw new Error('Could not verify Google save'+(postError?' (upload also failed)':'')+'. Local changes are safe; retry later.');
+   }
+   if(postError&&check.snapshot?.nonce!==snap.nonce)
+    throw new Error('Google upload did not complete. Your local data is safe.');
+
+   if(check.snapshot?.nonce!==snap.nonce)throw new Error('Google has not confirmed the upload. Your local changes are still saved; you can retry.');
    remoteRev=check.revision;localStorage.setItem(revKey,remoteRev);
    localStorage.removeItem(dirtyKey);dirty=false;setStatus('Cloud synced · '+new Date().toLocaleTimeString());
   }catch(err){setStatus('Cloud sync failed: '+err.message+' · Local copy saved')}finally{busy=false}
