@@ -52,12 +52,12 @@ function runCase(v,seed){
   if(mode==='accounts'){
    const n=Math.max(0,Math.min(trialsLimit,Math.floor(v.qty))),f=Math.max(0,v.fee),activation=Math.max(0,v.activation),pE=clamp(v.evalPass,0,100)/100,pP=clamp(v.payPass,0,100)/100,pS=clamp(v.secondPass,0,100)/100,delay=Math.max(1,Math.floor(v.delay));
    const affordable=Math.floor(budget/Math.max(.01,f+activation*pE));
-   const count=Math.min(n,affordable);
+   const count=f>0?Math.min(n,affordable,Math.floor(budget/f)):Math.min(n,affordable);
    fees=count*f;
-   for(let j=0;j<count;j++){if(rng()<pE){passes++;fees+=activation;if(delay<=months&&rng()<pP){receipts+=Math.max(0,v.first);payCount++;if(delay+1<=months&&rng()<pS){receipts+=Math.max(0,v.second);payCount++;}}}}
+   for(let j=0;j<count;j++){if(rng()<pE){if(fees+activation>budget+1e-7)continue;passes++;fees+=activation;if(delay<=months&&rng()<pP){receipts+=Math.max(0,v.first);payCount++;if(delay+1<=months&&rng()<pS){receipts+=Math.max(0,v.second);payCount++;}}}}
   }else{
    const n=Math.max(0,Math.min(trialsLimit,Math.floor(v.qty))),f=Math.max(0,v.fee),risk=Math.max(0,v.risk),win=clamp(v.win,0,100)/100,rr=Math.max(0,v.rr),target=Math.max(.01,v.target),loss=Math.max(.01,v.drawdown),trades=Math.min(500,Math.max(1,Math.floor(v.trades)));
-   const count=Math.min(n,Math.floor(budget/Math.max(.01,f)));
+   const count=f>0?Math.min(n,Math.floor(budget/f)):n;
    fees=count*f;
    for(let j=0;j<count;j++){let pnl=0;for(let t=0;t<trades;t++){if(risk>0&&pnl-risk<=-loss){breached++;break}pnl+=(rng()<win?risk*rr:-risk);if(pnl<=-loss){breached++;break}if(pnl>=target){passes++;if(rng()<.70){receipts+=Math.max(0,v.reward);payCount++;}break}}}
   }
