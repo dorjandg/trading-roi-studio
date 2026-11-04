@@ -9,7 +9,7 @@ new vm.Script(match[1],{filename:'trade-lab-engine.js'});
 const baseline={
  account:'official:ftmo2:10000',pfTotal:'20',pfFunded:'0',pfCount:'6',
  pfDailyBudget:'300',pfBudget:'99',pfActivation:'0',pfPayout:'2000',
- pfSplit:'90',pfPayoutDays:'5',pfPayoutMin:'150',pfTrials:'100',
+ pfSplit:'90',pfGoal:'20000',pfPayoutDays:'5',pfPayoutMin:'150',pfTrials:'100',
  pfRoute:'rotate',months:'1',wr:'35',be:'5',rr:'4',risk:'150',fee:'0',
  balance:'10000',target:'1000',dd:'1000',dailyLimit:'500',
  consistency:'0',minDays:'4',model:'static',seed:'24717',stage:'phase1'
