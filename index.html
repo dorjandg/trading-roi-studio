@@ -200,7 +200,7 @@ html[data-theme="light"] #themeToggle{background:#fff;color:#172638}
 <section id="page-dashboard" class="page active"><div class="notice" style="margin-bottom:14px"><strong>Where to edit:</strong> Account settings, rules, win rate, RR and payouts → <button class="btn small primary" data-nav="firms">Prop firms</button>. Investment budget and account count → <button class="btn small" data-nav="scaling">Investments & ROI</button>. This Overview shows calculated results.</div><div class="panel" style="margin-bottom:14px"><div class="panel-header"><div><h2>Overview account</h2><p>Choose firm, account type and amount. Available amounts depend on the account type; the dashboard updates automatically.</p></div></div><div class="formgrid overview-account-grid"><div class="field"><label for="overviewFirmSelect">1. Prop firm</label><select id="overviewFirmSelect"><option value="">Loading firms…</option></select></div><div class="field"><label for="overviewSizeSelect">2. Account amount</label><select id="overviewSizeSelect"><option value="">Choose amount</option></select></div><div class="field"><label for="overviewProgramSelect">3. Account type</label><select id="overviewProgramSelect"><option value="">Choose account type</option></select></div></div><div style="margin-top:12px"><button class="btn small" type="button" data-nav="firms">Edit selected account in Prop firms</button></div><p class="caption" id="overviewAccountHint" style="margin-top:10px">Choose an account to load its trading rules, risk settings, payout assumptions and ROI.</p></div><div id="activeAccountProfile" class="caption" style="margin:0 0 12px"></div>
   <div class="panel overview-investment" style="margin-bottom:14px"><div class="panel-header"><div><h2>Investment plan</h2><p>Enter your investment budget. The number of challenges and all results update automatically.</p></div></div><div class="overview-investment-grid"><div class="field"><label for="overviewBudget">Available investment budget (USD)</label><input id="overviewBudget" type="number" min="0" step="1" inputmode="decimal"></div><div class="field"><label>Challenges covered by budget</label><strong id="overviewDerivedCount">—</strong></div><div class="field"><label>Cost per challenge</label><strong id="overviewUnitCost">—</strong></div><div class="field"><label>Affordable challenges</label><strong id="overviewAffordable">—</strong></div></div><div id="overviewBudgetStatus" class="caption" style="margin-top:12px"></div></div>
   <div class="overview-summary-strip"><div><span class="section-tag">Modeled payout probability</span><strong id="heroRate">—</strong><span class="caption" id="overviewStageFormula">Selected account stages × payout collection</span></div><div class="overview-summary-actions"><span class="tag" id="modeLabel">Manual stage estimates</span><button class="btn small" id="overviewSimulate">Run trading simulation</button><button class="btn small" data-nav="firms">Edit trading settings</button><button class="btn small" data-nav="scaling">Compare investments</button></div></div>
-  <div class="notice" id="overviewModelStatus" style="margin-bottom:14px" role="status"></div><div class="panel" id="overviewIssueHelp" style="display:none;margin-bottom:16px;padding:16px"></div>
+  <div class="notice" id="overviewModelStatus" style="margin-bottom:14px" role="status"></div><div class="panel" id="topstepStageCounts" style="display:none;padding:16px;margin-bottom:16px"></div><div class="panel" id="overviewIssueHelp" style="display:none;margin-bottom:16px;padding:16px"></div>
   <div class="kpis">
     <div class="kpi"><div class="meta">Planned challenge spending</div><div class="val" id="kpiCost">—</div><div class="note" id="kpiBudget">—</div></div>
     <div class="kpi"><div class="meta">Expected collected rewards</div><div class="val" id="kpiReceipts">—</div><div class="note">Includes expected challenge refunds</div></div>
@@ -784,10 +784,20 @@ if(scenarioRows?.length)for(const row of scenarioRows)updateScenarioMetrics(row)
  $('heroRate').textContent=model.topstep?(topstep?.error?'Unavailable':topstep?pct(topstep.probability):'Run estimate'):pct(c.pass);
  $('modeLabel').textContent=model.topstep?(topstep?.error?'Topstep settings incomplete':topstep?'Topstep Standard · first payout estimate':'Topstep estimate not run'):mode==='simulation'?(dirtySim?'Simulation out of date':'Illustrative strategy simulation'):'Manual stage estimates';
  const status=$('overviewModelStatus');
- status.textContent=model.topstep?(topstep?.error?topstep.error:topstep?'Illustrative Topstep Standard Monte Carlo: '+topstep.count.toLocaleString()+' trials. Combine pass '+pct(topstep.combine)+'; XFA first-payout chance after passing '+pct(topstep.conditional)+'. These are estimates, not guaranteed payouts.':'Topstep Standard model is available. Click Run Topstep estimate to calculate first-payout probability and expected returns.')
+ status.textContent=model.topstep?(topstep?.error?topstep.error:topstep?'Stage-specific simulation using your evaluation and funded Strategy 1/2 risk and RR, '+pct(state.winRate)+' trade win rate, and '+topstep.count.toLocaleString()+' account trials. Evaluation pass '+pct(topstep.combine)+'; XFA first-payout chance after evaluation '+pct(topstep.conditional)+'.':'Click Run Topstep estimate. The model will simulate each account through evaluation and funded using the two strategies and win rate entered below.')
  :mode==='simulation'&&!dirtySim?'Illustrative probabilities from a simplified USD-risk simulation using your win rate, RR and order risks. This is not a backtest and does not enforce all prop-firm rules.'
  :mode==='simulation'&&dirtySim?'Trading parameters changed after the simulation. Results are stale: rerun the simulation before relying on projected figures.'
  :'The payout probability and ROI below use MANUALLY entered stage pass rates. Changing win rate or RR alone does not update these rates. Run the trading simulation for a simplified strategy-based estimate.';
+ const topstepCounts=$('topstepStageCounts');
+ if(topstepCounts){
+  topstepCounts.style.display=model.topstep?'block':'none';
+  if(model.topstep){
+   const n=state.accounts,t=topstep&&!topstep.error?topstep:null;
+   topstepCounts.innerHTML='<h3 style="margin:0 0 10px">Account progression — using your stage-specific Strategy 1 and Strategy 2</h3><div class="tablewrap"><table><thead><tr><th>Stage outcome</th><th class="num">Estimated accounts</th></tr></thead><tbody>'+
+    [['Purchased',n],['Evaluation passed',t?n*t.combine:null],['Evaluation breached',t?n*t.combineBurned:null],['Evaluation unfinished by deadline',t?n*t.combineTimeout:null],['Entered XFA',t?n*t.combine:null],['XFA first payout reached',t?n*t.probability:null],['XFA breached before payout',t?n*t.fundedBurned:null],['XFA unfinished by deadline',t?n*t.fundedTimeout:null]].map(([label,value])=>'<tr><td>'+label+'</td><td class="num">'+(value===null?'Run estimate':value.toFixed(1))+'</td></tr>').join('')+
+    '</tbody></table></div><p class="caption" style="margin-top:10px">Expected counts are averages over '+(t?t.count.toLocaleString():'—')+' independent account paths, not exact whole-account outcomes. Each stage uses its own two risk amounts and RR values, your win rate, and its configured trade/day limits. Strategy 2 only follows a Strategy 1 loss. The 50% win rate is applied to each eligible trade, not to an entire account.</p>';
+  }
+ }
  const help=$('overviewIssueHelp');
  if(help){
   help.style.display=model.topstep||c.unit<=0||state.accounts===0?'block':'none';
@@ -845,7 +855,7 @@ function topstepSimulate(){
  const rng=mulberry32((state.randomSeed||24717)>>>0);
  const win=prob(state.winRate),fees=positive(state.tradeCost);
  const dailySignals=Math.max(0,state.weeklySignals/5);
- let combinePass=0,paid=0,rawTotal=0,eligibleTotal=0,breaches=0;
+ let combinePass=0,paid=0,rawTotal=0,eligibleTotal=0,combineBurned=0,combineTimeout=0,fundedBurned=0,fundedTimeout=0;
  function stage(kind){
   const funded=kind==='funded',maxDays=Math.min(365,Math.max(1,Math.round(funded?state.fundedDays:state.p1Days)));
   const maxTrades=Math.min(2,Math.max(1,Math.round(funded?state.fundedDailyCap:state.p1DailyCap)));
@@ -878,11 +888,11 @@ function topstepSimulate(){
   return {pass:false,breach:false,balance,qualified};
  }
  for(let i=0;i<count;i++){
-  const c=stage('combine');if(!c.pass){if(c.breach)breaches++;continue;}combinePass++;
-  const f=stage('funded');if(f.breach)breaches++;
+  const c=stage('combine');if(!c.pass){if(c.breach)combineBurned++;else combineTimeout++;continue;}combinePass++;
+  const f=stage('funded');if(f.breach)fundedBurned++;else if(!f.pass)fundedTimeout++;
   if(f.pass){paid++;const raw=Math.min(cap,f.balance*.5);rawTotal+=raw*.9;eligibleTotal+=raw;}
  }
- return {count,combine:combinePass/count,conditional:combinePass?paid/combinePass:0,probability:paid/count,rawPerChallenge:rawTotal/count,averageGrossPayout:paid?eligibleTotal/paid:0,cap,limit,target,breaches:breaches/count,dll:state.topstepDLL};
+ return {count,combine:combinePass/count,combineBurned:combineBurned/count,combineTimeout:combineTimeout/count,fundedBurned:fundedBurned/count,fundedTimeout:fundedTimeout/count,conditional:combinePass?paid/combinePass:0,probability:paid/count,rawPerChallenge:rawTotal/count,averageGrossPayout:paid?eligibleTotal/paid:0,cap,limit,target,dll:state.topstepDLL};
 }
 function refreshTopstepEstimate(){
  if(!phaseModel().topstep)return null;
