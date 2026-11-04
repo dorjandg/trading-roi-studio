@@ -39,6 +39,7 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;background:rad
 .preset-select{background:#131f30;border:1px solid #35465c;border-radius:10px;height:42px;color:var(--text);width:100%;padding:8px 12px}
 @media(max-width:740px){.preset-grid{grid-template-columns:1fr}}
 </style>
+<script src="cloud-config.js"></script>
 </head>
 <body>
 <div class="shell">
@@ -134,7 +135,7 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;background:rad
 </section>
 
 <section id="page-settings" class="page">
-  <div class="two-up"><div class="panel"><h2>Save and reuse your own website</h2><p class="definition">Your current working scenario is saved automatically when browser storage is available. Use My presets for multiple named versions and export a JSON backup to move them between devices.</p><div class="actionrow" style="margin:15px 0"><button class="btn primary" data-nav="presets">Manage named presets</button></div><div class="actionrow" style="margin:21px 0"><button class="btn" id="exportSettings">Download settings JSON</button><button class="btn" id="importSettings">Import settings JSON</button><input type="file" id="importFile" accept="application/json,.json" hidden></div><div class="actionrow"><button class="btn" id="exportCSV">Download results CSV</button><button class="btn" id="copySummary">Copy summary</button><button class="btn danger" id="resetAll">Restore all defaults</button></div><div id="toast" class="notice" style="display:none;margin-top:18px"></div></div></div>
+  <div class="two-up"><div class="panel"><h2>4Ds cloud synchronization</h2><p class="subtle">One shared website, with separate profiles for Doen, Dori, Dona and Dion. No logins: anyone with access can select any name and change that profile.</p><div class="notice" id="cloudSyncStatus" role="status">Checking cloud connection…</div><div class="actionrow" style="margin-top:12px"><button type="button" class="btn" id="cloudUpload">Overwrite cloud with this device</button><button type="button" class="btn" id="cloudDownload">Load cloud onto this device</button></div><p class="caption">Saving remains local until the Google web app is connected. Use the existing export controls to keep a backup.</p></div><div class="panel"><h2>Save and reuse your own website</h2><p class="definition">Your current working scenario is saved automatically when browser storage is available. Use My presets for multiple named versions and export a JSON backup to move them between devices.</p><div class="actionrow" style="margin:15px 0"><button class="btn primary" data-nav="presets">Manage named presets</button></div><div class="actionrow" style="margin:21px 0"><button class="btn" id="exportSettings">Download settings JSON</button><button class="btn" id="importSettings">Import settings JSON</button><input type="file" id="importFile" accept="application/json,.json" hidden></div><div class="actionrow"><button class="btn" id="exportCSV">Download results CSV</button><button class="btn" id="copySummary">Copy summary</button><button class="btn danger" id="resetAll">Restore all defaults</button></div><div id="toast" class="notice" style="display:none;margin-top:18px"></div></div></div>
   <div class="panel" style="margin-top:19px"><h2>How to interpret the results</h2><p class="definition"><strong>Investment:</strong> purchased challenges × (challenge fee + optional fees). <strong>Expected collected payout:</strong> accounts × Phase 1 pass × Phase 2 pass × funded target success × collection probability × (net reward + eligible fee refund).</p><p class="definition"><strong>Net profit:</strong> expected receipts − total challenge spending. <strong>Net ROI:</strong> net profit ÷ total spending. <strong>3× net:</strong> after receiving payouts, net profit equals at least three times what you spent, requiring total receipts ≥4× spending.</p><p class="definition">Pass rates default to earlier hypothetical model estimates. A simulation produces another estimate under simplified assumptions—it does not make historical or real-world payout probabilities certain. The dashboard does not include exact FTMO spreads, swaps, partial closures, news events, slippage, external trading-platform lot restrictions or all program rules.</p><p class="definition">For official conditions, check <a href="https://ftmo.com/en/trading-objectives/" target="_blank" rel="noreferrer">FTMO Trading Objectives</a> and <a href="https://ftmo.com/en/faq/" target="_blank" rel="noreferrer">FTMO FAQ</a> before buying or routing live trades.</p></div>
 </section>
 </main>
@@ -179,7 +180,7 @@ let state={...DEFAULT};try{const stored=JSON.parse(localStorage.getItem(STORAGE)
 const PROFILE_ACTIVE=userStoreKey('studio-active-profile-v1');const PROFILE_PREFIX=userStoreKey('studio-account-profile-v1:');let activeProgramKey=null;
 function profileKey(id,size){return String(id)+':'+String(size)}
 function storedProfile(key){try{const item=JSON.parse(localStorage.getItem(PROFILE_PREFIX+key)||'null');return item&&item.v===1&&item.state&&typeof item.state==='object'?item:null}catch(e){return null}}
-function writeProfile(){if(!activeProgramKey)return;try{localStorage.setItem(PROFILE_PREFIX+activeProgramKey,JSON.stringify({v:1,updatedAt:new Date().toISOString(),state:{...state}}));localStorage.setItem(PROFILE_ACTIVE,activeProgramKey)}catch(e){console.warn('Account profile could not be saved',e)}}
+function writeProfile(){if(!activeProgramKey)return;try{localStorage.setItem(PROFILE_PREFIX+activeProgramKey,JSON.stringify({v:1,updatedAt:new Date().toISOString(),state:{...state}}));localStorage.setItem(PROFILE_ACTIVE,activeProgramKey);window.fourDsQueueCloudSave?.()}catch(e){console.warn('Account profile could not be saved',e)}}
 try{activeProgramKey=localStorage.getItem(PROFILE_ACTIVE)||null}catch(e){}
 try{const x=JSON.parse(sessionStorage.getItem('studio-program-selection')||'null');if(x&&x.v===1&&Array.isArray(x.targets)&&x.targets.length===2&&x.feeUSD>0){
   const incomingKey=profileKey(x.programId||x.label,x.size);if(activeProgramKey&&activeProgramKey!==incomingKey)writeProfile();
@@ -200,7 +201,7 @@ const money2=n=>!Number.isFinite(n)?'—':(n<0?'−':'')+'$'+Math.abs(n).toLocal
 const pct=n=>!Number.isFinite(n)?'—':(100*n).toFixed(1)+'%';const dec=n=>Number.isFinite(n)?n.toLocaleString('en-US',{maximumFractionDigits:2}):'—';const safeNum=(x,fallback=0)=>Number.isFinite(Number(x))?Number(x):fallback;
 const positive=(x,min=0,max=1e9)=>Math.min(max,Math.max(min,safeNum(x)));
 const prob=(x)=>positive(x,0,100)/100;
-const save=()=>{presetDirty=true;try{localStorage.setItem(STORAGE,JSON.stringify(state))}catch(e){}writeProfile();};
+const save=()=>{presetDirty=true;try{localStorage.setItem(STORAGE,JSON.stringify(state))}catch(e){}writeProfile();window.fourDsQueueCloudSave?.()};
 const maxCap={accounts:1000,mirror:25,simulations:20000,weeklySignals:100,randomSeed:2147483647,p1DailyCap:12,p2DailyCap:12,fundedDailyCap:12,p1Days:365,p2Days:365,fundedDays:365};
 const minCap={accounts:1,mirror:1,simulations:250,randomSeed:1,p1DailyCap:1,p2DailyCap:1,fundedDailyCap:1,p1Days:1,p2Days:1,fundedDays:1};
 const percentKeys=new Set(['p1','p2','pf','pc','winRate','marginCeiling','split','payoutPct','refund']);
@@ -354,7 +355,8 @@ window.addEventListener('message',event=>{
  if(msg.type==='studio-rules-height'&&Number.isFinite(Number(msg.height))){$('firmsFrame').style.height=Math.max(700,Math.min(16000,Number(msg.height)+14))+'px';return;}
  if(msg.type==='studio-open-trading-workspace'){$('firmTradingWorkspace').scrollIntoView({behavior:'smooth',block:'start'});return;}
  if(msg.type==='studio-program-change'){useSelectedAccount(msg.payload);return;}
- if(msg.type==='studio-program-rules-updated'){useSelectedAccount(msg.payload,true);return;}
+ if(msg.type==='studio-program-rules-updated'){useSelectedAccount(msg.payload,true);window.fourDsQueueCloudSave?.();return;}
+ if(msg.type==='studio-user-profile-changed'){window.fourDsQueueCloudSave?.();return;}
  if(msg.type==='studio-program-select'){useSelectedAccount(msg.payload,true);$('firmTradingWorkspace').scrollIntoView({behavior:'smooth',block:'start'});}
 });
 function goPage(name){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id==='page-'+name));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===name));window.scrollTo({top:0,behavior:'smooth'});}
@@ -378,5 +380,7 @@ $('compareB').addEventListener('change',e=>{compareB=e.target.value;renderPreset
 
 })();
 </script>
+<script>window.FOUR_DS_CURRENT_USER=(function(){const u=localStorage.getItem("4ds:active-user:v1");return ["doen","dori","dona","dion"].includes(u)?u:"dori"})();</script>
+<script src="cloud-sync.js"></script>
 </body>
 </html>
