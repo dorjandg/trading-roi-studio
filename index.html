@@ -931,17 +931,22 @@ async function syncOverviewAccountSelector(){
   overviewCatalog=await response.json();populateOverviewChoices('all');
  }catch(e){if(hint)hint.textContent='Account list could not load. Choose an account in Prop firms.'}
 }
-let pendingOverviewAccount=null;
+let pendingOverviewAccount=null,overviewRequestedKey=null;
 function chooseOverviewAccount(){
  const programId=$('overviewProgramSelect')?.value,size=Number($('overviewSizeSelect')?.value);
- if(!programId||!Number.isFinite(size)||size<=0)return;
  const p=overviewCatalog?.programs?.[programId];
- if(!p||(p.sizes||[]).every(n=>Number(n)!==size))return;
- const key=profileKey(programId,size);
- pendingOverviewAccount={programId,size};
- const hint=$('overviewAccountHint');if(hint)hint.textContent='Loading account '+p.firm+' · $'+size.toLocaleString('en-US')+' · '+p.name+'…';
- // The Prop firms iframe is the authoritative source for published and edited account rules.
- sendPendingOverviewAccount();
+ if(!p||!Number.isFinite(size)||!(p.sizes||[]).some(n=>Number(n)===size))return;
+ const fee=Number(p.pricesUSD?.[size]);
+ // Apply the selected account immediately from the same firm catalog used by Prop firms.
+ // The iframe is synchronized separately; it must not block the Overview dashboard.
+ pendingOverviewAccount=null;overviewRequestedKey=profileKey(programId,size);
+ const payload={v:1,programId,size,label:p.firm+' '+p.name+' $'+size.toLocaleString('en-US'),compatible:p.compatible===true,targets:p.targets||[],days:p.days||[],daily:p.daily,max:p.max,maxLossUSD:p.firm==='Topstep'?({50000:2000,100000:3000,150000:4500})[size]:null,feeUSD:Number.isFinite(fee)?fee:0};
+ useSelectedAccount(payload);
+ updateOverviewFromActive();
+ const hint=$('overviewAccountHint');
+ if(hint)hint.textContent='Showing '+p.firm+' · $'+size.toLocaleString('en-US')+' · '+p.name+'. Dashboard updated from saved account parameters.';
+ const frame=$('firmsFrame');
+ if(frame?.contentWindow)frame.contentWindow.postMessage({type:'studio-select-account',programId,size},window.location.origin);
 }
 function sendPendingOverviewAccount(){
  const frame=$('firmsFrame');if(!pendingOverviewAccount||!frame?.contentWindow||frame.dataset.accountFrameReady!=='yes')return;
@@ -992,18 +997,19 @@ window.addEventListener('message',event=>{
  if(msg.type==='studio-open-trading-workspace'){$('firmTradingWorkspace').scrollIntoView({behavior:'smooth',block:'start'});return;}
  if(msg.type==='studio-rules-ready'){$('firmsFrame').dataset.accountFrameReady='yes';sendPendingOverviewAccount();return;}
  if(msg.type==='studio-program-change'){
-  if(pendingOverviewAccount&&profileKey(msg.payload?.programId,msg.payload?.size)!==profileKey(pendingOverviewAccount.programId,pendingOverviewAccount.size)){
-   $('firmsFrame').dataset.accountFrameReady='yes';sendPendingOverviewAccount();return;
-  }
-  pendingOverviewAccount=null;
+  if(overviewRequestedKey&&profileKey(msg.payload?.programId,msg.payload?.size)!==overviewRequestedKey)return;
+  overviewRequestedKey=null;
   $('firmsFrame').dataset.accountFrameReady='yes';
-  useSelectedAccount(msg.payload);updateOverviewFromActive();return;
+  if(profileKey(msg.payload?.programId,msg.payload?.size)!==activeProgramKey){
+   useSelectedAccount(msg.payload);
+  }
+  updateOverviewFromActive();return;
  }
  if(msg.type==='studio-program-rules-updated'){useSelectedAccount(msg.payload,true);window.fourDsQueueCloudSave?.();return;}
  if(msg.type==='studio-user-profile-changed'){window.fourDsQueueCloudSave?.();return;}
  if(msg.type==='studio-program-select'){useSelectedAccount(msg.payload,true);$('firmTradingWorkspace').scrollIntoView({behavior:'smooth',block:'start'});}
 });
-function goPage(name){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id==='page-'+name));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===name));if(name==='firms'){requestAnimationFrame(fitFirmFrame);setTimeout(fitFirmFrame,160)}window.scrollTo({top:0,behavior:'smooth'});}
+function goPage(name){if(name==='firms')overviewRequestedKey=null;document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id==='page-'+name));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===name));if(name==='firms'){requestAnimationFrame(fitFirmFrame);setTimeout(fitFirmFrame,160)}window.scrollTo({top:0,behavior:'smooth'});}
 makeFields();initSymbols();render();initScenarioTable();setupFirmFit();
 $('overviewFirmSelect').addEventListener('change',()=>{populateOverviewChoices('firm');chooseOverviewAccount()});
 $('overviewSizeSelect').addEventListener('change',()=>{populateOverviewChoices('size');chooseOverviewAccount()});
