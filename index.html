@@ -204,8 +204,8 @@ html[data-theme="light"] #themeToggle{background:#fff;color:#172638}
   <div class="kpis">
     <div class="kpi"><div class="meta">Planned challenge spending</div><div class="val" id="kpiCost">—</div><div class="note" id="kpiBudget">—</div></div>
     <div class="kpi"><div class="meta">Expected collected rewards</div><div class="val" id="kpiReceipts">—</div><div class="note">Includes expected challenge refunds</div></div>
-    <div class="kpi"><div class="meta">Expected net profit</div><div class="val" id="kpiNet">—</div><div class="note">Rewards − all challenge costs</div></div>
-    <div class="kpi"><div class="meta">Expected net ROI</div><div class="val" id="kpiROI">—</div><div class="note" id="kpiROIx">—</div></div>
+    <div class="kpi"><div class="meta">Expected net profit</div><div class="val" id="kpiNet">—</div><div class="note" id="kpiNetNote">Rewards − challenge costs</div></div>
+    <div class="kpi"><div class="meta" id="kpiROILabel">Expected net ROI</div><div class="val" id="kpiROI">—</div><div class="note" id="kpiROIx">—</div></div>
   </div>
   <div id="warningBox" class="notice warning" style="display:none;margin-bottom:20px"></div>
 
@@ -829,7 +829,7 @@ if(scenarioRows?.length)for(const row of scenarioRows)updateScenarioMetrics(row)
   }
  }
  $('overviewSimulate').disabled=!model.topstep&&!selectedAccountSupportsSimulation;
- $('overviewSimulate').textContent=model.topstep?'Run Topstep estimate':selectedAccountSupportsSimulation?'Run trading simulation':'Simulation unavailable for this program';$('kpiCost').textContent=money(c.cost);$('kpiBudget').textContent=model.topstep?money(state.accounts*reserve)+' reserved for XFA activation · '+money(Math.max(0,state.budget-state.accounts*budgetUnit))+' unallocated':c.cost<=state.budget?money(state.budget-c.cost)+' budget unspent':money(c.cost-state.budget)+' above budget';$('kpiReceipts').textContent=money(c.receipts);$('kpiNet').textContent=money(c.net);$('kpiNet').className='val '+(c.net>=0?'green':'red');$('kpiROI').textContent=pct(c.roi);$('kpiROI').className='val '+(c.roi>=0?'green':'red');$('kpiROIx').textContent=c.roi.toFixed(2)+'× initial spending as NET profit';
+ $('overviewSimulate').textContent=model.topstep?'Run Topstep estimate':selectedAccountSupportsSimulation?'Run trading simulation':'Simulation unavailable for this program';$('kpiCost').textContent=money(c.cost);$('kpiBudget').textContent=model.topstep?money(state.accounts*reserve)+' reserved for XFA activation · '+money(Math.max(0,state.budget-state.accounts*budgetUnit))+' unallocated':c.cost<=state.budget?money(state.budget-c.cost)+' budget unspent':money(c.cost-state.budget)+' above budget';$('kpiReceipts').textContent=money(c.receipts);$('kpiNet').textContent=money(c.net);$('kpiNet').className='val '+(c.net>=0?'green':'red');$('kpiROI').textContent=pct(c.roi);$('kpiROI').className='val '+(c.roi>=0?'green':'red');$('kpiROIx').textContent=c.roi.toFixed(2)+'× initial spending as NET profit';$('kpiROILabel').textContent='Expected net ROI';$('kpiNetNote').textContent='Rewards − challenge costs';
  if(model.topstep){
   if(topstep&&!topstep.error){
    const count=state.accounts,activation=topstepReserveFee(),expense=c.cost+count*topstep.combine*activation;
@@ -837,11 +837,15 @@ if(scenarioRows?.length)for(const row of scenarioRows)updateScenarioMetrics(row)
    const net=receipts-expense;
    $('kpiReceipts').textContent=money(receipts);
    $('kpiNet').textContent=money(net);$('kpiNet').className='val '+(net>=0?'green':'red');
-   $('kpiROI').textContent=expense>0?pct(net/expense):'—';$('kpiROI').className='val '+(net>=0?'green':'red');
-   $('kpiROIx').textContent='First XFA payout only; estimated activation fees '+money(count*topstep.combine*activation);
+   $('kpiROI').textContent=state.budget>0?pct(net/state.budget):'—';$('kpiROI').className='val '+(net>=0?'green':'red');
+   $('kpiROILabel').textContent='Net return on investment budget';
+   $('kpiNetNote').textContent='Rewards − evaluation fees − expected activation fees';
+   $('kpiROIx').textContent='Net profit ÷ '+money(state.budget)+' budget · fee-based ROI '+(expense>0?pct(net/expense):'—')+' · estimated activation fees '+money(count*topstep.combine*activation);
   }else{
    for(const id of ['kpiReceipts','kpiNet','kpiROI'])$(id).textContent='Run estimate';
-   $('kpiROIx').textContent='Topstep Standard first-payout calculation';
+   $('kpiROILabel').textContent='Net return on investment budget';
+   $('kpiNetNote').textContent='Rewards − evaluation fees − expected activation fees';
+   $('kpiROIx').textContent='First XFA payout estimate · ROI = net profit ÷ full investment budget';
   }
  }
  const formula=$('overviewStageFormula');if(formula)formula.textContent=model.topstep?'Combine × XFA Standard payout':phaseModel().phase2?'Phase 1 × Phase 2 × Funded × Collection':phaseModel().phase1?'Evaluation × Funded × Collection':'Funded × Collection';
