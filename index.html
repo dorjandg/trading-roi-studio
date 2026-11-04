@@ -326,7 +326,7 @@ winRate:40,rr:3,simulations:4000,randomSeed:24717,weeklySignals:22,tradeCost:0,
 accountSize:10000,dailyLoss:500,overallLoss:1000,buffer:50,leverage:50,goldPrice:4400,stopDist:5,marginCeiling:90,minRisk:25,
 p1Target:1000,p1Base:350,p1Recovery:250,p1RecoverAfter:2,p1DailyCap:1,p1Days:24,p1MinDays:4,
 p2Target:500,p2Base:200,p2Recovery:200,p2DailyCap:2,p2Days:24,p2MinDays:4,
-topstepDLL:false,topstepPath:"standard",topstepActivationFee:149,fundedBase:250,fundedRecovery:200,fundedBoost:500,boostUnlock:750,fundedDailyCap:3,fundedDays:20,
+topstepDLL:false,topstepPath:"standard",topstepFirstPayoutBalance:4000,topstepActivationFee:149,fundedBase:250,fundedRecovery:200,fundedBoost:500,boostUnlock:750,fundedDailyCap:3,fundedDays:20,
  symbolId:'XAUUSD',customSymbol:'',symbolSpecs:{},rrByTier:{}};
 const FIELDS={
  quickFields:[['budget','Investment budget','USD',1],['price','Challenge price — from Prop firms','USD',1],['extraCost','Additional cost per challenge','USD',1]],
@@ -797,7 +797,10 @@ if(scenarioRows?.length)for(const row of scenarioRows)updateScenarioMetrics(row)
     '<tr><th>Allocated budget</th><th class="num">'+money(monthly+reserve)+'</th><th class="num">'+money(initial+activationReserve)+'</th></tr>'+
     '<tr><td>Remaining cash</td><td class="num">—</td><td class="num">'+money(remaining)+'</td></tr></tbody></table></div>'+
     '<p class="caption" style="margin-top:10px">Extra month: '+money(monthly)+'/account · Paid reset: '+money(monthly)+'/account. Not included above. Activation is paid only if an account passes.</p>'+ 
+     '<div class="field" style="max-width:310px;margin-top:12px"><label for="topstepFirstPayoutBalanceInput">Target balance before first XFA payout (USD)</label><input id="topstepFirstPayoutBalanceInput" type="number" min="250" step="250" value="'+Math.max(250,positive(state.topstepFirstPayoutBalance||4000))+'"><p class="help">Default $4,000. Trading can overshoot the target. The planned second withdrawal is capped at half of the first.</p></div>'+ 
      '<p class="caption">Two-payout example at $4,000 profit: request $2,000 then $1,000, collecting $2,700 after 90/10 split before transfer fees. The second payout needs five NEW qualifying winning days and positive profits since the first; it is not automatic.</p>';
+    const targetInput=$('topstepFirstPayoutBalanceInput');
+    if(targetInput)targetInput.onchange=()=>{const value=Number(targetInput.value);if(Number.isFinite(value)&&value>=250){state.topstepFirstPayoutBalance=value;topstepEstimate=null;save();render();}};
   }
  }
 
@@ -847,7 +850,7 @@ if(scenarioRows?.length)for(const row of scenarioRows)updateScenarioMetrics(row)
    for(const id of ['kpiReceipts','kpiNet','kpiROI'])$(id).textContent='Run estimate';
    $('kpiROILabel').textContent='Net return on investment budget';
    $('kpiNetNote').textContent='Rewards − evaluation fees − expected activation fees';
-   $('kpiROIx').textContent='First XFA payout estimate · ROI = net profit ÷ full investment budget';
+   $('kpiROIx').textContent='Two XFA payout cycles · ROI = net profit ÷ full investment budget';
   }
  }
  const formula=$('overviewStageFormula');if(formula)formula.textContent=model.topstep?'Combine × XFA Standard payout':phaseModel().phase2?'Phase 1 × Phase 2 × Funded × Collection':phaseModel().phase1?'Evaluation × Funded × Collection':'Funded × Collection';
@@ -897,7 +900,7 @@ function mulberry32(seed){let a=seed>>>0;return function(){a=(a+0x6D2B79F5)|0;le
    Intratrade excursion, contract scaling, activation fees and subscriptions
    beyond initial purchase are not modeled. */
 let topstepEstimate=null,topstepSignature='';
-function topstepInputs(){return JSON.stringify([activeProgramKey,state.accountSize,state.winRate,state.weeklySignals,state.tradeCost,state.p1Target,state.p1Days,state.p1DailyCap,state.p1Base,state.p1Recovery,tierRR('p1Base'),tierRR('p1Recovery'),state.fundedBase,state.fundedRecovery,tierRR('fundedBase'),tierRR('fundedRecovery'),state.fundedDays,state.fundedDailyCap,state.simulations,state.randomSeed,state.topstepDLL,state.topstepPath,topstepReserveFee(),state.price,state.extraCost,state.budget]);}
+function topstepInputs(){return JSON.stringify([activeProgramKey,state.accountSize,state.winRate,state.weeklySignals,state.tradeCost,state.p1Target,state.p1Days,state.p1DailyCap,state.p1Base,state.p1Recovery,tierRR('p1Base'),tierRR('p1Recovery'),state.fundedBase,state.fundedRecovery,tierRR('fundedBase'),tierRR('fundedRecovery'),state.fundedDays,state.fundedDailyCap,state.simulations,state.randomSeed,state.topstepDLL,state.topstepPath,state.topstepFirstPayoutBalance,topstepReserveFee(),state.price,state.extraCost,state.budget]);}
 function topstepSimulate(){
  const size=Number(state.accountSize),limit=size===50000?2000:size===100000?3000:size===150000?4500:0;
  if(!limit)return {error:'Choose a Topstep 50K, 100K or 150K account.'};
@@ -908,6 +911,7 @@ function topstepSimulate(){
  const rng=mulberry32((state.randomSeed||24717)>>>0);
  const win=prob(state.winRate),fees=positive(state.tradeCost);
  const dailySignals=Math.max(0,state.weeklySignals/5);
+  const firstPayoutBalance=Math.max(250,positive(state.topstepFirstPayoutBalance||4000));
  let combinePass=0,paid=0,paidSecond=0,rawTotal=0,firstTotal=0,secondTotal=0,eligibleTotal=0,combineBurned=0,combineTimeout=0,fundedBurned=0,fundedTimeout=0;
  function stage(kind){
   const funded=kind==='funded',maxDays=Math.min(365,Math.max(1,Math.round(funded?state.fundedDays:state.p1Days)));
@@ -936,9 +940,9 @@ function topstepSimulate(){
    if(!funded){
     const required=Math.max(target,bestDay/.55);
     if(balance>=required&&dayCount>=2)return {pass:true,breach:false,balance,qualified};
-   }else if(qualified>=5&&balance>=250){
+   }else if(qualified>=5&&balance>=(firstPayout?250:firstPayoutBalance)){
       if(!firstPayout){firstPayout=Math.min(cap,balance*.5);balance-=firstPayout;afterFirstBalance=balance;qualified=0;floor=0;high=Math.max(0,balance);}
-      else if(balance>afterFirstBalance+0.009){secondPayout=Math.min(cap,balance*.5);balance-=secondPayout;return {pass:true,breach:false,balance,qualified,firstPayout,secondPayout};}
+      else if(balance>afterFirstBalance+0.009){secondPayout=Math.min(cap,balance*.5,firstPayout*.5);balance-=secondPayout;return {pass:true,breach:false,balance,qualified,firstPayout,secondPayout};}
     }
   }
   return {pass:funded&&firstPayout>0,breach:false,balance,qualified,firstPayout,secondPayout};
@@ -958,7 +962,7 @@ function refreshTopstepEstimate(){
 }
 function runTopstepEstimate(){
  topstepEstimate=topstepSimulate();topstepSignature=topstepInputs();render();
- if(topstepEstimate.error)notify(topstepEstimate.error);else notify('Topstep Standard first-payout estimate updated.');
+ if(topstepEstimate.error)notify(topstepEstimate.error);else notify('Topstep Standard two-payout estimate updated.');
 }
 function simulateStage(which,rng){const s=state;const size=s.accountSize,overallFloor=size-s.overallLoss,winrate=prob(s.winRate);let balance=size,losses=0,tradeCount=0,daysTraded=0,boostTrades=0;
  const target=which==='p1'?s.p1Target:which==='p2'?s.p2Target:s.profitTarget;
