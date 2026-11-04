@@ -211,7 +211,7 @@ html[data-theme="light"] #themeToggle{background:#fff;color:#172638}
 
   <div class="cols">
     <div>
-      <div class="panel"><div class="panel-header"><div><h2>Progress through evaluation stages</h2><p>Conditional rates are multiplied across the three stages.</p></div><span class="section-tag">02 / Pipeline</span></div><div id="funnel"></div><div class="divider"></div><div class="probrow"><div class="prob"><small>Chance ≥1 payout</small><strong id="pOne">—</strong></div><div class="prob"><small>Chance ≥3× net</small><strong id="pThree">—</strong></div><div class="prob"><small>Chance ≥4× net</small><strong id="pFour">—</strong></div></div><p class="caption">Multiple accounts can share the same trade signal. Mirrored accounts are modeled as perfectly correlated within each mirrored group; groups are assumed independent. Other correlations are not modeled.</p></div>
+      <div class="panel"><div class="panel-header"><div><h2>Progress through evaluation stages</h2><p id="pipelineDescription">Conditional rates are multiplied across the three stages.</p></div><span class="section-tag">02 / Pipeline</span></div><div id="funnel"></div><div id="topstepPipelineFinance" style="display:none;margin-top:18px"></div><div class="divider"></div><div class="probrow"><div class="prob"><small>Chance ≥1 payout</small><strong id="pOne">—</strong></div><div class="prob"><small>Chance ≥3× net</small><strong id="pThree">—</strong></div><div class="prob"><small>Chance ≥4× net</small><strong id="pFour">—</strong></div></div><p class="caption">Multiple accounts can share the same trade signal. Mirrored accounts are modeled as perfectly correlated within each mirrored group; groups are assumed independent. Other correlations are not modeled.</p></div>
     </div>
     <div>
       <div class="panel"><div class="panel-header"><div><h2 id="economicsTitle">Economics per successful payout</h2><p id="economicsDescription">These include challenge losses averaged across all purchases.</p></div></div><div class="metric-row"><div><span id="unitRewardLabel">Reward paid to trader</span><small id="unitRewardDetail">After split and payout fees</small></div><strong id="unitReward">—</strong></div><div class="metric-row"><div><span id="unitRefundLabel">Fee refund on a paid account</span></div><strong id="unitRefund">—</strong></div><div class="metric-row"><div><span id="unitCostLabel">Effective cost per paid account</span><small id="unitCostDetail">Expected purchase fees / payout count − refund</small></div><strong id="unitCost">—</strong></div><div class="metric-row"><div><span id="breakEvenLabel">Break-even payout probability</span></div><strong id="breakEven">—</strong></div><div class="metric-row"><div><span id="needed4Label">Minimum payouts for 4× net</span></div><strong id="needed4">—</strong></div><div class="metric-row"><div><span id="payoutTimingLabel">Optimistic first cash timing</span><small id="payoutTimingDetail">Calendar-day approximation; excludes weekends, delays and trading losses</small></div><strong id="payoutTiming">—</strong></div></div>
@@ -855,7 +855,33 @@ if(scenarioRows?.length)for(const row of scenarioRows)updateScenarioMetrics(row)
  }
  const formula=$('overviewStageFormula');if(formula)formula.textContent=model.topstep?'Combine × XFA Standard payout':phaseModel().phase2?'Phase 1 × Phase 2 × Funded × Collection':phaseModel().phase1?'Evaluation × Funded × Collection':'Funded × Collection';
  const m=phaseModel(),a=state.accounts,b=a*(m.phase1?prob(state.p1):1),d=b*phase2Rate(),e=d*prob(state.pf),f=e*prob(state.pc);
- $('funnel').innerHTML=model.topstep?(funnelRow('Purchased challenges',a,a)+funnelRow('Estimated Combine passes',topstep&&!topstep.error?a*topstep.combine:0,a)+funnelRow('Estimated first XFA payouts',topstep&&!topstep.error?a*topstep.probability:0,a)):funnelRow('Purchased challenges',a,a)+(m.phase1?funnelRow(m.topstep?'Passed Trading Combine':'Passed Phase 1',b,a):'')+(m.phase2?funnelRow('Passed Phase 2',d,a):'')+funnelRow(m.topstep?'XFA payout-planning proxy':m.instant?'Funded reward-planning proxy':'Reached funded profit target (estimate)',e,a)+funnelRow('Expected collected payouts',f,a);
+ $('funnel').innerHTML=model.topstep?(funnelRow('Purchased challenges',a,a)+funnelRow('Estimated Combine passes',topstep&&!topstep.error?a*topstep.combine:0,a)+funnelRow('Estimated first XFA payouts',topstep&&!topstep.error?a*topstep.probability:0,a)+funnelRow('Estimated second XFA payouts',topstep&&!topstep.error?a*topstep.secondProbability:0,a)):funnelRow('Purchased challenges',a,a)+(m.phase1?funnelRow(m.topstep?'Passed Trading Combine':'Passed Phase 1',b,a):'')+(m.phase2?funnelRow('Passed Phase 2',d,a):'')+funnelRow(m.topstep?'XFA payout-planning proxy':m.instant?'Funded reward-planning proxy':'Reached funded profit target (estimate)',e,a)+funnelRow('Expected collected payouts',f,a);
+ $('pipelineDescription').textContent=model.topstep?'Expected account progression and cash flows from the selected Topstep two-payout simulation.':'Conditional rates are multiplied across the three stages.';
+ const finance=$('topstepPipelineFinance');
+ if(finance){
+   finance.style.display=model.topstep?'block':'none';
+   const t=topstep&&!topstep.error?topstep:null;
+   if(model.topstep&&!t){
+     finance.innerHTML='<p class="caption">Run Topstep estimate to calculate evaluation costs, activation fees, first payout and second payout profits.</p>';
+   }else if(model.topstep){
+     const evalFees=a*c.unit;
+     const activationFees=a*t.combine*topstepReserveFee();
+     const payoutOne=a*t.firstPerChallenge;
+     const payoutTwo=a*t.secondPerChallenge;
+     const steps=[
+       {name:'Purchased challenges',accounts:a,change:-evalFees,net:-evalFees},
+       {name:'Combine passed → XFA activation',accounts:a*t.combine,change:-activationFees,net:-evalFees-activationFees},
+       {name:'First XFA payout',accounts:a*t.probability,change:payoutOne,net:payoutOne-evalFees-activationFees},
+       {name:'Second XFA payout',accounts:a*t.secondProbability,change:payoutTwo,net:payoutOne+payoutTwo-evalFees-activationFees}
+     ];
+     const signed=v=>(v>0?'+':'−')+money(Math.abs(v));
+     finance.innerHTML='<h3 style="margin:0 0 9px">Financial progression · '+money(state.budget)+' budget</h3>'+
+       '<div class="tablewrap"><table style="min-width:540px"><thead><tr><th>Stage</th><th class="num">Expected accounts</th><th class="num">Cost / payout</th><th class="num">Cumulative net</th></tr></thead><tbody>'+
+       steps.map(s=>'<tr><td>'+s.name+'</td><td class="num">'+s.accounts.toFixed(2)+'</td><td class="num '+(s.change>=0?'green':'red')+'">'+signed(s.change)+'</td><td class="num '+(s.net>=0?'green':'red')+'">'+signed(s.net)+'</td></tr>').join('')+
+       '<tr><th>Total expected net profit</th><th class="num">—</th><th class="num">'+money(payoutOne+payoutTwo)+'</th><th class="num '+(steps[3].net>=0?'green':'red')+'">'+signed(steps[3].net)+'</th></tr></tbody></table></div>'+
+       '<p class="caption">Costs are negative and payouts are positive. First/second payout figures are expected trader receipts after the modeled 90/10 split. XFA activation costs apply only to estimated Combine passes. Cumulative net deducts costs; remaining cash in the investment budget is not treated as a loss. Values are probability-weighted averages, not guaranteed account counts or receipts.</p>';
+   }
+ }
  $('pOne').textContent=model.topstep?'—':pct(c.atLeast);$('pThree').textContent=model.topstep?'—':pct(c.chance(3));$('pFour').textContent=pct(c.chance(4));$('unitReward').textContent=money(c.reward);$('unitRefund').textContent=money(c.refund);$('unitCost').textContent=money(c.avgCost);$('breakEven').textContent=pct(c.breakEven);$('needed4').textContent=Number.isFinite(c.needed4)?c.needed4:'—';$('payoutTiming').textContent='~'+Math.ceil((m.phase1?state.p1MinDays:0)+(m.phase2?state.p2MinDays:0)+state.reviewDays*(m.phase1?(m.phase2?2:1):0)+state.daysBeforeRequest+state.payoutProcessingDays)+' days';
 
   // The Topstep panel uses actual modeled Combine → XFA first-payout rates, not generic prop-firm assumptions.
