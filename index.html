@@ -188,6 +188,78 @@ html[data-theme="light"] #themeToggle{background:#fff;color:#172638}
  #page-dashboard .probrow{grid-template-columns:1fr 1fr}
 }
 html[data-theme="light"] #topstepBudgetBreakdown .tablewrap{background:var(--panel)}
+</style>
+<style id="studio-mobile-audit-v2">
+/* Narrow-screen audit: keep editable strategy settings visible without horizontal dragging. */
+@media(max-width:700px){
+ #page-firms .risk-phase-group{min-width:0}
+ #page-firms .risk-phase-group>.tablewrap{overflow:visible;border:0;border-radius:0}
+ #page-firms .cash-risk-table{display:block;width:100%;min-width:0;border-collapse:separate}
+ #page-firms .cash-risk-table thead{display:none}
+ #page-firms .cash-risk-table tbody{display:grid;grid-template-columns:1fr;gap:10px;padding:12px}
+ #page-firms .cash-risk-table tbody tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px;border:1px solid var(--border);border-radius:12px;padding:12px;background:var(--panel);min-width:0}
+ #page-firms .cash-risk-table tbody tr:hover{background:var(--panel)}
+ #page-firms .cash-risk-table td{display:block;min-width:0;width:auto;border:0;padding:0;text-align:left}
+ #page-firms .cash-risk-table td:first-child{grid-column:1/-1;padding-bottom:7px;border-bottom:1px solid var(--border)}
+ #page-firms .cash-risk-table td:first-child strong{font-size:13px}
+ #page-firms .cash-risk-table td:nth-child(2)::before,#page-firms .cash-risk-table td:nth-child(3)::before,#page-firms .cash-risk-table td:nth-child(4)::before{display:block;color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.2px;margin-bottom:5px}
+ #page-firms .cash-risk-table td:nth-child(2)::before{content:"STOP LOSS · USD"}
+ #page-firms .cash-risk-table td:nth-child(3)::before{content:"RISK / REWARD"}
+ #page-firms .cash-risk-table td:nth-child(4)::before{content:"WINNING PROFIT · USD"}
+ #page-firms .cash-risk-table td:nth-child(4){grid-column:1/-1;background:var(--panel2);border-radius:9px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+ #page-firms .cash-risk-table td:nth-child(4)::before{margin:0}
+ #page-firms .cash-risk-table td[data-risk-profit]{font-size:18px;font-weight:800}
+ #page-firms .cash-risk-table input{width:100%;min-width:0;max-width:none;height:44px;margin:0;font-size:16px;text-align:left}
+ #page-firms .risk-phase-group [data-phase-meta]{margin-left:0!important;margin-right:0!important}
+ #page-firms .risk-phase-group [id$="Fields"]{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #page-firms .two-up{display:block}
+ #page-firms .two-up>.panel,#page-firms .two-up>div>.panel{min-width:0}
+ #page-scaling .scenario-scroll{position:relative;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain}
+ #page-scaling .scenario-table{min-width:760px}
+ #page-scaling .scenario-table th:first-child,#page-scaling .scenario-table td:first-child{position:sticky;left:0;z-index:1;background:var(--panel2);box-shadow:1px 0 0 var(--border)}
+ #page-scaling .scenario-table th:first-child{z-index:2}
+ #page-scaling .scenario-table td.scenario-detail-cell{position:static;background:var(--panel)}
+ #page-scaling .tablewrap:not(.scenario-scroll) table{min-width:610px}
+ #page-presets .tablewrap table{min-width:0;width:100%;table-layout:fixed}
+ #page-presets .tablewrap th,#page-presets .tablewrap td{padding:10px 8px;overflow-wrap:anywhere}
+ #page-presets .tablewrap th:first-child,#page-presets .tablewrap td:first-child{width:38%}
+ #page-dashboard #topstepPipelineFinance .tablewrap{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;border:1px solid var(--border)}
+ #page-dashboard #topstepPipelineFinance table{min-width:550px!important}
+ #page-dashboard #topstepPipelineFinance th,#page-dashboard #topstepPipelineFinance td{white-space:nowrap}
+ #page-dashboard #topstepPipelineFinance th:first-child,#page-dashboard #topstepPipelineFinance td:first-child{white-space:normal;min-width:135px}
+ #page-dashboard #topstepBudgetBreakdown table{table-layout:fixed;min-width:0!important}
+ #page-dashboard #topstepBudgetBreakdown th:first-child,#page-dashboard #topstepBudgetBreakdown td:first-child{width:46%}
+ .panel-header{flex-wrap:wrap}
+ .panel-header>.section-tag,.panel-header>.tag{flex:0 0 auto}
+ #page-dashboard .metric-row strong{max-width:47%}
+ #page-dashboard .probrow{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+ #page-dashboard .prob{min-width:0;padding:10px 8px}
+ #page-dashboard .prob strong{font-size:18px}
+ #page-dashboard .prob small{overflow-wrap:anywhere}
+ .formgrid,.formgrid.three{gap:12px}
+ .formgrid>.field{min-width:0}
+ .field input,.field select,.preset-select{width:100%;min-width:0}
+ .actionrow{align-items:stretch}
+}
+@media(max-width:440px){
+ #page-firms .risk-phase-group [id$="Fields"],#page-scaling #quickFields,#page-profile .formgrid,#page-presets .formgrid{grid-template-columns:1fr}
+ #page-dashboard .probrow{grid-template-columns:repeat(3,minmax(0,1fr))}
+ #page-dashboard .prob strong{font-size:16px}
+ #page-dashboard .overview-account-grid{grid-template-columns:1fr}
+ #page-scaling .scenario-editor-grid{grid-template-columns:1fr 1fr}
+ #page-dashboard .kpi .val{font-size:clamp(18px,5.5vw,23px)}
+ .panel-header{gap:8px}
+ .panel-header h2{font-size:18px}
+ .notice,.caption{overflow-wrap:anywhere}
+}
+@media(max-width:340px){
+ #page-firms .cash-risk-table tbody tr{grid-template-columns:1fr}
+ #page-firms .cash-risk-table td:first-child,#page-firms .cash-risk-table td:nth-child(4){grid-column:1}
+ #page-dashboard .probrow{grid-template-columns:1fr 1fr}
+ #page-scaling .scenario-editor-grid{grid-template-columns:1fr}
+}
+html[data-theme="light"] #page-firms .cash-risk-table tbody tr{background:var(--panel)}
+html[data-theme="light"] #page-firms .cash-risk-table td:nth-child(4){background:var(--panel2)}
 </style></head>
 <body>
 <div class="shell">
