@@ -444,8 +444,13 @@
       "sources": [
         "https://apextraderfunding.com/help-center/eod-trailing-drawdown-accounts/eod-evaluations/",
         "https://apextraderfunding.com/help-center/evaluation-accounts-ea/intraday-trailing-drawdown-evaluations/",
-        "https://apextraderfunding.com/help-center/additional-helpful-items/position-sizing-evaluation/"
-      ]
+        "https://apextraderfunding.com/help-center/additional-helpful-items/position-sizing-evaluation/",
+        "https://apextraderfunding.com/help-center/uncategorized/no-activation-fee-evaluations/"
+      ],
+      "restrictions": {
+        "activation": "7 days from passing evaluation for currently described Performance Account plans",
+        "noActivationFee": "No-activation-fee evaluations are a separate purchase option"
+      }
     },
     "takeprofit": {
       "status": "reviewed-partial",
@@ -453,7 +458,7 @@
         "minDays": [
           3
         ],
-        "consistency": "50% best day; exceeding increases required progress, not an immediate failure",
+        "consistency": "Best single day at most 50% of total profits; otherwise target effectively increases",
         "targetsUSDBySize": {
           "25000": 1500,
           "150000": 9000
@@ -466,7 +471,10 @@
       },
       "restrictions": {
         "hold": "No overnight futures holdings; restricted products/trading hours",
-        "news": "PRO restricted around selected high-impact events"
+        "news": "PRO restricted around selected high-impact events",
+        "ea": "Automated trading bots are prohibited on published main product page",
+        "counterPositions": "Counter positions prohibited",
+        "overnight": "No holding futures positions past approved session close"
       },
       "funded": {
         "split": "PRO 80%, PRO+ 90%",
@@ -475,8 +483,26 @@
       },
       "sources": [
         "https://takeprofittrader.com/blog/3-day-evals",
-        "https://try.takeprofittrader.com/TPT-FAQs-nf40-4-0725"
-      ]
+        "https://try.takeprofittrader.com/TPT-FAQs-nf40-4-0725",
+        "https://takeprofittrader.com/",
+        "https://takeprofittrader.com/es/blog/sale"
+      ],
+      "sizesUSD": [
+        25000,
+        50000,
+        75000,
+        100000,
+        150000
+      ],
+      "pricesUSD": {
+        "25000": 150,
+        "50000": 170,
+        "75000": 245,
+        "100000": 330,
+        "150000": 360
+      },
+      "pricingNote": "Official standard evaluation monthly subscription prices. Temporary promotions (including November 2026 NOFEE50) and activation fees are separate; checkout price may vary.",
+      "pricingFrequency": "Monthly until passing evaluation; funded account may have separate one-time activation fee."
     },
     "fundednext-futures": {
       "status": "requires-variant-selection",
@@ -656,17 +682,11 @@
     "mff-builder": {
       "status": "reviewed-partial",
       "sizesUSD": [
-        25000,
-        50000,
-        100000,
-        150000
+        50000
       ],
       "evaluation": {
         "targetsUSDBySize": {
-          "25000": 1500,
-          "50000": 3000,
-          "100000": 6000,
-          "150000": 9000
+          "50000": 3000
         },
         "minDays": [
           1
@@ -674,33 +694,54 @@
         "consistency": "None"
       },
       "loss": {
-        "type": "EOD trailing",
+        "type": "End-of-day trailing",
         "maximumUSDBySize": {
-          "25000": 1000,
-          "50000": 2000,
-          "100000": 3000,
-          "150000": 4500
+          "50000": 2000
+        },
+        "alternativeMaximumUSDBySize": {
+          "50000": 1500
         },
         "dailyUSDBySize": {
-          "25000": 600,
-          "50000": 1000,
-          "100000": 1750,
-          "150000": 2500
+          "50000": 1000
         },
-        "dailyBreach": "Soft pause"
+        "dailyBreach": "Soft pause; two MLL variants chosen at checkout"
       },
       "margin": {
         "maximumContractsBySize": {
-          "25000": 2,
-          "50000": 4,
-          "100000": 6,
-          "150000": 9
+          "50000": 4
         },
         "microToMiniRatio": "10:1"
       },
       "sources": [
-        "https://help.myfundedfutures.com/en/articles/11802636-traders-evaluation-simplified"
-      ]
+        "https://help.myfundedfutures.com/en/articles/11802636-traders-evaluation-simplified",
+        "https://help.myfundedfutures.com/en/articles/14290805-builder-plan-50k-a-comprehensive-guide"
+      ],
+      "pricesUSD": {
+        "50000": 153
+      },
+      "priceVariantsUSD": {
+        "Builder 50K Default MLL $2000": {
+          "50000": 153
+        },
+        "Builder 50K Alternative MLL $1500": {
+          "50000": 125
+        }
+      },
+      "pricingNote": "50K Builder confirmed from current dedicated Builder product page. Previously broad 25K–150K list related to general evaluation offerings, not confirmed as Builder. Prices without promotions.",
+      "funded": {
+        "split": "80% sim payouts",
+        "maxActiveBuilderSimAccounts": 1,
+        "maximumPayoutUSD": 2000,
+        "maximumSimPayouts": 5,
+        "payoutBufferUSDByVariant": {
+          "default": 2100,
+          "alternative": 1600
+        },
+        "minimumNetProfitUSD": 500,
+        "minimumQualifyingDaysPerCycle": 2,
+        "consistency": "50% max best-day share",
+        "inactivity": "7 calendar days"
+      }
     },
     "mff-rapid": {
       "status": "requires-variant-selection",
@@ -721,7 +762,8 @@
           "100000": 6000,
           "150000": 9000
         },
-        "consistency": "Rapid Intraday: 50% and 2 days; Rapid EOD: 30% and 4 days"
+        "consistency": "Rapid Intraday: 50% and 2 days; Rapid EOD: 30% and 4 days",
+        "exceptions": "Rapid EOD currently confirmed only at $25K and $50K; Rapid Intraday at $25K/$50K/$100K/$150K. Do not assume any size applies to every variant."
       },
       "loss": {
         "type": "Variant-dependent EOD trailing floors; 25K $1,000 / 50K $2,000 / 100K $3,000 / 150K $4,500 for Intraday plan",
