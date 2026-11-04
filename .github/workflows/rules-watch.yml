@@ -1,0 +1,46 @@
+name: Prop firm official-rules drift watch
+on:
+  schedule:
+    - cron: '17 7 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check official source markers (no parameter changes)
+        run: python3 scripts/rules_watch.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prop-firm-rules-watch-report
+          path: rule-watch-report.json
+          retention-days: 30
+      - name: Flag changed or inaccessible sources for manual review
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path("rule-watch-report.json").read_text())
+          problems=[x for x in data["results"] if x["status"]!="checks_passed"]
+          if problems:
+              Path("rule-watch-findings.txt").write_text(
+                  "Automated source marker checks found potential changes or access problems. "
+                  "This is NOT a confirmed rule change. Review provider rules manually before editing models.\n\n"+
+                  "\n".join(f"- {x['name']}: {x['status']} · {x['url']} · "
+                            f"{x.get('missing_markers', x.get('error',''))}" for x in problems))
+          PY
+          if [ -f rule-watch-findings.txt ]; then
+            TITLE="Rules Watch: review official prop-firm sources"
+            OPEN=$(gh issue list --repo "$GH_REPO" --state open --search "in:title $TITLE" --json title --jq 'map(select(.title == "Rules Watch: review official prop-firm sources")) | length')
+            if [ "$OPEN" = "0" ]; then
+              gh issue create --repo "$GH_REPO" --title "$TITLE" --body-file rule-watch-findings.txt
+            else
+              echo "Existing review issue is open. No duplicate created."
+            fi
+          fi
