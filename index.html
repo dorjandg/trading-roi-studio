@@ -893,45 +893,35 @@ function useSelectedAccount(x,force=false){
 let overviewCatalog=null;
 function overviewOption(value,label){const o=document.createElement('option');o.value=value;o.textContent=label;return o;}
 function populateOverviewChoices(changed='all'){
- const firm=$('overviewFirmSelect'),size=$('overviewSizeSelect'),program=$('overviewProgramSelect'),hint=$('overviewAccountHint');
+ const firm=$('overviewFirmSelect'),size=$('overviewSizeSelect'),program=$('overviewProgramSelect');
  if(!overviewCatalog||!firm||!size||!program)return;
  const entries=Object.entries(overviewCatalog.programs||{});
  const activeId=String(activeProgramKey||'').split(':')[0],activeSize=String(activeProgramKey||'').split(':')[1];
- const active=overviewCatalog.programs?.[activeId];
  if(changed==='all'){
   firm.replaceChildren(...[...new Set(entries.map(([,p])=>p.firm))].map(f=>overviewOption(f,f)));
-  if(active)firm.value=active.firm;
+  const active=overviewCatalog.programs[activeId];if(active)firm.value=active.firm;
  }
- const matching=entries.filter(([,p])=>p.firm===firm.value);
- const previousProgram=program.value,previousSize=size.value;
- // Show ALL account types for this firm, regardless of the currently selected amount.
- program.replaceChildren(...matching.map(([id,p])=>overviewOption(id,p.name)));
- if(changed==='all'&&matching.some(([id])=>id===activeId))program.value=activeId;
- else if(matching.some(([id])=>id===previousProgram))program.value=previousProgram;
- let selected=overviewCatalog.programs[program.value];
- if(changed==='size'){
-  // When an amount is chosen, prefer retaining the type, but switch if that amount is unavailable.
-  if(!selected?.sizes?.some(n=>String(n)===previousSize)){
-   const alternative=matching.find(([,p])=>p.sizes?.some(n=>String(n)===previousSize));
-   if(alternative){program.value=alternative[0];selected=alternative[1]}
-  }
+ if(changed==='all'||changed==='firm'){
+  const previous=program.value,available=entries.filter(([,p])=>p.firm===firm.value);
+  program.replaceChildren(...available.map(([id,p])=>overviewOption(id,p.name)));
+  if(changed==='all'&&available.some(([id])=>id===activeId))program.value=activeId;
+  else if(available.some(([id])=>id===previous))program.value=previous;
  }
- const sizes=(selected?.sizes||[]).slice().sort((a,b)=>a-b);
- size.replaceChildren(...sizes.map(n=>overviewOption(String(n),'$'+Number(n).toLocaleString('en-US'))));
- if(changed==='all'&&sizes.some(n=>String(n)===activeSize))size.value=activeSize;
- else if(sizes.some(n=>String(n)===previousSize))size.value=previousSize;
- if(hint&&!pendingOverviewAccount)hint.textContent='Selected: '+firm.value+' · '+(size.selectedOptions[0]?.textContent||'')+' · '+(program.selectedOptions[0]?.textContent||'')+'. Account amounts depend on account type.';
+ if(changed!=='size'){
+  const previous=size.value,sizes=(overviewCatalog.programs[program.value]?.sizes||[]).slice().sort((x,y)=>x-y);
+  size.replaceChildren(...sizes.map(n=>overviewOption(String(n),'$'+Number(n).toLocaleString('en-US'))));
+  if(changed==='all'&&sizes.some(n=>String(n)===activeSize))size.value=activeSize;
+  else if(sizes.some(n=>String(n)===previous))size.value=previous;
+ }
 }
 function updateOverviewFromActive(){
- const key=String(activeProgramKey||''),p=overviewCatalog?.programs?.[key.split(':')[0]];
+ const [id,amount]=String(activeProgramKey||'').split(':'),p=overviewCatalog?.programs?.[id];
  if(!p)return;
  const firm=$('overviewFirmSelect'),size=$('overviewSizeSelect'),program=$('overviewProgramSelect');
  if(!firm||!size||!program)return;
- firm.value=p.firm;
- populateOverviewChoices('firm');
- program.value=key.split(':')[0];
- populateOverviewChoices('program');
- size.value=key.split(':')[1];
+ firm.value=p.firm;populateOverviewChoices('firm');program.value=id;populateOverviewChoices('program');size.value=amount;
+ const hint=$('overviewAccountHint');
+ if(hint)hint.textContent='Active account: '+p.firm+' · $'+Number(amount).toLocaleString('en-US')+' · '+p.name+'. Dashboard uses saved settings.';
 }
 async function syncOverviewAccountSelector(){
  const hint=$('overviewAccountHint');
@@ -954,8 +944,7 @@ function chooseOverviewAccount(){
  updateOverviewFromActive();
  const hint=$('overviewAccountHint');
  if(hint)hint.textContent='Showing '+p.firm+' · $'+size.toLocaleString('en-US')+' · '+p.name+'. Dashboard updated from saved account parameters.';
- const frame=$('firmsFrame');
- if(frame?.contentWindow)frame.contentWindow.postMessage({type:'studio-select-account',programId,size},window.location.origin);
+ // Overview changes do not depend on or notify the hidden iframe.
 }
 function sendPendingOverviewAccount(){
  const frame=$('firmsFrame');if(!pendingOverviewAccount||!frame?.contentWindow||frame.dataset.accountFrameReady!=='yes')return;
@@ -1006,19 +995,21 @@ window.addEventListener('message',event=>{
  if(msg.type==='studio-open-trading-workspace'){$('firmTradingWorkspace').scrollIntoView({behavior:'smooth',block:'start'});return;}
  if(msg.type==='studio-rules-ready'){$('firmsFrame').dataset.accountFrameReady='yes';sendPendingOverviewAccount();return;}
  if(msg.type==='studio-program-change'){
-  if(overviewRequestedKey&&profileKey(msg.payload?.programId,msg.payload?.size)!==overviewRequestedKey)return;
-  overviewRequestedKey=null;
   $('firmsFrame').dataset.accountFrameReady='yes';
-  if(profileKey(msg.payload?.programId,msg.payload?.size)!==activeProgramKey){
-   useSelectedAccount(msg.payload);
-  }
+  if(!$('page-firms')?.classList.contains('active'))return;
+  overviewRequestedKey=null;
+  if(profileKey(msg.payload?.programId,msg.payload?.size)!==activeProgramKey)useSelectedAccount(msg.payload);
   updateOverviewFromActive();return;
  }
  if(msg.type==='studio-program-rules-updated'){useSelectedAccount(msg.payload,true);window.fourDsQueueCloudSave?.();return;}
  if(msg.type==='studio-user-profile-changed'){window.fourDsQueueCloudSave?.();return;}
  if(msg.type==='studio-program-select'){useSelectedAccount(msg.payload,true);$('firmTradingWorkspace').scrollIntoView({behavior:'smooth',block:'start'});}
 });
-function goPage(name){if(name==='firms')overviewRequestedKey=null;document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id==='page-'+name));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===name));if(name==='firms'){requestAnimationFrame(fitFirmFrame);setTimeout(fitFirmFrame,160)}window.scrollTo({top:0,behavior:'smooth'});}
+function goPage(name){if(name==='firms')overviewRequestedKey=null;document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id==='page-'+name));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===name));if(name==='firms'){
+ const [programId,size]=String(activeProgramKey||'').split(':');
+ if(programId&&Number(size)>0)$('firmsFrame')?.contentWindow?.postMessage({type:'studio-select-account',programId,size:Number(size)},window.location.origin);
+ requestAnimationFrame(fitFirmFrame);setTimeout(fitFirmFrame,160);
+}window.scrollTo({top:0,behavior:'smooth'});}
 makeFields();initSymbols();render();initScenarioTable();setupFirmFit();
 $('overviewFirmSelect').addEventListener('change',()=>{populateOverviewChoices('firm');chooseOverviewAccount()});
 $('overviewSizeSelect').addEventListener('change',()=>{populateOverviewChoices('size');chooseOverviewAccount()});
