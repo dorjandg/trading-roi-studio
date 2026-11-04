@@ -16,7 +16,12 @@
         "max": 10,
         "minDays": 4
       },
-      "notes": "Rules depend on phase, platform, region and current terms; verify funded restrictions."
+      "notes": "Rules depend on phase, platform, region and current terms; verify funded restrictions.",
+      "limits": {
+        "maxAllocationUSD": 400000,
+        "scope": "per trader or strategy, across FTMO accounts and products before scaling",
+        "source": "https://ftmo.com/en/faq/how-many-accounts-can-i-have/"
+      }
     },
     {
       "id": "ftmo1",
@@ -67,9 +72,20 @@
           "50000": 3000,
           "100000": 6000,
           "150000": 9000
-        }
+        },
+        "fundedStandardWinningDays": 5,
+        "fundedStandardMinWinningDayUSD": 150,
+        "fundedStandardMaxGrossPayoutPercentOfBalance": 50,
+        "fundedStandardMaxPayoutUSD": 5000,
+        "fundedStandardTraderSplitPercent": 90
       },
-      "notes": "Standard Trading Combine; XFA and payout stages have separate rules."
+      "notes": "Standard Trading Combine; XFA and payout stages have separate rules.",
+      "limits": {
+        "maxActiveFunded": 5,
+        "maxTradingCombines": null,
+        "source": "https://help.topstep.com/en/articles/8284215-express-funded-account-parameters",
+        "notes": "Up to five active XFA, unlimited standard Trading Combines; active XFA cap differs from purchase count."
+      }
     },
     {
       "id": "fundednext-stellar2",
