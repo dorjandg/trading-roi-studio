@@ -302,7 +302,7 @@ let selectedAccountSupportsSimulation=true;
 function useSelectedAccount(x,force=false){
  if(!x||x.v!==1||!x.programId||!Number.isFinite(Number(x.size))||Number(x.size)<=0)return;
  const newKey=profileKey(x.programId,x.size),isNew=activeProgramKey!==newKey;
- if(!isNew&&!force)return;
+ if(!isNew&&!force){selectedAccountSupportsSimulation=x.compatible===true;const btn=$('simulate');if(btn)btn.disabled=!selectedAccountSupportsSimulation;return;}
  if(isNew&&activeProgramKey)writeProfile();
  const profile=storedProfile(newKey);
  if(isNew){state=profile?{...DEFAULT,...profile.state}:{...DEFAULT};}
@@ -310,12 +310,12 @@ function useSelectedAccount(x,force=false){
  state.accountSize=n;
  if(Number.isFinite(Number(x.feeUSD))&&Number(x.feeUSD)>0)state.price=Number(x.feeUSD);
  if(Array.isArray(x.targets)){
-  if(Number.isFinite(Number(x.targets[0])))state.p1Target=n*Number(x.targets[0])/100;
-  if(Number.isFinite(Number(x.targets[1])))state.p2Target=n*Number(x.targets[1])/100;
+  if(x.targets[0]!=null&&Number.isFinite(Number(x.targets[0])))state.p1Target=n*Number(x.targets[0])/100;
+  if(x.targets[1]!=null&&Number.isFinite(Number(x.targets[1])))state.p2Target=n*Number(x.targets[1])/100;
  }
  if(Array.isArray(x.days)){
-  if(Number.isFinite(Number(x.days[0])))state.p1MinDays=Number(x.days[0]);
-  if(Number.isFinite(Number(x.days[1])))state.p2MinDays=Number(x.days[1]);
+  if(x.days[0]!=null&&Number.isFinite(Number(x.days[0])))state.p1MinDays=Number(x.days[0]);
+  if(x.days[1]!=null&&Number.isFinite(Number(x.days[1])))state.p2MinDays=Number(x.days[1]);
  }
  if(x.daily!=null&&Number.isFinite(Number(x.daily)))state.dailyLoss=n*Number(x.daily)/100;
  if(x.max!=null&&Number.isFinite(Number(x.max)))state.overallLoss=n*Number(x.max)/100;
@@ -330,6 +330,7 @@ function useSelectedAccount(x,force=false){
  const notice=$('firmStrategyStatus');
  if(notice)notice.textContent=label+' · '+(profile?'Saved trading settings restored.':'New trading profile created.')+(selectedAccountSupportsSimulation?' Existing simulation is approximate and does not enforce all firm rules.':' Rule reference only: this simulator does not support this program.');
  const btn=$('simulate');if(btn)btn.disabled=!selectedAccountSupportsSimulation;
+ const phase1Panel=$('phase1Fields')?.closest('.panel'),phase2Panel=$('phase2Fields')?.closest('.panel');if(phase1Panel)phase1Panel.style.display=x.programId==='instant'?'none':'';if(phase2Panel)phase2Panel.style.display=['ftmo2','holaPrime','holaPro'].includes(x.programId)?'':'none';
  const simNotice=$('simulationStatus');if(simNotice)simNotice.textContent=selectedAccountSupportsSimulation?'Ready for approximate simulation':'Simulation unavailable for selected challenge';
  const badge=$('activeAccountProfile');if(badge)badge.textContent='Selected account: '+label+' · Personal trading settings saved automatically in this browser.';
 }
@@ -339,6 +340,7 @@ window.addEventListener('message',event=>{
  if(msg.type==='studio-rules-height'&&Number.isFinite(Number(msg.height))){$('firmsFrame').style.height=Math.max(700,Math.min(16000,Number(msg.height)+14))+'px';return;}
  if(msg.type==='studio-open-trading-workspace'){$('firmTradingWorkspace').scrollIntoView({behavior:'smooth',block:'start'});return;}
  if(msg.type==='studio-program-change'){useSelectedAccount(msg.payload);return;}
+ if(msg.type==='studio-program-rules-updated'){useSelectedAccount(msg.payload,true);return;}
  if(msg.type==='studio-program-select'){useSelectedAccount(msg.payload,true);$('firmTradingWorkspace').scrollIntoView({behavior:'smooth',block:'start'});}
 });
 function goPage(name){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id==='page-'+name));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===name));window.scrollTo({top:0,behavior:'smooth'});}
