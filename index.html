@@ -68,7 +68,7 @@ table{width:100%;border-collapse:collapse;text-align:left;min-width:550px}th,td{
 <script>window.FOUR_DS_CLOUD_ENDPOINT = "https://script.google.com/macros/s/AKfycbyZW792ZLBPxusQwthCJr0bVdZwCjXyeNaklq4Dk-BuSQ8P9gdg2zdTiWFKEmYuy5sY9Q/exec";</script>
 <script src="cloud-bootstrap.js?v=4ds-auto-first-20261104-a"></script>
 <script>window.FOUR_DS_BOOTSTRAP = window.FOUR_DS_BOOTSTRAP || Promise.resolve('bootstrap-script-unavailable');</script>
-<style>.overview-account-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}@media(max-width:720px){.overview-account-grid{grid-template-columns:1fr}}</style></head>
+<style>.overview-account-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}@media(max-width:720px){.overview-account-grid{grid-template-columns:1fr}}</style><style>.overview-summary-strip{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:14px 18px;border:1px solid var(--border);border-radius:14px;background:var(--panel2);margin-bottom:18px;flex-wrap:wrap}.overview-summary-strip>div:first-child{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.overview-summary-strip strong{font-size:28px;color:var(--green)}.overview-summary-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}@media(max-width:720px){.overview-summary-strip{align-items:flex-start}.overview-summary-strip>div:first-child{gap:8px}}</style></head>
 <body>
 <div class="shell">
 <header class="top">
@@ -151,11 +151,8 @@ table{width:100%;border-collapse:collapse;text-align:left;min-width:550px}th,td{
   <div class="panel" style="margin-top:19px"><div class="panel-header"><div><h2>Simulation results</h2><p>Estimated pass rates, trade counts and risk exhaustion from the latest simulation. Winning profits are already shown inside each phase above.</p></div></div><div id="simResults" class="notice">Run the simulation to estimate stage pass rates and average trade counts.</div></div>
 </div>
 </section>
-<section id="page-dashboard" class="page active"><div class="notice" style="margin-bottom:14px"><strong>Where to edit:</strong> Account settings, rules, win rate, RR and payouts → <button class="btn small primary" data-nav="firms">Prop firms</button>. Investment budget and account count → <button class="btn small" data-nav="scaling">Investments & ROI</button>. This Overview shows calculated results.</div><div class="panel" style="margin-bottom:14px"><div class="panel-header"><div><h2>Overview account</h2><p>Select the prop-firm program and account size. All Overview figures use the selected account's saved parameters.</p></div></div><div class="formgrid overview-account-grid"><div class="field"><label for="overviewFirmSelect">1. Prop firm</label><select id="overviewFirmSelect"><option value="">Loading firms…</option></select></div><div class="field"><label for="overviewSizeSelect">2. Account amount</label><select id="overviewSizeSelect"><option value="">Choose amount</option></select></div><div class="field"><label for="overviewProgramSelect">3. Account type</label><select id="overviewProgramSelect"><option value="">Choose account type</option></select></div></div><div style="margin-top:12px"><button class="btn small" type="button" data-nav="firms">Edit selected account in Prop firms</button></div><p class="caption" id="overviewAccountHint" style="margin-top:10px">Choose an account to load its trading rules, risk settings, payout assumptions and ROI.</p></div><div id="activeAccountProfile" class="notice" style="margin-bottom:12px"></div>
-  <div class="hero">
-    <div class="hero-main"><div class="eyebrow"><span class="dot"></span> Overview · results from selected account</div><h1>Build the payout.<br><span style="color:var(--green)">Measure the cost.</span></h1><p>View results for the selected Prop Firms account. Edit its trading and payout parameters under Prop firms; compare different investment amounts under Investments & ROI.</p><div class="actionrow" style="margin-top:23px"><button class="btn primary" data-nav="firms">Open account trading settings →</button><button class="btn" data-nav="scaling">Compare investments</button><button class="btn" data-nav="presets">Saved presets</button></div></div>
-    <div class="hero-aside"><div><span class="section-tag">Modeled combined payout rate</span><div class="big" id="heroRate">—</div><div class="subline">Phase 1 × Phase 2 × Funded × Collection</div></div><div><span class="tag" id="modeLabel">Manual stage estimates</span><div class="subline" style="margin-top:12px">These are adjustable scenarios, not guaranteed trading returns.</div></div></div>
-  </div>
+<section id="page-dashboard" class="page active"><div class="notice" style="margin-bottom:14px"><strong>Where to edit:</strong> Account settings, rules, win rate, RR and payouts → <button class="btn small primary" data-nav="firms">Prop firms</button>. Investment budget and account count → <button class="btn small" data-nav="scaling">Investments & ROI</button>. This Overview shows calculated results.</div><div class="panel" style="margin-bottom:14px"><div class="panel-header"><div><h2>Overview account</h2><p>Choose firm, amount and account type. The dashboard updates automatically.</p></div></div><div class="formgrid overview-account-grid"><div class="field"><label for="overviewFirmSelect">1. Prop firm</label><select id="overviewFirmSelect"><option value="">Loading firms…</option></select></div><div class="field"><label for="overviewSizeSelect">2. Account amount</label><select id="overviewSizeSelect"><option value="">Choose amount</option></select></div><div class="field"><label for="overviewProgramSelect">3. Account type</label><select id="overviewProgramSelect"><option value="">Choose account type</option></select></div></div><div style="margin-top:12px"><button class="btn small" type="button" data-nav="firms">Edit selected account in Prop firms</button></div><p class="caption" id="overviewAccountHint" style="margin-top:10px">Choose an account to load its trading rules, risk settings, payout assumptions and ROI.</p></div><div id="activeAccountProfile" class="caption" style="margin:0 0 12px"></div>
+  <div class="overview-summary-strip"><div><span class="section-tag">Modeled payout probability</span><strong id="heroRate">—</strong><span class="caption" id="overviewStageFormula">Selected account stages × payout collection</span></div><div class="overview-summary-actions"><span class="tag" id="modeLabel">Manual stage estimates</span><button class="btn small" data-nav="firms">Edit trading settings</button><button class="btn small" data-nav="scaling">Compare investments</button></div></div>
   <div class="kpis">
     <div class="kpi"><div class="meta">Challenge spending</div><div class="val" id="kpiCost">—</div><div class="note" id="kpiBudget">—</div></div>
     <div class="kpi"><div class="meta">Expected collected rewards</div><div class="val" id="kpiReceipts">—</div><div class="note">Includes expected challenge refunds</div></div>
@@ -720,6 +717,7 @@ function render(){applyPhaseVisibility();
  if(p2)p2.textContent='Profit target: '+money(state.p2Target)+' · Minimum trading days: '+state.p2MinDays+' · Set by selected firm rules above.';
  if(fund)fund.textContent='Funded payout eligibility depends on the selected firm. The payout planning target below is an estimate, not an official payout rule.';
 if(scenarioRows?.length)for(const row of scenarioRows)updateScenarioMetrics(row);const src=$('investmentAccountSource');if(src)src.textContent=activeProgramKey||'No account selected — sample defaults in use';const c=calc();$('heroRate').textContent=pct(c.pass);$('modeLabel').textContent=mode==='simulation'?'Trading-rule Monte Carlo estimates':'Manual stage estimates';$('kpiCost').textContent=money(c.cost);$('kpiBudget').textContent=c.cost<=state.budget?money(state.budget-c.cost)+' budget unspent':money(c.cost-state.budget)+' above budget';$('kpiReceipts').textContent=money(c.receipts);$('kpiNet').textContent=money(c.net);$('kpiNet').className='val '+(c.net>=0?'green':'red');$('kpiROI').textContent=pct(c.roi);$('kpiROI').className='val '+(c.roi>=0?'green':'red');$('kpiROIx').textContent=c.roi.toFixed(2)+'× initial spending as NET profit';
+ const formula=$('overviewStageFormula');if(formula)formula.textContent=phaseModel().phase2?'Phase 1 × Phase 2 × Funded × Collection':phaseModel().phase1?'Evaluation × Funded × Collection':'Funded × Collection';
  const m=phaseModel(),a=state.accounts,b=a*(m.phase1?prob(state.p1):1),d=b*phase2Rate(),e=d*prob(state.pf),f=e*prob(state.pc);
  $('funnel').innerHTML=funnelRow('Purchased challenges',a,a)+(m.phase1?funnelRow(m.topstep?'Passed Trading Combine':'Passed Phase 1',b,a):'')+(m.phase2?funnelRow('Passed Phase 2',d,a):'')+funnelRow(m.topstep?'XFA payout-planning proxy':m.instant?'Funded reward-planning proxy':'Reached funded profit target (estimate)',e,a)+funnelRow('Expected collected payouts',f,a);
  $('pOne').textContent=pct(c.atLeast);$('pThree').textContent=pct(c.chance(3));$('pFour').textContent=pct(c.chance(4));$('unitReward').textContent=money(c.reward);$('unitRefund').textContent=money(c.refund);$('unitCost').textContent=money(c.avgCost);$('breakEven').textContent=pct(c.breakEven);$('needed4').textContent=Number.isFinite(c.needed4)?c.needed4:'—';$('payoutTiming').textContent='~'+Math.ceil((m.phase1?state.p1MinDays:0)+(m.phase2?state.p2MinDays:0)+state.reviewDays*(m.phase1?(m.phase2?2:1):0)+state.daysBeforeRequest+state.payoutProcessingDays)+' days';
@@ -933,11 +931,21 @@ async function syncOverviewAccountSelector(){
   overviewCatalog=await response.json();populateOverviewChoices('all');
  }catch(e){if(hint)hint.textContent='Account list could not load. Choose an account in Prop firms.'}
 }
+let pendingOverviewAccount=null;
 function chooseOverviewAccount(){
  const programId=$('overviewProgramSelect')?.value,size=Number($('overviewSizeSelect')?.value);
- const frame=$('firmsFrame');
- if(!programId||!Number.isFinite(size)||size<=0||!frame?.contentWindow)return;
- frame.contentWindow.postMessage({type:'studio-select-account',programId,size},window.location.origin);
+ if(!programId||!Number.isFinite(size)||size<=0)return;
+ const p=overviewCatalog?.programs?.[programId];
+ if(!p||(p.sizes||[]).every(n=>Number(n)!==size))return;
+ const key=profileKey(programId,size);
+ pendingOverviewAccount={programId,size};
+ const hint=$('overviewAccountHint');if(hint)hint.textContent='Loading account '+p.firm+' · $'+size.toLocaleString('en-US')+' · '+p.name+'…';
+ // The Prop firms iframe is the authoritative source for published and edited account rules.
+ sendPendingOverviewAccount();
+}
+function sendPendingOverviewAccount(){
+ const frame=$('firmsFrame');if(!pendingOverviewAccount||!frame?.contentWindow||frame.dataset.accountFrameReady!=='yes')return;
+ frame.contentWindow.postMessage({type:'studio-select-account',...pendingOverviewAccount},window.location.origin);
 }
 function fitFirmFrame(){
  const frame=$('firmsFrame');
@@ -982,7 +990,11 @@ window.addEventListener('message',event=>{
  const msg=event.data;
  if(msg.type==='studio-rules-height'){requestAnimationFrame(fitFirmFrame);return;}
  if(msg.type==='studio-open-trading-workspace'){$('firmTradingWorkspace').scrollIntoView({behavior:'smooth',block:'start'});return;}
- if(msg.type==='studio-program-change'){useSelectedAccount(msg.payload);updateOverviewFromActive();return;}
+ if(msg.type==='studio-program-change'){
+  if(pendingOverviewAccount&&profileKey(msg.payload?.programId,msg.payload?.size)!==profileKey(pendingOverviewAccount.programId,pendingOverviewAccount.size))return;
+  pendingOverviewAccount=null;
+  useSelectedAccount(msg.payload);updateOverviewFromActive();return;
+ }
  if(msg.type==='studio-program-rules-updated'){useSelectedAccount(msg.payload,true);window.fourDsQueueCloudSave?.();return;}
  if(msg.type==='studio-user-profile-changed'){window.fourDsQueueCloudSave?.();return;}
  if(msg.type==='studio-program-select'){useSelectedAccount(msg.payload,true);$('firmTradingWorkspace').scrollIntoView({behavior:'smooth',block:'start'});}
@@ -993,7 +1005,10 @@ $('overviewFirmSelect').addEventListener('change',()=>{populateOverviewChoices('
 $('overviewSizeSelect').addEventListener('change',()=>{populateOverviewChoices('size');chooseOverviewAccount()});
 $('overviewProgramSelect').addEventListener('change',()=>{populateOverviewChoices('program');chooseOverviewAccount()});
 syncOverviewAccountSelector();
-const firmFrame=$('firmsFrame');if(firmFrame?.dataset?.src){firmFrame.src=firmFrame.dataset.src;}
+const firmFrame=$('firmsFrame');if(firmFrame){
+ firmFrame.addEventListener('load',()=>{firmFrame.dataset.accountFrameReady='yes';sendPendingOverviewAccount()});
+ if(firmFrame.dataset.src)firmFrame.src=firmFrame.dataset.src;
+}
 $('activeUserSelect').value=activeUser;$('activeUserSelect').addEventListener('change',()=>{const v=$('activeUserSelect').value;if(!FOUR_DS_USERS.some(u=>u.id===v))return;writeProfile();try{localStorage.setItem(FOUR_DS_ACTIVE,v)}catch(_){}location.reload()});const profileSelect=$('profileUserSelect');profileSelect.value=activeUser;profileSelect.addEventListener('change',()=>{$('activeUserSelect').value=profileSelect.value;$('activeUserSelect').dispatchEvent(new Event('change'));});$('profileAccountStatus').textContent=activeProgramKey?'Active challenge: '+activeProgramKey+' · Settings saved for '+activeUser+'.':'No challenge selected yet for '+activeUser+'. Choose one under Prop firms.';{const el=$('activeAccountProfile');if(el)el.textContent=activeProgramKey?'Saved account profile: '+activeProgramKey+' · Changes to trading parameters are saved automatically on this device.':'No account profile selected. Choose a firm, program and account size in Prop firms.';}
 document.querySelectorAll('[data-page]').forEach(el=>el.addEventListener('click',()=>goPage(el.dataset.page)));document.querySelectorAll('[data-nav]').forEach(el=>el.addEventListener('click',()=>goPage(el.dataset.nav)));
 $('preset40').addEventListener('click',()=>applyPreset(40));$('preset50').addEventListener('click',()=>applyPreset(50));$('simulate').addEventListener('click',()=>{const b=$('simulate');if(!selectedAccountSupportsSimulation){notify('Choose a challenge supported by the evaluation simulator.');return;}b.disabled=true;b.classList.add('is-calculating');b.textContent='Calculating…';setTimeout(()=>{try{runSimulation();}catch(e){console.error(e);notify('Simulation error: check your inputs.');}b.textContent='Run strategy simulation';b.classList.remove('is-calculating');updateSimulationAvailability();},25);});
