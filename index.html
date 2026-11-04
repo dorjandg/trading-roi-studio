@@ -111,10 +111,10 @@ table{width:100%;border-collapse:collapse;text-align:left;min-width:550px}th,td{
   <div class="field" id="customSymbolField" hidden><label for="customSymbolInput">Custom symbol / broker name</label>
    <input id="customSymbolInput" type="text" placeholder="e.g. US100, GC, MNQ" maxlength="40"></div>
  </div>
- <div class="notice" style="margin-top:16px">These are <strong>risk tiers in sequence</strong>, not instructions to place three simultaneous orders. Each stage is separate. Values are USD cash risk per trade, and the green number is the hypothetical profit if a trade wins at the selected RR.</div>
-<section class="risk-phase-group" style="border:1px solid var(--border);border-radius:13px;overflow:hidden;margin-top:16px"><div style="padding:15px 17px;background:var(--panel2)"><h3 style="margin:0 0 5px;font-size:16px">01 · Phase 1 — Evaluation</h3><p class="caption" style="margin:0">First, trade the initial risk tier. After the configured number of losses, switch to the recovery risk tier. The profit target and loss threshold are set in Phase 1 settings.</p></div><div class="tablewrap"><table class="cash-risk-table" aria-label="01 · Phase 1 — Evaluation stop losses in US dollars"><thead><tr><th>Order / risk tier</th><th class="num">Stop loss per trade (USD)</th><th class="num">Profit at selected RR (USD)</th></tr></thead><tbody><tr><td><strong>Order 1 · Initial risk</strong><div class="caption" style="margin-top:3px">Risk per trade before the loss threshold</div></td><td><input type="number" inputmode="decimal" min="0" step="1" aria-label="Order 1 · Initial risk stop loss in USD" data-risk-field="p1Base"></td><td class="num" data-risk-profit="p1Base">—</td></tr><tr><td><strong>Order 2 · Recovery risk</strong><div class="caption" style="margin-top:3px">Risk per trade after the loss threshold</div></td><td><input type="number" inputmode="decimal" min="0" step="1" aria-label="Order 2 · Recovery risk stop loss in USD" data-risk-field="p1Recovery"></td><td class="num" data-risk-profit="p1Recovery">—</td></tr></tbody></table></div></section>
-<section class="risk-phase-group" style="border:1px solid var(--border);border-radius:13px;overflow:hidden;margin-top:16px"><div style="padding:15px 17px;background:var(--panel2)"><h3 style="margin:0 0 5px;font-size:16px">02 · Phase 2 — Verification</h3><p class="caption" style="margin:0">After Phase 1 passes, start Phase 2 with its own risk. The recovery tier applies after a first daily loss; daily limits still apply.</p></div><div class="tablewrap"><table class="cash-risk-table" aria-label="02 · Phase 2 — Verification stop losses in US dollars"><thead><tr><th>Order / risk tier</th><th class="num">Stop loss per trade (USD)</th><th class="num">Profit at selected RR (USD)</th></tr></thead><tbody><tr><td><strong>Order 1 · Initial risk</strong><div class="caption" style="margin-top:3px">First trade of the day, before a loss</div></td><td><input type="number" inputmode="decimal" min="0" step="1" aria-label="Order 1 · Initial risk stop loss in USD" data-risk-field="p2Base"></td><td class="num" data-risk-profit="p2Base">—</td></tr><tr><td><strong>Order 2 · After daily loss</strong><div class="caption" style="margin-top:3px">Lower or alternative risk after the first daily loss</div></td><td><input type="number" inputmode="decimal" min="0" step="1" aria-label="Order 2 · After daily loss stop loss in USD" data-risk-field="p2Recovery"></td><td class="num" data-risk-profit="p2Recovery">—</td></tr></tbody></table></div></section>
-<section class="risk-phase-group" style="border:1px solid var(--border);border-radius:13px;overflow:hidden;margin-top:16px"><div style="padding:15px 17px;background:var(--panel2)"><h3 style="margin:0 0 5px;font-size:16px">03 · Funded — Payout stage</h3><p class="caption" style="margin:0">After passing the evaluation stages, use funded risk rules. The boosted tier is only considered when the funded boost condition and available loss limits allow it.</p></div><div class="tablewrap"><table class="cash-risk-table" aria-label="03 · Funded — Payout stage stop losses in US dollars"><thead><tr><th>Order / risk tier</th><th class="num">Stop loss per trade (USD)</th><th class="num">Profit at selected RR (USD)</th></tr></thead><tbody><tr><td><strong>Order 1 · Initial risk</strong><div class="caption" style="margin-top:3px">Normal funded trade risk</div></td><td><input type="number" inputmode="decimal" min="0" step="1" aria-label="Order 1 · Initial risk stop loss in USD" data-risk-field="fundedBase"></td><td class="num" data-risk-profit="fundedBase">—</td></tr><tr><td><strong>Order 2 · After daily loss</strong><div class="caption" style="margin-top:3px">Risk after the first daily loss</div></td><td><input type="number" inputmode="decimal" min="0" step="1" aria-label="Order 2 · After daily loss stop loss in USD" data-risk-field="fundedRecovery"></td><td class="num" data-risk-profit="fundedRecovery">—</td></tr><tr><td><strong>Order 3 · Boosted risk</strong><div class="caption" style="margin-top:3px">Optional higher risk after the funded boost condition</div></td><td><input type="number" inputmode="decimal" min="0" step="1" aria-label="Order 3 · Boosted risk stop loss in USD" data-risk-field="fundedBoost"></td><td class="num" data-risk-profit="fundedBoost">—</td></tr></tbody></table></div></section>
+ <div class="notice" style="margin-top:16px">These are <strong>risk tiers in sequence</strong>, not simultaneous orders. Each order tier has its own editable RR. Winning profit = stop-loss USD × that tier’s RR. The strategy simulation uses the corresponding RR for each tier.</div>
+<section class="risk-phase-group" style="border:1px solid var(--border);border-radius:13px;overflow:hidden;margin-top:16px"><div style="padding:15px 17px;background:var(--panel2)"><h3 style="margin:0 0 5px;font-size:16px">01 · Phase 1 — Evaluation</h3><p class="caption" style="margin:0">First, trade the initial risk tier. After the configured number of losses, switch to the recovery risk tier. The profit target and loss threshold are set in Phase 1 settings.</p></div><div class="tablewrap"><table class="cash-risk-table" aria-label="01 · Phase 1 — Evaluation stop losses in US dollars"><thead><tr><th>Order / risk tier</th><th class="num">Stop loss (USD)</th><th class="num">RR</th><th class="num">Winning profit (USD)</th></tr></thead><tbody><tr><td><strong>Order 1 · Initial risk</strong><div class="caption" style="margin-top:3px">Risk per trade before the loss threshold</div></td><td><input type="number" inputmode="decimal" min="0" step="1" aria-label="Order 1 · Initial risk stop loss in USD" data-risk-field="p1Base"></td><td><input class="tier-rr" type="number" inputmode="decimal" min="0.1" max="100" step="0.1" aria-label="p1Base risk reward ratio" data-risk-rr="p1Base" title="RR for this order tier; change to update winning profit and stage simulation"></td><td class="num" data-risk-profit="p1Base">—</td></tr><tr><td><strong>Order 2 · Recovery risk</strong><div class="caption" style="margin-top:3px">Risk per trade after the loss threshold</div></td><td><input type="number" inputmode="decimal" min="0" step="1" aria-label="Order 2 · Recovery risk stop loss in USD" data-risk-field="p1Recovery"></td><td><input class="tier-rr" type="number" inputmode="decimal" min="0.1" max="100" step="0.1" aria-label="p1Recovery risk reward ratio" data-risk-rr="p1Recovery" title="RR for this order tier; change to update winning profit and stage simulation"></td><td class="num" data-risk-profit="p1Recovery">—</td></tr></tbody></table></div></section>
+<section class="risk-phase-group" style="border:1px solid var(--border);border-radius:13px;overflow:hidden;margin-top:16px"><div style="padding:15px 17px;background:var(--panel2)"><h3 style="margin:0 0 5px;font-size:16px">02 · Phase 2 — Verification</h3><p class="caption" style="margin:0">After Phase 1 passes, start Phase 2 with its own risk. The recovery tier applies after a first daily loss; daily limits still apply.</p></div><div class="tablewrap"><table class="cash-risk-table" aria-label="02 · Phase 2 — Verification stop losses in US dollars"><thead><tr><th>Order / risk tier</th><th class="num">Stop loss (USD)</th><th class="num">RR</th><th class="num">Winning profit (USD)</th></tr></thead><tbody><tr><td><strong>Order 1 · Initial risk</strong><div class="caption" style="margin-top:3px">First trade of the day, before a loss</div></td><td><input type="number" inputmode="decimal" min="0" step="1" aria-label="Order 1 · Initial risk stop loss in USD" data-risk-field="p2Base"></td><td><input class="tier-rr" type="number" inputmode="decimal" min="0.1" max="100" step="0.1" aria-label="p2Base risk reward ratio" data-risk-rr="p2Base" title="RR for this order tier; change to update winning profit and stage simulation"></td><td class="num" data-risk-profit="p2Base">—</td></tr><tr><td><strong>Order 2 · After daily loss</strong><div class="caption" style="margin-top:3px">Lower or alternative risk after the first daily loss</div></td><td><input type="number" inputmode="decimal" min="0" step="1" aria-label="Order 2 · After daily loss stop loss in USD" data-risk-field="p2Recovery"></td><td><input class="tier-rr" type="number" inputmode="decimal" min="0.1" max="100" step="0.1" aria-label="p2Recovery risk reward ratio" data-risk-rr="p2Recovery" title="RR for this order tier; change to update winning profit and stage simulation"></td><td class="num" data-risk-profit="p2Recovery">—</td></tr></tbody></table></div></section>
+<section class="risk-phase-group" style="border:1px solid var(--border);border-radius:13px;overflow:hidden;margin-top:16px"><div style="padding:15px 17px;background:var(--panel2)"><h3 style="margin:0 0 5px;font-size:16px">03 · Funded — Payout stage</h3><p class="caption" style="margin:0">After passing the evaluation stages, use funded risk rules. The boosted tier is only considered when the funded boost condition and available loss limits allow it.</p></div><div class="tablewrap"><table class="cash-risk-table" aria-label="03 · Funded — Payout stage stop losses in US dollars"><thead><tr><th>Order / risk tier</th><th class="num">Stop loss (USD)</th><th class="num">RR</th><th class="num">Winning profit (USD)</th></tr></thead><tbody><tr><td><strong>Order 1 · Initial risk</strong><div class="caption" style="margin-top:3px">Normal funded trade risk</div></td><td><input type="number" inputmode="decimal" min="0" step="1" aria-label="Order 1 · Initial risk stop loss in USD" data-risk-field="fundedBase"></td><td><input class="tier-rr" type="number" inputmode="decimal" min="0.1" max="100" step="0.1" aria-label="fundedBase risk reward ratio" data-risk-rr="fundedBase" title="RR for this order tier; change to update winning profit and stage simulation"></td><td class="num" data-risk-profit="fundedBase">—</td></tr><tr><td><strong>Order 2 · After daily loss</strong><div class="caption" style="margin-top:3px">Risk after the first daily loss</div></td><td><input type="number" inputmode="decimal" min="0" step="1" aria-label="Order 2 · After daily loss stop loss in USD" data-risk-field="fundedRecovery"></td><td><input class="tier-rr" type="number" inputmode="decimal" min="0.1" max="100" step="0.1" aria-label="fundedRecovery risk reward ratio" data-risk-rr="fundedRecovery" title="RR for this order tier; change to update winning profit and stage simulation"></td><td class="num" data-risk-profit="fundedRecovery">—</td></tr><tr><td><strong>Order 3 · Boosted risk</strong><div class="caption" style="margin-top:3px">Optional higher risk after the funded boost condition</div></td><td><input type="number" inputmode="decimal" min="0" step="1" aria-label="Order 3 · Boosted risk stop loss in USD" data-risk-field="fundedBoost"></td><td><input class="tier-rr" type="number" inputmode="decimal" min="0.1" max="100" step="0.1" aria-label="fundedBoost risk reward ratio" data-risk-rr="fundedBoost" title="RR for this order tier; change to update winning profit and stage simulation"></td><td class="num" data-risk-profit="fundedBoost">—</td></tr></tbody></table></div></section>
  <div class="notice" id="symbolSummary" style="margin-top:16px" aria-live="polite">A losing trade costs the selected stop-loss amount in USD in the cash-risk model.</div>
  <details class="contract-detail" style="margin-top:16px">
   <summary>Optional: advanced contract sizing & broker margin</summary>
@@ -281,7 +281,7 @@ accountSize:10000,dailyLoss:500,overallLoss:1000,buffer:50,leverage:50,goldPrice
 p1Target:1000,p1Base:350,p1Recovery:250,p1RecoverAfter:2,p1DailyCap:1,p1Days:24,p1MinDays:4,
 p2Target:500,p2Base:200,p2Recovery:200,p2DailyCap:2,p2Days:24,p2MinDays:4,
 fundedBase:250,fundedRecovery:200,fundedBoost:500,boostUnlock:750,fundedDailyCap:3,fundedDays:20,
- symbolId:'XAUUSD',customSymbol:'',symbolSpecs:{}};
+ symbolId:'XAUUSD',customSymbol:'',symbolSpecs:{},rrByTier:{}};
 const FIELDS={
  quickFields:[['budget','Investment budget','USD',1],['accounts','Challenges to purchase','count',1],['price','Challenge price — from Prop firms','USD',1],['extraCost','Additional cost per challenge','USD',1]],
  probFields:[['p1','Phase 1 pass rate','%',.1],['p2','Phase 2 pass rate','%',.1],['pf','Funded target hit','%',.1],['pc','Payout collected if eligible','%',.1]],
@@ -363,13 +363,19 @@ function updateSimulationAvailability(){
  const btn=$('simulate');
  if(btn&&!btn.classList.contains('is-calculating'))btn.disabled=!selectedAccountSupportsSimulation;
 }
+const RISK_TIERS=['p1Base','p1Recovery','p2Base','p2Recovery','fundedBase','fundedRecovery','fundedBoost'];
+function tierRR(key){const n=Number(state.rrByTier?.[key]);return Number.isFinite(n)&&n>=0.1&&n<=100?n:positive(state.rr,0.1,100);}
 function renderDollarRiskRows(){
  for(const field of document.querySelectorAll('[data-risk-field]')){
   const key=field.dataset.riskField,value=positive(state[key]);
   if(document.activeElement!==field)field.value=String(value);
  }
+ for(const field of document.querySelectorAll('[data-risk-rr]')){
+  if(document.activeElement!==field)field.value=String(tierRR(field.dataset.riskRr));
+ }
  for(const cell of document.querySelectorAll('[data-risk-profit]')){
-  cell.textContent=money2(positive(state[cell.dataset.riskProfit])*positive(state.rr));
+  const key=cell.dataset.riskProfit;
+  cell.textContent=money2(positive(state[key])*tierRR(key));
  }
 }
 function renderSymbolSummary(){
@@ -377,7 +383,7 @@ function renderSymbolSummary(){
  renderDollarRiskRows();
  const id=instrumentLabel();
  const loss='A losing trade costs '+money(state.p1Base)+' in Phase 1, '+money(state.p2Base)+' in Phase 2, or '+money(state.fundedBase)+' when funded (initial risk).';
- const profit=' At '+Number(state.rr).toLocaleString('en-US',{maximumFractionDigits:2})+'R, a funded winning trade earns '+money(state.fundedBase*state.rr)+' before trade costs.';
+ const profit=' Funded initial RR '+tierRR('fundedBase').toFixed(2)+' produces '+money(state.fundedBase*tierRR('fundedBase'))+' winning profit before trade costs.';
  if(!instrumentReady()){
   box.textContent=id+' · '+loss+profit+' Optional order-size and margin estimates are not verified. Use Advanced contract sizing only if needed.';
   updateSimulationAvailability();return;
@@ -422,6 +428,15 @@ function initSymbols(){
   state.customSymbol=$('customSymbolInput').value.slice(0,40);
   save();renderSymbolSummary();
  });
+ for(const field of document.querySelectorAll('[data-risk-rr]')){
+  field.addEventListener('input',()=>{
+   const raw=field.value.trim();if(raw===''||!Number.isFinite(Number(raw)))return;
+   const value=positive(Number(raw),0.1,100);
+   state.rrByTier={...(state.rrByTier||{}),[field.dataset.riskRr]:value};
+   dirtySim=true;lastSim=null;save();render();
+  });
+  field.addEventListener('change',()=>{field.value=String(tierRR(field.dataset.riskRr));});
+ }
  for(const field of document.querySelectorAll('[data-risk-field]')){
   field.addEventListener('input',()=>{
    if(field.value.trim()===''||!Number.isFinite(Number(field.value)))return;
@@ -711,8 +726,12 @@ function simulateStage(which,rng){const s=state;const size=s.accountSize,overall
   // Only drawdown headroom caps this conceptual risk; live contract/margin rules are not simulated.
   if(which==='funded'&&planned===s.fundedBoost&&planned>room+1e-7)planned=s.fundedBase;
   let risk=Math.min(planned,room);
+  const tier=which==='p1'?(planned===s.p1Recovery&&losses>=s.p1RecoverAfter&&balance<size?'p1Recovery':'p1Base')
+    :which==='p2'?(dayLosses>0?'p2Recovery':'p2Base')
+    :(planned===s.fundedBoost&&wonToday?'fundedBoost':planned===s.fundedRecovery&&dayLosses>0?'fundedRecovery':'fundedBase');
+  const rr=tierRR(tier);
   // Once close to target, a smaller trade can close the remaining gap, while the first trade stays at the normal risk.
-  const remaining=target-(balance-size);if(remaining>0&&remaining<s.rr*risk*.65)risk=Math.min(risk,Math.max(minRisk,remaining/Math.max(.1,s.rr)));
+  const remaining=target-(balance-size);if(remaining>0&&remaining<rr*risk*.65)risk=Math.min(risk,Math.max(minRisk,remaining/Math.max(.1,rr)));
   risk=Math.floor(risk*100+1e-8)/100;
   if(risk<minRisk){
     // Reaching the *daily* loss reserve means stop for today, not lose the account.
@@ -722,7 +741,7 @@ function simulateStage(which,rng){const s=state;const size=s.accountSize,overall
   }
   const wasBoost=which==='funded'&&planned===s.fundedBoost&&risk>s.fundedBase+.01;
   const won=rng()<winrate;
-  balance+=(won?risk*s.rr:-risk)-costs;tradeCount++;did++;if(wasBoost)boostTrades++;
+  balance+=(won?risk*rr:-risk)-costs;tradeCount++;did++;if(wasBoost)boostTrades++;
   if(won){wonToday=true;}else{losses++;dayLosses++;}
   if(balance<size-s.overallLoss-1e-6||balance<dayStart-s.dailyLoss-1e-6){status='breached';break;}
   if(balance-size>=target-1e-6){status='pass';break;}
@@ -755,6 +774,12 @@ function cleanSettings(source){
    if(intKeys.has(k))n=Math.round(n);
    settings[k]=n;
   }
+ }
+ if(source?.rrByTier&&typeof source.rrByTier==='object'&&!Array.isArray(source.rrByTier)){
+  const rrByTier={};for(const key of RISK_TIERS){
+   const n=Number(source.rrByTier[key]);
+   if(source.rrByTier[key]!==''&&source.rrByTier[key]!=null&&Number.isFinite(n)&&n>=0.1&&n<=100)rrByTier[key]=n;
+  }settings.rrByTier=rrByTier;
  }
  if(Object.prototype.hasOwnProperty.call(INSTRUMENT_PRESETS,source?.symbolId))settings.symbolId=source.symbolId;
  if(typeof source?.customSymbol==='string')settings.customSymbol=source.customSymbol.slice(0,40);
