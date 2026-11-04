@@ -41,6 +41,7 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;background:rad
 </style>
 <script>window.FOUR_DS_CLOUD_ENDPOINT = "https://script.google.com/macros/s/AKfycbyZW792ZLBPxusQwthCJr0bVdZwCjXyeNaklq4Dk-BuSQ8P9gdg2zdTiWFKEmYuy5sY9Q/exec";</script>
 <script src="cloud-bootstrap.js?v=4ds-auto-first-20261104-a"></script>
+<script>window.FOUR_DS_BOOTSTRAP = window.FOUR_DS_BOOTSTRAP || Promise.resolve('bootstrap-script-unavailable');</script>
 </head>
 <body>
 <div class="shell">
@@ -152,6 +153,8 @@ try{const saved=localStorage.getItem(FOUR_DS_ACTIVE);if(FOUR_DS_USERS.some(u=>u.
 const userStoreKey=key=>'4ds:v1:'+activeUser+':'+key;
 function migrateLegacyForDori(){
  if(activeUser!=='dori')return;
+ // Cloud data was already downloaded before app startup; do not merge stale legacy settings.
+ if(window.FOUR_DS_BOOTSTRAP_INFO?.status==='cloud-loaded')return;
  try{if(localStorage.getItem('4ds:migrated:dori:v1')==='yes')return;const prefixes=['ftmo-roi-studio-v1','ftmo-roi-studio-presets-v2','studio-active-profile-v1','studio-account-profile-v1:','studio-specific-trading-rules-v1:','studio-rules-override-v1:','studio-trading-preferences-v1:','studio-last-selected-challenge-v1'];
   const keys=Array.from({length:localStorage.length},(_,i)=>localStorage.key(i)).filter(k=>prefixes.some(p=>k===p||p.endsWith(':')&&k.startsWith(p)));
   for(const k of keys){const dest=userStoreKey(k);if(localStorage.getItem(dest)===null)localStorage.setItem(dest,localStorage.getItem(k))}
