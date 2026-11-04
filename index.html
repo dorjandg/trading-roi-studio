@@ -92,8 +92,29 @@ table{width:100%;border-collapse:collapse;text-align:left;min-width:550px}th,td{
   </div>
   <div class="panel"><h2>4Ds cloud synchronization</h2><p class="subtle">One shared website, with separate profiles for Doen, Dori, Dona and Dion. No logins: anyone with access can select any name and change that profile.</p><div class="notice" id="cloudSyncStatus" role="status">Checking cloud connection…</div><div class="actionrow" style="margin-top:12px"><button type="button" class="btn" id="cloudUpload">Overwrite cloud with this device</button><button type="button" class="btn" id="cloudDownload">Load cloud onto this device</button></div><p class="caption">Settings are saved on this device first. When connected, cloud synchronization transfers them between devices. Keep a JSON backup for important configurations.</p></div>
 </section>
-<section id="page-firms" class="page"><div class="panel" style="padding:0;overflow:hidden"><iframe id="firmsFrame" title="Prop firm account selector and rules" src="about:blank" data-src="rules.html?embedded=1" loading="lazy" style="display:block;width:100%;height:360px;border:0;background:#080d16"></iframe></div><div class="notice" id="firmStrategyStatus" style="margin:16px 0">Select a firm, program and account size above to load this account's saved trading parameters.</div>
+<section id="page-firms" class="page"><div class="panel" style="padding:0;overflow:hidden"><iframe id="firmsFrame" title="Prop firm account selector and rules" src="about:blank" data-src="rules.html?embedded=1&v=fit-symbols-20261104" loading="lazy" style="display:block;width:100%;height:1px;min-height:0;border:0;background:#080d16;overflow:hidden"></iframe></div><div class="notice" id="firmStrategyStatus" style="margin:16px 0">Select a firm, program and account size above to load this account's saved trading parameters.</div>
 <div id="firmTradingWorkspace">
+<div class="panel" id="symbolPanel" style="margin-bottom:19px">
+ <div class="panel-header"><div><div class="eyebrow" style="margin-bottom:6px">Account instrument</div><h2>Symbols & contract settings</h2>
+ <p>Choose Gold, NQ, or enter your own symbol. Specifications are saved with this user's selected challenge.</p></div>
+ <span class="section-tag">BROKER SPECS ARE EDITABLE</span></div>
+ <div class="formgrid" id="instrumentFields">
+  <div class="field"><label for="symbolSelect">Trading symbol</label><select id="symbolSelect">
+   <option value="XAUUSD">Gold — XAUUSD (spot/CFD)</option><option value="NQ">NQ — E-mini Nasdaq-100 futures</option><option value="CUSTOM">Custom symbol</option></select></div>
+  <div class="field" id="customSymbolField" hidden><label for="customSymbolInput">Custom symbol / broker label</label>
+   <input id="customSymbolInput" type="text" placeholder="e.g. US100, GC, MNQ" maxlength="40"></div>
+  <div class="field"><label for="symbolMarket">Instrument type</label><select id="symbolMarket"><option value="cfd">Spot / CFD (leverage based)</option><option value="futures">Exchange-traded futures (margin per contract)</option></select></div>
+  <div class="field"><label for="symbol-price">Reference price (USD / index points)</label><input id="symbol-price" data-symbol-setting="price" type="number" min="0" step="0.01"></div>
+  <div class="field"><label for="symbol-stop">Stop distance (price points)</label><input id="symbol-stop" data-symbol-setting="stop" type="number" min="0" step="0.25"></div>
+  <div class="field"><label for="symbol-pointValue">USD per 1-point move per unit</label><input id="symbol-pointValue" data-symbol-setting="pointValue" type="number" min="0" step="0.01"></div>
+  <div class="field"><label for="symbol-tickSize">Minimum tick size (points)</label><input id="symbol-tickSize" data-symbol-setting="tickSize" type="number" min="0" step="0.01"></div>
+  <div class="field"><label for="symbol-qtyStep">Minimum order increment (lots / contracts)</label><input id="symbol-qtyStep" data-symbol-setting="qtyStep" type="number" min="0" step="0.01"></div>
+  <div class="field" id="symbolLeverageField"><label for="symbol-leverage">Leverage (1 : X)</label><input id="symbol-leverage" data-symbol-setting="leverage" type="number" min="1" step="1"></div>
+  <div class="field" id="symbolMarginField"><label for="symbol-marginPerUnit">Required margin per contract (USD)</label><input id="symbol-marginPerUnit" data-symbol-setting="marginPerUnit" type="number" min="0" step="1"></div>
+ </div>
+ <div class="notice" id="symbolSummary" style="margin-top:16px" aria-live="polite">Choose an instrument to see a risk and margin estimate.</div>
+ <p class="caption">NQ means the full CME E-mini future, not MNQ or a Nasdaq CFD. NQ uses $20 per point and a 0.25-point tick ($5). Margin per contract depends on your broker and must be entered. XAUUSD specifications vary by broker; check the symbol's contract size, volume step, leverage and currency. Neither selector verifies instrument permission at your prop firm.</p>
+</div>
   <div class="panel" style="margin-bottom:19px"><div class="panel-header"><div><div class="eyebrow" style="margin-bottom:7px">Selected challenge · XAUUSD</div><h2>Trading-rule laboratory</h2><p>Set risk tiers, loss limits and entry capacity. Run simulated trade outcomes to estimate stage success rates.</p></div><span class="tag">ONE SET · ONE ACCOUNT PER IDEA</span></div><div class="actionrow"><button class="btn primary" id="simulate">Run strategy simulation</button><button class="btn" id="useManual">Use manual pass rates</button><span class="status" id="simulationStatus">Ready to simulate</span></div><p class="caption">Simulation is intentionally simplified: independent fixed-R wins/losses, constant gold price/stop distance, and no intrabar equity path. It is not a historical backtest.</p></div>
   <div class="two-up">
     <div>
@@ -238,12 +259,13 @@ winRate:40,rr:3,simulations:4000,randomSeed:24717,weeklySignals:22,tradeCost:0,
 accountSize:10000,dailyLoss:500,overallLoss:1000,buffer:50,leverage:50,goldPrice:4400,stopDist:5,marginCeiling:90,minRisk:25,
 p1Target:1000,p1Base:350,p1Recovery:250,p1RecoverAfter:2,p1DailyCap:1,p1Days:24,p1MinDays:4,
 p2Target:500,p2Base:200,p2Recovery:200,p2DailyCap:2,p2Days:24,p2MinDays:4,
-fundedBase:250,fundedRecovery:200,fundedBoost:500,boostUnlock:750,fundedDailyCap:3,fundedDays:20};
+fundedBase:250,fundedRecovery:200,fundedBoost:500,boostUnlock:750,fundedDailyCap:3,fundedDays:20,
+ symbolId:'XAUUSD',customSymbol:'',symbolSpecs:{}};
 const FIELDS={
  quickFields:[['budget','Available budget','USD',1],['accounts','Challenges purchased','count',1],['price','Challenge purchase price','USD',1],['extraCost','Extra cost per challenge','USD',1]],
  probFields:[['p1','Phase 1 pass rate','%',.1],['p2','Phase 2 pass rate','%',.1],['pf','Funded target hit','%',.1],['pc','Payout collected if eligible','%',.1]],
  performanceFields:[['winRate','Trade win rate','%',.5],['rr','Winning multiple','R',.1],['weeklySignals','Trade ideas available / week','count',1],['simulations','Trials per phase','count',100],['randomSeed','Repeatable random seed','count',1],['tradeCost','Cost per executed trade','USD',.25]],
- safetyFields:[['accountSize','Starting account equity','USD',1000],['dailyLoss','Daily maximum loss','USD',25],['overallLoss','Maximum overall loss','USD',25],['buffer','Risk reserve / buffer','USD',5],['goldPrice','XAUUSD price assumption','USD',10],['stopDist','Gold stop distance','USD',.1],['leverage','Gold leverage (1 : X)','ratio',1],['marginCeiling','Maximum margin utilization','%',1],['minRisk','Minimum trade risk','USD',1]],
+ safetyFields:[['accountSize','Starting account equity','USD',1000],['dailyLoss','Daily maximum loss','USD',25],['overallLoss','Maximum overall loss','USD',25],['buffer','Risk reserve / buffer','USD',5],['marginCeiling','Maximum margin utilization','%',1],['minRisk','Minimum trade risk','USD',1]],
  phase1Fields:[['p1Target','Phase 1 profit target','USD',50],['p1Base','Initial risk per trade','USD',25],['p1Recovery','Risk after loss threshold','USD',25],['p1RecoverAfter','Losses before recovery tier','count',1],['p1DailyCap','Maximum trades / day','count',1],['p1Days','Maximum trading days to pass','days',1],['p1MinDays','Minimum required trading days','days',1]],
  phase2Fields:[['p2Target','Phase 2 profit target','USD',50],['p2Base','Initial risk per trade','USD',25],['p2Recovery','Risk after first daily loss','USD',25],['p2DailyCap','Maximum trades / day','count',1],['p2Days','Maximum trading days to pass','days',1],['p2MinDays','Minimum required trading days','days',1]],
  fundedFields:[['profitTarget','Funded profit target','USD',250],['fundedBase','Starting risk each day','USD',25],['fundedRecovery','After first daily loss','USD',25],['fundedBoost','Maximum boosted risk','USD',25],['boostUnlock','Daily realized profit to boost','USD',50],['fundedDailyCap','Maximum trades / day','count',1],['fundedDays','Funded trading-day horizon','days',1]],
@@ -275,6 +297,117 @@ const money2=n=>!Number.isFinite(n)?'—':(n<0?'−':'')+'$'+Math.abs(n).toLocal
 const pct=n=>!Number.isFinite(n)?'—':(100*n).toFixed(1)+'%';const dec=n=>Number.isFinite(n)?n.toLocaleString('en-US',{maximumFractionDigits:2}):'—';const safeNum=(x,fallback=0)=>Number.isFinite(Number(x))?Number(x):fallback;
 const positive=(x,min=0,max=1e9)=>Math.min(max,Math.max(min,safeNum(x)));
 const prob=(x)=>positive(x,0,100)/100;
+
+const INSTRUMENT_PRESETS={
+ XAUUSD:{market:'cfd',price:4400,stop:5,pointValue:100,tickSize:.01,qtyStep:.01,leverage:50,marginPerUnit:0},
+ NQ:{market:'futures',price:0,stop:0,pointValue:20,tickSize:.25,qtyStep:1,leverage:1,marginPerUnit:0},
+ CUSTOM:{market:'cfd',price:0,stop:0,pointValue:0,tickSize:.01,qtyStep:1,leverage:1,marginPerUnit:0}
+};
+function currentSymbolKey(){return Object.prototype.hasOwnProperty.call(INSTRUMENT_PRESETS,state.symbolId)?state.symbolId:'XAUUSD'}
+function currentSymbolSpec(){
+ const key=currentSymbolKey(),base=INSTRUMENT_PRESETS[key];
+ const legacy=key==='XAUUSD'&&!state.symbolSpecs?.XAUUSD?{price:positive(state.goldPrice||base.price),stop:positive(state.stopDist||base.stop),leverage:positive(state.leverage||base.leverage)}:{};
+ const saved=state.symbolSpecs&&typeof state.symbolSpecs==='object'?state.symbolSpecs[key]:null;
+ return {...base,...legacy,...(saved&&typeof saved==='object'?saved:{})};
+}
+function instrumentReady(){
+ const s=currentSymbolSpec();
+ return positive(s.stop)>0&&positive(s.pointValue)>0&&positive(s.tickSize)>0&&positive(s.qtyStep)>0
+  &&(s.market==='futures'?positive(s.marginPerUnit)>0:positive(s.price)>0&&positive(s.leverage)>0);
+}
+function positionForRisk(requested){
+ const s=currentSymbolSpec(),want=positive(requested);
+ if(!instrumentReady())return {ready:false,qty:0,risk:0,margin:NaN};
+ const riskUnit=positive(s.stop)*positive(s.pointValue),step=positive(s.qtyStep);
+ const raw=want/riskUnit;
+ const qty=Math.max(0,Math.floor(raw/step+1e-9)*step);
+ const risk=qty*riskUnit;
+ const margin=s.market==='futures'?qty*positive(s.marginPerUnit):qty*positive(s.pointValue)*positive(s.price)/positive(s.leverage);
+ return {ready:true,qty,risk,margin};
+}
+function maxRiskByMargin(marginBudget){
+ if(!instrumentReady())return 0;
+ const s=currentSymbolSpec(),step=positive(s.qtyStep);
+ const perUnit=s.market==='futures'?positive(s.marginPerUnit):positive(s.pointValue)*positive(s.price)/positive(s.leverage);
+ if(perUnit<=0)return 0;
+ const qty=Math.floor(positive(marginBudget)/perUnit/step+1e-9)*step;
+ return Math.max(0,qty*positive(s.stop)*positive(s.pointValue));
+}
+function quantizedTradeRisk(value){return Math.floor(positionForRisk(value).risk*100+1e-7)/100}
+function instrumentLabel(){
+ const key=currentSymbolKey();
+ return key==='CUSTOM'?(String(state.customSymbol||'CUSTOM').trim().slice(0,40)||'CUSTOM'):key;
+}
+function updateSimulationAvailability(){
+ const btn=$('simulate');
+ if(btn&&!btn.classList.contains('is-calculating'))btn.disabled=!selectedAccountSupportsSimulation||!instrumentReady();
+}
+function renderSymbolSummary(){
+ const box=$('symbolSummary');if(!box)return;
+ const spec=currentSymbolSpec(),id=instrumentLabel(),ready=instrumentReady();
+ const tick=positive(spec.pointValue)*positive(spec.tickSize);
+ if(!ready){
+  box.textContent=id+' · Complete the stop distance, USD point value, minimum increment, and '+(spec.market==='futures'?'broker margin per contract.':'price and leverage.')+' These must be supplied before running a margin-aware strategy simulation.';
+  updateSimulationAvailability();return;
+ }
+ const base=positionForRisk(state.fundedBase),boost=positionForRisk(state.fundedBoost);
+ const priceUnit=spec.market==='futures'?'contract':'lot';
+ const request=money(state.fundedBase);
+ const one=positive(spec.stop)*positive(spec.pointValue)*positive(spec.qtyStep);
+ box.textContent=id+' · Tick '+spec.tickSize+' points = '+money2(tick)+' per '+priceUnit
+  +' · Minimum position risk at this stop: '+money2(one)
+  +' · Funded plan '+request+' → '+base.qty.toLocaleString('en-US',{maximumFractionDigits:4})+' '+priceUnit+'(s), actual risk '+money2(base.risk)
+  +', estimated margin '+money(base.margin)
+  +' · Boosted planned risk '+money(state.fundedBoost)+' → '+money2(boost.risk)+' executable risk. These are examples, not broker quotes.';
+ updateSimulationAvailability();
+}
+function renderSymbolControls(){
+ if(!$('symbolSelect'))return;
+ const key=currentSymbolKey(),spec=currentSymbolSpec();
+ $('symbolSelect').value=key;$('customSymbolInput').value=state.customSymbol||'';
+ $('customSymbolField').hidden=key!=='CUSTOM';
+ $('symbolMarket').value=spec.market==='futures'?'futures':'cfd';
+ $('symbolLeverageField').hidden=spec.market==='futures';
+ $('symbolMarginField').hidden=spec.market!=='futures';
+ for(const field of document.querySelectorAll('[data-symbol-setting]')){
+  const val=spec[field.dataset.symbolSetting];
+  field.value=val===undefined?'':String(val);
+ }
+ renderSymbolSummary();
+}
+function updateSymbolSetting(key,value){
+ const name=currentSymbolKey(),old=state.symbolSpecs&&typeof state.symbolSpecs==='object'?state.symbolSpecs:{};
+ state.symbolSpecs={...old,[name]:{...currentSymbolSpec(),[key]:value}};
+ if(name==='XAUUSD'){
+  if(key==='price')state.goldPrice=value;
+  if(key==='stop')state.stopDist=value;
+  if(key==='leverage')state.leverage=value;
+ }
+ dirtySim=true;lastSim=null;save();render();
+}
+function initSymbols(){
+ if(!$('symbolSelect'))return;
+ $('symbolSelect').addEventListener('change',()=>{
+  state.symbolId=$('symbolSelect').value;
+  dirtySim=true;lastSim=null;save();renderSymbolControls();render();
+ });
+ $('customSymbolInput').addEventListener('input',()=>{
+  state.customSymbol=$('customSymbolInput').value.slice(0,40);
+  save();renderSymbolSummary();
+ });
+ $('symbolMarket').addEventListener('change',()=>{updateSymbolSetting('market',$('symbolMarket').value);renderSymbolControls()});
+ for(const field of document.querySelectorAll('[data-symbol-setting]')){
+  field.addEventListener('input',()=>{
+   const v=field.value.trim();
+   if(v==='')return;
+   const num=Number(v);
+   if(!Number.isFinite(num)||num<0)return;
+   updateSymbolSetting(field.dataset.symbolSetting,num);
+  });
+ }
+ renderSymbolControls();
+}
+
 const save=()=>{presetDirty=true;try{localStorage.setItem(STORAGE,JSON.stringify(state))}catch(e){}writeProfile();window.fourDsQueueCloudSave?.()};
 const maxCap={accounts:1000,mirror:25,simulations:20000,weeklySignals:100,randomSeed:2147483647,p1DailyCap:12,p2DailyCap:12,fundedDailyCap:12,p1Days:365,p2Days:365,fundedDays:365};
 const minCap={accounts:1,mirror:1,simulations:250,randomSeed:1,p1DailyCap:1,p2DailyCap:1,fundedDailyCap:1,p1Days:1,p2Days:1,fundedDays:1};
@@ -283,7 +416,7 @@ const intKeys=new Set(['accounts','mirror','weeklySignals','simulations','random
 function makeFields(){for(const [target,fields] of Object.entries(FIELDS)){const el=$(target);el.innerHTML=fields.map(([key,label,unit,step])=>`<div class="field"><label for="f-${key}">${label}${unit?` <span class="hint">(${unit})</span>`:''}</label><input id="f-${key}" data-field="${key}" type="number" inputmode="decimal" min="0" step="${step}" value="${state[key]}"></div>`).join('');}
  document.querySelectorAll('[data-field]').forEach(el=>el.addEventListener('input',()=>{const k=el.dataset.field;const raw=el.value.trim();if(raw==='')return;let val=positive(raw,minCap[k]??0,maxCap[k]??(percentKeys.has(k)?100:1e8));if(intKeys.has(k))val=Math.round(val);state[k]=val;save();if(['p1','p2','pf','pc'].includes(k)){mode='manual';lastSim=null;}else if(['winRate','rr','simulations','randomSeed','weeklySignals','tradeCost','accountSize','dailyLoss','overallLoss','buffer','leverage','goldPrice','stopDist','marginCeiling','minRisk','p1Target','p1Base','p1Recovery','p1RecoverAfter','p1DailyCap','p1Days','p2Target','p2Base','p2Recovery','p2DailyCap','p2Days','profitTarget','fundedBase','fundedRecovery','fundedBoost','boostUnlock','fundedDailyCap','fundedDays'].includes(k)){dirtySim=true;}
  render();}));}
-function syncControls(){document.querySelectorAll('[data-field]').forEach(el=>el.value=state[el.dataset.field]);}
+function syncControls(){document.querySelectorAll('[data-field]').forEach(el=>el.value=state[el.dataset.field]);renderSymbolControls();}
 function applyPreset(wr){state.winRate=wr;if(wr===40){state.p1=70.3;state.p2=82.5;state.pf=65.5;}else{state.p1=83.1;state.p2=92.3;state.pf=87.6;}mode='manual';lastSim=null;dirtySim=false;save();syncControls();render();notify(`Loaded ${wr}% WR model preset. These are planning assumptions, not verified probabilities.`);}
 function calc(count=state.accounts,mirror=state.mirror){count=Math.max(1,Math.floor(count));mirror=Math.max(1,Math.floor(mirror));const unit=positive(state.price)+positive(state.extraCost), cost=count*unit;
  const pass=prob(state.p1)*prob(state.p2)*prob(state.pf)*prob(state.pc);
@@ -489,16 +622,16 @@ function initScenarioTable(){
 }
 
 function funnelRow(name,value,total){const v=total>0?Math.max(0,Math.min(100,value/total*100)):0;return `<div class="funnel-line"><div class="funnel-head"><span>${name}</span><strong>${value.toFixed(2)}</strong></div><div class="bar-track"><div class="bar-fill" style="width:${v.toFixed(2)}%"></div></div></div>`;}
-function marginForRisk(risk){const s=state;return positive(risk)*positive(s.goldPrice)/(Math.max(.00001,positive(s.stopDist))*Math.max(1,positive(s.leverage)));}
-function showWarnings(c){let items=[];if(c.cost>positive(state.budget))items.push(`Planned challenge purchases ${money(c.cost)} exceed the available budget ${money(state.budget)}.`);if(c.unit<=0)items.push('Set a positive challenge price/cost for meaningful ROI.');if(positive(state.dailyLoss)+positive(state.buffer)>positive(state.accountSize))items.push('Daily loss plus buffer exceeds account size.');if(positive(state.overallLoss)+positive(state.buffer)>positive(state.accountSize))items.push('Total loss plus buffer exceeds account size.');if(positive(state.fundedBoost)>0&&marginForRisk(state.fundedBoost)>positive(state.accountSize)*prob(state.marginCeiling))items.push('Full funded boost does not fit your margin ceiling at starting equity; it may fit only after profits.');if(dirtySim&&lastSim)items.push('Strategy parameters changed after the last simulation. Rerun to refresh pass rates.');const box=$('warningBox');if(items.length){box.style.display='block';box.textContent=items.join('  •  ')}else box.style.display='none';}
+function marginForRisk(risk){return positionForRisk(risk).margin;}
+function showWarnings(c){let items=[];if(c.cost>positive(state.budget))items.push(`Planned challenge purchases ${money(c.cost)} exceed the available budget ${money(state.budget)}.`);if(c.unit<=0)items.push('Set a positive challenge price/cost for meaningful ROI.');if(positive(state.dailyLoss)+positive(state.buffer)>positive(state.accountSize))items.push('Daily loss plus buffer exceeds account size.');if(positive(state.overallLoss)+positive(state.buffer)>positive(state.accountSize))items.push('Total loss plus buffer exceeds account size.');if(!instrumentReady())items.push('Instrument specifications are incomplete; trade sizing and strategy simulation are disabled.');if(instrumentReady()&&positionForRisk(state.fundedBase).qty===0)items.push('Funded risk per trade is below the minimum executable order size for the selected symbol and stop distance.');if(instrumentReady()&&positive(state.fundedBoost)>0&&marginForRisk(state.fundedBoost)>positive(state.accountSize)*prob(state.marginCeiling))items.push('Full funded boost does not fit your margin ceiling at starting equity; it may fit only after profits.');if(dirtySim&&lastSim)items.push('Strategy parameters changed after the last simulation. Rerun to refresh pass rates.');const box=$('warningBox');if(items.length){box.style.display='block';box.textContent=items.join('  •  ')}else box.style.display='none';}
 function render(){const c=calc();$('heroRate').textContent=pct(c.pass);$('modeLabel').textContent=mode==='simulation'?'Trading-rule Monte Carlo estimates':'Manual stage estimates';$('kpiCost').textContent=money(c.cost);$('kpiBudget').textContent=c.cost<=state.budget?money(state.budget-c.cost)+' budget unspent':money(c.cost-state.budget)+' above budget';$('kpiReceipts').textContent=money(c.receipts);$('kpiNet').textContent=money(c.net);$('kpiNet').className='val '+(c.net>=0?'green':'red');$('kpiROI').textContent=pct(c.roi);$('kpiROI').className='val '+(c.roi>=0?'green':'red');$('kpiROIx').textContent=c.roi.toFixed(2)+'× initial spending as NET profit';
  const a=state.accounts,b=a*prob(state.p1),d=b*prob(state.p2),e=d*prob(state.pf),f=e*prob(state.pc);$('funnel').innerHTML=funnelRow('Purchased challenges',a,a)+funnelRow('Passed Phase 1',b,a)+funnelRow('Passed Phase 2',d,a)+funnelRow('Reached funded profit target',e,a)+funnelRow('Expected collected payouts',f,a);
  $('pOne').textContent=pct(c.atLeast);$('pThree').textContent=pct(c.chance(3));$('pFour').textContent=pct(c.chance(4));$('unitReward').textContent=money(c.reward);$('unitRefund').textContent=money(c.refund);$('unitCost').textContent=money(c.avgCost);$('breakEven').textContent=pct(c.breakEven);$('needed4').textContent=Number.isFinite(c.needed4)?c.needed4:'—';$('payoutTiming').textContent='~'+Math.ceil(state.p1MinDays+state.p2MinDays+state.reviewDays*2+state.daysBeforeRequest+state.payoutProcessingDays)+' days';
  $('scenarioNote').textContent=mode==='simulation'?(dirtySim?'Simulation estimates may be stale. Rerun after editing trading rules.':'Stage rates derived from simplified Monte Carlo paths. Payout collection remains a manual assumption.'):'These pass rates are manual planning estimates, including prior illustrative 40%/50% presets—not verified live account success rates.';
- $('marginNotice').innerHTML=`At gold ${money(state.goldPrice)} and a ${state.stopDist} USD stop, ${money(state.fundedBase)} risk uses about <strong>${money(marginForRisk(state.fundedBase))} margin</strong>; ${money(state.fundedBoost)} uses about <strong>${money(marginForRisk(state.fundedBoost))}</strong>. Starting equity allows ${money(state.accountSize*prob(state.marginCeiling))} margin under the selected limit.`;
- const preview=[['Phase 1 3R winner',state.p1Base*state.rr,`Target ${money(state.p1Target)}`,state.p1Base*state.rr>=state.p1Target],['Phase 2 3R winner',state.p2Base*state.rr,`Target ${money(state.p2Target)}`,state.p2Base*state.rr>=state.p2Target],['Funded base winner',state.fundedBase*state.rr,`Boost eligibility depends on same-day profit`,false],['Funded boosted winner',state.fundedBoost*state.rr,`Margin at ${money(marginForRisk(state.fundedBoost))}`,false]];
+ $('marginNotice').textContent=instrumentReady()?instrumentLabel()+' · Planned funded base '+money(state.fundedBase)+' → estimated margin '+money(marginForRisk(state.fundedBase))+'; boost '+money(state.fundedBoost)+' → estimated margin '+money(marginForRisk(state.fundedBoost))+'. Starting-equity margin ceiling: '+money(state.accountSize*prob(state.marginCeiling))+'. Actual broker/exchange margin may differ.':'Select the symbol above and complete its broker-specific contract and margin assumptions before using margin estimates.';renderSymbolSummary();
+ const preview=[['Phase 1 winner',state.p1Base*state.rr,`Target ${money(state.p1Target)}`,state.p1Base*state.rr>=state.p1Target],['Phase 2 winner',state.p2Base*state.rr,`Target ${money(state.p2Target)}`,state.p2Base*state.rr>=state.p2Target],['Funded base winner',state.fundedBase*state.rr,`Boost eligibility depends on same-day profit`,false],['Funded boosted winner',state.fundedBoost*state.rr,`Margin at ${money(marginForRisk(state.fundedBoost))}`,false]];
  $('tradePreview').innerHTML=preview.map(([name,val,note,passes])=>`<div class="info-card"><span class="section-tag">${name}</span><div class="value ${passes?'green':''}">${money(val)}</div><p>${note}${passes?' · One win hits target':''}</p></div>`).join('');
- renderScaling();showWarnings(c);if(lastSim)renderSim();renderPresetLibrary();}
+ renderScaling();showWarnings(c);if(lastSim)renderSim();else{$('simResults').className='notice';$('simResults').textContent='Run the simulation to generate stage probabilities. Complete the selected symbol specifications first.';}renderPresetLibrary();}
 function renderScaling(){const budgets=[250,500,1000,2000,4000,8000,16000];const c=calc();const unit=c.unit;const selected=positive(state.budget);if(!budgets.includes(selected))budgets.push(selected);budgets.sort((x,y)=>x-y);
  $('budgetRows').innerHTML=budgets.map(b=>{const n=unit>0?Math.floor(b/unit):0;if(n<=0)return `<tr><td>${money(b)}</td><td colspan="6" class="subtle">Budget below one challenge</td></tr>`;const x=calc(Math.min(n,1000));return `<tr><td>${money(b)}</td><td class="num">${x.count}</td><td class="num">${money(x.cost)}</td><td class="num">${x.successes.toFixed(2)}</td><td class="num ${x.net>=0?'green':'red'}">${money(x.net)}</td><td class="num">${pct(x.roi)}</td><td class="num">${pct(x.chance(4))}</td></tr>`;}).join('');
  $('mirrorRows').innerHTML=[1,2,3,4,5].map(m=>{const x=calc(state.accounts,m);return `<tr><td>${m} account${m===1?'':'s'} / signal ${m===state.mirror?'<span class="tag">selected</span>':''}</td><td class="num">${money(x.net)}</td><td class="num">${pct(x.atLeast)}</td><td class="num">${pct(x.chance(3))}</td><td class="num">${pct(x.chance(4))}</td></tr>`;}).join('');}
@@ -518,13 +651,13 @@ function simulateStage(which,rng){const s=state;const size=s.accountSize,overall
   const costs=Math.max(0,s.tradeCost);const dailyRoom=balance-(dayStart-s.dailyLoss+s.buffer)-costs;
   const overallRoom=balance-(overallFloor+s.buffer)-costs;
   const room=Math.min(dailyRoom,overallRoom);
-  const marginRisk=balance*maxMargin*s.stopDist*s.leverage/Math.max(1,s.goldPrice);
+  const marginRisk=maxRiskByMargin(balance*maxMargin);
   // A boosted order is all-or-nothing: if $500 does not fit, return to base instead.
   if(which==='funded'&&planned===s.fundedBoost&&planned>Math.min(room,marginRisk)+1e-7)planned=s.fundedBase;
   let risk=Math.min(planned,room,marginRisk);
   // Once close to target, a smaller trade can close the remaining gap, while the first trade stays at the normal risk.
   const remaining=target-(balance-size);if(remaining>0&&remaining<s.rr*risk*.65)risk=Math.min(risk,Math.max(minRisk,remaining/Math.max(.1,s.rr)));
-  risk=Math.floor(risk*100)/100;
+  risk=quantizedTradeRisk(risk);
   if(risk<minRisk){
     // Reaching the *daily* loss reserve means stop for today, not lose the account.
     // Only the overall cap or inability to size even the minimum order retires it.
@@ -542,7 +675,7 @@ function simulateStage(which,rng){const s=state;const size=s.accountSize,overall
  if(status==='pass'||status==='breached'||status==='exhausted')break;
  }
  return {success:status==='pass',status,tradeCount,daysTraded,boostTrades};}
-function runSimulation(){const count=Math.max(250,Math.min(20000,Math.floor(state.simulations)));const keys=['p1','p2','funded'];const results={};
+function runSimulation(){if(!selectedAccountSupportsSimulation||!instrumentReady()){notify('This program requires a supported evaluation model and completed symbol specifications before simulation.');return;}const count=Math.max(250,Math.min(20000,Math.floor(state.simulations)));const keys=['p1','p2','funded'];const results={};
  let seed=state.randomSeed>>>0;for(const key of keys){const rng=mulberry32(seed++);let wins=0,trades=0,tradesSuccess=0,successTotal=0,daysSuccess=0,boost=0,exhausted=0;
   for(let i=0;i<count;i++){const r=simulateStage(key==='funded'?'funded':key,rng);wins+=r.success?1:0;trades+=r.tradeCount;boost+=r.boostTrades;if(r.success){tradesSuccess+=r.tradeCount;successTotal++;daysSuccess+=r.daysTraded;}if(r.status==='exhausted'||r.status==='breached')exhausted++;}
   results[key]={pass:wins/count,tradesMean:trades/count,tradesSuccess:successTotal?tradesSuccess/successTotal:null,daysSuccess:successTotal?daysSuccess/successTotal:null,exhausted:exhausted/count,boostAverage:boost/count};}
@@ -552,13 +685,41 @@ function renderSim(){const keys=[['p1','Phase 1'],['p2','Phase 2'],['funded','Fu
 function notify(msg){const el=$('toast');el.textContent=msg;el.style.display='block';clearTimeout(notify.timeout);notify.timeout=setTimeout(()=>el.style.display='none',3500);}
 function download(text,filename,mime){const blob=new Blob([text],{type:mime});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 function exportSettings(){download(JSON.stringify({app:'FTMO ROI Studio',version:1,settings:state,mode,simulation:lastSim},null,2),'FTMO_ROI_scenario.json','application/json');notify('Exported editable settings JSON.');}
-function importSettings(file){if(!file)return;const reader=new FileReader();reader.onload=()=>{try{const obj=JSON.parse(reader.result);if(!obj.settings||typeof obj.settings!=='object')throw Error('Missing settings');for(const [k,v] of Object.entries(obj.settings)){if(Object.prototype.hasOwnProperty.call(DEFAULT,k)&&Number.isFinite(Number(v)))state[k]=Number(v);}mode='manual';lastSim=null;dirtySim=false;save();syncControls();render();notify('Imported scenario successfully.');}catch(e){notify('Could not load that JSON settings file.');}};reader.readAsText(file);}
+function importSettings(file){if(!file)return;const reader=new FileReader();reader.onload=()=>{try{const obj=JSON.parse(reader.result);if(!obj.settings||typeof obj.settings!=='object')throw Error('Missing settings');state=cleanSettings({...state,...obj.settings});mode='manual';lastSim=null;dirtySim=false;save();syncControls();render();notify('Imported scenario successfully.');}catch(e){notify('Could not load that JSON settings file.');}};reader.readAsText(file);}
 function exportCSV(){const x=calc();const rows=[['Metric','Value'],['Account purchases',state.accounts],['Cost per challenge',x.unit],['Challenge spending',x.cost],['Phase 1 pass rate',state.p1+'%'],['Phase 2 pass rate',state.p2+'%'],['Funded target hit',state.pf+'%'],['Payout collection',state.pc+'%'],['Combined payout probability',pct(x.pass)],['Expected paid accounts',x.successes],['Payout after fees',x.reward],['Refund per payout',x.refund],['Expected collected receipts',x.receipts],['Expected net profit',x.net],['Expected net ROI',pct(x.roi)],['Chance of ≥3x net',pct(x.chance(3))],['Chance of ≥4x net',pct(x.chance(4))]];download(rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n'),'FTMO_ROI_results.csv','text/csv');notify('Downloaded result summary CSV.');}
 function copySummary(){const x=calc();const msg=`FTMO ROI Studio — Set 1 / 3R\nChallenges: ${state.accounts}\nMirror group: ${state.mirror}\nInvestment: ${money(x.cost)}\nP1 pass: ${state.p1}%\nP2 pass: ${state.p2}%\nFunded target hit: ${state.pf}%\nPayout collected: ${state.pc}%\nFull pipeline: ${pct(x.pass)}\nExpected paid accounts: ${x.successes.toFixed(2)}\nReward per paid account: ${money(x.reward)}\nRefund per payout: ${money(x.refund)}\nExpected net profit: ${money(x.net)}\nNet ROI: ${pct(x.roi)}\nChance at least 3x net: ${pct(x.chance(3))}\nChance at least 4x net: ${pct(x.chance(4))}`;
  if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(msg).then(()=>notify('Summary copied.')).catch(()=>fallbackCopy(msg));}else fallbackCopy(msg);}
 function fallbackCopy(text){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');notify('Summary copied.');}catch(e){notify('Copy unavailable; use Export CSV instead.');}ta.remove();}
 function esc(s){return String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
-function cleanSettings(source){const settings={...DEFAULT};for(const [k,v] of Object.entries(source||{})){if(Object.prototype.hasOwnProperty.call(DEFAULT,k)&&Number.isFinite(Number(v))){let n=positive(v,minCap[k]??0,maxCap[k]??(percentKeys.has(k)?100:1e8));if(intKeys.has(k))n=Math.round(n);settings[k]=n;}}return settings;}
+function cleanSettings(source){
+ const settings={...DEFAULT};
+ for(const [k,v] of Object.entries(source||{})){
+  if(typeof DEFAULT[k]==='number'&&Number.isFinite(Number(v))){
+   let n=positive(v,minCap[k]??0,maxCap[k]??(percentKeys.has(k)?100:1e8));
+   if(intKeys.has(k))n=Math.round(n);
+   settings[k]=n;
+  }
+ }
+ if(Object.prototype.hasOwnProperty.call(INSTRUMENT_PRESETS,source?.symbolId))settings.symbolId=source.symbolId;
+ if(typeof source?.customSymbol==='string')settings.customSymbol=source.customSymbol.slice(0,40);
+ const raw=source?.symbolSpecs;
+ if(raw&&typeof raw==='object'&&!Array.isArray(raw)){
+  const cleaned={};
+  for(const id of Object.keys(INSTRUMENT_PRESETS)){
+   const sourceSpec=raw[id];
+   if(!sourceSpec||typeof sourceSpec!=='object'||Array.isArray(sourceSpec))continue;
+   const record={market:sourceSpec.market==='futures'?'futures':'cfd'};
+   for(const key of ['price','stop','pointValue','tickSize','qtyStep','leverage','marginPerUnit']){
+    if(sourceSpec[key]!==''&&sourceSpec[key]!=null&&Number.isFinite(Number(sourceSpec[key]))){
+     record[key]=positive(Number(sourceSpec[key]),0,1e10);
+    }
+   }
+   cleaned[id]=record;
+  }
+  settings.symbolSpecs=cleaned;
+ }
+ return settings;
+}
 function writePresetStorage(){try{localStorage.setItem(PRESETS_STORAGE,JSON.stringify(presets));window.fourDsQueueCloudSave?.();return true;}catch(e){return false;}}
 function newId(){return 'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,9);}
 function snapshot(){return {settings:{...state},mode,simulation:!dirtySim&&lastSim?lastSim:null};}
@@ -589,7 +750,7 @@ function useSelectedAccount(x,force=false){
  // Repeated selection broadcasts are not user edits. Keep the saved profile untouched.
  if(!isNew&&!force){
   selectedAccountSupportsSimulation=x.compatible===true;
-  const btn=$('simulate');if(btn)btn.disabled=!selectedAccountSupportsSimulation;
+  const btn=$('simulate');if(btn)btn.disabled=!selectedAccountSupportsSimulation||!instrumentReady();
   const panel1=$('phase1Fields')?.closest('.panel'),panel2=$('phase2Fields')?.closest('.panel');
   if(panel1)panel1.style.display=x.programId==='instant'?'none':'';
   if(panel2)panel2.style.display=['ftmo2','holaPrime','holaPro'].includes(x.programId)?'':'none';
@@ -623,26 +784,64 @@ function useSelectedAccount(x,force=false){
  const label=x.label||newKey;
  const notice=$('firmStrategyStatus');
  if(notice)notice.textContent=label+' · '+(profile?'Saved trading settings restored.':'New trading profile created.')+(selectedAccountSupportsSimulation?' Existing simulation is approximate and does not enforce all firm rules.':' Rule reference only: this simulator does not support this program.');
- const btn=$('simulate');if(btn)btn.disabled=!selectedAccountSupportsSimulation;
+ const btn=$('simulate');if(btn)btn.disabled=!selectedAccountSupportsSimulation||!instrumentReady();
  const phase1Panel=$('phase1Fields')?.closest('.panel'),phase2Panel=$('phase2Fields')?.closest('.panel');if(phase1Panel)phase1Panel.style.display=x.programId==='instant'?'none':'';if(phase2Panel)phase2Panel.style.display=['ftmo2','holaPrime','holaPro'].includes(x.programId)?'':'none';
  const simNotice=$('simulationStatus');if(simNotice)simNotice.textContent=selectedAccountSupportsSimulation?'Ready for approximate simulation':'Simulation unavailable for selected challenge';
  const badge=$('activeAccountProfile');if(badge)badge.textContent='Selected account: '+label+' · Personal trading settings saved automatically in this browser.';const ps=$('profileAccountStatus');if(ps)ps.textContent='Active challenge: '+label+' · Profile: '+activeUser+'.';
 }
+function fitFirmFrame(){
+ const frame=$('firmsFrame');
+ if(!frame||!frame.contentDocument||frame.closest('.page')?.classList.contains('active')!==true)return;
+ try{
+  const doc=frame.contentDocument,wrap=doc.querySelector('.wrap');
+  if(!wrap)return;
+  const top=wrap.getBoundingClientRect().top;
+  let bottom=0;
+  for(const child of wrap.children){
+   if(doc.defaultView.getComputedStyle(child).display==='none')continue;
+   bottom=Math.max(bottom,child.getBoundingClientRect().bottom-top);
+  }
+  const padding=parseFloat(doc.defaultView.getComputedStyle(wrap).paddingBottom)||0;
+  const measured=Math.max(25,Math.min(24000,Math.ceil(bottom+padding+1)));
+  if(Math.abs(frame.getBoundingClientRect().height-measured)>1)frame.style.height=measured+'px';
+ }catch(err){console.warn('Firm frame auto-fit unavailable',err)}
+}
+function setupFirmFit(){
+ const frame=$('firmsFrame');
+ if(!frame||frame.dataset.autoFitAttached)return;
+ frame.dataset.autoFitAttached='yes';
+ frame.addEventListener('load',()=>{
+  try{
+   const doc=frame.contentDocument,wrap=doc?.querySelector('.wrap');
+   if(!wrap)return;
+   if(typeof ResizeObserver!=='undefined'){
+    const ro=new ResizeObserver(()=>requestAnimationFrame(fitFirmFrame));ro.observe(wrap);frame._fourDsResizeObserver=ro;
+   }
+   const mo=new MutationObserver(()=>requestAnimationFrame(fitFirmFrame));
+   mo.observe(wrap,{attributes:true,attributeFilter:['open','class','style'],childList:true,subtree:true});
+   frame._fourDsMutationObserver=mo;
+   doc.addEventListener('toggle',()=>requestAnimationFrame(fitFirmFrame),true);
+  }catch(err){console.warn('Could not observe firm content',err)}
+  requestAnimationFrame(fitFirmFrame);
+  setTimeout(fitFirmFrame,120);
+ });
+}
+
 window.addEventListener('message',event=>{
  if(event.origin!==window.location.origin||event.source!==$('firmsFrame')?.contentWindow||!event.data)return;
  const msg=event.data;
- if(msg.type==='studio-rules-height'&&Number.isFinite(Number(msg.height))){const height=Math.max(160,Math.min(16000,Math.ceil(Number(msg.height))+4));$('firmsFrame').style.height=height+'px';return;}
+ if(msg.type==='studio-rules-height'){requestAnimationFrame(fitFirmFrame);return;}
  if(msg.type==='studio-open-trading-workspace'){$('firmTradingWorkspace').scrollIntoView({behavior:'smooth',block:'start'});return;}
  if(msg.type==='studio-program-change'){useSelectedAccount(msg.payload);return;}
  if(msg.type==='studio-program-rules-updated'){useSelectedAccount(msg.payload,true);window.fourDsQueueCloudSave?.();return;}
  if(msg.type==='studio-user-profile-changed'){window.fourDsQueueCloudSave?.();return;}
  if(msg.type==='studio-program-select'){useSelectedAccount(msg.payload,true);$('firmTradingWorkspace').scrollIntoView({behavior:'smooth',block:'start'});}
 });
-function goPage(name){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id==='page-'+name));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===name));window.scrollTo({top:0,behavior:'smooth'});}
-makeFields();render();initScenarioTable();const firmFrame=$('firmsFrame');if(firmFrame?.dataset?.src){firmFrame.src=firmFrame.dataset.src;}
+function goPage(name){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id==='page-'+name));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===name));if(name==='firms'){requestAnimationFrame(fitFirmFrame);setTimeout(fitFirmFrame,160)}window.scrollTo({top:0,behavior:'smooth'});}
+makeFields();initSymbols();render();initScenarioTable();setupFirmFit();const firmFrame=$('firmsFrame');if(firmFrame?.dataset?.src){firmFrame.src=firmFrame.dataset.src;}
 $('activeUserSelect').value=activeUser;$('activeUserSelect').addEventListener('change',()=>{const v=$('activeUserSelect').value;if(!FOUR_DS_USERS.some(u=>u.id===v))return;writeProfile();try{localStorage.setItem(FOUR_DS_ACTIVE,v)}catch(_){}location.reload()});const profileSelect=$('profileUserSelect');profileSelect.value=activeUser;profileSelect.addEventListener('change',()=>{$('activeUserSelect').value=profileSelect.value;$('activeUserSelect').dispatchEvent(new Event('change'));});$('profileAccountStatus').textContent=activeProgramKey?'Active challenge: '+activeProgramKey+' · Settings saved for '+activeUser+'.':'No challenge selected yet for '+activeUser+'. Choose one under Prop firms.';{const el=$('activeAccountProfile');if(el)el.textContent=activeProgramKey?'Saved account profile: '+activeProgramKey+' · Changes to trading parameters are saved automatically on this device.':'No account profile selected. Choose a firm, program and account size in Prop firms.';}
 document.querySelectorAll('[data-page]').forEach(el=>el.addEventListener('click',()=>goPage(el.dataset.page)));document.querySelectorAll('[data-nav]').forEach(el=>el.addEventListener('click',()=>goPage(el.dataset.nav)));
-$('preset40').addEventListener('click',()=>applyPreset(40));$('preset50').addEventListener('click',()=>applyPreset(50));$('simulate').addEventListener('click',()=>{const b=$('simulate');b.disabled=true;b.textContent='Calculating…';setTimeout(()=>{try{runSimulation();}catch(e){console.error(e);notify('Simulation error: check your inputs.');}b.textContent='Run strategy simulation';b.disabled=false;},25);});
+$('preset40').addEventListener('click',()=>applyPreset(40));$('preset50').addEventListener('click',()=>applyPreset(50));$('simulate').addEventListener('click',()=>{const b=$('simulate');if(!selectedAccountSupportsSimulation||!instrumentReady()){notify('Select a supported challenge and complete the symbol specifications.');return;}b.disabled=true;b.classList.add('is-calculating');b.textContent='Calculating…';setTimeout(()=>{try{runSimulation();}catch(e){console.error(e);notify('Simulation error: check your inputs.');}b.textContent='Run strategy simulation';b.classList.remove('is-calculating');updateSimulationAvailability();},25);});
 $('useManual').addEventListener('click',()=>{mode='manual';lastSim=null;dirtySim=false;render();notify('Manual pass-rate mode enabled.');});$('useBudget').addEventListener('click',()=>{const unit=positive(state.price)+positive(state.extraCost);if(unit>0){state.accounts=Math.max(1,Math.min(1000,Math.floor(state.budget/unit)));save();syncControls();render();}});
 $('resetQuick').addEventListener('click',()=>{for(const k of ['budget','accounts','price','extraCost'])state[k]=DEFAULT[k];save();syncControls();render();});
 $('exportTop').addEventListener('click',exportSettings);$('exportSettings').addEventListener('click',exportSettings);$('importSettings').addEventListener('click',()=>$('importFile').click());$('importFile').addEventListener('change',e=>{importSettings(e.target.files[0]);e.target.value='';});$('exportCSV').addEventListener('click',exportCSV);$('copySummary').addEventListener('click',copySummary);
