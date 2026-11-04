@@ -78,7 +78,8 @@
       },
       "sources": [
         "https://ftmo.com/en/comparison-table/",
-        "https://ftmo.com/en/trading-objectives/"
+        "https://ftmo.com/en/trading-objectives/",
+        "https://ftmo.com/en/1-step-challenge/"
       ],
       "sizesUSD": [
         10000,
@@ -88,9 +89,13 @@
         200000
       ],
       "pricesEUR": {
-        "10000": 79
+        "10000": 79,
+        "25000": 199,
+        "50000": 319,
+        "100000": 399,
+        "200000": 999
       },
-      "pricingNote": "Only published start-from €79 minimum captured; do not extrapolate other account-size fees.",
+      "pricingNote": "EUR price shown on FTMO 1-Step official page on 5 Nov 2026; 100K €399 is displayed as a promotion versus €499 regular. Currency conversion/region checkout not assumed.",
       "pricingCurrency": "EUR"
     },
     "instant": {
@@ -746,7 +751,7 @@
         "minDays": [
           1
         ],
-        "consistency": "35% max single profitable day share during evaluation; published 2026 pricing reference"
+        "consistency": "35% max share of total evaluation profit on any single day; no monthly renewal"
       },
       "loss": {
         "type": "EOD trailing MLL; daily-loss soft pause rather than instant account failure"
@@ -800,7 +805,8 @@
         "minDays": [
           3
         ],
-        "consistency": "40% evaluation; optional 50% add-on (except 300K)"
+        "consistency": "40% max daily profit share; optional 50% paid add-on not available on 300K",
+        "minimumTradingDays": "3 days for standard Select; paid add-on 50% may allow passing in 2 days"
       },
       "loss": {
         "dailyPercent": null,
@@ -1110,7 +1116,9 @@
         "targetsPercent": [
           9
         ],
-        "minProfitableDays": 3
+        "minProfitableDays": 3,
+        "minimumHoldingTime": "2 minutes; short trades may be flagged",
+        "news": "Allowed in challenge; funded ±5-min high-impact restriction"
       },
       "loss": {
         "dailyPercent": 4,
