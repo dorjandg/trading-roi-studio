@@ -169,6 +169,93 @@
       "status": "research-only",
       "url": "https://fundednext.com/",
       "notes": "Separate futures offerings and payout rules, not the CFD Stellar rules."
+    },
+    {
+      "id": "tradeify-growth",
+      "firm": "Tradeify",
+      "program": "Growth Evaluation",
+      "market": "Futures",
+      "status": "research-only",
+      "url": "https://help.tradeify.co/en/articles/14369021-tradeify-pricing-reference",
+      "notes": "One-time evaluation with daily loss soft pause; verify consistency, funded payout path and account purchase caps separately."
+    },
+    {
+      "id": "tradeify-select",
+      "firm": "Tradeify",
+      "program": "Select Evaluation",
+      "market": "Futures",
+      "status": "research-only",
+      "url": "https://help.tradeify.co/en/articles/12853921-select-evaluation-accounts",
+      "rules": {
+        "consistency": 40
+      },
+      "notes": "No DLL during evaluation; trailing drawdown and funded account restrictions apply; official source describes purchase and active-account limits."
+    },
+    {
+      "id": "tradeify-lightning",
+      "firm": "Tradeify",
+      "program": "Lightning Funded",
+      "market": "Futures",
+      "status": "research-only",
+      "url": "https://help.tradeify.co/en/articles/14369021-tradeify-pricing-reference",
+      "notes": "Direct simulated-funded path; payout and trading limits differ from evaluation products."
+    },
+    {
+      "id": "mff-builder",
+      "firm": "MyFundedFutures",
+      "program": "Builder",
+      "market": "Futures",
+      "status": "research-only",
+      "url": "https://help.myfundedfutures.com/en/articles/11802636-traders-evaluation-simplified",
+      "notes": "Evaluation rules vary by size; funded-stage consistency and payout rules need separate verification."
+    },
+    {
+      "id": "mff-rapid",
+      "firm": "MyFundedFutures",
+      "program": "Rapid",
+      "market": "Futures",
+      "status": "research-only",
+      "url": "https://help.myfundedfutures.com/en/articles/11802636-traders-evaluation-simplified",
+      "notes": "Rapid Intraday and Rapid EOD have different consistency, minimum days and funded rules."
+    },
+    {
+      "id": "mff-studio",
+      "firm": "MyFundedFutures",
+      "program": "Studio",
+      "market": "Futures",
+      "status": "research-only",
+      "url": "https://help.myfundedfutures.com/en/articles/17589665-studio-plans-a-comprehensive-guide",
+      "notes": "Limited-availability products with static loss floors, distinct costs and active-account limits."
+    },
+    {
+      "id": "blueguardian-standard",
+      "firm": "Blue Guardian",
+      "program": "1-Step Standard",
+      "market": "CFD",
+      "status": "research-only",
+      "url": "https://help.blueguardian.com/en/articles/14062186-1-step-standard-rules",
+      "rules": {
+        "p1": 9,
+        "daily": 4,
+        "max": 6,
+        "lossType": "trailing"
+      },
+      "notes": "Product and purchase-date variants; funded news, copy trading and tick-scalping restrictions require careful review."
+    },
+    {
+      "id": "blueguardian-nano",
+      "firm": "Blue Guardian",
+      "program": "1-Step Nano",
+      "market": "CFD",
+      "status": "research-only",
+      "url": "https://help.blueguardian.com/en/articles/16444654-1-step-nano-rules",
+      "rules": {
+        "p1": 10,
+        "daily": 4,
+        "max": 6,
+        "lossType": "trailing"
+      },
+      "notes": "Funded payout frequency, profitable-day requirement and copy-trading limits vary by product."
     }
   ]
 }
