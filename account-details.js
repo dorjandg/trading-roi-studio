@@ -10,6 +10,7 @@ window.fourDsRenderAudit=function(id){
  const status=document.getElementById('officialAuditStatus');
  if(status)status.textContent=audit.status==='requires-variant-selection'?'VARIANT REQUIRED · not fully verified':'SOURCE-REVIEWED · verification incomplete';
  const intro=document.createElement('p');intro.className='muted';intro.textContent='Reference checked '+window.fourDsOfficialAudit.asOf+'. Review the exact account size, purchase date, market, platform and phase. This is not a broker risk controller.';host.append(intro);
+ const protect=document.createElement('details');protect.className='audit-subsection';const protectTitle=document.createElement('summary');protectTitle.textContent='Account-protection checklist';protect.append(protectTitle);for(const step of window.fourDsOfficialAudit.safetyChecklist||[]){const line=document.createElement('p');line.className='muted';line.style.margin='6px 0';line.textContent='• '+step;protect.append(line)}host.append(protect);
  const sections=[['Pricing & sizes',{sizesUSD:audit.sizesUSD,pricesUSD:audit.pricesUSD,pricingNote:audit.pricingNote}],['Evaluation',audit.evaluation],['Maximum losses & daily breaches',audit.loss],['Margin, leverage & position caps',audit.margin],['Funded payouts and restrictions',audit.funded],['Trading restrictions & exceptions',audit.restrictions]];
  const friendly=k=>k.replace(/([a-z])([A-Z])/g,'$1 $2').replace(/USD/g,' USD').replace(/Percent/g,' %').replace(/^./,x=>x.toUpperCase());
  const value=v=>Array.isArray(v)?v.join(' / '):typeof v==='object'?Object.entries(v).map(([k,x])=>k+': '+String(x)).join(' | '):v===null?'Not specified in this source':String(v);
@@ -37,7 +38,7 @@ const name=item.firm+' · '+item.program+' · '+item.market;
 document.getElementById('officialAccountTitle').textContent=name;
 document.getElementById('officialDetailStatus').textContent='Research-only · source catalog '+(asOf||'undated');
 const cards=document.getElementById('officialAccountHighlights');cards.replaceChildren();
-for(const [label,val] of [['Account sizes','Not verified'],['Challenge price','Not verified'],['Status','Rules research only'],['Market',item.market]]){
+const confirmed=window.fourDsOfficialAudit?.programs?.[item.id];for(const [label,val] of [['Account sizes',confirmed?.sizesUSD?.length?confirmed.sizesUSD.map(x=>'$'+Number(x).toLocaleString('en-US')).join(' / '):'Not verified'],['Published fees',confirmed?.pricesUSD?Object.entries(confirmed.pricesUSD).map(([k,v])=>'$'+Number(k).toLocaleString('en-US')+': $'+Number(v).toLocaleString('en-US')).join(' / '):'Not verified'],['Status','Research only'],['Market',item.market]]){
  const card=document.createElement('div');card.className='stat';const a=document.createElement('span');a.textContent=label;const b=document.createElement('b');b.textContent=val;card.append(a,b);cards.append(card);
 }
 const pretty=k=>k.replace(/([A-Z])/g,' $1').replace(/^./,x=>x.toUpperCase());
