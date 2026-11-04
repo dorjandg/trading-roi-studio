@@ -152,7 +152,7 @@ table{width:100%;border-collapse:collapse;text-align:left;min-width:550px}th,td{
 </div>
 </section>
 <section id="page-dashboard" class="page active"><div class="notice" style="margin-bottom:14px"><strong>Where to edit:</strong> Account settings, rules, win rate, RR and payouts → <button class="btn small primary" data-nav="firms">Prop firms</button>. Investment budget and account count → <button class="btn small" data-nav="scaling">Investments & ROI</button>. This Overview shows calculated results.</div><div class="panel" style="margin-bottom:14px"><div class="panel-header"><div><h2>Overview account</h2><p>Choose firm, account type and amount. Available amounts depend on the account type; the dashboard updates automatically.</p></div></div><div class="formgrid overview-account-grid"><div class="field"><label for="overviewFirmSelect">1. Prop firm</label><select id="overviewFirmSelect"><option value="">Loading firms…</option></select></div><div class="field"><label for="overviewSizeSelect">2. Account amount</label><select id="overviewSizeSelect"><option value="">Choose amount</option></select></div><div class="field"><label for="overviewProgramSelect">3. Account type</label><select id="overviewProgramSelect"><option value="">Choose account type</option></select></div></div><div style="margin-top:12px"><button class="btn small" type="button" data-nav="firms">Edit selected account in Prop firms</button></div><p class="caption" id="overviewAccountHint" style="margin-top:10px">Choose an account to load its trading rules, risk settings, payout assumptions and ROI.</p></div><div id="activeAccountProfile" class="caption" style="margin:0 0 12px"></div>
-  <div class="panel overview-investment" style="margin-bottom:14px"><div class="panel-header"><div><h2>Investment plan</h2><p>Choose your budget and how many challenges to purchase. The dashboard below uses this plan and the selected account.</p></div></div><div class="overview-investment-grid"><div class="field"><label for="overviewBudget">Available investment budget (USD)</label><input id="overviewBudget" type="number" min="0" step="1" inputmode="decimal"></div><div class="field"><label for="overviewAccounts">Planned challenges (count)</label><input id="overviewAccounts" type="number" min="1" step="1" inputmode="numeric"></div><div class="field"><label>Cost per challenge</label><strong id="overviewUnitCost">—</strong></div><div class="field"><label>Affordable challenges</label><strong id="overviewAffordable">—</strong></div></div><div id="overviewBudgetStatus" class="caption" style="margin-top:12px"></div><button type="button" class="btn small" id="overviewFitBudget" style="margin-top:10px">Use affordable challenge count</button></div>
+  <div class="panel overview-investment" style="margin-bottom:14px"><div class="panel-header"><div><h2>Investment plan</h2><p>Change either budget or challenge count, then click outside. The other value and all dashboard results update automatically.</p></div></div><div class="overview-investment-grid"><div class="field"><label for="overviewBudget">Available investment budget (USD)</label><input id="overviewBudget" type="number" min="0" step="1" inputmode="decimal"></div><div class="field"><label for="overviewAccounts">Planned challenges (count)</label><input id="overviewAccounts" type="number" min="0" step="1" inputmode="numeric"></div><div class="field"><label>Cost per challenge</label><strong id="overviewUnitCost">—</strong></div><div class="field"><label>Affordable challenges</label><strong id="overviewAffordable">—</strong></div></div><div id="overviewBudgetStatus" class="caption" style="margin-top:12px"></div><button type="button" class="btn small" id="overviewFitBudget" style="margin-top:10px">Use affordable challenge count</button></div>
   <div class="overview-summary-strip"><div><span class="section-tag">Modeled payout probability</span><strong id="heroRate">—</strong><span class="caption" id="overviewStageFormula">Selected account stages × payout collection</span></div><div class="overview-summary-actions"><span class="tag" id="modeLabel">Manual stage estimates</span><button class="btn small" id="overviewSimulate">Run trading simulation</button><button class="btn small" data-nav="firms">Edit trading settings</button><button class="btn small" data-nav="scaling">Compare investments</button></div></div>
   <div class="notice" id="overviewModelStatus" style="margin-bottom:14px" role="status"></div>
   <div class="kpis">
@@ -1035,18 +1035,28 @@ function goPage(name){if(name==='firms')overviewRequestedKey=null;document.query
  requestAnimationFrame(fitFirmFrame);setTimeout(fitFirmFrame,160);
 }window.scrollTo({top:0,behavior:'smooth'});}
 makeFields();initSymbols();render();initScenarioTable();setupFirmFit();
- for(const [id,key,minimum] of [['overviewBudget','budget',0],['overviewAccounts','accounts',1]]){
-  const el=$(id);
-  const update=()=>{
-   if(el.value.trim()==='')return;
-   const v=Number(el.value);
-   if(!Number.isFinite(v)||v<minimum)return;
-   state[key]=key==='accounts'?Math.floor(v):v;
-   save();render();
-  };
-  el.addEventListener('input',update);
-  el.addEventListener('change',()=>{update();render()});
+ // Bidirectional investment planner: commit changes only when leaving the field.
+ // Budget -> maximum whole challenges affordable; challenges -> exact required budget.
+ function commitOverviewInvestment(source){
+  const budget=$('overviewBudget'),count=$('overviewAccounts');
+  const el=source==='budget'?budget:count;
+  const value=Number(el.value);
+  const unit=positive(state.price)+positive(state.extraCost);
+  if(el.value.trim()===''||!Number.isFinite(value)||value<0||!Number.isFinite(unit)||unit<=0){
+   budget.value=state.budget;count.value=state.accounts;return;
+  }
+  if(source==='budget'){
+   state.budget=value;
+   state.accounts=Math.floor(value/unit);
+  }else{
+   state.accounts=Math.max(0,Math.floor(value));
+   state.budget=Math.round(state.accounts*unit*100)/100;
+  }
+  budget.value=state.budget;count.value=state.accounts;
+  save();render();
  }
+ $('overviewBudget').addEventListener('change',()=>commitOverviewInvestment('budget'));
+ $('overviewAccounts').addEventListener('change',()=>commitOverviewInvestment('accounts'));
  $('overviewSimulate').addEventListener('click',()=>{
  if(!selectedAccountSupportsSimulation){goPage('firms');return;}
  runSimulation();
