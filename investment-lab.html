@@ -100,7 +100,7 @@ function run(){
      else if(strategy.id==='staged')amount=available/h;
      else amount=month===0?available*.1:Math.max(0,Math.min(available*.35,available*.12+(lastNet>0?available*.10:0)));
      amount=Math.min(amount,Math.max(0,capacity));
-     const count=Math.min(25000,Math.max(0,Math.floor(Math.min(spendable,amount)/price)));
+     const count=Math.min(25000,Math.max(0,Math.floor(Math.min(spendable,amount)/(price+pE*activation))));
      const cost=count*price;spendable-=cost;expenses+=cost;capacity-=cost;allocated+=cost;
      const passed=sample(count,pE,rng);
      const activationCount=Math.min(passed,Math.floor(spendable/Math.max(activation,0.000001)));
