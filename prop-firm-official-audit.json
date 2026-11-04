@@ -1,0 +1,781 @@
+{
+  "asOf": "2026-11-05",
+  "purpose": "Source-linked rule audit; research only, not a live risk-enforcement system. Review purchase dates, current checkout, stage and platform.",
+  "verificationDefinitions": {
+    "reviewed-partial": "Official rules checked for significant fields. NOT comprehensive or simulator certified.",
+    "requires-variant-selection": "A catalog entry groups multiple materially different products; must select exact plan before calculations."
+  },
+  "programs": {
+    "ftmo2": {
+      "status": "reviewed-partial",
+      "evaluation": {
+        "targetsPercent": [
+          10,
+          5
+        ],
+        "minDays": [
+          4,
+          4
+        ]
+      },
+      "loss": {
+        "dailyPercent": 5,
+        "maximumPercent": 10,
+        "type": "static",
+        "dailyReset": "00:00 CE(S)T",
+        "breach": "Equity including floating P/L, swaps and commissions breaches floor; hard failure"
+      },
+      "margin": {
+        "leverage": "Instrument/account dependent; check platform specifications"
+      },
+      "funded": {
+        "split": "80% standard; up to 90% under eligible conditions",
+        "withdrawals": "Check funded agreement and news restrictions"
+      },
+      "sources": [
+        "https://ftmo.com/en/2-step-challenge/",
+        "https://ftmo.com/en/trading-objectives/"
+      ]
+    },
+    "ftmo1": {
+      "status": "reviewed-partial",
+      "evaluation": {
+        "targetsPercent": [
+          10
+        ],
+        "minDays": [
+          0
+        ],
+        "consistency": "50% of total profit for orders from 12 Oct 2026; earlier orders have legacy Best Day rule"
+      },
+      "loss": {
+        "dailyPercent": 3,
+        "maximumPercent": 10,
+        "type": "end-of-day balance trailing",
+        "dailyReset": "00:00 CE(S)T",
+        "breach": "Maximum loss floor trails highest midnight balance; equity breach is hard failure"
+      },
+      "funded": {
+        "split": "90%",
+        "withdrawals": "50% consistency applies to reward eligibility for newer accounts"
+      },
+      "sources": [
+        "https://ftmo.com/en/comparison-table/",
+        "https://ftmo.com/en/trading-objectives/"
+      ]
+    },
+    "instant": {
+      "status": "reviewed-partial",
+      "evaluation": {
+        "targetsPercent": [],
+        "minDays": [],
+        "consistency": "30% stated for Instant"
+      },
+      "loss": {
+        "dailyPercent": 3,
+        "maximumPercent": 10,
+        "type": "intraday closed-balance trailing",
+        "breach": "Equity must remain above maximum-loss floor, recalculated when closed balance makes new highs"
+      },
+      "margin": {
+        "maxLeverage": "Up to 1:100; instrument limits apply"
+      },
+      "funded": {
+        "split": "90%",
+        "refund": "Nonrefundable",
+        "withdrawals": "Reward eligibility subject to consistency"
+      },
+      "sources": [
+        "https://ftmo.com/en/instant-account/",
+        "https://ftmo.com/en/trading-objectives/"
+      ]
+    },
+    "holaPrime": {
+      "status": "reviewed-partial",
+      "evaluation": {
+        "targetsPercent": null
+      },
+      "loss": {
+        "dailyPercent": 5,
+        "maximumPercent": 10,
+        "type": "static",
+        "exceptions": "$200K accounts have 8% overall maximum loss"
+      },
+      "margin": {
+        "leverage": "Program and instrument specific; confirm platform"
+      },
+      "sources": [
+        "https://holaprime.com/forex/challenge-comparison/",
+        "https://holaprime.com/forex/faq/trading-conditions/how-does-the-max-loss-limit-work/"
+      ]
+    },
+    "holaPro": {
+      "status": "reviewed-partial",
+      "loss": {
+        "dailyPercent": 5,
+        "maximumPercent": 10,
+        "type": "static",
+        "exceptions": "$200K accounts have 8% overall maximum loss"
+      },
+      "margin": {
+        "leverage": "Program and instrument specific; confirm platform"
+      },
+      "sources": [
+        "https://holaprime.com/forex/challenge-comparison/"
+      ]
+    },
+    "topstep": {
+      "status": "reviewed-partial",
+      "evaluation": {
+        "consistency": "Best day below 55% of profit target; otherwise the target rises"
+      },
+      "loss": {
+        "type": "end-of-day trailing Maximum Loss Limit",
+        "maximumUSDBySize": {
+          "50000": 2000,
+          "100000": 3000,
+          "150000": 4500
+        },
+        "dailyPercent": null,
+        "breach": "Account balance reaching Maximum Loss Limit ends account; intraday risk still matters"
+      },
+      "margin": {
+        "maximumContractsBySize": {
+          "50000": 5,
+          "100000": 10,
+          "150000": 15
+        },
+        "microToMiniRatio": "10:1",
+        "leverage": "Futures contract caps, not a generic CFD leverage percentage"
+      },
+      "funded": {
+        "activeAccountsMax": 5,
+        "payouts": "Express Funded Account requirements differ from evaluation; verify chosen payout policy"
+      },
+      "sources": [
+        "https://help.topstep.com/en/articles/8284197-trading-combine-parameters",
+        "https://help.topstep.com/en/articles/8284215-express-funded-account-parameters"
+      ]
+    },
+    "fundednext-stellar2": {
+      "status": "reviewed-partial",
+      "sizesUSD": [
+        6000,
+        15000,
+        25000,
+        50000,
+        100000,
+        200000
+      ],
+      "pricesUSD": {
+        "6000": 59.99,
+        "15000": 119.99,
+        "25000": 199.99,
+        "50000": 299.99,
+        "100000": 549.99,
+        "200000": 999.99
+      },
+      "pricingNote": "Approximate published base prices; checkout, options and region can differ",
+      "evaluation": {
+        "targetsPercent": [
+          8,
+          5
+        ],
+        "minDays": [
+          5,
+          5
+        ]
+      },
+      "loss": {
+        "dailyPercent": 5,
+        "maximumPercent": 10,
+        "type": "static initial-balance",
+        "breach": "Floating and realized losses count; reaching daily or overall floor violates challenge"
+      },
+      "funded": {
+        "split": "80% base, possible optional 95% lifetime add-on",
+        "riskAtOncePercent": 3,
+        "news": "5-minute high-impact news profit treatment may reduce attributable profits",
+        "payouts": "21-day / three profitable days / on-demand options selected at checkout; verify option eligibility"
+      },
+      "margin": {
+        "ea": "EA add-on; unavailable on $50K+ in published FAQ"
+      },
+      "sources": [
+        "https://help.fundednext.com/en/articles/17255124-stellar-2-step-challenge",
+        "https://help.fundednext.com/en/articles/8019914-what-is-the-maximum-daily-loss-limit"
+      ]
+    },
+    "fundednext-stellar1": {
+      "status": "reviewed-partial",
+      "evaluation": {
+        "targetsPercent": [
+          10
+        ],
+        "minDays": [
+          2
+        ],
+        "consistency": "Quick Strike below 30%"
+      },
+      "loss": {
+        "dailyPercent": 3,
+        "maximumPercent": 6,
+        "type": "static initial-balance"
+      },
+      "funded": {
+        "split": "80% for accounts acquired or reset from 12 Jan 2026; legacy exceptions",
+        "payouts": "Generally every 5 business days, subject to conditions",
+        "riskAtOncePercent": 3
+      },
+      "sources": [
+        "https://help.fundednext.com/en/articles/17252927-stellar-1-step-account",
+        "https://help.fundednext.com/en/articles/10701585-how-often-will-i-receive-my-performance-reward"
+      ]
+    },
+    "fundednext-lite": {
+      "status": "reviewed-partial",
+      "sizesUSD": [
+        5000,
+        10000,
+        25000,
+        50000,
+        100000,
+        200000
+      ],
+      "pricesUSD": {
+        "5000": 32.99,
+        "10000": 59.99,
+        "25000": 139.99,
+        "50000": 229.99,
+        "100000": 399.99,
+        "200000": 798.99
+      },
+      "pricingNote": "Approximate published prices; add-ons/promo vary",
+      "evaluation": {
+        "targetsPercent": [
+          8,
+          4
+        ],
+        "minDays": [
+          2,
+          2
+        ],
+        "exceptions": "Purchased/reset before 12 Oct 2026: 5 minimum days per phase; later purchases 2 days unless a particular payout/add-on model imposes another rule"
+      },
+      "loss": {
+        "dailyPercent": 4,
+        "maximumPercent": 8,
+        "type": "static initial-balance",
+        "exceptions": "Optional 10% maximum-loss add-on"
+      },
+      "funded": {
+        "split": "80% standard, optional 95% add-on",
+        "riskAtOncePercent": 3,
+        "news": "Correlated high-impact trades within 5 minutes before/after: only 40% of profit credited, loss fully charged",
+        "payouts": "21-day initial cycle then 14-day, or 3-day/on-demand checkout options, each with separate requirements"
+      },
+      "sources": [
+        "https://help.fundednext.com/en/articles/17253939-stellar-lite-account",
+        "https://help.fundednext.com/en/articles/8019803-what-are-the-minimum-trading-days-in-fundednext-challenges"
+      ]
+    },
+    "fundednext-instant": {
+      "status": "reviewed-partial",
+      "evaluation": {
+        "targetsPercent": [],
+        "minDays": []
+      },
+      "loss": {
+        "dailyPercent": null,
+        "maximumPercent": 6,
+        "type": "balance-trailing capped at initial balance; withdrawal affects buffer",
+        "breach": "Equity touching trailing floor ends account; withdrawals do not restore floor",
+        "dailyStatus": "No daily loss limit, but overall 6% trailing remains active"
+      },
+      "funded": {
+        "split": "70% tiers 1-2, 80% tier 3+",
+        "refund": "Nonrefundable",
+        "payouts": "5% growth with EOD on-demand eligibility or >=1% growth after 14 days; conditions apply"
+      },
+      "sources": [
+        "https://help.fundednext.com/en/articles/17253243-stellar-instant-account",
+        "https://help.fundednext.com/en/articles/11641381-what-will-be-my-performance-reward-from-the-stellar-instant-account"
+      ]
+    },
+    "the5ers-high": {
+      "status": "reviewed-partial",
+      "evaluation": {
+        "stages": 2,
+        "timeLimit": "Unlimited evaluation; inactivity 30 days"
+      },
+      "loss": {
+        "dailyPercent": 5,
+        "maximumPercent": 10,
+        "type": "static total and daily prior-day close reference",
+        "dailyReset": "00:00 server time; previous day higher of balance and equity is daily reference"
+      },
+      "funded": {
+        "inactivity": "60 days",
+        "payouts": "Every 14 days; caps $3,000/$4,000 for $50K/$100K per cited official FAQ"
+      },
+      "restrictions": {
+        "news": "No order executions within 2 min before/after high-impact news; profits deducted, losses still charged"
+      },
+      "sources": [
+        "https://the5ers.com/faqs/what-is-the-drawdown-rule-for-high-stakes/",
+        "https://the5ers.com/faqs/what-are-the-general-rules-for-the-high-stakes-program/"
+      ]
+    },
+    "apex": {
+      "status": "reviewed-partial",
+      "variants": [
+        "EOD trailing evaluation",
+        "Intraday trailing evaluation"
+      ],
+      "sizesUSD": [
+        25000,
+        50000,
+        100000,
+        150000
+      ],
+      "evaluation": {
+        "targetsUSDBySize": {
+          "25000": 1500,
+          "50000": 3000,
+          "100000": 6000,
+          "150000": 9000
+        },
+        "minDays": [
+          0
+        ]
+      },
+      "loss": {
+        "maximumUSDBySize": {
+          "25000": 1000,
+          "50000": 2000,
+          "100000": 3000,
+          "150000": 4000
+        },
+        "type": "VARIANT: EOD or intraday trailing; do not mix",
+        "dailyUSDBySizeEOD": {
+          "25000": 500,
+          "50000": 1000,
+          "100000": 1500,
+          "150000": 2000
+        },
+        "dailyLossIntraday": "None"
+      },
+      "margin": {
+        "maximumContractsBySize": {
+          "25000": 4,
+          "50000": 6,
+          "100000": 8,
+          "150000": 12
+        },
+        "microToMiniRatio": "10:1"
+      },
+      "funded": {
+        "activationDeadline": "7 days after evaluation pass; variants differ"
+      },
+      "sources": [
+        "https://apextraderfunding.com/help-center/eod-trailing-drawdown-accounts/eod-evaluations/",
+        "https://apextraderfunding.com/help-center/evaluation-accounts-ea/intraday-trailing-drawdown-evaluations/",
+        "https://apextraderfunding.com/help-center/additional-helpful-items/position-sizing-evaluation/"
+      ]
+    },
+    "takeprofit": {
+      "status": "reviewed-partial",
+      "evaluation": {
+        "minDays": [
+          3
+        ],
+        "consistency": "50% best day; exceeding increases required progress, not an immediate failure",
+        "targetsUSDBySize": {
+          "25000": 1500,
+          "150000": 9000
+        }
+      },
+      "loss": {
+        "type": "EOD trailing during evaluation; intraday in PRO",
+        "dailyPercent": null,
+        "breach": "Hard drawdown; avoid correlated opposite positions"
+      },
+      "restrictions": {
+        "hold": "No overnight futures holdings; restricted products/trading hours",
+        "news": "PRO restricted around selected high-impact events"
+      },
+      "funded": {
+        "split": "PRO 80%, PRO+ 90%",
+        "activeAccountsMax": 5,
+        "payouts": "PRO day-one daily payout above buffer; buffer withdrawal changes terms"
+      },
+      "sources": [
+        "https://takeprofittrader.com/blog/3-day-evals",
+        "https://try.takeprofittrader.com/TPT-FAQs-nf40-4-0725"
+      ]
+    },
+    "fundednext-futures": {
+      "status": "requires-variant-selection",
+      "variants": [
+        "Legacy",
+        "Flex",
+        "Rapid Pro",
+        "Rapid Daily",
+        "Direct",
+        "retired Rapid / Bolt"
+      ],
+      "loss": {
+        "type": "Trailing EOD Maximum Loss Limit; hard breach if equity touches floor",
+        "daily": "Rapid Daily soft DLL $500/$1,000/$1,250 for 25K/50K/100K; Legacy/Flex no DLL",
+        "exceptions": "Rapid/Bolt no longer offered for new purchases/resets since 10 Jul 2026"
+      },
+      "evaluation": {
+        "consistency": "Legacy/Flex 40%; Rapid Pro/Daily none in evaluation"
+      },
+      "funded": {
+        "split": "Rapid Pro/Daily 90% per official FAQ; varies by model",
+        "payouts": "Rapid Daily daily; Rapid Pro every 3 days; other variants differ"
+      },
+      "sources": [
+        "https://helpfutures.fundednext.com/en/articles/17230292-daily-loss-limit-and-maximum-loss-limit-at-fundednext-futures",
+        "https://helpfutures.fundednext.com/en/articles/14255818-what-types-and-sizes-of-challenges-are-available-at-fundednext-futures"
+      ]
+    },
+    "tradeify-growth": {
+      "status": "reviewed-partial",
+      "sizesUSD": [
+        25000,
+        50000,
+        100000,
+        150000
+      ],
+      "pricesUSD": {
+        "25000": 99,
+        "50000": 145,
+        "100000": 255,
+        "150000": 369
+      },
+      "evaluation": {
+        "minDays": [
+          1
+        ],
+        "consistency": "None in evaluation"
+      },
+      "loss": {
+        "type": "EOD trailing MLL; daily-loss soft pause rather than instant account failure"
+      },
+      "funded": {
+        "consistency": "35% payout consistency"
+      },
+      "pricingNote": "One-time purchase; reset prices differ",
+      "sources": [
+        "https://help.tradeify.co/en/articles/14369021-tradeify-pricing-reference",
+        "https://help.tradeify.co/en/articles/12853921-select-evaluation-accounts"
+      ]
+    },
+    "tradeify-select": {
+      "status": "reviewed-partial",
+      "sizesUSD": [
+        25000,
+        50000,
+        100000,
+        150000,
+        300000
+      ],
+      "pricesUSD": {
+        "25000": 109,
+        "50000": 165,
+        "100000": 265,
+        "150000": 369,
+        "300000": 570
+      },
+      "evaluation": {
+        "minDays": [
+          3
+        ],
+        "consistency": "40% evaluation; optional 50% add-on (except 300K)"
+      },
+      "loss": {
+        "dailyPercent": null,
+        "type": "EOD trailing; no daily loss limit in evaluation"
+      },
+      "funded": {
+        "payouts": "Choose Select Flex or Select Daily on pass"
+      },
+      "restrictions": {
+        "purchase": "15 evaluations per rolling 30 days for ordinary Select; special 300K max 5 purchased/30 days, max 3 funded 300K within standard total 5",
+        "activation": "300K requires KYC before purchase; no resets"
+      },
+      "sources": [
+        "https://help.tradeify.co/en/articles/12853921-select-evaluation-accounts",
+        "https://help.tradeify.co/en/articles/14369021-tradeify-pricing-reference"
+      ]
+    },
+    "tradeify-lightning": {
+      "status": "reviewed-partial",
+      "sizesUSD": [
+        25000,
+        50000,
+        100000,
+        150000
+      ],
+      "evaluation": {
+        "targetsPercent": [],
+        "minDays": []
+      },
+      "loss": {
+        "type": "EOD trailing; floor enforced intraday",
+        "dailyUSDBySize": {
+          "25000": null,
+          "50000": 1250,
+          "100000": 2500,
+          "150000": 3000
+        },
+        "maximumUSDBySize": {
+          "25000": 1000,
+          "50000": 2000,
+          "100000": 4000,
+          "150000": 5250
+        },
+        "dailyBreach": "Soft pause"
+      },
+      "margin": {
+        "maximumContractsBySize": {
+          "25000": 1,
+          "50000": 4,
+          "100000": 8,
+          "150000": 12
+        },
+        "microToMiniRatio": "10:1"
+      },
+      "funded": {
+        "consistency": "Progressive 20%, 25%, 30% payout consistency",
+        "payouts": "Instant payout request after meeting requirements"
+      },
+      "sources": [
+        "https://help.tradeify.co/en/articles/10495938-lightning-funded-accounts",
+        "https://help.tradeify.co/en/articles/14369021-tradeify-pricing-reference"
+      ]
+    },
+    "mff-builder": {
+      "status": "reviewed-partial",
+      "sizesUSD": [
+        25000,
+        50000,
+        100000,
+        150000
+      ],
+      "evaluation": {
+        "targetsUSDBySize": {
+          "25000": 1500,
+          "50000": 3000,
+          "100000": 6000,
+          "150000": 9000
+        },
+        "minDays": [
+          1
+        ],
+        "consistency": "None"
+      },
+      "loss": {
+        "type": "EOD trailing",
+        "maximumUSDBySize": {
+          "25000": 1000,
+          "50000": 2000,
+          "100000": 3000,
+          "150000": 4500
+        },
+        "dailyUSDBySize": {
+          "25000": 600,
+          "50000": 1000,
+          "100000": 1750,
+          "150000": 2500
+        },
+        "dailyBreach": "Soft pause"
+      },
+      "margin": {
+        "maximumContractsBySize": {
+          "25000": 2,
+          "50000": 4,
+          "100000": 6,
+          "150000": 9
+        },
+        "microToMiniRatio": "10:1"
+      },
+      "sources": [
+        "https://help.myfundedfutures.com/en/articles/11802636-traders-evaluation-simplified"
+      ]
+    },
+    "mff-rapid": {
+      "status": "requires-variant-selection",
+      "variants": [
+        "Rapid Intraday",
+        "Rapid EOD"
+      ],
+      "sizesUSD": [
+        25000,
+        50000,
+        100000,
+        150000
+      ],
+      "evaluation": {
+        "targetsUSDBySize": {
+          "25000": 1500,
+          "50000": 3000,
+          "100000": 6000,
+          "150000": 9000
+        },
+        "consistency": "Rapid Intraday: 50% and 2 days; Rapid EOD: 30% and 4 days"
+      },
+      "loss": {
+        "type": "Variant-dependent EOD trailing floors; 25K $1,000 / 50K $2,000 / 100K $3,000 / 150K $4,500 for Intraday plan",
+        "dailyUSDBySize": {
+          "25000": null,
+          "50000": null,
+          "100000": null,
+          "150000": null
+        }
+      },
+      "margin": {
+        "maximumContractsBySizeIntraday": {
+          "25000": 3,
+          "50000": 5,
+          "100000": 8,
+          "150000": 10
+        },
+        "maximumContractsBySizeEOD": {
+          "25000": 2,
+          "50000": 3
+        }
+      },
+      "sources": [
+        "https://help.myfundedfutures.com/en/articles/11802636-traders-evaluation-simplified"
+      ]
+    },
+    "mff-studio": {
+      "status": "requires-variant-selection",
+      "variants": [
+        "Studio #001 10K",
+        "Studio #002 20K",
+        "Studio #003 5K"
+      ],
+      "sizesUSD": [
+        5000,
+        10000,
+        20000
+      ],
+      "pricesUSD": {
+        "5000": 75,
+        "10000": 140,
+        "20000": 280
+      },
+      "evaluation": {
+        "targetsUSDBySize": {
+          "5000": 500,
+          "10000": 1000,
+          "20000": 2000
+        },
+        "minDays": [
+          0
+        ],
+        "consistency": "None"
+      },
+      "loss": {
+        "type": "Static max loss; no daily loss",
+        "maximumUSDBySize": {
+          "5000": 250,
+          "10000": 500,
+          "20000": 1000
+        },
+        "dailyPercent": null
+      },
+      "margin": {
+        "maxMicrosBySize": {
+          "5000": 5,
+          "10000": 10,
+          "20000": 20
+        },
+        "minisAllowed": false
+      },
+      "funded": {
+        "split": "Sim funded 80%; live 90%",
+        "payouts": "Available when profitable, eligible, flat; product-specific min payout"
+      },
+      "restrictions": {
+        "inactivity": "7 calendar days; limited availability"
+      },
+      "sources": [
+        "https://help.myfundedfutures.com/en/articles/17589665-studio-plans-a-comprehensive-guide"
+      ]
+    },
+    "blueguardian-standard": {
+      "status": "reviewed-partial",
+      "evaluation": {
+        "targetsPercent": [
+          9
+        ],
+        "minProfitableDays": 3
+      },
+      "loss": {
+        "dailyPercent": 4,
+        "maximumPercent": 6,
+        "type": "trailing"
+      },
+      "funded": {
+        "split": "85% base; 90% add-on",
+        "payouts": "Every 14 days; 7-day add-on",
+        "minWithdrawals": "$100 crypto / $500 Rise"
+      },
+      "restrictions": {
+        "news": "Funded: no trading 5 min before/after high-impact events",
+        "minHoldingTime": "2 minutes",
+        "ea": "Allowed",
+        "copy": "Only own accounts",
+        "overnight": "Allowed",
+        "guardianShield": "Funded trades auto-close at 2% floating loss"
+      },
+      "sources": [
+        "https://help.blueguardian.com/en/articles/14062186-1-step-standard-rules"
+      ]
+    },
+    "blueguardian-nano": {
+      "status": "reviewed-partial",
+      "evaluation": {
+        "targetsPercent": [
+          10
+        ]
+      },
+      "loss": {
+        "dailyPercent": 4,
+        "maximumPercent": 6,
+        "type": "trailing"
+      },
+      "funded": {
+        "split": "85% base; optional 100% add-on",
+        "payouts": "Every 7 days; requires 5 profitable days on funded",
+        "minWithdrawals": "$100 crypto / $500 Rise"
+      },
+      "restrictions": {
+        "news": "Funded: no trading 5 min before/after high-impact events",
+        "minHoldingTime": "2 minutes",
+        "ea": "Allowed",
+        "copy": "Only own accounts",
+        "overnight": "Allowed"
+      },
+      "sources": [
+        "https://help.blueguardian.com/en/articles/16444654-1-step-nano-rules"
+      ]
+    }
+  },
+  "safetyChecklist": [
+    "Equity and unrealized P/L breaches can happen before stop orders fill",
+    "Distinguish hard breaches versus soft daily pauses",
+    "Use actual account-specific EOD/session/timezone; never assume calendar UTC day",
+    "Include commissions, swaps and platform/instrument exposure",
+    "Respect stage- and size-specific maximum contracts or broker margin",
+    "News, copy trading, IP, EA, hedge, weekend and holding restrictions vary",
+    "On funded stages check payout buffer and withdrawal impact on loss floor",
+    "Leave a cushion for spread, slippage, gaps and multiple correlated positions",
+    "Never infer a risk-per-trade allowance solely from account nominal size"
+  ]
+}
