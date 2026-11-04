@@ -46,6 +46,7 @@ a.lab-title-link{color:var(--text);text-decoration:none}a.lab-title-link:hover{c
 <script>
 (()=>{'use strict';
 try{document.documentElement.dataset.theme=localStorage.getItem('4ds:theme:v1')==='light'?'light':'dark'}catch(e){}
+function accountDisplayName(key){const parts=String(key||'').split(':'),id=parts[0],raw=Number(parts.find((p,i)=>i>0&&/^\d+$/.test(p))||0),size=raw>=1000?(raw%1000===0?raw/1000:(raw/1000).toFixed(1))+'K':raw?String(raw):'';const names={ftmo2:'FTMO 2-Step',ftmo1:'FTMO 1-Step',instant:'FTMO Instant',holaPrime:'Hola Prime',holaPro:'Hola Pro',topstep:'Topstep Trading Combine'};return[names[id]||id,size].filter(Boolean).join(' · ')}
 const $=id=>document.getElementById(id),money=v=>(v<0?'−':'')+'$'+Math.abs(v).toLocaleString('en-US',{maximumFractionDigits:0}),pct=v=>(100*v).toFixed(1)+'%',num=(id,d=0)=>Math.max(0,Number($(id).value)||d),clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const schedules=[{id:'front',name:'Upfront · invest early'},{id:'balanced',name:'Balanced · over 3 months'},{id:'staged',name:'Gradual · over horizon'},{id:'adaptive',name:'Adaptive · scale on results'}];
 function readStudio(){
@@ -60,7 +61,7 @@ function readStudio(){
  }catch(e){}
  const d={...(s||{}),...(profile||{})};
  if(!s&&!profile){$('source').textContent='No local Studio profile detected. Example assumptions are loaded; edit all fields before interpreting results.';return}
- $('source').textContent='Read-only local settings from '+user+(key?' · '+key:'')+'. Review the payout probabilities and dates below; they are scenario assumptions, not verified firm forecasts.';
+ $('source').textContent='Read-only local settings from '+user+(key?' · '+accountDisplayName(key):'')+'. Review the payout probabilities and dates below; they are scenario assumptions, not verified firm forecasts.';
  $('budget').value=Math.max(0,Number(s?.budget??d.budget??100000));
  $('evaluationFee').value=Math.max(1,Number(d.price||49)+Number(d.extraCost||0));
  const top=key.startsWith('topstep:');
