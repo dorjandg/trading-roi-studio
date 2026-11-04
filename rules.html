@@ -161,7 +161,7 @@ function importSpecific(file){
    const cleanVals={};for(const [id,v] of Object.entries(p.values)){if(/^[A-Za-z0-9_-]{1,64}$/.test(id)&&['string','number'].includes(typeof v))cleanVals[id]=String(v).slice(0,120)}
    const cleanCustom=p.custom.filter(x=>x&&typeof x.name==='string'&&typeof x.id==='string'&&/^[A-Za-z0-9_-]{1,64}$/.test(x.id)).slice(0,40).map(x=>({id:x.id,name:x.name.slice(0,70),value:String(x.value??'').slice(0,120),stage:['General','Evaluation','Funded'].includes(x.stage)?x.stage:'General'}));
    localStorage.setItem(SPEC_PREFIX+k,JSON.stringify({version:1,values:cleanVals,custom:cleanCustom,stageMeta:Object.fromEntries(Object.entries(p.stageMeta||{}).filter(([k,v])=>['phase1','phase2','funded'].includes(k)&&v&&typeof v==='object').map(([k,v])=>[k,{review:['Not reviewed','Needs verification','Reviewed'].includes(v.review)?v.review:'Not reviewed',notes:String(v.notes||'').slice(0,3000)}])),updatedAt:new Date().toISOString()}));n++;
-  }renderSpecific();e('specificStatus').textContent='Imported '+n+' account profiles';
+  }renderSpecific();notifyProfileSaved();e('specificStatus').textContent='Imported '+n+' account profiles';
   }catch(err){e('specificStatus').textContent='Import failed: '+err.message}
  };reader.readAsText(file);
 }

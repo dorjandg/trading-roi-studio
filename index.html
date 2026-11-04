@@ -150,9 +150,10 @@ try{const saved=localStorage.getItem(FOUR_DS_ACTIVE);if(FOUR_DS_USERS.some(u=>u.
 const userStoreKey=key=>'4ds:v1:'+activeUser+':'+key;
 function migrateLegacyForDori(){
  if(activeUser!=='dori')return;
- try{const prefixes=['ftmo-roi-studio-v1','ftmo-roi-studio-presets-v2','studio-active-profile-v1','studio-account-profile-v1:','studio-specific-trading-rules-v1:','studio-rules-override-v1:','studio-trading-preferences-v1:','studio-last-selected-challenge-v1'];
+ try{if(localStorage.getItem('4ds:migrated:dori:v1')==='yes')return;const prefixes=['ftmo-roi-studio-v1','ftmo-roi-studio-presets-v2','studio-active-profile-v1','studio-account-profile-v1:','studio-specific-trading-rules-v1:','studio-rules-override-v1:','studio-trading-preferences-v1:','studio-last-selected-challenge-v1'];
   const keys=Array.from({length:localStorage.length},(_,i)=>localStorage.key(i)).filter(k=>prefixes.some(p=>k===p||p.endsWith(':')&&k.startsWith(p)));
   for(const k of keys){const dest=userStoreKey(k);if(localStorage.getItem(dest)===null)localStorage.setItem(dest,localStorage.getItem(k))}
+  localStorage.setItem('4ds:migrated:dori:v1','yes');
  }catch(err){console.warn('Legacy data migration skipped',err)}
 }
 migrateLegacyForDori();
@@ -290,7 +291,7 @@ function copySummary(){const x=calc();const msg=`FTMO ROI Studio — Set 1 / 3R\
 function fallbackCopy(text){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');notify('Summary copied.');}catch(e){notify('Copy unavailable; use Export CSV instead.');}ta.remove();}
 function esc(s){return String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
 function cleanSettings(source){const settings={...DEFAULT};for(const [k,v] of Object.entries(source||{})){if(Object.prototype.hasOwnProperty.call(DEFAULT,k)&&Number.isFinite(Number(v))){let n=positive(v,minCap[k]??0,maxCap[k]??(percentKeys.has(k)?100:1e8));if(intKeys.has(k))n=Math.round(n);settings[k]=n;}}return settings;}
-function writePresetStorage(){try{localStorage.setItem(PRESETS_STORAGE,JSON.stringify(presets));return true;}catch(e){return false;}}
+function writePresetStorage(){try{localStorage.setItem(PRESETS_STORAGE,JSON.stringify(presets));window.fourDsQueueCloudSave?.();return true;}catch(e){return false;}}
 function newId(){return 'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,9);}
 function snapshot(){return {settings:{...state},mode,simulation:!dirtySim&&lastSim?lastSim:null};}
 function loadPreset(id){const p=presets.find(p=>p.id===id);if(!p)return;state=cleanSettings(p.settings);mode=p.mode==='simulation'&&p.simulation?'simulation':'manual';lastSim=mode==='simulation'?p.simulation:null;dirtySim=false;activePresetId=p.id;save();presetDirty=false;syncControls();$('presetName').value=p.name;$('presetNote').value=p.note||'';render();notify('Loaded preset: '+p.name);}
