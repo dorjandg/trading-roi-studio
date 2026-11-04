@@ -2,6 +2,38 @@
 "use strict";
 function rows(id,items){const host=document.getElementById(id);if(!host)return;host.replaceChildren();for(const [label,value] of items){const item=document.createElement('div');item.className='item';const l=document.createElement('span');l.textContent=label;const v=document.createElement('strong');v.textContent=value===undefined||value===null||value===''?'Not verified in reference':String(value);item.append(l,v);host.append(item);}}
 function money(v){return v===null||v===undefined||!Number.isFinite(Number(v))?'Not verified':'$'+Number(v).toLocaleString('en-US');}
+window.fourDsRenderResearchAccount=function(item,asOf){
+if(!item)return;const rules=item.rules||{},limits=item.limits||{};
+const name=item.firm+' · '+item.program+' · '+item.market;
+document.getElementById('officialAccountTitle').textContent=name;
+document.getElementById('officialDetailStatus').textContent='Research-only · source catalog '+(asOf||'undated');
+const cards=document.getElementById('officialAccountHighlights');cards.replaceChildren();
+for(const [label,val] of [['Account sizes','Not verified'],['Challenge price','Not verified'],['Status','Rules research only'],['Market',item.market]]){
+ const card=document.createElement('div');card.className='stat';const a=document.createElement('span');a.textContent=label;const b=document.createElement('b');b.textContent=val;card.append(a,b);cards.append(card);
+}
+const pretty=k=>k.replace(/([A-Z])/g,' $1').replace(/^./,x=>x.toUpperCase());
+const display=v=>v===null||v===undefined?'Not verified':typeof v==='object'?JSON.stringify(v):String(v);
+rows('officialEvaluationDetail',[
+ ['Program',item.program],['Market',item.market],['Supported account sizes','Not verified in source catalog'],
+ ...Object.entries(rules).map(([key,value])=>[pretty(key),display(value)]),
+ ['Other evaluation conditions','Not yet verified; refer to the official program']
+]);
+rows('officialLimitDetail',[
+ ...Object.entries(limits).filter(([key])=>key!=='source').map(([key,value])=>[pretty(key),display(value)]),
+ ['Trading restrictions','News, copy trading, holding and platform limitations require source review'],
+ ['Maximum simultaneous accounts','Not yet verified unless listed above']
+]);
+rows('officialPayoutDetail',[
+ ['Purchase price','Not verified'],['Subscription / activation fees','Not verified'],
+ ['Funded payout eligibility','Not verified'],['Reward split','Not verified'],
+ ['Refunds and withdrawals','Not verified'],['Simulation readiness','Not connected: incomplete source values']
+]);
+const notes=document.getElementById('officialExtraNotes');notes.replaceChildren();const li=document.createElement('li');li.textContent=item.notes||'Provider conditions require review';notes.append(li);
+const links=document.getElementById('officialLinks');links.replaceChildren();for(const [label,url] of [['Official program / provider reference',item.url],['Source for account limits',limits.source]]){
+ if(typeof url!=='string'||!url.startsWith('https://'))continue;
+ const p=document.createElement('p'),a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener noreferrer';a.textContent=label;p.append(a);links.append(p);
+}
+};
 window.fourDsRenderOfficialAccount=function(programs,id,size,asOf){
 const p=programs&&programs[id],n=Number(size);if(!p||!Number.isFinite(n)||n<=0)return;
 const research=window.fourDsOfficialCatalog?.entries?.find(x=>x.id===id),lim=research?.limits||{},top=p.firm==='Topstep';
