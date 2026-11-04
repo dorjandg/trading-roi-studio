@@ -746,19 +746,39 @@
         "minDays": [
           1
         ],
-        "consistency": "None in evaluation"
+        "consistency": "35% max single profitable day share during evaluation; published 2026 pricing reference"
       },
       "loss": {
         "type": "EOD trailing MLL; daily-loss soft pause rather than instant account failure"
       },
       "funded": {
-        "consistency": "35% payout consistency"
+        "consistency": "Check funded payout path; evaluation 35% is separate",
+        "split": "90% simulated funded / 80% Elite Live",
+        "activeSimFundedLimitPerHousehold": 5,
+        "activationFeeUSD": 0
       },
       "pricingNote": "One-time purchase; reset prices differ",
       "sources": [
         "https://help.tradeify.co/en/articles/14369021-tradeify-pricing-reference",
         "https://help.tradeify.co/en/articles/12853921-select-evaluation-accounts"
-      ]
+      ],
+      "resetFeesUSD": {
+        "25000": 60,
+        "50000": 95,
+        "100000": 155,
+        "150000": 215
+      },
+      "margin": {
+        "commissionPerRoundTripUSD": {
+          "ES": 5.76,
+          "NQ": 5.76,
+          "MES": 1.82,
+          "MNQ": 1.82,
+          "GC": 6.2
+        },
+        "contractMargin": "Refer to trading platform and selected symbol; commission is not margin"
+      },
+      "pricingFrequency": "one-time"
     },
     "tradeify-select": {
       "status": "reviewed-partial",
@@ -774,7 +794,7 @@
         "50000": 165,
         "100000": 265,
         "150000": 369,
-        "300000": 570
+        "300000": 449
       },
       "evaluation": {
         "minDays": [
@@ -787,7 +807,10 @@
         "type": "EOD trailing; no daily loss limit in evaluation"
       },
       "funded": {
-        "payouts": "Choose Select Flex or Select Daily on pass"
+        "payouts": "Choose Select Flex or Select Daily on pass",
+        "split": "90% simulated funded / 80% Elite Live",
+        "activeSimFundedLimitPerHousehold": 5,
+        "activationFeeUSD": 0
       },
       "restrictions": {
         "purchase": "15 evaluations per rolling 30 days for ordinary Select; special 300K max 5 purchased/30 days, max 3 funded 300K within standard total 5",
@@ -796,7 +819,30 @@
       "sources": [
         "https://help.tradeify.co/en/articles/12853921-select-evaluation-accounts",
         "https://help.tradeify.co/en/articles/14369021-tradeify-pricing-reference"
-      ]
+      ],
+      "priceVariantsUSD": {
+        "Select 40% consistency": {
+          "25000": 109,
+          "50000": 165,
+          "100000": 265,
+          "150000": 369,
+          "300000": 449
+        },
+        "Select 50% add-on": {
+          "25000": 135,
+          "50000": 205,
+          "100000": 329,
+          "150000": 459
+        }
+      },
+      "resetFeesUSD": {
+        "25000": 75,
+        "50000": 109,
+        "100000": 169,
+        "150000": 239
+      },
+      "pricingNote": "Official one-time USD purchase prices. 300K $449 limited-release size (not $570). 50%-consistency add-on priced separately, unavailable for 300K.",
+      "pricingFrequency": "one-time"
     },
     "tradeify-lightning": {
       "status": "reviewed-partial",
@@ -837,7 +883,11 @@
       },
       "funded": {
         "consistency": "Progressive 20%, 25%, 30% payout consistency",
-        "payouts": "Instant payout request after meeting requirements"
+        "payouts": "Instant payout request after meeting requirements",
+        "split": "90% simulated funded / 80% Elite Live",
+        "activationFeeUSD": 0,
+        "resetAllowed": false,
+        "activeSimFundedLimitPerHousehold": 5
       },
       "sources": [
         "https://help.tradeify.co/en/articles/10495938-lightning-funded-accounts",
@@ -849,7 +899,8 @@
         "100000": 660,
         "150000": 796
       },
-      "pricingNote": "Official one-time Lightning pricing; no reset purchases for failed funded accounts."
+      "pricingNote": "Official one-time Lightning pricing; no reset purchases for failed funded accounts.",
+      "pricingFrequency": "one-time"
     },
     "mff-builder": {
       "status": "reviewed-partial",
@@ -1067,7 +1118,8 @@
         "type": "trailing",
         "dailyReset": "5pm EST (consult daylight-saving and firm server clock)",
         "dailyReference": "Higher of balance or equity at daily reset less 4% of initial balance",
-        "trailingLock": "On 6% account profit, overall floor locks to starting balance; funded withdrawals leave 1% fixed buffer"
+        "trailingLock": "On 6% account profit, overall floor locks to starting balance; funded withdrawals leave 1% fixed buffer",
+        "breach": "Daily and trailing maximum-loss floors are hard account limits"
       },
       "funded": {
         "split": "85% base; 90% add-on",
@@ -1108,24 +1160,38 @@
       "evaluation": {
         "targetsPercent": [
           10
+        ],
+        "consistency": "Best day must remain strictly BELOW 50% of total profits; applies in both challenge and funded, but hitting it delays qualification/payout instead of terminating account",
+        "minDays": [
+          0
         ]
       },
       "loss": {
         "dailyPercent": 4,
         "maximumPercent": 6,
-        "type": "trailing"
+        "type": "trailing",
+        "dailyReference": "At 5pm EST, use higher of balance/equity then subtract 4% of INITIAL balance; daily floor may rise with open floating profit",
+        "trailingLock": "6% trailing from closed balance high-water mark, locks at initial balance after 6% profit; 1% balance buffer required for withdrawal",
+        "breach": "Daily and overall floors are hard limits"
       },
       "funded": {
         "split": "85% base; optional 100% add-on",
         "payouts": "Every 7 days; requires 5 profitable days on funded",
-        "minWithdrawals": "$100 crypto / $500 Rise"
+        "minWithdrawals": "$100 crypto / $500 Rise",
+        "consistency": "Strictly below 50% best-day share required for payout",
+        "profitableDays": 5,
+        "minDailyProfitPercent": 0.5,
+        "withdrawalBufferPercent": 1,
+        "profitSplit": "85%; optional 100% add-on",
+        "withdrawalRequest": "Positions must be closed and balance above starting value"
       },
       "restrictions": {
         "news": "Funded: no trading 5 min before/after high-impact events",
-        "minHoldingTime": "2 minutes",
+        "minHoldingTime": "2 minutes, shorter trades may be flagged",
         "ea": "Allowed",
-        "copy": "Only own accounts",
-        "overnight": "Allowed"
+        "copy": "Only accounts legally owned by same holder",
+        "overnight": "Allowed",
+        "newsConsequences": "Funded high-impact +-5-minute execution profit may be removed but not necessarily account termination"
       },
       "sources": [
         "https://help.blueguardian.com/en/articles/16444654-1-step-nano-rules",
