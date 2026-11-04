@@ -682,11 +682,17 @@
     "mff-builder": {
       "status": "reviewed-partial",
       "sizesUSD": [
-        50000
+        25000,
+        50000,
+        100000,
+        150000
       ],
       "evaluation": {
         "targetsUSDBySize": {
-          "50000": 3000
+          "25000": 1500,
+          "50000": 3000,
+          "100000": 6000,
+          "150000": 9000
         },
         "minDays": [
           1
@@ -694,27 +700,36 @@
         "consistency": "None"
       },
       "loss": {
-        "type": "End-of-day trailing",
+        "type": "EOD trailing maximum loss; daily limits are soft trading pauses, not account closure",
         "maximumUSDBySize": {
-          "50000": 2000
-        },
-        "alternativeMaximumUSDBySize": {
-          "50000": 1500
+          "25000": 1000,
+          "50000": 2000,
+          "100000": 3000,
+          "150000": 4500
         },
         "dailyUSDBySize": {
-          "50000": 1000
+          "25000": 600,
+          "50000": 1000,
+          "100000": 1750,
+          "150000": 2500
         },
-        "dailyBreach": "Soft pause; two MLL variants chosen at checkout"
+        "alternativeBuilder50KMaxLossUSD": 1500
       },
       "margin": {
         "maximumContractsBySize": {
-          "50000": 4
+          "25000": 2,
+          "50000": 4,
+          "100000": 6,
+          "150000": 9
         },
         "microToMiniRatio": "10:1"
       },
       "sources": [
         "https://help.myfundedfutures.com/en/articles/11802636-traders-evaluation-simplified",
-        "https://help.myfundedfutures.com/en/articles/14290805-builder-plan-50k-a-comprehensive-guide"
+        "https://help.myfundedfutures.com/en/articles/14290805-builder-plan-50k-a-comprehensive-guide",
+        "https://help.myfundedfutures.com/en/articles/17005296-builder-plan-100k-comprehensive-guide",
+        "https://help.myfundedfutures.com/en/articles/17035331-builder-plan-150k-comprehensive-guide",
+        "https://help.myfundedfutures.com/en/articles/16498635-moving-from-evaluation-to-sim-funded-account"
       ],
       "pricesUSD": {
         "50000": 153
@@ -727,20 +742,26 @@
           "50000": 125
         }
       },
-      "pricingNote": "50K Builder confirmed from current dedicated Builder product page. Previously broad 25K–150K list related to general evaluation offerings, not confirmed as Builder. Prices without promotions.",
+      "pricingNote": "Current official Builder 50K default $153 (alternate $1,500 MLL option $125). Builder 25K, 100K, 150K prices not yet reliably documented; keep them blank.",
       "funded": {
-        "split": "80% sim payouts",
-        "maxActiveBuilderSimAccounts": 1,
-        "maximumPayoutUSD": 2000,
-        "maximumSimPayouts": 5,
-        "payoutBufferUSDByVariant": {
-          "default": 2100,
-          "alternative": 1600
+        "split": "80% simulated funded",
+        "maxActiveBuilderSimAccounts": "25K max 2, 50K max 1, 100K & 150K max 1 each; cross-account caps still apply",
+        "payoutCapUSDBySize": {
+          "25000": 1000,
+          "50000": 2000,
+          "100000": 3000,
+          "150000": 4500
         },
-        "minimumNetProfitUSD": 500,
-        "minimumQualifyingDaysPerCycle": 2,
-        "consistency": "50% max best-day share",
-        "inactivity": "7 calendar days"
+        "requiredBufferUSDBySize": {
+          "25000": 1100,
+          "50000": 2100,
+          "100000": 3100,
+          "150000": 4600
+        },
+        "maxSimPayouts": 5,
+        "minimumQualifyingDays": 2,
+        "consistency": "Largest day <= 50% of payout-cycle gains",
+        "inactivity": "7 calendar days; funded plan-specific rules apply"
       }
     },
     "mff-rapid": {
@@ -787,8 +808,22 @@
         }
       },
       "sources": [
-        "https://help.myfundedfutures.com/en/articles/11802636-traders-evaluation-simplified"
-      ]
+        "https://help.myfundedfutures.com/en/articles/11802636-traders-evaluation-simplified",
+        "https://help.myfundedfutures.com/en/articles/13134709-rapid-plan-50k-a-comprehensive-look",
+        "https://help.myfundedfutures.com/en/articles/13745661-payout-policy-overview-best-and-fastest-prop-firm-payouts"
+      ],
+      "funded": {
+        "split": "90% simulated funded for Rapid plans",
+        "payouts": "Daily after first eligible trade 24h and sufficient buffer",
+        "bufferUSDBySize": {
+          "50000": 2100,
+          "100000": 3100,
+          "150000": 4600
+        },
+        "minimumPayoutUSD": 500,
+        "news": "T1 news prohibited in Rapid Intraday sim-funded stage",
+        "trailing": "Intraday trailing equity high-water mark at funded stage; locks at $100 in documented 50K Rapid Intraday"
+      }
     },
     "mff-studio": {
       "status": "requires-variant-selection",
