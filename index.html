@@ -15,7 +15,26 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;background:rad
 .cols{display:grid;grid-template-columns:minmax(0,1.42fr) minmax(310px,.85fr);gap:19px}.panel{border:1px solid var(--border);border-radius:16px;background:var(--panel);padding:23px;min-width:0}.panel+.panel{margin-top:18px}.panel-header{display:flex;align-items:start;justify-content:space-between;gap:12px;margin-bottom:19px}.panel-header p{color:var(--muted);font-size:12px;margin:3px 0 0}.section-tag{font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--faint)}.subtle{color:var(--muted)}.notice{padding:13px 15px;background:#1b2938;border:1px solid #314354;border-radius:11px;font-size:12px;color:#b7c9d8}.notice.warning{border-color:#6a4935;background:#30251d;color:#f0c99d}.notice.success{border-color:#285e53;background:#122d2c;color:#b2f0d4}
 .metric-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid #223247}.metric-row:last-child{border:0}.metric-row small{display:block;color:var(--muted);font-size:11px;margin-top:2px}.metric-row strong{font-size:17px;font-variant-numeric:tabular-nums;white-space:nowrap}.bar-track{background:#253448;border-radius:99px;height:10px;overflow:hidden}.bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#279e96,#55e3b4);transition:width .35s}.funnel-line{margin:14px 0}.funnel-head{display:flex;justify-content:space-between;margin:0 0 6px;font-size:12px}.funnel-head strong{font-variant-numeric:tabular-nums}.probrow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}.prob{border:1px solid var(--border);border-radius:13px;background:#142235;padding:13px 11px}.prob small{color:var(--muted);font-size:11px;display:block}.prob strong{display:block;font-size:24px;letter-spacing:-1px;margin-top:3px;font-variant-numeric:tabular-nums}.smalltext{font-size:11px;line-height:1.55;color:var(--muted)}
 .formgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.formgrid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.field label{display:block;color:#b3c2d4;font-size:12px;font-weight:650;margin-bottom:6px}.field label .hint{color:var(--faint);font-weight:500}.field input,.field select{width:100%;height:42px;color:var(--text);border:1px solid #35465c;border-radius:10px;padding:9px 12px;background:#131f30;font-variant-numeric:tabular-nums;outline:none}.field input:focus,.field select:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(84,227,180,.08)}.field input[type=number]{appearance:textfield}.field input::-webkit-inner-spin-button,.field input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}.field .help{color:var(--faint);font-size:11px;margin:5px 0 0}.section{margin:25px 0 0;padding-top:20px;border-top:1px solid #253348}.section:first-child{margin-top:0;padding-top:0;border-top:0}.section h3{margin-bottom:15px}.actionrow{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.toggle-buttons{display:flex;gap:8px;flex-wrap:wrap}.seg{border:1px solid var(--border);border-radius:10px;background:#142034;color:var(--muted);font-size:12px;padding:9px 13px;font-weight:800}.seg.active{color:var(--green);border-color:#337964;background:#12372f}.card-columns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}.info-card{background:var(--panel2);border:1px solid var(--border);border-radius:13px;padding:17px}.info-card .value{font-size:24px;font-weight:850;letter-spacing:-.6px;margin:8px 0 0}.info-card p{color:var(--muted);margin:5px 0 0;font-size:12px}.tag{border-radius:6px;background:#25394a;padding:3px 7px;font-size:10px;color:#bfdeed;font-weight:750}.status{font-size:11px;font-weight:700;color:var(--amber)}
-.tablewrap{overflow:auto;border-radius:12px;border:1px solid var(--border)}table{width:100%;border-collapse:collapse;text-align:left;min-width:550px}th,td{padding:13px 15px;border-bottom:1px solid #263549;font-variant-numeric:tabular-nums}th{color:var(--muted);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.55px;background:#172334}td{font-size:13px}tbody tr:last-child td{border:0}td.num,th.num{text-align:right}tbody tr:hover{background:#18263a}.caption{font-size:11px;color:var(--muted);margin:10px 0 0}.footer{color:var(--faint);font-size:11px;text-align:center;padding:27px 0 0}.two-up{display:grid;grid-template-columns:1fr 1fr;gap:19px}.nav-cta{display:flex;gap:10px;flex-wrap:wrap}.checkboxline{display:flex;align-items:center;gap:10px;padding:9px 0}.checkboxline input{accent-color:var(--green);width:16px;height:16px}.checkboxline label{color:var(--text);font-size:12px}.definition{color:#c8d8e4;font-size:13px}.divider{height:1px;background:var(--border);margin:19px 0}.empty{color:var(--muted);padding:15px}
+.tablewrap{overflow:auto;border-radius:12px;border:1px solid var(--border)}
+.scenario-table{min-width:760px}
+.scenario-table th,.scenario-table td{padding:9px 9px;vertical-align:middle}
+.scenario-table td:first-child{min-width:145px}
+.scenario-input{width:100%;min-width:0;padding:7px 8px;border:1px solid #40536d;border-radius:8px;background:#101c2d;color:var(--text);font-size:13px;font-variant-numeric:tabular-nums}
+.scenario-input:focus{border-color:var(--green)}
+.scenario-table .scenario-number{width:78px;text-align:right}
+.scenario-table .scenario-name{min-width:126px;max-width:200px}
+.scenario-table .scenario-goal{width:73px;text-align:right}
+.scenario-table .scenario-output{white-space:nowrap;font-weight:650}
+.scenario-actions{display:flex;align-items:center;gap:5px;flex-wrap:wrap;min-width:140px}
+.scenario-actions .btn{padding:6px 8px;font-size:11px;white-space:nowrap}
+.scenario-detail-cell{padding:10px 12px 18px!important;background:#0b1422}
+.scenario-editor-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px}
+.scenario-editor-grid label{display:block;font-size:12px;color:var(--muted);font-weight:650}
+.scenario-editor-grid input{display:block;margin-top:5px}
+.scenario-editor-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 12px}
+.scenario-inline-note{font-size:11px;color:var(--muted);margin-top:12px}
+@media(max-width:640px){.scenario-table{min-width:680px}.scenario-editor-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.scenario-table th,.scenario-table td{padding:8px 6px}.scenario-table .scenario-name{min-width:95px}}
+table{width:100%;border-collapse:collapse;text-align:left;min-width:550px}th,td{padding:13px 15px;border-bottom:1px solid #263549;font-variant-numeric:tabular-nums}th{color:var(--muted);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.55px;background:#172334}td{font-size:13px}tbody tr:last-child td{border:0}td.num,th.num{text-align:right}tbody tr:hover{background:#18263a}.caption{font-size:11px;color:var(--muted);margin:10px 0 0}.footer{color:var(--faint);font-size:11px;text-align:center;padding:27px 0 0}.two-up{display:grid;grid-template-columns:1fr 1fr;gap:19px}.nav-cta{display:flex;gap:10px;flex-wrap:wrap}.checkboxline{display:flex;align-items:center;gap:10px;padding:9px 0}.checkboxline input{accent-color:var(--green);width:16px;height:16px}.checkboxline label{color:var(--text);font-size:12px}.definition{color:#c8d8e4;font-size:13px}.divider{height:1px;background:var(--border);margin:19px 0}.empty{color:var(--muted);padding:15px}
 @media(max-width:1000px){.kpis{grid-template-columns:repeat(2,1fr)}.cols{grid-template-columns:1fr}.hero{grid-template-columns:1fr}.hero-aside{flex-direction:row;align-items:center}.card-columns{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:640px){.shell{padding:0 14px 38px}.top{padding:16px 0 14px}.brand strong{font-size:14px}.brand small{font-size:10px}.top-right .hide-mobile{display:none}.top-right{gap:6px}.pill{padding:6px 7px;font-size:9px}.nav{margin-bottom:18px}.nav button{padding:13px 11px;font-size:12px}.hero-main,.hero-aside,.panel{padding:17px;border-radius:14px}.hero-main h1{font-size:30px}.hero-aside .big{font-size:29px}.hero p{font-size:12px}.kpis{gap:9px}.kpi{padding:13px;border-radius:12px}.kpi .val{font-size:23px}.kpi .note{font-size:10px}.kpi .meta{font-size:10px}.formgrid,.formgrid.three{grid-template-columns:1fr 1fr;gap:12px}.field input,.field select{padding:9px}.probrow{grid-template-columns:1fr 1fr 1fr;gap:7px}.prob{padding:10px 8px}.prob strong{font-size:19px}.prob small{font-size:9px}.card-columns{grid-template-columns:1fr}.two-up{grid-template-columns:1fr}.panel-header{margin-bottom:14px}}
 @media(max-width:370px){.formgrid,.formgrid.three{grid-template-columns:1fr}.kpi .val{font-size:20px}}
@@ -103,6 +122,34 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;background:rad
     <div class="kpi"><div class="meta">Expected net ROI</div><div class="val" id="kpiROI">—</div><div class="note" id="kpiROIx">—</div></div>
   </div>
   <div id="warningBox" class="notice warning" style="display:none;margin-bottom:20px"></div>
+
+  <div class="panel" id="scenarioLab" style="margin-bottom:20px">
+    <div class="panel-header">
+      <div>
+        <div class="eyebrow" style="margin-bottom:6px">Adjustable financial levels</div>
+        <h2>Scenario comparison table</h2>
+        <p>Compare 2×, 3×, 5× or your own net-profit goals. Edit each scenario independently and instantly see the outcomes.</p>
+      </div>
+      <span class="section-tag">PLANNING · NOT A FORECAST</span>
+    </div>
+    <div class="actionrow" style="margin:14px 0">
+      <button class="btn primary small" type="button" id="addScenario">+ Add scenario</button>
+      <button class="btn small" type="button" id="resetScenarioTable">Restore starting scenarios</button>
+      <span class="status" id="scenarioSaveStatus" aria-live="polite">Loading scenarios…</span>
+    </div>
+    <div class="tablewrap scenario-scroll">
+      <table class="scenario-table">
+        <thead><tr>
+          <th>Scenario</th><th class="num">Accounts</th><th class="num">Net goal</th>
+          <th class="num">Expected payouts</th><th class="num">Expected net</th>
+          <th class="num">Expected ROI</th><th class="num">Chance of goal</th><th>Options</th>
+        </tr></thead>
+        <tbody id="scenarioRows"></tbody>
+      </table>
+    </div>
+    <p class="caption">Net goal 3× means profit equal to three times challenge spending (total receipts must reach 4× spending). Payout probabilities are entered assumptions, not calculated from win rate or RR. Mirrored accounts have correlated outcomes. These are financial scenarios, not prop-firm rule or live-trading simulations.</p>
+  </div>
+
   <div class="cols">
     <div>
       <div class="panel"><div class="panel-header"><div><h2>Capital & challenge purchases</h2><p>All financial results update as you edit these variables.</p></div><span class="section-tag">01 / Investment</span></div><div id="quickFields" class="formgrid"></div><div class="actionrow" style="margin-top:16px"><button class="btn small" id="useBudget">Buy as many as budget supports</button><button class="btn small" id="resetQuick">Reset to defaults</button></div></div>
@@ -246,6 +293,201 @@ function calc(count=state.accounts,mirror=state.mirror){count=Math.max(1,Math.fl
  function chance(mult){if(cost<=0)return 0;let total=0;for(let k=0;k<distribution.length;k++)if(k*(reward+refund)-cost>=mult*cost-1e-7)total+=distribution[k];return Math.min(1,Math.max(0,total));}
  const atLeast=1-distribution[0],needed4=reward+refund>0?Math.ceil((5*cost)/(reward+refund)):Infinity;
  return {count,unit,cost,pass,reward,refund,successes,receipts,net,roi,distribution,atLeast,chance,needed4,breakEven:reward+refund>0?unit/(reward+refund):Infinity,avgCost:pass>0?unit/pass-refund:Infinity};}
+
+/* Scenario comparison — user + firm + program + account size scoped.
+   This calculator uses assumed stage success probabilities and payouts;
+   win rate and RR are NOT converted to pass rates. */
+const SCENARIO_STORAGE='studio-scenarios-v1:';
+let scenarioRows=[],scenarioExpanded=null,scenarioActiveKey='';
+const scenarioFieldDefs=[
+ ['price','Challenge purchase fee (USD)','1',0,1e7],
+ ['extraCost','Extra cost / challenge (USD)','1',0,1e7],
+ ['p1','Phase 1 pass rate (%)','0.5',0,100],
+ ['p2','Phase 2 pass rate (%)','0.5',0,100],
+ ['pf','Funded target hit chance (%)','0.5',0,100],
+ ['pc','Payout collected if eligible (%)','0.5',0,100],
+ ['target','Funded gross profit target (USD)','50',0,1e8],
+ ['split','Trader profit split (%)','1',0,100],
+ ['payoutPct','Variable payout fee (%)','0.5',0,100],
+ ['payoutFixed','Fixed payout fee (USD)','1',0,1e7],
+ ['refund','Refund of challenge purchase fee (%)','1',0,100],
+ ['mirror','Accounts sharing each trading signal','1',1,1000]
+];
+const scenarioCaps={accounts:[1,1000],goal:[0,100],...Object.fromEntries(scenarioFieldDefs.map(([key,,step,min,max])=>[key,[min,max]]))};
+function newScenarioId(){return 's'+Date.now().toString(36)+Math.random().toString(36).slice(2,9)}
+function scenarioKey(){return userStoreKey(SCENARIO_STORAGE+(activeProgramKey||'general'))}
+function scenarioFromCurrent(name='New scenario',goal=3){
+ return {id:newScenarioId(),name,accounts:Math.round(positive(state.accounts,1,1000)),goal,
+ price:positive(state.price),extraCost:positive(state.extraCost),
+ p1:positive(state.p1,0,100),p2:positive(state.p2,0,100),
+ pf:positive(state.pf,0,100),pc:positive(state.pc,0,100),
+ target:positive(state.profitTarget),split:positive(state.split,0,100),
+ payoutPct:positive(state.payoutPct,0,100),payoutFixed:positive(state.payoutFixed),
+ refund:positive(state.refund,0,100),mirror:Math.round(positive(state.mirror,1,1000))};
+}
+function starterScenarios(){return [scenarioFromCurrent('2× net goal',2),scenarioFromCurrent('3× net goal',3),scenarioFromCurrent('5× net goal',5)]}
+function scenarioClean(raw){
+ if(!raw||typeof raw!=='object')return null;
+ const base=scenarioFromCurrent(String(raw.name??'Scenario').slice(0,60),3);
+ base.id=/^s[a-zA-Z0-9]{5,35}$/.test(raw.id||'')?raw.id:newScenarioId();
+ for(const [key,[min,max]] of Object.entries(scenarioCaps)){
+  if(raw[key]!==null&&raw[key]!==''&&Number.isFinite(Number(raw[key]))){
+   let number=Math.min(max,Math.max(min,Number(raw[key])));
+   if(key==='accounts'||key==='mirror')number=Math.round(number);
+   base[key]=number;
+  }
+ }
+ return base;
+}
+function loadScenarioRows(){
+ scenarioActiveKey=scenarioKey();scenarioExpanded=null;
+ let record=null;
+ try{record=JSON.parse(localStorage.getItem(scenarioActiveKey)||'null')}catch(_){}
+ scenarioRows=record?.v===1&&Array.isArray(record.rows)
+  ?record.rows.slice(0,20).map(scenarioClean).filter(Boolean)
+  :starterScenarios();
+ if(!scenarioRows.length)scenarioRows=starterScenarios();
+}
+function storeScenarioRows(){
+ if(!scenarioActiveKey)return;
+ try{
+  localStorage.setItem(scenarioActiveKey,JSON.stringify({v:1,rows:scenarioRows,updatedAt:new Date().toISOString()}));
+  window.fourDsQueueCloudSave?.();
+  $('scenarioSaveStatus').textContent='Saved locally · Cloud sync queued · '+activeUser+(activeProgramKey?' · '+activeProgramKey:'');
+ }catch(_){$('scenarioSaveStatus').textContent='Could not save scenarios on this device'}
+}
+function scenarioGoalChance(n,p,mirror,needed){
+ if(needed<=0)return 1;
+ if(needed>n||p<=0)return 0;
+ if(p>=1)return 1;
+ const d=new Float64Array(n+1);d[0]=1;
+ let seen=0;
+ while(seen<n){
+  const size=Math.min(mirror,n-seen);
+  for(let k=seen;k>=0;k--){
+   const prev=d[k];if(!prev)continue;
+   d[k+size]+=prev*p;
+   d[k]=prev*(1-p);
+  }
+  seen+=size;
+ }
+ let total=0;for(let k=needed;k<=n;k++)total+=d[k];
+ return Math.max(0,Math.min(1,total));
+}
+function scenarioResult(row){
+ const n=Math.max(1,Math.round(positive(row.accounts,1,1000)));
+ const fee=positive(row.price)+positive(row.extraCost);
+ const cost=n*fee;
+ const pass=prob(row.p1)*prob(row.p2)*prob(row.pf)*prob(row.pc);
+ const paid=Math.max(0,positive(row.target)*prob(row.split)*(1-prob(row.payoutPct))-positive(row.payoutFixed))
+  +positive(row.price)*prob(row.refund);
+ const expectedPayouts=n*pass;
+ const net=expectedPayouts*paid-cost;
+ const roi=cost>0?net/cost:NaN;
+ const required=paid>0?Math.ceil(((1+positive(row.goal,0,100))*cost-1e-8)/paid):Infinity;
+ const chance=cost>0?scenarioGoalChance(n,pass,Math.max(1,Math.round(row.mirror)),required):NaN;
+ return {cost,pass,paid,expectedPayouts,net,roi,required,chance};
+}
+function scenarioControl(row,key,step,styleClass){
+ const input=document.createElement('input');input.type=key==='name'?'text':'number';
+ input.className='scenario-input '+(styleClass||'');
+ input.value=key==='name'?row.name:String(row[key]);
+ input.maxLength=60;
+ if(key!=='name'){input.min=String(scenarioCaps[key]?.[0]??0);input.max=String(scenarioCaps[key]?.[1]??10000000);input.step=String(step||1)}
+ input.setAttribute('aria-label',key==='name'?'Scenario name':key);
+ input.addEventListener('input',()=>{
+  if(key==='name'){row.name=input.value.slice(0,60);storeScenarioRows()}
+  else if(input.value.trim()!==''&&Number.isFinite(Number(input.value))){
+   const [min,max]=scenarioCaps[key]||[0,1e9];
+   const n=Math.min(max,Math.max(min,Number(input.value)));
+   row[key]=['accounts','mirror'].includes(key)?Math.round(n):n;
+   storeScenarioRows();updateScenarioMetrics(row);
+  }
+ });
+ input.addEventListener('change',()=>{
+  if(key!=='name'&&(input.value.trim()===''||!Number.isFinite(Number(input.value))))input.value=String(row[key]);
+  else if(key!=='name')input.value=String(row[key]);
+  else if(!row.name.trim()){row.name='Scenario';input.value=row.name;storeScenarioRows()}
+ });
+ return input;
+}
+function scenarioCell(contents,className=''){
+ const td=document.createElement('td');td.className=className;
+ if(contents instanceof Node)td.append(contents);else td.textContent=String(contents);
+ return td;
+}
+function scenarioButton(title,onClick,extraClass=''){
+ const btn=document.createElement('button');btn.type='button';
+ btn.className='btn small '+extraClass;btn.textContent=title;btn.onclick=onClick;return btn;
+}
+function updateScenarioMetrics(row){
+ const result=scenarioResult(row),id='scenario-'+row.id;
+ const output={
+  payouts:result.expectedPayouts.toFixed(2),
+  net:money(result.net),
+  roi:Number.isFinite(result.roi)?result.roi.toFixed(2)+'×':'—',
+  chance:pct(result.chance)
+ };
+ for(const [key,text] of Object.entries(output)){
+  const cell=document.getElementById(id+'-'+key);if(cell)cell.textContent=text;
+ }
+ const det=document.getElementById(id+'-details-note');
+ if(det)det.textContent='Spent '+money(result.cost)+' · Payout received per successful account '+money(result.paid)+' · Required payouts for this goal: '+(Number.isFinite(result.required)?result.required:'unreachable')+' · Combined success chance '+pct(result.pass)+'.';
+}
+function renderScenarioTable(){
+ const tbody=$('scenarioRows');if(!tbody)return;tbody.replaceChildren();
+ $('scenarioSaveStatus').textContent=activeUser+(activeProgramKey?' · '+activeProgramKey:' · General')+' · Auto-saved per user and account';
+ for(const row of scenarioRows){
+  const tr=document.createElement('tr');tr.id='scenario-'+row.id;
+  tr.append(scenarioCell(scenarioControl(row,'name',1,'scenario-name')),
+   scenarioCell(scenarioControl(row,'accounts',1,'scenario-number'),'num'),
+   scenarioCell(scenarioControl(row,'goal',0.5,'scenario-goal'),'num'));
+  for(const key of ['payouts','net','roi','chance']){
+   const td=scenarioCell('—','num scenario-output');td.id='scenario-'+row.id+'-'+key;tr.append(td)
+  }
+  const actions=document.createElement('div');actions.className='scenario-actions';
+  actions.append(
+   scenarioButton(scenarioExpanded===row.id?'Close':'Edit',()=>{scenarioExpanded=scenarioExpanded===row.id?null:row.id;renderScenarioTable()}),
+   scenarioButton('Copy',()=>{if(scenarioRows.length>=20)return;const idx=scenarioRows.indexOf(row);scenarioRows.splice(idx+1,0,{...row,id:newScenarioId(),name:(row.name+' copy').slice(0,60)});storeScenarioRows();renderScenarioTable()}),
+   scenarioButton('Delete',()=>{if(scenarioRows.length<=1)return;scenarioRows=scenarioRows.filter(x=>x!==row);if(scenarioExpanded===row.id)scenarioExpanded=null;storeScenarioRows();renderScenarioTable()},'danger')
+  );
+  tr.append(scenarioCell(actions));
+  tbody.append(tr);
+  if(scenarioExpanded===row.id){
+   const detailRow=document.createElement('tr');const td=document.createElement('td');td.colSpan=8;td.className='scenario-detail-cell';
+   const header=document.createElement('div');header.className='scenario-editor-head';
+   const title=document.createElement('strong');title.textContent='Adjust this scenario’s assumptions';
+   header.append(title,scenarioButton('Copy current account values',()=>{
+    const fresh=scenarioFromCurrent(row.name,row.goal);
+    Object.assign(row,{...fresh,id:row.id,name:row.name,goal:row.goal,accounts:row.accounts});
+    storeScenarioRows();renderScenarioTable();
+   }));
+   td.append(header);
+   const grid=document.createElement('div');grid.className='scenario-editor-grid';
+   for(const [key,label,step] of scenarioFieldDefs){
+    const wrap=document.createElement('label');wrap.textContent=label;
+    wrap.append(scenarioControl(row,key,step));grid.append(wrap);
+   }
+   td.append(grid);
+   const note=document.createElement('p');note.className='scenario-inline-note';note.id='scenario-'+row.id+'-details-note';
+   td.append(note);detailRow.append(td);tbody.append(detailRow);
+  }
+  updateScenarioMetrics(row);
+ }
+}
+function initScenarioTable(){
+ loadScenarioRows();renderScenarioTable();
+ $('addScenario').addEventListener('click',()=>{
+  if(scenarioRows.length>=20){$('scenarioSaveStatus').textContent='Limit reached (20 scenarios)';return}
+  const item=scenarioFromCurrent('Scenario '+(scenarioRows.length+1),3);
+  scenarioRows.push(item);scenarioExpanded=item.id;storeScenarioRows();renderScenarioTable();
+ });
+ $('resetScenarioTable').addEventListener('click',()=>{
+  if(!confirm('Restore the starting 2×, 3× and 5× scenario rows for this user and challenge? This replaces this scenario table only.'))return;
+  scenarioRows=starterScenarios();scenarioExpanded=null;storeScenarioRows();renderScenarioTable();
+ });
+}
+
 function funnelRow(name,value,total){const v=total>0?Math.max(0,Math.min(100,value/total*100)):0;return `<div class="funnel-line"><div class="funnel-head"><span>${name}</span><strong>${value.toFixed(2)}</strong></div><div class="bar-track"><div class="bar-fill" style="width:${v.toFixed(2)}%"></div></div></div>`;}
 function marginForRisk(risk){const s=state;return positive(risk)*positive(s.goldPrice)/(Math.max(.00001,positive(s.stopDist))*Math.max(1,positive(s.leverage)));}
 function showWarnings(c){let items=[];if(c.cost>positive(state.budget))items.push(`Planned challenge purchases ${money(c.cost)} exceed the available budget ${money(state.budget)}.`);if(c.unit<=0)items.push('Set a positive challenge price/cost for meaningful ROI.');if(positive(state.dailyLoss)+positive(state.buffer)>positive(state.accountSize))items.push('Daily loss plus buffer exceeds account size.');if(positive(state.overallLoss)+positive(state.buffer)>positive(state.accountSize))items.push('Total loss plus buffer exceeds account size.');if(positive(state.fundedBoost)>0&&marginForRisk(state.fundedBoost)>positive(state.accountSize)*prob(state.marginCeiling))items.push('Full funded boost does not fit your margin ceiling at starting equity; it may fit only after profits.');if(dirtySim&&lastSim)items.push('Strategy parameters changed after the last simulation. Rerun to refresh pass rates.');const box=$('warningBox');if(items.length){box.style.display='block';box.textContent=items.join('  •  ')}else box.style.display='none';}
@@ -374,7 +616,7 @@ function useSelectedAccount(x,force=false){
  if(isNew&&!profile&&x.trading&&typeof x.trading==='object'){
   for(const k of ['winRate','rr','weeklySignals','p1Base','p2Base','fundedBase'])if(Number.isFinite(Number(x.trading[k])))state[k]=Number(x.trading[k]);
  }
- activeProgramKey=newKey;selectedAccountSupportsSimulation=x.compatible===true;
+ activeProgramKey=newKey;selectedAccountSupportsSimulation=x.compatible===true;loadScenarioRows();renderScenarioTable();
  mode='manual';lastSim=null;dirtySim=true;writeProfile();
  try{localStorage.setItem(STORAGE,JSON.stringify(state))}catch(e){}
  syncControls();render();
@@ -397,7 +639,7 @@ window.addEventListener('message',event=>{
  if(msg.type==='studio-program-select'){useSelectedAccount(msg.payload,true);$('firmTradingWorkspace').scrollIntoView({behavior:'smooth',block:'start'});}
 });
 function goPage(name){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id==='page-'+name));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===name));window.scrollTo({top:0,behavior:'smooth'});}
-makeFields();render();const firmFrame=$('firmsFrame');if(firmFrame?.dataset?.src){firmFrame.src=firmFrame.dataset.src;}
+makeFields();render();initScenarioTable();const firmFrame=$('firmsFrame');if(firmFrame?.dataset?.src){firmFrame.src=firmFrame.dataset.src;}
 $('activeUserSelect').value=activeUser;$('activeUserSelect').addEventListener('change',()=>{const v=$('activeUserSelect').value;if(!FOUR_DS_USERS.some(u=>u.id===v))return;writeProfile();try{localStorage.setItem(FOUR_DS_ACTIVE,v)}catch(_){}location.reload()});const profileSelect=$('profileUserSelect');profileSelect.value=activeUser;profileSelect.addEventListener('change',()=>{$('activeUserSelect').value=profileSelect.value;$('activeUserSelect').dispatchEvent(new Event('change'));});$('profileAccountStatus').textContent=activeProgramKey?'Active challenge: '+activeProgramKey+' · Settings saved for '+activeUser+'.':'No challenge selected yet for '+activeUser+'. Choose one under Prop firms.';{const el=$('activeAccountProfile');if(el)el.textContent=activeProgramKey?'Saved account profile: '+activeProgramKey+' · Changes to trading parameters are saved automatically on this device.':'No account profile selected. Choose a firm, program and account size in Prop firms.';}
 document.querySelectorAll('[data-page]').forEach(el=>el.addEventListener('click',()=>goPage(el.dataset.page)));document.querySelectorAll('[data-nav]').forEach(el=>el.addEventListener('click',()=>goPage(el.dataset.nav)));
 $('preset40').addEventListener('click',()=>applyPreset(40));$('preset50').addEventListener('click',()=>applyPreset(50));$('simulate').addEventListener('click',()=>{const b=$('simulate');b.disabled=true;b.textContent='Calculating…';setTimeout(()=>{try{runSimulation();}catch(e){console.error(e);notify('Simulation error: check your inputs.');}b.textContent='Run strategy simulation';b.disabled=false;},25);});
