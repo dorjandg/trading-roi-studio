@@ -214,7 +214,7 @@ html[data-theme="light"] #themeToggle{background:#fff;color:#172638}
       <div class="panel"><div class="panel-header"><div><h2>Progress through evaluation stages</h2><p>Conditional rates are multiplied across the three stages.</p></div><span class="section-tag">02 / Pipeline</span></div><div id="funnel"></div><div class="divider"></div><div class="probrow"><div class="prob"><small>Chance ≥1 payout</small><strong id="pOne">—</strong></div><div class="prob"><small>Chance ≥3× net</small><strong id="pThree">—</strong></div><div class="prob"><small>Chance ≥4× net</small><strong id="pFour">—</strong></div></div><p class="caption">Multiple accounts can share the same trade signal. Mirrored accounts are modeled as perfectly correlated within each mirrored group; groups are assumed independent. Other correlations are not modeled.</p></div>
     </div>
     <div>
-      <div class="panel"><div class="panel-header"><div><h2>Economics per successful payout</h2><p>These include challenge losses averaged across all purchases.</p></div></div><div class="metric-row"><div>Reward paid to trader<small>After split and payout fees</small></div><strong id="unitReward">—</strong></div><div class="metric-row"><div>Fee refund on a paid account</div><strong id="unitRefund">—</strong></div><div class="metric-row"><div>Effective cost per paid account<small>Expected purchase fees / payout count − refund</small></div><strong id="unitCost">—</strong></div><div class="metric-row"><div>Break-even payout probability</div><strong id="breakEven">—</strong></div><div class="metric-row"><div>Minimum payouts for 4× net</div><strong id="needed4">—</strong></div><div class="metric-row"><div>Optimistic first cash timing<small>Calendar-day approximation; excludes weekends, delays and trading losses</small></div><strong id="payoutTiming">—</strong></div></div>
+      <div class="panel"><div class="panel-header"><div><h2 id="economicsTitle">Economics per successful payout</h2><p id="economicsDescription">These include challenge losses averaged across all purchases.</p></div></div><div class="metric-row"><div><span id="unitRewardLabel">Reward paid to trader</span><small id="unitRewardDetail">After split and payout fees</small></div><strong id="unitReward">—</strong></div><div class="metric-row"><div><span id="unitRefundLabel">Fee refund on a paid account</span></div><strong id="unitRefund">—</strong></div><div class="metric-row"><div><span id="unitCostLabel">Effective cost per paid account</span><small id="unitCostDetail">Expected purchase fees / payout count − refund</small></div><strong id="unitCost">—</strong></div><div class="metric-row"><div><span id="breakEvenLabel">Break-even payout probability</span></div><strong id="breakEven">—</strong></div><div class="metric-row"><div><span id="needed4Label">Minimum payouts for 4× net</span></div><strong id="needed4">—</strong></div><div class="metric-row"><div><span id="payoutTimingLabel">Optimistic first cash timing</span><small id="payoutTimingDetail">Calendar-day approximation; excludes weekends, delays and trading losses</small></div><strong id="payoutTiming">—</strong></div></div>
     </div>
   </div>
 </section>
@@ -852,6 +852,34 @@ if(scenarioRows?.length)for(const row of scenarioRows)updateScenarioMetrics(row)
  const m=phaseModel(),a=state.accounts,b=a*(m.phase1?prob(state.p1):1),d=b*phase2Rate(),e=d*prob(state.pf),f=e*prob(state.pc);
  $('funnel').innerHTML=model.topstep?(funnelRow('Purchased challenges',a,a)+funnelRow('Estimated Combine passes',topstep&&!topstep.error?a*topstep.combine:0,a)+funnelRow('Estimated first XFA payouts',topstep&&!topstep.error?a*topstep.probability:0,a)):funnelRow('Purchased challenges',a,a)+(m.phase1?funnelRow(m.topstep?'Passed Trading Combine':'Passed Phase 1',b,a):'')+(m.phase2?funnelRow('Passed Phase 2',d,a):'')+funnelRow(m.topstep?'XFA payout-planning proxy':m.instant?'Funded reward-planning proxy':'Reached funded profit target (estimate)',e,a)+funnelRow('Expected collected payouts',f,a);
  $('pOne').textContent=model.topstep?'—':pct(c.atLeast);$('pThree').textContent=model.topstep?'—':pct(c.chance(3));$('pFour').textContent=pct(c.chance(4));$('unitReward').textContent=money(c.reward);$('unitRefund').textContent=money(c.refund);$('unitCost').textContent=money(c.avgCost);$('breakEven').textContent=pct(c.breakEven);$('needed4').textContent=Number.isFinite(c.needed4)?c.needed4:'—';$('payoutTiming').textContent='~'+Math.ceil((m.phase1?state.p1MinDays:0)+(m.phase2?state.p2MinDays:0)+state.reviewDays*(m.phase1?(m.phase2?2:1):0)+state.daysBeforeRequest+state.payoutProcessingDays)+' days';
+
+  // The Topstep panel uses actual modeled Combine → XFA first-payout rates, not generic prop-firm assumptions.
+  $('economicsTitle').textContent=model.topstep?'Topstep · first XFA payout economics':'Economics per successful payout';
+  $('economicsDescription').textContent=model.topstep?'Expected costs include unsuccessful Combine purchases and XFA activation on passed Combines.':'These include challenge losses averaged across all purchases.';
+  $('unitRewardLabel').textContent=model.topstep?'Average reward per successful first payout':'Reward paid to trader';
+  $('unitRewardDetail').textContent=model.topstep?'After 90/10 split; conditional on first payout':'After split and payout fees';
+  $('unitRefundLabel').textContent=model.topstep?'Routine Combine fee refund':'Fee refund on a paid account';
+  $('unitCostLabel').textContent=model.topstep?'Expected fees per successful payout':'Effective cost per paid account';
+  $('unitCostDetail').textContent=model.topstep?'Evaluation fees plus expected activations, divided by estimated payouts':'Expected purchase fees / payout count − refund';
+  $('breakEvenLabel').textContent=model.topstep?'Break-even first-payout probability':'Break-even payout probability';
+  $('needed4Label').textContent=model.topstep?'Minimum first payouts for 4× net on budget':'Minimum payouts for 4× net';
+  $('payoutTimingLabel').textContent=model.topstep?'Estimated first cash timing':'Optimistic first cash timing';
+  $('payoutTimingDetail').textContent=model.topstep?'Elapsed time is not tracked by the current Topstep simulation.':'Calendar-day approximation; excludes weekends, delays and trading losses';
+  if(model.topstep){
+    const t=topstep&&!topstep.error?topstep:null;
+    const n=state.accounts,fees=c.cost+(t?n*t.combine*topstepReserveFee():0);
+    const paid=t?n*t.probability:0;
+    const average=t&&t.probability>0?t.rawPerChallenge/t.probability:0;
+    const breakEven=t&&n>0&&average>0?fees/(n*average):NaN;
+    const minPayouts=t&&average>0?Math.ceil((4*positive(state.budget)+fees)/average):NaN;
+    $('unitReward').textContent=t&&paid>0?money(average):'—';
+    $('unitRefund').textContent='$0';
+    $('unitCost').textContent=t&&paid>0?money(fees/paid):'—';
+    $('breakEven').textContent=Number.isFinite(breakEven)?pct(breakEven):'—';
+    $('needed4').textContent=Number.isFinite(minPayouts)?String(minPayouts)+(minPayouts>n?' (exceeds '+n+' challenges)':''):'—';
+    $('payoutTiming').textContent='Not modeled';
+    $('pFour').textContent='—';
+  }
  $('scenarioNote').textContent=mode==='simulation'?(dirtySim?'Simulation estimates may be stale. Rerun after editing trading rules.':'Stage rates derived from simplified Monte Carlo paths. Payout collection remains a manual assumption.'):'These pass rates are manual planning estimates, including prior illustrative 40%/50% presets—not verified live account success rates.';
  $('marginNotice').textContent=instrumentReady()?instrumentLabel()+' · Planned funded base '+money(state.fundedBase)+' → estimated margin '+money(marginForRisk(state.fundedBase))+'; boost '+money(state.fundedBoost)+' → estimated margin '+money(marginForRisk(state.fundedBoost))+'. Starting-equity margin ceiling: '+money(state.accountSize*prob(state.marginCeiling))+'. Actual broker/exchange margin may differ.':'Planned initial stop-loss risk: Phase 1 '+money(state.p1Base)+'; Phase 2 '+money(state.p2Base)+'; Funded '+money(state.fundedBase)+'. Dollar-risk simulation works without contract settings; executable lot size and broker margin are not yet checked.';renderSymbolSummary();
  renderScaling();showWarnings(c);if(lastSim)renderSim();else{$('simResults').className='notice';$('simResults').textContent='Run the USD stop-loss simulation for illustrative stage pass rates. Contract sizing and broker margin are not modeled.';}renderPresetLibrary();}
