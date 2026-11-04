@@ -75,7 +75,7 @@ table{width:100%;border-collapse:collapse;text-align:left;min-width:550px}th,td{
   <div class="brand"><div class="mark">F<span style="font-size:15px;margin-left:2px">↗</span></div><div><strong>4Ds Trading Studio</strong><small>STRATEGY · PAYOUTS · CAPITAL ALLOCATION</small></div></div>
   <div class="top-right"><label for="activeUserSelect" style="font-size:12px;color:var(--muted)">User <select id="activeUserSelect" aria-label="Select 4Ds user" style="display:inline-block;margin-left:7px;padding:7px 10px;background:#142033;color:white;border:1px solid #35455b;border-radius:8px"><option value="doen">Doen</option><option value="dori">Dori</option><option value="dona">Dona</option><option value="dion">Dion</option></select></label><span class="pill" title="Settings are saved locally first and synchronized with Google Cloud when connected.">● AUTO-SAVE ENABLED</span><button class="btn small quiet hide-mobile" id="exportTop">Export scenario</button></div>
 </header>
-<nav class="nav" aria-label="Pages"><button class="active" data-page="dashboard">Overview</button><button data-page="profile">Profile</button><button data-page="firms">Prop firms</button><button data-page="scaling">Scaling & targets</button><button data-page="presets">My presets</button><button data-page="settings">Export & help</button></nav>
+<nav class="nav" aria-label="Pages"><button class="active" data-page="dashboard">Overview</button><button data-page="profile">Profile</button><button data-page="firms">Prop firms</button><button data-page="scaling">Investments & ROI</button><button data-page="presets">My presets</button><button data-page="settings">Export & help</button></nav>
 
 <main>
 
@@ -155,12 +155,14 @@ table{width:100%;border-collapse:collapse;text-align:left;min-width:550px}th,td{
     </div>
   </div>
   <div class="panel" style="margin-top:19px"><div class="panel-header"><div><h2>Payout settings and timing</h2><p>Profit split, fees, refund and payout timing saved for this selected challenge.</p></div></div><div id="payoutFields" class="formgrid"></div></div>
+      <div class="panel"><div class="panel-header"><div><h2>Account probability assumptions</h2><p>These rates belong to the selected Prop Firms account and feed Overview and linked investment scenarios. Manual rates are estimates.</p></div></div><div class="toggle-buttons" style="margin-bottom:16px"><button class="seg" id="preset40">40% WR preset</button><button class="seg" id="preset50">50% WR preset</button><button class="seg" data-nav="firms">Simulate rules ↗</button></div><div id="probFields" class="formgrid"></div><div class="notice" style="margin-top:16px" id="scenarioNote">Presets originate from prior illustrative models, not verified live funded-to-payout rates.</div></div>
+
   <div class="panel" style="margin-top:19px"><div class="panel-header"><div><h2>Strategy outputs</h2><p>Winning-trade math and latest simulation diagnostics.</p></div></div><div class="card-columns" id="tradePreview"></div><div class="divider"></div><div id="simResults" class="notice">Run the simulation to generate stage pass rates and average trade counts using these exact input values.</div></div>
 </div>
 </section>
-<section id="page-dashboard" class="page active"><div id="activeAccountProfile" class="notice" style="margin-bottom:12px"></div><div class="notice" style="margin-bottom:18px">Compare FTMO, Hola Prime and Topstep in the <button class="btn small primary" data-nav="firms" style="margin-left:8px">Prop firms section →</button></div>
+<section id="page-dashboard" class="page active"><div class="notice" style="margin-bottom:14px"><strong>Where to edit:</strong> Account settings, rules, win rate, RR and payouts → <button class="btn small primary" data-nav="firms">Prop firms</button>. Investment budget and account count → <button class="btn small" data-nav="scaling">Investments & ROI</button>. This Overview shows calculated results.</div><div id="activeAccountProfile" class="notice" style="margin-bottom:12px"></div>
   <div class="hero">
-    <div class="hero-main"><div class="eyebrow"><span class="dot"></span> Your independent planning dashboard</div><h1>Build the payout.<br><span style="color:var(--green)">Measure the cost.</span></h1><p>Adjust your account assumptions, account purchases, Set 1 risk and payout objectives. Compare expected outcomes with the risk of losing the entire challenge budget.</p><div class="actionrow" style="margin-top:23px"><button class="btn primary" data-nav="firms">Open account trading settings →</button><button class="btn" data-nav="scaling">Explore scaling</button><button class="btn" data-nav="presets">Saved presets</button></div></div>
+    <div class="hero-main"><div class="eyebrow"><span class="dot"></span> Overview · results from selected account</div><h1>Build the payout.<br><span style="color:var(--green)">Measure the cost.</span></h1><p>View results for the selected Prop Firms account. Edit its trading and payout parameters under Prop firms; compare different investment amounts under Investments & ROI.</p><div class="actionrow" style="margin-top:23px"><button class="btn primary" data-nav="firms">Open account trading settings →</button><button class="btn" data-nav="scaling">Compare investments</button><button class="btn" data-nav="presets">Saved presets</button></div></div>
     <div class="hero-aside"><div><span class="section-tag">Modeled combined payout rate</span><div class="big" id="heroRate">—</div><div class="subline">Phase 1 × Phase 2 × Funded × Collection</div></div><div><span class="tag" id="modeLabel">Manual stage estimates</span><div class="subline" style="margin-top:12px">These are adjustable scenarios, not guaranteed trading returns.</div></div></div>
   </div>
   <div class="kpis">
@@ -171,14 +173,28 @@ table{width:100%;border-collapse:collapse;text-align:left;min-width:550px}th,td{
   </div>
   <div id="warningBox" class="notice warning" style="display:none;margin-bottom:20px"></div>
 
+  <div class="cols">
+    <div>
+      <div class="panel"><div class="panel-header"><div><h2>Progress through evaluation stages</h2><p>Conditional rates are multiplied across the three stages.</p></div><span class="section-tag">02 / Pipeline</span></div><div id="funnel"></div><div class="divider"></div><div class="probrow"><div class="prob"><small>Chance ≥1 payout</small><strong id="pOne">—</strong></div><div class="prob"><small>Chance ≥3× net</small><strong id="pThree">—</strong></div><div class="prob"><small>Chance ≥4× net</small><strong id="pFour">—</strong></div></div><p class="caption">Multiple accounts can share the same trade signal. Mirrored accounts are modeled as perfectly correlated within each mirrored group; groups are assumed independent. Other correlations are not modeled.</p></div>
+    </div>
+    <div>
+      <div class="panel"><div class="panel-header"><div><h2>Economics per successful payout</h2><p>These include challenge losses averaged across all purchases.</p></div></div><div class="metric-row"><div>Reward paid to trader<small>After split and payout fees</small></div><strong id="unitReward">—</strong></div><div class="metric-row"><div>Fee refund on a paid account</div><strong id="unitRefund">—</strong></div><div class="metric-row"><div>Effective cost per paid account<small>Expected purchase fees / payout count − refund</small></div><strong id="unitCost">—</strong></div><div class="metric-row"><div>Break-even payout probability</div><strong id="breakEven">—</strong></div><div class="metric-row"><div>Minimum payouts for 4× net</div><strong id="needed4">—</strong></div><div class="metric-row"><div>Optimistic first cash timing<small>Calendar-day approximation; excludes weekends, delays and trading losses</small></div><strong id="payoutTiming">—</strong></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="page-scaling" class="page">
+<div class="notice" style="margin-bottom:16px"><strong>Account source:</strong> <span id="investmentAccountSource">Select an account in Prop firms</span>. Challenge price, probabilities, payout terms and trading assumptions come from that account. Change the investment budget or number of challenges below; results update throughout the dashboard. <button class="btn small" data-nav="firms" type="button">Edit account settings</button></div>
+      <div class="panel"><div class="panel-header"><div><h2>Investment amount & number of challenges</h2><p>Budget and number of challenges are investment-only inputs. Challenge purchase price is linked to the selected Prop Firms account.</p></div><span class="section-tag">01 / Investment</span></div><div id="quickFields" class="formgrid"></div><div class="actionrow" style="margin-top:16px"><button class="btn small" id="useBudget">Buy as many as budget supports</button><button class="btn small" id="resetQuick">Reset investment values</button></div></div>
+
   <div class="panel" id="scenarioLab" style="margin-bottom:20px">
     <div class="panel-header">
       <div>
         <div class="eyebrow" style="margin-bottom:6px">Adjustable financial levels</div>
         <h2>Scenario comparison table</h2>
-        <p>Compare 2×, 3×, 5× or your own net-profit goals. Edit each scenario independently and instantly see the outcomes.</p>
+        <p>Compare 2×, 3×, 5× or your own net-profit goals. New scenarios follow the selected Prop Firms account automatically. Existing saved custom scenarios retain their assumptions until you choose to link them.</p><p class="caption">Linked = uses current account fee, stage probabilities and payout terms; Custom = retains its own editable snapshot. Only change amount and goal for a linked scenario.</p>
       </div>
-      <span class="section-tag">PLANNING · NOT A FORECAST</span>
+      <span class="section-tag">LINKED INVESTMENT SCENARIOS</span>
     </div>
     <div class="actionrow" style="margin:14px 0">
       <button class="btn primary small" type="button" id="addScenario">+ Add scenario</button>
@@ -195,23 +211,11 @@ table{width:100%;border-collapse:collapse;text-align:left;min-width:550px}th,td{
         <tbody id="scenarioRows"></tbody>
       </table>
     </div>
-    <p class="caption">Net goal 3× means profit equal to three times challenge spending (total receipts must reach 4× spending). Payout probabilities are entered assumptions, not calculated from win rate or RR. Mirrored accounts have correlated outcomes. These are financial scenarios, not prop-firm rule or live-trading simulations.</p>
+    <p class="caption">Net goal 3× means profit equal to three times challenge spending (total receipts must reach 4× spending). Linked scenarios use the selected account’s planning probabilities; these are estimates, not verified historical rates. Mirrored accounts have correlated outcomes. These are financial scenarios, not prop-firm rule or live-trading simulations.</p>
   </div>
 
-  <div class="cols">
-    <div>
-      <div class="panel"><div class="panel-header"><div><h2>Capital & challenge purchases</h2><p>All financial results update as you edit these variables.</p></div><span class="section-tag">01 / Investment</span></div><div id="quickFields" class="formgrid"></div><div class="actionrow" style="margin-top:16px"><button class="btn small" id="useBudget">Buy as many as budget supports</button><button class="btn small" id="resetQuick">Reset to defaults</button></div></div>
-      <div class="panel"><div class="panel-header"><div><h2>Progress through evaluation stages</h2><p>Conditional rates are multiplied across the three stages.</p></div><span class="section-tag">02 / Pipeline</span></div><div id="funnel"></div><div class="divider"></div><div class="probrow"><div class="prob"><small>Chance ≥1 payout</small><strong id="pOne">—</strong></div><div class="prob"><small>Chance ≥3× net</small><strong id="pThree">—</strong></div><div class="prob"><small>Chance ≥4× net</small><strong id="pFour">—</strong></div></div><p class="caption">Multiple accounts can share the same trade signal. Mirrored accounts are modeled as perfectly correlated within each mirrored group; groups are assumed independent. Other correlations are not modeled.</p></div>
-    </div>
-    <div>
-      <div class="panel"><div class="panel-header"><div><h2>Stage pass assumptions</h2><p>Use the presets, enter your own rates or run strategy simulations.</p></div></div><div class="toggle-buttons" style="margin-bottom:16px"><button class="seg" id="preset40">40% WR preset</button><button class="seg" id="preset50">50% WR preset</button><button class="seg" data-nav="firms">Simulate rules ↗</button></div><div id="probFields" class="formgrid"></div><div class="notice" style="margin-top:16px" id="scenarioNote">Presets originate from prior illustrative models, not verified live funded-to-payout rates.</div></div>
-      <div class="panel"><div class="panel-header"><div><h2>Economics per successful payout</h2><p>These include challenge losses averaged across all purchases.</p></div></div><div class="metric-row"><div>Reward paid to trader<small>After split and payout fees</small></div><strong id="unitReward">—</strong></div><div class="metric-row"><div>Fee refund on a paid account</div><strong id="unitRefund">—</strong></div><div class="metric-row"><div>Effective cost per paid account<small>Expected purchase fees / payout count − refund</small></div><strong id="unitCost">—</strong></div><div class="metric-row"><div>Break-even payout probability</div><strong id="breakEven">—</strong></div><div class="metric-row"><div>Minimum payouts for 4× net</div><strong id="needed4">—</strong></div><div class="metric-row"><div>Optimistic first cash timing<small>Calendar-day approximation; excludes weekends, delays and trading losses</small></div><strong id="payoutTiming">—</strong></div></div>
-    </div>
-  </div>
-</section>
 
-<section id="page-scaling" class="page">
-  <div class="panel" style="margin-bottom:19px"><div class="panel-header"><div><h2>Scale the capital, not the assumptions</h2><p>Compare costs and expected cash returns at different budgets without placing an arbitrary account-purchase cap.</p></div><span class="section-tag">03 / Scaling</span></div><div id="scalingFields" class="formgrid three"></div><div class="notice" style="margin-top:16px">Buying several accounts for the same signals multiplies exposure and expected dollar returns, but does not automatically raise expected ROI. It can increase correlated failures.</div></div>
+  <div class="panel" style="margin-bottom:19px"><div class="panel-header"><div><h2>Investments & return on investment</h2><p>Compare costs and expected cash returns at different budgets without placing an arbitrary account-purchase cap.</p></div><span class="section-tag">INVESTMENTS · ACCOUNT-LINKED</span></div><div id="scalingFields" class="formgrid three"></div><div class="notice" style="margin-top:16px">Buying several accounts for the same signals multiplies exposure and expected dollar returns, but does not automatically raise expected ROI. It can increase correlated failures.</div></div>
   <div class="panel" style="margin-bottom:19px"><div class="panel-header"><div><h2>Budget comparison</h2><p>Each row assumes all affordable challenge purchases, with the current pass rates and mirror setting.</p></div></div><div class="tablewrap"><table><thead><tr><th>Budget</th><th class="num">Accounts</th><th class="num">Spent</th><th class="num">Expected payouts</th><th class="num">Expected net</th><th class="num">Net ROI</th><th class="num">≥4× net chance</th></tr></thead><tbody id="budgetRows"></tbody></table></div></div>
   <div class="panel"><div class="panel-header"><div><h2>Mirroring comparison</h2><p>Same number of accounts, same spend, increasing correlation.</p></div></div><div class="tablewrap"><table><thead><tr><th>Accounts per shared signal</th><th class="num">Expected net</th><th class="num">Chance ≥1 payout</th><th class="num">Chance ≥3× net</th><th class="num">Chance ≥4× net</th></tr></thead><tbody id="mirrorRows"></tbody></table></div><p class="caption">Mirroring does not create new independent signals. Any multi-account use must comply with FTMO's current rules on allocation, strategy and copying.</p></div>
 </section>
@@ -219,7 +223,7 @@ table{width:100%;border-collapse:collapse;text-align:left;min-width:550px}th,td{
 
 <section id="page-presets" class="page">
   <div class="hero">
-    <div class="hero-main"><div class="eyebrow"><span class="dot"></span> Save · duplicate · compare</div><h1>My Strategy <span style="color:var(--green)">Presets</span></h1><p>Create as many versions of your ROI model as you like. Each preset stores every input: challenge budget, risk rules, simulations, pass rates, payout terms and scaling settings.</p><div class="actionrow" style="margin-top:22px"><button class="btn primary" id="goCreatePreset">Save a new version</button><button class="btn" id="exportPresetLibraryTop">Back up all presets</button></div></div>
+    <div class="hero-main"><div class="eyebrow"><span class="dot"></span> Save · duplicate · compare</div><h1>My Strategy <span style="color:var(--green)">Presets</span></h1><p>Presets are saved historical snapshots of an account model. Loading a preset replaces the current working assumptions; it is not an automatically linked investment scenario. Use Investments & ROI for live comparisons without changing account rules.</p><div class="actionrow" style="margin-top:22px"><button class="btn primary" id="goCreatePreset">Save a new version</button><button class="btn" id="exportPresetLibraryTop">Back up all presets</button></div></div>
     <div class="hero-aside"><div><span class="section-tag">Saved versions</span><div class="big" id="presetCount">0</div><div class="subline" id="storageStatus">Checking browser storage</div></div><div class="notice" id="activePresetLabel">Current working scenario</div></div>
   </div>
   <div class="two-up" style="margin-bottom:18px">
@@ -289,7 +293,7 @@ p2Target:500,p2Base:200,p2Recovery:200,p2DailyCap:2,p2Days:24,p2MinDays:4,
 fundedBase:250,fundedRecovery:200,fundedBoost:500,boostUnlock:750,fundedDailyCap:3,fundedDays:20,
  symbolId:'XAUUSD',customSymbol:'',symbolSpecs:{}};
 const FIELDS={
- quickFields:[['budget','Available budget','USD',1],['accounts','Challenges purchased','count',1],['price','Challenge purchase price','USD',1],['extraCost','Extra cost per challenge','USD',1]],
+ quickFields:[['budget','Investment budget','USD',1],['accounts','Challenges to purchase','count',1],['price','Challenge price — from Prop firms','USD',1],['extraCost','Additional cost per challenge','USD',1]],
  probFields:[['p1','Phase 1 pass rate','%',.1],['p2','Phase 2 pass rate','%',.1],['pf','Funded target hit','%',.1],['pc','Payout collected if eligible','%',.1]],
  performanceFields:[['winRate','Trade win rate','%',.5],['rr','Winning multiple','R',.1],['weeklySignals','Trade ideas available / week','count',1],['simulations','Trials per phase','count',100],['randomSeed','Repeatable random seed','count',1],['tradeCost','Cost per executed trade','USD',.25]],
  safetyFields:[['accountSize','Starting account equity','USD',1000],['dailyLoss','Daily maximum loss','USD',25],['overallLoss','Maximum overall loss','USD',25],['buffer','Risk reserve / buffer','USD',5],['marginCeiling','Maximum margin utilization','%',1],['minRisk','Minimum planned stop loss / trade','USD',1]],
@@ -457,6 +461,7 @@ const minCap={accounts:1,mirror:1,simulations:250,randomSeed:1,p1DailyCap:1,p2Da
 const percentKeys=new Set(['p1','p2','pf','pc','winRate','marginCeiling','split','payoutPct','refund']);
 const intKeys=new Set(['accounts','mirror','weeklySignals','simulations','randomSeed','p1RecoverAfter','p1DailyCap','p1Days','p1MinDays','p2DailyCap','p2Days','p2MinDays','fundedDailyCap','fundedDays','reviewDays','daysBeforeRequest','payoutProcessingDays']);
 function makeFields(){for(const [target,fields] of Object.entries(FIELDS)){const el=$(target);el.innerHTML=fields.map(([key,label,unit,step])=>`<div class="field"><label for="f-${key}">${label}${unit?` <span class="hint">(${unit})</span>`:''}</label><input id="f-${key}" data-field="${key}" type="number" inputmode="decimal" min="0" step="${step}" value="${state[key]}"></div>`).join('');}
+ const feeField=$('f-price');if(feeField){feeField.readOnly=true;feeField.title='Linked to the selected Prop Firms account. Edit the challenge fee in Prop firms.';feeField.style.opacity='.75';}
  document.querySelectorAll('[data-field]').forEach(el=>el.addEventListener('input',()=>{const k=el.dataset.field;const raw=el.value.trim();if(raw==='')return;let val=positive(raw,minCap[k]??0,maxCap[k]??(percentKeys.has(k)?100:1e8));if(intKeys.has(k))val=Math.round(val);state[k]=val;save();if(['p1','p2','pf','pc'].includes(k)){mode='manual';lastSim=null;}else if(['winRate','rr','simulations','randomSeed','weeklySignals','tradeCost','accountSize','dailyLoss','overallLoss','buffer','leverage','goldPrice','stopDist','marginCeiling','minRisk','p1Target','p1Base','p1Recovery','p1RecoverAfter','p1DailyCap','p1Days','p2Target','p2Base','p2Recovery','p2DailyCap','p2Days','profitTarget','fundedBase','fundedRecovery','fundedBoost','boostUnlock','fundedDailyCap','fundedDays'].includes(k)){dirtySim=true;}
  render();}));}
 function syncControls(){document.querySelectorAll('[data-field]').forEach(el=>el.value=state[el.dataset.field]);renderSymbolControls();}
@@ -493,7 +498,7 @@ const scenarioCaps={accounts:[1,1000],goal:[0,100],...Object.fromEntries(scenari
 function newScenarioId(){return 's'+Date.now().toString(36)+Math.random().toString(36).slice(2,9)}
 function scenarioKey(){return userStoreKey(SCENARIO_STORAGE+(activeProgramKey||'general'))}
 function scenarioFromCurrent(name='New scenario',goal=3){
- return {id:newScenarioId(),name,accounts:Math.round(positive(state.accounts,1,1000)),goal,
+ return {id:newScenarioId(),name,linked:true,accounts:Math.round(positive(state.accounts,1,1000)),goal,
  price:positive(state.price),extraCost:positive(state.extraCost),
  p1:positive(state.p1,0,100),p2:positive(state.p2,0,100),
  pf:positive(state.pf,0,100),pc:positive(state.pc,0,100),
@@ -506,6 +511,8 @@ function scenarioClean(raw){
  if(!raw||typeof raw!=='object')return null;
  const base=scenarioFromCurrent(String(raw.name??'Scenario').slice(0,60),3);
  base.id=/^s[a-zA-Z0-9]{5,35}$/.test(raw.id||'')?raw.id:newScenarioId();
+ // Existing saved rows were independently editable: preserve their values as custom.
+ base.linked=raw.linked===true;
  for(const [key,[min,max]] of Object.entries(scenarioCaps)){
   if(raw[key]!==null&&raw[key]!==''&&Number.isFinite(Number(raw[key]))){
    let number=Math.min(max,Math.max(min,Number(raw[key])));
@@ -551,17 +558,18 @@ function scenarioGoalChance(n,p,mirror,needed){
  return Math.max(0,Math.min(1,total));
 }
 function scenarioResult(row){
+ const src=row.linked===true?{...row,price:state.price,extraCost:state.extraCost,p1:state.p1,p2:state.p2,pf:state.pf,pc:state.pc,target:state.profitTarget,split:state.split,payoutPct:state.payoutPct,payoutFixed:state.payoutFixed,refund:state.refund,mirror:state.mirror}:row;
  const n=Math.max(1,Math.round(positive(row.accounts,1,1000)));
- const fee=positive(row.price)+positive(row.extraCost);
+ const fee=positive(src.price)+positive(src.extraCost);
  const cost=n*fee;
- const pass=prob(row.p1)*prob(row.p2)*prob(row.pf)*prob(row.pc);
- const paid=Math.max(0,positive(row.target)*prob(row.split)*(1-prob(row.payoutPct))-positive(row.payoutFixed))
-  +positive(row.price)*prob(row.refund);
+ const pass=prob(src.p1)*prob(src.p2)*prob(src.pf)*prob(src.pc);
+ const paid=Math.max(0,positive(src.target)*prob(src.split)*(1-prob(src.payoutPct))-positive(src.payoutFixed))
+  +positive(src.price)*prob(src.refund);
  const expectedPayouts=n*pass;
  const net=expectedPayouts*paid-cost;
  const roi=cost>0?net/cost:NaN;
  const required=paid>0?Math.ceil(((1+positive(row.goal,0,100))*cost-1e-8)/paid):Infinity;
- const chance=cost>0?scenarioGoalChance(n,pass,Math.max(1,Math.round(row.mirror)),required):NaN;
+ const chance=cost>0?scenarioGoalChance(n,pass,Math.max(1,Math.round(src.mirror)),required):NaN;
  return {cost,pass,paid,expectedPayouts,net,roi,required,chance};
 }
 function scenarioControl(row,key,step,styleClass){
@@ -607,6 +615,7 @@ function updateScenarioMetrics(row){
  for(const [key,text] of Object.entries(output)){
   const cell=document.getElementById(id+'-'+key);if(cell)cell.textContent=text;
  }
+ const mode=document.getElementById(id+'-source');if(mode)mode.textContent=row.linked?'Linked to Prop firms':'Custom assumptions';
  const det=document.getElementById(id+'-details-note');
  if(det)det.textContent='Spent '+money(result.cost)+' · Payout received per successful account '+money(result.paid)+' · Required payouts for this goal: '+(Number.isFinite(result.required)?result.required:'unreachable')+' · Combined success chance '+pct(result.pass)+'.';
 }
@@ -623,22 +632,34 @@ function renderScenarioTable(){
   }
   const actions=document.createElement('div');actions.className='scenario-actions';
   actions.append(
-   scenarioButton(scenarioExpanded===row.id?'Close':'Edit',()=>{scenarioExpanded=scenarioExpanded===row.id?null:row.id;renderScenarioTable()}),
+   scenarioButton(row.linked?'Source':'Edit',()=>{scenarioExpanded=scenarioExpanded===row.id?null:row.id;renderScenarioTable()}),
    scenarioButton('Copy',()=>{if(scenarioRows.length>=20)return;const idx=scenarioRows.indexOf(row);scenarioRows.splice(idx+1,0,{...row,id:newScenarioId(),name:(row.name+' copy').slice(0,60)});storeScenarioRows();renderScenarioTable()}),
    scenarioButton('Delete',()=>{if(scenarioRows.length<=1)return;scenarioRows=scenarioRows.filter(x=>x!==row);if(scenarioExpanded===row.id)scenarioExpanded=null;storeScenarioRows();renderScenarioTable()},'danger')
   );
+  const source=document.createElement('div');source.className='scenario-inline-note';source.id='scenario-'+row.id+'-source';actions.append(source);
   tr.append(scenarioCell(actions));
   tbody.append(tr);
   if(scenarioExpanded===row.id){
    const detailRow=document.createElement('tr');const td=document.createElement('td');td.colSpan=8;td.className='scenario-detail-cell';
    const header=document.createElement('div');header.className='scenario-editor-head';
-   const title=document.createElement('strong');title.textContent='Adjust this scenario’s assumptions';
-   header.append(title,scenarioButton('Copy current account values',()=>{
+   const title=document.createElement('strong');title.textContent=row.linked?'This scenario uses your selected Prop Firms account':'Custom scenario assumptions';
+   header.append(title,scenarioButton('Link to Prop firms',()=>{row.linked=true;storeScenarioRows();renderScenarioTable()}),scenarioButton('Copy current account values',()=>{
     const fresh=scenarioFromCurrent(row.name,row.goal);
-    Object.assign(row,{...fresh,id:row.id,name:row.name,goal:row.goal,accounts:row.accounts});
+    Object.assign(row,{...fresh,id:row.id,name:row.name,goal:row.goal,accounts:row.accounts,linked:false});
     storeScenarioRows();renderScenarioTable();
    }));
    td.append(header);
+   if(row.linked){
+    const msg=document.createElement('p');msg.className='scenario-inline-note';
+    msg.textContent='Account fee, pass probabilities and payout terms update automatically from Prop firms. Change only account count and net-profit goal in the row. To test different assumptions, choose Make custom copy.';
+    td.append(msg);
+    td.append(scenarioButton('Make custom copy',()=>{
+      row.linked=false;
+      const current=scenarioFromCurrent(row.name,row.goal);
+      Object.assign(row,{...current,id:row.id,accounts:row.accounts,name:row.name,goal:row.goal,linked:false});
+      storeScenarioRows();renderScenarioTable();
+    }));
+   }else{
    const grid=document.createElement('div');grid.className='scenario-editor-grid';
    for(const [key,label,step] of scenarioFieldDefs){
     const wrap=document.createElement('label');wrap.textContent=label;
@@ -646,7 +667,9 @@ function renderScenarioTable(){
    }
    td.append(grid);
    const note=document.createElement('p');note.className='scenario-inline-note';note.id='scenario-'+row.id+'-details-note';
-   td.append(note);detailRow.append(td);tbody.append(detailRow);
+   td.append(note);
+   }
+   detailRow.append(td);tbody.append(detailRow);
   }
   updateScenarioMetrics(row);
  }
@@ -667,7 +690,7 @@ function initScenarioTable(){
 function funnelRow(name,value,total){const v=total>0?Math.max(0,Math.min(100,value/total*100)):0;return `<div class="funnel-line"><div class="funnel-head"><span>${name}</span><strong>${value.toFixed(2)}</strong></div><div class="bar-track"><div class="bar-fill" style="width:${v.toFixed(2)}%"></div></div></div>`;}
 function marginForRisk(risk){return positionForRisk(risk).margin;}
 function showWarnings(c){let items=[];if(c.cost>positive(state.budget))items.push(`Planned challenge purchases ${money(c.cost)} exceed the available budget ${money(state.budget)}.`);if(c.unit<=0)items.push('Set a positive challenge price/cost for meaningful ROI.');if(positive(state.dailyLoss)+positive(state.buffer)>positive(state.accountSize))items.push('Daily loss plus buffer exceeds account size.');if(positive(state.overallLoss)+positive(state.buffer)>positive(state.accountSize))items.push('Total loss plus buffer exceeds account size.');if(instrumentReady()&&positionForRisk(state.fundedBase).qty===0)items.push('The funded USD stop loss is too small for the minimum contract/lot with the optional broker settings. Cash simulation does not test executable order size.');if(instrumentReady()&&positive(state.fundedBoost)>0&&marginForRisk(state.fundedBoost)>positive(state.accountSize)*prob(state.marginCeiling))items.push('Full funded boost does not fit your margin ceiling at starting equity; it may fit only after profits.');if(dirtySim&&lastSim)items.push('Strategy parameters changed after the last simulation. Rerun to refresh pass rates.');const box=$('warningBox');if(items.length){box.style.display='block';box.textContent=items.join('  •  ')}else box.style.display='none';}
-function render(){const c=calc();$('heroRate').textContent=pct(c.pass);$('modeLabel').textContent=mode==='simulation'?'Trading-rule Monte Carlo estimates':'Manual stage estimates';$('kpiCost').textContent=money(c.cost);$('kpiBudget').textContent=c.cost<=state.budget?money(state.budget-c.cost)+' budget unspent':money(c.cost-state.budget)+' above budget';$('kpiReceipts').textContent=money(c.receipts);$('kpiNet').textContent=money(c.net);$('kpiNet').className='val '+(c.net>=0?'green':'red');$('kpiROI').textContent=pct(c.roi);$('kpiROI').className='val '+(c.roi>=0?'green':'red');$('kpiROIx').textContent=c.roi.toFixed(2)+'× initial spending as NET profit';
+function render(){if(scenarioRows?.length)for(const row of scenarioRows)updateScenarioMetrics(row);const src=$('investmentAccountSource');if(src)src.textContent=activeProgramKey||'No account selected — sample defaults in use';const c=calc();$('heroRate').textContent=pct(c.pass);$('modeLabel').textContent=mode==='simulation'?'Trading-rule Monte Carlo estimates':'Manual stage estimates';$('kpiCost').textContent=money(c.cost);$('kpiBudget').textContent=c.cost<=state.budget?money(state.budget-c.cost)+' budget unspent':money(c.cost-state.budget)+' above budget';$('kpiReceipts').textContent=money(c.receipts);$('kpiNet').textContent=money(c.net);$('kpiNet').className='val '+(c.net>=0?'green':'red');$('kpiROI').textContent=pct(c.roi);$('kpiROI').className='val '+(c.roi>=0?'green':'red');$('kpiROIx').textContent=c.roi.toFixed(2)+'× initial spending as NET profit';
  const a=state.accounts,b=a*prob(state.p1),d=b*prob(state.p2),e=d*prob(state.pf),f=e*prob(state.pc);$('funnel').innerHTML=funnelRow('Purchased challenges',a,a)+funnelRow('Passed Phase 1',b,a)+funnelRow('Passed Phase 2',d,a)+funnelRow('Reached funded profit target',e,a)+funnelRow('Expected collected payouts',f,a);
  $('pOne').textContent=pct(c.atLeast);$('pThree').textContent=pct(c.chance(3));$('pFour').textContent=pct(c.chance(4));$('unitReward').textContent=money(c.reward);$('unitRefund').textContent=money(c.refund);$('unitCost').textContent=money(c.avgCost);$('breakEven').textContent=pct(c.breakEven);$('needed4').textContent=Number.isFinite(c.needed4)?c.needed4:'—';$('payoutTiming').textContent='~'+Math.ceil(state.p1MinDays+state.p2MinDays+state.reviewDays*2+state.daysBeforeRequest+state.payoutProcessingDays)+' days';
  $('scenarioNote').textContent=mode==='simulation'?(dirtySim?'Simulation estimates may be stale. Rerun after editing trading rules.':'Stage rates derived from simplified Monte Carlo paths. Payout collection remains a manual assumption.'):'These pass rates are manual planning estimates, including prior illustrative 40%/50% presets—not verified live account success rates.';
@@ -886,7 +909,7 @@ $('activeUserSelect').value=activeUser;$('activeUserSelect').addEventListener('c
 document.querySelectorAll('[data-page]').forEach(el=>el.addEventListener('click',()=>goPage(el.dataset.page)));document.querySelectorAll('[data-nav]').forEach(el=>el.addEventListener('click',()=>goPage(el.dataset.nav)));
 $('preset40').addEventListener('click',()=>applyPreset(40));$('preset50').addEventListener('click',()=>applyPreset(50));$('simulate').addEventListener('click',()=>{const b=$('simulate');if(!selectedAccountSupportsSimulation){notify('Choose a challenge supported by the evaluation simulator.');return;}b.disabled=true;b.classList.add('is-calculating');b.textContent='Calculating…';setTimeout(()=>{try{runSimulation();}catch(e){console.error(e);notify('Simulation error: check your inputs.');}b.textContent='Run strategy simulation';b.classList.remove('is-calculating');updateSimulationAvailability();},25);});
 $('useManual').addEventListener('click',()=>{mode='manual';lastSim=null;dirtySim=false;render();notify('Manual pass-rate mode enabled.');});$('useBudget').addEventListener('click',()=>{const unit=positive(state.price)+positive(state.extraCost);if(unit>0){state.accounts=Math.max(1,Math.min(1000,Math.floor(state.budget/unit)));save();syncControls();render();}});
-$('resetQuick').addEventListener('click',()=>{for(const k of ['budget','accounts','price','extraCost'])state[k]=DEFAULT[k];save();syncControls();render();});
+$('resetQuick').addEventListener('click',()=>{for(const k of ['budget','accounts','extraCost'])state[k]=DEFAULT[k];save();syncControls();render();});
 $('exportTop').addEventListener('click',exportSettings);$('exportSettings').addEventListener('click',exportSettings);$('importSettings').addEventListener('click',()=>$('importFile').click());$('importFile').addEventListener('change',e=>{importSettings(e.target.files[0]);e.target.value='';});$('exportCSV').addEventListener('click',exportCSV);$('copySummary').addEventListener('click',copySummary);
 $('resetAll').addEventListener('click',()=>{if(!confirm('Reset all settings to the original FTMO Set 1 defaults?'))return;state={...DEFAULT};mode='manual';lastSim=null;dirtySim=false;save();syncControls();render();notify('Defaults restored.');});
 
