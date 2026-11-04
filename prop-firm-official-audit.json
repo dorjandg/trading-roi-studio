@@ -34,8 +34,25 @@
       },
       "sources": [
         "https://ftmo.com/en/2-step-challenge/",
-        "https://ftmo.com/en/trading-objectives/"
-      ]
+        "https://ftmo.com/en/trading-objectives/",
+        "https://ftmo.com/en/comparison-table/"
+      ],
+      "sizesUSD": [
+        10000,
+        25000,
+        50000,
+        100000,
+        200000
+      ],
+      "pricesEUR": {
+        "10000": 89,
+        "25000": 250,
+        "50000": 345,
+        "100000": 439,
+        "200000": 1080
+      },
+      "pricingNote": "These are EUR base prices published by FTMO; USD checkout amounts are different and must not be calculated by simply relabelling EUR as USD.",
+      "pricingCurrency": "EUR"
     },
     "ftmo1": {
       "status": "reviewed-partial",
@@ -62,7 +79,19 @@
       "sources": [
         "https://ftmo.com/en/comparison-table/",
         "https://ftmo.com/en/trading-objectives/"
-      ]
+      ],
+      "sizesUSD": [
+        10000,
+        25000,
+        50000,
+        100000,
+        200000
+      ],
+      "pricesEUR": {
+        "10000": 79
+      },
+      "pricingNote": "Only published start-from €79 minimum captured; do not extrapolate other account-size fees.",
+      "pricingCurrency": "EUR"
     },
     "instant": {
       "status": "reviewed-partial",
@@ -87,8 +116,25 @@
       },
       "sources": [
         "https://ftmo.com/en/instant-account/",
-        "https://ftmo.com/en/trading-objectives/"
-      ]
+        "https://ftmo.com/en/trading-objectives/",
+        "https://ftmo.com/en/comparison-table/"
+      ],
+      "sizesUSD": [
+        5000,
+        10000,
+        25000,
+        50000,
+        100000
+      ],
+      "pricesEUR": {
+        "5000": 169,
+        "10000": 339,
+        "25000": 749,
+        "50000": 1499,
+        "100000": 2999
+      },
+      "pricingCurrency": "EUR",
+      "pricingNote": "EUR amount shown on official account page; this is not a USD amount. Separate USD checkout region may differ."
     },
     "holaPrime": {
       "status": "reviewed-partial",
@@ -102,12 +148,28 @@
         "exceptions": "$200K accounts have 8% overall maximum loss"
       },
       "margin": {
-        "leverage": "Program and instrument specific; confirm platform"
+        "leverage": "Up to 1:50; instrument and account limitations apply",
+        "marginRule": "Check challenge platform symbol details; not equivalent to risk allowance."
       },
       "sources": [
         "https://holaprime.com/forex/challenge-comparison/",
-        "https://holaprime.com/forex/faq/trading-conditions/how-does-the-max-loss-limit-work/"
-      ]
+        "https://holaprime.com/forex/faq/trading-conditions/how-does-the-max-loss-limit-work/",
+        "https://holaprime.com/"
+      ],
+      "sizesUSD": [
+        2000,
+        5000,
+        10000,
+        25000,
+        50000,
+        100000,
+        200000
+      ],
+      "funded": {
+        "maxRiskPerTradeIdeaPercent": 2,
+        "payoutOptions": "On-demand 80% requires up to 40% consistency; biweekly 80% requires 3 profitable days; monthly 95% is an extra-fee option requiring 7 profitable days; verify actual checkout selection",
+        "onDemandMinProfitPercent": 2
+      }
     },
     "holaPro": {
       "status": "reviewed-partial",
@@ -118,11 +180,26 @@
         "exceptions": "$200K accounts have 8% overall maximum loss"
       },
       "margin": {
-        "leverage": "Program and instrument specific; confirm platform"
+        "leverage": "Up to 1:100; instrument and account limitations apply",
+        "marginRule": "Check challenge platform symbol details; not equivalent to risk allowance."
       },
       "sources": [
-        "https://holaprime.com/forex/challenge-comparison/"
-      ]
+        "https://holaprime.com/forex/challenge-comparison/",
+        "https://holaprime.com/"
+      ],
+      "sizesUSD": [
+        2000,
+        5000,
+        10000,
+        25000,
+        50000,
+        100000,
+        200000
+      ],
+      "funded": {
+        "maxRiskPerTradeIdeaPercent": 2,
+        "payoutOptions": "On-demand 80% requires up to 40% consistency; biweekly 80% requires 3 profitable days; monthly 95% is an extra-fee option requiring 7 profitable days; verify actual checkout selection"
+      }
     },
     "topstep": {
       "status": "reviewed-partial",
@@ -137,7 +214,8 @@
           "150000": 4500
         },
         "dailyPercent": null,
-        "breach": "Account balance reaching Maximum Loss Limit ends account; intraday risk still matters"
+        "breach": "Account balance reaching Maximum Loss Limit ends account; intraday risk still matters",
+        "voluntaryDailyLossLimit": "Optional DLL risk stop may be set at purchase; do not confuse with hard MLL"
       },
       "margin": {
         "maximumContractsBySize": {
@@ -146,16 +224,67 @@
           "150000": 15
         },
         "microToMiniRatio": "10:1",
-        "leverage": "Futures contract caps, not a generic CFD leverage percentage"
+        "leverage": "Futures contract caps, not a generic CFD leverage percentage",
+        "tier1News": "During CPI, FOMC, NFP, PPI windows: 50K Combine max 3 micros, 100K max 6, 150K max 9; minis blocked; event window normally 5 minutes before through 5 minutes after published release",
+        "newsMarginUSDBySize": {
+          "50000": 50000,
+          "100000": 100000,
+          "150000": 150000
+        }
       },
       "funded": {
         "activeAccountsMax": 5,
-        "payouts": "Express Funded Account requirements differ from evaluation; verify chosen payout policy"
+        "payouts": "Express Funded Account requirements differ from evaluation; verify chosen payout policy",
+        "standardActivationFeeUSD": 149,
+        "noActivationPathFeeUSD": 0,
+        "back2FundedEligibility": "Only before first payout; max 2 reactivations for eligible XFA; 30-calendar-day application window"
       },
       "sources": [
         "https://help.topstep.com/en/articles/8284197-trading-combine-parameters",
-        "https://help.topstep.com/en/articles/8284215-express-funded-account-parameters"
-      ]
+        "https://help.topstep.com/en/articles/8284215-express-funded-account-parameters",
+        "https://help.topstep.com/en/articles/14289835-topstep-pricing-and-payment-questions",
+        "https://help.topstep.com/en/articles/13613539-risk-adjustments-high-risk-high-volatility",
+        "https://help.topstep.com/en/articles/12060405-back2funded-rules-guidelines-and-how-it-works"
+      ],
+      "sizesUSD": [
+        50000,
+        100000,
+        150000
+      ],
+      "pricesUSD": {
+        "50000": 49,
+        "100000": 99,
+        "150000": 199
+      },
+      "priceVariantsUSD": {
+        "Standard · monthly + $149 funded activation": {
+          "50000": 49,
+          "100000": 99,
+          "150000": 199
+        },
+        "No activation fee · monthly": {
+          "50000": 95,
+          "100000": 149,
+          "150000": 229
+        }
+      },
+      "pricingNote": "USD recurring monthly Trading Combine subscription, excluding sales tax. Standard pathway requires a separate $149 activation fee per Express Funded Account; path cannot change after purchase.",
+      "pricingCurrency": "USD",
+      "pricingFrequency": "monthly",
+      "activationFeesUSD": {
+        "standard": 149,
+        "noActivationFee": 0
+      },
+      "resetFeesUSD": {
+        "50000": 49,
+        "100000": 99,
+        "150000": 199
+      },
+      "backToFundedReactivationUSD": {
+        "50000": 599,
+        "100000": 699,
+        "150000": 829
+      }
     },
     "fundednext-stellar2": {
       "status": "reviewed-partial",
@@ -411,7 +540,10 @@
         },
         "minDays": [
           0
-        ]
+        ],
+        "durationDays": 30,
+        "consistency": "None for EOD evaluation",
+        "types": "EOD trailing and Intraday trailing have different hard loss behavior"
       },
       "loss": {
         "maximumUSDBySize": {
@@ -427,7 +559,9 @@
           "100000": 1500,
           "150000": 2000
         },
-        "dailyLossIntraday": "None"
+        "dailyLossIntraday": "None",
+        "eodBreach": "The end-of-day floor is calculated at session close but enforced intraday next session; touching it triggers hard failure",
+        "eodDLL": "Daily loss limit blocks trading, not necessarily hard failure; verify option and account status"
       },
       "margin": {
         "maximumContractsBySize": {
@@ -436,16 +570,26 @@
           "100000": 8,
           "150000": 12
         },
-        "microToMiniRatio": "10:1"
+        "microToMiniRatio": "10:1",
+        "maxContractsCombined": "All symbols and open positions combined; 10 micro = 1 mini; over-size orders rejected"
       },
       "funded": {
-        "activationDeadline": "7 days after evaluation pass; variants differ"
+        "activationDeadline": "7 days after evaluation pass; variants differ",
+        "eodPAContractsBySize": {
+          "25000": 2,
+          "50000": 4,
+          "100000": 6,
+          "150000": 10
+        },
+        "eodPAProfitSplit": "100% of eligible payout subject to current PA terms",
+        "eodPAScaling": "Funded PA uses tier-based position scaling"
       },
       "sources": [
         "https://apextraderfunding.com/help-center/eod-trailing-drawdown-accounts/eod-evaluations/",
         "https://apextraderfunding.com/help-center/evaluation-accounts-ea/intraday-trailing-drawdown-evaluations/",
         "https://apextraderfunding.com/help-center/additional-helpful-items/position-sizing-evaluation/",
-        "https://apextraderfunding.com/help-center/uncategorized/no-activation-fee-evaluations/"
+        "https://apextraderfunding.com/help-center/uncategorized/no-activation-fee-evaluations/",
+        "https://apextraderfunding.com/help-center/eod-trailing-drawdown-accounts/eod-performance-accounts-pa/"
       ],
       "restrictions": {
         "activation": "7 days from passing evaluation for currently described Performance Account plans",
@@ -507,12 +651,11 @@
     "fundednext-futures": {
       "status": "requires-variant-selection",
       "variants": [
-        "Legacy",
-        "Flex",
         "Rapid Pro",
         "Rapid Daily",
-        "Direct",
-        "retired Rapid / Bolt"
+        "Flex",
+        "Legacy",
+        "Direct"
       ],
       "loss": {
         "type": "Trailing EOD Maximum Loss Limit; hard breach if equity touches floor",
@@ -520,7 +663,8 @@
         "exceptions": "Rapid/Bolt no longer offered for new purchases/resets since 10 Jul 2026"
       },
       "evaluation": {
-        "consistency": "Legacy/Flex 40%; Rapid Pro/Daily none in evaluation"
+        "consistency": "Legacy/Flex 40%; Rapid Pro/Daily none in evaluation",
+        "direct": "Direct $50K skips evaluation; distinct 20% perpetual consistency rule and 90% reward split"
       },
       "funded": {
         "split": "Rapid Pro/Daily 90% per official FAQ; varies by model",
@@ -538,23 +682,51 @@
         150000
       ],
       "priceVariantsUSD": {
-        "Rapid Pro or Daily base": {
+        "Rapid Pro / Rapid Daily · standard base": {
           "25000": 159.98,
           "50000": 299.98,
           "100000": 499.98
         },
-        "Flex base": {
-          "50000": 133.99,
-          "100000": 264.99,
-          "150000": 483.99
+        "Flex · standard base": {
+          "50000": 141.99,
+          "100000": 273.99,
+          "150000": 490.99
         },
-        "Legacy": {
+        "Legacy · listed price": {
           "25000": 79.99,
           "50000": 199.99,
           "100000": 239.99
+        },
+        "Direct funded · standard base": {
+          "50000": 283.99
         }
       },
-      "pricingNote": "Futures price varies by selected Rapid Pro, Rapid Daily, Flex or Legacy plan; promotional 'offer' prices and add-on prices excluded. No single price is applicable to this grouped program."
+      "pricingNote": "Exact model matters. Base and offer prices shown separately. Rapid Pro, Rapid Daily, Flex, Legacy and Direct have different funded conditions; a fee does not verify the entire model.",
+      "offerVariantsUSD": {
+        "Rapid Pro / Rapid Daily · current offer": {
+          "25000": 79.99,
+          "50000": 169.99,
+          "100000": 279.99
+        },
+        "Rapid Pro / Rapid Daily + addon · current offer": {
+          "25000": 59.99,
+          "50000": 129.99,
+          "100000": 229.99
+        },
+        "Flex · first two purchases": {
+          "50000": 74.99,
+          "100000": 144.99,
+          "150000": 259.99
+        },
+        "Flex · third and later": {
+          "50000": 84.99,
+          "100000": 159.99,
+          "150000": 289.99
+        },
+        "Direct · current offer": {
+          "50000": 169.99
+        }
+      }
     },
     "tradeify-growth": {
       "status": "reviewed-partial",
