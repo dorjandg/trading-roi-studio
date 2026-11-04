@@ -68,7 +68,7 @@ table{width:100%;border-collapse:collapse;text-align:left;min-width:550px}th,td{
 <script>window.FOUR_DS_CLOUD_ENDPOINT = "https://script.google.com/macros/s/AKfycbyZW792ZLBPxusQwthCJr0bVdZwCjXyeNaklq4Dk-BuSQ8P9gdg2zdTiWFKEmYuy5sY9Q/exec";</script>
 <script src="cloud-bootstrap.js?v=4ds-auto-first-20261104-a"></script>
 <script>window.FOUR_DS_BOOTSTRAP = window.FOUR_DS_BOOTSTRAP || Promise.resolve('bootstrap-script-unavailable');</script>
-</head>
+<style>.overview-account-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}@media(max-width:720px){.overview-account-grid{grid-template-columns:1fr}}</style></head>
 <body>
 <div class="shell">
 <header class="top">
@@ -151,7 +151,7 @@ table{width:100%;border-collapse:collapse;text-align:left;min-width:550px}th,td{
   <div class="panel" style="margin-top:19px"><div class="panel-header"><div><h2>Simulation results</h2><p>Estimated pass rates, trade counts and risk exhaustion from the latest simulation. Winning profits are already shown inside each phase above.</p></div></div><div id="simResults" class="notice">Run the simulation to estimate stage pass rates and average trade counts.</div></div>
 </div>
 </section>
-<section id="page-dashboard" class="page active"><div class="notice" style="margin-bottom:14px"><strong>Where to edit:</strong> Account settings, rules, win rate, RR and payouts → <button class="btn small primary" data-nav="firms">Prop firms</button>. Investment budget and account count → <button class="btn small" data-nav="scaling">Investments & ROI</button>. This Overview shows calculated results.</div><div class="panel" style="margin-bottom:14px"><div class="panel-header"><div><h2>Overview account</h2><p>Select the prop-firm program and account size. All Overview figures use the selected account's saved parameters.</p></div></div><div class="formgrid"><div class="field"><label for="overviewAccountSelect">Account to display</label><select id="overviewAccountSelect"><option value="">Loading accounts…</option></select></div><div class="field" style="justify-content:end"><label>Account settings</label><button class="btn" type="button" data-nav="firms">Edit selected account in Prop firms</button></div></div><p class="caption" id="overviewAccountHint" style="margin-top:10px">Choose an account to load its trading rules, risk settings, payout assumptions and ROI.</p></div><div id="activeAccountProfile" class="notice" style="margin-bottom:12px"></div>
+<section id="page-dashboard" class="page active"><div class="notice" style="margin-bottom:14px"><strong>Where to edit:</strong> Account settings, rules, win rate, RR and payouts → <button class="btn small primary" data-nav="firms">Prop firms</button>. Investment budget and account count → <button class="btn small" data-nav="scaling">Investments & ROI</button>. This Overview shows calculated results.</div><div class="panel" style="margin-bottom:14px"><div class="panel-header"><div><h2>Overview account</h2><p>Select the prop-firm program and account size. All Overview figures use the selected account's saved parameters.</p></div></div><div class="formgrid overview-account-grid"><div class="field"><label for="overviewFirmSelect">1. Prop firm</label><select id="overviewFirmSelect"><option value="">Loading firms…</option></select></div><div class="field"><label for="overviewSizeSelect">2. Account amount</label><select id="overviewSizeSelect"><option value="">Choose amount</option></select></div><div class="field"><label for="overviewProgramSelect">3. Account type</label><select id="overviewProgramSelect"><option value="">Choose account type</option></select></div></div><div style="margin-top:12px"><button class="btn small" type="button" data-nav="firms">Edit selected account in Prop firms</button></div><p class="caption" id="overviewAccountHint" style="margin-top:10px">Choose an account to load its trading rules, risk settings, payout assumptions and ROI.</p></div><div id="activeAccountProfile" class="notice" style="margin-bottom:12px"></div>
   <div class="hero">
     <div class="hero-main"><div class="eyebrow"><span class="dot"></span> Overview · results from selected account</div><h1>Build the payout.<br><span style="color:var(--green)">Measure the cost.</span></h1><p>View results for the selected Prop Firms account. Edit its trading and payout parameters under Prop firms; compare different investment amounts under Investments & ROI.</p><div class="actionrow" style="margin-top:23px"><button class="btn primary" data-nav="firms">Open account trading settings →</button><button class="btn" data-nav="scaling">Compare investments</button><button class="btn" data-nav="presets">Saved presets</button></div></div>
     <div class="hero-aside"><div><span class="section-tag">Modeled combined payout rate</span><div class="big" id="heroRate">—</div><div class="subline">Phase 1 × Phase 2 × Funded × Collection</div></div><div><span class="tag" id="modeLabel">Manual stage estimates</span><div class="subline" style="margin-top:12px">These are adjustable scenarios, not guaranteed trading returns.</div></div></div>
@@ -714,7 +714,7 @@ function initScenarioTable(){
 function funnelRow(name,value,total){const v=total>0?Math.max(0,Math.min(100,value/total*100)):0;return `<div class="funnel-line"><div class="funnel-head"><span>${name}</span><strong>${value.toFixed(2)}</strong></div><div class="bar-track"><div class="bar-fill" style="width:${v.toFixed(2)}%"></div></div></div>`;}
 function marginForRisk(risk){return positionForRisk(risk).margin;}
 function showWarnings(c){let items=[];if(c.cost>positive(state.budget))items.push(`Planned challenge purchases ${money(c.cost)} exceed the available budget ${money(state.budget)}.`);if(c.unit<=0)items.push('Set a positive challenge price/cost for meaningful ROI.');if(positive(state.dailyLoss)+positive(state.buffer)>positive(state.accountSize))items.push('Daily loss plus buffer exceeds account size.');if(positive(state.overallLoss)+positive(state.buffer)>positive(state.accountSize))items.push('Total loss plus buffer exceeds account size.');if(instrumentReady()&&positionForRisk(state.fundedBase).qty===0)items.push('The funded USD stop loss is too small for the minimum contract/lot with the optional broker settings. Cash simulation does not test executable order size.');if(instrumentReady()&&positive(state.fundedBoost)>0&&marginForRisk(state.fundedBoost)>positive(state.accountSize)*prob(state.marginCeiling))items.push('Full funded boost does not fit your margin ceiling at starting equity; it may fit only after profits.');if(dirtySim&&lastSim)items.push('Strategy parameters changed after the last simulation. Rerun to refresh pass rates.');const box=$('warningBox');if(items.length){box.style.display='block';box.textContent=items.join('  •  ')}else box.style.display='none';}
-function render(){applyPhaseVisibility();const ov=$('overviewAccountSelect');if(ov&&activeProgramKey&&[...ov.options].some(x=>x.value===activeProgramKey))ov.value=activeProgramKey;
+function render(){applyPhaseVisibility();
  const p1=document.querySelector('[data-phase-meta="p1"]'),p2=document.querySelector('[data-phase-meta="p2"]'),fund=document.querySelector('[data-phase-meta="funded"]');
  if(p1)p1.textContent='Profit target: '+money(state.p1Target)+' · Minimum trading days: '+state.p1MinDays+' · Set by selected firm rules above.';
  if(p2)p2.textContent='Profit target: '+money(state.p2Target)+' · Minimum trading days: '+state.p2MinDays+' · Set by selected firm rules above.';
@@ -892,24 +892,52 @@ function useSelectedAccount(x,force=false){
  const simNotice=$('simulationStatus');if(simNotice)simNotice.textContent=selectedAccountSupportsSimulation?'Ready for approximate simulation':'Simulation unavailable for selected challenge';
  const badge=$('activeAccountProfile');if(badge)badge.textContent='Selected account: '+label+' · Personal trading settings saved automatically in this browser.';const ps=$('profileAccountStatus');if(ps)ps.textContent='Active challenge: '+label+' · Profile: '+activeUser+'.';
 }
+let overviewCatalog=null;
+function overviewOption(value,label){const o=document.createElement('option');o.value=value;o.textContent=label;return o;}
+function populateOverviewChoices(changed='all'){
+ const firm=$('overviewFirmSelect'),size=$('overviewSizeSelect'),program=$('overviewProgramSelect'),hint=$('overviewAccountHint');
+ if(!overviewCatalog||!firm||!size||!program)return;
+ const entries=Object.entries(overviewCatalog.programs||{});
+ if(changed==='all'){
+  const firms=[...new Set(entries.map(([,p])=>p.firm))];
+  const active=overviewCatalog.programs?.[String(activeProgramKey||'').split(':')[0]];
+  firm.replaceChildren(...firms.map(f=>overviewOption(f,f)));
+  if(active)firm.value=active.firm;
+ }
+ const matching=entries.filter(([,p])=>p.firm===firm.value);
+ const sizes=[...new Set(matching.flatMap(([,p])=>p.sizes||[]))].sort((a,b)=>a-b);
+ const oldSize=size.value,activeSize=String(activeProgramKey||'').split(':')[1];
+ size.replaceChildren(...sizes.map(n=>overviewOption(String(n),'$'+Number(n).toLocaleString('en-US'))));
+ if(sizes.some(n=>String(n)===oldSize)&&changed==='firm')size.value=oldSize;
+ else if(changed==='all'&&sizes.some(n=>String(n)===activeSize))size.value=activeSize;
+ const matchingPrograms=matching.filter(([,p])=>(p.sizes||[]).some(n=>String(n)===size.value));
+ const oldProgram=program.value,activeProgram=String(activeProgramKey||'').split(':')[0];
+ program.replaceChildren(...matchingPrograms.map(([id,p])=>overviewOption(id,p.name)));
+ if(matchingPrograms.some(([id])=>id===oldProgram)&&changed==='size')program.value=oldProgram;
+ else if(changed==='all'&&matchingPrograms.some(([id])=>id===activeProgram))program.value=activeProgram;
+ if(hint)hint.textContent='Selected: '+firm.value+' · '+(size.selectedOptions[0]?.textContent||'')+' · '+(program.selectedOptions[0]?.textContent||'')+'. Overview uses this account’s saved parameters.';
+}
+function updateOverviewFromActive(){
+ const key=String(activeProgramKey||''),p=overviewCatalog?.programs?.[key.split(':')[0]];
+ if(!p)return;
+ const firm=$('overviewFirmSelect'),size=$('overviewSizeSelect'),program=$('overviewProgramSelect');
+ if(!firm||!size||!program)return;
+ firm.value=p.firm;populateOverviewChoices('firm');
+ size.value=key.split(':')[1];populateOverviewChoices('size');
+ program.value=key.split(':')[0];populateOverviewChoices('program');
+}
 async function syncOverviewAccountSelector(){
- const sel=$('overviewAccountSelect'),hint=$('overviewAccountHint');if(!sel)return;
+ const hint=$('overviewAccountHint');
  try{
   const response=await fetch('prop-firm-rules.json',{cache:'no-store'});if(!response.ok)throw Error('Catalog unavailable');
-  const catalog=await response.json();const options=[];
-  for(const [id,p] of Object.entries(catalog.programs||{})){
-   for(const n of p.sizes||[])options.push({key:id+':'+n,label:p.firm+' · '+p.name+' · $'+Number(n).toLocaleString('en-US')});
-  }
-  sel.replaceChildren(...options.map(x=>{const el=document.createElement('option');el.value=x.key;el.textContent=x.label;return el}));
-  if(activeProgramKey&&options.some(x=>x.key===activeProgramKey))sel.value=activeProgramKey;
-  else sel.selectedIndex=-1;
-  if(hint)hint.textContent=activeProgramKey?'Displaying '+(options.find(x=>x.key===activeProgramKey)?.label||activeProgramKey)+' · All figures use this account’s parameters.':'Choose an account to display its saved parameters.';
+  overviewCatalog=await response.json();populateOverviewChoices('all');
  }catch(e){if(hint)hint.textContent='Account list could not load. Choose an account in Prop firms.'}
 }
-function chooseOverviewAccount(key){
- const [programId,size]=String(key).split(':');const frame=$('firmsFrame');
- if(!programId||!Number.isFinite(Number(size))||!frame?.contentWindow)return;
- frame.contentWindow.postMessage({type:'studio-select-account',programId,size:Number(size)},window.location.origin);
+function chooseOverviewAccount(){
+ const programId=$('overviewProgramSelect')?.value,size=Number($('overviewSizeSelect')?.value);
+ const frame=$('firmsFrame');
+ if(!programId||!Number.isFinite(size)||size<=0||!frame?.contentWindow)return;
+ frame.contentWindow.postMessage({type:'studio-select-account',programId,size},window.location.origin);
 }
 function fitFirmFrame(){
  const frame=$('firmsFrame');
@@ -954,14 +982,16 @@ window.addEventListener('message',event=>{
  const msg=event.data;
  if(msg.type==='studio-rules-height'){requestAnimationFrame(fitFirmFrame);return;}
  if(msg.type==='studio-open-trading-workspace'){$('firmTradingWorkspace').scrollIntoView({behavior:'smooth',block:'start'});return;}
- if(msg.type==='studio-program-change'){useSelectedAccount(msg.payload);const ov=$('overviewAccountSelect');if(ov&&msg.payload?.programId){const key=profileKey(msg.payload.programId,msg.payload.size);if([...ov.options].some(x=>x.value===key))ov.value=key;}return;}
+ if(msg.type==='studio-program-change'){useSelectedAccount(msg.payload);updateOverviewFromActive();return;}
  if(msg.type==='studio-program-rules-updated'){useSelectedAccount(msg.payload,true);window.fourDsQueueCloudSave?.();return;}
  if(msg.type==='studio-user-profile-changed'){window.fourDsQueueCloudSave?.();return;}
  if(msg.type==='studio-program-select'){useSelectedAccount(msg.payload,true);$('firmTradingWorkspace').scrollIntoView({behavior:'smooth',block:'start'});}
 });
 function goPage(name){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id==='page-'+name));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===name));if(name==='firms'){requestAnimationFrame(fitFirmFrame);setTimeout(fitFirmFrame,160)}window.scrollTo({top:0,behavior:'smooth'});}
 makeFields();initSymbols();render();initScenarioTable();setupFirmFit();
-$('overviewAccountSelect').addEventListener('change',()=>chooseOverviewAccount($('overviewAccountSelect').value));
+$('overviewFirmSelect').addEventListener('change',()=>{populateOverviewChoices('firm');chooseOverviewAccount()});
+$('overviewSizeSelect').addEventListener('change',()=>{populateOverviewChoices('size');chooseOverviewAccount()});
+$('overviewProgramSelect').addEventListener('change',()=>{populateOverviewChoices('program');chooseOverviewAccount()});
 syncOverviewAccountSelector();
 const firmFrame=$('firmsFrame');if(firmFrame?.dataset?.src){firmFrame.src=firmFrame.dataset.src;}
 $('activeUserSelect').value=activeUser;$('activeUserSelect').addEventListener('change',()=>{const v=$('activeUserSelect').value;if(!FOUR_DS_USERS.some(u=>u.id===v))return;writeProfile();try{localStorage.setItem(FOUR_DS_ACTIVE,v)}catch(_){}location.reload()});const profileSelect=$('profileUserSelect');profileSelect.value=activeUser;profileSelect.addEventListener('change',()=>{$('activeUserSelect').value=profileSelect.value;$('activeUserSelect').dispatchEvent(new Event('change'));});$('profileAccountStatus').textContent=activeProgramKey?'Active challenge: '+activeProgramKey+' · Settings saved for '+activeUser+'.':'No challenge selected yet for '+activeUser+'. Choose one under Prop firms.';{const el=$('activeAccountProfile');if(el)el.textContent=activeProgramKey?'Saved account profile: '+activeProgramKey+' · Changes to trading parameters are saved automatically on this device.':'No account profile selected. Choose a firm, program and account size in Prop firms.';}
