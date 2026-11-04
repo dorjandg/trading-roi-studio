@@ -260,6 +260,60 @@ html[data-theme="light"] #topstepBudgetBreakdown .tablewrap{background:var(--pan
 }
 html[data-theme="light"] #page-firms .cash-risk-table tbody tr{background:var(--panel)}
 html[data-theme="light"] #page-firms .cash-risk-table td:nth-child(4){background:var(--panel2)}
+</style>
+<style id="studio-mobile-numbers-fix">
+/* Keep financial values indivisible. Only descriptive text may wrap. */
+#page-dashboard .kpi .val,
+#page-dashboard .metric-row strong,
+#page-dashboard .overview-investment-grid strong,
+#page-dashboard #topstepBudgetBreakdown td.num,
+#page-dashboard #topstepBudgetBreakdown th.num,
+#page-dashboard #topstepPipelineFinance td.num,
+#page-dashboard #topstepPipelineFinance th.num,
+#page-dashboard .prob strong,
+#page-dashboard .hero-aside .big,
+#page-scaling td.num,#page-scaling th.num,
+#page-presets td.num,#page-presets th.num,
+.preset-tile .stats b{
+ white-space:nowrap!important;
+ overflow-wrap:normal!important;
+ word-break:normal!important;
+ hyphens:none!important;
+ font-variant-numeric:tabular-nums;
+}
+#page-dashboard .kpi .val{font-size:clamp(18px,2.5vw,32px);letter-spacing:-.7px}
+#page-dashboard .metric-row{min-width:0}
+#page-dashboard .metric-row>div{min-width:0;flex:1 1 auto;overflow-wrap:break-word}
+#page-dashboard .metric-row strong{flex:0 0 auto;max-width:none;font-size:clamp(15px,3.9vw,18px)}
+#page-dashboard .overview-investment-grid strong{font-size:clamp(18px,3.3vw,23px)}
+#page-dashboard .kpis{min-width:0}
+#page-dashboard .kpi{min-width:0}
+@media(max-width:650px){
+ #page-dashboard .kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ #page-dashboard .kpi{padding:13px 11px}
+ #page-dashboard .kpi .val{font-size:clamp(18px,5vw,24px);letter-spacing:-.65px}
+ #page-dashboard .overview-investment-grid strong{font-size:clamp(17px,4.7vw,22px)}
+ #page-dashboard #topstepBudgetBreakdown .tablewrap,
+ #page-dashboard #topstepPipelineFinance .tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+ #page-dashboard #topstepBudgetBreakdown table{min-width:340px!important}
+ #page-dashboard #topstepBudgetBreakdown td.num,#page-dashboard #topstepBudgetBreakdown th.num{font-size:12px}
+ #page-dashboard #topstepPipelineFinance table{min-width:570px!important}
+}
+@media(max-width:420px){
+ #page-dashboard .kpis{grid-template-columns:minmax(0,1fr);gap:9px}
+ #page-dashboard .kpi{padding:13px 15px}
+ #page-dashboard .kpi .val{font-size:clamp(22px,6.8vw,30px)}
+ #page-dashboard .overview-investment-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #page-dashboard .overview-investment-grid strong{font-size:clamp(16px,4.4vw,20px)}
+ #page-dashboard .metric-row{gap:10px}
+ #page-dashboard .metric-row strong{font-size:16px}
+ #page-dashboard .prob strong{font-size:17px}
+}
+@media(max-width:340px){
+ #page-dashboard .overview-investment-grid{grid-template-columns:1fr}
+ #page-dashboard .metric-row{flex-wrap:wrap}
+ #page-dashboard .metric-row strong{width:100%;text-align:left}
+}
 </style></head>
 <body>
 <div class="shell">
