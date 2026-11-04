@@ -152,7 +152,7 @@ table{width:100%;border-collapse:collapse;text-align:left;min-width:550px}th,td{
 </div>
 </section>
 <section id="page-dashboard" class="page active"><div class="notice" style="margin-bottom:14px"><strong>Where to edit:</strong> Account settings, rules, win rate, RR and payouts → <button class="btn small primary" data-nav="firms">Prop firms</button>. Investment budget and account count → <button class="btn small" data-nav="scaling">Investments & ROI</button>. This Overview shows calculated results.</div><div class="panel" style="margin-bottom:14px"><div class="panel-header"><div><h2>Overview account</h2><p>Choose firm, account type and amount. Available amounts depend on the account type; the dashboard updates automatically.</p></div></div><div class="formgrid overview-account-grid"><div class="field"><label for="overviewFirmSelect">1. Prop firm</label><select id="overviewFirmSelect"><option value="">Loading firms…</option></select></div><div class="field"><label for="overviewSizeSelect">2. Account amount</label><select id="overviewSizeSelect"><option value="">Choose amount</option></select></div><div class="field"><label for="overviewProgramSelect">3. Account type</label><select id="overviewProgramSelect"><option value="">Choose account type</option></select></div></div><div style="margin-top:12px"><button class="btn small" type="button" data-nav="firms">Edit selected account in Prop firms</button></div><p class="caption" id="overviewAccountHint" style="margin-top:10px">Choose an account to load its trading rules, risk settings, payout assumptions and ROI.</p></div><div id="activeAccountProfile" class="caption" style="margin:0 0 12px"></div>
-  <div class="panel overview-investment" style="margin-bottom:14px"><div class="panel-header"><div><h2>Investment plan</h2><p>Change either budget or challenge count, then click outside. The other value and all dashboard results update automatically.</p></div></div><div class="overview-investment-grid"><div class="field"><label for="overviewBudget">Available investment budget (USD)</label><input id="overviewBudget" type="number" min="0" step="1" inputmode="decimal"></div><div class="field"><label for="overviewAccounts">Planned challenges (count)</label><input id="overviewAccounts" type="number" min="0" step="1" inputmode="numeric"></div><div class="field"><label>Cost per challenge</label><strong id="overviewUnitCost">—</strong></div><div class="field"><label>Affordable challenges</label><strong id="overviewAffordable">—</strong></div></div><div id="overviewBudgetStatus" class="caption" style="margin-top:12px"></div><button type="button" class="btn small" id="overviewFitBudget" style="margin-top:10px">Use affordable challenge count</button></div>
+  <div class="panel overview-investment" style="margin-bottom:14px"><div class="panel-header"><div><h2>Investment plan</h2><p>Enter your investment budget. The number of challenges and all results update automatically.</p></div></div><div class="overview-investment-grid"><div class="field"><label for="overviewBudget">Available investment budget (USD)</label><input id="overviewBudget" type="number" min="0" step="1" inputmode="decimal"></div><div class="field"><label>Challenges covered by budget</label><strong id="overviewDerivedCount">—</strong></div><div class="field"><label>Cost per challenge</label><strong id="overviewUnitCost">—</strong></div><div class="field"><label>Affordable challenges</label><strong id="overviewAffordable">—</strong></div></div><div id="overviewBudgetStatus" class="caption" style="margin-top:12px"></div></div>
   <div class="overview-summary-strip"><div><span class="section-tag">Modeled payout probability</span><strong id="heroRate">—</strong><span class="caption" id="overviewStageFormula">Selected account stages × payout collection</span></div><div class="overview-summary-actions"><span class="tag" id="modeLabel">Manual stage estimates</span><button class="btn small" id="overviewSimulate">Run trading simulation</button><button class="btn small" data-nav="firms">Edit trading settings</button><button class="btn small" data-nav="scaling">Compare investments</button></div></div>
   <div class="notice" id="overviewModelStatus" style="margin-bottom:14px" role="status"></div>
   <div class="kpis">
@@ -175,7 +175,7 @@ table{width:100%;border-collapse:collapse;text-align:left;min-width:550px}th,td{
 
 <section id="page-scaling" class="page">
 <div class="notice" style="margin-bottom:16px"><strong>Account source:</strong> <span id="investmentAccountSource">Select an account in Prop firms</span>. Challenge price, probabilities, payout terms and trading assumptions come from that account. Change the investment budget or number of challenges below; results update throughout the dashboard. <button class="btn small" data-nav="firms" type="button">Edit account settings</button></div>
-      <div class="panel"><div class="panel-header"><div><h2>Investment amount & number of challenges</h2><p>Budget and number of challenges are investment-only inputs. Challenge purchase price is linked to the selected Prop Firms account.</p></div><span class="section-tag">01 / Investment</span></div><div id="quickFields" class="formgrid"></div><div class="actionrow" style="margin-top:16px"><button class="btn small" id="useBudget">Buy as many as budget supports</button><button class="btn small" id="resetQuick">Reset investment values</button></div></div>
+      <div class="panel"><div class="panel-header"><div><h2>Investment amount & number of challenges</h2><p>Budget and number of challenges are investment-only inputs. Challenge purchase price is linked to the selected Prop Firms account.</p></div><span class="section-tag">01 / Investment</span></div><div id="quickFields" class="formgrid"></div><div class="actionrow" style="margin-top:16px"><button class="btn small" id="resetQuick">Reset investment values</button></div></div>
 
   <div class="panel" id="scenarioLab" style="margin-bottom:20px">
     <div class="panel-header">
@@ -283,7 +283,7 @@ p2Target:500,p2Base:200,p2Recovery:200,p2DailyCap:2,p2Days:24,p2MinDays:4,
 fundedBase:250,fundedRecovery:200,fundedBoost:500,boostUnlock:750,fundedDailyCap:3,fundedDays:20,
  symbolId:'XAUUSD',customSymbol:'',symbolSpecs:{},rrByTier:{}};
 const FIELDS={
- quickFields:[['budget','Investment budget','USD',1],['accounts','Challenges to purchase','count',1],['price','Challenge price — from Prop firms','USD',1],['extraCost','Additional cost per challenge','USD',1]],
+ quickFields:[['budget','Investment budget','USD',1],['price','Challenge price — from Prop firms','USD',1],['extraCost','Additional cost per challenge','USD',1]],
  probFields:[['p1','Phase 1 pass rate','%',.1],['p2','Phase 2 pass rate','%',.1],['pf','Funded target hit','%',.1],['pc','Payout collected if eligible','%',.1]],
  performanceFields:[['winRate','Trade win rate','%',.5],['weeklySignals','Trade ideas available / week','count',1],['simulations','Trials per phase','count',100],['randomSeed','Repeatable random seed','count',1],['tradeCost','Cost per executed trade','USD',.25]],
  safetyFields:[['buffer','Risk reserve / buffer','USD',5],['marginCeiling','Maximum margin utilization','%',1],['minRisk','Minimum planned stop loss / trade','USD',1]],
@@ -489,7 +489,7 @@ function makeFields(){for(const [target,fields] of Object.entries(FIELDS)){const
  render();}));}
 function syncControls(){document.querySelectorAll('[data-field]').forEach(el=>el.value=state[el.dataset.field]);renderSymbolControls();}
 function applyPreset(wr){state.winRate=wr;if(wr===40){state.p1=70.3;state.p2=82.5;state.pf=65.5;}else{state.p1=83.1;state.p2=92.3;state.pf=87.6;}mode='manual';lastSim=null;dirtySim=false;save();syncControls();render();notify(`Loaded ${wr}% WR model preset. These are planning assumptions, not verified probabilities.`);}
-function calc(count=state.accounts,mirror=state.mirror){count=Math.max(1,Math.floor(count));mirror=Math.max(1,Math.floor(mirror));const unit=positive(state.price)+positive(state.extraCost), cost=count*unit;
+function calc(count=state.accounts,mirror=state.mirror){count=Math.max(0,Math.floor(count));mirror=Math.max(1,Math.floor(mirror));const unit=positive(state.price)+positive(state.extraCost), cost=count*unit;
  const pass=(phaseModel().phase1?prob(state.p1):1)*phase2Rate()*prob(state.pf)*prob(state.pc);
  const rewardBase=positive(state.profitTarget)*prob(state.split);const reward=Math.max(0,rewardBase*(1-prob(state.payoutPct))-positive(state.payoutFixed));const refund=positive(state.price)*prob(state.refund);
  const successes=count*pass;const receipts=successes*(reward+refund);const net=receipts-cost;const roi=cost>0?net/cost:0;
@@ -713,20 +713,24 @@ function initScenarioTable(){
 function funnelRow(name,value,total){const v=total>0?Math.max(0,Math.min(100,value/total*100)):0;return `<div class="funnel-line"><div class="funnel-head"><span>${name}</span><strong>${value.toFixed(2)}</strong></div><div class="bar-track"><div class="bar-fill" style="width:${v.toFixed(2)}%"></div></div></div>`;}
 function marginForRisk(risk){return positionForRisk(risk).margin;}
 function showWarnings(c){let items=[];if(c.cost>positive(state.budget))items.push(`Planned challenge purchases ${money(c.cost)} exceed the available budget ${money(state.budget)}.`);if(c.unit<=0)items.push('Set a positive challenge price/cost for meaningful ROI.');if(positive(state.dailyLoss)+positive(state.buffer)>positive(state.accountSize))items.push('Daily loss plus buffer exceeds account size.');if(positive(state.overallLoss)+positive(state.buffer)>positive(state.accountSize))items.push('Total loss plus buffer exceeds account size.');if(instrumentReady()&&positionForRisk(state.fundedBase).qty===0)items.push('The funded USD stop loss is too small for the minimum contract/lot with the optional broker settings. Cash simulation does not test executable order size.');if(instrumentReady()&&positive(state.fundedBoost)>0&&marginForRisk(state.fundedBoost)>positive(state.accountSize)*prob(state.marginCeiling))items.push('Full funded boost does not fit your margin ceiling at starting equity; it may fit only after profits.');if(dirtySim&&lastSim)items.push('Strategy parameters changed after the last simulation. Rerun to refresh pass rates.');const box=$('warningBox');if(items.length){box.style.display='block';box.textContent=items.join('  •  ')}else box.style.display='none';}
-function render(){applyPhaseVisibility();
+function deriveBudgetAccounts(){
+ const unit=positive(state.price)+positive(state.extraCost);
+ state.accounts=unit>0?Math.max(0,Math.min(1000,Math.floor(positive(state.budget)/unit))):0;
+}
+function render(){deriveBudgetAccounts();applyPhaseVisibility();
  const p1=document.querySelector('[data-phase-meta="p1"]'),p2=document.querySelector('[data-phase-meta="p2"]'),fund=document.querySelector('[data-phase-meta="funded"]');
  if(p1)p1.textContent='Profit target: '+money(state.p1Target)+' · Minimum trading days: '+state.p1MinDays+' · Set by selected firm rules above.';
  if(p2)p2.textContent='Profit target: '+money(state.p2Target)+' · Minimum trading days: '+state.p2MinDays+' · Set by selected firm rules above.';
  if(fund)fund.textContent='Funded payout eligibility depends on the selected firm. The payout planning target below is an estimate, not an official payout rule.';
 if(scenarioRows?.length)for(const row of scenarioRows)updateScenarioMetrics(row);const src=$('investmentAccountSource');if(src)src.textContent=activeProgramKey||'No account selected — sample defaults in use';const c=calc();const model=phaseModel();const unsupportedModel=!selectedAccountSupportsSimulation;const payoutUnsupported=model.topstep;const affordable=c.unit>0?Math.max(0,Math.floor(positive(state.budget)/c.unit)):0;
- const budgetInput=$('overviewBudget'),countInput=$('overviewAccounts');
+ const budgetInput=$('overviewBudget');
  if(budgetInput&&document.activeElement!==budgetInput)budgetInput.value=state.budget;
- if(countInput&&document.activeElement!==countInput)countInput.value=state.accounts;
+ $('overviewDerivedCount').textContent=String(state.accounts);
  $('overviewUnitCost').textContent=money(c.unit);
  $('overviewAffordable').textContent=String(affordable);
- $('overviewFitBudget').disabled=affordable<1||state.accounts===affordable;
+
  const budgetStatus=$('overviewBudgetStatus');
- budgetStatus.textContent=c.cost>state.budget?'Over budget by '+money(c.cost-state.budget)+'. Expected profits below are for '+state.accounts+' PLANNED challenges, not the '+affordable+' you can currently afford.':state.accounts+' planned challenges cost '+money(c.cost)+'; '+money(state.budget-c.cost)+' remains available.';
+ budgetStatus.textContent=c.unit<=0?'A valid challenge fee is needed to calculate the account count.':state.accounts===0?'Your budget cannot purchase one challenge at '+money(c.unit)+' each.':state.accounts+' challenges × '+money(c.unit)+' = '+money(c.cost)+' invested; '+money(Math.max(0,state.budget-c.cost))+' unspent.';
  budgetStatus.style.color=c.cost>state.budget?'#f5b76c':'';
  $('heroRate').textContent=payoutUnsupported?'Not modeled':pct(c.pass);
  $('modeLabel').textContent=payoutUnsupported?'Topstep payout model unavailable':mode==='simulation'?(dirtySim?'Simulation out of date':'Illustrative strategy simulation'):'Manual stage estimates';
@@ -1037,31 +1041,13 @@ function goPage(name){if(name==='firms')overviewRequestedKey=null;document.query
 makeFields();initSymbols();render();initScenarioTable();setupFirmFit();
  // Bidirectional investment planner: commit changes only when leaving the field.
  // Budget -> maximum whole challenges affordable; challenges -> exact required budget.
- function commitOverviewInvestment(source){
-  const budget=$('overviewBudget'),count=$('overviewAccounts');
-  const el=source==='budget'?budget:count;
-  const value=Number(el.value);
-  const unit=positive(state.price)+positive(state.extraCost);
-  if(el.value.trim()===''||!Number.isFinite(value)||value<0||!Number.isFinite(unit)||unit<=0){
-   budget.value=state.budget;count.value=state.accounts;return;
-  }
-  if(source==='budget'){
-   state.budget=value;
-   state.accounts=Math.floor(value/unit);
-  }else{
-   state.accounts=Math.max(0,Math.floor(value));
-   state.budget=Math.round(state.accounts*unit*100)/100;
-  }
-  budget.value=state.budget;count.value=state.accounts;
-  save();render();
- }
- $('overviewBudget').addEventListener('change',()=>commitOverviewInvestment('budget'));
- $('overviewAccounts').addEventListener('change',()=>commitOverviewInvestment('accounts'));
+ const budgetEl=$('overviewBudget');
+ budgetEl.addEventListener('input',()=>{if(budgetEl.value.trim()==='')return;const v=Number(budgetEl.value);if(!Number.isFinite(v)||v<0)return;state.budget=v;deriveBudgetAccounts();save();render();});
+ budgetEl.addEventListener('change',()=>{if(budgetEl.value.trim()==='')budgetEl.value=state.budget;render();});
  $('overviewSimulate').addEventListener('click',()=>{
  if(!selectedAccountSupportsSimulation){goPage('firms');return;}
  runSimulation();
 });
- $('overviewFitBudget').addEventListener('click',()=>{const unit=positive(state.price)+positive(state.extraCost),n=unit>0?Math.floor(positive(state.budget)/unit):0;if(n<1)return;state.accounts=n;save();render()});
 
 $('overviewFirmSelect').addEventListener('change',()=>{populateOverviewChoices('firm');chooseOverviewAccount()});
 $('overviewSizeSelect').addEventListener('change',()=>{populateOverviewChoices('size');chooseOverviewAccount()});
@@ -1074,8 +1060,7 @@ const firmFrame=$('firmsFrame');if(firmFrame){
 $('activeUserSelect').value=activeUser;$('activeUserSelect').addEventListener('change',()=>{const v=$('activeUserSelect').value;if(!FOUR_DS_USERS.some(u=>u.id===v))return;writeProfile();try{localStorage.setItem(FOUR_DS_ACTIVE,v)}catch(_){}location.reload()});const profileSelect=$('profileUserSelect');profileSelect.value=activeUser;profileSelect.addEventListener('change',()=>{$('activeUserSelect').value=profileSelect.value;$('activeUserSelect').dispatchEvent(new Event('change'));});$('profileAccountStatus').textContent=activeProgramKey?'Active challenge: '+activeProgramKey+' · Settings saved for '+activeUser+'.':'No challenge selected yet for '+activeUser+'. Choose one under Prop firms.';{const el=$('activeAccountProfile');if(el)el.textContent=activeProgramKey?'Saved account profile: '+activeProgramKey+' · Changes to trading parameters are saved automatically on this device.':'No account profile selected. Choose a firm, program and account size in Prop firms.';}
 document.querySelectorAll('[data-page]').forEach(el=>el.addEventListener('click',()=>goPage(el.dataset.page)));document.querySelectorAll('[data-nav]').forEach(el=>el.addEventListener('click',()=>goPage(el.dataset.nav)));
 $('preset40').addEventListener('click',()=>applyPreset(40));$('preset50').addEventListener('click',()=>applyPreset(50));$('simulate').addEventListener('click',()=>{const b=$('simulate');if(!selectedAccountSupportsSimulation){notify('Choose a challenge supported by the evaluation simulator.');return;}b.disabled=true;b.classList.add('is-calculating');b.textContent='Calculating…';setTimeout(()=>{try{runSimulation();}catch(e){console.error(e);notify('Simulation error: check your inputs.');}b.textContent='Run strategy simulation';b.classList.remove('is-calculating');updateSimulationAvailability();},25);});
-$('useManual').addEventListener('click',()=>{mode='manual';lastSim=null;dirtySim=false;render();notify('Manual pass-rate mode enabled.');});$('useBudget').addEventListener('click',()=>{const unit=positive(state.price)+positive(state.extraCost);if(unit>0){state.accounts=Math.max(1,Math.min(1000,Math.floor(state.budget/unit)));save();syncControls();render();}});
-$('resetQuick').addEventListener('click',()=>{for(const k of ['budget','accounts','extraCost'])state[k]=DEFAULT[k];save();syncControls();render();});
+$('useManual').addEventListener('click',()=>{mode='manual';lastSim=null;dirtySim=false;render();notify('Manual pass-rate mode enabled.');});$('resetQuick').addEventListener('click',()=>{for(const k of ['budget','extraCost'])state[k]=DEFAULT[k];save();syncControls();render();});
 $('exportTop').addEventListener('click',exportSettings);$('exportSettings').addEventListener('click',exportSettings);$('importSettings').addEventListener('click',()=>$('importFile').click());$('importFile').addEventListener('change',e=>{importSettings(e.target.files[0]);e.target.value='';});$('exportCSV').addEventListener('click',exportCSV);$('copySummary').addEventListener('click',copySummary);
 $('resetAll').addEventListener('click',()=>{if(!confirm('Reset all settings to the original FTMO Set 1 defaults?'))return;state={...DEFAULT};mode='manual';lastSim=null;dirtySim=false;save();syncControls();render();notify('Defaults restored.');});
 
