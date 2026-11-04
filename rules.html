@@ -6,6 +6,17 @@ function notifyProfileSaved(){if(window.parent!==window){window.parent.postMessa
 const USER_KEY='4ds:active-user:v1';const USERS=['doen','dori','dona','dion'];let selected4D='dori';try{const u=localStorage.getItem(USER_KEY);if(USERS.includes(u))selected4D=u}catch(_){}const userStoreKey=k=>'4ds:v1:'+selected4D+':'+k;
 let library,chosen;let restoringSelection=false;const LAST_SELECT_KEY=userStoreKey('studio-last-selected-challenge-v1');
 function sendParentSelection(type='studio-program-change'){if(window.parent===window||!chosen||restoringSelection)return;const p=chosen.p,n=chosen.n,r=effectiveRules();const payload={v:1,programId:e('program').value,label:p.firm+' '+p.name+' '+cash(n),size:n,compatible:p.compatible===true,targets:[r.target1,r.target2],days:[r.days1,r.days2],daily:r.daily,max:r.max,maxLossUSD:p.firm==='Topstep'?({50000:2000,100000:3000,150000:4500})[n]:null,phaseCount:p.targets.length,feeUSD:Number(e('purchasePrice')?.value)||Number(p.pricesUSD?.[n])||0,trading:getPrefs()};window.parent.postMessage({type,payload},window.location.origin)}
+window.addEventListener('message',event=>{
+ if(event.origin!==window.location.origin||event.source!==window.parent||event.data?.type!=='studio-select-account')return;
+ const {programId,size}=event.data;
+ const p=library?.programs?.[programId];if(!p||!p.sizes.includes(Number(size)))return;
+ restoringSelection=true;
+ e('firm').value=p.firm;selectFirm();
+ e('program').value=programId;selectProgram();
+ e('size').value=String(size);
+ restoringSelection=false;
+ render();
+});
 function sendParentHeight(){if(window.parent!==window){const wrap=document.querySelector('.wrap');if(!wrap)return;const height=Math.ceil(wrap.getBoundingClientRect().height);window.parent.postMessage({type:'studio-rules-height',height},window.location.origin)}}
 
 
