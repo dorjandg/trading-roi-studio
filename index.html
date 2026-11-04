@@ -1149,7 +1149,7 @@ if(scenarioRows?.length)for(const row of scenarioRows)updateScenarioMetrics(row)
   }
  $('scenarioNote').textContent=mode==='simulation'?(dirtySim?'Simulation estimates may be stale. Rerun after editing trading rules.':'Stage rates derived from simplified Monte Carlo paths. Payout collection remains a manual assumption.'):'These pass rates are manual planning estimates, including prior illustrative 40%/50% presets—not verified live account success rates.';
  $('marginNotice').textContent=instrumentReady()?instrumentLabel()+' · Planned funded base '+money(state.fundedBase)+' → estimated margin '+money(marginForRisk(state.fundedBase))+'; boost '+money(state.fundedBoost)+' → estimated margin '+money(marginForRisk(state.fundedBoost))+'. Starting-equity margin ceiling: '+money(state.accountSize*prob(state.marginCeiling))+'. Actual broker/exchange margin may differ.':'Planned initial stop-loss risk: Phase 1 '+money(state.p1Base)+'; Phase 2 '+money(state.p2Base)+'; Funded '+money(state.fundedBase)+'. Dollar-risk simulation works without contract settings; executable lot size and broker margin are not yet checked.';renderSymbolSummary();
- renderScaling();showWarnings(c);if(lastSim)renderSim();else{$('simResults').className='notice';$('simResults').textContent='Run the USD stop-loss simulation for illustrative stage pass rates. Contract sizing and broker margin are not modeled.';}renderPresetLibrary();}
+ renderScaling();showWarnings(c);if(lastSim)renderSim();else{$('simResults').className='notice';$('simResults').textContent='Run the USD stop-loss simulation for illustrative stage pass rates. Contract sizing and broker margin are not modeled.';}renderPresetLibrary();scheduleAutomaticEstimate();}
 function renderScaling(){const budgets=[250,500,1000,2000,4000,8000,16000];const c=calc();const unit=c.unit;const selected=positive(state.budget);if(!budgets.includes(selected))budgets.push(selected);budgets.sort((x,y)=>x-y);
  $('budgetRows').innerHTML=budgets.map(b=>{const n=unit>0?Math.floor(b/unit):0;if(n<=0)return `<tr><td>${money(b)}</td><td colspan="6" class="subtle">Budget below one challenge</td></tr>`;const x=calc(Math.min(n,1000));return `<tr><td>${money(b)}</td><td class="num">${x.count}</td><td class="num">${money(x.cost)}</td><td class="num">${x.successes.toFixed(2)}</td><td class="num ${x.net>=0?'green':'red'}">${money(x.net)}</td><td class="num">${pct(x.roi)}</td><td class="num">${pct(x.chance(4))}</td></tr>`;}).join('');
  $('mirrorRows').innerHTML=[1,2,3,4,5].map(m=>{const x=calc(state.accounts,m);return `<tr><td>${m} account${m===1?'':'s'} / signal ${m===state.mirror?'<span class="tag">selected</span>':''}</td><td class="num">${money(x.net)}</td><td class="num">${pct(x.atLeast)}</td><td class="num">${pct(x.chance(3))}</td><td class="num">${pct(x.chance(4))}</td></tr>`;}).join('');}
@@ -1161,7 +1161,8 @@ function mulberry32(seed){let a=seed>>>0;return function(){a=(a+0x6D2B79F5)|0;le
    Intratrade excursion, contract scaling, activation fees and subscriptions
    beyond initial purchase are not modeled. */
 let topstepEstimate=null,topstepSignature='';
-function topstepInputs(){return JSON.stringify([activeProgramKey,state.accountSize,state.winRate,state.weeklySignals,state.tradeCost,state.p1Target,state.p1Days,state.p1DailyCap,state.p1Base,state.p1Recovery,tierRR('p1Base'),tierRR('p1Recovery'),state.fundedBase,state.fundedRecovery,tierRR('fundedBase'),tierRR('fundedRecovery'),state.fundedDays,state.fundedDailyCap,state.simulations,state.randomSeed,state.topstepDLL,state.topstepPath,state.topstepFirstPayoutBalance,topstepReserveFee(),state.price,state.extraCost,state.budget]);}
+let autoEstimateTimer=null,autoEstimatePending='';
+function topstepInputs(){return JSON.stringify([activeProgramKey,state.accountSize,state.winRate,state.weeklySignals,state.tradeCost,state.p1Target,state.p1Days,state.p1DailyCap,state.p1Base,state.p1Recovery,tierRR('p1Base'),tierRR('p1Recovery'),state.fundedBase,state.fundedRecovery,tierRR('fundedBase'),tierRR('fundedRecovery'),state.fundedDays,state.fundedDailyCap,state.simulations,state.randomSeed,state.topstepDLL,state.topstepPath,state.topstepFirstPayoutBalance]);}
 function topstepSimulate(){
  const size=Number(state.accountSize),limit=size===50000?2000:size===100000?3000:size===150000?4500:0;
  if(!limit)return {error:'Choose a Topstep 50K, 100K or 150K account.'};
@@ -1221,9 +1222,27 @@ function refreshTopstepEstimate(){
  if(sig!==topstepSignature){topstepEstimate=null;topstepSignature=sig;}
  return topstepEstimate;
 }
-function runTopstepEstimate(){
+function runTopstepEstimate(silent=false){
+ if(autoEstimateTimer!==null){clearTimeout(autoEstimateTimer);autoEstimateTimer=null;}
+ autoEstimatePending='';
  topstepEstimate=topstepSimulate();topstepSignature=topstepInputs();render();
- if(topstepEstimate.error)notify(topstepEstimate.error);else notify('Topstep Standard two-payout estimate updated.');
+ if(!silent){if(topstepEstimate.error)notify(topstepEstimate.error);else notify('Topstep Standard two-payout estimate updated.');}
+}
+function scheduleAutomaticEstimate(){
+ // Auto-mode for Topstep; other firms preserve manual pass-rate assumptions.
+ if(!phaseModel().topstep||!activeProgramKey||!selectedAccountSupportsSimulation)return;
+ const signature=topstepInputs();
+ if(topstepEstimate&&topstepSignature===signature)return;
+ if(autoEstimateTimer!==null&&autoEstimatePending===signature)return;
+ if(autoEstimateTimer!==null)clearTimeout(autoEstimateTimer);
+ autoEstimatePending=signature;
+ const btn=$('overviewSimulate');if(btn){btn.textContent='Updating estimate…';btn.setAttribute('aria-busy','true');}
+ autoEstimateTimer=setTimeout(()=>{
+  autoEstimateTimer=null;autoEstimatePending='';
+  if(!phaseModel().topstep||topstepInputs()!==signature)return;
+  runTopstepEstimate(true);
+  const button=$('overviewSimulate');if(button)button.removeAttribute('aria-busy');
+ },450);
 }
 function simulateStage(which,rng){const s=state;const size=s.accountSize,overallFloor=size-s.overallLoss,winrate=prob(s.winRate);let balance=size,losses=0,tradeCount=0,daysTraded=0,boostTrades=0;
  const target=which==='p1'?s.p1Target:which==='p2'?s.p2Target:s.profitTarget;
