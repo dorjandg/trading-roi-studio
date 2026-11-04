@@ -120,8 +120,8 @@ function run(){
  return {name:strategy.name,id:strategy.id,median,p10,p90,ruin,goal,payout:quantile(payouts,.5),path:paths.map(p=>quantile(p,.5))};
  });
  const eligible=all.filter(x=>x.ruin<=tolerance);
- const recommended=(eligible.length?eligible:all).slice().sort((a,b)=>b.median-a.median)[0];
- $('strategies').innerHTML=all.map(x=>'<tr class="'+(x.id===recommended.id?'recommended':'')+'"><td><b>'+x.name+'</b>'+(x.id===recommended.id?'<span class="tag">'+(eligible.length?'Best within risk limit':'Lowest constraint unmet')+'</span>':'')+'</td><td class="num">'+money(x.median)+'</td><td class="num">'+money(x.p10)+' / '+money(x.p90)+'</td><td class="num">'+pct(x.goal)+'</td><td class="num '+(x.ruin>.1?'bad':'')+'">'+pct(x.ruin)+'</td><td class="num">'+money(x.payout)+'</td></tr>').join('');
+ const recommended=eligible.length?eligible.slice().sort((a,b)=>b.median-a.median)[0]:all.slice().sort((a,b)=>a.ruin-b.ruin||b.median-a.median)[0];
+ $('strategies').innerHTML=all.map(x=>'<tr class="'+(x.id===recommended.id?'recommended':'')+'"><td><b>'+x.name+'</b>'+(x.id===recommended.id?'<span class="tag">'+(eligible.length?'Best within risk limit':'Closest to risk limit')+'</span>':'')+'</td><td class="num">'+money(x.median)+'</td><td class="num">'+money(x.p10)+' / '+money(x.p90)+'</td><td class="num">'+pct(x.goal)+'</td><td class="num '+(x.ruin>.1?'bad':'')+'">'+pct(x.ruin)+'</td><td class="num">'+money(x.payout)+'</td></tr>').join('');
  $('chosen').textContent=recommended.name;
  $('median').textContent=money(recommended.median);$('median').className=recommended.median>=0?'good':'bad';
  $('goal').textContent=pct(recommended.goal);$('ruin').textContent=pct(recommended.ruin);$('tail').textContent=money(recommended.p10);
