@@ -15,7 +15,38 @@ html[data-theme="light"] .btn{color:#fff}
  try{apply(localStorage.getItem(key))}catch(e){apply('dark')}
  window.addEventListener('message',event=>{if(event.origin!==window.location.origin||event.data?.type!=='studio-theme')return;apply(event.data.theme)});
 })();
-</script><style id="studio-responsive-unified">
+</script>
+<style id="studio-rules-mobile-audit-v2">
+/* Compact, consistent mobile editing for both public rules and personal overrides. */
+html,body{max-width:100%}
+.wrap,.panel,.selectors,.stats,.cols{min-width:0}
+.panel{overflow-wrap:anywhere}
+.selectors>*,.stats>*,.cols>*{min-width:0}
+select,input,textarea{width:100%;max-width:100%;min-width:0;box-sizing:border-box}
+.stat b,.item strong{overflow-wrap:anywhere}
+@media(max-width:650px){
+ .wrap{padding:10px 12px 24px}
+ .panel{padding:15px;margin-bottom:13px}
+ header{gap:8px}
+ .eyebrow{font-size:10px;letter-spacing:1px}
+ .selectors{grid-template-columns:1fr;gap:12px}
+ .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .cols{grid-template-columns:1fr}
+ details{padding:12px;margin-top:14px}
+ summary{min-height:32px}
+ .btn{min-height:44px}
+ .item{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:8px}
+ .item strong{max-width:100%;text-align:right}
+ #editableRulesPanel .selectors,#specificRuleFields{grid-template-columns:1fr}
+}
+@media(max-width:365px){
+ .stats{gap:8px}
+ .stat{padding:10px}
+ .stat b{font-size:17px}
+ .item{grid-template-columns:1fr}
+ .item strong{text-align:left}
+}
+</style><style id="studio-responsive-unified">
 /* Match the parent studio's cards, controls, typography and mobile rhythm. */
 :root{--studio-radius:14px;--studio-gap:16px;--studio-control-height:44px}
 html{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
