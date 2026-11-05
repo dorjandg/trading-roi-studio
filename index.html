@@ -1642,18 +1642,27 @@ function recoveryPlanPath(outcomes,params){
  for(let i=0;i<outcomes.length;i++){
   if(pnl>=setup.goal-0.005)break;
   if(day===0||tradesToday>=winCap){day++;dayStart=pnl;tradesToday=0}
-  let dailyRoom=daily>0?daily+(pnl-dayStart):Infinity;
-  let totalRoom=staticFloor?overall+pnl:overall;
-  if(staticFloor&&totalRoom<=buffer){fail=true;break}
-  if(dailyRoom<=buffer){day++;dayStart=pnl;tradesToday=0;dailyRoom=daily>0?daily:Infinity}
-  const riskLimit=Math.max(0,Math.min(dailyRoom*.85,staticFloor?totalRoom*.85:totalRoom*.3)-buffer);
+  const dailyRoom=daily>0?daily+(pnl-dayStart):Infinity;
+  // Verify the overall room only for static loss floors. Trailing rules require live equity.
+  const totalRoom=staticFloor&&overall>0?overall+pnl:Infinity;
   const riskSlot=RECOVERY_LEVELS.includes(selected[i])?selected[i]:'r1';
   const intended=positive(riskLevels[riskSlot]);
-  const risk=Math.max(0,Math.min(intended,riskLimit));
-  if(!Number.isFinite(risk)||risk<0.01){
-   items.push({step:i+1,day:days+day,pnl,riskSlot,intended,risk:0,stop:'No usable risk buffer or this risk level is zero'});
+  // Never replace the risk selected by the user with a smaller hidden risk.
+  const reserve=Math.max(0.01,positive(buffer));
+  const dailyLimit=Number.isFinite(dailyRoom)?Math.max(0,dailyRoom-reserve):Infinity;
+  const overallLimit=Number.isFinite(totalRoom)?Math.max(0,totalRoom-reserve):Infinity;
+  const available=Math.min(dailyLimit,overallLimit);
+  if(intended<0.01||!Number.isFinite(intended)){
+   items.push({step:i+1,day:days+day,pnl,riskSlot,intended,risk:0,stop:'Risk '+riskSlot.toUpperCase()+' is zero or invalid.'});
    break;
   }
+  if(intended>available+0.000001){
+   const cause=dailyLimit<=overallLimit?'daily':'overall';
+   items.push({step:i+1,day:days+day,pnl,riskSlot,intended,risk:0,
+    stop:riskSlot.toUpperCase()+' '+recoveryMoney(intended)+' blocked: only '+recoveryMoney(Math.max(0,available))+' remains within the modeled '+cause+' limit after reserve.'});
+   break;
+  }
+  const risk=intended;
   const before=pnl,win=outcomes[i]==='W';
   pnl+=win?risk*rr:-risk;
   tradesToday++;
@@ -1708,7 +1717,7 @@ function renderRecoveryPlanners(){
    const sim=entry.sim;
    if(sim.fail)return 'Loss floor breached';
    if(sim.hit)return sim.days>=setup.minDays?'Profit target hit':'Profit target · days pending';
-   if(sim.items.some(x=>x.stop))return 'No risk room';
+   if(sim.items.some(x=>x.stop))return 'Risk blocked · check limits';
    return 'Still active at horizon';
   };
   const targetCount=entries.filter(x=>x.sim.hit).length,failedCount=entries.filter(x=>x.sim.fail).length;
@@ -1752,7 +1761,7 @@ function renderRecoveryPlanners(){
      '<td class="num">'+recoveryMoney(item.pnl)+'</td>'+
      '<td class="num">'+(item.afterDaily===null?'—':recoveryMoney(item.afterDaily))+'</td>'+
      '<td class="num">'+(item.afterOverall===null?'Verify live floor':recoveryMoney(item.afterOverall))+'</td>'+
-     '<td>'+item.status+(item.consistencyNote?' · '+item.consistencyNote:'')+(item.risk+.005<item.intended?' · Risk capped':'')+'</td></tr>';
+     '<td>'+item.status+(item.consistencyNote?' · '+item.consistencyNote:'')+'</td></tr>';
    }).join('');
    const perDay=new Map();
    for(const trade of trades)perDay.set(trade.day,(perDay.get(trade.day)||0)+1);
@@ -1778,7 +1787,7 @@ function renderRecoveryPlanners(){
   const select=(name,values,current)=>'<select data-recovery-input="'+name+'">'+values.map(([value,label])=>
    '<option value="'+value+'"'+(String(value)===String(current)?' selected':'')+'>'+label+'</option>').join('')+'</select>';
   const options=[['all','All options'],['target','Profit target reached'],['failed','Loss floor breached'],['active','Still active / stalled']];
-  const caution=staticFloor?'Static overall floor: modeled headroom = overall allowance + realized stage P/L. This is not live equity headroom.':'Trailing or stage-dependent overall floor: the broker high-water mark and current equity are not available. Overall buffer and risk caps are illustrative.';
+  const caution=staticFloor?'Static overall floor: modeled headroom = overall allowance + realized stage P/L. This is not live equity headroom.':'Trailing or stage-dependent overall floor: broker high-water mark and current equity are not available. The planner checks modeled daily room but cannot verify trailing overall headroom.';
   host.innerHTML='<details class="recovery-details"><summary>'+setup.name+' · Options to reach the target</summary>'+
    '<h4>Risk &amp; reward · '+setup.name+'</h4><div class="recovery-fields">'+
    '<label>Reward / Risk (RR)<input data-option-rr type="number" min="0.1" max="100" step="0.1" value="'+setup.rr+'"></label>'+
@@ -1793,7 +1802,7 @@ function renderRecoveryPlanners(){
    '<label>Show outcomes'+select('filter',options,filter)+'</label>'+
    '<label>Sort'+select('sortBy',[['fast','Fastest target'],['drawdown','Lowest modeled drawdown']],snapshot.sortBy||'fast')+'</label>'+
    '<label>Show'+select('viewCount',[[8,'Top 8'],[20,'Top 20'],['all','All']],snapshot.viewCount||8)+'</label></div></details>'+
-   '<p class="caption">Every option uses the same risk slots and the same trade table. Default order: R1 first, R2 after one consecutive loss, R3 after two or more losses; a win resets the next trade to R1. Edit any trade’s risk selector inside its option. R3 is not automatically boosted.</p>'+
+   '<p class="caption">Default risk order: R1 first, R2 after one loss, R3 after two or more losses; a win resets to R1. Option-level selectors can override this sequence. The selected risk is used in full or the trade is blocked when the modeled loss allowance and reserve are insufficient.</p>'+
    '<p class="caption">'+setup.name+' · '+setup.rr.toFixed(2)+'R · Target '+recoveryMoney(setup.goal)+' · Starting P/L '+recoveryMoney(pnl)+
     ' · Minimum trading days '+setup.minDays+' · Saved stage trade cap '+setup.dailyCap+' · Winning-day planner cap '+winCap+'.'+(winCap>setup.dailyCap?' Planner wins may exceed the saved stage trade cap; update that setting before live use.':'')+'</p>'+
    '<div class="recovery-stats"><span>Modeled paths <b>'+entries.length+'</b></span><span>Reach target <b>'+targetCount+'</b></span><span>Breach floor <b>'+failedCount+'</b></span><span>Showing <b>'+visible.length+' / '+candidates.length+'</b></span></div>'+
