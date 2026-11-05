@@ -77,6 +77,18 @@ table{width:100%;border-collapse:collapse;text-align:left;min-width:550px}th,td{
 .overview-analysis-card p:last-child{margin-bottom:0}
 @media(max-width:850px){.overview-analysis-grid{grid-template-columns:1fr}}
 @media(max-width:600px){#overviewAnalysisPanel{padding:12px}.overview-analysis-grid{gap:7px}.overview-analysis-card{padding:10px}.overview-analysis-card h3{font-size:12px}.overview-analysis-card p{font-size:11px}}
+.firm-health-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:10px 0}
+.firm-health-card{border:1px solid var(--border);border-radius:10px;padding:12px;min-width:0;background:var(--panel2)}
+.firm-health-card h3{font-size:13px;margin:0 0 4px}
+.firm-health-card p{font-size:11px;line-height:1.45;margin:7px 0;overflow-wrap:anywhere}
+.firm-health-card .firm-health-meta{color:var(--muted)}
+.firm-health-card .firm-health-danger{color:var(--red)}
+.firm-health-card .firm-health-warn{color:var(--amber)}
+.firm-health-card .firm-health-ok{color:var(--green)}
+.firm-health-card .firm-health-tip{color:var(--blue)}
+.firm-health-card .firm-health-info{color:var(--muted)}
+@media(max-width:900px){.firm-health-grid{grid-template-columns:1fr}}
+@media(max-width:600px){#firmHealthPanel{padding:12px}.firm-health-card{padding:10px}.firm-health-card p{font-size:11px}}
 </style>
 <script>window.FOUR_DS_CLOUD_ENDPOINT = "https://script.google.com/macros/s/AKfycbyZW792ZLBPxusQwthCJr0bVdZwCjXyeNaklq4Dk-BuSQ8P9gdg2zdTiWFKEmYuy5sY9Q/exec";</script>
 <script src="cloud-bootstrap.js?v=4ds-auto-first-20261104-a"></script>
@@ -362,6 +374,12 @@ html[data-theme="light"] #page-firms .cash-risk-table td:nth-child(4){background
 </section>
 <section id="page-firms" class="page"><div class="panel" style="padding:0;overflow:hidden"><iframe id="firmsFrame" title="Prop firm account selector and rules" src="about:blank" data-src="rules.html?embedded=1&v=fit-symbols-20261104" loading="eager" style="display:block;width:100%;height:1px;min-height:0;border:0;background:#080d16;overflow:hidden"></iframe></div><div class="notice" id="firmStrategyStatus" style="margin:16px 0">Select a firm, program and account size above to load this account's saved trading parameters.</div>
 <div id="firmTradingWorkspace">
+<section class="panel" id="firmHealthPanel" style="margin-bottom:16px">
+ <div class="panel-header"><div><h2>Parameter Health Check</h2><p class="caption">Checks the selected firm's published drawdown classification and consistency against your separate stage settings. Advisory only.</p></div><span class="section-tag">LIVE PARAMETER REVIEW</span></div>
+ <div id="firmHealthSummary" class="notice">Loading account rules…</div>
+ <div class="firm-health-grid" id="firmHealthStages"></div>
+ <p class="caption" id="firmHealthCaveat">These checks do not verify broker margin, live equity or trading permissions.</p>
+</section>
 <div class="panel" id="symbolPanel" style="margin-bottom:19px">
  <div class="panel-header"><div><div class="eyebrow" style="margin-bottom:6px">Cash-based trade planning</div><h2>Trading stages & order risk — USD</h2>
  <p>Each phase now contains its complete trading plan: order risk, RR, profit target reference, and trade schedule. Only phases applicable to your selected program appear.</p></div>
@@ -1063,7 +1081,7 @@ function deriveBudgetAccounts(){
  const unit=positive(state.price)+positive(state.extraCost)+topstepReserveFee();
  state.accounts=unit>0?Math.max(0,Math.min(1000,Math.floor(positive(state.budget)/unit))):0;
 }
-function render(){syncOverviewProgressMode();if(phaseModel().topstep)state.topstepActivationFee=topstepReserveFee();deriveBudgetAccounts();applyPhaseVisibility();
+function render(){renderFirmHealth();syncOverviewProgressMode();if(phaseModel().topstep)state.topstepActivationFee=topstepReserveFee();deriveBudgetAccounts();applyPhaseVisibility();
  const p1=document.querySelector('[data-phase-meta="p1"]'),p2=document.querySelector('[data-phase-meta="p2"]'),fund=document.querySelector('[data-phase-meta="funded"]');
  if(p1)p1.textContent='Profit target: '+money(state.p1Target)+' · Minimum trading days: '+state.p1MinDays+' · Set by selected firm rules above.';
  if(p2)p2.textContent='Profit target: '+money(state.p2Target)+' · Minimum trading days: '+state.p2MinDays+' · Set by selected firm rules above.';
@@ -1421,6 +1439,71 @@ function presetAction(action,id){const p=presets.find(p=>p.id===id);if(!p)return
 function exportPresetLibrary(){download(JSON.stringify({app:'FTMO ROI Studio',kind:'preset-library',version:2,exportedAt:new Date().toISOString(),presets:presets,current:snapshot()},null,2),'FTMO_ROI_All_Presets_'+new Date().toISOString().slice(0,10)+'.json','application/json');notify('Downloaded backup containing '+presets.length+' presets.');}
 function importPresetLibrary(file){if(!file)return;const reader=new FileReader();reader.onload=()=>{try{const obj=JSON.parse(reader.result);let incoming=Array.isArray(obj.presets)?obj.presets:[];if(!incoming.length&&obj.settings){incoming=[{name:file.name.replace(/\.json$/i,'')||'Imported scenario',settings:obj.settings,mode:obj.mode,simulation:obj.simulation}];}if(!incoming.length&&obj.current?.settings){incoming=[{name:'Imported working scenario',settings:obj.current.settings,mode:obj.current.mode,simulation:obj.current.simulation}];}if(!incoming.length)throw Error('No compatible saved presets found');let added=0;for(const p of incoming){if(p&&p.settings&&typeof p.settings==='object'&&presets.length<250){const now=new Date().toISOString();presets.push({id:newId(),name:String(p.name||'Imported preset').slice(0,100),note:String(p.note||'').slice(0,500),createdAt:p.createdAt||now,updatedAt:now,settings:cleanSettings(p.settings),mode:p.mode==='simulation'?'simulation':'manual',simulation:p.simulation||null});added++;}}writePresetStorage();render();notify('Imported '+added+' preset'+(added===1?'':'s')+'. Existing versions were preserved.');}catch(e){notify('Import failed: choose a FTMO ROI Studio JSON backup.');}};reader.readAsText(file);}
 
+let firmHealthAudit=null;
+function healthDollar(n){return '$'+Number(n).toLocaleString('en-US',{maximumFractionDigits:2})}
+function renderFirmHealth(){
+ const summary=$('firmHealthSummary'),host=$('firmHealthStages'),foot=$('firmHealthCaveat');
+ if(!summary||!host)return;
+ host.replaceChildren();
+ const id=String(activeProgramKey||'').split(':')[0],account=firmHealthAudit?.programs?.[id];
+ if(!id){summary.textContent='Select a prop-firm account to check its Phase 1, Phase 2 and Funded settings.';return}
+ if(!account){summary.textContent=firmHealthAudit?'No matched official audit for this program; cannot validate risk settings.':'Waiting for sourced firm rules…';return}
+ const risk=account.riskStructure||{},loss=account.loss||{},m=phaseModel(),size=Number(state.accountSize);
+ const variant=['variant','stage-dependent'].includes(risk.drawdownKind)||account.status==='requires-variant-selection';
+ const stages=[
+  ...(m.phase1?[{name:m.topstep?'Evaluation / Combine':'Phase 1',keys:['p1Base','p1Recovery'],cap:positive(state.p1DailyCap),goal:positive(state.p1Target),phase:'evaluation'}]:[]),
+  ...(m.phase2?[{name:'Phase 2',keys:['p2Base','p2Recovery'],cap:positive(state.p2DailyCap),goal:positive(state.p2Target),phase:'evaluation'}]:[]),
+  {name:m.topstep?'Funded / XFA':'Funded',keys:['fundedBase','fundedRecovery'],cap:positive(state.fundedDailyCap),goal:positive(state.profitTarget),phase:'funded'}
+ ];
+ const limitFor=(field,pct)=>{const fixed=Number(field?.[size]);return Number.isFinite(fixed)&&fixed>0?fixed:Number(pct)>0?size*Number(pct)/100:null};
+ const dailyLimit=limitFor(loss.dailyUSDBySize,loss.dailyPercent),overallLimit=limitFor(loss.maximumUSDBySize,loss.maximumPercent);
+ const cons=risk.consistency||{},hasNumeric=Number.isFinite(Number(cons.percent))&&cons.percent!==null&&Number(cons.percent)>0;
+ const stageApplies=stage=>hasNumeric&&(cons.stage==='evaluation-and-funded'||(stage.phase==='evaluation'&&cons.stage==='evaluation')||(stage.phase==='funded'&&cons.stage==='funded'));
+ let warnings=0,high=0;
+ for(const stage of stages){
+  const messages=[],risks=stage.keys.map(k=>({key:k,r:positive(state[k]),rr:tierRR(k)})),base=risks[0],recovery=risks[1];
+  const sum=base.r+recovery.r,worst=stage.cap>=2?sum:base.r,win=Math.max(...risks.map(x=>x.r*x.rr));
+  if(!selectedAccountSupportsSimulation)messages.push(['warn','This program is research-only: the model may not match funded-stage restrictions.']);
+  if(variant)messages.push(['warn','Drawdown terms vary by stage or purchased version; confirm the exact variant before sizing.']);
+  if(dailyLimit!==null){
+   if(worst>=dailyLimit){messages.push(['danger','Planned daily losing sequence '+healthDollar(worst)+' meets/exceeds the initial '+healthDollar(dailyLimit)+' daily loss allowance.']);}
+   else if(worst>dailyLimit*.8)messages.push(['warn','Planned daily losing sequence uses '+(100*worst/dailyLimit).toFixed(1)+'% of the daily allowance before fees and gaps.']);
+   else messages.push(['ok','Daily loss budget uses '+(100*worst/dailyLimit).toFixed(1)+'% of initial allowance.']);
+   if(stage.cap>=2&&sum>dailyLimit*.8)messages.push(['warn','Sequential Strategy 1 + Strategy 2 losses leave a small daily buffer.']);
+  }else messages.push(['info','A numeric initial daily loss allowance is unavailable or not applicable for this selected version.']);
+  if(overallLimit!==null){
+   if(Math.max(base.r,recovery.r)>=overallLimit)messages.push(['danger','One trade can consume the full initial maximum-loss allowance.']);
+   else if(worst>overallLimit*.5)messages.push(['warn','Worst planned trading day consumes '+(100*worst/overallLimit).toFixed(1)+'% of initial maximum-loss allowance.']);
+  }else messages.push(['info','Overall loss allowance not available as a verified numeric value; trailing headroom cannot be guaranteed.']);
+  let consistencyThreshold=null;
+  if(stageApplies(stage)&&stage.goal>0){
+   consistencyThreshold=stage.goal*Number(cons.percent)/100;
+   const dailyWin=stage.cap>=2?Math.max(win,base.r*base.rr+recovery.r*recovery.rr):base.r*base.rr;
+   if(dailyWin>=consistencyThreshold)messages.push(['warn','Potential winning day '+healthDollar(dailyWin)+' meets/exceeds '+Number(cons.percent)+'% of '+healthDollar(stage.goal)+' target ('+healthDollar(consistencyThreshold)+'). This can increase target or delay qualification.']);
+   else messages.push(['ok','Potential winning-day reference '+healthDollar(dailyWin)+' is below '+healthDollar(consistencyThreshold)+'. Multiple trades, fees and profit history still matter.']);
+  }else if(hasNumeric)messages.push(['info','Consistency '+cons.percent+'% applies to '+cons.stage+'; no fixed '+stage.name+' daily cap can be calculated from the available stage target.']);
+  else messages.push(['info','No universal numeric consistency limit confirmed for this stage.']);
+  const plannedCap=dailyLimit!==null?Math.max(0,dailyLimit*.8-(stage.cap>=2?recovery.r:0)):null;
+  const overallCap=overallLimit!==null?overallLimit*.25:null;
+  const consistencyCap=consistencyThreshold!==null&&base.rr>0?consistencyThreshold/base.rr:null;
+  const candidates=[plannedCap,overallCap,consistencyCap].filter(x=>x!==null&&Number.isFinite(x));
+  if(candidates.length){
+   const suggested=Math.max(0,Math.min(...candidates));
+   messages.push(['tip','Conservative Strategy 1 test: risk up to '+healthDollar(suggested)+' using an 80% initial daily-loss budget, 25% initial overall-loss budget'+(consistencyCap!==null?' and best-day reference':'')+'. Not an approved lot size or guaranteed-safe risk.']);
+  }
+  if(stage.cap===1&&recovery.r>0)messages.push(['info','Daily trade cap is one: Strategy 2 cannot execute on the same day under this plan.']);
+  if(base.r<=0||base.rr<=0)messages.push(['warn','Set a positive Strategy 1 risk and reward/risk before using this estimate.']);
+  const card=document.createElement('article');card.className='firm-health-card';
+  const heading=document.createElement('h3');heading.textContent=stage.name;card.append(heading);
+  const brief=document.createElement('p');brief.className='firm-health-meta';brief.textContent='S1 '+healthDollar(base.r)+' @ '+base.rr.toFixed(2)+'R · S2 '+healthDollar(recovery.r)+' @ '+recovery.rr.toFixed(2)+'R · daily max '+stage.cap+' trades';card.append(brief);
+  for(const [level,message]of messages){if(level==='danger')high++;else if(level==='warn')warnings++;const p=document.createElement('p');p.className='firm-health-'+level;p.textContent=(level==='danger'?'HIGH RISK · ':level==='warn'?'Review · ':level==='tip'?'Suggestion · ':'')+message;card.append(p)}
+  host.append(card);
+ }
+ const classification=String(risk.drawdownKind||'unknown').replaceAll('-',' ');
+ summary.textContent=(high?high+' high-risk alert(s) · ':'')+warnings+' review warning(s) · '+stages.length+' stages checked · '+classification+' drawdown. '+(variant?'Variant confirmation required.':risk.updateRule||'');
+ foot.textContent='Advisory only: consistency is a share of cumulative/cycle profits, not a fixed daily cash ceiling. Initial loss allowances are not live headroom. Trailing floors, high-water marks, spread, commission, slippage, contract caps, news and withdrawal rules need separate validation. No settings are automatically changed.';
+}
+fetch('prop-firm-official-audit.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Audit HTTP '+r.status);return r.json()}).then(x=>{firmHealthAudit=x;renderFirmHealth()}).catch(()=>{const el=$('firmHealthSummary');if(el)el.textContent='Official risk audit unavailable. Parameters cannot be verified.'});
 let selectedAccountSupportsSimulation=true;
 function useSelectedAccount(x,force=false){
  if(!x||x.v!==1||!x.programId||!Number.isFinite(Number(x.size))||Number(x.size)<=0)return;
