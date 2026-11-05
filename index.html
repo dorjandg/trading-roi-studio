@@ -1621,7 +1621,7 @@ function plannerOptionSequence(snapshot,path){
 }
 function recoveryPlanPath(outcomes,params){
  const {setup,initialPnl,completedDays,overall,daily,buffer,staticFloor,consistencyPct}=params;
- const winCap=Math.max(1,Math.min(10,Math.floor(Number(params.winCap)||1),setup.dailyCap));
+ const winCap=Math.max(1,Math.min(10,Math.floor(Number(params.winCap)||1)));
  const riskLevels=params.riskLevels||{r1:setup.base,r2:setup.recovery||setup.base,r3:setup.recovery||setup.base};
  const selected=params.riskSequence||plannerDefaultSequence(outcomes.join(''));
  let pnl=initialPnl,days=completedDays,day=0,dayStart=initialPnl,tradesToday=0,fail=false;
@@ -1670,7 +1670,7 @@ function renderRecoveryPlanners(){
   const consistencyPct=cons.percent!=null&&(cons.stage==='evaluation-and-funded'||(stageIsEval&&cons.stage==='evaluation')||(!stageIsEval&&cons.stage==='funded'))?Number(cons.percent):null;
   const levels=plannerLevels(snapshot,setup);
   const requestedWinCap=Math.max(1,Math.min(6,Math.floor(Number(snapshot.winCap)||2)));
-  const winCap=Math.max(1,Math.min(requestedWinCap,setup.dailyCap));
+  const winCap=requestedWinCap;
   const depth=Math.max(1,Math.min(8,Math.floor(Number(snapshot.depth)||6)));
   const params={setup,initialPnl:pnl,completedDays:days,daily,overall,buffer,staticFloor,consistencyPct,winCap,riskLevels:levels};
   const paths=[];
@@ -1739,12 +1739,11 @@ function renderRecoveryPlanners(){
     '<input type="number" min="0" step="1" data-risk-level="'+level+'" value="'+levels[level]+'"></label>').join('')+'</div>'+
    '<p class="caption">Every option uses the same risk slots and the same trade table. Default order: R1 first, R2 after one consecutive loss, R3 after two or more losses; a win resets the next trade to R1. Edit any trade’s risk selector inside its option. R3 is not automatically boosted.</p>'+
    '<p class="caption">'+setup.name+' · '+setup.rr.toFixed(2)+'R · Target '+recoveryMoney(setup.goal)+' · Starting P/L '+recoveryMoney(pnl)+
-    ' · Minimum trading days '+setup.minDays+' · Stage daily trade cap '+setup.dailyCap+'. Winning-day planner cap '+requestedWinCap+
-    (winCap<requestedWinCap?' (effective cap '+winCap+' because of saved stage limit).':' (effective cap '+winCap+').')+'</p>'+
+    ' · Minimum trading days '+setup.minDays+' · Saved stage trade cap '+setup.dailyCap+' · Winning-day planner cap '+winCap+'.'+(winCap>setup.dailyCap?' Planner wins may exceed the saved stage trade cap; update that setting before live use.':'')+'</p>'+
    '<div class="recovery-stats"><span>Distinct options <b>'+entries.length+'</b></span><span>Target-hit options <b>'+targetCount+'</b></span><span>Breached-floor options <b>'+failedCount+'</b></span><span>Displayed <b>'+visible.length+'</b></span></div>'+
    '<p class="caption">Option 1 is the first-trade WIN plan. All later options represent ordered WIN/LOSS paths. Each option has its own risk sequence; simulations use the selected risk amounts in order, and reduce trade size when the modeled buffer requires it. Options are scenarios, not probabilities.</p>'+
    optionHtml+
-   '<p class="caption">'+caution+' Losses close their trading day; wins may continue up to the smaller of the planner and saved-stage trade caps. Fees, slippage, open positions, trailing drawdown, consistency and withdrawal rules may change real outcomes. This is not an account-safety guarantee.</p>'+
+   '<p class="caption">'+caution+' Losses close their trading day; wins may continue up to the planner winning-day trade cap. Fees, slippage, open positions, trailing drawdown, consistency and withdrawal rules may change real outcomes. This is not an account-safety guarantee.</p>'+
    '</details>';
   const open=host.querySelector('.recovery-details');if(open)open.open=snapshot.open===true;
  }
