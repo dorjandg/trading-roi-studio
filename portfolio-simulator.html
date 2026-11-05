@@ -777,7 +777,10 @@ function renderResults(list,inputs){
     count:r.count,bought:r.avg.bought,paid:r.avg.paid,funded:r.avg.funded,
     failed:r.avg.failed,exhausted:r.avg.exhausted,spent:r.avg.spent,
     receipts:r.avg.receipts,net:r.avg.net,roi:r.roi,
-    chancePayout:r.chancePayout,stages:r.stages,
+    chancePayout:r.chancePayout,
+    chance3x:r.chartTrials?.length?r.chartTrials.filter(t=>t.spent>0&&t.net>=3*t.spent).length/r.chartTrials.length:null,
+    chance4x:r.chartTrials?.length?r.chartTrials.filter(t=>t.spent>0&&t.net>=4*t.spent).length/r.chartTrials.length:null,
+    stages:r.stages,
     p10:r.p10,median:r.median,p90:r.p90};
   })
  }))}catch(e){}
