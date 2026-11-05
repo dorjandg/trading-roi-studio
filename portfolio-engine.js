@@ -308,7 +308,8 @@ function oneTrial(p,config,rng,record=false){
   (a.status==='active'||a.status==='activation-wait') &&
   a.stageIndex<p.stageList.length-1).length*p.activationFee:0;
  const dailyCash=config.trackDaily===true?
-  [{day:0,spent,receipts,net:receipts-spent,paid,bought,challengeSpent,activationSpent,live:liveCount()}]:null;
+  [{day:0,spent,receipts,net:receipts-spent,paid,bought,challengeSpent,activationSpent,
+   live:liveCount(),burned:0}]:null;
  for(let day=1;day<=config.days;day++){
   if(dynamic){
    // Spend only when there is an available active slot. Closed/failed/blocked
@@ -358,7 +359,8 @@ function oneTrial(p,config,rng,record=false){
    if(res.paid){paid++;receipts+=ac.firstPaid;}
   }
   if(dailyCash)dailyCash.push({day,spent,receipts,net:receipts-spent,paid,
-   bought,challengeSpent,activationSpent,live:liveCount()});
+   bought,challengeSpent,activationSpent,live:liveCount(),
+   burned:accounts.filter(a=>a.status==='failed'||a.status==='exhausted').length});
  }
  const passes=p.stageList.filter(x=>x!=='funded').map(stage=>accounts.filter(x=>x.passes.some(y=>y.stage===stage)).length);
  // Evaluation passes waiting for a funded slot are not counted as activated.
@@ -418,7 +420,7 @@ function simulatePortfolio(p,config={}){
  const rand=rngFactory(settings.seed);
  const chartTrials=settings.trackDaily?[]:null;
  const chartSums=settings.trackDaily?Array.from({length:settings.days+1},
-  (_,day)=>({day,spent:0,receipts:0,net:0,paid:0,bought:0,challengeSpent:0,activationSpent:0,live:0})):null;
+  (_,day)=>({day,spent:0,receipts:0,net:0,paid:0,bought:0,challengeSpent:0,activationSpent:0,live:0,burned:0})):null;
  let withPayout=0,positiveNet=0,goalMet=0, sample=null;
  const goal=pos(config.netGoal);
  for(let k=0;k<trials;k++){
@@ -431,7 +433,7 @@ function simulatePortfolio(p,config={}){
   });
   if(chartSums)for(const d of x.dailyCash||[]){
    const sum=chartSums[d.day];
-   for(const key of ['spent','receipts','net','paid','bought','challengeSpent','activationSpent','live'])sum[key]+=d[key];
+   for(const key of ['spent','receipts','net','paid','bought','challengeSpent','activationSpent','live','burned'])sum[key]+=d[key];
   }
   for(const key of Object.keys(total))total[key]+=x[key]||0;
   x.passes.forEach((count,i)=>stageTotals[i]+=count);
@@ -469,7 +471,7 @@ function simulatePortfolio(p,config={}){
   cashCurve:chartSums?.map(d=>({day:d.day,spent:d.spent/trials,
    receipts:d.receipts/trials,net:d.net/trials,paid:d.paid/trials,
    bought:d.bought/trials,challengeSpent:d.challengeSpent/trials,
-   activationSpent:d.activationSpent/trials,live:d.live/trials}))||null
+   activationSpent:d.activationSpent/trials,live:d.live/trials,burned:d.burned/trials}))||null
  };
 }
 root.StudioPortfolioEngine={buildPlan,validatePlan,resolvePolicy,plannedSlot,
