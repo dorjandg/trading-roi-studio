@@ -205,7 +205,7 @@ function runAccountDay(p,ac,day,rand,config,record){
  let dayProfit=0,hadTrade=false,winsToday=0;
  const signals=clamp(config.tradesPerDay,0,6);
  for(let ix=0;ix<signals;ix++){
-  if(ix>=c.maxWinsPerDay)break;
+  if(winsToday>=c.maxWinsPerDay)break;
   // Topstep needs enough winning days and may need additional profits to meet
   // the 55% evaluation best-day test. Do not stop only at the dollar goal.
   const bestDayOk=!c.consistency||ac.bestDay<=Math.max(0,ac.stagePnl)*c.consistency+1e-7;
@@ -279,7 +279,7 @@ function runAccountDay(p,ac,day,rand,config,record){
  if(stage==='funded'&&ac.status==='active'&&ac.stagePnl>=c.target-.005){
   const eligible=p.id==='topstep'?ac.funded150Days>=5:ac.fundedDays>=p.fundedWaitDays;
   if(eligible){
-   ac.firstPaid=firstPayout(p,ac);ac.status='paid';
+   ac.firstPaid=firstPayout(p,ac);ac.status='paid';ac.paidDay=day;
    if(record)ac.trace.push({day,stage,type:'paid',label:'First modeled payout',cash:ac.firstPaid});
    out.paid=true;
   }
@@ -294,9 +294,24 @@ function pairedSignal(seed,trial,day,ix,id){
  x=Math.imul(x,0x846CA68B);x^=x>>>16;
  return (x>>>0)/4294967296;
 }
+function canAcceptSignal(p,ac){
+ if(ac.status!=='active')return false;
+ const stage=stageName(p,ac),c=p.riskProfiles[stage];
+ if(!c)return false;
+ if(ac.stagePnl>=c.target-.005){
+  const consistent=!c.consistency||ac.bestDay<=Math.max(0,ac.stagePnl)*c.consistency+1e-7;
+  if(isEvaluation(stage)&&consistent)return false;
+  if(stage==='funded'&&(p.id!=='topstep'||ac.funded150Days>=5))return false;
+ }
+ return true;
+}
 function oneTrial(p,config,rng,record=false){
  const n=Math.max(0,Math.floor(config.count)),dynamic=config.purchaseMode==='recycle';
  const accounts=dynamic?[]:Array.from({length:n},(_,i)=>makeAccount(i+1));
+ // Round-robin cursor persists between days. With 50 purchased accounts and
+ // 5 signals, day 1 uses #1–#5, day 2 uses #6–#10, etc.
+ let cursor=0;
+ const tradeAssignments=record?[]:null;
  const commonSignals=new Map();
  const rand=(day,ix,id)=>{
   if(config.pairedSignals)return pairedSignal(config.seed,config.trialIndex||0,day,ix,config.signalMode==='shared'?0:id);
@@ -330,11 +345,15 @@ function oneTrial(p,config,rng,record=false){
   const dailyOpportunities=dynamic?(config.tradeSchedule?config.tradeSchedule[day-1]:config.tradesPerDay):config.tradesPerDay;
   const tradesBefore=accounts.reduce((sum,ac)=>sum+ac.trades,0);
   if(dynamic){
-   // Spend only when there is an available active slot. Closed/failed/blocked
-   // accounts are replaced no earlier than the following trading day.
-   const slots=Math.max(0,config.maxActive-liveCount());
-   // A new account needs at least one of today's portfolio trade slots.
-   const dailyLimit=Math.min(slots,config.maxBuysPerDay,dailyOpportunities,
+   // Existing eligible purchased accounts get priority; only buy the gap.
+   const eligible=accounts.filter(ac=>canAcceptSignal(p,ac)).length;
+   const target=config.capacityMode==='manual'?
+    Math.min(config.maxActive,dailyOpportunities):dailyOpportunities;
+   const needed=Math.max(0,target-eligible);
+   const room=config.capacityMode==='manual'?
+    Math.max(0,config.maxActive-liveCount()):needed;
+   const dailyLimit=Math.min(needed,room,
+    config.capacityMode==='manual'?config.maxBuysPerDay:dailyOpportunities,
     config.maxLifetime-accounts.length);
    for(let i=0;i<dailyLimit;i++){
     const available=config.budget+(config.reinvestPayouts?receipts:0)-spent-reserved();
@@ -346,18 +365,15 @@ function oneTrial(p,config,rng,record=false){
      label:'New challenge purchased on trading day '+day,cash:p.fee});
    }
   }
-  // Each trade opportunity belongs to only one account, not every account.
-  // Consecutive opportunities assigned to an account retain its normal
-  // winning-day continuation and stop-after-loss behavior.
+  // Each signal goes to one DISTINCT eligible purchased account.
+  // The cursor advances between days so existing accounts keep rotating.
   const allocations=new Map();
-  if(dynamic){
-   const live=accounts.filter(a=>a.status==='active');
-   for(let ix=0;live.length&&ix<dailyOpportunities;ix++){
-    const ac=live[(day-1+ix)%live.length];
-    if(!allocations.has(ac))allocations.set(ac,[]);
-    allocations.get(ac).push(ix);
-   }
+  const eligible=accounts.filter(ac=>canAcceptSignal(p,ac));
+  for(let ix=0;ix<dailyOpportunities&&ix<eligible.length;ix++){
+   const index=(cursor+ix)%eligible.length;
+   allocations.set(eligible[index],ix);
   }
+  if(eligible.length)cursor=(cursor+Math.min(dailyOpportunities,eligible.length))%eligible.length;
   // Funded positions that are paid/free at the end of a day release their
   // active-slot capacity for accounts that previously passed evaluation.
   if(p.id==='topstep'){
@@ -373,9 +389,17 @@ function oneTrial(p,config,rng,record=false){
   for(const ac of accounts){
    if(ac.status!=='active')continue;
    // Global active-funded cap for Topstep is applied at activation, not at purchase.
-   const slots=allocations.get(ac)||[];
-   const dayConfig=dynamic?{...config,tradesPerDay:slots.length,tradeSlots:slots}:config;
+   const signalSlot=allocations.get(ac),selected=signalSlot!==undefined;
+   const beforeTrades=ac.trades,beforeWins=ac.wins;
+   const assignedStage=stageName(p,ac);
+   const dayConfig={...config,tradesPerDay:selected?1:0,
+    tradeSlots:selected?[signalSlot]:[]};
    const res=runAccountDay(p,ac,day,rand,dayConfig,record&&ac.id<=3);
+   if(record&&selected){
+    const outcome=ac.trades>beforeTrades?(ac.wins>beforeWins?'W':'L'):'Skipped';
+    tradeAssignments.push({day,signal:signalSlot+1,account:ac.id,
+     stage:assignedStage,outcome,status:ac.status});
+   }
    if(res.activation){
     const fundedNow=accounts.filter(x=>x.stageIndex===p.stageList.length-1&&x.status==='active').length;
     if(p.id==='topstep'&&fundedNow>p.fundedMaxActive){
@@ -418,7 +442,8 @@ function oneTrial(p,config,rng,record=false){
    totalR:accounts.reduce((sum,a)=>sum+a.totalR,0),
    tradePnl:accounts.reduce((sum,a)=>sum+a.tradePnl,0),
    qualifying:accounts.reduce((sum,a)=>sum+a.totalAdminDays,0),
-   accountDetails:record?accounts.slice(0,3):[],
+   accountDetails:record?accounts:[],
+   tradeAssignments:tradeAssignments||undefined,
    dailyCash:dailyCash||undefined,
    accounts:record?accounts:undefined};
 }
@@ -447,6 +472,7 @@ function simulatePortfolio(p,config={}){
   tradeSchedule:Array.isArray(config.tradeSchedule)&&config.tradeSchedule.length===
    (clamp(config.days,1,120)|0)?config.tradeSchedule.map(x=>clamp(x,0,6)|0):null,
   purchaseMode:config.purchaseMode==='recycle'?'recycle':'upfront',
+  capacityMode:config.capacityMode==='manual'?'manual':'automatic',
   maxActive:clamp(Math.floor(config.maxActive||1),1,20)|0,
   maxBuysPerDay:clamp(Math.floor(config.maxBuysPerDay||1),1,20)|0,
   maxLifetime:clamp(Math.floor(config.maxAccounts||100),1,100)|0,
