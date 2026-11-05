@@ -117,7 +117,7 @@ summary{cursor:pointer;font-weight:750;color:var(--text)}details .tablewrap{marg
 </section>
 <section class="panel" id="discovery">
  <h2>3 · Find Better Models</h2>
- <p class="hint">Automatically compare risk-sized models and trade-order rules using the same account, budget, win rate and RR. Candidates are selected on one random sample and checked on a separate sample. This tests <b>risk management</b>, not a new market edge.</p>
+ <p class="hint">Automatically compare risk-sized models and trade-order rules using the same account, budget, win rate and RR. Candidates are shortlisted on one simulated random sample and retested using different random outcomes under the same assumptions. This is <b>not historical validation</b> or evidence of a new trading edge.</p>
  <div class="fields">
   <div class="field"><label for="ideaAccount">Prop-firm account to optimize</label><select id="ideaAccount"></select></div>
   <div class="field"><label for="ideaObjective">What should improve?</label><select id="ideaObjective">
@@ -595,20 +595,20 @@ function renderDiscovery(result,row,budget){
  const best=result.ideas.find(c=>c.improvement>0);
  const summary=best?
   'One or more ideas improved the selected score on this separate validation sample. The first is <b>'+esc(best.title)+'</b>'+
-  ' with net '+showDifference(best.delta.net)+' and payout probability '+showDifference(best.delta.payout,true)+
+  ' with simulated net '+showDifference(best.delta.net)+' and payout probability '+showDifference(best.delta.payout,true)+
   ' compared with your starting plan. Downside P10 moved '+showDifference(best.delta.p10)+'.':
   'No candidate in the shortlisted group beat your current plan on the selected validation score. Keeping the original settings is reasonable.';
  $('ideaResults').innerHTML=
   '<div class="discovery-card"><h3>Model search · '+esc(catalog.programs[row.id].firm+' · '+catalog.programs[row.id].name)+' '+usd(row.size)+'</h3>'+
   '<p class="discovery-summary">Budget '+usd(budget)+' · '+result.evaluated+' different candidate plans · ranked on '+
   result.trainTrials+' discovery trials · verified on '+result.testTrials+
-  ' separate trials · objective: '+esc(objectiveLabel)+'.</p>'+
+  ' separate simulated trials · objective: '+esc(objectiveLabel)+'.</p>'+
   '<div class="alert">'+summary+'</div>'+
   '<div class="tablewrap"><table class="discovery-table" style="min-width:940px">'+
   '<thead><tr><th>Risk model</th><th>Expected net</th><th>Change vs yours</th><th>Downside P10</th>'+
   '<th>Chance of payout</th><th>Blocked accounts</th><th>Test</th></tr></thead><tbody>'+
   [result.baseline,...result.ideas].map(entry).join('')+'</tbody></table></div>'+
-  '<p class="discovery-note">Candidates were shortlisted using the discovery sample, not the separate validation sample. Their rank is not proof of future superiority; the same assumed win rate, RR, firm rules and market opportunity count were used. Results depend on your inputs and simplified payout rules. Applying a model changes only Portfolio Sim experiments, never your saved Firms strategy.</p>'+
+  '<p class="discovery-note">Candidates are shortlisted using simulated discovery trials, then rechecked with different simulated outcomes. This is not a backtest of market price data or statistically established superiority. Win rate and RR remain fixed across candidates; changing RR without adjusting win rate would distort comparisons. Assumed firm rules and simplified payouts may differ from actual eligibility. Applying a model changes only Portfolio Sim experiments, never your saved Firms strategy.</p>'+
   '</div>';
 }
 function currentDiscoveryInputs(row){
