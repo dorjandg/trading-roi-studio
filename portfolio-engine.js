@@ -231,7 +231,8 @@ function runAccountDay(p,ac,day,rand,config,record){
        'Daily risk blocked; retry on next trading day'});
    break;
   }
-  const win=rand(day,ix,ac.id)<config.winRate;
+  const slotIndex=config.tradeSlots?.[ix]??ix;
+  const win=rand(day,slotIndex,ac.id)<config.winRate;
   const delta=(win?risk*c.rr:-risk)-p.tradeCost;
   const prior=ac.stagePnl;
   ac.stagePnl=money(ac.stagePnl+delta);dayProfit=money(dayProfit+delta);
@@ -315,7 +316,9 @@ function oneTrial(p,config,rng,record=false){
    // Spend only when there is an available active slot. Closed/failed/blocked
    // accounts are replaced no earlier than the following trading day.
    const slots=Math.max(0,config.maxActive-liveCount());
-   const dailyLimit=Math.min(slots,config.maxBuysPerDay,config.maxLifetime-accounts.length);
+   // A new account needs at least one of today's portfolio trade slots.
+   const dailyLimit=Math.min(slots,config.maxBuysPerDay,config.tradesPerDay,
+    config.maxLifetime-accounts.length);
    for(let i=0;i<dailyLimit;i++){
     const available=config.budget+(config.reinvestPayouts?receipts:0)-spent-reserved();
     if(available+1e-8<p.fee+p.activationFee||p.fee+p.activationFee<=0)break;
@@ -325,12 +328,18 @@ function oneTrial(p,config,rng,record=false){
      label:'New challenge purchased on trading day '+day,cash:p.fee});
    }
   }
-  // Dynamic mode uses one selected account for the daily trading opportunities
-  // in total, rather than multiplying them across all active accounts.
-  const focus=dynamic?(()=>{
+  // Each trade opportunity belongs to only one account, not every account.
+  // Consecutive opportunities assigned to an account retain its normal
+  // winning-day continuation and stop-after-loss behavior.
+  const allocations=new Map();
+  if(dynamic){
    const live=accounts.filter(a=>a.status==='active');
-   return live.length?live[(day-1)%live.length]:null;
-  })():null;
+   for(let ix=0;live.length&&ix<config.tradesPerDay;ix++){
+    const ac=live[(day-1+ix)%live.length];
+    if(!allocations.has(ac))allocations.set(ac,[]);
+    allocations.get(ac).push(ix);
+   }
+  }
   // Funded positions that are paid/free at the end of a day release their
   // active-slot capacity for accounts that previously passed evaluation.
   if(p.id==='topstep'){
@@ -345,7 +354,8 @@ function oneTrial(p,config,rng,record=false){
   for(const ac of accounts){
    if(ac.status!=='active')continue;
    // Global active-funded cap for Topstep is applied at activation, not at purchase.
-   const dayConfig=dynamic?{...config,tradesPerDay:ac===focus?config.tradesPerDay:0}:config;
+   const slots=allocations.get(ac)||[];
+   const dayConfig=dynamic?{...config,tradesPerDay:slots.length,tradeSlots:slots}:config;
    const res=runAccountDay(p,ac,day,rand,dayConfig,record&&ac.id<=3);
    if(res.activation){
     const fundedNow=accounts.filter(x=>x.stageIndex===p.stageList.length-1&&x.status==='active').length;
