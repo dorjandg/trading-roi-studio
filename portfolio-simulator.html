@@ -91,7 +91,7 @@ summary{cursor:pointer;font-weight:750;color:var(--text)}details .tablewrap{marg
 <section class="panel"><h2>4 · Detailed account simulations</h2><p class="hint">Each account uses the risk tiers saved for its own phase. A trade's risk selection depends on *past* W/L history. No future-win knowledge is used. Open a result to inspect stage progression and example trade logs.</p><div id="details"></div></section>
 </section>
 <section class="panel"><h2>Model assumptions & limits</h2><details><summary>Read before interpreting an ROI estimate</summary><p class="hint">Evaluation challenges are purchased once at the start. No automatic replacements, retries, refund processing delays, repeated funded payouts or taxes are simulated. Topstep's subscription renewals, variant-specific activation rules, contract limits and full payout eligibility are not enforced. Its modeled initial payout is up to 50% of realized funded profit capped at $5,000; check the exact purchased path. FTMO/Hola pay a modeled split of funded profit after a planning target and waiting period, not a guaranteed withdrawal. Trailing drawdown is approximated for Topstep using end-of-day high-water marks and a zero-capped floor; intraday breaches and contract-size restrictions are not verified. Other firms' static initial floors are modeled where known. Fees, spread/slippage, evaluation activation delays, minimum qualifying trades and news restrictions may differ. If multiple accounts share a signal, outcomes may be correlated and diversification overstated. The model's risk-exhausted status does not mean an official failed-account breach.</p></details>
- <p class="footer">Research tool only. Sourced catalog rules are snapshots, not live purchase/eligibility confirmations. The simulator reads profiles locally; budget changes here don't overwrite the main Overview settings.</p>
+ <p class="footer">Research tool only. Sourced catalog rules are snapshots, not live purchase/eligibility confirmations. The simulator reads profiles locally; budget changes here don't overwrite the main Overview settings. The maximum of 100 modeled challenges per account type is a performance cap, not a prop-firm permission limit.</p>
 </section>
 </div>
 <script src="portfolio-engine.js"></script>
@@ -152,12 +152,10 @@ function loadView(){
  }
  const current=localStorage.getItem(rootKey+'studio-active-profile-v1')||'';
  const [activeId,activeSize]=current.split(':');
- const defaultsRows=defaultRows.map(([id,size,weight])=>({id,size,weight}));
+ let defaultsRows=defaultRows.map(([id,size,weight])=>({id,size,weight}));
  if(E.supported.has(activeId)&&catalog.programs[activeId]&&catalog.programs[activeId].sizes.includes(Number(activeSize))){
-  defaultsRows[0]={id:activeId,size:Number(activeSize),weight:40};
-  if(defaultsRows.some((row,i)=>i>0&&row.id===activeId&&row.size===Number(activeSize))){
-   defaultsRows[0]={id:'ftmo2',size:10000,weight:40};
-  }
+  const chosen={id:activeId,size:Number(activeSize),weight:40};
+  defaultsRows=[chosen,...defaultsRows.filter(row=>row.id!==chosen.id||row.size!==chosen.size)].slice(0,3);
  }
  rows=Array.isArray(prior.rows)&&prior.rows.length?prior.rows.slice(0,8).map(r=>({
   id:catalog.programs[r.id]?r.id:'ftmo2',size:Number(r.size)||10000,weight:Math.max(0,Number(r.weight)||0)
@@ -327,6 +325,14 @@ function run(){
  if(!rows.length){$('status').textContent='Select at least one firm';return}
  const totalWeight=rows.reduce((a,r)=>a+Math.max(0,r.weight),0);
  if(mode==='split'&&totalWeight<=0){$('status').textContent='Set at least one positive budget weight';return}
+ if(mode==='split'){
+  const seen=new Set();
+  for(const row of rows){
+   const id=row.id+':'+row.size;
+   if(seen.has(id)){$('status').textContent='This account appears twice in the split portfolio. Remove the duplicate to avoid bypassing its modeled allocation limits.';return}
+   seen.add(id);
+  }
+ }
  const jobs=rows.map((row,i)=>{
   const budget=mode==='split'?inputs.budget*Math.max(0,row.weight)/totalWeight:inputs.budget;
   const p=accountPlan(row),validation=E.validatePlan(p);
