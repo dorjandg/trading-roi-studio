@@ -36,7 +36,7 @@ function status(storage,user,accountKey,budget){
  try{view=JSON.parse(storage.getItem('4ds:v1:'+user+':portfolio-simulator:v1')||'null')}catch(_){}
  if(view&&obj.inputs){
   const checks=['budget','netGoal','winRate','days','tradesPerDay','trials','seed',
-   'signalMode','budgetMode','purchaseMode','maxActive','maxBuysPerDay'];
+   'signalMode','budgetMode','purchaseMode','capacityMode','maxActive','maxBuysPerDay'];
   if(checks.some(k=>view[k]!=null&&obj.inputs[k]!=null&&
    String(view[k])!==String(obj.inputs[k])))
    return {state:'stale-sim-inputs',message:'Portfolio Sim inputs changed after the last completed run.',report:obj,row};
