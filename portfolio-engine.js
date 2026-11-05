@@ -518,6 +518,8 @@ function oneTrial(p,config,rng,record=false){
  const pending=accounts.filter(x=>['active','activation-wait','payout-pending'].includes(x.status)).length;
  const net=receipts-spent;
  return {bought,paid,passes,funded,failed,exhausted,pending,spent,receipts,net,activations,
+    targetHit:accounts.filter(a=>a.fundedTargetDay!==null).length,
+    payoutRequested:accounts.filter(a=>a.payoutRequestedDay!==null).length,
    trades:accounts.reduce((sum,a)=>sum+a.trades,0),
    qualificationTrades:accounts.reduce((sum,a)=>sum+a.qualificationTrades,0),
    wins:accounts.reduce((sum,a)=>sum+a.wins,0),
@@ -571,7 +573,7 @@ function simulatePortfolio(p,config={}){
   budget,reinvestPayouts:config.reinvestPayouts===true
  };
  const results=[],stageTotals=p.stageList.filter(x=>x!=='funded').map(()=>0);
- const total={bought:0,paid:0,funded:0,failed:0,exhausted:0,pending:0,spent:0,receipts:0,net:0,activations:0,trades:0,qualifying:0,qualificationTrades:0,
+ const total={bought:0,paid:0,funded:0,targetHit:0,payoutRequested:0,failed:0,exhausted:0,pending:0,spent:0,receipts:0,net:0,activations:0,trades:0,qualifying:0,qualificationTrades:0,
   wins:0,losses:0,grossProfit:0,grossLoss:0,winPnl:0,lossPnl:0,riskTotal:0,plannedReward:0,totalR:0,tradePnl:0};
  const rand=rngFactory(settings.seed);
  const chartTrials=settings.trackDaily?[]:null;
@@ -638,6 +640,31 @@ function simulatePortfolio(p,config={}){
    unusedToday:d.unusedToday/trials}))||null
  };
 }
+// Expected phase conversions are ratios of aggregate account counts across
+// trials, NOT a probability that a particular late-purchased account can finish
+// all stages within the chosen horizon.
+function stageFunnel(result,useSample=false){
+ const p=result?.plan;
+ if(!p)return [];
+ const source=useSample?result.sample:result.avg;
+ if(!source)return [];
+ const purchased=pos(source.bought);
+ const passes=useSample?source.passes||[]:result.stages||[];
+ const labels=p.id==='topstep'?['Trading Combine passed']:['ftmo2','holaPrime','holaPro'].includes(p.id)?
+  ['Challenge passed','Verification passed']:['Challenge passed'];
+ const stages=[{label:'Purchased challenges',count:purchased}];
+ for(let i=0;i<passes.length;i++)
+  stages.push({label:labels[i]||('Evaluation '+(i+1)+' passed'),count:pos(passes[i])});
+ stages.push({label:p.id==='topstep'?'Express Funded activated':'Funded activated',count:pos(source.funded)});
+ stages.push({label:'Funded profit target reached',count:pos(source.targetHit)});
+ stages.push({label:'Payout requested',count:pos(source.payoutRequested)});
+ stages.push({label:'First payout received',count:pos(source.paid)});
+ return stages.map((stage,i)=>{
+  const previous=i?stages[i-1].count:null;
+  return {...stage,previousRate:i?(previous>0?stage.count/previous:null):null,
+   totalRate:purchased>0?stage.count/purchased:null};
+ });
+}
 root.StudioPortfolioEngine={buildPlan,validatePlan,resolvePolicy,plannedSlot,
-  runAccountDay,simulatePortfolio,rngFactory,phasesFor,supported,oneTrial};
+  runAccountDay,simulatePortfolio,rngFactory,phasesFor,supported,oneTrial,stageFunnel};
 })(typeof window!=='undefined'?window:globalThis);
