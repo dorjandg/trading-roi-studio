@@ -295,7 +295,7 @@ details p{margin:6px 0}
  <div id="dynamicPurchaseSettings" class="dynamic-purchase-settings">
   <div class="fields">
    <div class="field"><label for="maxActive">Maximum concurrent accounts</label><input id="maxActive" type="number" min="1" max="20" step="1" value="1"></div>
-   <div class="field"><label for="maxBuysPerDay">Max new accounts / day</label><input id="maxBuysPerDay" type="number" min="1" max="20" step="1" value="1"></div>
+   <div class="field"><label for="maxBuysPerDay">Max new accounts/day (≤ trades/day)</label><input id="maxBuysPerDay" type="number" min="1" max="20" step="1" value="1"></div>
    <div class="field"><label for="reinvestPayouts">Use payouts for new accounts</label><select id="reinvestPayouts"><option value="no" selected>No · initial budget only</option><option value="yes">Yes · reinvest first payouts</option></select></div>
   </div>
   <p class="hint">Dynamic: buy on a trading day only if an open slot and sufficient available money exist. After an account fails, exhausts its risk, or gets paid, its slot can be reused the next trading day. Daily trade opportunities are assigned across available accounts. In split-budget mode they are also distributed across the selected firms, so opportunities are not multiplied. Replacement purchases use available budget, not unlimited credit.</p>
