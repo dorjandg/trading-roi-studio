@@ -686,6 +686,7 @@ function storedProfile(key){try{const item=JSON.parse(localStorage.getItem(PROFI
 function writeProfile(){if(!activeProgramKey)return;try{localStorage.setItem(PROFILE_PREFIX+activeProgramKey,JSON.stringify({v:1,updatedAt:new Date().toISOString(),state:{...state}}));localStorage.setItem(PROFILE_ACTIVE,activeProgramKey);window.fourDsQueueCloudSave?.()}catch(e){console.warn('Account profile could not be saved',e)}}
 try{activeProgramKey=localStorage.getItem(PROFILE_ACTIVE)||null}catch(e){}
 // Direct links from Portfolio Sim open the exact saved Firms account.
+let portfolioFirmsLinkLoaded=false;
 try{
  const qs=new URLSearchParams(window.location.search),key=qs.get('account');
  if(qs.get('view')==='firms'&&/^(ftmo2|holaPrime|holaPro|topstep):[1-9]\d{3,6}$/.test(key||'')){
@@ -696,10 +697,11 @@ try{
    activeProgramKey=key;
    localStorage.setItem(PROFILE_ACTIVE,key);
    localStorage.setItem(STORAGE,JSON.stringify(state));
+   portfolioFirmsLinkLoaded=true;
   }
  }
 }catch(e){console.warn('Portfolio Sim account link could not select target profile',e)}
-try{const x=JSON.parse(sessionStorage.getItem('studio-program-selection')||'null');if(x&&x.v===1&&Array.isArray(x.targets)&&x.targets.length===2&&x.feeUSD>0){
+try{const x=portfolioFirmsLinkLoaded?null:JSON.parse(sessionStorage.getItem('studio-program-selection')||'null');if(x&&x.v===1&&Array.isArray(x.targets)&&x.targets.length===2&&x.feeUSD>0){
   const incomingKey=profileKey(x.programId||x.label,x.size);if(activeProgramKey&&activeProgramKey!==incomingKey)writeProfile();
   const profile=storedProfile(incomingKey);
   if(profile){const investmentBudget=positive(state.budget);state={...DEFAULT,...profile.state};state.budget=investmentBudget;}else{state={...DEFAULT,...state};state.accountSize=x.size;state.dailyLoss=x.daily*x.size/100;state.overallLoss=x.max*x.size/100;state.p1Target=x.targets[0]*x.size/100;state.p2Target=x.targets[1]*x.size/100;state.p1MinDays=x.days[0];state.p2MinDays=x.days[1];state.price=x.feeUSD;if(x.fundedRisk){const cap=x.size*x.fundedRisk/100;state.fundedBase=Math.min(state.fundedBase,cap);state.fundedRecovery=Math.min(state.fundedRecovery,cap);state.fundedBoost=Math.min(state.fundedBoost,cap);}if(x.trading&&typeof x.trading==='object'){for(const k of ['winRate','rr','weeklySignals','p1Base','p2Base','fundedBase'])if(Number.isFinite(Number(x.trading[k]))&&Number(x.trading[k])>=0)state[k]=Number(x.trading[k]);}}
