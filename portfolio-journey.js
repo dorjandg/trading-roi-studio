@@ -185,7 +185,7 @@ function dailyTradeRouting(results,selected,inputs,routePage=1,pageSize=10){
  if(!entries.length)return '<p class="hint">No daily trade assignments were recorded for this portfolio path.</p>';
  const days=[...new Set(entries.map(x=>x.day))].sort((a,b)=>a-b);
  const maxSignals=Math.max(1,...entries.map(a=>a.signal));
- const maxCells=Math.min(6,maxSignals);
+ const maxCells=Math.min(20,maxSignals);
  const byDay=new Map();
  for(const e of entries){
   if(!byDay.has(e.day))byDay.set(e.day,[]);
