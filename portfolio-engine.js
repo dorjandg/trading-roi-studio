@@ -201,7 +201,7 @@ function runAccountDay(p,ac,day,rand,config,record){
   return out;
  }
  let dayProfit=0,hadTrade=false,winsToday=0;
- const signals=clamp(config.tradesPerDay,1,6);
+ const signals=clamp(config.tradesPerDay,0,6);
  for(let ix=0;ix<signals;ix++){
   if(ix>=c.maxWinsPerDay)break;
   // Topstep needs enough winning days and may need additional profits to meet
@@ -289,8 +289,8 @@ function pairedSignal(seed,trial,day,ix,id){
  return (x>>>0)/4294967296;
 }
 function oneTrial(p,config,rng,record=false){
- const n=Math.max(0,Math.floor(config.count));
- const accounts=Array.from({length:n},(_,i)=>makeAccount(i+1));
+ const n=Math.max(0,Math.floor(config.count)),dynamic=config.purchaseMode==='recycle';
+ const accounts=dynamic?[]:Array.from({length:n},(_,i)=>makeAccount(i+1));
  const commonSignals=new Map();
  const rand=(day,ix,id)=>{
   if(config.pairedSignals)return pairedSignal(config.seed,config.trialIndex||0,day,ix,config.signalMode==='shared'?0:id);
@@ -299,12 +299,37 @@ function oneTrial(p,config,rng,record=false){
   if(!commonSignals.has(key))commonSignals.set(key,rng());
   return commonSignals.get(key);
  };
- let spent=p.fee*n,paid=0,receipts=0,activations=0;
- // Optional actual day-by-day portfolio cash ledger. It tracks money paid
- // for challenges/activations versus first-payout receipts, NOT prop equity.
+ let bought=dynamic?0:n,spent=p.fee*bought,paid=0,receipts=0,activations=0;
+ let challengeSpent=spent,activationSpent=0;
+ const liveCount=()=>accounts.filter(a=>a.status==='active'||a.status==='activation-wait').length;
+ // An activation-fee commitment is held for each not-yet-activated account.
+ // Released when an evaluation ends unsuccessfully; never counted as spent.
+ const reserved=()=>p.activationFee>0?accounts.filter(a=>
+  (a.status==='active'||a.status==='activation-wait') &&
+  a.stageIndex<p.stageList.length-1).length*p.activationFee:0;
  const dailyCash=config.trackDaily===true?
-  [{day:0,spent,receipts,net:receipts-spent,paid}]:null;
+  [{day:0,spent,receipts,net:receipts-spent,paid,bought,challengeSpent,activationSpent,live:liveCount()}]:null;
  for(let day=1;day<=config.days;day++){
+  if(dynamic){
+   // Spend only when there is an available active slot. Closed/failed/blocked
+   // accounts are replaced no earlier than the following trading day.
+   const slots=Math.max(0,config.maxActive-liveCount());
+   const dailyLimit=Math.min(slots,config.maxBuysPerDay,config.maxLifetime-accounts.length);
+   for(let i=0;i<dailyLimit;i++){
+    const available=config.budget+(config.reinvestPayouts?receipts:0)-spent-reserved();
+    if(available+1e-8<p.fee+p.activationFee||p.fee+p.activationFee<=0)break;
+    const ac=makeAccount(accounts.length+1);
+    accounts.push(ac);bought++;spent+=p.fee;challengeSpent+=p.fee;
+    if(record&&ac.id<=3)ac.trace.push({day,stage:p.stageList[0],type:'purchase',
+     label:'New challenge purchased on trading day '+day,cash:p.fee});
+   }
+  }
+  // Dynamic mode uses one selected account for the daily trading opportunities
+  // in total, rather than multiplying them across all active accounts.
+  const focus=dynamic?(()=>{
+   const live=accounts.filter(a=>a.status==='active');
+   return live.length?live[(day-1)%live.length]:null;
+  })():null;
   // Funded positions that are paid/free at the end of a day release their
   // active-slot capacity for accounts that previously passed evaluation.
   if(p.id==='topstep'){
@@ -312,26 +337,28 @@ function oneTrial(p,config,rng,record=false){
    for(const a of accounts){
     if(live>=p.fundedMaxActive)break;
     if(a.status!=='activation-wait')continue;
-    a.status='active';activations++;spent+=p.activationFee;live++;
+    a.status='active';activations++;spent+=p.activationFee;activationSpent+=p.activationFee;live++;
     if(record&&a.id<=3)a.trace.push({day,stage:'funded',type:'activation',label:'Funded slot available; activation starts this day'});
    }
   }
   for(const ac of accounts){
    if(ac.status!=='active')continue;
    // Global active-funded cap for Topstep is applied at activation, not at purchase.
-   const res=runAccountDay(p,ac,day,rand,config,record&&ac.id<=3);
+   const dayConfig=dynamic?{...config,tradesPerDay:ac===focus?config.tradesPerDay:0}:config;
+   const res=runAccountDay(p,ac,day,rand,dayConfig,record&&ac.id<=3);
    if(res.activation){
     const fundedNow=accounts.filter(x=>x.stageIndex===p.stageList.length-1&&x.status==='active').length;
     if(p.id==='topstep'&&fundedNow>p.fundedMaxActive){
      ac.status='activation-wait';
      if(record&&ac.id<=3)ac.trace.push({day,stage:'funded',type:'wait',label:'Active funded cap reached'});
     }else{
-     spent+=p.activationFee;activations++;
+     spent+=p.activationFee;activationSpent+=p.activationFee;activations++;
     }
    }
    if(res.paid){paid++;receipts+=ac.firstPaid;}
   }
-  if(dailyCash)dailyCash.push({day,spent,receipts,net:receipts-spent,paid});
+  if(dailyCash)dailyCash.push({day,spent,receipts,net:receipts-spent,paid,
+   bought,challengeSpent,activationSpent,live:liveCount()});
  }
  const passes=p.stageList.filter(x=>x!=='funded').map(stage=>accounts.filter(x=>x.passes.some(y=>y.stage===stage)).length);
  // Evaluation passes waiting for a funded slot are not counted as activated.
@@ -340,7 +367,7 @@ function oneTrial(p,config,rng,record=false){
  const failed=accounts.filter(x=>x.status==='failed').length;
  const pending=accounts.filter(x=>x.status==='active'||x.status==='activation-wait').length;
  const net=receipts-spent;
- return {bought:n,paid,passes,funded,failed,exhausted,pending,spent,receipts,net,activations,
+ return {bought,paid,passes,funded,failed,exhausted,pending,spent,receipts,net,activations,
    trades:accounts.reduce((sum,a)=>sum+a.trades,0),
    wins:accounts.reduce((sum,a)=>sum+a.wins,0),
    losses:accounts.reduce((sum,a)=>sum+a.losses,0),
@@ -378,7 +405,12 @@ function simulatePortfolio(p,config={}){
   seed:config.seed||24717,
   pairedSignals:config.pairedSignals===true,
   signalMode:config.signalMode==='shared'?'shared':'independent',
-  trackDaily:config.trackCharts===true
+  trackDaily:config.trackCharts===true,
+  purchaseMode:config.purchaseMode==='recycle'?'recycle':'upfront',
+  maxActive:clamp(Math.floor(config.maxActive||1),1,20)|0,
+  maxBuysPerDay:clamp(Math.floor(config.maxBuysPerDay||1),1,20)|0,
+  maxLifetime:clamp(Math.floor(config.maxAccounts||100),1,100)|0,
+  budget,reinvestPayouts:config.reinvestPayouts===true
  };
  const results=[],stageTotals=p.stageList.filter(x=>x!=='funded').map(()=>0);
  const total={bought:0,paid:0,funded:0,failed:0,exhausted:0,pending:0,spent:0,receipts:0,net:0,activations:0,trades:0,qualifying:0,
@@ -386,7 +418,7 @@ function simulatePortfolio(p,config={}){
  const rand=rngFactory(settings.seed);
  const chartTrials=settings.trackDaily?[]:null;
  const chartSums=settings.trackDaily?Array.from({length:settings.days+1},
-  (_,day)=>({day,spent:0,receipts:0,net:0,paid:0})):null;
+  (_,day)=>({day,spent:0,receipts:0,net:0,paid:0,bought:0,challengeSpent:0,activationSpent:0,live:0})):null;
  let withPayout=0,positiveNet=0,goalMet=0, sample=null;
  const goal=pos(config.netGoal);
  for(let k=0;k<trials;k++){
@@ -399,7 +431,7 @@ function simulatePortfolio(p,config={}){
   });
   if(chartSums)for(const d of x.dailyCash||[]){
    const sum=chartSums[d.day];
-   for(const key of ['spent','receipts','net','paid'])sum[key]+=d[key];
+   for(const key of ['spent','receipts','net','paid','bought','challengeSpent','activationSpent','live'])sum[key]+=d[key];
   }
   for(const key of Object.keys(total))total[key]+=x[key]||0;
   x.passes.forEach((count,i)=>stageTotals[i]+=count);
@@ -424,7 +456,10 @@ function simulatePortfolio(p,config={}){
  };
  const nets=results.slice().sort((a,b)=>a-b);
  return {
-  plan:p,config:settings,budget,desired,count,clipped,perUnit,feeReserve:reservedPer*count,
+  plan:p,config:settings,budget,desired,
+  count:settings.purchaseMode==='recycle'?avg.bought:count,
+  clipped:settings.purchaseMode==='recycle'?avg.bought>=settings.maxLifetime:clipped,
+  perUnit,feeReserve:reservedPer*count,
   avg,tradeKpis,stages:stageTotals.map(x=>x/trials),
   chancePayout:withPayout/trials,chanceProfit:positiveNet/trials,
   chanceGoal:goal?goalMet/trials:null,goal,
@@ -432,7 +467,9 @@ function simulatePortfolio(p,config={}){
   median:quantile(nets,.5),p10:quantile(nets,.1),p90:quantile(nets,.9),
   sample,nets,chartTrials,
   cashCurve:chartSums?.map(d=>({day:d.day,spent:d.spent/trials,
-   receipts:d.receipts/trials,net:d.net/trials,paid:d.paid/trials}))||null
+   receipts:d.receipts/trials,net:d.net/trials,paid:d.paid/trials,
+   bought:d.bought/trials,challengeSpent:d.challengeSpent/trials,
+   activationSpent:d.activationSpent/trials,live:d.live/trials}))||null
  };
 }
 root.StudioPortfolioEngine={buildPlan,validatePlan,resolvePolicy,plannedSlot,
