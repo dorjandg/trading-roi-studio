@@ -95,8 +95,11 @@ function combinedResult(list,inputs){
  }
  const cashCurve=Array.from({length:days+1},(_,day)=>cashAt(day,false));
  const sample={dailyCash:Array.from({length:days+1},(_,day)=>cashAt(day,true)),accountDetails:[]};
- const nets=Array.from({length:list[0]?.nets?.length||0},(_,i)=>list.reduce((total,r)=>total+N(r.nets?.[i]),0)).sort((a,b)=>a-b);
- const avg={spent:0,net:0,funded:0,paid:0,failed:0,exhausted:0};
+ // Join independently generated trials by their original trial index,
+ // never by sorted net ranks (which falsely correlates winning outcomes).
+ const nets=Array.from({length:list[0]?.chartTrials?.length||0},(_,i)=>
+  list.reduce((total,r)=>total+N(r.chartTrials?.[i]?.net),0)).sort((a,b)=>a-b);
+ const avg={spent:0,receipts:0,net:0,funded:0,paid:0,failed:0,exhausted:0};
  for(const r of list)for(const k of Object.keys(avg))avg[k]+=N(r.avg[k]);
  const quantile=q=>nets.length?nets[Math.min(nets.length-1,Math.floor((nets.length-1)*q))]:0;
  const chartTrials=Array.from({length:list[0]?.chartTrials?.length||0},(_,i)=>{
@@ -244,7 +247,8 @@ function render({results=[],inputs={},selection='',account='auto',group='overvie
   control('outcome','Final-trial filter',[['all','All trials'],['positive','Positive NET'],['negative','Negative NET'],['payout','At least 1 payout'],['no-payout','No payouts']],outcome);
  const metrics=[['NET',usd(r.avg.net)],['ROI',(N(r.roi)*100).toFixed(1)+'%'],['P10',usd(r.p10)],
   ['P90',usd(r.p90)],['Ex. trades',trade.trades],['Ex. max DD',usd(trade.maxDD)]];
- return '<div class="sim-chart-toolbar">'+portfolios+accounts+views+'</div>'+
+ return '<div class="sim-chart-toolbar">'+portfolios+accounts+views+
+  '<button type="button" class="sim-chart-reset" data-chart-reset="1" title="Reset chart filters to their defaults">Reset filters</button></div>'+
   '<details class="sim-chart-advanced" data-chart-advanced'+(filtersOpen?' open':'')+
   '><summary>Advanced filters · Days / Stage / Trial view / Outcome</summary>'+
   '<div class="sim-chart-toolbar sim-chart-extra">'+extra+'</div></details>'+
