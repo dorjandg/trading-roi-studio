@@ -594,6 +594,7 @@ $('details').addEventListener('click',event=>{
   const index=Number(reset.dataset.resetTest),result=lastResults[index];
   if(!result)return;
   delete testRisks[result.plan.id+':'+result.plan.size];
+  ideaReserveAccountKey='';
   saveView();renderRows();setStale();run();
   return;
  }
@@ -713,6 +714,11 @@ $('ideaReserve').addEventListener('change',()=>{
  refreshIdeaCeiling();
  if(discovered){discovered.stale=true;$('ideaStatus').textContent='Reserve changed · run model search again';}
 });
+for(const id of ['ideaObjective','ideaEffort']){
+ $(id).addEventListener('change',()=>{
+  if(discovered){discovered.stale=true;$('ideaStatus').textContent='Search settings changed · run model search again';}
+ });
+}
 $('ideaResults').addEventListener('click',event=>{
  const btn=event.target.closest?.('[data-discovery-apply]');
  if(!btn||!discovered)return;
@@ -730,10 +736,11 @@ $('ideaResults').addEventListener('click',event=>{
  }
  tests.__riskReserve=selected.plan.riskReserve;
  testRisks[id]=tests;
+ discovered.stale=true;
  saveView();renderRows();
  $('ideaStatus').style.color='var(--green)';
- $('ideaStatus').textContent='Testing '+selected.title+' for '+discovered.row.id+' '+usd(discovered.row.size)+
-  ' · other firm profiles unchanged';
+ $('ideaStatus').textContent='Applied '+selected.title+' to Portfolio Sim only. Re-run Find Better Models to compare again.';
+
  run();
 });
 
