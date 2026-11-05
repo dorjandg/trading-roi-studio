@@ -206,7 +206,7 @@ function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true
   ' · Burned '+fmt(last.burned,average)+
   ' · Eval '+usd(last.evaluationAllocation)+' · Funded '+usd(last.fundedAllocation)+
   ' · Spent '+usd(last.spent)+' · Received '+usd(last.receipts)+'</p>';
- const capInfo=selected==='all'?'Combined nominal allocation across different firms; firm limits are separate.':'Planning limits: Evaluation '+(n(cap.evaluation)>0?usd(cap.evaluation):'not set')+' · Funded '+(n(cap.funded)>0?usd(cap.funded):'not set')+'. Breaches are highlighted, not blocked.';
+ const capInfo=selected==='all'?'Combined nominal allocation across different firms; firm limits are separate.':'Planning limits: Evaluation '+(n(cap.evaluation)>0?usd(cap.evaluation):'not set')+' · Funded '+(n(cap.funded)>0?usd(cap.funded):'not set')+'. These caps are enforced in new simulation runs: evaluation purchases stop at the cap, and funded activations wait for a free slot. A cap below one account size permits zero accounts. Caps are per selected account type, not pooled across different account sizes of the same firm.';
  return header+total+'<p class="journey-explainer">'+capInfo+'</p>'+table+graphs+(!average&&selected!=='all'?sampleMilestones(r,signalDay):'')+note;
 }
 root.StudioPortfolioJourney={render,daily,combined,sampleMilestones};
