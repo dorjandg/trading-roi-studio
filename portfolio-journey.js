@@ -124,6 +124,64 @@ function sampleMilestones(r,signalDay='1'){
   '</p>':'';
  return preview+ledger+route;
 }
+function dailyTradeRouting(results,selected,inputs){
+ const sources=selected==='all'?results:[results[Number(selected)]].filter(Boolean);
+ const entries=[];
+ for(const source of sources){
+  const label=source.plan.firm+' '+usd(source.plan.size);
+  for(const a of source.sample?.tradeAssignments||[])entries.push({...a,firm:label});
+ }
+ entries.sort((a,b)=>a.day-b.day||a.signal-b.signal||a.firm.localeCompare(b.firm));
+ if(!entries.length)return '<p class="hint">No daily trade assignments were recorded for this portfolio path.</p>';
+ const days=[...new Set(entries.map(x=>x.day))].sort((a,b)=>a-b);
+ const maxSignals=Math.max(1,...entries.map(a=>a.signal));
+ const maxCells=Math.min(6,maxSignals);
+ const byDay=new Map();
+ for(const e of entries){
+  if(!byDay.has(e.day))byDay.set(e.day,[]);
+  byDay.get(e.day).push(e);
+ }
+ const chosenSources=selected==='all'?sources:sources;
+ const daySummary=day=>{
+  const data=chosenSources.map(x=>x.sample?.dailyCash?.find(c=>c.day===day)).filter(Boolean);
+  return {
+   bought:data.reduce((v,d)=>v+n(d.bought),0),
+   challenge:data.reduce((v,d)=>v+n(d.challenge),0),
+   verification:data.reduce((v,d)=>v+n(d.verification),0),
+   funded:data.reduce((v,d)=>v+n(d.fundedActive),0),
+   failed:data.reduce((v,d)=>v+n(d.burned),0),
+   paid:data.reduce((v,d)=>v+n(d.paid),0),
+   executed:data.reduce((v,d)=>v+n(d.tradesToday),0)
+  };
+ };
+ const tradeText=a=>{
+  if(!a||a.account==null)return '<span style="color:var(--muted)">Unused</span>';
+  const name='A'+a.account+(selected==='all'?' · '+esc(a.firm):'');
+  const result=a.outcome==='W'?'W':a.outcome==='L'?'L':esc(a.outcome||'—');
+  const stage=a.stage==='p1'?'CH':a.stage==='p2'?'VR':a.stage==='funded'?'FD':'—';
+  const color=result==='W'?'var(--green)':result==='L'?'var(--red)':'var(--muted)';
+  return '<span title="'+esc(a.firm+' · Account '+a.account+' · '+stage+' · '+a.outcome+' · '+(a.status||''))+'">'+name+
+   ' <small style="color:var(--muted)">'+stage+'</small> <b style="color:'+color+'">'+result+'</b></span>';
+ };
+ const rows=days.map(day=>{
+  const events=byDay.get(day)||[],counts=daySummary(day);
+  const cells=Array.from({length:maxCells},(_,i)=>{
+   const matches=events.filter(a=>a.signal===i+1);
+   return '<td style="white-space:nowrap">'+(matches.length?matches.map(tradeText).join('<div style="margin-top:3px"></div>'):'—')+'</td>';
+  }).join('');
+  return '<tr><th scope="row">D'+day+'</th>'+cells+
+   '<td class="num">'+counts.executed+'</td><td class="num">'+counts.bought+'</td>'+
+   '<td class="num">'+counts.challenge+'</td><td class="num">'+counts.verification+'</td>'+
+   '<td class="num">'+counts.funded+'</td><td class="num">'+counts.failed+'</td>'+
+   '<td class="num">'+counts.paid+'</td></tr>';
+ }).join('');
+ const heading='<div class="journey-status-line"><strong>Daily trades → prop-firm accounts</strong> · '+days.length+
+  ' trading days · '+entries.filter(e=>e.account!=null).length+' assigned signal slots</div>';
+ const explain='<p class="journey-explainer">A1, A2, etc. are individual purchased accounts. CH = Challenge, VR = Verification, FD = Funded; W/L = simulated trade outcome. Each row shows daily trade routing and end-of-day account totals. These are complete account assignments from one simulated portfolio path, not an average or only one account. Account IDs restart for each firm. '+(selected==='all'?'In a split portfolio each firm has its own local trade slot numbering; the same Trade number across firms does not necessarily mean the same global signal.':'')+'</p>';
+ return heading+explain+'<div class="tablewrap journey-ledger-table" style="max-height:650px"><table class="journey-table" style="min-width:970px"><thead><tr><th>Day</th>'+
+  Array.from({length:maxCells},(_,i)=>'<th>Trade '+(i+1)+'</th>').join('')+
+  '<th>Executed</th><th>Bought</th><th>CH</th><th>VR</th><th>FD</th><th>Failed</th><th>Paid</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+}
 function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true,signalDay='1'}={}){
  if(!results.length)return '<p class="hint">Run a Portfolio Sim calculation to see account journeys.</p>';
  const split=inputs.budgetMode==='split';
@@ -143,7 +201,7 @@ function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true
  const span=r.plan?.stageList?.includes('p2')?'Verification / Phase 2':'Verification (N/A for 1-step)';
  const header='<div class="journey-toolbar">'+
   '<label>Account / portfolio<select data-journey-field="selection">'+options(choices,selected)+'</select></label>'+
-  '<label>Show results<select data-journey-field="mode">'+options([['trial','Trial #1 · actual counts'],['average','Mean across '+n(inputs.trials)+' trials']],average?'average':'trial')+'</select></label>'+
+  
   '<label>Days<select data-journey-field="onlyChanges">'+options([['true','Trades & stage changes'],['false','Every trading day']],onlyChanges?'true':'false')+'</select></label>'+ 
   (selected==='all'?'':'<label>Evaluation allocation limit ($)<input type="number" min="0" step="10000" placeholder="No limit set" data-journey-field="evaluationLimit" value="'+(n(cap.evaluation)||'')+'"></label>'+ 
   '<label>Funded allocation limit ($)<input type="number" min="0" step="10000" placeholder="No limit set" data-journey-field="fundedLimit" value="'+(n(cap.funded)||'')+'"></label>')+'</div>';
@@ -207,7 +265,7 @@ function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true
   ' · Eval '+usd(last.evaluationAllocation)+' · Funded '+usd(last.fundedAllocation)+
   ' · Spent '+usd(last.spent)+' · Received '+usd(last.receipts)+'</p>';
  const capInfo=selected==='all'?'Combined nominal allocation across different firms; firm limits are separate.':'Planning limits: Evaluation '+(n(cap.evaluation)>0?usd(cap.evaluation):'not set')+' · Funded '+(n(cap.funded)>0?usd(cap.funded):'not set')+'. These caps are enforced in new simulation runs: evaluation purchases stop at the cap, and funded activations wait for a free slot. A cap below one account size permits zero accounts. Caps are per selected account type, not pooled across different account sizes of the same firm.';
- return header+total+'<p class="journey-explainer">'+capInfo+'</p>'+table+graphs+(!average&&selected!=='all'?sampleMilestones(r,signalDay):'')+note;
+ return header+dailyTradeRouting(results,selected,inputs)+total+'<p class="journey-explainer">'+capInfo+'</p>'+table+graphs+(!average&&selected!=='all'?sampleMilestones(r,signalDay):'')+note;
 }
 root.StudioPortfolioJourney={render,daily,combined,sampleMilestones};
 })(typeof window!=='undefined'?window:globalThis);
