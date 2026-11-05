@@ -127,7 +127,10 @@ summary{cursor:pointer;font-weight:750;color:var(--text)}details .tablewrap{marg
   <div class="field"><label for="ideaEffort">Search depth</label><select id="ideaEffort">
    <option value="quick">Quick · 50 + 80 trials</option><option value="normal" selected>Standard · 80 + 150 trials</option>
    <option value="deep">Detailed · 150 + 250 trials</option></select></div>
+  <div class="field"><label for="ideaReserve">Safety reserve for this test (USD)</label>
+   <input id="ideaReserve" type="number" min="0" step=".01" inputmode="decimal" value="0"></div>
  </div>
+ <div id="ideaCeilingInfo" class="status" style="margin:10px 0">Select an account to calculate the maximum modeled starting risk.</div>
  <div class="actions"><button type="button" class="primary" id="discover">Find Better Models</button>
   <span id="ideaStatus" class="status" role="status">Run a model search to compare alternatives.</span></div>
  <div id="ideaResults"></div>
@@ -161,6 +164,7 @@ const rootKey='4ds:v1:'+user+':';
 let catalog=null,audit=null,rows=[],lastResults=[],lastInputs=null;
 let testRisks={}; // simulator-only R1/R2/R3 and RR experiments, never written to Firms
 let discovered=null; // exploration candidates (not saved as Firms profile)
+let ideaReserveAccountKey='';
 const modelDiscovery=window.StudioModelDiscovery;
 const historyState={}; // per-result paging/filter, independent from Monte Carlo calculations
 const openResultDetails=new Set();
@@ -184,6 +188,10 @@ function accountPlan(row){
  const snapshots={p1:snapFor(row.id,size,'p1'),p2:snapFor(row.id,size,'p2'),funded:snapFor(row.id,size,'funded')};
  const plan=E.buildPlan(row.id,size,program,profile,snapshots,audit?.programs?.[row.id]);
  const experiment=testRisks[row.id+':'+size]||{};
+ if(Object.prototype.hasOwnProperty.call(experiment,'__riskReserve')){
+  const value=Number(experiment.__riskReserve);
+  if(Number.isFinite(value)&&value>=0)plan.riskReserve=value;
+ }
  for(const stage of plan.stageList){
   const saved=experiment[stage]||{},risk=plan.riskProfiles[stage];
   for(const field of ['r1','r2','r3','rr']){
@@ -241,7 +249,7 @@ function loadView(){
 }
 function rowSummary(row){
  const p=accountPlan(row),v=E.validatePlan(p);
- const hasTest=Object.keys(testRisks[p.id+':'+p.size]||{}).some(stage=>Object.keys(testRisks[p.id+':'+p.size][stage]||{}).length);
+ const hasTest=Object.keys(testRisks[p.id+':'+p.size]||{}).length>0;
  const title=hasTest?'<strong style="color:var(--amber)">Simulator test risks (Firms unchanged)</strong>':
   p.sourceSaved?'<strong class="good">Saved phase settings</strong>':'<strong style="color:var(--amber)">Illustrative defaults · not saved</strong>';
  const risks=p.stageList.map(stage=>{
@@ -273,10 +281,35 @@ function renderRows(){
  $('ideaAccount').innerHTML=rows.map((row,i)=>
   '<option value="'+i+'">'+esc(catalog.programs[row.id].firm+' · '+catalog.programs[row.id].name+' · '+usd(row.size))+'</option>').join('');
  if(priorIdea!==''&&rows[Number(priorIdea)])$('ideaAccount').value=priorIdea;
+ refreshIdeaCeiling();
  $('profileStatus').textContent=rows.length+' account type'+(rows.length===1?'':'s')+' selected.';
  $('budgetModeNote').textContent=mode==='compare'?
   'Every firm receives the FULL starting budget in its own alternative scenario. Do not add the row totals.':
   'One starting budget is split across the selected firms in proportion to the weights above. The combined result is calculated as one portfolio.';
+}
+function refreshIdeaCeiling(){
+ if(!catalog||!modelDiscovery)return;
+ const row=rows[Number($('ideaAccount').value)];
+ if(!row)return;
+ const key=row.id+':'+row.size;
+ const plan=accountPlan(row);
+ if(key!==ideaReserveAccountKey){
+  ideaReserveAccountKey=key;
+  $('ideaReserve').value=String(plan.riskReserve);
+ }
+ const input=Number($('ideaReserve').value);
+ if(!Number.isFinite(input)||input<0){
+  $('ideaCeilingInfo').textContent='Enter a valid nonnegative safety reserve.';
+  return;
+ }
+ plan.riskReserve=input;
+ const c=modelDiscovery.riskCeiling(plan);
+ const label=n=>Number.isFinite(n)?usd(n):'not configured';
+ $('ideaCeilingInfo').textContent=
+  'Modeled starting-trade ceiling: '+(c.maxRisk===null?'unavailable':usd(c.maxRisk))+
+  ' = min(daily loss '+label(c.daily)+', overall loss '+label(c.overall)+
+  ') − reserve '+usd(c.reserve)+' − trade cost '+usd(c.tradeCost)+
+  '. A $0 test reserve still keeps $0.01 clearance. Limits are starting-state estimates; after losses, equity and drawdown headroom can be smaller.';
 }
 function setStale(){
  if(lastResults.length){$('status').textContent='Inputs changed · run again for updated results';$('status').style.color='var(--amber)';}
@@ -363,7 +396,8 @@ function historyMarkup(result,index){
 function riskEditor(result,index){
  const p=result.plan;
  return '<section class="risk-tester"><h4>Test phase risks · '+esc(p.firm)+' '+usd(p.size)+'</h4>'+
-  '<p class="hint">Change R1, R2, R3, RR, risk sequence or maximum wins per day and select Re-run. These tests are saved only for Portfolio Sim; your original settings in Firms are not modified.</p>'+
+  '<p class="hint">Change R1, R2, R3, RR, risk sequence, maximum wins per day or safety reserve and select Re-run. These experiments never modify Firms.</p>'+
+  '<div class="fields"><div class="field"><label>Safety reserve for this account (USD)</label><input type="number" min="0" step=".01" data-test-reserve="'+index+'" value="'+p.riskReserve+'"></div></div>'+
   p.stageList.map(stage=>{
    const r=p.riskProfiles[stage];
    return '<fieldset class="risk-phase-test"><legend>'+esc(r.name)+'</legend><div class="fields">'+
@@ -474,6 +508,17 @@ function renderResults(list,inputs){
 
 $('details').addEventListener('change',event=>{
  const input=event.target;
+ if(input.matches?.('[data-test-reserve]')){
+  const index=Number(input.dataset.testReserve),result=lastResults[index];if(!result)return;
+  const value=Number(input.value);
+  if(!Number.isFinite(value)||value<0){input.value=String(result.plan.riskReserve);return;}
+  const key=result.plan.id+':'+result.plan.size;
+  if(!testRisks[key])testRisks[key]={};
+  testRisks[key].__riskReserve=value;
+  const note=input.closest('.risk-tester')?.querySelector('[data-test-note]');
+  if(note){note.textContent='Reserve edited · select Re-run';note.style.color='var(--amber)';}
+  renderRows();setStale();return;
+ }
  if(input.matches?.('[data-test-config]')){
   const index=Number(input.dataset.testConfig),result=lastResults[index];
   if(!result)return;
@@ -592,7 +637,7 @@ function renderDiscovery(result,row,budget){
     '<td>'+dec(h.avg.exhausted)+'</td>'+
     '<td>'+(i===0?'Current':'<button type="button" data-discovery-apply="'+(i-1)+'">Test in Portfolio Sim</button>')+'</td></tr>';
  };
- const best=result.ideas.find(c=>c.improvement>0);
+ const best=result.ideas.filter(c=>c.improvement>0).sort((a,b)=>b.improvement-a.improvement)[0];
  const summary=best?
   'One or more ideas improved the selected score on this separate validation sample. The first is <b>'+esc(best.title)+'</b>'+
   ' with simulated net '+showDifference(best.delta.net)+' and payout probability '+showDifference(best.delta.payout,true)+
