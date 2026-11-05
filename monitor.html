@@ -41,6 +41,13 @@ for(const x of entries){checks+=2;if(!['CFD','Futures'].includes(x.market))add('
   if(rec.sizesUSD?.length)withSizes++;else if(!active.programs?.[x.id]?.sizes?.length)add('warn',x.firm+' · '+x.program+' sizes unconfirmed','Exact purchasable account sizes are not confirmed for this program.',x.url);
   if(Object.keys(rec.pricesUSD||{}).length||Object.keys(rec.pricesEUR||{}).length||Object.keys(rec.priceVariantsUSD||{}).length)withPrices++;
   else if(!active.programs?.[x.id]?.pricesUSD||!Object.keys(active.programs[x.id].pricesUSD||{}).length)add('warn',x.firm+' · '+x.program+' fee missing','Official purchase fee by size/plan remains unavailable; do not assume a default.',x.url);
+  const risk=rec.riskStructure;
+  checks+=5;
+  if(!risk?.drawdownKind)add('warn',x.firm+' · '+x.program+' drawdown unclassified','Specify static, end-of-day, intraday, capped or stage-dependent trailing.',x.url);
+  else if(['variant','stage-dependent'].includes(risk.drawdownKind))add('info',x.firm+' · '+x.program+' drawdown depends on account','Check exact purchased variant and evaluation/funded stage before risk sizing.',x.url);
+  if(!risk?.consistency)add('warn',x.firm+' · '+x.program+' consistency unclassified','Determine stage-specific best-day rule, payout condition or absence of published cap.',x.url);
+  else if(risk.consistency.percent!=null&&(!Number.isFinite(Number(risk.consistency.percent))||risk.consistency.percent<=0||risk.consistency.percent>100))add('warn',x.firm+' · '+x.program+' invalid consistency rate','Review best-day percentage and source.',x.url);
+  if(risk?.consistency?.stage==='variant-dependent'||risk?.consistency?.stage==='funded-variable')add('info',x.firm+' · '+x.program+' variable consistency','A universal daily cap cannot be calculated for all plan variants.',x.url);
   if(rec.status==='requires-variant-selection'){needsVariants++;add('warn',x.firm+' · '+x.program+' mixes rule variants','Select exact program and purchase path before interpreting margin, drawdown or fees.',x.url)}
  }
  checks+=4;
