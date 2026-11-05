@@ -345,6 +345,22 @@ function canAcceptSignal(p,ac){
  }
  return true;
 }
+// Preflight the *next configured trade* against the account's live MLL.
+// A risk-blocked account is NOT a breached Topstep account. Checking before
+// purchases/routing prevents blocked accounts from consuming signal slots.
+function nextRiskStatus(p,ac){
+ if(!canAcceptSignal(p,ac))return null;
+ const stage=stageName(p,ac),c=p.riskProfiles[stage];
+ const useR3=p.id==='topstep'&&stage==='funded'&&
+  ac.fundedTargetDay!==null&&ac.funded150Days<5;
+ const slot=p.id==='topstep'&&stage==='p1'?'r1':useR3?'r3':plannedSlot(ac.history,c.policy);
+ const risk=pos(c[slot]);
+ const required=risk+p.tradeCost+Math.max(.01,p.riskReserve);
+ const available=ac.stagePnl-floorFor(p,ac);
+ if(risk<.01||required>available+1e-8||required>p.dailyLoss+1e-8)
+  return {slot,risk,required,available};
+ return null;
+}
 function oneTrial(p,config,rng,record=false){
  const n=Math.max(0,Math.floor(config.count)),dynamic=config.purchaseMode==='recycle';
  const evaluationCap=config.evaluationAllocationCap>0?Math.floor(config.evaluationAllocationCap/p.size):Infinity;
@@ -387,11 +403,22 @@ function oneTrial(p,config,rng,record=false){
  });
  const dailyCash=config.trackDaily===true?
   [{day:0,spent,receipts,net:receipts-spent,paid,bought,challengeSpent,activationSpent,
-   live:liveCount(),burned:0,opportunities:0,tradesToday:0,qualificationToday:0,unusedToday:0,...journeyCounts()}]:null;
+   live:liveCount(),burned:0,failed:0,riskBlocked:0,opportunities:0,tradesToday:0,qualificationToday:0,unusedToday:0,...journeyCounts()}]:null;
  for(let day=1;day<=config.days;day++){
   const dailyOpportunities=dynamic?(config.tradeSchedule?config.tradeSchedule[day-1]:config.tradesPerDay):config.tradesPerDay;
   const tradesBefore=accounts.reduce((sum,ac)=>sum+ac.trades,0);
   const qualificationsBefore=accounts.reduce((sum,ac)=>sum+ac.qualificationTrades,0);
+  // Close only the ability to trade at the configured tier; DO NOT record
+  // a real MLL breach when the account still has a positive safety margin.
+  for(const ac of accounts){
+   if(ac.status!=='active')continue;
+   const blocked=nextRiskStatus(p,ac);
+   if(!blocked)continue;
+   ac.status='exhausted';ac.closedDay=day;ac.blocked++;
+   if(record)ac.trace.push({day,stage:stageName(p,ac),type:'blocked',
+    risk:blocked.risk,slot:blocked.slot,headroom:blocked.available,
+    label:'Risk tier too large for remaining drawdown: account not breached'});
+  }
   if(dynamic){
    // Existing eligible purchased accounts get priority; only buy the gap.
    const eligible=accounts.filter(ac=>canAcceptSignal(p,ac)).length;
@@ -478,6 +505,8 @@ function oneTrial(p,config,rng,record=false){
     bought,challengeSpent,activationSpent,live:liveCount(),
     opportunities,tradesToday,qualificationToday,unusedToday:Math.max(0,opportunities-tradesToday),
     burned:accounts.filter(a=>a.status==='failed'||a.status==='exhausted').length,
+    failed:accounts.filter(a=>a.status==='failed').length,
+    riskBlocked:accounts.filter(a=>a.status==='exhausted').length,
     ...journeyCounts()});
   }
  }
@@ -547,7 +576,7 @@ function simulatePortfolio(p,config={}){
  const rand=rngFactory(settings.seed);
  const chartTrials=settings.trackDaily?[]:null;
  const chartSums=settings.trackDaily?Array.from({length:settings.days+1},
-  (_,day)=>({day,spent:0,receipts:0,net:0,paid:0,bought:0,challengeSpent:0,activationSpent:0,live:0,burned:0,
+  (_,day)=>({day,spent:0,receipts:0,net:0,paid:0,bought:0,challengeSpent:0,activationSpent:0,live:0,burned:0,failed:0,riskBlocked:0,
    challenge:0,verification:0,fundedActive:0,fundingWait:0,payoutPending:0,targetHit:0,activated:0,passed1:0,passed2:0,
    opportunities:0,tradesToday:0,qualificationToday:0,unusedToday:0})):null;
  let withPayout=0,positiveNet=0,goalMet=0, sample=null;
@@ -562,7 +591,7 @@ function simulatePortfolio(p,config={}){
   });
   if(chartSums)for(const d of x.dailyCash||[]){
    const sum=chartSums[d.day];
-   for(const key of ['spent','receipts','net','paid','bought','challengeSpent','activationSpent','live','burned','challenge','verification','fundedActive',
+   for(const key of ['spent','receipts','net','paid','bought','challengeSpent','activationSpent','live','burned','failed','riskBlocked','challenge','verification','fundedActive',
     'fundingWait','payoutPending','targetHit','activated','passed1','passed2','opportunities','tradesToday','qualificationToday','unusedToday'])sum[key]+=d[key];
   }
   for(const key of Object.keys(total))total[key]+=x[key]||0;
