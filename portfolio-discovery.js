@@ -127,8 +127,20 @@ function search(base,options={}){
  const trained=candidates.map(c=>({...c,train:E.simulatePortfolio(c.plan,trainInput)}));
  const original=trained.find(c=>c.key==='baseline');
  if(!original)throw Error('No baseline in risk search');
- trained.sort((a,b)=>score(b.train,objective)-score(a.train,objective));
- const top=trained.filter(c=>c.key!=='baseline').slice(0,shortlist);
+ // Hide variants that produce identical simulated outcomes on the training
+ // sample. For example, allowing 3 wins cannot change a 2-opportunity day.
+ const fingerprints=new Set(),distinct=[original];
+ const fingerprint=r=>JSON.stringify([r.nets,r.avg.paid,r.avg.exhausted,r.stages]);
+ fingerprints.add(fingerprint(original.train));
+ for(const c of trained){
+  if(c.key==='baseline')continue;
+  const key=fingerprint(c.train);
+  if(fingerprints.has(key))continue;
+  fingerprints.add(key);
+  distinct.push(c);
+ }
+ distinct.sort((a,b)=>score(b.train,objective)-score(a.train,objective));
+ const top=distinct.filter(c=>c.key!=='baseline').slice(0,shortlist);
  const selected=[original,...top];
  const validation=selected.map((c,i)=>{
   const holdout=E.simulatePortfolio(c.plan,testInput);
