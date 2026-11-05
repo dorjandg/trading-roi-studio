@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#101a2b"><title>Portfolio Simulator · 4Ds Trading Studio</title>
+<meta name="theme-color" content="#101a2b"><title>Portfolio Sim · 4Ds Trading Studio</title>
 <style>
 :root{--bg:#080f1a;--panel:#111c2d;--panel2:#17263a;--line:#2c4058;--text:#edf4fd;--muted:#91a8c2;--green:#51e1b2;--blue:#83acff;--red:#ff8b95;--amber:#f0c484}
 html[data-theme=light]{--bg:#f2f5fa;--panel:#fff;--panel2:#e9f0f8;--line:#c6d4e4;--text:#182a3e;--muted:#536a83;--green:#087f62;--blue:#295caf;--red:#ac354b;--amber:#805308}
@@ -54,7 +54,7 @@ summary{cursor:pointer;font-weight:750;color:var(--text)}details .tablewrap{marg
 @media(max-width:600px){.shell{padding:10px 10px 35px}.panel{padding:13px;margin:11px 0}.fields{gap:9px}.account-grid{gap:8px}.account-grid .remove{grid-column:2;justify-self:end}.nav{gap:9px}.result-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi strong{font-size:19px}input,select{font-size:16px}table{font-size:12px}td,th{padding:9px 8px}}
 </style>
 </head><body><div class="shell">
-<header class="top"><div class="brand"><span class="mark">4D</span><span>4Ds Trading Studio <span style="color:var(--green)">/ Portfolio Simulator</span></span></div><nav class="nav"><a href="index.html">Overview & Firms</a><a href="labs.html">Labs</a><a href="comparison-lab.html">Compare Lab</a><a href="trade-lab.html">Trade Lab</a><button type="button" id="theme" aria-label="Toggle color theme">◐</button></nav></header>
+<header class="top"><div class="brand"><span class="mark">4D</span><span>4Ds Trading Studio <span style="color:var(--green)">/ Portfolio Sim</span></span></div><nav class="nav"><a href="index.html">Overview & Firms</a><a href="labs.html">Labs</a><a href="comparison-lab.html">Compare Lab</a><a href="trade-lab.html">Trade Lab</a><button type="button" id="theme" aria-label="Toggle color theme">◐</button></nav></header>
 <div class="eyebrow">Options-based Monte Carlo · cash risk · first payout</div>
 <h1>Budget → Challenges → Phases → Payout</h1>
 <p class="muted">Uses the saved RR, R1/R2/R3 and risk decisions from your account's phase options. It simulates random trade outcomes rather than choosing future winning paths. No orders are placed.</p>
@@ -80,7 +80,7 @@ summary{cursor:pointer;font-weight:750;color:var(--text)}details .tablewrap{marg
 <section class="panel"><h2>2 · Prop-firm accounts</h2><p class="hint">Saved profiles and phase-risk options are read from this browser's selected 4Ds user (<b id="userLabel">—</b>). Use Firms on the main site to adjust R1/R2/R3 and RR; the simulator doesn't create a second set of risk settings.</p>
  <div id="accounts"></div>
  <div class="actions"><button id="addAccount" type="button">+ Add account to comparison</button><button id="reload" type="button">Reload saved stage settings</button><span id="profileStatus" class="hint"></span></div>
- <div class="actions"><button id="run" type="button" class="primary">Run options-driven portfolio simulation</button><span id="status" class="status" role="status">Loading account catalog…</span></div>
+ <div class="actions"><button id="run" type="button" class="primary">Run Simulation</button><span id="status" class="status" role="status">Loading account catalog…</span></div>
 </section>
 <section id="results" hidden>
 <section class="panel"><h2>3 · Results across prop firms</h2><p id="summaryCaption" class="hint"></p><div id="totals" class="kpis"></div>
