@@ -355,7 +355,32 @@ html[data-theme="light"] #page-firms .cash-risk-table td:nth-child(4){background
  #page-dashboard .metric-row strong{width:100%;text-align:left}
 }
 </style>
-<style id="studio-investment-lab-nav">.nav .nav-lab-link{display:inline-flex;align-items:center;flex:0 0 auto;background:transparent;color:var(--muted);border:0;border-bottom:2px solid transparent;padding:18px 18px 16px;font-weight:700;white-space:nowrap;font-size:inherit;text-decoration:none}.nav .nav-lab-link:hover{color:var(--text)}.nav .nav-lab-link:focus-visible{outline:2px solid var(--blue);outline-offset:-2px}@media(max-width:600px){.nav .nav-lab-link{padding:12px 10px;min-height:44px}}</style></head>
+<style id="studio-investment-lab-nav">.nav .nav-lab-link{display:inline-flex;align-items:center;flex:0 0 auto;background:transparent;color:var(--muted);border:0;border-bottom:2px solid transparent;padding:18px 18px 16px;font-weight:700;white-space:nowrap;font-size:inherit;text-decoration:none}.nav .nav-lab-link:hover{color:var(--text)}.nav .nav-lab-link:focus-visible{outline:2px solid var(--blue);outline-offset:-2px}@media(max-width:600px){.nav .nav-lab-link{padding:12px 10px;min-height:44px}}</style>
+<style id="studio-light-surface-fix">
+/* Light-mode-only contrast correction. Dark theme is unchanged. */
+html[data-theme="light"]{--bg:#f7f9fc;--panel:#ffffff;--panel2:#f3f7fb;--panel3:#edf3f9;--border:#d6e0eb;--text:#1c2b3d;--muted:#53677c;--faint:#62758b}
+html[data-theme="light"] .hero-main,html[data-theme="light"] .hero-aside{background:linear-gradient(135deg,#f6fbff,#edf5fc);color:var(--text);border-color:var(--border)}
+html[data-theme="light"] .field label,html[data-theme="light"] .definition{color:#475f75}
+html[data-theme="light"] .panel,html[data-theme="light"] .kpi,html[data-theme="light"] .card,html[data-theme="light"] .info-card{background:#fff;color:var(--text);border-color:var(--border)}
+html[data-theme="light"] .metric-row,html[data-theme="light"] th,html[data-theme="light"] td,html[data-theme="light"] .section{border-color:var(--border)}
+html[data-theme="light"] th{background:#f0f5fa;color:#4b6179}
+html[data-theme="light"] tbody tr:hover{background:#edf5fb}
+html[data-theme="light"] .prob,html[data-theme="light"] .seg,html[data-theme="light"] .overview-summary-strip,html[data-theme="light"] .overview-analysis-card,html[data-theme="light"] .firm-health-card,html[data-theme="light"] .recovery-details,html[data-theme="light"] .recovery-stats span{background:#f3f7fb;color:var(--text);border-color:var(--border)}
+html[data-theme="light"] .seg.active{background:#e1f4ed;color:#096b54;border-color:#9cd4c1}
+html[data-theme="light"] .overview-mode-switch .btn.active{background:#087c60;color:#fff;border-color:#087c60}
+html[data-theme="light"] .bar-track{background:#e0e9f2}
+html[data-theme="light"] .scenario-detail-cell{background:#f7fafd}
+html[data-theme="light"] .scenario-input,html[data-theme="light"] .field textarea,html[data-theme="light"] .preset-select,html[data-theme="light"] .cash-risk-table input{background:#fff;color:var(--text);border-color:#c0cfdd}
+html[data-theme="light"] .preset-tile .preset-description{color:#5b7084}
+html[data-theme="light"] .notice.success{background:#eaf8f1;color:#116b51;border-color:#b7decf}
+html[data-theme="light"] .notice.warning{background:#fff5e7;color:#83550d;border-color:#eed0a3}
+html[data-theme="light"] .btn:not(.primary):hover{background:#e7f0f8;border-color:#aebfd1}
+html[data-theme="light"] #page-firms .cash-risk-table tbody tr{background:#fff}
+html[data-theme="light"] #page-firms .cash-risk-table td:nth-child(4){background:#f3f7fb}
+html[data-theme="light"] .firm-health-card .firm-health-meta,html[data-theme="light"] .firm-health-card .firm-health-info{color:#53677c}
+html[data-theme="light"] .recovery-details .caption{color:#53677c}
+</style>
+</head>
 <body>
 <div class="shell">
 <header class="top">
