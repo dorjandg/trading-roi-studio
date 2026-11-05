@@ -197,7 +197,9 @@ function search(base,options={}){
  // Always present selected 100%-of-usable-limit examples even if their
  // discovery score is poor. These are stress tests, not recommendations.
  const boundaryKeys=['limitInitial100','limitFlat100','limitRecovery100','limitWin100','limitAllFirst','oneWinTarget'];
- const boundary=boundaryKeys.map(k=>distinct.find(c=>c.key===k)).filter(Boolean);
+ // Boundary tests are always visible, even when the training result happens
+ // to equal another model. Do not deduplicate away a requested maximum-risk test.
+ const boundary=boundaryKeys.map(k=>trained.find(c=>c.key===k)).filter(Boolean);
  const others=top.filter(c=>!boundary.some(b=>b.key===c.key));
  const selected=[original,...boundary,...others];
  const validation=selected.map((c,i)=>{
