@@ -132,6 +132,21 @@ function dailyTradeRouting(results,selected,inputs){
   for(const a of source.sample?.tradeAssignments||[])entries.push({...a,firm:label});
  }
  entries.sort((a,b)=>a.day-b.day||a.signal-b.signal||a.firm.localeCompare(b.firm));
+ // A purchased account has one permanent ID within its account type.
+ // Once it advances, it must never appear in an earlier phase.
+ const phaseRank={p1:0,p2:1,funded:2};
+ const progress=new Map();
+ const violations=[];
+ for(const e of entries.slice().sort((a,b)=>a.day-b.day||a.signal-b.signal)){
+  if(e.account==null||!(e.stage in phaseRank))continue;
+  const key=e.firm+':'+e.account;
+  const before=progress.get(key);
+  const rank=phaseRank[e.stage];
+  if(before!==undefined&&rank<before)violations.push('A'+e.account+' '+e.firm+' on D'+e.day);
+  progress.set(key,Math.max(before??rank,rank));
+ }
+ const warning=violations.length?'<p class="journey-status-line" style="color:var(--red)">Account-stage regression detected: '+esc(violations.slice(0,5).join(', '))+'. Check simulation data.</p>':'';
+
  if(!entries.length)return '<p class="hint">No daily trade assignments were recorded for this portfolio path.</p>';
  const days=[...new Set(entries.map(x=>x.day))].sort((a,b)=>a-b);
  const maxSignals=Math.max(1,...entries.map(a=>a.signal));
@@ -177,8 +192,8 @@ function dailyTradeRouting(results,selected,inputs){
  }).join('');
  const heading='<div class="journey-status-line"><strong>Daily trades → prop-firm accounts</strong> · '+days.length+
   ' trading days · '+entries.filter(e=>e.account!=null).length+' assigned signal slots</div>';
- const explain='<p class="journey-explainer">A1, A2, etc. are individual purchased accounts. CH = Challenge, VR = Verification, FD = Funded; W/L = simulated trade outcome. Each row shows daily trade routing and end-of-day account totals. These are complete account assignments from one simulated portfolio path, not an average or only one account. Account IDs restart for each firm. '+(selected==='all'?'In a split portfolio each firm has its own local trade slot numbering; the same Trade number across firms does not necessarily mean the same global signal.':'')+'</p>';
- return heading+explain+'<div class="tablewrap journey-ledger-table" style="max-height:650px"><table class="journey-table" style="min-width:970px"><thead><tr><th>Day</th>'+
+ const explain='<p class="journey-explainer">A1, A2, etc. are permanent purchased-account IDs, never reassigned to new purchases. An account moves only CH → VR → FD → Payout/closed. After it passes CH, the same ID never returns to CH. CH = Challenge, VR = Verification, FD = Funded; W/L = simulated trade outcome. Each row shows daily trade routing and end-of-day account totals. These are complete account assignments from one simulated portfolio path, not an average or only one account. Account IDs restart for each firm. '+(selected==='all'?'In a split portfolio each firm has its own local trade slot numbering; the same Trade number across firms does not necessarily mean the same global signal.':'')+'</p>';
+ return heading+warning+explain+'<div class="tablewrap journey-ledger-table" style="max-height:650px"><table class="journey-table" style="min-width:970px"><thead><tr><th>Day</th>'+
   Array.from({length:maxCells},(_,i)=>'<th>Trade '+(i+1)+'</th>').join('')+
   '<th>Executed</th><th>Bought</th><th>CH</th><th>VR</th><th>FD</th><th>Failed</th><th>Paid</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
 }
