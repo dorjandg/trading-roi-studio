@@ -685,6 +685,20 @@ function profileKey(id,size){return String(id)+':'+String(size)}
 function storedProfile(key){try{const item=JSON.parse(localStorage.getItem(PROFILE_PREFIX+key)||'null');return item&&item.v===1&&item.state&&typeof item.state==='object'?item:null}catch(e){return null}}
 function writeProfile(){if(!activeProgramKey)return;try{localStorage.setItem(PROFILE_PREFIX+activeProgramKey,JSON.stringify({v:1,updatedAt:new Date().toISOString(),state:{...state}}));localStorage.setItem(PROFILE_ACTIVE,activeProgramKey);window.fourDsQueueCloudSave?.()}catch(e){console.warn('Account profile could not be saved',e)}}
 try{activeProgramKey=localStorage.getItem(PROFILE_ACTIVE)||null}catch(e){}
+// Direct links from Portfolio Sim open the exact saved Firms account.
+try{
+ const qs=new URLSearchParams(window.location.search),key=qs.get('account');
+ if(qs.get('view')==='firms'&&/^(ftmo2|holaPrime|holaPro|topstep):[1-9]\d{3,6}$/.test(key||'')){
+  const incoming=storedProfile(key);
+  if(incoming){
+   const budget=positive(state.budget);
+   state={...DEFAULT,...incoming.state,budget};
+   activeProgramKey=key;
+   localStorage.setItem(PROFILE_ACTIVE,key);
+   localStorage.setItem(STORAGE,JSON.stringify(state));
+  }
+ }
+}catch(e){console.warn('Portfolio Sim account link could not select target profile',e)}
 try{const x=JSON.parse(sessionStorage.getItem('studio-program-selection')||'null');if(x&&x.v===1&&Array.isArray(x.targets)&&x.targets.length===2&&x.feeUSD>0){
   const incomingKey=profileKey(x.programId||x.label,x.size);if(activeProgramKey&&activeProgramKey!==incomingKey)writeProfile();
   const profile=storedProfile(incomingKey);
@@ -1644,7 +1658,12 @@ function plannerDefaultSequence(path){
  });
 }
 function plannerOptionSequence(snapshot,path){
- const fallback=plannerDefaultSequence(path),saved=snapshot.optionSequences?.[path];
+ const mode=['saved','streak','flat','after-win','protect-after-loss'].includes(snapshot.policyMode)?snapshot.policyMode:'saved';
+ const fallback=mode==='flat'?[...path].map(()=>'r1'):
+  mode==='after-win'?[...path].map((_,i)=>i===0?'r1':path[i-1]==='W'?'r2':'r3'):
+  mode==='protect-after-loss'?[...path].map((_,i)=>i>0&&path[i-1]==='L'?'r3':'r1'):
+  plannerDefaultSequence(path);
+ const saved=snapshot.optionSequences?.[path];
  return fallback.map((level,index)=>Array.isArray(saved)&&RECOVERY_LEVELS.includes(saved[index])?saved[index]:level);
 }
 function recoveryPlanPath(outcomes,params){
@@ -1823,6 +1842,7 @@ function renderRecoveryPlanners(){
   host.innerHTML='<details class="recovery-details"><summary>'+setup.name+' · Options to reach the target</summary>'+
    '<h4>Risk &amp; reward · '+setup.name+'</h4><div class="recovery-fields">'+
    '<label>Reward / Risk (RR)<input data-option-rr type="number" min="0.1" max="100" step="0.1" value="'+setup.rr+'"></label>'+
+   '<label>Risk sequence'+select('policyMode',[['saved','Saved option choices'],['streak','After-loss tiers'],['flat','Flat R1'],['after-win','Boost after WIN'],['protect-after-loss','Protect after LOSS']],snapshot.policyMode||'saved')+'</label>'+
    RECOVERY_LEVELS.map((level,index)=>'<label>'+(index===0?'R1 · Initial':index===1?'R2 · Recovery':'R3 · Additional')+' ($)'+
     '<input type="number" min="0" step="1" data-risk-level="'+level+'" value="'+levels[level]+'"></label>').join('')+'</div>'+
    '<p class="caption">Edit R1, R2 and R3 once, then assign them in each option.</p>'+
@@ -1832,7 +1852,7 @@ function renderRecoveryPlanners(){
    '<label>Max trades on a winning day'+select('winCap',[[1,'1 trade'],[2,'2 trades'],[3,'3 trades'],[4,'4 trades'],[5,'5 trades'],[6,'6 trades']],requestedWinCap)+'</label>'+
    '<label>Max trades per option'+select('depth',[[3,'3 trades'],[4,'4 trades'],[5,'5 trades'],[6,'6 trades'],[7,'7 trades'],[8,'8 trades']],depth)+'</label>'+
    '<label>Sort'+select('sortBy',[['fast','Fastest target'],['drawdown','Lowest modeled drawdown']],snapshot.sortBy||'fast')+'</label></div></details>'+
-   '<p class="caption">Default risk order: R1 first, R2 after one loss, R3 after two or more losses; a win resets to R1. Option-level selectors can override this sequence. The selected risk is used in full or the trade is blocked when the modeled loss allowance and reserve are insufficient.</p>'+
+   '<p class="caption">Risk sequence: '+({saved:'Saved choices / after-loss defaults',streak:'R1 → R2 after 1 loss → R3 after 2+',flat:'R1 every trade','after-win':'R2 after WIN, R3 after LOSS','protect-after-loss':'R3 after LOSS, otherwise R1'}[snapshot.policyMode||'saved']||'Saved choices')+'. You can override individual trade risks. The selected risk is used in full or the trade is blocked if modeled limits are insufficient.</p>'+
    '<p class="caption">'+setup.name+' · '+setup.rr.toFixed(2)+'R · Target '+recoveryMoney(setup.goal)+' · Starting P/L '+recoveryMoney(pnl)+
     ' · Minimum trading days '+setup.minDays+' · Saved stage trade cap '+setup.dailyCap+' · Winning-day planner cap '+winCap+'.'+(winCap>setup.dailyCap?' Planner wins may exceed the saved stage trade cap; update that setting before live use.':'')+'</p>'+
    '<div class="recovery-stats"><span>Modeled paths <b>'+entries.length+'</b></span><span>Reach target <b>'+targetCount+'</b></span><span>Breach floor <b>'+failedCount+'</b></span><span>Page <b>'+page+' / '+totalPages+'</b></span></div>'+
@@ -1869,6 +1889,10 @@ document.addEventListener('change',event=>{
  }else if(el.hasAttribute('data-recovery-input')){
   const field=el.dataset.recoveryInput;
   if(field==='filter'){snapshot.filter=el.value;snapshot.page=1;snapshot.openOptionPath='';}
+  else if(field==='policyMode'){
+   const policy=['saved','streak','flat','after-win','protect-after-loss'].includes(el.value)?el.value:'saved';
+   if(snapshot.policyMode!==policy){snapshot.policyMode=policy;snapshot.optionSequences={};snapshot.page=1;snapshot.openOptionPath='';}
+  }
   else if(field==='sortBy'){snapshot.sortBy=el.value==='drawdown'?'drawdown':'fast';snapshot.page=1;snapshot.openOptionPath='';}
   else if(field==='pageSize'){snapshot.pageSize=el.value==='all'?'all':Math.max(1,Math.min(100,Math.floor(Number(el.value)||8)));snapshot.page=1;snapshot.openOptionPath='';}
   else if(field==='page'){snapshot.page=Math.max(1,Math.floor(Number(el.value)||1));snapshot.openOptionPath='';}
@@ -2058,7 +2082,14 @@ window.addEventListener('message',event=>{
  const msg=event.data;
  if(msg.type==='studio-rules-height'){requestAnimationFrame(fitFirmFrame);return;}
  if(msg.type==='studio-open-trading-workspace'){$('firmTradingWorkspace').scrollIntoView({behavior:'smooth',block:'start'});return;}
- if(msg.type==='studio-rules-ready'){$('firmsFrame').dataset.accountFrameReady='yes';sendPendingOverviewAccount();return;}
+ if(msg.type==='studio-rules-ready'){
+ $('firmsFrame').dataset.accountFrameReady='yes';sendPendingOverviewAccount();
+ if($('page-firms')?.classList.contains('active')){
+  const [programId,size]=String(activeProgramKey||'').split(':');
+  if(programId&&Number(size)>0)$('firmsFrame')?.contentWindow?.postMessage({type:'studio-select-account',programId,size:Number(size)},window.location.origin);
+ }
+ return;
+}
  if(msg.type==='studio-program-change'){
   $('firmsFrame').dataset.accountFrameReady='yes';
   if(!$('page-firms')?.classList.contains('active'))return;
@@ -2097,7 +2128,11 @@ const firmFrame=$('firmsFrame');if(firmFrame){
 $('activeUserSelect').value=activeUser;$('activeUserSelect').addEventListener('change',()=>{const v=$('activeUserSelect').value;if(!FOUR_DS_USERS.some(u=>u.id===v))return;writeProfile();try{localStorage.setItem(FOUR_DS_ACTIVE,v)}catch(_){}location.reload()});const profileSelect=$('profileUserSelect');profileSelect.value=activeUser;profileSelect.addEventListener('change',()=>{$('activeUserSelect').value=profileSelect.value;$('activeUserSelect').dispatchEvent(new Event('change'));});$('profileAccountStatus').textContent=activeProgramKey?'Active challenge: '+accountDisplayName(activeProgramKey)+' · Settings saved for '+activeUser+'.':'No challenge selected yet for '+activeUser+'. Choose one under Prop firms.';{const el=$('activeAccountProfile');if(el)el.textContent=activeProgramKey?'Saved account profile: '+accountDisplayName(activeProgramKey)+' · Changes to trading parameters are saved automatically on this device.':'No account profile selected. Choose a firm, program and account size in Prop firms.';}
 document.querySelectorAll('[data-page]').forEach(el=>el.addEventListener('click',()=>goPage(el.dataset.page)));document.querySelectorAll('[data-nav]').forEach(el=>el.addEventListener('click',()=>goPage(el.dataset.nav)));
 // Direct link from Labs to the existing Investments planner. No separate state or calculations.
-try{if(new URLSearchParams(window.location.search).get('view')==='investments')goPage('scaling');}catch(e){}
+try{
+ const target=new URLSearchParams(window.location.search).get('view');
+ if(target==='investments')goPage('scaling');
+ else if(target==='firms')goPage('firms');
+}catch(e){}
 
 $('preset40').addEventListener('click',()=>applyPreset(40));$('preset50').addEventListener('click',()=>applyPreset(50));$('simulate').addEventListener('click',()=>{const b=$('simulate');if(!selectedAccountSupportsSimulation){notify('Choose a challenge supported by the evaluation simulator.');return;}b.disabled=true;b.classList.add('is-calculating');b.textContent='Calculating…';setTimeout(()=>{try{runSimulation();}catch(e){console.error(e);notify('Simulation error: check your inputs.');}b.textContent='Run strategy simulation';b.classList.remove('is-calculating');updateSimulationAvailability();},25);});
 $('useManual').addEventListener('click',()=>{mode='manual';lastSim=null;dirtySim=false;render();notify('Manual pass-rate mode enabled.');});$('resetQuick').addEventListener('click',()=>{for(const k of ['budget','extraCost'])state[k]=DEFAULT[k];save();syncControls();render();});
