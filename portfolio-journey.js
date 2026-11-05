@@ -32,7 +32,10 @@ function daily(rows,averages=false,onlyChanges=true){
  });
  const changes=['bought','burned','challenge','verification','fundedActive','fundingWait',
   'targetHit','paid','spent','receipts','passed1','passed2','activated'];
- return onlyChanges?all.filter((row,i)=>i===0||changes.some(key=>Math.abs(diff(row,all[i-1],key))>1e-9)):all;
+ // Include days with actual trades, even when the account stays in the same
+ // phase; otherwise an "Activity" view hides all trading from the user.
+ return onlyChanges?all.filter((row,i)=>i===0||row.tradesToday>0||
+  changes.some(key=>Math.abs(diff(row,all[i-1],key))>1e-9)):all;
 }
 function combined(list,inputs){
  const days=Math.max(0,Math.floor(n(inputs.days)));
@@ -90,7 +93,7 @@ function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true
  const header='<div class="journey-toolbar">'+
   '<label>Account / portfolio<select data-journey-field="selection">'+options(choices,selected)+'</select></label>'+
   '<label>Show results<select data-journey-field="mode">'+options([['trial','Trial #1 · actual counts'],['average','Mean across '+n(inputs.trials)+' trials']],average?'average':'trial')+'</select></label>'+
-  '<label>Days<select data-journey-field="onlyChanges">'+options([['true','Changes only'],['false','Every trading day']],onlyChanges?'true':'false')+'</select></label></div>';
+  '<label>Days<select data-journey-field="onlyChanges">'+options([['true','Trades & stage changes'],['false','Every trading day']],onlyChanges?'true':'false')+'</select></label></div>';
  const note='<p class="journey-explainer"><b>Opp</b> = available opportunities, <b>Tr</b> = trades actually placed, <b>Unused</b> = remaining opportunities. A first loss stops that account for the day, a reached goal can stop further trades, and each phase has a separate max-win setting. D = simulated trading day, not a calendar date. '+
   '<b>CH</b> is Phase 1, <b>VR</b> is verification, <b>FD</b> is active funded, '+
   '<b>TG</b> and <b>PD</b> are cumulative targets hit and first payouts (TG may include paid accounts), '+
