@@ -407,7 +407,7 @@ details p{margin:6px 0}
  <p class="footer">Research tool only. Sourced catalog rules are snapshots, not live purchase/eligibility confirmations. The simulator reads profiles locally; budget changes here don't overwrite the main Overview settings. The maximum of 100 modeled challenges per account type is a performance cap, not a prop-firm permission limit.</p>
 </section>
 </div>
-<script src="portfolio-engine.js?v=20261105-payout-stage-freeze"></script>
+<script src="portfolio-engine.js?v=20261105-topstep-mll-r3"></script>
 <script src="portfolio-discovery.js?v=20261105-account-rotation"></script>
 <script src="portfolio-to-firms.js"></script>
 <script src="studio-report-source.js?v=20261105-account-rotation"></script>
@@ -493,6 +493,7 @@ function accountPlan(row){
   if(['saved','flat','streak','after-win','protect-after-loss'].includes(saved.policyMode)){
    risk.policy={...risk.policy,mode:saved.policyMode};
   }
+  if(plan.id==='topstep'&&stage==='p1')risk.policy={map:{},conflicts:[],mode:'flat'};
  }
  return plan;
 }
@@ -789,15 +790,15 @@ function riskEditor(result,index){
    const r=p.riskProfiles[stage];
    return '<fieldset class="risk-phase-test"><legend>'+esc(r.name)+'</legend><div class="fields">'+
     (stage==='funded'?'<div class="field"><label>Funded payout profit target (USD)</label><input type="number" min="0.01" step="100" data-test-funded-target="'+index+'" value="'+r.target+'"></div>':'')+
-    ['r1','r2','r3','rr'].map(field=>
+    (p.id==='topstep'&&stage==='p1'?['r1','rr']:['r1','r2','r3','rr']).map(field=>
      '<div class="field"><label>'+field.toUpperCase()+(field==='rr'?' · reward / risk':' · USD risk')+'</label>'+
      '<input type="number" inputmode="decimal" min="'+(field==='rr'?'.1':'.01')+
      '" max="'+(field==='rr'?'100':'10000000')+'" step="'+(field==='rr'?'.1':'.01')+
      '" data-test-risk="'+index+'" data-stage="'+stage+'" data-field="'+field+'" value="'+r[field]+'"></div>').join('')+
-    '<div class="field"><label>Risk sequence approach</label><select data-test-config="'+index+'" data-stage="'+stage+'" data-setting="policyMode">'+
+    (p.id==='topstep'&&stage==='p1'?'<p class="hint">Trading Combine: R1 only, no recovery tiers.</p>':    '<div class="field"><label>Risk sequence approach</label><select data-test-config="'+index+'" data-stage="'+stage+'" data-setting="policyMode">'+
     [['saved','Saved options'],['streak','After-loss tiers'],['flat','Flat R1 only'],['after-win','Increase after WIN'],['protect-after-loss','Protect after LOSS']].map(([val,label])=>
       '<option value="'+val+'"'+((r.policy?.mode||'saved')===val?' selected':'')+'>'+label+'</option>').join('')+
-    '</select></div>'+
+    '</select></div>')+
     '<div class="field"><label>Max wins per day</label><select data-test-config="'+index+'" data-stage="'+stage+'" data-setting="winCap">'+
     [1,2,3,4,5,6].map(val=>'<option value="'+val+'"'+(r.maxWinsPerDay===val?' selected':'')+'>'+val+'</option>').join('')+
     '</select></div>'+
@@ -1013,6 +1014,7 @@ $('details').addEventListener('change',event=>{
   const key=result.plan.id+':'+result.plan.size;
   if(!testRisks[key])testRisks[key]={};
   if(!testRisks[key][stage])testRisks[key][stage]={};
+  if(setting==='policyMode'&&result.plan.id==='topstep'&&stage==='p1')return;
   if(setting==='policyMode'&&['saved','streak','flat','after-win','protect-after-loss'].includes(input.value))
     testRisks[key][stage].policyMode=input.value;
   else if(setting==='winCap'&&Number(input.value)>=1&&Number(input.value)<=6)
@@ -1039,6 +1041,7 @@ $('details').addEventListener('change',event=>{
   if(!result)return;
   const stage=input.dataset.stage,field=input.dataset.field;
   if(!result.plan.stageList.includes(stage)||!['r1','r2','r3','rr'].includes(field))return;
+  if(result.plan.id==='topstep'&&stage==='p1'&&['r2','r3'].includes(field))return;
   const val=Number(input.value),max=field==='rr'?100:10000000,min=field==='rr'?.1:.01;
   if(!Number.isFinite(val)||val<min||val>max){
    input.value=String(result.plan.riskProfiles[stage][field]);
