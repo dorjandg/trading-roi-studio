@@ -204,7 +204,13 @@ function runAccountDay(p,ac,day,rand,config,record){
   const reserve=Math.max(.01,p.riskReserve);
   if(risk<.01||risk+reserve>dailyHeadroom+1e-8||risk+reserve>overallHeadroom+1e-8){
    ac.blocked++;
-   if(record)ac.trace.push({day,stage,type:'blocked',risk,slot,label:'Selected risk blocked by modeled headroom/reserve'});
+   const overallBlocked=risk<.01||risk+reserve>overallHeadroom+1e-8;
+   // Overall exhaustion cannot recover without a smaller risk selection or new
+   // deposits (neither is allowed by the configured policy), so stop the account.
+   if(overallBlocked)ac.status='exhausted';
+   if(record)ac.trace.push({day,stage,type:'blocked',risk,slot,
+    label:overallBlocked?'Risk exhausted: selected tier exceeds remaining overall headroom':
+      'Daily risk blocked; retry on next trading day'});
    break;
   }
   const win=rand(day,ix,ac.id)<config.winRate;
@@ -284,7 +290,7 @@ function oneTrial(p,config,rng,record=false){
  const passes=p.stageList.filter(x=>x!=='funded').map(stage=>accounts.filter(x=>x.passes.some(y=>y.stage===stage)).length);
  // Evaluation passes waiting for a funded slot are not counted as activated.
  const funded=activations;
- const exhausted=accounts.filter(x=>x.status==='active'&&x.blocked>0).length;
+ const exhausted=accounts.filter(x=>x.status==='exhausted').length;
  const failed=accounts.filter(x=>x.status==='failed').length;
  const pending=accounts.filter(x=>x.status==='active'||x.status==='activation-wait').length;
  const net=receipts-spent;
