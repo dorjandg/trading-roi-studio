@@ -412,6 +412,12 @@ function oneTrial(p,config,rng,record=false){
    }
    if(res.paid){paid++;receipts+=ac.firstPaid;}
   }
+  if(record){
+   const allocatedSlots=new Set(allocations.values());
+   for(let ix=0;ix<dailyOpportunities;ix++)if(!allocatedSlots.has(ix))
+    tradeAssignments.push({day,signal:ix+1,account:null,stage:null,
+     outcome:'Unused',status:'No eligible account or remaining purchase budget'});
+  }
   if(dailyCash){
    const tradesToday=accounts.reduce((sum,ac)=>sum+ac.trades,0)-tradesBefore;
    const opportunities=dynamic?dailyOpportunities:dailyOpportunities*accounts.length;
@@ -443,7 +449,7 @@ function oneTrial(p,config,rng,record=false){
    tradePnl:accounts.reduce((sum,a)=>sum+a.tradePnl,0),
    qualifying:accounts.reduce((sum,a)=>sum+a.totalAdminDays,0),
    accountDetails:record?accounts:[],
-   tradeAssignments:tradeAssignments||undefined,
+   tradeAssignments:tradeAssignments?.sort((a,b)=>a.day-b.day||a.signal-b.signal)||undefined,
    dailyCash:dailyCash||undefined,
    accounts:record?accounts:undefined};
 }
