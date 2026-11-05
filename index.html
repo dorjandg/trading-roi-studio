@@ -1365,15 +1365,15 @@ if(scenarioRows?.length)for(const row of scenarioRows)updateScenarioMetrics(row)
    const net=receipts-expense;
    $('kpiReceipts').textContent=money(receipts);
    $('kpiNet').textContent=money(net);$('kpiNet').className='val '+(net>=0?'green':'red');
-   $('kpiROI').textContent=state.budget>0?pct(net/state.budget):'—';$('kpiROI').className='val '+(net>=0?'green':'red');
-   $('kpiROILabel').textContent='Net return on investment budget';
+   $('kpiROI').textContent=expense>0?pct(net/expense):'—';$('kpiROI').className='val '+(net>=0?'green':'red');
+   $('kpiROILabel').textContent='Net ROI on incurred costs · Topstep estimate';
    $('kpiNetNote').textContent='Rewards − evaluation fees − expected activation fees';
-   $('kpiROIx').textContent='Net profit ÷ '+money(state.budget)+' budget · fee-based ROI '+(expense>0?pct(net/expense):'—')+' · estimated activation fees '+money(count*topstep.combine*activation);
+   $('kpiROIx').textContent='NET ÷ expected fees '+money(expense)+' · budget-based return '+(state.budget>0?pct(net/state.budget):'—')+' · activation fees '+money(count*topstep.combine*activation);
   }else{
    for(const id of ['kpiReceipts','kpiNet','kpiROI'])$(id).textContent='Run estimate';
-   $('kpiROILabel').textContent='Net return on investment budget';
+   $('kpiROILabel').textContent='Net ROI on incurred costs · Topstep estimate';
    $('kpiNetNote').textContent='Rewards − evaluation fees − expected activation fees';
-   $('kpiROIx').textContent='Two XFA payout cycles · ROI = net profit ÷ full investment budget';
+   $('kpiROIx').textContent='Two XFA payout cycles · ROI = net profit ÷ expected incurred fees';
   }
  }
  const formula=$('overviewStageFormula');if(formula)formula.textContent=model.topstep?'Combine × XFA Standard payout':phaseModel().phase2?'Phase 1 × Phase 2 × Funded × Collection':phaseModel().phase1?'Evaluation × Funded × Collection':'Funded × Collection';
