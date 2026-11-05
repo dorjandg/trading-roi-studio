@@ -124,7 +124,23 @@ function sampleMilestones(r,signalDay='1'){
   '</p>':'';
  return preview+ledger+route;
 }
-function dailyTradeRouting(results,selected,inputs){
+function pageData(items,page,size){
+ const pageSize=[5,10,20,30].includes(Number(size))?Number(size):10;
+ const pages=Math.max(1,Math.ceil(items.length/pageSize));
+ const current=Math.max(1,Math.min(pages,Math.floor(Number(page)||1)));
+ const first=(current-1)*pageSize;
+ return {items:items.slice(first,first+pageSize),current,pages,total:items.length,first,pageSize};
+}
+function pageNav(p,field){
+ const opts=Array.from({length:p.pages},(_,i)=>[String(i+1),'Page '+(i+1)]);
+ return '<div class="journey-toolbar" style="align-items:center;gap:7px;margin:7px 0">'+
+  '<span class="journey-explainer" style="margin:0">Rows '+(p.total?p.first+1:0)+'–'+Math.min(p.total,p.first+p.pageSize)+' of '+p.total+'</span>'+
+  '<button type="button" data-journey-page="'+field+'" data-journey-step="-1"'+(p.current===1?' disabled':'')+' aria-label="Previous page">‹ Previous</button>'+
+  '<label style="flex:0 1 130px;min-width:110px">Page<select data-journey-field="'+field+'">'+options(opts,String(p.current))+'</select></label>'+
+  '<button type="button" data-journey-page="'+field+'" data-journey-step="1"'+(p.current===p.pages?' disabled':'')+' aria-label="Next page">Next ›</button>'+
+  '</div>';
+}
+function dailyTradeRouting(results,selected,inputs,routePage=1,pageSize=10){
  const sources=selected==='all'?results:[results[Number(selected)]].filter(Boolean);
  const entries=[];
  const payoutsByDay=new Map(),targetsByDay=new Map();
@@ -197,7 +213,8 @@ function dailyTradeRouting(results,selected,inputs){
   return '<span title="'+esc(a.firm+' · Account '+a.account+' · '+stage+' · '+a.outcome+' · '+(a.status||''))+'">'+name+
    ' <small style="color:var(--muted)">'+stage+'</small> <b style="color:'+color+'">'+result+'</b></span>';
  };
- const rows=days.map(day=>{
+ const routePagination=pageData(days,routePage,pageSize);
+ const rows=routePagination.items.map(day=>{
   const events=byDay.get(day)||[],counts=daySummary(day);
   const payouts=payoutsByDay.get(day)||[],targets=targetsByDay.get(day)||[];
   const cells=Array.from({length:maxCells},(_,i)=>{
@@ -216,9 +233,9 @@ function dailyTradeRouting(results,selected,inputs){
  const explain='<p class="journey-explainer">Payouts are account events and may happen without a trade that day. Paid today is a daily count; Paid total is cumulative. A1, A2, etc. are permanent, unique account IDs across this displayed portfolio. New challenges always receive new numbers. CH → VR → FD → Payout/closed is forward-only: an account that passed CH can never be displayed in CH again. CH = Challenge, VR = Verification, FD = Funded; W/L = the modeled result of that assigned trade. '+(selected==='all'?'In split mode, the same trade number may appear for separate firms because signals are allocated by firm.':'')+'</p>';
  return heading+warning+explain+'<div class="tablewrap journey-ledger-table" style="max-height:650px"><table class="journey-table" style="min-width:970px"><thead><tr><th>Day</th>'+
   Array.from({length:maxCells},(_,i)=>'<th>Trade '+(i+1)+'</th>').join('')+
-  '<th>Executed</th><th>Bought</th><th>CH</th><th>VR</th><th>FD</th><th>Failed</th><th>Paid today</th><th>Paid total</th><th>Payout events</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  '<th>Executed</th><th>Bought</th><th>CH</th><th>VR</th><th>FD</th><th>Failed</th><th>Paid today</th><th>Paid total</th><th>Payout events</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+pageNav(routePagination,'routePage');
 }
-function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true,signalDay='1'}={}){
+function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true,signalDay='1',routePage=1,summaryPage=1,pageSize=10}={}){
  if(!results.length)return '<p class="hint">Run a Portfolio Sim calculation to see account journeys.</p>';
  const split=inputs.budgetMode==='split';
  const choices=results.map((r,i)=>[String(i),r.plan.firm+' · '+r.plan.programName+' · '+usd(r.plan.size)]);
@@ -232,6 +249,7 @@ function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true
   fundedAllocation:selected==='all'?results.reduce((t,a)=>t+n((average?a.cashCurve:a.sample?.dailyCash)?.[i]?.fundedActive)*n(a.plan.size),0):n(d.fundedActive)*n(r.plan.size)
  }));
  const rows=daily(allRows,average,onlyChanges);
+ const summaryPagination=pageData(rows,summaryPage,pageSize);
  const cap=selected==='all'?{}:inputs.allocationLimits?.[r.plan.id+':'+r.plan.size]||{};
  const exceeds=d=>(n(cap.evaluation)>0&&d.evaluationAllocation>n(cap.evaluation))||(n(cap.funded)>0&&d.fundedAllocation>n(cap.funded));
  const span=r.plan?.stageList?.includes('p2')?'Verification / Phase 2':'Verification (N/A for 1-step)';
@@ -239,6 +257,7 @@ function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true
   '<label>Account / portfolio<select data-journey-field="selection">'+options(choices,selected)+'</select></label>'+
   
   '<label>Days<select data-journey-field="onlyChanges">'+options([['true','Trades & stage changes'],['false','Every trading day']],onlyChanges?'true':'false')+'</select></label>'+ 
+  '<label>Rows per page<select data-journey-field="pageSize">'+options([['5','5 rows'],['10','10 rows'],['20','20 rows'],['30','30 rows']],String([5,10,20,30].includes(Number(pageSize))?Number(pageSize):10))+'</select></label>'+ 
   (selected==='all'?'':'<label>Evaluation allocation limit ($)<input type="number" min="0" step="10000" placeholder="No limit set" data-journey-field="evaluationLimit" value="'+(n(cap.evaluation)||'')+'"></label>'+ 
   '<label>Funded allocation limit ($)<input type="number" min="0" step="10000" placeholder="No limit set" data-journey-field="fundedLimit" value="'+(n(cap.funded)||'')+'"></label>')+'</div>';
  const note='<p class="journey-explainer"><b>Opp</b> = available opportunities, <b>Tr</b> = trades actually placed, <b>Unused</b> = remaining opportunities. A first loss stops that account for the day, a reached goal can stop further trades, and each phase has a separate max-win setting. D = simulated trading day, not a calendar date. '+
@@ -250,9 +269,9 @@ function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true
   esc(span)+'. New and Fees are daily changes.</p>';
  const table='<div class="tablewrap journey-tablewrap"><table class="journey-table"><thead><tr><th>Day</th>'+
   columns.map(([key,label,help])=>'<th title="'+esc(help)+'">'+label+'</th>').join('')+
-  '</tr></thead><tbody>'+rows.map(r=>'<tr'+(exceeds(r)?' style="background:rgba(255,132,148,.13)"':'')+'><th scope="row">D'+r.day+(exceeds(r)?' ⚠':'')+'</th>'+
+  '</tr></thead><tbody>'+summaryPagination.items.map(r=>'<tr'+(exceeds(r)?' style="background:rgba(255,132,148,.13)"':'')+'><th scope="row">D'+r.day+(exceeds(r)?' ⚠':'')+'</th>'+
     columns.map(([key])=>'<td class="num">'+(key==='dailySpend'||key==='dailyReceipts'||key.endsWith('Allocation')?usd(r[key]):fmt(r[key],average))+'</td>').join('')+
-    '</tr>').join('')+'</tbody></table></div>';
+    '</tr>').join('')+'</tbody></table></div>'+pageNav(summaryPagination,'summaryPage');
  const svg=root.StudioPortfolioCharts?.svgLine;
  const detailRows=Object.fromEntries(allRows.map((d,i)=>[d.day,[
   ['Trades executed',fmt(d.tradesToday,average)+' / '+fmt(d.opportunities,average)],
@@ -307,7 +326,7 @@ function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true
   ' paid accounts. '+(samplePaid===0&&expectedPaid>0?'Zero payouts in this sample does not mean all simulations had zero payouts. ':'')+
   'Funded targets may also be reached before the payout waiting period ends.</p>';
  const capInfo=selected==='all'?'Combined nominal allocation across different firms; firm limits are separate.':'Planning limits: Evaluation '+(n(cap.evaluation)>0?usd(cap.evaluation):'not set')+' · Funded '+(n(cap.funded)>0?usd(cap.funded):'not set')+'. These caps are enforced in new simulation runs: evaluation purchases stop at the cap, and funded activations wait for a free slot. A cap below one account size permits zero accounts. Caps are per selected account type, not pooled across different account sizes of the same firm.';
- return header+dailyTradeRouting(results,selected,inputs)+total+estimateNote+'<p class="journey-explainer">'+capInfo+'</p>'+table+graphs+(!average&&selected!=='all'?sampleMilestones(r,signalDay):'')+note;
+ return header+dailyTradeRouting(results,selected,inputs,routePage,pageSize)+total+estimateNote+'<p class="journey-explainer">'+capInfo+'</p>'+table+graphs+(!average&&selected!=='all'?sampleMilestones(r,signalDay):'')+note;
 }
 root.StudioPortfolioJourney={render,daily,combined,sampleMilestones};
 })(typeof window!=='undefined'?window:globalThis);
