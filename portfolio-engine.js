@@ -53,8 +53,12 @@ function buildPlan(programId,size,program,profile={},snapshots={},audit=null){
   dynamic(audit?.loss?.maximumUSDBySize,String(size),
    size*pos(program?.max)/100));
  const dailyFromRule=program?.daily==null?0:size*pos(program.daily)/100;
- const dailyLoss=dynamic(state,'dailyLoss',dailyFromRule);
  const isTopstep=programId==='topstep';
+ // Topstep's Daily Loss Limit is optional; the generic saved dailyLoss
+ // field can contain a leftover CFD default and must not be silently used.
+ const topstepDllBySize={50000:1000,100000:2000,150000:3000};
+ const dailyLoss=isTopstep?(state.topstepDLL===true?topstepDllBySize[size]||0:0):
+  dynamic(state,'dailyLoss',dailyFromRule);
  const fee=dynamic(state,'price',pos(program?.pricesUSD?.[size]));
  const extraCost=pos(state.extraCost);
  const riskReserve=dynamic(state,'buffer',0);
