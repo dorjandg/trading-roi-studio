@@ -87,7 +87,7 @@ function tradeCurve(ac,stage='all'){
  return {equity,drawdown,trades:index,net,maxDD};
 }
 function combinedResult(list,inputs){
- const days=Math.max(0,Math.floor(N(inputs.days))),keys=['spent','receipts','net','paid'];
+ const days=Math.max(0,Math.floor(N(inputs.days))),keys=['spent','receipts','net','paid','bought','challengeSpent','activationSpent','live','burned'];
  function cashAt(day,sample){
   const row={day,spent:0,receipts:0,net:0,paid:0};
   for(const r of list)for(const k of keys)row[k]+=N((sample?r.sample?.dailyCash:r.cashCurve)?.[day]?.[k]);
@@ -99,7 +99,7 @@ function combinedResult(list,inputs){
  // never by sorted net ranks (which falsely correlates winning outcomes).
  const nets=Array.from({length:list[0]?.chartTrials?.length||0},(_,i)=>
   list.reduce((total,r)=>total+N(r.chartTrials?.[i]?.net),0)).sort((a,b)=>a-b);
- const avg={spent:0,receipts:0,net:0,funded:0,paid:0,failed:0,exhausted:0};
+ const avg={spent:0,receipts:0,net:0,funded:0,paid:0,failed:0,exhausted:0,bought:0,activations:0};
  for(const r of list)for(const k of Object.keys(avg))avg[k]+=N(r.avg[k]);
  const quantile=q=>nets.length?nets[Math.min(nets.length-1,Math.floor((nets.length-1)*q))]:0;
  const chartTrials=Array.from({length:list[0]?.chartTrials?.length||0},(_,i)=>{
@@ -110,7 +110,7 @@ function combinedResult(list,inputs){
   }
   return {...totals,roi:totals.spent?totals.net/totals.spent:0};
  });
- return {plan:null,chartTrials,count:list.reduce((sum,r)=>sum+r.count,0),cashCurve,sample,nets,avg,roi:avg.spent?avg.net/avg.spent:0,
+ return {plan:null,chartTrials,count:avg.bought,cashCurve,sample,nets,avg,roi:avg.spent?avg.net/avg.spent:0,
   p10:quantile(.1),median:quantile(.5),p90:quantile(.9),stages:[]};
 }
 function chartCard(title,info,svg,foot=''){
@@ -172,6 +172,13 @@ function render({results=[],inputs={},selection='',account='auto',group='overvie
   const full=r.cashCurve||[],prev=d.day>0?full[d.day-1]:null;
   return {x:d.day,y:d.net-N(prev?.net)};
  });
+ const spendingDays=cashStreams.map(d=>{
+  const prev=d.day>0?r.cashCurve?.[d.day-1]:null;
+  return {day:d.day,challenge:N(d.challengeSpent)-N(prev?.challengeSpent),
+   activation:N(d.activationSpent)-N(prev?.activationSpent),
+   purchased:N(d.bought)-N(prev?.bought),
+   burned:N(d.burned)-N(prev?.burned),live:N(d.live)};
+ });
  const cashLines=[];
  if(cashView!=='example')cashLines.push({name:'Trial average',values:mean});
  if(cashView!=='mean')cashLines.push({name:'Trial #1',values:example,dash:cashLines.length>0});
@@ -181,9 +188,9 @@ function render({results=[],inputs={},selection='',account='auto',group='overvie
  const individual=ac&&trade.trades>0;
  const payouts=cashStreams.map(d=>({x:d.day,y:d.paid}));
  const stages=r.plan?
-  [{label:'Bought',value:r.count},...r.plan.stageList.filter(x=>x!=='funded').map((st,i)=>({label:st==='p1'?'P1':'P2',value:r.stages[i]})),
+  [{label:'Bought',value:r.avg.bought},...r.plan.stageList.filter(x=>x!=='funded').map((st,i)=>({label:st==='p1'?'P1':'P2',value:r.stages[i]})),
    {label:'Funded',value:r.avg.funded},{label:'Paid',value:r.avg.paid}]:
-  [{label:'Bought',value:r.count},{label:'Funded',value:r.avg.funded},{label:'Paid',value:r.avg.paid}];
+  [{label:'Bought',value:r.avg.bought},{label:'Funded',value:r.avg.funded},{label:'Paid',value:r.avg.paid}];
  const riskOutcomes=[{label:'Paid',value:r.avg.paid},{label:'Failed',value:r.avg.failed},
   {label:'Blocked',value:r.avg.exhausted}];
  const streakChart=[{label:'W1',value:stats.runs.W1||0},{label:'W2',value:stats.runs.W2||0},
@@ -211,6 +218,18 @@ function render({results=[],inputs={},selection='',account='auto',group='overvie
   {id:'first-payouts',groups:['overview','cash'],html:chartCard('First payouts by day',
    'Mean cumulative count of accounts with a first modeled payout.',
    svgLine([{name:'First paid',values:payouts}],'Day','count'))},
+  {id:'challenge-spend',groups:['cash'],html:chartCard('New account spending · by day',
+   'Daily money spent buying new challenges versus paying funded activation fees.',
+   svgLine([{name:'Challenge purchases',values:spendingDays.map(d=>({x:d.day,y:d.challenge}))},
+    {name:'Activation fees',values:spendingDays.map(d=>({x:d.day,y:d.activation}))}]),
+   'Total challenge purchases: '+usd(r.avg.spent-N(r.avg.activations)*N(r.plan?.activationFee)))},
+  {id:'new-vs-burned',groups:['cash'],html:chartCard('New vs burned accounts · daily',
+   'Average challenges bought per day and accounts failed or risk-exhausted that day.',
+   svgLine([{name:'New accounts',values:spendingDays.map(d=>({x:d.day,y:d.purchased}))},
+    {name:'Burned',values:spendingDays.map(d=>({x:d.day,y:d.burned}))}],'Day','count'))},
+  {id:'active-accounts',groups:['cash'],html:chartCard('Open accounts · by day',
+   'Average open/waiting accounts at day end; burned and paid accounts free slots.',
+   svgLine([{name:'Open accounts',values:spendingDays.map(d=>({x:d.day,y:d.live}))}],'Day','count'))},
   {id:'cashflows',groups:['cash'],html:chartCard('Money in vs money spent',
    'Cumulative first-payout receipts and incurred fees across simulated trials.',
    svgLine(streams),'Expected payout receipts: '+usd(r.avg.receipts||0)+' · Fees: '+usd(r.avg.spent))},
@@ -239,7 +258,7 @@ function render({results=[],inputs={},selection='',account='auto',group='overvie
  const accounts=control('account','Example account',
   [['auto','Auto (paid if available)'],...acList.map(a=>[String(a.id),'Account #'+a.id])],acId,chosen==='all');
  const views=control('group','Chart category',
-  [['overview','Overview (6)'],['cash','Cash flow'],['trades','Trade analysis'],['risk','ROI & risk'],['all','All charts']],activeGroup);
+  [['overview','Overview (6)'],['cash','Cash + new accounts (7)'],['trades','Trade analysis'],['risk','ROI & risk'],['all','All charts (15)']],activeGroup);
  const extra=
   control('daysRange','Trading days',[['all','Full horizon'],['7','Last 7'],['14','Last 14'],['30','Last 30'],['60','Last 60']],daysRange)+
   control('stage','Trade stage',[['all','All phases'],['p1','Phase 1'],['p2','Phase 2'],['funded','Funded']],stageKey,chosen==='all')+
@@ -254,7 +273,7 @@ function render({results=[],inputs={},selection='',account='auto',group='overvie
   '<div class="sim-chart-toolbar sim-chart-extra">'+extra+'</div></details>'+
   '<div class="sim-chart-metrics">'+metrics.map(m=>'<span><b>'+e(m[0])+'</b><strong>'+e(m[1])+'</strong></span>').join('')+'</div>'+
   '<div class="sim-chart-grid">'+selectedItems.map(c=>c.html).join('')+'</div>'+
-  '<p class="sim-chart-note">Charts show simulated results, not historical trades. Portfolio cash NET is received first payouts minus incurred costs, <b>not</b> prop-firm equity. Example account trading equity and drawdown are from trial #1; evaluation-stage profits are not withdrawable. Day-range filtering changes the displayed days, not the simulation. Stage filtering applies only to sample trading charts. Outcome filtering applies only to the final NET and ROI histograms; all other graphs and KPI totals remain unfiltered. Headline ROI divides average net by average spending, whereas the ROI histogram calculates each trial separately.</p>';
+  '<p class="sim-chart-note">Charts show simulated results, not historical trades. Portfolio cash NET is received first payouts minus incurred costs, <b>not</b> prop-firm equity. Example account trading equity and drawdown are from trial #1; evaluation-stage profits are not withdrawable. Day-range filtering changes the displayed days, not the simulation. Daily purchases and activation fees are shown when actually incurred. Stage filtering applies only to sample trading charts. Outcome filtering applies only to the final NET and ROI histograms; all other graphs and KPI totals remain unfiltered. Headline ROI divides average net by average spending, whereas the ROI histogram calculates each trial separately.</p>';
 }
 
 root.StudioPortfolioCharts={render,tradeCurve,combinedResult,svgLine,svgBars,svgHistogram,streaks,usage,cashWindow,chartOutcome};
