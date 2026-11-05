@@ -7,6 +7,9 @@ const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const usd=x=>(n(x)<0?'-':'')+'$'+Math.round(Math.abs(n(x))).toLocaleString('en-US');
 const fmt=(v,average)=>average?n(v).toFixed(1):String(Math.round(n(v)));
 const columns=[
+ ['opportunities','Opp','Maximum trading opportunities available on this day'],
+ ['tradesToday','Tr','Trades actually executed on this trading day'],
+ ['unusedToday','Unused','Daily opportunities not executed because of account or strategy restrictions'],
  ['new','New','New challenges purchased on this trading day'],
  ['challenge','CH','Challenges still in Phase 1 at end of day'],
  ['verification','VR','Verification / Phase 2 at end of day'],
@@ -34,7 +37,8 @@ function daily(rows,averages=false,onlyChanges=true){
 function combined(list,inputs){
  const days=Math.max(0,Math.floor(n(inputs.days)));
  const keys=['spent','receipts','net','paid','bought','challengeSpent','activationSpent','live','burned',
-  'challenge','verification','fundedActive','fundingWait','targetHit','activated','passed1','passed2'];
+  'challenge','verification','fundedActive','fundingWait','targetHit','activated','passed1','passed2',
+  'opportunities','tradesToday','unusedToday'];
  function sumRow(day,sample){
   const row={day};
   for(const k of keys)row[k]=list.reduce((total,r)=>total+n((sample?r.sample?.dailyCash:r.cashCurve)?.[day]?.[k]),0);
@@ -87,7 +91,7 @@ function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true
   '<label>Account / portfolio<select data-journey-field="selection">'+options(choices,selected)+'</select></label>'+
   '<label>Show results<select data-journey-field="mode">'+options([['trial','Trial #1 · actual counts'],['average','Mean across '+n(inputs.trials)+' trials']],average?'average':'trial')+'</select></label>'+
   '<label>Days<select data-journey-field="onlyChanges">'+options([['true','Changes only'],['false','Every trading day']],onlyChanges?'true':'false')+'</select></label></div>';
- const note='<p class="journey-explainer">D = simulated trading day, not a calendar date. '+
+ const note='<p class="journey-explainer"><b>Opp</b> = available opportunities, <b>Tr</b> = trades actually placed, <b>Unused</b> = remaining opportunities. A first loss stops that account for the day, a reached goal can stop further trades, and each phase has a separate max-win setting. D = simulated trading day, not a calendar date. '+
   '<b>CH</b> is Phase 1, <b>VR</b> is verification, <b>FD</b> is active funded, '+
   '<b>TG</b> and <b>PD</b> are cumulative targets hit and first payouts (TG may include paid accounts), '+
   '<b>BR</b> is cumulative burned. End-of-day stage totals and cumulative milestones overlap; do not add them. '+
@@ -109,10 +113,20 @@ function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true
   {name:'Paid',values:allRows.map(d=>({x:d.day,y:n(d.paid)}))},
   {name:'Burned',values:allRows.map(d=>({x:d.day,y:n(d.burned)}))}
  ],'Trading day','count'):'';
+ const utilization=svg?svg([
+  {name:'Available',values:allRows.map(d=>({x:d.day,y:n(d.opportunities)}))},
+  {name:'Executed',values:allRows.map(d=>({x:d.day,y:n(d.tradesToday)}))}
+ ],'Trading day','count'):'';
  const graphs='<div class="journey-chart-grid"><article><h4>Accounts by active stage</h4>'+
-  chart1+'</article><article><h4>Cumulative milestones</h4>'+chart2+'</article></div>';
+  chart1+'</article><article><h4>Cumulative milestones</h4>'+chart2+'</article>'+
+  '<article><h4>Daily trade opportunities vs executed</h4>'+utilization+'</article></div>';
  const last=allRows[allRows.length-1]||{},paid=fmt(last.paid,average);
+ const used=allRows.reduce((sum,x)=>sum+n(x.tradesToday),0);
+ const possible=allRows.reduce((sum,x)=>sum+n(x.opportunities),0);
+ const utilized=possible>0?100*used/possible:0;
  const total='<p class="journey-status-line">'+(average?'Average portfolio':'Trial #1')+' · '+
+  'Trading opportunities '+fmt(possible,average)+' · Executed '+fmt(used,average)+
+  ' · Utilization '+utilized.toFixed(1)+'% · '+
   'Bought '+fmt(last.bought,average)+' · Funded activated '+fmt(last.activated,average)+
   ' · Goal hit '+fmt(last.targetHit,average)+' · Paid '+paid+
   ' · Burned '+fmt(last.burned,average)+
