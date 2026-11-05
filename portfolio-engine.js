@@ -127,7 +127,7 @@ function validatePlan(p){
  return {errors,warnings};
 }
 function makeAccount(i){return {
- id:i,stageIndex:0,stageDay:0,activeDays:0,adminDays:0,
+ id:i,stageIndex:0,stageDay:0,activeDays:0,adminDays:0,totalAdminDays:0,
  stagePnl:0,history:'',dailyProfit:0,dayProfits:[],peakEod:0,bestDay:0,
  status:'active',trades:0,wins:0,losses:0,firstPaid:0,
  passes:[],totalR:0,realizedDD:0,peakPnl:0,blocked:0,
@@ -169,7 +169,7 @@ function runAccountDay(p,ac,day,rand,config,record){
  const alreadyTarget=ac.stagePnl>=c.target-.005;
  const consistentNow=!c.consistency||ac.bestDay<=Math.max(0,ac.stagePnl)*c.consistency+1e-7;
  if(isEvaluation(stage)&&alreadyTarget&&consistentNow && ac.activeDays<c.minDays){
-  ac.adminDays++;
+  ac.adminDays++;ac.totalAdminDays++;
   // Administration-only day is NOT included in any W/L trade series.
   // Firm-specific tiny qualifying orders are outside this estimate.
   ac.activeDays++;
@@ -302,7 +302,7 @@ function oneTrial(p,config,rng,record=false){
  const net=receipts-spent;
  return {bought:n,paid,passes,funded,failed,exhausted,pending,spent,receipts,net,activations,
    trades:accounts.reduce((sum,a)=>sum+a.trades,0),
-   qualifying:accounts.reduce((sum,a)=>sum+a.adminDays,0),
+   qualifying:accounts.reduce((sum,a)=>sum+a.totalAdminDays,0),
    accountDetails:record?accounts.slice(0,3):[],
    accounts:record?accounts:undefined};
 }
