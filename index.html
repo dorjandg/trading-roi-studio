@@ -2227,6 +2227,24 @@ window.addEventListener('message',event=>{
   if(profileKey(msg.payload?.programId,msg.payload?.size)!==activeProgramKey)useSelectedAccount(msg.payload);
   updateOverviewFromActive();return;
  }
+ if(msg.type==='studio-program-preferences-updated'){
+  const payload=msg.payload||{},key=profileKey(payload.programId,payload.size);
+  if(key===activeProgramKey&&payload.trading&&typeof payload.trading==='object'){
+   let changed=false;
+   for(const name of ['winRate','rr','weeklySignals','p1Base','p2Base','fundedBase']){
+    const value=Number(payload.trading[name]);
+    if(payload.trading[name]==null||!Number.isFinite(value)||value<0||value>1e7||
+       (name==='winRate'&&value>100)||(name==='rr'&&(value<.1||value>100)))continue;
+    if(state[name]!==value){state[name]=value;changed=true;}
+   }
+   if(changed){
+    mode='manual';lastSim=null;dirtySim=true;
+    save();syncControls();render();
+   }
+  }
+  window.fourDsQueueCloudSave?.();
+  return;
+ }
  if(msg.type==='studio-program-rules-updated'){useSelectedAccount(msg.payload,true);window.fourDsQueueCloudSave?.();return;}
  if(msg.type==='studio-user-profile-changed'){window.fourDsQueueCloudSave?.();return;}
  if(msg.type==='studio-program-select'){useSelectedAccount(msg.payload,true);$('firmTradingWorkspace').scrollIntoView({behavior:'smooth',block:'start'});}
