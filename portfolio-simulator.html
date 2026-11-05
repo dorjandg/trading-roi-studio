@@ -280,7 +280,7 @@ function renderRows(){
 }
 function setStale(){
  if(lastResults.length){$('status').textContent='Inputs changed · run again for updated results';$('status').style.color='var(--amber)';}
- if(discovered){$('ideaStatus').textContent='Inputs changed · run Find Better Models again for updated suggestions';$('ideaStatus').style.color='var(--amber)';}
+ if(discovered){discovered.stale=true;$('ideaStatus').textContent='Inputs changed · run Find Better Models again for updated suggestions';$('ideaStatus').style.color='var(--amber)';}
  saveView();
 }
 $('accounts').addEventListener('change',event=>{
@@ -599,7 +599,7 @@ function renderDiscovery(result,row,budget){
   ' compared with your starting plan. Downside P10 moved '+showDifference(best.delta.p10)+'.':
   'No candidate in the shortlisted group beat your current plan on the selected validation score. Keeping the original settings is reasonable.';
  $('ideaResults').innerHTML=
-  '<div class="discovery-card"><h3>Model search · '+esc(row.id)+' '+usd(row.size)+'</h3>'+
+  '<div class="discovery-card"><h3>Model search · '+esc(catalog.programs[row.id].firm+' · '+catalog.programs[row.id].name)+' '+usd(row.size)+'</h3>'+
   '<p class="discovery-summary">Budget '+usd(budget)+' · '+result.evaluated+' different candidate plans · ranked on '+
   result.trainTrials+' discovery trials · verified on '+result.testTrials+
   ' separate trials · objective: '+esc(objectiveLabel)+'.</p>'+
@@ -649,9 +649,11 @@ $('discover').addEventListener('click',()=>{
   }finally{$('discover').disabled=false;}
  });
 });
+$('ideaAccount').addEventListener('change',()=>{if(discovered){discovered.stale=true;$('ideaStatus').textContent='Account changed · run model search for this account';}});
 $('ideaResults').addEventListener('click',event=>{
  const btn=event.target.closest?.('[data-discovery-apply]');
  if(!btn||!discovered)return;
+ if(discovered.stale){$('ideaStatus').textContent='Budget or inputs changed. Run a fresh model search before applying.';return;}
  const selected=discovered.result.ideas[Number(btn.dataset.discoveryApply)];
  if(!selected)return;
  const id=discovered.row.id+':'+discovered.row.size;
