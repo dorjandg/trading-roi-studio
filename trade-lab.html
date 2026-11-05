@@ -33,7 +33,8 @@ html[data-theme="light"]{color-scheme:light;--bg:#f3f6fa;--panel:#fff;--panel2:#
  .field select,.selectors select,select{font-size:12px;min-height:39px;height:39px}
  select option,select optgroup{font-size:12px}
 }
-</style><link rel="stylesheet" href="studio-nav.css"><link rel="stylesheet" href="studio-labs-dense.css"></head><body class="studio-lab-page"><main class="wrap">
+</style><link rel="stylesheet" href="studio-nav.css?v=20261105-compact-v2"><link rel="stylesheet" href="studio-labs-dense.css"></head><body class="studio-lab-page"><main class="wrap">
+<header class="studio-site-header"><a class="studio-site-brand" href="index.html?view=dashboard"><span class="studio-site-mark">F<small>↗</small></span><span class="studio-site-title"><strong>4Ds Trading Studio</strong><small>STRATEGY · PAYOUTS · CAPITAL ALLOCATION</small></span></a><div class="studio-site-tools"><label class="studio-site-user" for="studioUserSelect">User <select id="studioUserSelect" aria-label="Active Studio user"><option value="doen">Doen</option><option value="dori">Dori</option><option value="dona">Dona</option><option value="dion">Dion</option></select></label><button type="button" id="studioTheme" class="studio-site-theme" aria-label="Switch theme" title="Switch theme">◐</button></div></header>
 <nav class="studio-primary-nav" aria-label="Studio pages"><a href="index.html?view=dashboard">Overview</a><a href="index.html?view=firms">Firms</a><a href="labs.html" class="active" aria-current="page">Labs</a><a href="portfolio-simulator.html">Portfolio Sim</a><a href="index.html?view=presets">Presets</a><a href="index.html?view=settings">Help</a><a href="index.html?view=profile">Profile</a></nav>
 <nav class="studio-labs-nav" aria-label="Lab tabs"><a href="monitor.html">Monitor</a><a href="index.html?view=investments">Budget</a><a href="portfolio-simulator.html">Portfolio Sim</a><a href="investment-lab.html">Invest Lab</a><a href="comparison-lab.html">Compare Lab</a><a href="trade-lab.html" class="active" aria-current="page">Trade Lab</a></nav>
 <section class="panel"><div class="eyebrow">Equity · Streaks · Risk</div><h1><a class="titlelink" href="labs.html" title="View all labs">Trade Lab</a></h1><p class="muted">Simulate trade-by-trade account paths, view equity curves and equity candles, and explore streaks, drawdowns, and month-by-month results. Runs locally; no trades are placed and no saved Studio settings are changed.</p></section>
@@ -314,4 +315,4 @@ function run(){const c=config();if(c.risk+c.cost>c.daily){el('pfStatus').textCon
 let timer;for(const id of ['pfTotal','pfFunded','pfCount','pfRoute','pfDailyBudget','pfDailyMode','pfStopLoss','pfBudget','pfActivation','pfRenewal','pfRefund','pfPayout','pfGoal','pfSplit','pfPayoutDays','pfPayoutMin','pfTrials','account','stage','balance','months','wr','be','rr','risk','fee','target','dd','dailyLimit','consistency','minDays','model','seed']){el(id)?.addEventListener('change',()=>{clearTimeout(timer);timer=setTimeout(run,250)});}
 el('pfRun').addEventListener('click',run);run();
 })();
-</script></body></html>
+</script><script src="studio-header.js"></script></body></html>
