@@ -222,7 +222,7 @@ function render({results=[],inputs={},selection='',account='auto',group='overvie
    'Daily money spent buying new challenges versus paying funded activation fees.',
    svgLine([{name:'Challenge purchases',values:spendingDays.map(d=>({x:d.day,y:d.challenge}))},
     {name:'Activation fees',values:spendingDays.map(d=>({x:d.day,y:d.activation}))}]),
-   'Total challenge purchases: '+usd(r.avg.spent-N(r.avg.activations)*N(r.plan?.activationFee)))},
+   'Total challenge purchases: '+usd(r.cashCurve?.[r.cashCurve.length-1]?.challengeSpent||0))},
   {id:'new-vs-burned',groups:['cash'],html:chartCard('New vs burned accounts · daily',
    'Average challenges bought per day and accounts failed or risk-exhausted that day.',
    svgLine([{name:'New accounts',values:spendingDays.map(d=>({x:d.day,y:d.purchased}))},
@@ -264,6 +264,19 @@ function render({results=[],inputs={},selection='',account='auto',group='overvie
   control('stage','Trade stage',[['all','All phases'],['p1','Phase 1'],['p2','Phase 2'],['funded','Funded']],stageKey,chosen==='all')+
   control('cashView','Cash lines',[['both','Mean + trial #1'],['mean','Mean only'],['example','Trial #1 only']],cashView)+
   control('outcome','Final-trial filter',[['all','All trials'],['positive','Positive NET'],['negative','Negative NET'],['payout','At least 1 payout'],['no-payout','No payouts']],outcome);
+ const ledgerRows=spendingDays.map(d=>{
+  const full=r.cashCurve?.[d.day]||{};
+  return '<tr><td>'+d.day+'</td><td>'+d.purchased.toFixed(2)+'</td>'+
+   '<td>'+d.burned.toFixed(2)+'</td><td>'+d.live.toFixed(2)+'</td>'+
+   '<td>'+usd(d.challenge)+'</td><td>'+usd(d.activation)+'</td>'+
+   '<td>'+usd(full.spent)+'</td><td>'+usd(full.receipts)+'</td>'+
+   '<td>'+usd(full.net)+'</td></tr>';
+ }).join('');
+ const ledger='<details class="sim-ledger"><summary>Daily spending ledger · '+spendingDays.length+
+  ' days shown (trial averages)</summary><div class="tablewrap"><table>'+
+  '<thead><tr><th>Day</th><th>New</th><th>Burned</th><th>Open</th>'+
+  '<th>New fees</th><th>Activation</th><th>Total spent</th><th>Payouts</th><th>Net cash</th>'+
+  '</tr></thead><tbody>'+ledgerRows+'</tbody></table></div></details>';
  const metrics=[['NET',usd(r.avg.net)],['ROI',(N(r.roi)*100).toFixed(1)+'%'],['P10',usd(r.p10)],
   ['P90',usd(r.p90)],['Ex. trades',trade.trades],['Ex. max DD',usd(trade.maxDD)]];
  return '<div class="sim-chart-toolbar">'+portfolios+accounts+views+
@@ -272,7 +285,7 @@ function render({results=[],inputs={},selection='',account='auto',group='overvie
   '><summary>Advanced filters · Days / Stage / Trial view / Outcome</summary>'+
   '<div class="sim-chart-toolbar sim-chart-extra">'+extra+'</div></details>'+
   '<div class="sim-chart-metrics">'+metrics.map(m=>'<span><b>'+e(m[0])+'</b><strong>'+e(m[1])+'</strong></span>').join('')+'</div>'+
-  '<div class="sim-chart-grid">'+selectedItems.map(c=>c.html).join('')+'</div>'+
+  '<div class="sim-chart-grid">'+selectedItems.map(c=>c.html).join('')+'</div>'+ledger+
   '<p class="sim-chart-note">Charts show simulated results, not historical trades. Portfolio cash NET is received first payouts minus incurred costs, <b>not</b> prop-firm equity. Example account trading equity and drawdown are from trial #1; evaluation-stage profits are not withdrawable. Day-range filtering changes the displayed days, not the simulation. Daily purchases and activation fees are shown when actually incurred. Stage filtering applies only to sample trading charts. Outcome filtering applies only to the final NET and ROI histograms; all other graphs and KPI totals remain unfiltered. Headline ROI divides average net by average spending, whereas the ROI histogram calculates each trial separately.</p>';
 }
 
