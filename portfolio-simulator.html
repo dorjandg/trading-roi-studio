@@ -156,6 +156,7 @@ const E=window.StudioPortfolioEngine;
 const $=id=>document.getElementById(id);
 const esc=x=>String(x==null?'':x).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const usd=n=>(Number(n)||0).toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0});
+const usdExact=n=>(Number(n)||0).toLocaleString('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2});
 const dec=n=>(Number(n)||0).toLocaleString('en-US',{maximumFractionDigits:2});
 const pct=n=>(100*(Number(n)||0)).toFixed(1)+'%';
 const int=n=>Math.max(0,Math.floor(Number(n)||0));
@@ -254,7 +255,7 @@ function rowSummary(row){
   p.sourceSaved?'<strong class="good">Saved phase settings</strong>':'<strong style="color:var(--amber)">Illustrative defaults · not saved</strong>';
  const risks=p.stageList.map(stage=>{
   const c=p.riskProfiles[stage];
-  return esc(c.name)+' R1 '+usd(c.r1)+' / R2 '+usd(c.r2)+' / R3 '+usd(c.r3)+' · '+dec(c.rr)+'R';
+  return esc(c.name)+' R1 '+usdExact(c.r1)+' / R2 '+usdExact(c.r2)+' / R3 '+usdExact(c.r3)+' · '+dec(c.rr)+'R';
  }).join('  |  ');
  return title+' · Fee '+usd(p.fee)+(p.activationFee?' + '+usd(p.activationFee)+' activation reserve':'')+
   '<span style="display:block;margin-top:4px">'+esc(risks)+'</span>'+
@@ -304,11 +305,11 @@ function refreshIdeaCeiling(){
  }
  plan.riskReserve=input;
  const c=modelDiscovery.riskCeiling(plan);
- const label=n=>Number.isFinite(n)?usd(n):'not configured';
+ const label=n=>Number.isFinite(n)?usdExact(n):'not configured';
  $('ideaCeilingInfo').textContent=
-  'Modeled starting-trade ceiling: '+(c.maxRisk===null?'unavailable':usd(c.maxRisk))+
+  'Modeled starting-trade ceiling: '+(c.maxRisk===null?'unavailable':usdExact(c.maxRisk))+
   ' = min(daily loss '+label(c.daily)+', overall loss '+label(c.overall)+
-  ') − reserve '+usd(c.reserve)+' − trade cost '+usd(c.tradeCost)+
+  ') − reserve '+usdExact(c.reserve)+' − trade cost '+usdExact(c.tradeCost)+
   '. A $0 test reserve still keeps $0.01 clearance. Limits are starting-state estimates; after losses, equity and drawdown headroom can be smaller.';
 }
 function setStale(){
@@ -424,7 +425,7 @@ function makeResultCard(result,index){
  const stageNames=p.stageList.filter(x=>x!=='funded');
  const stageInfo=p.stageList.map(stage=>{
   const r=p.riskProfiles[stage];
-  return '<span class="risk-chip">'+esc(r.name)+' · <b>'+dec(r.rr)+'R</b> · R1 <b>'+usd(r.r1)+'</b> · R2 <b>'+usd(r.r2)+'</b> · R3 <b>'+usd(r.r3)+'</b> · max wins/day '+r.maxWinsPerDay+'</span>';
+  return '<span class="risk-chip">'+esc(r.name)+' · <b>'+dec(r.rr)+'R</b> · R1 <b>'+usdExact(r.r1)+'</b> · R2 <b>'+usdExact(r.r2)+'</b> · R3 <b>'+usdExact(r.r3)+'</b> · max wins/day '+r.maxWinsPerDay+'</span>';
  }).join('');
  const warns=v.warnings.map(x=>'<p class="hint">• '+esc(x)+'</p>').join('');
  return '<article class="result-card"><header><div><h3>'+esc(p.firm+' · '+p.programName+' · '+usd(p.size))+'</h3>'+
@@ -612,8 +613,8 @@ function formatDiscoveryPlan(p){
  return p.stageList.map(stage=>{
   const c=p.riskProfiles[stage];
   const policy={saved:'Saved option choices',streak:'After-loss tiers',flat:'Flat R1','after-win':'After-win boost','protect-after-loss':'After-loss protection'}[c.policy?.mode||'saved'];
-  return '<span class="risk-chip">'+esc(c.name)+': R1 <b>'+usd(c.r1)+'</b> · R2 <b>'+usd(c.r2)+
-   '</b> · R3 <b>'+usd(c.r3)+'</b> · '+dec(c.rr)+'R · '+policy+' · '+c.maxWinsPerDay+' wins/day</span>';
+  return '<span class="risk-chip">'+esc(c.name)+': R1 <b>'+usdExact(c.r1)+'</b> · R2 <b>'+usdExact(c.r2)+
+   '</b> · R3 <b>'+usdExact(c.r3)+'</b> · '+dec(c.rr)+'R · '+policy+' · '+c.maxWinsPerDay+' wins/day</span>';
  }).join('');
 }
 function renderDiscovery(result,row,budget){
@@ -648,6 +649,11 @@ function renderDiscovery(result,row,budget){
   '<p class="discovery-summary">Budget '+usd(budget)+' · '+result.evaluated+' different candidate plans · ranked on '+
   result.trainTrials+' discovery trials · verified on '+result.testTrials+
   ' separate simulated trials · objective: '+esc(objectiveLabel)+'.</p>'+
+  '<p class="discovery-summary"><b>Modeled starting risk ceiling: '+(result.ceiling.maxRisk===null?'not established':usdExact(result.ceiling.maxRisk))+
+  '</b> · daily loss '+(Number.isFinite(result.ceiling.daily)?usdExact(result.ceiling.daily):'not configured')+
+  ' · overall loss '+(Number.isFinite(result.ceiling.overall)?usdExact(result.ceiling.overall):'not configured')+
+  ' · safety clearance '+usdExact(result.ceiling.reserve)+' · cost '+usdExact(result.ceiling.tradeCost)+
+  '. Includes '+result.boundaryCount+' mandatory limit-boundary stress tests (not necessarily recommended).</p>'+
   '<div class="alert">'+summary+'</div>'+
   '<div class="tablewrap"><table class="discovery-table" style="min-width:940px">'+
   '<thead><tr><th>Risk model</th><th>Expected net</th><th>Change vs yours</th><th>Downside P10</th>'+
@@ -674,7 +680,11 @@ $('discover').addEventListener('click',()=>{
  if(!row){$('ideaStatus').textContent='Select a prop-firm account for the search';return;}
  const inputs=currentDiscoveryInputs(row);
  if(inputs.budget<=0){$('ideaStatus').textContent='Allocate a positive budget to this account first';return;}
- const plan=accountPlan(row),v=E.validatePlan(plan);
+ const plan=accountPlan(row);
+ const testReserve=Number($('ideaReserve').value);
+ if(!Number.isFinite(testReserve)||testReserve<0){$('ideaStatus').textContent='Enter a valid nonnegative safety reserve';return;}
+ plan.riskReserve=testReserve;
+ const v=E.validatePlan(plan);
  if(v.errors.length){$('ideaStatus').textContent=v.errors.join(' · ');return;}
  const effort=$('ideaEffort').value,study=effort==='deep'?[150,250]:effort==='quick'?[50,80]:[80,150];
  $('discover').disabled=true;
@@ -694,7 +704,15 @@ $('discover').addEventListener('click',()=>{
   }finally{$('discover').disabled=false;}
  });
 });
-$('ideaAccount').addEventListener('change',()=>{if(discovered){discovered.stale=true;$('ideaStatus').textContent='Account changed · run model search for this account';}});
+$('ideaAccount').addEventListener('change',()=>{
+ ideaReserveAccountKey='';
+ refreshIdeaCeiling();
+ if(discovered){discovered.stale=true;$('ideaStatus').textContent='Account changed · run model search for this account';}
+});
+$('ideaReserve').addEventListener('change',()=>{
+ refreshIdeaCeiling();
+ if(discovered){discovered.stale=true;$('ideaStatus').textContent='Reserve changed · run model search again';}
+});
 $('ideaResults').addEventListener('click',event=>{
  const btn=event.target.closest?.('[data-discovery-apply]');
  if(!btn||!discovered)return;
@@ -710,6 +728,7 @@ $('ideaResults').addEventListener('click',event=>{
   const c=selected.plan.riskProfiles[stage];
   tests[stage]={r1:c.r1,r2:c.r2,r3:c.r3,rr:c.rr,winCap:c.maxWinsPerDay,policyMode:c.policy?.mode||'saved'};
  }
+ tests.__riskReserve=selected.plan.riskReserve;
  testRisks[id]=tests;
  saveView();renderRows();
  $('ideaStatus').style.color='var(--green)';
