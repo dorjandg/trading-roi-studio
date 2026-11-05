@@ -70,6 +70,13 @@ table{width:100%;border-collapse:collapse;text-align:left;min-width:550px}th,td{
 .overview-mode-switch .btn.active{background:var(--green);color:#061c15;border-color:var(--green)}
 #overviewModeCaption{margin:0 0 10px;font-size:11px}
 @media(max-width:600px){.overview-progression-controls{justify-content:flex-start}.overview-mode-switch .btn{font-size:11px;padding:5px 9px}}
+.overview-analysis-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.overview-analysis-card{background:var(--panel2);border:1px solid var(--border);border-radius:11px;padding:13px;min-width:0}
+.overview-analysis-card h3{margin:0 0 7px;font-size:13px;color:var(--text)}
+.overview-analysis-card p{margin:0 0 7px;font-size:12px;color:var(--muted);line-height:1.4;overflow-wrap:anywhere}
+.overview-analysis-card p:last-child{margin-bottom:0}
+@media(max-width:850px){.overview-analysis-grid{grid-template-columns:1fr}}
+@media(max-width:600px){#overviewAnalysisPanel{padding:12px}.overview-analysis-grid{gap:7px}.overview-analysis-card{padding:10px}.overview-analysis-card h3{font-size:12px}.overview-analysis-card p{font-size:11px}}
 </style>
 <script>window.FOUR_DS_CLOUD_ENDPOINT = "https://script.google.com/macros/s/AKfycbyZW792ZLBPxusQwthCJr0bVdZwCjXyeNaklq4Dk-BuSQ8P9gdg2zdTiWFKEmYuy5sY9Q/exec";</script>
 <script src="cloud-bootstrap.js?v=4ds-auto-first-20261104-a"></script>
@@ -425,6 +432,7 @@ html[data-theme="light"] #page-firms .cash-risk-table td:nth-child(4){background
       <div class="panel"><div class="panel-header"><div><h2 id="economicsTitle">Economics per successful payout</h2><p id="economicsDescription">These include challenge losses averaged across all purchases.</p></div></div><div class="metric-row"><div><span id="unitRewardLabel">Reward paid to trader</span><small id="unitRewardDetail">After split and payout fees</small></div><strong id="unitReward">—</strong></div><div class="metric-row"><div><span id="unitRefundLabel">Fee refund on a paid account</span></div><strong id="unitRefund">—</strong></div><div class="metric-row"><div><span id="unitCostLabel">Effective cost per paid account</span><small id="unitCostDetail">Expected purchase fees / payout count − refund</small></div><strong id="unitCost">—</strong></div><div class="metric-row"><div><span id="breakEvenLabel">Break-even payout probability</span></div><strong id="breakEven">—</strong></div><div class="metric-row"><div><span id="needed4Label">Minimum payouts for 4× net</span></div><strong id="needed4">—</strong></div><div class="metric-row"><div><span id="payoutTimingLabel">Optimistic first cash timing</span><small id="payoutTimingDetail">Calendar-day approximation; excludes weekends, delays and trading losses</small></div><strong id="payoutTiming">—</strong></div></div>
     </div>
   </div>
+  <section class="panel" id="overviewAnalysisPanel" aria-labelledby="overviewAnalysisHeading"><div class="panel-header"><div><h2 id="overviewAnalysisHeading">Analysis &amp; Recommendations</h2><p class="caption">Automatic interpretation of the selected account’s current model. Not AI, broker verification, or a promise of payouts.</p></div><span class="section-tag">MODEL CHECK</span></div><div id="overviewAnalysisBody" class="overview-analysis-grid" aria-live="polite"></div><p id="overviewAnalysisCaveat" class="caption" style="margin-top:10px"></p></section>
 </section>
 
 <section id="page-scaling" class="page">
@@ -993,6 +1001,62 @@ function syncOverviewProgressMode(){
 
 function marginForRisk(risk){return positionForRisk(risk).margin;}
 function showWarnings(c){let items=[];if(c.cost>positive(state.budget))items.push(`Planned challenge purchases ${money(c.cost)} exceed the available budget ${money(state.budget)}.`);if(c.unit<=0)items.push('Set a positive challenge price/cost for meaningful ROI.');if(positive(state.dailyLoss)+positive(state.buffer)>positive(state.accountSize))items.push('Daily loss plus buffer exceeds account size.');if(positive(state.overallLoss)+positive(state.buffer)>positive(state.accountSize))items.push('Total loss plus buffer exceeds account size.');if(instrumentReady()&&positionForRisk(state.fundedBase).qty===0)items.push('The funded USD stop loss is too small for the minimum contract/lot with the optional broker settings. Cash simulation does not test executable order size.');if(instrumentReady()&&positive(state.fundedBoost)>0&&marginForRisk(state.fundedBoost)>positive(state.accountSize)*prob(state.marginCeiling))items.push('Full funded boost does not fit your margin ceiling at starting equity; it may fit only after profits.');if(dirtySim&&lastSim)items.push('Strategy parameters changed after the last simulation. Rerun to refresh pass rates.');const box=$('warningBox');if(items.length){box.style.display='block';box.textContent=items.join('  •  ')}else box.style.display='none';}
+function renderOverviewAnalysis(c,model,topstep){
+ const target=$('overviewAnalysisBody'),caveat=$('overviewAnalysisCaveat');
+ if(!target||!caveat)return;
+ target.replaceChildren();
+ const add=(title,lines)=>{
+  const card=document.createElement('div');card.className='overview-analysis-card';
+  const heading=document.createElement('h3');heading.textContent=title;card.append(heading);
+  for(const entry of lines){const p=document.createElement('p');p.textContent=entry;card.append(p)}
+  target.append(card);
+ };
+ if(!activeProgramKey||!selectedAccountSupportsSimulation&&!model.topstep){
+  add('Performance', ['Choose a supported firm and account size before interpreting pass and payout results.']);
+  add('Risk assessment',['No account-specific risk assessment is available without compatible stage rules.']);
+  add('Next comparison',['Review the exact program, funded payout terms and loss-floor mechanics in Prop Firms.']);
+  caveat.textContent='Research-only programs are not certified for this model.';
+  return;
+ }
+ const n=Number(state.accounts)||0, max=positive(state.overallLoss),daily=positive(state.dailyLoss);
+ const risk=positive(state.p1Base),fundedRisk=positive(state.fundedBase);
+ const performance=[],risks=[],ideas=[];
+ if(n===0)performance.push('Your budget does not currently cover a complete challenge purchase.');
+ if(model.topstep){
+  if(!topstep||topstep.error){performance.push('Run the Topstep estimate to calculate Combine and XFA payout outcomes.');}
+  else{
+   performance.push('Estimated Combine pass: '+pct(topstep.combine)+'. First XFA payout: '+pct(topstep.probability)+'. Second payout: '+pct(topstep.secondProbability)+'.');
+   const evalLoss=Number(topstep.combineBurned)||0,fundLoss=Number(topstep.fundedBurned)||0;
+   risks.push('Estimated Combine breach: '+pct(evalLoss)+'; funded-stage breach: '+pct(fundLoss)+'. Check the XFA trailing MLL and contract caps separately.');
+   ideas.push('Compare both Topstep purchase paths and the funded risk per trade; the model excludes intratrade excursions and slippage.');
+  }
+ }else{
+  if(!Number.isFinite(c.pass)||!Number.isFinite(c.breakEven)||c.unit<=0){
+   performance.push('Enter a valid account fee, payout target and stage assumptions to evaluate the scenario.');
+  }else{
+   performance.push('Modeled collected-payout chance per account: '+pct(c.pass)+'. Fee-only break-even payout rate: '+(Number.isFinite(c.breakEven)?pct(c.breakEven):'unavailable')+'.');
+   if(c.pass<c.breakEven)performance.push('The current modeled payout rate is below the simple purchase-fee break-even threshold.');
+   else performance.push('The modeled payout rate exceeds the simple purchase-fee break-even threshold; this does not validate the strategy or account rules.');
+  }
+  const stages=[...(model.phase1?[['Phase 1',prob(state.p1)]]:[]),...(model.phase2?[['Phase 2',prob(state.p2)]]:[]),['Funded profit target',prob(state.pf)],['Payout collection',prob(state.pc)]];
+  const weakest=stages.reduce((a,b)=>b[1]<a[1]?b:a,stages[0]);
+  performance.push('Lowest assumed conditional rate: '+weakest[0]+' at '+pct(weakest[1])+'.');
+  ideas.push('Sensitivity test: reduce '+weakest[0]+' success by 5 percentage points and compare payout probability and ROI; this is a scenario, not a prediction.');
+ }
+ const limit=min=>Number.isFinite(min)&&min>0;
+ if(limit(daily)&&risk>0)risks.push('Phase 1 planned risk uses '+(100*risk/daily).toFixed(1)+'% of the starting daily loss allowance per trade, before costs, slippage or other open exposure.');
+ if(limit(max)&&fundedRisk>0)risks.push('Funded planned risk uses '+(100*fundedRisk/max).toFixed(1)+'% of the starting overall loss allowance per trade; trailing floors may leave less room.');
+ if(limit(daily)&&risk>=daily)risks.push('Planned Phase 1 loss meets or exceeds the entire starting daily allowance. Reduce risk before trading.');
+ if(!limit(daily)||!limit(max))risks.push('A comparable USD daily or overall limit is unavailable here; confirm the selected firm’s hard equity floor.');
+ if(!risks.length)risks.push('Loss limits do not fully account for floating P/L, broker margin, commissions, news gaps or trailing drawdown.');
+ if(dirtySim&&lastSim)ideas.push('Rerun the stage simulation: trading parameters changed since the last estimate.');
+ if(model.topstep)ideas.push('Check whether a lower funded risk improves survival through the first and second XFA payouts.');
+ else ideas.push('Compare the same budget with smaller per-trade risk and fewer concurrent positions before increasing the account count.');
+ add('Performance analysis',performance);
+ add('Risk assessment',risks);
+ add('Improvement opportunities',ideas);
+ caveat.textContent='All pass and payout rates are modeled assumptions or simplified simulations, not firm-published statistics. Risk percentages use initial limits; real-time remaining headroom can be smaller.';
+}
 function topstepReserveFee(){return phaseModel().topstep&&state.topstepPath!=="noactivation"?149:0;}
 function topstepMonthlyFee(){const n=Number(state.accountSize);return state.topstepPath==="noactivation"?(n===50000?95:n===100000?149:229):(n===50000?49:n===100000?99:199);}
 function deriveBudgetAccounts(){
@@ -1150,7 +1214,7 @@ if(scenarioRows?.length)for(const row of scenarioRows)updateScenarioMetrics(row)
   }
  $('scenarioNote').textContent=mode==='simulation'?(dirtySim?'Simulation estimates may be stale. Rerun after editing trading rules.':'Stage rates derived from simplified Monte Carlo paths. Payout collection remains a manual assumption.'):'These pass rates are manual planning estimates, including prior illustrative 40%/50% presets—not verified live account success rates.';
  $('marginNotice').textContent=instrumentReady()?instrumentLabel()+' · Planned funded base '+money(state.fundedBase)+' → estimated margin '+money(marginForRisk(state.fundedBase))+'; boost '+money(state.fundedBoost)+' → estimated margin '+money(marginForRisk(state.fundedBoost))+'. Starting-equity margin ceiling: '+money(state.accountSize*prob(state.marginCeiling))+'. Actual broker/exchange margin may differ.':'Planned initial stop-loss risk: Phase 1 '+money(state.p1Base)+'; Phase 2 '+money(state.p2Base)+'; Funded '+money(state.fundedBase)+'. Dollar-risk simulation works without contract settings; executable lot size and broker margin are not yet checked.';renderSymbolSummary();
- renderScaling();showWarnings(c);if(lastSim)renderSim();else{$('simResults').className='notice';$('simResults').textContent='Run the USD stop-loss simulation for illustrative stage pass rates. Contract sizing and broker margin are not modeled.';}renderPresetLibrary();scheduleAutomaticEstimate();}
+ renderScaling();showWarnings(c);renderOverviewAnalysis(c,model,topstep);if(lastSim)renderSim();else{$('simResults').className='notice';$('simResults').textContent='Run the USD stop-loss simulation for illustrative stage pass rates. Contract sizing and broker margin are not modeled.';}renderPresetLibrary();scheduleAutomaticEstimate();}
 function renderScaling(){const budgets=[250,500,1000,2000,4000,8000,16000];const c=calc();const unit=c.unit;const selected=positive(state.budget);if(!budgets.includes(selected))budgets.push(selected);budgets.sort((x,y)=>x-y);
  $('budgetRows').innerHTML=budgets.map(b=>{const n=unit>0?Math.floor(b/unit):0;if(n<=0)return `<tr><td>${money(b)}</td><td colspan="6" class="subtle">Budget below one challenge</td></tr>`;const x=calc(Math.min(n,1000));return `<tr><td>${money(b)}</td><td class="num">${x.count}</td><td class="num">${money(x.cost)}</td><td class="num">${x.successes.toFixed(2)}</td><td class="num ${x.net>=0?'green':'red'}">${money(x.net)}</td><td class="num">${pct(x.roi)}</td><td class="num">${pct(x.chance(4))}</td></tr>`;}).join('');
  $('mirrorRows').innerHTML=[1,2,3,4,5].map(m=>{const x=calc(state.accounts,m);return `<tr><td>${m} account${m===1?'':'s'} / signal ${m===state.mirror?'<span class="tag">selected</span>':''}</td><td class="num">${money(x.net)}</td><td class="num">${pct(x.atLeast)}</td><td class="num">${pct(x.chance(3))}</td><td class="num">${pct(x.chance(4))}</td></tr>`;}).join('');}
