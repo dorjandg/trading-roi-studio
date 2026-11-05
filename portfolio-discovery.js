@@ -174,6 +174,7 @@ function search(base,options={}){
   budget:options.budget,netGoal:options.netGoal,
   purchaseMode:options.purchaseMode==='recycle'?'recycle':'upfront',
   maxActive:options.maxActive,maxBuysPerDay:options.maxBuysPerDay,
+  capacityMode:options.capacityMode==='manual'?'manual':'automatic',
   tradeSchedule:options.tradeSchedule||null,
   reinvestPayouts:options.reinvestPayouts===true,
   pairedSignals:true,maxAccounts:100
