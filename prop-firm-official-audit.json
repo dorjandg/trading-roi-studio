@@ -993,7 +993,7 @@
         "minDays": [
           1
         ],
-        "consistency": "35% max share of total evaluation profit on any single day; no monthly renewal",
+        "consistency": "Current official Growth evaluation has no best-day consistency rule.",
         "targetsUSDBySize": {
           "25000": 1500,
           "50000": 3000,
@@ -1002,7 +1002,19 @@
         }
       },
       "loss": {
-        "type": "EOD trailing MLL; daily-loss soft pause rather than instant account failure"
+        "type": "EOD trailing MLL; daily-loss soft pause rather than instant account failure",
+        "maximumUSDBySize": {
+          "25000": 1000,
+          "50000": 2000,
+          "100000": 3500,
+          "150000": 5000
+        },
+        "dailyUSDBySize": {
+          "25000": 600,
+          "50000": 1250,
+          "100000": 2500,
+          "150000": 3750
+        }
       },
       "funded": {
         "consistency": "Check funded payout path; evaluation 35% is separate",
@@ -1013,7 +1025,8 @@
       "pricingNote": "One-time purchase; reset prices differ",
       "sources": [
         "https://help.tradeify.co/en/articles/14369021-tradeify-pricing-reference",
-        "https://help.tradeify.co/en/articles/12853921-select-evaluation-accounts"
+        "https://help.tradeify.co/en/articles/12853921-select-evaluation-accounts",
+        "https://help.tradeify.co/en/articles/10495915-growth-evaluation-accounts"
       ],
       "resetFeesUSD": {
         "25000": 60,
@@ -1029,7 +1042,13 @@
           "MNQ": 1.82,
           "GC": 6.2
         },
-        "contractMargin": "Refer to trading platform and selected symbol; commission is not margin"
+        "contractMargin": "Refer to trading platform and selected symbol; commission is not margin",
+        "maximumContractsBySize": {
+          "25000": 1,
+          "50000": 4,
+          "100000": 8,
+          "150000": 12
+        }
       },
       "pricingFrequency": "one-time",
       "riskStructure": {
@@ -1039,12 +1058,10 @@
         "drawdownPercent": null,
         "drawdownBySizeUSD": null,
         "consistency": {
-          "percent": 35,
+          "percent": null,
           "stage": "evaluation",
-          "reference": "share-of-total-profit",
-          "description": "35% best-day share of evaluation total.",
-          "enforcement": "Consistency normally delays qualification / raises target; loss-floor breaches are separate. Firm-specific outcome controls.",
-          "sourceVerified": true
+          "description": "No evaluation consistency rule in current Growth guide; previously recorded 35% was inconsistent with the official guide.",
+          "source": "https://help.tradeify.co/en/articles/10495915-growth-evaluation-accounts"
         },
         "verification": "Stage, version, purchase date and current provider terms must be matched before automated enforcement."
       }
@@ -1063,25 +1080,26 @@
         "50000": 165,
         "100000": 265,
         "150000": 369,
-        "300000": 449
+        "300000": 349
       },
       "evaluation": {
         "minDays": [
           3
         ],
-        "consistency": "40% max daily profit share; optional 50% paid add-on not available on 300K",
+        "consistency": "Standard 40% best-day; purchased plan and size determine any options.",
         "minimumTradingDays": "3 days for standard Select; paid add-on 50% may allow passing in 2 days",
         "targetsUSDBySize": {
           "25000": 1500,
           "50000": 3000,
           "100000": 6000,
           "150000": 9000,
-          "300000": 18000
+          "300000": 14000
         }
       },
       "loss": {
         "dailyPercent": null,
-        "type": "EOD trailing; no daily loss limit in evaluation"
+        "type": "EOD trailing; no daily loss limit in evaluation",
+        "exceptions": "300K current V2: EOD max loss $8,000; daily loss $4,000. Legacy V1: EOD max loss $6,000; no daily loss limit."
       },
       "funded": {
         "payouts": "Choose Select Flex or Select Daily on pass",
@@ -1095,7 +1113,8 @@
       },
       "sources": [
         "https://help.tradeify.co/en/articles/12853921-select-evaluation-accounts",
-        "https://help.tradeify.co/en/articles/14369021-tradeify-pricing-reference"
+        "https://help.tradeify.co/en/articles/14369021-tradeify-pricing-reference",
+        "https://help.tradeify.co/en/articles/16497699-300k-select-account-limited-release"
       ],
       "priceVariantsUSD": {
         "Select 40% consistency": {
@@ -1103,13 +1122,16 @@
           "50000": 165,
           "100000": 265,
           "150000": 369,
-          "300000": 449
+          "300000": 349
         },
         "Select 50% add-on": {
           "25000": 135,
           "50000": 205,
           "100000": 329,
           "150000": 459
+        },
+        "Select 300K legacy V1": {
+          "300000": 449
         }
       },
       "resetFeesUSD": {
@@ -1118,7 +1140,7 @@
         "100000": 169,
         "150000": 239
       },
-      "pricingNote": "Official one-time USD purchase prices. 300K $449 limited-release size (not $570). 50%-consistency add-on priced separately, unavailable for 300K.",
+      "pricingNote": "300K published V2 $349; V1 legacy $449. Official pages may disagree on current price: verify exact checkout, product version and date.",
       "pricingFrequency": "one-time",
       "riskStructure": {
         "drawdownKind": "eod-trailing",
