@@ -95,6 +95,20 @@ summary{cursor:pointer;font-weight:750;color:var(--text)}details .tablewrap{marg
 .discovery-sort-th:hover,.discovery-sort-th[aria-pressed=true]{color:var(--blue)}
 .discovery-table th:first-child .discovery-sort-th{text-align:left}
 @media(max-width:620px){.discovery-sortbar label{max-width:none;min-width:170px}.discovery-sortbar button{flex:1}}
+
+/* Compact per-model trade KPIs: labels are 2-3 characters. */
+.discovery-table td:first-child{white-space:normal;min-width:310px;max-width:410px;text-align:left}
+.discovery-table td:not(:first-child){white-space:nowrap;padding:9px 7px}
+.discovery-table th{padding:9px 7px}
+.discovery-table .discovery-sort-th{font-size:11px}
+.discovery-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:8px 0 9px}
+.discovery-kpi{display:flex;flex-wrap:nowrap;align-items:center;justify-content:space-between;gap:3px;min-width:0;border:1px solid var(--line);background:var(--panel);padding:4px 5px;border-radius:6px;font-size:10px;white-space:nowrap}
+.discovery-kpi b{color:var(--muted);font-size:9px;font-weight:800;letter-spacing:.1px}
+.discovery-kpi span{color:var(--text);font-weight:700;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis}
+.discovery-kpi-key{border:0!important;background:none!important;padding:0!important;margin:6px 0!important;font-size:11px;color:var(--muted)}
+.discovery-kpi-key summary{font-size:11px;color:var(--muted);font-weight:600}
+.discovery-kpi-key p{margin:4px 0;color:var(--muted);line-height:1.5}
+@media(max-width:620px){.discovery-table td:first-child{min-width:288px;max-width:310px}.discovery-kpi{font-size:10px;padding:4px 4px}}
 </style>
 </head><body><div class="shell">
 <header class="top"><div class="brand"><span class="mark">4D</span><span>4Ds Trading Studio <span style="color:var(--green)">/ Portfolio Sim</span></span></div><nav class="nav"><a href="index.html">Overview & Firms</a><a href="labs.html">Labs</a><a href="comparison-lab.html">Compare Lab</a><a href="trade-lab.html">Trade Lab</a><button type="button" id="theme" aria-label="Toggle color theme">◐</button></nav></header>
@@ -637,6 +651,14 @@ const discoverySorts=[
  ['p10','Downside P10','desc'],
  ['blocked','Risk-blocked accounts','asc'],
  ['paid','Paid accounts','desc'],
+ ['pf','PF · Profit factor','desc'],
+ ['wr','WR · Win rate','desc'],
+ ['rr','RR · Weighted reward/risk','desc'],
+ ['ar','AR · Realized R per trade','desc'],
+ ['ev','EV · Expected trade P/L','desc'],
+ ['aw','AW · Average winning trade','desc'],
+ ['al','AL · Average losing trade','asc'],
+ ['tc','TC · Average trades per trial','desc'],
  ['p1r1','Phase 1 · R1 amount','asc'],
  ['p1r2','Phase 1 · R2 amount','asc'],
  ['p1r3','Phase 1 · R3 amount','asc'],
@@ -653,6 +675,14 @@ function discoveryMetric(entry,key){
   case 'p10':return h.p10;
   case 'blocked':return h.avg.exhausted;
   case 'paid':return h.avg.paid;
+  case 'pf':return h.tradeKpis?.pf??-Infinity;
+  case 'wr':return h.tradeKpis?.wr??-Infinity;
+  case 'rr':return h.tradeKpis?.rr??-Infinity;
+  case 'ar':return h.tradeKpis?.ar??-Infinity;
+  case 'ev':return h.tradeKpis?.ev??-Infinity;
+  case 'aw':return h.tradeKpis?.aw??-Infinity;
+  case 'al':return h.tradeKpis?.al??Infinity;
+  case 'tc':return h.avg.trades;
   case 'p1r1':return entry.plan.riskProfiles.p1?.r1??-1;
   case 'p1r2':return entry.plan.riskProfiles.p1?.r2??-1;
   case 'p1r3':return entry.plan.riskProfiles.p1?.r3??-1;
@@ -670,6 +700,26 @@ function discoverySortSet(key,reverse=false){
  discovered.sortKey=key;
  renderDiscovery(discovered.result,discovered.row,discovered.budget);
 }
+function discoveryKpis(h){
+ const k=h.tradeKpis||{},none='—';
+ const n=(v,d=2)=>v==null?none:v===Infinity?'∞':Number.isFinite(v)?v.toFixed(d):none;
+ const dollar=v=>v==null?none:usd(v);
+ const percentage=v=>v==null?none:dec(v*100)+'%';
+ // TC is the average executed-trade count in one portfolio trial, not the
+ // aggregate trade count across all Monte Carlo trials.
+ const chips=[
+  ['PF',n(k.pf),'Gross profitable P/L divided by gross losing P/L; includes trade costs'],
+  ['WR',percentage(k.wr),'Winning trades divided by all executed trades'],
+  ['RR',n(k.rr),'Risk-weighted planned reward/risk across executed trades'],
+  ['AR',(k.ar!=null&&k.ar>0?'+':'')+n(k.ar),'Average realized net R per executed trade'],
+  ['AW',dollar(k.aw),'Average net winning trade in USD'],
+  ['AL',dollar(k.al),'Average absolute net losing trade in USD'],
+  ['EV',dollar(k.ev),'Average net P/L per executed trade in USD'],
+  ['TC',n(h.avg.trades,1),'Average executed trades per portfolio trial']
+ ];
+ return '<div class="discovery-kpis">'+chips.map(([label,value,help])=>
+  '<span class="discovery-kpi" title="'+esc(help)+'"><b>'+label+'</b><span>'+esc(value)+'</span></span>').join('')+'</div>';
+}
 function renderDiscovery(result,row,budget){
  const baseline=result.baseline.holdout,objectiveLabel={
   balanced:'Balanced net and downside',net:'Expected net profit',
@@ -683,7 +733,8 @@ function renderDiscovery(result,row,budget){
   const h=c.holdout,delta=i<0?null:c.delta;
   const policySummary='<div class="risks">'+formatDiscoveryPlan(c.plan)+'</div>';
   return '<tr><td><b>'+esc(c.title)+'</b><small>'+esc(c.reason)+'</small>'+
-    '<details><summary>Show exact R1/R2/R3 and phase policies</summary>'+policySummary+'</details></td>'+
+    discoveryKpis(h)+
+    '<details><summary>R1/R2/R3 · phases</summary>'+policySummary+'</details></td>'+
     '<td class="'+(h.avg.net>=0?'good':'bad')+'">'+usd(h.avg.net)+'</td>'+
     '<td>'+(delta?showDifference(delta.net):'Baseline')+'</td>'+
     '<td>'+usd(h.p10)+'</td>'+
@@ -698,7 +749,8 @@ function renderDiscovery(result,row,budget){
  const sorted=result.ideas.map((idea,index)=>({idea,index})).sort((a,b)=>{
   const left=discoveryMetric(a.idea,sortKey),right=discoveryMetric(b.idea,sortKey);
   const comparison=typeof left==='string'?
-   left.localeCompare(right):(left-right);
+   left.localeCompare(right):(left===right?0:left===Infinity?1:right===Infinity?-1:
+    left===-Infinity?-1:right===-Infinity?1:left-right);
   return (sortDirection==='asc'?comparison:-comparison)||a.index-b.index;
  });
  const label=discoverySorts.find(s=>s[0]===sortKey)?.[1]||'Improvement vs your settings';
@@ -728,9 +780,11 @@ function renderDiscovery(result,row,budget){
   '. Includes '+result.boundaryCount+' mandatory limit-boundary stress tests (not necessarily recommended).</p>'+
   '<div class="alert">'+summary+'</div>'+
   sortControls+
-  '<div class="tablewrap"><table class="discovery-table" style="min-width:940px">'+
-  '<thead><tr><th>'+sorter('name','Risk model')+'</th><th>'+sorter('net','Expected net')+'</th><th>'+sorter('delta','Change vs yours')+'</th><th>'+sorter('p10','Downside P10')+'</th>'+
-  '<th>'+sorter('payout','Chance of payout')+'</th><th>'+sorter('blocked','Blocked accounts')+'</th><th>Test</th></tr></thead><tbody>'+
+  '<details class="discovery-kpi-key"><summary>KPI key</summary>'+
+   '<p>PF = profit factor · WR = win rate · RR = planned reward/risk · AR = average realized R · AW = average winning trade · AL = average losing trade · EV = expectancy per trade · TC = average trade count per trial. All are calculated from simulated executed trades; AW, AL and EV are USD values. RR is not the realized result.</p></details>'+
+  '<div class="tablewrap"><table class="discovery-table" style="min-width:815px">'+
+  '<thead><tr><th>'+sorter('name','MOD')+'</th><th>'+sorter('net','NET')+'</th><th>'+sorter('delta','DLT')+'</th><th>'+sorter('p10','P10')+'</th>'+
+  '<th>'+sorter('payout','CP')+'</th><th>'+sorter('blocked','BA')+'</th><th>GO</th></tr></thead><tbody>'+
   entry(result.baseline,-1)+sorted.map(x=>entry(x.idea,x.index)).join('')+'</tbody></table></div>'+
   '<p class="discovery-note">Candidates are shortlisted using simulated discovery trials, then rechecked with different simulated outcomes. This is not a backtest of market price data or statistically established superiority. Win rate and RR remain fixed across candidates; changing RR without adjusting win rate would distort comparisons. Assumed firm rules and simplified payouts may differ from actual eligibility. Applying a model changes only Portfolio Sim experiments, never your saved Firms strategy.</p>'+
   '</div>';
