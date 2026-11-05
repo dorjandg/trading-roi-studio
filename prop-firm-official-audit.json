@@ -52,7 +52,23 @@
         "200000": 1080
       },
       "pricingNote": "These are EUR base prices published by FTMO; USD checkout amounts are different and must not be calculated by simply relabelling EUR as USD.",
-      "pricingCurrency": "EUR"
+      "pricingCurrency": "EUR",
+      "riskStructure": {
+        "drawdownKind": "static",
+        "description": "static",
+        "updateRule": "Overall floor fixed to initial account reference; daily floor can still reset and move.",
+        "drawdownPercent": 10,
+        "drawdownBySizeUSD": null,
+        "consistency": {
+          "percent": null,
+          "stage": null,
+          "reference": "share-of-total-profit",
+          "description": "No universal best-day consistency condition documented for standard 2-Step evaluation.",
+          "enforcement": "Not established as a universal numeric daily cap.",
+          "sourceVerified": false
+        },
+        "verification": "Stage, version, purchase date and current provider terms must be matched before automated enforcement."
+      }
     },
     "ftmo1": {
       "status": "reviewed-partial",
@@ -96,7 +112,23 @@
         "200000": 999
       },
       "pricingNote": "EUR price shown on FTMO 1-Step official page on 5 Nov 2026; 100K €399 is displayed as a promotion versus €499 regular. Currency conversion/region checkout not assumed.",
-      "pricingCurrency": "EUR"
+      "pricingCurrency": "EUR",
+      "riskStructure": {
+        "drawdownKind": "eod-trailing",
+        "description": "end-of-day balance trailing",
+        "updateRule": "Overall floor recalculated from end-of-day reference, with intraday breach enforcement depending on firm.",
+        "drawdownPercent": 10,
+        "drawdownBySizeUSD": null,
+        "consistency": {
+          "percent": 50,
+          "stage": "evaluation",
+          "reference": "share-of-total-profit",
+          "description": "50% best-day rule; check purchase date and funded eligibility variant.",
+          "enforcement": "Consistency normally delays qualification / raises target; loss-floor breaches are separate. Firm-specific outcome controls.",
+          "sourceVerified": true
+        },
+        "verification": "Stage, version, purchase date and current provider terms must be matched before automated enforcement."
+      }
     },
     "instant": {
       "status": "reviewed-partial",
@@ -139,7 +171,23 @@
         "100000": 2999
       },
       "pricingCurrency": "EUR",
-      "pricingNote": "EUR amount shown on official account page; this is not a USD amount. Separate USD checkout region may differ."
+      "pricingNote": "EUR amount shown on official account page; this is not a USD amount. Separate USD checkout region may differ.",
+      "riskStructure": {
+        "drawdownKind": "intraday-trailing",
+        "description": "intraday closed-balance trailing",
+        "updateRule": "Overall floor can move intraday from closed balance/profit reference; not just once daily.",
+        "drawdownPercent": 10,
+        "drawdownBySizeUSD": null,
+        "consistency": {
+          "percent": 30,
+          "stage": "funded",
+          "reference": "share-of-total-profit",
+          "description": "30% profit distribution restriction; verify exact Instant account terms.",
+          "enforcement": "Consistency normally delays qualification / raises target; loss-floor breaches are separate. Firm-specific outcome controls.",
+          "sourceVerified": true
+        },
+        "verification": "Stage, version, purchase date and current provider terms must be matched before automated enforcement."
+      }
     },
     "holaPrime": {
       "status": "reviewed-partial",
@@ -174,6 +222,22 @@
         "maxRiskPerTradeIdeaPercent": 2,
         "payoutOptions": "On-demand 80% requires up to 40% consistency; biweekly 80% requires 3 profitable days; monthly 95% is an extra-fee option requiring 7 profitable days; verify actual checkout selection",
         "onDemandMinProfitPercent": 2
+      },
+      "riskStructure": {
+        "drawdownKind": "static",
+        "description": "static",
+        "updateRule": "Overall floor fixed to initial account reference; daily floor can still reset and move.",
+        "drawdownPercent": 10,
+        "drawdownBySizeUSD": null,
+        "consistency": {
+          "percent": null,
+          "stage": null,
+          "reference": "share-of-total-profit",
+          "description": "Consistency depends on selected payout option; verify at checkout. On-demand option may impose 40%.",
+          "enforcement": "Not established as a universal numeric daily cap.",
+          "sourceVerified": false
+        },
+        "verification": "Stage, version, purchase date and current provider terms must be matched before automated enforcement."
       }
     },
     "holaPro": {
@@ -204,6 +268,22 @@
       "funded": {
         "maxRiskPerTradeIdeaPercent": 2,
         "payoutOptions": "On-demand 80% requires up to 40% consistency; biweekly 80% requires 3 profitable days; monthly 95% is an extra-fee option requiring 7 profitable days; verify actual checkout selection"
+      },
+      "riskStructure": {
+        "drawdownKind": "static",
+        "description": "static",
+        "updateRule": "Overall floor fixed to initial account reference; daily floor can still reset and move.",
+        "drawdownPercent": 10,
+        "drawdownBySizeUSD": null,
+        "consistency": {
+          "percent": null,
+          "stage": null,
+          "reference": "share-of-total-profit",
+          "description": "Consistency depends on selected payout option; verify at checkout. On-demand option may impose 40%.",
+          "enforcement": "Not established as a universal numeric daily cap.",
+          "sourceVerified": false
+        },
+        "verification": "Stage, version, purchase date and current provider terms must be matched before automated enforcement."
       }
     },
     "topstep": {
@@ -249,7 +329,8 @@
         "https://help.topstep.com/en/articles/8284215-express-funded-account-parameters",
         "https://help.topstep.com/en/articles/14289835-topstep-pricing-and-payment-questions",
         "https://help.topstep.com/en/articles/13613539-risk-adjustments-high-risk-high-volatility",
-        "https://help.topstep.com/en/articles/12060405-back2funded-rules-guidelines-and-how-it-works"
+        "https://help.topstep.com/en/articles/12060405-back2funded-rules-guidelines-and-how-it-works",
+        "https://help.topstep.com/en/articles/8284208-consistency-at-topstep"
       ],
       "sizesUSD": [
         50000,
@@ -289,6 +370,27 @@
         "50000": 599,
         "100000": 699,
         "150000": 829
+      },
+      "riskStructure": {
+        "drawdownKind": "eod-trailing",
+        "description": "end-of-day trailing Maximum Loss Limit",
+        "updateRule": "Overall floor recalculated from end-of-day reference, with intraday breach enforcement depending on firm.",
+        "drawdownPercent": null,
+        "drawdownBySizeUSD": {
+          "50000": 2000,
+          "100000": 3000,
+          "150000": 4500
+        },
+        "consistency": {
+          "percent": 55,
+          "stage": "evaluation",
+          "reference": "share-of-total-profit",
+          "description": "55% best-day target on Trading Combine. Exceeding it raises required target; not an automatic breach.",
+          "enforcement": "Consistency normally delays qualification / raises target; loss-floor breaches are separate. Firm-specific outcome controls.",
+          "sourceVerified": true,
+          "source": "https://help.topstep.com/en/articles/8284208-consistency-at-topstep"
+        },
+        "verification": "Stage, version, purchase date and current provider terms must be matched before automated enforcement."
       }
     },
     "fundednext-stellar2": {
@@ -338,7 +440,24 @@
       "sources": [
         "https://help.fundednext.com/en/articles/17255124-stellar-2-step-challenge",
         "https://help.fundednext.com/en/articles/8019914-what-is-the-maximum-daily-loss-limit"
-      ]
+      ],
+      "riskStructure": {
+        "drawdownKind": "static",
+        "description": "static initial-balance",
+        "updateRule": "Overall floor fixed to initial account reference; daily floor can still reset and move.",
+        "drawdownPercent": 10,
+        "drawdownBySizeUSD": null,
+        "consistency": {
+          "percent": 40,
+          "stage": "funded-on-demand",
+          "reference": "share-of-total-profit",
+          "description": "40% best-day cap for ON-DEMAND payout only; standard/three-day options have different requirements. Quick Strike 30% is trade-duration profit, NOT daily profit consistency.",
+          "enforcement": "Consistency normally delays qualification / raises target; loss-floor breaches are separate. Firm-specific outcome controls.",
+          "sourceVerified": true,
+          "source": "https://help.fundednext.com/en/articles/17255124-stellar-2-step-challenge"
+        },
+        "verification": "Stage, version, purchase date and current provider terms must be matched before automated enforcement."
+      }
     },
     "fundednext-stellar1": {
       "status": "reviewed-partial",
@@ -382,7 +501,23 @@
         "200000": 1099.99
       },
       "pricingNote": "Approximate global USD base pricing from the Stellar 1-Step official help page. USA pricing and optional add-ons differ; confirm at checkout.",
-      "pricingRegion": "Global / approximate; not US"
+      "pricingRegion": "Global / approximate; not US",
+      "riskStructure": {
+        "drawdownKind": "static",
+        "description": "static initial-balance",
+        "updateRule": "Overall floor fixed to initial account reference; daily floor can still reset and move.",
+        "drawdownPercent": 6,
+        "drawdownBySizeUSD": null,
+        "consistency": {
+          "percent": null,
+          "stage": null,
+          "reference": "share-of-total-profit",
+          "description": "Quick Strike 30% controls profits from short-duration trades, NOT daily profit consistency.",
+          "enforcement": "Not established as a universal numeric daily cap.",
+          "sourceVerified": false
+        },
+        "verification": "Stage, version, purchase date and current provider terms must be matched before automated enforcement."
+      }
     },
     "fundednext-lite": {
       "status": "reviewed-partial",
@@ -428,8 +563,25 @@
       },
       "sources": [
         "https://help.fundednext.com/en/articles/17253939-stellar-lite-account",
-        "https://help.fundednext.com/en/articles/8019803-what-are-the-minimum-trading-days-in-fundednext-challenges"
-      ]
+        "https://help.fundednext.com/en/articles/8019803-what-are-the-minimum-trading-days-in-fundednext-challenges",
+        "https://help.fundednext.com/en/articles/15586820-does-fundednext-cfds-offer-on-demand-performance-rewards"
+      ],
+      "riskStructure": {
+        "drawdownKind": "static",
+        "description": "static initial-balance",
+        "updateRule": "Overall floor fixed to initial account reference; daily floor can still reset and move.",
+        "drawdownPercent": 8,
+        "drawdownBySizeUSD": null,
+        "consistency": {
+          "percent": 40,
+          "stage": "funded-on-demand",
+          "reference": "share-of-total-profit",
+          "description": "40% best-day share applies to ON-DEMAND payout only; other payout options differ.",
+          "enforcement": "Consistency normally delays qualification / raises target; loss-floor breaches are separate. Firm-specific outcome controls.",
+          "sourceVerified": true
+        },
+        "verification": "Stage, version, purchase date and current provider terms must be matched before automated enforcement."
+      }
     },
     "fundednext-instant": {
       "status": "reviewed-partial",
@@ -474,6 +626,22 @@
       },
       "margin": {
         "commission": "Forex $7/lot; commodities 0.0016% of opening price; indices zero; crypto 0.04%; stocks 0.004%. Broker instrument specification still needed for margin."
+      },
+      "riskStructure": {
+        "drawdownKind": "trailing-capped",
+        "description": "balance-trailing capped at initial balance; withdrawal affects buffer",
+        "updateRule": "Trailing floor moves with qualifying highs until a documented lock/cap.",
+        "drawdownPercent": 6,
+        "drawdownBySizeUSD": null,
+        "consistency": {
+          "percent": null,
+          "stage": null,
+          "reference": "share-of-total-profit",
+          "description": "Growth milestones and EOD payout eligibility; daily best-day restriction not confirmed.",
+          "enforcement": "Not established as a universal numeric daily cap.",
+          "sourceVerified": false
+        },
+        "verification": "Stage, version, purchase date and current provider terms must be matched before automated enforcement."
       }
     },
     "the5ers-high": {
@@ -522,6 +690,22 @@
       "margin": {
         "leverage": "Published 1:100; instrument and account platform limitations apply",
         "platform": "MT5 Hedge"
+      },
+      "riskStructure": {
+        "drawdownKind": "static",
+        "description": "static total and daily prior-day close reference",
+        "updateRule": "Overall floor fixed to initial account reference; daily floor can still reset and move.",
+        "drawdownPercent": 10,
+        "drawdownBySizeUSD": null,
+        "consistency": {
+          "percent": null,
+          "stage": null,
+          "reference": "share-of-total-profit",
+          "description": "Minimum profitable days and optional account variant matter; best-day cap not confirmed.",
+          "enforcement": "Not established as a universal numeric daily cap.",
+          "sourceVerified": false
+        },
+        "verification": "Stage, version, purchase date and current provider terms must be matched before automated enforcement."
       }
     },
     "apex": {
@@ -599,6 +783,27 @@
       "restrictions": {
         "activation": "7 days from passing evaluation for currently described Performance Account plans",
         "noActivationFee": "No-activation-fee evaluations are a separate purchase option"
+      },
+      "riskStructure": {
+        "drawdownKind": "variant",
+        "description": "VARIANT: EOD or intraday trailing; do not mix",
+        "updateRule": "Exact purchased product controls EOD versus intraday floor.",
+        "drawdownPercent": null,
+        "drawdownBySizeUSD": {
+          "25000": 1000,
+          "50000": 2000,
+          "100000": 3000,
+          "150000": 4000
+        },
+        "consistency": {
+          "percent": null,
+          "stage": null,
+          "reference": "share-of-total-profit",
+          "description": "EOD vs intraday evaluation products must be selected before calculating moving loss floor or payout consistency.",
+          "enforcement": "Not established as a universal numeric daily cap.",
+          "sourceVerified": false
+        },
+        "verification": "Stage, version, purchase date and current provider terms must be matched before automated enforcement."
       }
     },
     "takeprofit": {
@@ -651,7 +856,23 @@
         "150000": 360
       },
       "pricingNote": "Official standard evaluation monthly subscription prices. Temporary promotions (including November 2026 NOFEE50) and activation fees are separate; checkout price may vary.",
-      "pricingFrequency": "Monthly until passing evaluation; funded account may have separate one-time activation fee."
+      "pricingFrequency": "Monthly until passing evaluation; funded account may have separate one-time activation fee.",
+      "riskStructure": {
+        "drawdownKind": "stage-dependent",
+        "description": "EOD trailing during evaluation; intraday in PRO",
+        "updateRule": "Evaluation and funded stages can use different moving floors.",
+        "drawdownPercent": null,
+        "drawdownBySizeUSD": null,
+        "consistency": {
+          "percent": 50,
+          "stage": "evaluation",
+          "reference": "share-of-total-profit",
+          "description": "50% best-day share for evaluation; crossing raises effective profit requirement, not an immediate account breach.",
+          "enforcement": "Consistency normally delays qualification / raises target; loss-floor breaches are separate. Firm-specific outcome controls.",
+          "sourceVerified": true
+        },
+        "verification": "Stage, version, purchase date and current provider terms must be matched before automated enforcement."
+      }
     },
     "fundednext-futures": {
       "status": "requires-variant-selection",
@@ -731,6 +952,22 @@
         "Direct · current offer": {
           "50000": 169.99
         }
+      },
+      "riskStructure": {
+        "drawdownKind": "variant",
+        "description": "Trailing EOD Maximum Loss Limit; hard breach if equity touches floor",
+        "updateRule": "Exact purchased product controls EOD versus intraday floor.",
+        "drawdownPercent": null,
+        "drawdownBySizeUSD": null,
+        "consistency": {
+          "percent": 40,
+          "stage": "variant-dependent",
+          "reference": "share-of-total-profit",
+          "description": "Legacy and Flex evaluation: 40% consistency in current reference; Rapid Pro/Daily: none in evaluation. Requires exact plan.",
+          "enforcement": "Consistency normally delays qualification / raises target; loss-floor breaches are separate. Firm-specific outcome controls.",
+          "sourceVerified": true
+        },
+        "verification": "Stage, version, purchase date and current provider terms must be matched before automated enforcement."
       }
     },
     "tradeify-growth": {
@@ -783,7 +1020,23 @@
         },
         "contractMargin": "Refer to trading platform and selected symbol; commission is not margin"
       },
-      "pricingFrequency": "one-time"
+      "pricingFrequency": "one-time",
+      "riskStructure": {
+        "drawdownKind": "eod-trailing",
+        "description": "EOD trailing MLL; daily-loss soft pause rather than instant account failure",
+        "updateRule": "Overall floor recalculated from end-of-day reference, with intraday breach enforcement depending on firm.",
+        "drawdownPercent": null,
+        "drawdownBySizeUSD": null,
+        "consistency": {
+          "percent": 35,
+          "stage": "evaluation",
+          "reference": "share-of-total-profit",
+          "description": "35% best-day share of evaluation total.",
+          "enforcement": "Consistency normally delays qualification / raises target; loss-floor breaches are separate. Firm-specific outcome controls.",
+          "sourceVerified": true
+        },
+        "verification": "Stage, version, purchase date and current provider terms must be matched before automated enforcement."
+      }
     },
     "tradeify-select": {
       "status": "reviewed-partial",
@@ -848,7 +1101,23 @@
         "150000": 239
       },
       "pricingNote": "Official one-time USD purchase prices. 300K $449 limited-release size (not $570). 50%-consistency add-on priced separately, unavailable for 300K.",
-      "pricingFrequency": "one-time"
+      "pricingFrequency": "one-time",
+      "riskStructure": {
+        "drawdownKind": "eod-trailing",
+        "description": "EOD trailing; no daily loss limit in evaluation",
+        "updateRule": "Overall floor recalculated from end-of-day reference, with intraday breach enforcement depending on firm.",
+        "drawdownPercent": null,
+        "drawdownBySizeUSD": null,
+        "consistency": {
+          "percent": 40,
+          "stage": "evaluation",
+          "reference": "share-of-total-profit",
+          "description": "40% best-day share; 50% paid option on eligible sizes, not 300K.",
+          "enforcement": "Consistency normally delays qualification / raises target; loss-floor breaches are separate. Firm-specific outcome controls.",
+          "sourceVerified": true
+        },
+        "verification": "Stage, version, purchase date and current provider terms must be matched before automated enforcement."
+      }
     },
     "tradeify-lightning": {
       "status": "reviewed-partial",
@@ -906,7 +1175,28 @@
         "150000": 796
       },
       "pricingNote": "Official one-time Lightning pricing; no reset purchases for failed funded accounts.",
-      "pricingFrequency": "one-time"
+      "pricingFrequency": "one-time",
+      "riskStructure": {
+        "drawdownKind": "eod-trailing",
+        "description": "EOD trailing; floor enforced intraday",
+        "updateRule": "Overall floor recalculated from end-of-day reference, with intraday breach enforcement depending on firm.",
+        "drawdownPercent": null,
+        "drawdownBySizeUSD": {
+          "25000": 1000,
+          "50000": 2000,
+          "100000": 4000,
+          "150000": 5250
+        },
+        "consistency": {
+          "percent": null,
+          "stage": "funded-variable",
+          "reference": "share-of-total-profit",
+          "description": "20/25/30% progressive payouts depend on the specific reward cycle. No single numeric cap.",
+          "enforcement": "Not established as a universal numeric daily cap.",
+          "sourceVerified": false
+        },
+        "verification": "Stage, version, purchase date and current provider terms must be matched before automated enforcement."
+      }
     },
     "mff-builder": {
       "status": "reviewed-partial",
@@ -958,7 +1248,8 @@
         "https://help.myfundedfutures.com/en/articles/14290805-builder-plan-50k-a-comprehensive-guide",
         "https://help.myfundedfutures.com/en/articles/17005296-builder-plan-100k-comprehensive-guide",
         "https://help.myfundedfutures.com/en/articles/17035331-builder-plan-150k-comprehensive-guide",
-        "https://help.myfundedfutures.com/en/articles/16498635-moving-from-evaluation-to-sim-funded-account"
+        "https://help.myfundedfutures.com/en/articles/16498635-moving-from-evaluation-to-sim-funded-account",
+        "https://help.myfundedfutures.com/en/articles/11994562-consistency-rule-at-my-fundedfutures"
       ],
       "pricesUSD": {
         "50000": 153
@@ -991,6 +1282,28 @@
         "minimumQualifyingDays": 2,
         "consistency": "Largest day <= 50% of payout-cycle gains",
         "inactivity": "7 calendar days; funded plan-specific rules apply"
+      },
+      "riskStructure": {
+        "drawdownKind": "eod-trailing",
+        "description": "EOD trailing maximum loss; daily limits are soft trading pauses, not account closure",
+        "updateRule": "Overall floor recalculated from end-of-day reference, with intraday breach enforcement depending on firm.",
+        "drawdownPercent": null,
+        "drawdownBySizeUSD": {
+          "25000": 1000,
+          "50000": 2000,
+          "100000": 3000,
+          "150000": 4500
+        },
+        "consistency": {
+          "percent": 50,
+          "stage": "funded",
+          "reference": "share-of-total-profit",
+          "description": "No best-day consistency in evaluation; 50% applies to simulated-funded payout.",
+          "enforcement": "Consistency normally delays qualification / raises target; loss-floor breaches are separate. Firm-specific outcome controls.",
+          "sourceVerified": true,
+          "source": "https://help.myfundedfutures.com/en/articles/11994562-consistency-rule-at-my-fundedfutures"
+        },
+        "verification": "Stage, version, purchase date and current provider terms must be matched before automated enforcement."
       }
     },
     "mff-rapid": {
@@ -1052,6 +1365,22 @@
         "minimumPayoutUSD": 500,
         "news": "T1 news prohibited in Rapid Intraday sim-funded stage",
         "trailing": "Intraday trailing equity high-water mark at funded stage; locks at $100 in documented 50K Rapid Intraday"
+      },
+      "riskStructure": {
+        "drawdownKind": "variant",
+        "description": "Variant-dependent EOD trailing floors; 25K $1,000 / 50K $2,000 / 100K $3,000 / 150K $4,500 for Intraday plan",
+        "updateRule": "Exact purchased product controls EOD versus intraday floor.",
+        "drawdownPercent": null,
+        "drawdownBySizeUSD": null,
+        "consistency": {
+          "percent": null,
+          "stage": "variant-dependent",
+          "reference": "share-of-total-profit",
+          "description": "Rapid EOD evaluation 30%; Rapid Intraday evaluation 50%; exact funded payout rules vary.",
+          "enforcement": "Not established as a universal numeric daily cap.",
+          "sourceVerified": false
+        },
+        "verification": "Stage, version, purchase date and current provider terms must be matched before automated enforcement."
       }
     },
     "mff-studio": {
@@ -1108,7 +1437,27 @@
       },
       "sources": [
         "https://help.myfundedfutures.com/en/articles/17589665-studio-plans-a-comprehensive-guide"
-      ]
+      ],
+      "riskStructure": {
+        "drawdownKind": "static",
+        "description": "Static max loss; no daily loss",
+        "updateRule": "Overall floor fixed to initial account reference; daily floor can still reset and move.",
+        "drawdownPercent": null,
+        "drawdownBySizeUSD": {
+          "5000": 250,
+          "10000": 500,
+          "20000": 1000
+        },
+        "consistency": {
+          "percent": null,
+          "stage": null,
+          "reference": "share-of-total-profit",
+          "description": "No evaluation consistency documented; funded terms depend on specific Studio version.",
+          "enforcement": "Not established as a universal numeric daily cap.",
+          "sourceVerified": false
+        },
+        "verification": "Stage, version, purchase date and current provider terms must be matched before automated enforcement."
+      }
     },
     "blueguardian-standard": {
       "status": "reviewed-partial",
@@ -1161,6 +1510,22 @@
           400000
         ],
         "accountTypeSpecificAvailability": "Must confirm selected Standard product at checkout; the nine sizes are a firm-wide list"
+      },
+      "riskStructure": {
+        "drawdownKind": "trailing-capped",
+        "description": "trailing",
+        "updateRule": "Trailing floor moves with qualifying highs until a documented lock/cap.",
+        "drawdownPercent": 6,
+        "drawdownBySizeUSD": null,
+        "consistency": {
+          "percent": null,
+          "stage": null,
+          "reference": "share-of-total-profit",
+          "description": "Daily loss 4%; overall 6% trail locks at starting balance after profit milestone. Product-specific consistency unconfirmed.",
+          "enforcement": "Not established as a universal numeric daily cap.",
+          "sourceVerified": false
+        },
+        "verification": "Stage, version, purchase date and current provider terms must be matched before automated enforcement."
       }
     },
     "blueguardian-nano": {
@@ -1218,6 +1583,22 @@
           400000
         ],
         "accountTypeSpecificAvailability": "Do not assume all firm-wide sizes exist for Nano at checkout"
+      },
+      "riskStructure": {
+        "drawdownKind": "trailing-capped",
+        "description": "trailing",
+        "updateRule": "Trailing floor moves with qualifying highs until a documented lock/cap.",
+        "drawdownPercent": 6,
+        "drawdownBySizeUSD": null,
+        "consistency": {
+          "percent": 50,
+          "stage": "evaluation-and-funded",
+          "reference": "share-of-total-profit",
+          "description": "Best day STRICTLY below 50% of cumulative net profit; delays qualification/payout rather than hard breach.",
+          "enforcement": "Consistency normally delays qualification / raises target; loss-floor breaches are separate. Firm-specific outcome controls.",
+          "sourceVerified": true
+        },
+        "verification": "Stage, version, purchase date and current provider terms must be matched before automated enforcement."
       }
     }
   },
@@ -1230,6 +1611,9 @@
     "News, copy trading, IP, EA, hedge, weekend and holding restrictions vary",
     "On funded stages check payout buffer and withdrawal impact on loss floor",
     "Leave a cushion for spread, slippage, gaps and multiple correlated positions",
-    "Never infer a risk-per-trade allowance solely from account nominal size"
+    "Never infer a risk-per-trade allowance solely from account nominal size",
+    "A consistency percentage is max profitable-day share of TOTAL cumulative/cycle profits, NOT a fixed daily dollar cap. If the total target increases, allowable best-day profit changes.",
+    "For EOD trailing drawdown, the floor usually updates at day-end, but can be breached intraday. Some products trail intraday or lock after a profit milestone.",
+    "Daily reset reference can change even when the overall maximum-loss floor is static."
   ]
 }
