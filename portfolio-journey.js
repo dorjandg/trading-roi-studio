@@ -144,7 +144,9 @@ function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true
  const header='<div class="journey-toolbar">'+
   '<label>Account / portfolio<select data-journey-field="selection">'+options(choices,selected)+'</select></label>'+
   '<label>Show results<select data-journey-field="mode">'+options([['trial','Trial #1 · actual counts'],['average','Mean across '+n(inputs.trials)+' trials']],average?'average':'trial')+'</select></label>'+
-  '<label>Days<select data-journey-field="onlyChanges">'+options([['true','Trades & stage changes'],['false','Every trading day']],onlyChanges?'true':'false')+'</select></label></div>';
+  '<label>Days<select data-journey-field="onlyChanges">'+options([['true','Trades & stage changes'],['false','Every trading day']],onlyChanges?'true':'false')+'</select></label>'+ 
+  (selected==='all'?'':'<label>Evaluation allocation limit ($)<input type="number" min="0" step="10000" placeholder="No limit set" data-journey-field="evaluationLimit" value="'+(n(cap.evaluation)||'')+'"></label>'+ 
+  '<label>Funded allocation limit ($)<input type="number" min="0" step="10000" placeholder="No limit set" data-journey-field="fundedLimit" value="'+(n(cap.funded)||'')+'"></label>')+'</div>';
  const note='<p class="journey-explainer"><b>Opp</b> = available opportunities, <b>Tr</b> = trades actually placed, <b>Unused</b> = remaining opportunities. A first loss stops that account for the day, a reached goal can stop further trades, and each phase has a separate max-win setting. D = simulated trading day, not a calendar date. '+
   '<b>New</b> is purchases today; <b>TOT</b> is all purchased to date. '+
   '<b>CH</b>, <b>VR</b>, and <b>FD</b> show current active accounts at each stage. '+
