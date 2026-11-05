@@ -662,6 +662,12 @@ $('chartsContents').addEventListener('change',event=>{
  if(field==='selection'){chartState.account='auto';chartState.stage='all';}
  renderCharts();saveView();
 });
+$('chartsContents').addEventListener('toggle',event=>{
+ if(event.target.matches?.('[data-chart-advanced]')){
+  chartState.filtersOpen=event.target.open;
+  saveView();
+ }
+},true);
 $('chartsContents').addEventListener('click',event=>{
  if(!event.target.closest?.('[data-chart-reset]'))return;
  Object.assign(chartState,{...chartDefaults,selection:chartState.selection,account:chartState.account});
