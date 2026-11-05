@@ -60,8 +60,20 @@ function prepare(storage,user,key,plan){
  changes.unshift({key:pk,value:JSON.stringify(destProfile)});
  return {changes,backup:backupKey(user,key),phases,pk,title:plan.programName||plan.id};
 }
-function transfer(storage,user,key,plan,modelName){
+function transfer(storage,user,key,plan,modelName,findings=null){
  const prep=prepare(storage,user,key,plan);
+ if(findings&&typeof findings==='object'){
+  const old=JSON.parse(prep.changes[0].value);
+  const allowed=['net','delta','p10','chancePayout','profitFactor','winRate','rewardRisk','realizedR','avgWin','avgLoss','expectancy','tradesPerTrial','trials','budget'];
+  const metrics={};
+  for(const key of allowed){
+   const value=Number(findings[key]);
+   if(findings[key]!=null&&Number.isFinite(value))metrics[key]=value;
+  }
+  old.latestImportedModel={name:String(modelName||'Selected model').slice(0,120),
+   source:'Portfolio Sim',savedAt:new Date().toISOString(),metrics};
+  prep.changes[0].value=JSON.stringify(old);
+ }
  const before=prep.changes.map(x=>({key:x.key,raw:storage.getItem(x.key)}));
  const oldBackup=storage.getItem(prep.backup);
  const backup={v:1,savedAt:new Date().toISOString(),modelName:String(modelName||'Selected model').slice(0,120),
