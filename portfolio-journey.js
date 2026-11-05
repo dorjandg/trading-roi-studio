@@ -12,6 +12,9 @@ const columns=[
  ['unusedToday','Unused','Daily opportunities not executed because of account or strategy restrictions'],
  ['new','New','New challenges purchased on this trading day'],
  ['bought','TOT','Total challenges purchased cumulatively through this trading day'],
+ ['purchasedAllocation','Buy $','Cumulative nominal value of purchased accounts'],
+ ['evaluationAllocation','Eval $','Current Challenge plus Verification nominal allocation'],
+ ['fundedAllocation','FD $','Current active Funded nominal allocation'],
  ['challenge','CH','Challenges still in Phase 1 at end of day'],
  ['passed1','P1P','Cumulative accounts that passed Phase 1 / Challenge'],
  ['verification','VR','Verification / Phase 2 at end of day'],
@@ -129,7 +132,14 @@ function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true
  const selected=choices.some(([key])=>key===selection)?selection:(split?'all':'0');
  const r=selected==='all'?combined(results,inputs):results[Number(selected)];
  const average=mode==='average',raw=average?r.cashCurve:r.sample?.dailyCash;
- const rows=daily(raw,average,onlyChanges);
+ const allRows=(raw||[]).map((d,i)=>({...d,
+  purchasedAllocation:selected==='all'?results.reduce((t,a)=>t+n((average?a.cashCurve:a.sample?.dailyCash)?.[i]?.bought)*n(a.plan.size),0):n(d.bought)*n(r.plan.size),
+  evaluationAllocation:selected==='all'?results.reduce((t,a)=>t+(n((average?a.cashCurve:a.sample?.dailyCash)?.[i]?.challenge)+n((average?a.cashCurve:a.sample?.dailyCash)?.[i]?.verification))*n(a.plan.size),0):(n(d.challenge)+n(d.verification))*n(r.plan.size),
+  fundedAllocation:selected==='all'?results.reduce((t,a)=>t+n((average?a.cashCurve:a.sample?.dailyCash)?.[i]?.fundedActive)*n(a.plan.size),0):n(d.fundedActive)*n(r.plan.size)
+ }));
+ const rows=daily(allRows,average,onlyChanges);
+ const cap=selected==='all'?{}:inputs.allocationLimits?.[r.plan.id+':'+r.plan.size]||{};
+ const exceeds=d=>(n(cap.evaluation)>0&&d.evaluationAllocation>n(cap.evaluation))||(n(cap.funded)>0&&d.fundedAllocation>n(cap.funded));
  const span=r.plan?.stageList?.includes('p2')?'Verification / Phase 2':'Verification (N/A for 1-step)';
  const header='<div class="journey-toolbar">'+
   '<label>Account / portfolio<select data-journey-field="selection">'+options(choices,selected)+'</select></label>'+
@@ -144,15 +154,17 @@ function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true
   esc(span)+'. New and Fees are daily changes.</p>';
  const table='<div class="tablewrap journey-tablewrap"><table class="journey-table"><thead><tr><th>Day</th>'+
   columns.map(([key,label,help])=>'<th title="'+esc(help)+'">'+label+'</th>').join('')+
-  '</tr></thead><tbody>'+rows.map(r=>'<tr><th scope="row">D'+r.day+'</th>'+
-    columns.map(([key])=>'<td class="num">'+(key==='dailySpend'||key==='dailyReceipts'?usd(r[key]):fmt(r[key],average))+'</td>').join('')+
+  '</tr></thead><tbody>'+rows.map(r=>'<tr'+(exceeds(r)?' style="background:rgba(255,132,148,.13)"':'')+'><th scope="row">D'+r.day+(exceeds(r)?' ⚠':'')+'</th>'+
+    columns.map(([key])=>'<td class="num">'+(key==='dailySpend'||key==='dailyReceipts'||key.endsWith('Allocation')?usd(r[key]):fmt(r[key],average))+'</td>').join('')+
     '</tr>').join('')+'</tbody></table></div>';
  const svg=root.StudioPortfolioCharts?.svgLine;
- const allRows=raw||[];
  const detailRows=Object.fromEntries(allRows.map((d,i)=>[d.day,[
   ['Trades executed',fmt(d.tradesToday,average)+' / '+fmt(d.opportunities,average)],
   ['New accounts',fmt(i===0?d.bought:n(d.bought)-n(allRows[i-1].bought),average)],
   ['Purchased total',fmt(d.bought,average)],
+  ['Purchased allocation',usd(d.purchasedAllocation)],
+  ['Evaluation allocation',usd(d.evaluationAllocation)],
+  ['Funded allocation',usd(d.fundedAllocation)],
   ['Phase 1 passed',fmt(d.passed1,average)],
   ['Phase 2 passed',fmt(d.passed2,average)],
   ['Funded activated',fmt(d.activated,average)],
@@ -190,8 +202,10 @@ function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true
   'Bought '+fmt(last.bought,average)+' · Funded activated '+fmt(last.activated,average)+
   ' · Goal hit '+fmt(last.targetHit,average)+' · Paid '+paid+
   ' · Burned '+fmt(last.burned,average)+
+  ' · Eval '+usd(last.evaluationAllocation)+' · Funded '+usd(last.fundedAllocation)+
   ' · Spent '+usd(last.spent)+' · Received '+usd(last.receipts)+'</p>';
- return header+total+table+graphs+(!average&&selected!=='all'?sampleMilestones(r,signalDay):'')+note;
+ const capInfo=selected==='all'?'Combined nominal allocation across different firms; firm limits are separate.':'Planning limits: Evaluation '+(n(cap.evaluation)>0?usd(cap.evaluation):'not set')+' · Funded '+(n(cap.funded)>0?usd(cap.funded):'not set')+'. Breaches are highlighted, not blocked.';
+ return header+total+'<p class="journey-explainer">'+capInfo+'</p>'+table+graphs+(!average&&selected!=='all'?sampleMilestones(r,signalDay):'')+note;
 }
 root.StudioPortfolioJourney={render,daily,combined,sampleMilestones};
 })(typeof window!=='undefined'?window:globalThis);
