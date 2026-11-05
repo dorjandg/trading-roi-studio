@@ -271,6 +271,15 @@ details p{margin:6px 0}
  .dynamic-purchase-settings .fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 
+.discovery-table-panel{border:1px solid var(--line);border-radius:8px;margin:9px 0;overflow:hidden}
+.discovery-table-panel>summary{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;background:var(--panel2);font-size:12px;list-style:none}
+.discovery-table-panel>summary::-webkit-details-marker{display:none}
+.discovery-table-panel>summary::before{content:'▸';color:var(--muted)}
+.discovery-table-panel[open]>summary::before{content:'▾'}
+.discovery-table-panel>summary strong{flex:1}
+.discovery-table-panel>summary span{font-size:11px;color:var(--muted)}
+.discovery-table-panel>.tablewrap{margin:0}
+.discovery-table-panel>summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 /* Compact daily account journey: stage flow and tabular daily status. */
 .journey-panel{margin-top:8px}
 .journey-toolbar{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 7px}
@@ -443,6 +452,7 @@ const rootKey='4ds:v1:'+user+':';
 let catalog=null,audit=null,rows=[],lastResults=[],lastInputs=null;
 let testRisks={}; // simulator-only R1/R2/R3 and RR experiments, never written to Firms
 let discovered=null; // exploration candidates (not saved as Firms profile)
+let discoveryTableOpen=true;
 let ideaReserveAccountKey='';
 const modelDiscovery=window.StudioModelDiscovery;
 const firmsTransfer=window.StudioFirmsTransfer;
@@ -1274,10 +1284,11 @@ function renderDiscovery(result,row,budget){
   sortControls+
   '<details class="discovery-kpi-key"><summary>KPI key</summary>'+
    '<p>ROI = average net profit / incurred costs · PF = profit factor · WR = win rate · RR = planned reward/risk · AR = average realized R · AW = average winning trade · AL = average losing trade · EV = expectancy per trade · TC = average trade count per trial. All are calculated from simulated executed trades; AW, AL and EV are USD values. RR is not the realized result.</p></details>'+
+  '<details class="discovery-table-panel" id="discoveryTablePanel"'+(discoveryTableOpen?' open':'')+'><summary><strong>Model comparison table</strong><span>Show / hide</span></summary>'+ 
   '<div class="tablewrap"><table class="discovery-table" style="min-width:875px">'+
   '<thead><tr><th>'+sorter('name','MOD')+'</th><th>'+sorter('net','NET')+'</th><th>'+sorter('roi','ROI')+'</th><th>'+sorter('delta','DLT')+'</th><th>'+sorter('p10','P10')+'</th>'+
   '<th>'+sorter('payout','CP')+'</th><th>'+sorter('blocked','BA')+'</th><th>GO</th></tr></thead><tbody>'+
-  entry(result.baseline,-1)+sorted.map(x=>entry(x.idea,x.index)).join('')+'</tbody></table></div>'+
+  entry(result.baseline,-1)+sorted.map(x=>entry(x.idea,x.index)).join('')+'</tbody></table></div></details>'+
   '<p class="discovery-note">Test changes only Portfolio Sim. Send to Firms explicitly replaces R1/R2/R3, RR, sequence, win caps and reserve for this account (after confirmation), with a backup for restoration. Candidates are synthetic simulations, not evidence of a trading edge or verified firm eligibility.</p>'+
   '</div>';
 }
@@ -1345,6 +1356,9 @@ for(const id of ['ideaObjective','ideaEffort']){
   if(discovered){discovered.stale=true;$('ideaStatus').textContent='Search settings changed · run model search again';}
  });
 }
+$('ideaResults').addEventListener('toggle',event=>{
+ if(event.target.id==='discoveryTablePanel')discoveryTableOpen=event.target.open;
+},true);
 $('ideaResults').addEventListener('change',event=>{
  const el=event.target.closest?.('[data-discovery-sort="key"]');
  if(el)discoverySortSet(el.value,false);
