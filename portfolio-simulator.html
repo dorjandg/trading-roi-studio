@@ -725,6 +725,7 @@ function discoveryKpis(h){
  // TC is the average executed-trade count in one portfolio trial, not the
  // aggregate trade count across all Monte Carlo trials.
  const chips=[
+  ['ROI',percentage(h.roi),'Expected portfolio net profit divided by average incurred challenge and activation costs'],
   ['PF',n(k.pf),'Gross profitable P/L divided by gross losing P/L; includes trade costs'],
   ['WR',percentage(k.wr),'Winning trades divided by all executed trades'],
   ['RR',n(k.rr),'Risk-weighted planned reward/risk across executed trades'],
@@ -799,7 +800,7 @@ function renderDiscovery(result,row,budget){
   '<div class="alert">'+summary+'</div>'+
   sortControls+
   '<details class="discovery-kpi-key"><summary>KPI key</summary>'+
-   '<p>PF = profit factor · WR = win rate · RR = planned reward/risk · AR = average realized R · AW = average winning trade · AL = average losing trade · EV = expectancy per trade · TC = average trade count per trial. All are calculated from simulated executed trades; AW, AL and EV are USD values. RR is not the realized result.</p></details>'+
+   '<p>ROI = average net profit / incurred costs · PF = profit factor · WR = win rate · RR = planned reward/risk · AR = average realized R · AW = average winning trade · AL = average losing trade · EV = expectancy per trade · TC = average trade count per trial. All are calculated from simulated executed trades; AW, AL and EV are USD values. RR is not the realized result.</p></details>'+
   '<div class="tablewrap"><table class="discovery-table" style="min-width:815px">'+
   '<thead><tr><th>'+sorter('name','MOD')+'</th><th>'+sorter('net','NET')+'</th><th>'+sorter('delta','DLT')+'</th><th>'+sorter('p10','P10')+'</th>'+
   '<th>'+sorter('payout','CP')+'</th><th>'+sorter('blocked','BA')+'</th><th>GO</th></tr></thead><tbody>'+
@@ -885,7 +886,7 @@ function sentStatus(key,message,error=false){
 function findingsForModel(candidate){
  const h=candidate.holdout,k=h?.tradeKpis||{};
  return {
-  net:h?.avg?.net,delta:candidate.delta?.net,p10:h?.p10,chancePayout:h?.chancePayout,
+  net:h?.avg?.net,roi:h?.roi,delta:candidate.delta?.net,p10:h?.p10,chancePayout:h?.chancePayout,
   profitFactor:k.pf,winRate:k.wr,rewardRisk:k.rr,realizedR:k.ar,
   avgWin:k.aw,avgLoss:k.al,expectancy:k.ev,tradesPerTrial:h?.avg?.trades,
   trials:h?.config?.trials,budget:h?.budget
