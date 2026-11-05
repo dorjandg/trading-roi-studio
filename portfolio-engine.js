@@ -307,7 +307,11 @@ function canAcceptSignal(p,ac){
 }
 function oneTrial(p,config,rng,record=false){
  const n=Math.max(0,Math.floor(config.count)),dynamic=config.purchaseMode==='recycle';
- const accounts=dynamic?[]:Array.from({length:n},(_,i)=>makeAccount(i+1));
+ const evaluationCap=config.evaluationAllocationCap>0?Math.floor(config.evaluationAllocationCap/p.size):Infinity;
+ const fundedCap=Math.min(p.fundedMaxActive,config.fundedAllocationCap>0?Math.floor(config.fundedAllocationCap/p.size):Infinity);
+ // Upfront accounts all begin evaluation; cap is applied before purchase.
+ const upfront=Math.min(n,evaluationCap);
+ const accounts=dynamic?[]:Array.from({length:upfront},(_,i)=>makeAccount(i+1));
  // Round-robin cursor persists between days. With 50 purchased accounts and
  // 5 signals, day 1 uses #1–#5, day 2 uses #6–#10, etc.
  let cursor=0;
@@ -320,9 +324,11 @@ function oneTrial(p,config,rng,record=false){
   if(!commonSignals.has(key))commonSignals.set(key,rng());
   return commonSignals.get(key);
  };
- let bought=dynamic?0:n,spent=p.fee*bought,paid=0,receipts=0,activations=0;
+ let bought=dynamic?0:upfront,spent=p.fee*bought,paid=0,receipts=0,activations=0;
  let challengeSpent=spent,activationSpent=0;
  const liveCount=()=>accounts.filter(a=>a.status==='active'||a.status==='activation-wait').length;
+ const evaluationCount=()=>accounts.filter(a=>a.status==='active'&&isEvaluation(stageName(p,a))).length;
+ const fundedCount=()=>accounts.filter(a=>a.status==='active'&&stageName(p,a)==='funded').length;
  // An activation-fee commitment is held for each not-yet-activated account.
  // Released when an evaluation ends unsuccessfully; never counted as spent.
  const reserved=()=>p.activationFee>0?accounts.filter(a=>
@@ -356,6 +362,8 @@ function oneTrial(p,config,rng,record=false){
     config.capacityMode==='manual'?config.maxBuysPerDay:dailyOpportunities,
     config.maxLifetime-accounts.length);
    for(let i=0;i<dailyLimit;i++){
+    // Active Phase 1 and Phase 2 accounts share the evaluation cap.
+    if(evaluationCount()>=evaluationCap)break;
     const available=config.budget+(config.reinvestPayouts?receipts:0)-spent-reserved();
     if(available+1e-8<p.fee+p.activationFee||p.fee+p.activationFee<=0)break;
     const ac=makeAccount(accounts.length+1);
@@ -376,10 +384,10 @@ function oneTrial(p,config,rng,record=false){
   if(eligible.length)cursor=(cursor+Math.min(dailyOpportunities,eligible.length))%eligible.length;
   // Funded positions that are paid/free at the end of a day release their
   // active-slot capacity for accounts that previously passed evaluation.
-  if(p.id==='topstep'){
-   let live=accounts.filter(a=>a.stageIndex===p.stageList.length-1&&a.status==='active').length;
+  if(Number.isFinite(fundedCap)){
+   let live=fundedCount();
    for(const a of accounts){
-    if(live>=p.fundedMaxActive)break;
+    if(live>=fundedCap)break;
     if(a.status!=='activation-wait')continue;
     a.status='active';a.fundedActivatedDay=day;
     activations++;spent+=p.activationFee;activationSpent+=p.activationFee;live++;
@@ -402,9 +410,9 @@ function oneTrial(p,config,rng,record=false){
    }
    if(res.activation){
     const fundedNow=accounts.filter(x=>x.stageIndex===p.stageList.length-1&&x.status==='active').length;
-    if(p.id==='topstep'&&fundedNow>p.fundedMaxActive){
+    if(fundedNow>fundedCap){
      ac.status='activation-wait';
-     if(record&&ac.id<=3)ac.trace.push({day,stage:'funded',type:'wait',label:'Active funded cap reached'});
+     if(record&&ac.id<=3)ac.trace.push({day,stage:'funded',type:'wait',label:'Funded allocation or activation cap reached'});
     }else{
      ac.fundedActivatedDay=day;
      spent+=p.activationFee;activationSpent+=p.activationFee;activations++;
@@ -465,12 +473,15 @@ function simulatePortfolio(p,config={}){
  const reservedPer=p.id==='topstep'?p.activationFee:0;
  const perUnit=p.fee+reservedPer;
  const desired=perUnit>0?Math.floor(budget/perUnit):0;
- const count=clamp(desired,0,Math.max(1,Math.floor(config.maxAccounts||100)));
+ const evaluationAllocationCap=pos(config.evaluationAllocationCap);
+ const fundedAllocationCap=pos(config.fundedAllocationCap);
+ const evaluationCountCap=evaluationAllocationCap>0?Math.floor(evaluationAllocationCap/p.size):Infinity;
+ const count=Math.min(clamp(desired,0,Math.max(1,Math.floor(config.maxAccounts||100))),evaluationCountCap);
  const clipped=desired>count;
  const trials=clamp(config.trials,50,3000)|0;
  const settings={
   days:clamp(config.days,1,120)|0,
-  trials,count,
+  trials,count,evaluationAllocationCap,fundedAllocationCap,
   tradesPerDay:clamp(config.tradesPerDay,1,6)|0,
   winRate:clamp(config.winRate==null?p.winRate*100:config.winRate,0,100)/100,
   seed:config.seed||24717,
@@ -535,7 +546,7 @@ function simulatePortfolio(p,config={}){
  return {
   plan:p,config:settings,budget,desired,
   count:settings.purchaseMode==='recycle'?avg.bought:count,
-  clipped:settings.purchaseMode==='recycle'?avg.bought>=settings.maxLifetime:clipped,
+  clipped:settings.purchaseMode==='recycle'?avg.bought>=settings.maxLifetime:clipped||desired>count,
   perUnit,feeReserve:reservedPer*count,
   avg,tradeKpis,stages:stageTotals.map(x=>x/trials),
   chancePayout:withPayout/trials,chanceProfit:positiveNet/trials,
