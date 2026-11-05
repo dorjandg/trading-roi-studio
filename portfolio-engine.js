@@ -384,6 +384,7 @@ function simulatePortfolio(p,config={}){
  const total={bought:0,paid:0,funded:0,failed:0,exhausted:0,pending:0,spent:0,receipts:0,net:0,activations:0,trades:0,qualifying:0,
   wins:0,losses:0,grossProfit:0,grossLoss:0,winPnl:0,lossPnl:0,riskTotal:0,plannedReward:0,totalR:0,tradePnl:0};
  const rand=rngFactory(settings.seed);
+ const chartTrials=settings.trackDaily?[]:null;
  const chartSums=settings.trackDaily?Array.from({length:settings.days+1},
   (_,day)=>({day,spent:0,receipts:0,net:0,paid:0})):null;
  let withPayout=0,positiveNet=0,goalMet=0, sample=null;
@@ -391,6 +392,11 @@ function simulatePortfolio(p,config={}){
  for(let k=0;k<trials;k++){
   const x=oneTrial(p,{...settings,trialIndex:k},rand,k===0);
   if(k===0)sample=x;
+  if(chartTrials)chartTrials.push({
+   net:x.net,spent:x.spent,receipts:x.receipts,roi:x.spent?x.net/x.spent:0,
+   paid:x.paid,failed:x.failed,exhausted:x.exhausted,funded:x.funded,
+   wins:x.wins,losses:x.losses,trades:x.trades,passes:x.passes.slice()
+  });
   if(chartSums)for(const d of x.dailyCash||[]){
    const sum=chartSums[d.day];
    for(const key of ['spent','receipts','net','paid'])sum[key]+=d[key];
@@ -424,7 +430,7 @@ function simulatePortfolio(p,config={}){
   chanceGoal:goal?goalMet/trials:null,goal,
   roi:avg.spent>0?avg.net/avg.spent:0,
   median:quantile(nets,.5),p10:quantile(nets,.1),p90:quantile(nets,.9),
-  sample,nets,
+  sample,nets,chartTrials,
   cashCurve:chartSums?.map(d=>({day:d.day,spent:d.spent/trials,
    receipts:d.receipts/trials,net:d.net/trials,paid:d.paid/trials}))||null
  };
