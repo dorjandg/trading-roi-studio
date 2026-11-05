@@ -467,6 +467,18 @@ function loadView(){
  rows=rows.filter(r=>catalog.programs[r.id]);
  if(!rows.length)rows=defaultsRows;
  for(const row of rows)if(!catalog.programs[row.id].sizes.includes(row.size))row.size=catalog.programs[row.id].sizes[0];
+ // Direct links from Overview put the same selected Firms account first,
+ // even when an older Portfolio Sim comparison contained other firms.
+ try{
+  const key=new URLSearchParams(window.location.search).get('account')||'';
+  const match=/^(ftmo2|holaPrime|holaPro|topstep):(\\d+)$/.exec(key);
+  if(match){
+   const id=match[1],size=Number(match[2]);
+   if(catalog.programs[id]?.sizes?.includes(size)){
+    rows=[{id,size,weight:40},...rows.filter(r=>r.id!==id||r.size!==size)].slice(0,8);
+   }
+  }
+ }catch(e){}
 }
 function rowSummary(row){
  const p=accountPlan(row),v=E.validatePlan(p);
