@@ -407,7 +407,7 @@ details p{margin:6px 0}
  <p class="footer">Research tool only. Sourced catalog rules are snapshots, not live purchase/eligibility confirmations. The simulator reads profiles locally; budget changes here don't overwrite the main Overview settings. The maximum of 100 modeled challenges per account type is a performance cap, not a prop-firm permission limit.</p>
 </section>
 </div>
-<script src="portfolio-engine.js?v=20261105-portfolio-wide-opportunities"></script>
+<script src="portfolio-engine.js?v=20261105-allocation-enforced"></script>
 <script src="portfolio-discovery.js?v=20261105-account-rotation"></script>
 <script src="portfolio-to-firms.js"></script>
 <script src="studio-report-source.js?v=20261105-account-rotation"></script>
@@ -582,7 +582,9 @@ function renderRows(){
    '<div class="field"><label>Prop firm & account</label><select data-field="id">'+programOptions+'</select></div>'+
    '<div class="field"><label>Account amount</label><select data-field="size">'+sizes+'</select></div>'+
    '<div class="field"'+(mode==='compare'?' style="display:none"':'')+'><label>Budget weight</label><input type="number" data-field="weight" min="0" step="5" value="'+r.weight+'"></div>'+
-   '<div class="source">'+rowSummary(r)+'</div>'+
+   '<div class="field"><label>Evaluation allocation cap ($)</label><input type="number" data-field="evaluationCap" min="0" step="10000" placeholder="No limit" value="'+(allocationLimits[r.id+':'+r.size]?.evaluation||'')+'"></div>'+
+    '<div class="field"><label>Funded allocation cap ($)</label><input type="number" data-field="fundedCap" min="0" step="10000" placeholder="No limit" value="'+(allocationLimits[r.id+':'+r.size]?.funded||'')+'"></div>'+
+    '<div class="source">'+rowSummary(r)+'</div>'+
    '<button type="button" class="remove" data-remove="'+i+'" title="Remove this comparison row" aria-label="Remove account">×</button>'+
    '</div></article>';
  }).join('');
@@ -656,7 +658,11 @@ $('accounts').addEventListener('change',event=>{
  if(field==='id'){rows[index].id=input.value;rows[index].size=catalog.programs[input.value].sizes[0]}
  if(field==='size')rows[index].size=Number(input.value);
  if(field==='weight')rows[index].weight=Math.max(0,Number(input.value)||0);
- renderRows();setStale();
+ if(field==='evaluationCap'||field==='fundedCap'){
+  const key=rows[index].id+':'+rows[index].size;
+  allocationLimits[key]={...(allocationLimits[key]||{}),[field==='evaluationCap'?'evaluation':'funded']:Math.max(0,Math.min(1e12,Number(input.value)||0))};
+ }
+ renderRows();setStale();saveView();
 });
 $('accounts').addEventListener('click',event=>{
  const b=event.target.closest('[data-remove]');if(!b)return;
@@ -817,6 +823,7 @@ $('journeyContents').addEventListener('change',event=>{
    allocationLimits[key]={...(allocationLimits[key]||{}),[field==='evaluationLimit'?'evaluation':'funded']:value};
   }
  else return;
+ if(field==='evaluationLimit'||field==='fundedLimit'){saveView();renderRows();setStale();run();return;}
  renderJourney();saveView();
 });
 function renderCharts(){
@@ -1209,7 +1216,9 @@ function currentDiscoveryInputs(row){
   maxActive:Math.max(1,Math.min(100,Math.floor(Number($('maxActive').value)||1))),
   maxBuysPerDay:Math.max(1,Math.min(20,Math.floor(Number($('maxBuysPerDay').value)||1))),
   reinvestPayouts:$('reinvestPayouts').value==='yes',
-  tradeSchedule:schedule
+  tradeSchedule:schedule,
+  evaluationAllocationCap:allocationLimits[row.id+':'+row.size]?.evaluation||0,
+  fundedAllocationCap:allocationLimits[row.id+':'+row.size]?.funded||0
  };
 }
 $('discover').addEventListener('click',()=>{
@@ -1409,7 +1418,8 @@ function run(){
  const jobs=rows.map((row,i)=>{
   const budget=mode==='split'?inputs.budget*Math.max(0,row.weight)/totalWeight:inputs.budget;
   const p=accountPlan(row),validation=E.validatePlan(p);
-  return {p,budget,validation,index:i,tradeSchedule:schedules?.[i]||null};
+  return {p,budget,validation,index:i,tradeSchedule:schedules?.[i]||null,
+    allocation:allocationLimits[p.id+':'+p.size]||{}};
  });
  const bad=jobs.filter(j=>j.validation.errors.length);
  if(bad.length){
@@ -1422,7 +1432,9 @@ function run(){
   try{
    const results=jobs.map(j=>E.simulatePortfolio(j.p,{
     ...inputs,budget:j.budget,seed:inputs.seed+j.index*120011,maxAccounts:100,
-    tradeSchedule:j.tradeSchedule,trackCharts:true}));
+    tradeSchedule:j.tradeSchedule,trackCharts:true,
+     evaluationAllocationCap:j.allocation.evaluation||0,
+     fundedAllocationCap:j.allocation.funded||0}));
    renderResults(results,inputs);
   }catch(e){
    $('status').textContent='Simulation error: '+e.message;$('status').style.color='var(--red)';
