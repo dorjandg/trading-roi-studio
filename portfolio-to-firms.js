@@ -64,7 +64,7 @@ function transfer(storage,user,key,plan,modelName,findings=null){
  const prep=prepare(storage,user,key,plan);
  if(findings&&typeof findings==='object'){
   const old=JSON.parse(prep.changes[0].value);
-  const allowed=['net','delta','p10','chancePayout','profitFactor','winRate','rewardRisk','realizedR','avgWin','avgLoss','expectancy','tradesPerTrial','trials','budget'];
+  const allowed=['net','roi','delta','p10','chancePayout','profitFactor','winRate','rewardRisk','realizedR','avgWin','avgLoss','expectancy','tradesPerTrial','trials','budget'];
   const metrics={};
   for(const key of allowed){
    const value=Number(findings[key]);
