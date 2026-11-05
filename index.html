@@ -1733,10 +1733,16 @@ function renderRecoveryPlanners(){
   const visible=candidates.slice(0,viewCount);
   const optionHtml=visible.map((entry,k)=>{
    const index=ranked.indexOf(entry)+1,sim=entry.sim,path=entry.path,status=getStatus(entry);
-   const planned=entry.riskSequence.map((slot,i)=>'<label>Trade '+(i+1)+' · '+(path[i]==='W'?'WIN':'LOSS')+
+   // Only render trades actually executed toward the target/failure.
+   // The full enumerated path remains an internal key for saved risk selectors.
+   const trades=sim.items.filter(item=>typeof item.win==='boolean');
+   const planned=trades.map((trade,i)=>{
+    const slot=entry.riskSequence[i];
+    return '<label>Trade '+(i+1)+' · '+(trade.win?'WIN':'LOSS')+
     '<select data-option-path="'+path+'" data-option-step="'+i+'">'+RECOVERY_LEVELS.map(v=>
     '<option value="'+v+'"'+(slot===v?' selected':'')+'>'+v.toUpperCase()+' · '+recoveryMoney(levels[v])+'</option>').join('')+
-    '</select></label>').join('');
+    '</select></label>';
+   }).join('');
    const rows=sim.items.map(item=>{
     if(item.stop)return '<tr><td>Day '+item.day+'</td><td>'+item.riskSlot.toUpperCase()+'</td><td colspan="6">'+item.stop+'</td></tr>';
     return '<tr><td>Day '+item.day+' · '+(item.win?'WIN':'LOSS')+'</td>'+
@@ -1748,7 +1754,6 @@ function renderRecoveryPlanners(){
      '<td class="num">'+(item.afterOverall===null?'Verify live floor':recoveryMoney(item.afterOverall))+'</td>'+
      '<td>'+item.status+(item.consistencyNote?' · '+item.consistencyNote:'')+(item.risk+.005<item.intended?' · Risk capped':'')+'</td></tr>';
    }).join('');
-   const trades=sim.items.filter(item=>typeof item.win==='boolean');
    const perDay=new Map();
    for(const trade of trades)perDay.set(trade.day,(perDay.get(trade.day)||0)+1);
    const elapsedDays=perDay.size;
@@ -1765,7 +1770,7 @@ function renderRecoveryPlanners(){
     '<span class="recovery-option-timing">'+outcomeTiming+
     '<small>'+trades.length+' trade'+(trades.length===1?'':'s')+' · '+(dayBreakdown||'No trades executed')+'</small>'+
     '<strong>'+status+' · '+recoveryMoney(sim.pnl)+'</strong></span></summary>'+
-    '<p class="caption">Outcome plan: '+path.split('').join(' → ')+'. Set a risk level for every planned trade. WIN can continue within the daily trade cap; LOSS closes the day.</p>'+
+    '<p class="caption">Trades toward the modeled target: '+(outcomeLine||'none executed')+'. No extra W/L trades are added solely to satisfy minimum trading days. Edit the risk for each executed trade below.</p>'+
     '<div class="recovery-option-risk-grid">'+planned+'</div>'+
     '<div class="tablewrap"><table class="recovery-table"><thead><tr><th>Day / outcome</th><th>Risk level</th><th>Trade risk</th><th>Trade P/L</th><th>Stage P/L</th><th>Daily buffer</th><th>Overall buffer</th><th>Next action</th></tr></thead><tbody>'+rows+'</tbody></table></div></details>';
   }).join('');
