@@ -1,0 +1,50 @@
+/* High-density Labs layout. No elements or calculations removed. */
+body.studio-lab-page{font-size:13px;line-height:1.38}
+body.studio-lab-page .wrap{padding:12px 14px 30px}
+body.studio-lab-page h1{font-size:clamp(22px,3vw,30px);margin:2px 0 4px}
+body.studio-lab-page h2{font-size:16px;margin:0 0 5px}
+body.studio-lab-page h3{font-size:14px;margin:0 0 4px}
+body.studio-lab-page p{margin:3px 0 7px}
+body.studio-lab-page .panel{
+ padding:11px 12px;margin:0 0 9px;border-radius:10px;min-width:0
+}
+body.studio-lab-page .cards{gap:8px}
+body.studio-lab-page .card{padding:10px;gap:7px;border-radius:9px;min-width:0}
+body.studio-lab-page .cardhead{margin-bottom:7px;gap:6px}
+body.studio-lab-page .fields{gap:7px}
+body.studio-lab-page .field label{font-size:11px;margin:0 0 3px}
+body.studio-lab-page .field input,body.studio-lab-page .field select{
+ min-height:34px;height:auto;padding:6px 8px;border-radius:7px;font-size:13px
+}
+body.studio-lab-page .btn{min-height:32px;padding:6px 9px;border-radius:7px;font-size:12px}
+body.studio-lab-page .buttons,body.studio-lab-page .selector,
+body.studio-lab-page .selectors,body.studio-lab-page .controls,
+body.studio-lab-page .actionrow{gap:6px;margin-bottom:7px}
+body.studio-lab-page .kpis{gap:6px;margin:7px 0}
+body.studio-lab-page .kpi{padding:8px;border-radius:8px;min-width:0}
+body.studio-lab-page .kpi small{font-size:10px;line-height:1.25}
+body.studio-lab-page .kpi strong{font-size:clamp(15px,1.8vw,19px);margin-top:3px;overflow-wrap:anywhere}
+body.studio-lab-page .grid,body.studio-lab-page .columns{gap:8px}
+body.studio-lab-page .note,body.studio-lab-page .notice{
+ padding:8px 10px;margin:7px 0;border-radius:8px
+}
+body.studio-lab-page details{padding:8px;border-radius:8px}
+body.studio-lab-page .tablewrap{border-radius:8px}
+body.studio-lab-page th,body.studio-lab-page td{padding:7px 8px}
+body.studio-lab-page .issues{gap:6px}
+body.studio-lab-page .issue{padding:8px;border-radius:7px}
+body.studio-lab-page .head{gap:6px;margin-bottom:4px}
+body.studio-lab-page .chip{padding:3px 6px}
+body.studio-lab-page .chart{gap:7px;height:140px;padding:8px 8px 0}
+body.studio-lab-page .column{min-width:60px;gap:4px}
+@media(max-width:650px){
+ body.studio-lab-page .wrap{padding:8px 9px 24px}
+ body.studio-lab-page .panel{padding:9px;margin-bottom:7px}
+ body.studio-lab-page .cards,body.studio-lab-page .fields,
+ body.studio-lab-page .kpis{gap:5px}
+ body.studio-lab-page .kpi{padding:7px}
+ body.studio-lab-page .kpi strong{font-size:16px}
+ body.studio-lab-page .btn{min-height:33px;padding:6px 8px}
+ /* Keep inputs readable and avoid zoom when focused on mobile. */
+ body.studio-lab-page .field input,body.studio-lab-page .field select{font-size:16px}
+}
