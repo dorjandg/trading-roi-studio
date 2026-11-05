@@ -82,7 +82,9 @@ function buildPlan(programId,size,program,profile={},snapshots={},audit=null){
   fundedTarget:pos(dynamic(state,'profitTarget',isTopstep?dynamic(state,'topstepFirstPayoutBalance',4000):size*.08)),
   // Approximate calendar-day payout eligibility on a trading-day timeline.
   // The clock starts with the first trade in the funded stage, not activation.
-  fundedWaitDays:clamp(Math.ceil(pos(dynamic(state,'daysBeforeRequest',isTopstep?5:14))*5/7),0,100),
+  payoutWaitCalendarDays:pos(dynamic(state,'daysBeforeRequest',isTopstep?0:14)),
+  fundedWaitDays:clamp(Math.ceil(pos(dynamic(state,'daysBeforeRequest',isTopstep?0:14))*5/7),0,100),
+  payoutProcessingCalendarDays:pos(state.reviewDays)+pos(state.payoutProcessingDays),
   payoutProcessingTradingDays:clamp(Math.ceil((pos(state.reviewDays)+pos(state.payoutProcessingDays))*5/7),0,60),
   qualificationSize:isTopstep?'1 micro contract':'0.01 lot',
   winRate:clamp(dynamic(state,'winRate',40),0,100)/100,
