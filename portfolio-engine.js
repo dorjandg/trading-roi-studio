@@ -138,6 +138,7 @@ function makeAccount(i){return {
  id:i,stageIndex:0,stageDay:0,activeDays:0,adminDays:0,totalAdminDays:0,
  stagePnl:0,history:'',dailyProfit:0,dayProfits:[],peakEod:0,bestDay:0,
  status:'active',trades:0,wins:0,losses:0,firstPaid:0,
+ purchaseDay:0,fundedActivatedDay:null,fundedTargetDay:null,paidDay:null,closedDay:null,
  grossProfit:0,grossLoss:0,winPnl:0,lossPnl:0,riskTotal:0,plannedReward:0,tradePnl:0,
  passes:[],totalR:0,realizedDD:0,peakPnl:0,blocked:0,
  fundedDays:0,fundedPositiveDays:0,funded150Days:0,trace:[]
@@ -176,6 +177,7 @@ function runAccountDay(p,ac,day,rand,config,record){
  const out={stagePass:false,paid:false,activation:false};
  if(stage==='funded')ac.fundedDays++;
  const alreadyTarget=ac.stagePnl>=c.target-.005;
+ if(stage==='funded'&&alreadyTarget&&ac.fundedTargetDay===null)ac.fundedTargetDay=day;
  const consistentNow=!c.consistency||ac.bestDay<=Math.max(0,ac.stagePnl)*c.consistency+1e-7;
  if(isEvaluation(stage)&&alreadyTarget&&consistentNow && ac.activeDays<c.minDays){
   ac.adminDays++;ac.totalAdminDays++;
@@ -192,7 +194,7 @@ function runAccountDay(p,ac,day,rand,config,record){
  const fundedReady=stage==='funded'&&ac.stagePnl>=c.target-.005 &&
   (p.id==='topstep'?ac.funded150Days>=5:ac.fundedDays>=p.fundedWaitDays);
  if(fundedReady){
-  ac.firstPaid=firstPayout(p,ac);ac.status='paid';
+  ac.firstPaid=firstPayout(p,ac);ac.status='paid';ac.paidDay=day;
   if(record)ac.trace.push({day,stage,type:'paid',label:'First modeled payout',cash:ac.firstPaid});
   out.paid=true;return out;
  }
@@ -224,7 +226,7 @@ function runAccountDay(p,ac,day,rand,config,record){
    const impossibleDaily=Number.isFinite(p.dailyLoss)&&potentialLoss>p.dailyLoss+1e-8;
    // A tier that cannot fit even on a fresh trading day, or cannot fit the
    // overall headroom, is untradeable without changing the configured policy.
-   if(overallBlocked||impossibleDaily)ac.status='exhausted';
+   if(overallBlocked||impossibleDaily){ac.status='exhausted';ac.closedDay=day;}
    if(record)ac.trace.push({day,stage,type:'blocked',risk,slot,
     label:overallBlocked?'Risk exhausted: selected tier exceeds remaining overall headroom':
       impossibleDaily?'Risk exhausted: selected tier exceeds full fresh-day allowance':
@@ -248,7 +250,7 @@ function runAccountDay(p,ac,day,rand,config,record){
   if(record)ac.trace.push({day,stage,type:win?'win':'loss',slot,risk,rr:c.rr,delta,pnl:ac.stagePnl,trade:ac.trades});
   if(ac.stagePnl<=floorFor(p,ac)+1e-9 ||
      dayProfit<=-p.dailyLoss+1e-9){
-   ac.status='failed';if(record)ac.trace.push({day,stage,type:'failed',label:'Modeled loss floor breached'});
+   ac.status='failed';ac.closedDay=day;if(record)ac.trace.push({day,stage,type:'failed',label:'Modeled loss floor breached'});
    break;
   }
   if(!win)break; // A loss closes this trading day; wins can continue.
@@ -258,6 +260,7 @@ function runAccountDay(p,ac,day,rand,config,record){
   ac.dayProfits.push(dayProfit);
   ac.bestDay=Math.max(ac.bestDay,dayProfit);
   if(stage==='funded'){
+   if(ac.stagePnl>=c.target-.005&&ac.fundedTargetDay===null)ac.fundedTargetDay=day;
    if(dayProfit>0)ac.fundedPositiveDays++;
    if(dayProfit>=150)ac.funded150Days++;
   }
@@ -308,9 +311,19 @@ function oneTrial(p,config,rng,record=false){
  const reserved=()=>p.activationFee>0?accounts.filter(a=>
   (a.status==='active'||a.status==='activation-wait') &&
   a.stageIndex<p.stageList.length-1).length*p.activationFee:0;
+ const journeyCounts=()=>({
+  challenge:accounts.filter(a=>a.status==='active'&&stageName(p,a)==='p1').length,
+  verification:accounts.filter(a=>a.status==='active'&&stageName(p,a)==='p2').length,
+  fundedActive:accounts.filter(a=>a.status==='active'&&stageName(p,a)==='funded').length,
+  fundingWait:accounts.filter(a=>a.status==='activation-wait').length,
+  targetHit:accounts.filter(a=>a.fundedTargetDay!==null).length,
+  activated:accounts.filter(a=>a.fundedActivatedDay!==null).length,
+  passed1:accounts.filter(a=>a.passes.some(x=>x.stage==='p1')).length,
+  passed2:accounts.filter(a=>a.passes.some(x=>x.stage==='p2')).length
+ });
  const dailyCash=config.trackDaily===true?
   [{day:0,spent,receipts,net:receipts-spent,paid,bought,challengeSpent,activationSpent,
-   live:liveCount(),burned:0}]:null;
+   live:liveCount(),burned:0,...journeyCounts()}]:null;
  for(let day=1;day<=config.days;day++){
   const dailyOpportunities=dynamic?(config.tradeSchedule?config.tradeSchedule[day-1]:config.tradesPerDay):config.tradesPerDay;
   if(dynamic){
@@ -324,6 +337,7 @@ function oneTrial(p,config,rng,record=false){
     const available=config.budget+(config.reinvestPayouts?receipts:0)-spent-reserved();
     if(available+1e-8<p.fee+p.activationFee||p.fee+p.activationFee<=0)break;
     const ac=makeAccount(accounts.length+1);
+    ac.purchaseDay=day;
     accounts.push(ac);bought++;spent+=p.fee;challengeSpent+=p.fee;
     if(record&&ac.id<=3)ac.trace.push({day,stage:p.stageList[0],type:'purchase',
      label:'New challenge purchased on trading day '+day,cash:p.fee});
@@ -348,7 +362,8 @@ function oneTrial(p,config,rng,record=false){
    for(const a of accounts){
     if(live>=p.fundedMaxActive)break;
     if(a.status!=='activation-wait')continue;
-    a.status='active';activations++;spent+=p.activationFee;activationSpent+=p.activationFee;live++;
+    a.status='active';a.fundedActivatedDay=day;
+    activations++;spent+=p.activationFee;activationSpent+=p.activationFee;live++;
     if(record&&a.id<=3)a.trace.push({day,stage:'funded',type:'activation',label:'Funded slot available; activation starts this day'});
    }
   }
@@ -364,6 +379,7 @@ function oneTrial(p,config,rng,record=false){
      ac.status='activation-wait';
      if(record&&ac.id<=3)ac.trace.push({day,stage:'funded',type:'wait',label:'Active funded cap reached'});
     }else{
+     ac.fundedActivatedDay=day;
      spent+=p.activationFee;activationSpent+=p.activationFee;activations++;
     }
    }
@@ -371,7 +387,8 @@ function oneTrial(p,config,rng,record=false){
   }
   if(dailyCash)dailyCash.push({day,spent,receipts,net:receipts-spent,paid,
    bought,challengeSpent,activationSpent,live:liveCount(),
-   burned:accounts.filter(a=>a.status==='failed'||a.status==='exhausted').length});
+   burned:accounts.filter(a=>a.status==='failed'||a.status==='exhausted').length,
+   ...journeyCounts()});
  }
  const passes=p.stageList.filter(x=>x!=='funded').map(stage=>accounts.filter(x=>x.passes.some(y=>y.stage===stage)).length);
  // Evaluation passes waiting for a funded slot are not counted as activated.
@@ -433,7 +450,8 @@ function simulatePortfolio(p,config={}){
  const rand=rngFactory(settings.seed);
  const chartTrials=settings.trackDaily?[]:null;
  const chartSums=settings.trackDaily?Array.from({length:settings.days+1},
-  (_,day)=>({day,spent:0,receipts:0,net:0,paid:0,bought:0,challengeSpent:0,activationSpent:0,live:0,burned:0})):null;
+  (_,day)=>({day,spent:0,receipts:0,net:0,paid:0,bought:0,challengeSpent:0,activationSpent:0,live:0,burned:0,
+   challenge:0,verification:0,fundedActive:0,fundingWait:0,targetHit:0,activated:0,passed1:0,passed2:0})):null;
  let withPayout=0,positiveNet=0,goalMet=0, sample=null;
  const goal=pos(config.netGoal);
  for(let k=0;k<trials;k++){
@@ -446,7 +464,8 @@ function simulatePortfolio(p,config={}){
   });
   if(chartSums)for(const d of x.dailyCash||[]){
    const sum=chartSums[d.day];
-   for(const key of ['spent','receipts','net','paid','bought','challengeSpent','activationSpent','live','burned'])sum[key]+=d[key];
+   for(const key of ['spent','receipts','net','paid','bought','challengeSpent','activationSpent','live','burned','challenge','verification','fundedActive',
+    'fundingWait','targetHit','activated','passed1','passed2'])sum[key]+=d[key];
   }
   for(const key of Object.keys(total))total[key]+=x[key]||0;
   x.passes.forEach((count,i)=>stageTotals[i]+=count);
@@ -484,7 +503,10 @@ function simulatePortfolio(p,config={}){
   cashCurve:chartSums?.map(d=>({day:d.day,spent:d.spent/trials,
    receipts:d.receipts/trials,net:d.net/trials,paid:d.paid/trials,
    bought:d.bought/trials,challengeSpent:d.challengeSpent/trials,
-   activationSpent:d.activationSpent/trials,live:d.live/trials,burned:d.burned/trials}))||null
+   activationSpent:d.activationSpent/trials,live:d.live/trials,burned:d.burned/trials,
+   challenge:d.challenge/trials,verification:d.verification/trials,fundedActive:d.fundedActive/trials,
+   fundingWait:d.fundingWait/trials,targetHit:d.targetHit/trials,activated:d.activated/trials,
+   passed1:d.passed1/trials,passed2:d.passed2/trials}))||null
  };
 }
 root.StudioPortfolioEngine={buildPlan,validatePlan,resolvePolicy,plannedSlot,
