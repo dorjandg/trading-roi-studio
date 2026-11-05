@@ -41,7 +41,7 @@ function resolvePolicy(sequences){
 function plannedSlot(history,policy){
  const mode=policy?.mode||'saved';
  const choices=policy&&policy.map||{};
- if(mode==='saved'&&has(choices,history))return choices[history];
+ if(has(choices,history))return choices[history];
  if(mode==='flat')return 'r1';
  if(mode==='after-win')return history.endsWith('W')?'r2':history.endsWith('L')?'r3':'r1';
  if(mode==='protect-after-loss')return history.endsWith('L')?'r3':'r1';
@@ -104,6 +104,8 @@ function buildPlan(programId,size,program,profile={},snapshots={},audit=null){
   const rrBase=dynamic(state.rrByTier,root+'Base',dynamic(state,'rr',3));
   const rr=clamp(rrBase,.1,100);
   const policy=resolvePolicy(snap.optionSequences||{});
+  if(['saved','streak','flat','after-win','protect-after-loss'].includes(snap.policyMode))
+   policy.mode=snap.policyMode;
   result.riskProfiles[key]={
    target:pos(target),
    minDays:clamp(minDays,0,60),
