@@ -163,14 +163,15 @@ function runAccountDay(p,ac,day,rand,config,record){
  const out={stagePass:false,paid:false,activation:false};
  if(stage==='funded')ac.fundedDays++;
  const alreadyTarget=ac.stagePnl>=c.target-.005;
- if(isEvaluation(stage)&&alreadyTarget && ac.activeDays<c.minDays){
+ const consistentNow=!c.consistency||ac.bestDay<=Math.max(0,ac.stagePnl)*c.consistency+1e-7;
+ if(isEvaluation(stage)&&alreadyTarget&&consistentNow && ac.activeDays<c.minDays){
   ac.adminDays++;
   // Administration-only day is NOT included in any W/L trade series.
   // Firm-specific tiny qualifying orders are outside this estimate.
   ac.activeDays++;
   if(record)ac.trace.push({day,stage,type:'admin',label:'Minimum-day qualification assumption — no W/L trade modeled'});
  }
- if(isEvaluation(stage)&&alreadyTarget&&ac.activeDays>=c.minDays){
+ if(isEvaluation(stage)&&alreadyTarget&&consistentNow&&ac.activeDays>=c.minDays){
   nextStage(p,ac,day,record);out.stagePass=true;out.activation=stage==='p1'&&!p.stageList.includes('p2');
   if(stage==='p2')out.activation=true;
   return out;
@@ -182,15 +183,19 @@ function runAccountDay(p,ac,day,rand,config,record){
   if(record)ac.trace.push({day,stage,type:'paid',label:'First modeled payout',cash:ac.firstPaid});
   out.paid=true;return out;
  }
- if(stage==='funded'&&ac.stagePnl>=c.target-.005){
-  if(record)ac.trace.push({day,stage,type:'waiting',label:'Funded profit goal reached; payout conditions remain'});
+ if(stage==='funded'&&ac.stagePnl>=c.target-.005&&p.id!=='topstep'){
+  if(record)ac.trace.push({day,stage,type:'waiting',label:'Funded profit goal reached; payout waiting period remains'});
   return out;
  }
  let dayProfit=0,hadTrade=false,winsToday=0;
  const signals=clamp(config.tradesPerDay,1,6);
  for(let ix=0;ix<signals;ix++){
   if(ix>=c.maxWinsPerDay)break;
-  if(ac.stagePnl>=c.target-.005)break;
+  // Topstep needs enough winning days and may need additional profits to meet
+  // the 55% evaluation best-day test. Do not stop only at the dollar goal.
+  const bestDayOk=!c.consistency||ac.bestDay<=Math.max(0,ac.stagePnl)*c.consistency+1e-7;
+  const payoutDaysOk=stage!=='funded'||p.id!=='topstep'||ac.funded150Days>=5;
+  if(ac.stagePnl>=c.target-.005&&bestDayOk&&payoutDaysOk)break;
   const slot=plannedSlot(ac.history,c.policy);
   const risk=pos(c[slot]);
   // User-selected risk is always exact; no hidden downsizing.
@@ -277,7 +282,8 @@ function oneTrial(p,config,rng,record=false){
   }
  }
  const passes=p.stageList.filter(x=>x!=='funded').map(stage=>accounts.filter(x=>x.passes.some(y=>y.stage===stage)).length);
- const funded=accounts.filter(x=>x.passes.some(y=>y.stage===p.stageList[p.stageList.length-2])).length;
+ // Evaluation passes waiting for a funded slot are not counted as activated.
+ const funded=activations;
  const exhausted=accounts.filter(x=>x.status==='active'&&x.blocked>0).length;
  const failed=accounts.filter(x=>x.status==='failed').length;
  const pending=accounts.filter(x=>x.status==='active'||x.status==='activation-wait').length;
