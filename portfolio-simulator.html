@@ -52,6 +52,29 @@ summary{cursor:pointer;font-weight:750;color:var(--text)}details .tablewrap{marg
 .footer{font-size:12px;color:var(--muted);margin-top:18px}
 @media(max-width:980px){.fields{grid-template-columns:repeat(2,minmax(0,1fr))}.account-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.account-grid .source{grid-column:1/-1}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.shell{padding:10px 10px 35px}.panel{padding:13px;margin:11px 0}.fields{gap:9px}.account-grid{gap:8px}.account-grid .remove{grid-column:2;justify-self:end}.nav{gap:9px}.result-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi strong{font-size:19px}input,select{font-size:16px}table{font-size:12px}td,th{padding:9px 8px}}
+
+/* Compact, paged example trade log */
+.history-zone{margin:12px 0}
+.history-toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:8px 14px;flex-wrap:wrap;margin:12px 0 9px}
+.history-toolbar .history-filters,.history-toolbar .history-navigation{display:flex;align-items:flex-end;gap:7px;flex-wrap:wrap}
+.history-toolbar label{font-size:11px;color:var(--muted);font-weight:700}
+.history-toolbar select{min-height:36px;padding:5px 8px;margin-top:3px;font-size:13px}
+.history-toolbar .history-navigation label{display:flex;align-items:center;gap:5px}
+.history-toolbar .history-navigation label select{margin-top:0;min-width:60px}
+.history-toolbar button{min-height:36px;padding:5px 10px}
+.history-toolbar button:disabled{opacity:.4;cursor:not-allowed}
+.history-count{font-size:12px;color:var(--muted);padding:5px 0}
+.history-table td{vertical-align:top}
+.history-table td:nth-child(3){white-space:normal;min-width:165px;max-width:360px}
+.history-zone .tablewrap{scrollbar-width:thin}
+.risk-tester{border:1px solid var(--line);border-radius:11px;padding:12px;margin-top:14px;background:var(--panel2)}
+.risk-tester h4{font-size:14px;margin:0 0 3px}
+.risk-phase-test{border:1px solid var(--line);border-radius:10px;margin:10px 0 0;padding:10px}
+.risk-phase-test legend{font-size:12px;font-weight:800;color:var(--blue);padding:0 5px}
+.risk-phase-test .fields{grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.risk-phase-test input{min-height:39px;padding:7px 9px;font-size:14px}
+.risk-tester .actions{margin-bottom:0}
+@media(max-width:600px){.history-toolbar{display:block}.history-toolbar .history-filters{justify-content:flex-start;margin-bottom:8px}.history-toolbar .history-navigation{justify-content:center}.history-toolbar button{min-width:37px}.history-count{text-align:center}.risk-phase-test .fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 </head><body><div class="shell">
 <header class="top"><div class="brand"><span class="mark">4D</span><span>4Ds Trading Studio <span style="color:var(--green)">/ Portfolio Sim</span></span></div><nav class="nav"><a href="index.html">Overview & Firms</a><a href="labs.html">Labs</a><a href="comparison-lab.html">Compare Lab</a><a href="trade-lab.html">Trade Lab</a><button type="button" id="theme" aria-label="Toggle color theme">◐</button></nav></header>
@@ -88,7 +111,7 @@ summary{cursor:pointer;font-weight:750;color:var(--text)}details .tablewrap{marg
  <p class="hint">Counts and profits are averages over simulated trials, not whole-account predictions. ROI = expected net / expected incurred costs. Starting budget is not account capital.</p>
  <div id="combined" hidden></div>
 </section>
-<section class="panel"><h2>4 · Detailed account simulations</h2><p class="hint">Each account uses the risk tiers saved for its own phase. A trade's risk selection depends on *past* W/L history. No future-win knowledge is used. Open a result to inspect stage progression and example trade logs.</p><div id="details"></div></section>
+<section class="panel"><h2>4 · Detailed account simulations</h2><p class="hint">Open a firm below to test separate R1, R2 and R3 amounts for Phase 1, Phase 2 and Funded without changing your saved Firms settings. The example trade list has pages and shows only W/L trades by default; switch to All events to include qualification days and stage changes.</p><div id="details"></div></section>
 </section>
 <section class="panel"><h2>Model assumptions & limits</h2><details><summary>Read before interpreting an ROI estimate</summary><p class="hint">Evaluation challenges are purchased once at the start. No automatic replacements, retries, refund processing delays, repeated funded payouts or taxes are simulated. Topstep's subscription renewals, variant-specific activation rules, contract limits and full payout eligibility are not enforced. Its modeled initial payout is up to 50% of realized funded profit capped at $5,000; check the exact purchased path. FTMO/Hola pay a modeled split of funded profit after a planning target and waiting period, not a guaranteed withdrawal. Trailing drawdown is approximated for Topstep using end-of-day high-water marks and a zero-capped floor; intraday breaches and contract-size restrictions are not verified. Other firms' static initial floors are modeled where known. Fees, spread/slippage, evaluation activation delays, minimum qualifying trades and news restrictions may differ. If multiple accounts share a signal, outcomes may be correlated and diversification overstated. The model's risk-exhausted status does not mean an official failed-account breach.</p></details>
  <p class="footer">Research tool only. Sourced catalog rules are snapshots, not live purchase/eligibility confirmations. The simulator reads profiles locally; budget changes here don't overwrite the main Overview settings. The maximum of 100 modeled challenges per account type is a performance cap, not a prop-firm permission limit.</p>
@@ -108,6 +131,9 @@ const int=n=>Math.max(0,Math.floor(Number(n)||0));
 const user=localStorage.getItem('4ds:active-user:v1')||'dori';
 const rootKey='4ds:v1:'+user+':';
 let catalog=null,audit=null,rows=[],lastResults=[],lastInputs=null;
+let testRisks={}; // simulator-only R1/R2/R3 and RR experiments, never written to Firms
+const historyState={}; // per-result paging/filter, independent from Monte Carlo calculations
+const openResultDetails=new Set();
 const savedViewKey=rootKey+'portfolio-simulator:v1';
 const defaultRows=[['ftmo2',10000,40],['holaPrime',10000,40],['topstep',50000,20]];
 const readJson=(key,def=null)=>{try{return JSON.parse(localStorage.getItem(key)||'null')??def}catch(e){return def}};
@@ -126,7 +152,18 @@ function accountPlan(row){
  const program=catalog.programs[row.id],size=Number(row.size);
  const profile=profileFor(row.id,size);
  const snapshots={p1:snapFor(row.id,size,'p1'),p2:snapFor(row.id,size,'p2'),funded:snapFor(row.id,size,'funded')};
- return E.buildPlan(row.id,size,program,profile,snapshots,audit?.programs?.[row.id]);
+ const plan=E.buildPlan(row.id,size,program,profile,snapshots,audit?.programs?.[row.id]);
+ const experiment=testRisks[row.id+':'+size]||{};
+ for(const stage of plan.stageList){
+  const saved=experiment[stage]||{},risk=plan.riskProfiles[stage];
+  for(const field of ['r1','r2','r3','rr']){
+   if(Object.prototype.hasOwnProperty.call(saved,field)){
+    const value=Number(saved[field]);
+    if(Number.isFinite(value)&&value>0)risk[field]=value;
+   }
+  }
+ }
+ return plan;
 }
 function theme(value){document.documentElement.setAttribute('data-theme',value==='light'?'light':'dark');$('theme').textContent=value==='light'?'☾':'☀'}
 let currentTheme=localStorage.getItem('4ds:theme:v1')||'dark';theme(currentTheme);
@@ -137,12 +174,13 @@ function saveView(){
   budget:$('budget').value,netGoal:$('netGoal').value,winRate:$('winRate').value,
   days:$('days').value,tradesPerDay:$('tradesPerDay').value,trials:$('trials').value,
   signalMode:$('signalMode').value,seed:$('seed').value,
-  budgetMode:document.querySelector('[name="budgetMode"]:checked').value,rows
+  budgetMode:document.querySelector('[name="budgetMode"]:checked').value,rows,testRisks
  }))}catch(e){}
 }
 function loadView(){
  const main=readJson(rootKey+'ftmo-roi-studio-v1',{});
  const prior=readJson(savedViewKey,{});
+ testRisks=prior.testRisks&&typeof prior.testRisks==='object'&&!Array.isArray(prior.testRisks)?prior.testRisks:{};
  const defaults={budget:main.budget||5000,netGoal:20000,winRate:main.winRate??40,days:20,
   tradesPerDay:2,trials:300,signalMode:'independent',seed:main.randomSeed||24717,budgetMode:'compare'};
  for(const id of Object.keys(defaults)){
@@ -166,7 +204,9 @@ function loadView(){
 }
 function rowSummary(row){
  const p=accountPlan(row),v=E.validatePlan(p);
- const title=p.sourceSaved?'<strong class="good">Saved phase settings</strong>':'<strong style="color:var(--amber)">Illustrative defaults · not saved</strong>';
+ const hasTest=Object.keys(testRisks[p.id+':'+p.size]||{}).some(stage=>Object.keys(testRisks[p.id+':'+p.size][stage]||{}).length);
+ const title=hasTest?'<strong style="color:var(--amber)">Simulator test risks (Firms unchanged)</strong>':
+  p.sourceSaved?'<strong class="good">Saved phase settings</strong>':'<strong style="color:var(--amber)">Illustrative defaults · not saved</strong>';
  const risks=p.stageList.map(stage=>{
   const c=p.riskProfiles[stage];
   return esc(c.name)+' R1 '+usd(c.r1)+' / R2 '+usd(c.r2)+' / R3 '+usd(c.r3)+' · '+dec(c.rr)+'R';
@@ -226,19 +266,79 @@ function trialSeriesStats(nets,goal){
  const percentile=q=>{if(!sorted.length)return 0;const p=q*(sorted.length-1),i=Math.floor(p);return sorted[i]+(sorted[Math.min(i+1,sorted.length-1)]-sorted[i])*(p-i)};
  return {mean:nets.reduce((a,b)=>a+b,0)/(nets.length||1),p10:percentile(.1),p50:percentile(.5),p90:percentile(.9),chanceGoal:nets.filter(x=>x>=goal).length/(nets.length||1),chancePositive:nets.filter(x=>x>0).length/(nets.length||1)};
 }
-function makeResultCard(result){
- const p=result.plan,c=result.avg,v=E.validatePlan(p);
- const stageNames=p.stageList.filter(x=>x!=='funded'),sample=result.sample;
- const sampleAccount=sample.accountDetails.find(x=>x.status==='paid')||sample.accountDetails[0];
- const log=sampleAccount?.trace||[];
- const stageInfo=p.stageList.map(stage=>{
-  const r=p.riskProfiles[stage];return '<span class="risk-chip">'+esc(r.name)+' · <b>'+dec(r.rr)+'R</b> · R1 <b>'+usd(r.r1)+'</b> · R2 <b>'+usd(r.r2)+'</b> · R3 <b>'+usd(r.r3)+'</b> · max wins/day '+r.maxWinsPerDay+'</span>';
+
+function historyAccount(result){
+ const candidates=result.sample?.accountDetails||[];
+ return candidates.find(ac=>ac.status==='paid')||candidates[0]||null;
+}
+function historySettings(index){
+ if(!historyState[index])historyState[index]={filter:'trades',pageSize:10,page:1};
+ return historyState[index];
+}
+function historyMarkup(result,index){
+ const account=historyAccount(result),all=account?.trace||[];
+ const state=historySettings(index);
+ const events=state.filter==='all'?all:all.filter(t=>t.type==='win'||t.type==='loss');
+ const pageSize=state.pageSize==='all'?Math.max(1,events.length):Math.max(1,Math.min(100,Math.floor(Number(state.pageSize)||10)));
+ const pages=Math.max(1,Math.ceil(events.length/pageSize));
+ const page=Math.max(1,Math.min(pages,Math.floor(Number(state.page)||1)));
+ state.page=page;
+ const start=(page-1)*pageSize,visible=events.slice(start,start+pageSize);
+ const opt=(v,label,current)=>'<option value="'+v+'"'+(String(current)===String(v)?' selected':'')+'>'+label+'</option>';
+ const filters='<div class="history-filters"><label>History '+'<select data-history-field="filter">'+
+  opt('trades','Trades only (W/L)',state.filter)+opt('all','All events',state.filter)+'</select></label>'+
+  '<label>Rows per page<select data-history-field="pageSize">'+
+  [[5,'5'],[10,'10'],[20,'20'],[50,'50'],[100,'100'],['all','All']].map(v=>opt(v[0],v[1],state.pageSize)).join('')+'</select></label></div>';
+ const navigator='<div class="history-navigation">'+
+  '<button type="button" data-history-action="first"'+(page===1?' disabled':'')+' aria-label="First history page">«</button>'+
+  '<button type="button" data-history-action="prev"'+(page===1?' disabled':'')+' aria-label="Previous history page">‹</button>'+
+  '<label>Page <select data-history-field="page">'+
+  Array.from({length:pages},(_,i)=>opt(i+1,i+1,page)).join('')+'</select> / '+pages+'</label>'+
+  '<button type="button" data-history-action="next"'+(page===pages?' disabled':'')+' aria-label="Next history page">›</button>'+
+  '<button type="button" data-history-action="last"'+(page===pages?' disabled':'')+' aria-label="Last history page">»</button></div>';
+ const bar='<div class="history-toolbar">'+filters+navigator+'</div>';
+ const body=visible.map(t=>{
+  const label=t.type==='win'?'WIN':t.type==='loss'?'LOSS':(t.label||t.type);
+  const stage=t.stage==='p1'?'Phase 1':t.stage==='p2'?'Phase 2':t.stage==='funded'?'Funded':t.stage;
+  return '<tr><td>Day '+t.day+'</td><td>'+esc(stage||'—')+'</td><td>'+esc(label)+'</td>'+
+   '<td>'+esc(t.slot?t.slot.toUpperCase():'—')+'</td><td>'+(t.risk!=null?usd(t.risk):'—')+'</td>'+
+   '<td class="'+(t.delta>=0?'good':'bad')+'">'+(t.delta!=null?usd(t.delta):'—')+'</td>'+
+   '<td>'+(t.pnl!=null?usd(t.pnl):'—')+'</td></tr>';
  }).join('');
- const tableRows=log.slice(0,180).map(t=>{
-  const label=t.type==='win'?'W':t.type==='loss'?'L':(t.label||t.type);
-  return '<tr><td>Day '+t.day+'</td><td>'+esc(t.stage)+'</td><td>'+esc(label)+'</td>'+
-   '<td>'+esc(t.slot||'—')+'</td><td>'+((t.risk!=null)?usd(t.risk):'—')+'</td>'+
-   '<td class="'+(t.delta>=0?'good':'bad')+'">'+(t.delta!=null?usd(t.delta):'—')+'</td><td>'+(t.pnl!=null?usd(t.pnl):'—')+'</td></tr>';
+ return '<div class="history-count">'+(events.length?
+  'Rows '+(start+1)+'–'+(start+visible.length)+' of '+events.length:
+  'No '+(state.filter==='trades'?'W/L trades':'events')+' in this example')+
+  ' · Account #'+(account?.id||1)+' · Trial #1</div>'+
+  bar+'<div class="tablewrap"><table class="history-table" style="min-width:670px">'+
+  '<thead><tr><th>Trading day</th><th>Stage</th><th>Outcome / event</th><th>Risk tier</th>'+
+  '<th>Risk</th><th>Trade P/L</th><th>Stage P/L</th></tr></thead><tbody>'+
+  (body||'<tr><td colspan="7" style="text-align:center">No matching history rows</td></tr>')+
+  '</tbody></table></div>'+bar;
+}
+function riskEditor(result,index){
+ const p=result.plan;
+ return '<section class="risk-tester"><h4>Test phase risks · '+esc(p.firm)+' '+usd(p.size)+'</h4>'+
+  '<p class="hint">Change R1, R2, R3 or RR here and select Re-run. These tests are saved only for Portfolio Sim; your original settings in Firms are not modified.</p>'+
+  p.stageList.map(stage=>{
+   const r=p.riskProfiles[stage];
+   return '<fieldset class="risk-phase-test"><legend>'+esc(r.name)+'</legend><div class="fields">'+
+    ['r1','r2','r3','rr'].map(field=>
+     '<div class="field"><label>'+field.toUpperCase()+(field==='rr'?' · reward / risk':' · USD risk')+'</label>'+
+     '<input type="number" inputmode="decimal" min="'+(field==='rr'?'.1':'.01')+
+     '" max="'+(field==='rr'?'100':'10000000')+'" step="'+(field==='rr'?'.1':'.01')+
+     '" data-test-risk="'+index+'" data-stage="'+stage+'" data-field="'+field+'" value="'+r[field]+'"></div>').join('')+
+    '</div></fieldset>';
+  }).join('')+
+  '<div class="actions"><button type="button" data-reset-test="'+index+'">Reset to Firms settings</button>'+
+  '<button type="button" class="primary" data-rerun-test="'+index+'">Re-run with these risks</button></div>'+
+  '<p class="hint" data-test-note="'+index+'">Current results use the values shown. Use Re-run after editing.</p></section>';
+}
+function makeResultCard(result,index){
+ const p=result.plan,c=result.avg,v=E.validatePlan(p);
+ const stageNames=p.stageList.filter(x=>x!=='funded');
+ const stageInfo=p.stageList.map(stage=>{
+  const r=p.riskProfiles[stage];
+  return '<span class="risk-chip">'+esc(r.name)+' · <b>'+dec(r.rr)+'R</b> · R1 <b>'+usd(r.r1)+'</b> · R2 <b>'+usd(r.r2)+'</b> · R3 <b>'+usd(r.r3)+'</b> · max wins/day '+r.maxWinsPerDay+'</span>';
  }).join('');
  const warns=v.warnings.map(x=>'<p class="hint">• '+esc(x)+'</p>').join('');
  return '<article class="result-card"><header><div><h3>'+esc(p.firm+' · '+p.programName+' · '+usd(p.size))+'</h3>'+
@@ -251,14 +351,17 @@ function makeResultCard(result){
    '<div><small>Chance net ≥ '+usd(result.goal)+'</small><strong>'+pct(result.chanceGoal??0)+'</strong></div>'+
    '<div><small>Net distribution P10 / median / P90</small><strong style="font-size:14px">'+usd(result.p10)+' / '+usd(result.median)+' / '+usd(result.p90)+'</strong></div>'+
    '<div><small>Avg. risk-blocked accounts</small><strong>'+dec(c.exhausted)+'</strong></div></div>'+
-   '<details><summary>Stage risk inputs, modeled limitations & example trade history</summary>'+
+   '<details data-result-detail="'+index+'"'+(openResultDetails.has(index)?' open':'')+'>'+
+   '<summary>Test phase risks · modeled limitations · example trade history</summary>'+
     '<div class="risks">'+stageInfo+'</div>'+
-    '<p class="hint">Illustrative account #'+(sampleAccount?.id||1)+' from trial #1. This is one possible history, not the average. Qualification-only days are NOT shown as W/L trades.</p>'+
+    riskEditor(result,index)+
+    '<h4 style="margin:16px 0 5px">Example trade history · paginated</h4>'+
+    '<p class="hint">Illustrative account #'+(historyAccount(result)?.id||1)+' from trial #1. This is one possible history, not the average. Choose All events to inspect stage transitions and qualification-only days.</p>'+
     (warns||'')+
-    '<div class="tablewrap"><table style="min-width:600px"><thead><tr><th>Trading day</th><th>Stage</th><th>Outcome / event</th><th>Risk tier</th><th>Risk</th><th>Trade P/L</th><th>Stage P/L</th></tr></thead><tbody>'+tableRows+'</tbody></table></div>'+
-    (log.length>180?'<p class="hint">Showing first 180 events.</p>':'')+
+    '<div class="history-zone" data-history-index="'+index+'">'+historyMarkup(result,index)+'</div>'+
    '</details></article>';
 }
+
 function renderResults(list,inputs){
  lastResults=list;lastInputs=inputs;
  $('results').hidden=false;
@@ -307,7 +410,7 @@ function renderResults(list,inputs){
    '<div><small>Net P90 (upside)</small><strong>'+usd(combinedStats.p90)+'</strong></div>'+
    '<div><small>Chance of positive net</small><strong>'+pct(combinedStats.chancePositive)+'</strong></div></div></div>';
  }
- $('details').innerHTML=list.map(makeResultCard).join('');
+ $('details').innerHTML=list.map((result,index)=>makeResultCard(result,index)).join('');
  $('status').style.color='var(--green)';
  $('status').textContent='Completed · '+inputs.trials+' trials · '+list.length+' account types';
  try{localStorage.setItem(rootKey+'options-portfolio-summary-v1',JSON.stringify({
@@ -316,6 +419,80 @@ function renderResults(list,inputs){
    count:r.count,paid:r.avg.paid,net:r.avg.net,roi:r.roi,stagePasses:r.stages}))
  }))}catch(e){}
 }
+
+$('details').addEventListener('change',event=>{
+ const input=event.target;
+ if(input.matches?.('[data-history-field]')){
+  const zone=input.closest('[data-history-index]');if(!zone)return;
+  const index=Number(zone.dataset.historyIndex),settings=historySettings(index);
+  if(!lastResults[index])return;
+  const field=input.dataset.historyField;
+  if(field==='filter'){settings.filter=input.value==='all'?'all':'trades';settings.page=1;}
+  else if(field==='pageSize'){settings.pageSize=input.value==='all'?'all':Math.max(1,Math.min(100,Number(input.value)||10));settings.page=1;}
+  else if(field==='page')settings.page=Math.max(1,Number(input.value)||1);
+  else return;
+  zone.innerHTML=historyMarkup(lastResults[index],index);
+  return;
+ }
+ if(input.matches?.('[data-test-risk]')){
+  const index=Number(input.dataset.testRisk),result=lastResults[index];
+  if(!result)return;
+  const stage=input.dataset.stage,field=input.dataset.field;
+  if(!result.plan.stageList.includes(stage)||!['r1','r2','r3','rr'].includes(field))return;
+  const val=Number(input.value),max=field==='rr'?100:10000000,min=field==='rr'?.1:.01;
+  if(!Number.isFinite(val)||val<min||val>max){
+   input.value=String(result.plan.riskProfiles[stage][field]);
+   $('status').textContent='Invalid '+field.toUpperCase()+' amount; previous value restored';
+   return;
+  }
+  const key=result.plan.id+':'+result.plan.size;
+  if(!testRisks[key])testRisks[key]={};
+  if(!testRisks[key][stage])testRisks[key][stage]={};
+  testRisks[key][stage][field]=val;
+  const note=input.closest('.risk-tester')?.querySelector('[data-test-note]');
+  if(note){note.textContent='Edited · select Re-run with these risks to recalculate';note.style.color='var(--amber)';}
+  renderRows();
+  setStale();
+ }
+});
+$('details').addEventListener('click',event=>{
+ const control=event.target.closest?.('[data-history-action]');
+ if(control&&!control.disabled){
+  const zone=control.closest('[data-history-index]');if(!zone)return;
+  const index=Number(zone.dataset.historyIndex),settings=historySettings(index);
+  if(!lastResults[index])return;
+  const events=historyAccount(lastResults[index])?.trace||[];
+  const filtered=settings.filter==='all'?events:events.filter(t=>t.type==='win'||t.type==='loss');
+  const size=settings.pageSize==='all'?Math.max(1,filtered.length):Math.max(1,Number(settings.pageSize)||10);
+  const pages=Math.max(1,Math.ceil(filtered.length/size));
+  const action=control.dataset.historyAction;
+  if(action==='first')settings.page=1;
+  else if(action==='prev')settings.page=Math.max(1,settings.page-1);
+  else if(action==='next')settings.page=Math.min(pages,settings.page+1);
+  else if(action==='last')settings.page=pages;
+  else return;
+  zone.innerHTML=historyMarkup(lastResults[index],index);
+  return;
+ }
+ const reset=event.target.closest?.('[data-reset-test]');
+ if(reset){
+  const index=Number(reset.dataset.resetTest),result=lastResults[index];
+  if(!result)return;
+  delete testRisks[result.plan.id+':'+result.plan.size];
+  saveView();renderRows();setStale();run();
+  return;
+ }
+ const rerun=event.target.closest?.('[data-rerun-test]');
+ if(rerun)run();
+});
+$('details').addEventListener('toggle',event=>{
+ const target=event.target;
+ if(!target.matches?.('[data-result-detail]'))return;
+ const index=Number(target.dataset.resultDetail);
+ if(target.open)openResultDetails.add(index);
+ else openResultDetails.delete(index);
+},true);
+
 function run(){
  const mode=document.querySelector('[name="budgetMode"]:checked').value;
  const inputs={budget:Math.max(0,Number($('budget').value)||0),netGoal:Math.max(0,Number($('netGoal').value)||0),
