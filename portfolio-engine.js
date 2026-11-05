@@ -347,9 +347,9 @@ function oneTrial(p,config,rng,record=false){
  };
  let bought=dynamic?0:upfront,spent=p.fee*bought,paid=0,receipts=0,activations=0;
  let challengeSpent=spent,activationSpent=0;
- const liveCount=()=>accounts.filter(a=>a.status==='active'||a.status==='activation-wait').length;
+ const liveCount=()=>accounts.filter(a=>['active','activation-wait','payout-pending'].includes(a.status)).length;
  const evaluationCount=()=>accounts.filter(a=>a.status==='active'&&isEvaluation(stageName(p,a))).length;
- const fundedCount=()=>accounts.filter(a=>a.status==='active'&&stageName(p,a)==='funded').length;
+ const fundedCount=()=>accounts.filter(a=>['active','payout-pending'].includes(a.status)&&stageName(p,a)==='funded').length;
  // An activation-fee commitment is held for each not-yet-activated account.
  // Released when an evaluation ends unsuccessfully; never counted as spent.
  const reserved=()=>p.activationFee>0?accounts.filter(a=>
@@ -358,7 +358,8 @@ function oneTrial(p,config,rng,record=false){
  const journeyCounts=()=>({
   challenge:accounts.filter(a=>a.status==='active'&&stageName(p,a)==='p1').length,
   verification:accounts.filter(a=>a.status==='active'&&stageName(p,a)==='p2').length,
-  fundedActive:accounts.filter(a=>a.status==='active'&&stageName(p,a)==='funded').length,
+  fundedActive:accounts.filter(a=>['active','payout-pending'].includes(a.status)&&stageName(p,a)==='funded').length,
+  payoutPending:accounts.filter(a=>a.status==='payout-pending').length,
   fundingWait:accounts.filter(a=>a.status==='activation-wait').length,
   targetHit:accounts.filter(a=>a.fundedTargetDay!==null).length,
   activated:accounts.filter(a=>a.fundedActivatedDay!==null).length,
@@ -367,10 +368,11 @@ function oneTrial(p,config,rng,record=false){
  });
  const dailyCash=config.trackDaily===true?
   [{day:0,spent,receipts,net:receipts-spent,paid,bought,challengeSpent,activationSpent,
-   live:liveCount(),burned:0,opportunities:0,tradesToday:0,unusedToday:0,...journeyCounts()}]:null;
+   live:liveCount(),burned:0,opportunities:0,tradesToday:0,qualificationToday:0,unusedToday:0,...journeyCounts()}]:null;
  for(let day=1;day<=config.days;day++){
   const dailyOpportunities=dynamic?(config.tradeSchedule?config.tradeSchedule[day-1]:config.tradesPerDay):config.tradesPerDay;
   const tradesBefore=accounts.reduce((sum,ac)=>sum+ac.trades,0);
+  const qualificationsBefore=accounts.reduce((sum,ac)=>sum+ac.qualificationTrades,0);
   if(dynamic){
    // Existing eligible purchased accounts get priority; only buy the gap.
    const eligible=accounts.filter(ac=>canAcceptSignal(p,ac)).length;
@@ -416,7 +418,7 @@ function oneTrial(p,config,rng,record=false){
    }
   }
   for(const ac of accounts){
-   if(ac.status!=='active')continue;
+   if(ac.status!=='active'&&ac.status!=='payout-pending')continue;
    // Global active-funded cap for Topstep is applied at activation, not at purchase.
    const signalSlot=allocations.get(ac),selected=signalSlot!==undefined;
    const beforeTrades=ac.trades,beforeWins=ac.wins;
@@ -430,7 +432,7 @@ function oneTrial(p,config,rng,record=false){
      stage:assignedStage,outcome,status:ac.status});
    }
    if(res.activation){
-    const fundedNow=accounts.filter(x=>x.stageIndex===p.stageList.length-1&&x.status==='active').length;
+    const fundedNow=fundedCount();
     if(fundedNow>fundedCap){
      ac.status='activation-wait';
      if(record&&ac.id<=3)ac.trace.push({day,stage:'funded',type:'wait',label:'Funded allocation or activation cap reached'});
@@ -449,12 +451,13 @@ function oneTrial(p,config,rng,record=false){
   }
   if(dailyCash){
    const tradesToday=accounts.reduce((sum,ac)=>sum+ac.trades,0)-tradesBefore;
+   const qualificationToday=accounts.reduce((sum,ac)=>sum+ac.qualificationTrades,0)-qualificationsBefore;
    // Signals are portfolio-wide in BOTH purchase modes: buying 50 accounts
    // does not create 50 times as many daily signal opportunities.
    const opportunities=dailyOpportunities;
    dailyCash.push({day,spent,receipts,net:receipts-spent,paid,
     bought,challengeSpent,activationSpent,live:liveCount(),
-    opportunities,tradesToday,unusedToday:Math.max(0,opportunities-tradesToday),
+    opportunities,tradesToday,qualificationToday,unusedToday:Math.max(0,opportunities-tradesToday),
     burned:accounts.filter(a=>a.status==='failed'||a.status==='exhausted').length,
     ...journeyCounts()});
   }
@@ -464,10 +467,11 @@ function oneTrial(p,config,rng,record=false){
  const funded=activations;
  const exhausted=accounts.filter(x=>x.status==='exhausted').length;
  const failed=accounts.filter(x=>x.status==='failed').length;
- const pending=accounts.filter(x=>x.status==='active'||x.status==='activation-wait').length;
+ const pending=accounts.filter(x=>['active','activation-wait','payout-pending'].includes(x.status)).length;
  const net=receipts-spent;
  return {bought,paid,passes,funded,failed,exhausted,pending,spent,receipts,net,activations,
    trades:accounts.reduce((sum,a)=>sum+a.trades,0),
+   qualificationTrades:accounts.reduce((sum,a)=>sum+a.qualificationTrades,0),
    wins:accounts.reduce((sum,a)=>sum+a.wins,0),
    losses:accounts.reduce((sum,a)=>sum+a.losses,0),
    grossProfit:accounts.reduce((sum,a)=>sum+a.grossProfit,0),
@@ -519,14 +523,14 @@ function simulatePortfolio(p,config={}){
   budget,reinvestPayouts:config.reinvestPayouts===true
  };
  const results=[],stageTotals=p.stageList.filter(x=>x!=='funded').map(()=>0);
- const total={bought:0,paid:0,funded:0,failed:0,exhausted:0,pending:0,spent:0,receipts:0,net:0,activations:0,trades:0,qualifying:0,
+ const total={bought:0,paid:0,funded:0,failed:0,exhausted:0,pending:0,spent:0,receipts:0,net:0,activations:0,trades:0,qualifying:0,qualificationTrades:0,
   wins:0,losses:0,grossProfit:0,grossLoss:0,winPnl:0,lossPnl:0,riskTotal:0,plannedReward:0,totalR:0,tradePnl:0};
  const rand=rngFactory(settings.seed);
  const chartTrials=settings.trackDaily?[]:null;
  const chartSums=settings.trackDaily?Array.from({length:settings.days+1},
   (_,day)=>({day,spent:0,receipts:0,net:0,paid:0,bought:0,challengeSpent:0,activationSpent:0,live:0,burned:0,
-   challenge:0,verification:0,fundedActive:0,fundingWait:0,targetHit:0,activated:0,passed1:0,passed2:0,
-   opportunities:0,tradesToday:0,unusedToday:0})):null;
+   challenge:0,verification:0,fundedActive:0,fundingWait:0,payoutPending:0,targetHit:0,activated:0,passed1:0,passed2:0,
+   opportunities:0,tradesToday:0,qualificationToday:0,unusedToday:0})):null;
  let withPayout=0,positiveNet=0,goalMet=0, sample=null;
  const goal=pos(config.netGoal);
  for(let k=0;k<trials;k++){
@@ -540,7 +544,7 @@ function simulatePortfolio(p,config={}){
   if(chartSums)for(const d of x.dailyCash||[]){
    const sum=chartSums[d.day];
    for(const key of ['spent','receipts','net','paid','bought','challengeSpent','activationSpent','live','burned','challenge','verification','fundedActive',
-    'fundingWait','targetHit','activated','passed1','passed2','opportunities','tradesToday','unusedToday'])sum[key]+=d[key];
+    'fundingWait','payoutPending','targetHit','activated','passed1','passed2','opportunities','tradesToday','qualificationToday','unusedToday'])sum[key]+=d[key];
   }
   for(const key of Object.keys(total))total[key]+=x[key]||0;
   x.passes.forEach((count,i)=>stageTotals[i]+=count);
@@ -580,9 +584,9 @@ function simulatePortfolio(p,config={}){
    bought:d.bought/trials,challengeSpent:d.challengeSpent/trials,
    activationSpent:d.activationSpent/trials,live:d.live/trials,burned:d.burned/trials,
    challenge:d.challenge/trials,verification:d.verification/trials,fundedActive:d.fundedActive/trials,
-   fundingWait:d.fundingWait/trials,targetHit:d.targetHit/trials,activated:d.activated/trials,
+   fundingWait:d.fundingWait/trials,payoutPending:d.payoutPending/trials,targetHit:d.targetHit/trials,activated:d.activated/trials,
    passed1:d.passed1/trials,passed2:d.passed2/trials,
-   opportunities:d.opportunities/trials,tradesToday:d.tradesToday/trials,
+   opportunities:d.opportunities/trials,tradesToday:d.tradesToday/trials,qualificationToday:d.qualificationToday/trials,
    unusedToday:d.unusedToday/trials}))||null
  };
 }
