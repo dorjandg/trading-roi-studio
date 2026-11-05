@@ -814,7 +814,7 @@ function makeResultCard(result,index){
  const stageNames=p.stageList.filter(x=>x!=='funded');
  const stageInfo=p.stageList.map(stage=>{
   const r=p.riskProfiles[stage];
-  return '<span class="risk-chip">'+esc(r.name)+' · <b>'+dec(r.rr)+'R</b> · R1 <b>'+usdExact(r.r1)+'</b> · R2 <b>'+usdExact(r.r2)+'</b> · R3 <b>'+usdExact(r.r3)+'</b> · max wins/day '+r.maxWinsPerDay+'</span>';
+  return '<span class="risk-chip">'+esc(r.name)+' · <b>'+dec(r.rr)+'R</b> · R1 <b>'+usdExact(r.r1)+'</b>'+(p.id==='topstep'&&stage==='p1'?'':' · R2 <b>'+usdExact(r.r2)+'</b> · R3 <b>'+usdExact(r.r3)+'</b>')+' · max wins/day '+r.maxWinsPerDay+'</span>';
  }).join('');
  const warns=v.warnings.map(x=>'<p class="hint">• '+esc(x)+'</p>').join('');
  return '<article class="result-card"><header><div><h3>'+esc(p.firm+' · '+p.programName+' · '+usd(p.size))+'</h3>'+
