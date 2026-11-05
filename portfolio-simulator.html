@@ -407,12 +407,12 @@ details p{margin:6px 0}
  <p class="footer">Research tool only. Sourced catalog rules are snapshots, not live purchase/eligibility confirmations. The simulator reads profiles locally; budget changes here don't overwrite the main Overview settings. The maximum of 100 modeled challenges per account type is a performance cap, not a prop-firm permission limit.</p>
 </section>
 </div>
-<script src="portfolio-engine.js?v=20261105-20-signals"></script>
+<script src="portfolio-engine.js?v=20261105-payout-stage-freeze"></script>
 <script src="portfolio-discovery.js?v=20261105-account-rotation"></script>
 <script src="portfolio-to-firms.js"></script>
 <script src="studio-report-source.js?v=20261105-account-rotation"></script>
 <script src="portfolio-charts.js?v=20261105-hover-details"></script>
-<script src="portfolio-journey.js?v=20261105-20-signals"></script>
+<script src="portfolio-journey.js?v=20261105-payout-stage-freeze"></script>
 <script>
 (function(){
 'use strict';
@@ -461,6 +461,12 @@ function accountPlan(row){
  const snapshots={p1:snapFor(row.id,size,'p1'),p2:snapFor(row.id,size,'p2'),funded:snapFor(row.id,size,'funded')};
  const plan=E.buildPlan(row.id,size,program,profile,snapshots,audit?.programs?.[row.id]);
  const experiment=testRisks[row.id+':'+size]||{};
+ for(const [field,target,derived] of [['__payoutWaitCalendarDays','payoutWaitCalendarDays','fundedWaitDays'],['__payoutProcessingCalendarDays','payoutProcessingCalendarDays','payoutProcessingTradingDays']]){
+  if(!Object.prototype.hasOwnProperty.call(experiment,field))continue;
+  const value=Number(experiment[field]);
+  if(!Number.isFinite(value)||value<0||value>120)continue;
+  plan[target]=value;plan[derived]=Math.ceil(value*5/7);
+ }
  if(Object.prototype.hasOwnProperty.call(experiment,'__fundedTarget')){
   const value=Number(experiment.__fundedTarget);
   if(Number.isFinite(value)&&value>0){
@@ -594,6 +600,8 @@ function renderRows(){
    '<div class="field"><label>Evaluation allocation cap ($)</label><input type="number" data-field="evaluationCap" min="0" step="10000" placeholder="No limit" value="'+(allocationLimits[r.id+':'+r.size]?.evaluation||'')+'"></div>'+
     '<div class="field"><label>Funded allocation cap ($)</label><input type="number" data-field="fundedCap" min="0" step="10000" placeholder="No limit" value="'+(allocationLimits[r.id+':'+r.size]?.funded||'')+'"></div>'+
     '<div class="field"><label>Funded payout profit target ($)</label><input type="number" data-field="fundedTarget" min="0.01" step="100" value="'+accountPlan(r).riskProfiles.funded.target+'"></div>'+
+    '<div class="field"><label>Payout wait from first funded trade (calendar days)</label><input type="number" data-field="payoutWait" min="0" max="120" step="1" value="'+accountPlan(r).payoutWaitCalendarDays+'"></div>'+
+    '<div class="field"><label>Modeled payout processing (calendar days)</label><input type="number" data-field="payoutProcessing" min="0" max="120" step="1" value="'+accountPlan(r).payoutProcessingCalendarDays+'"></div>'+
     '<div class="source">'+rowSummary(r)+'</div>'+
    '<button type="button" class="remove" data-remove="'+i+'" title="Remove this comparison row" aria-label="Remove account">×</button>'+
    '</div></article>';
@@ -675,6 +683,15 @@ $('accounts').addEventListener('change',event=>{
    if(!testRisks[key])testRisks[key]={};
    testRisks[key].__fundedTarget=value;
   }else{$('status').textContent='Enter a positive funded payout target';renderRows();return;}
+ }
+ if(field==='payoutWait'||field==='payoutProcessing'){
+  const value=Number(input.value);
+  if(!Number.isInteger(value)||value<0||value>120){
+   $('status').textContent='Payout days must be between 0 and 120';renderRows();return;
+  }
+  const key=rows[index].id+':'+rows[index].size;
+  if(!testRisks[key])testRisks[key]={};
+  testRisks[key][field==='payoutWait'?'__payoutWaitCalendarDays':'__payoutProcessingCalendarDays']=value;
  }
  if(field==='evaluationCap'||field==='fundedCap'){
   const key=rows[index].id+':'+rows[index].size;
