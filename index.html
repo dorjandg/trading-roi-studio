@@ -1562,7 +1562,7 @@ fetch('prop-firm-official-audit.json',{cache:'no-store'}).then(r=>{if(!r.ok)thro
 const recoverySnapshots={};
 function recoverySnapshot(stage){
  const key=String(activeProgramKey||'none')+':'+stage;
- if(!recoverySnapshots[key])recoverySnapshots[key]={pnl:0,days:0,custom:0,mode:'adaptive',open:true,depth:6,filter:'all'};
+ if(!recoverySnapshots[key])recoverySnapshots[key]={pnl:0,days:0,custom:0,mode:'adaptive',open:true,depth:6,filter:'all',winCap:2};
  return recoverySnapshots[key];
 }
 function stageRecoverySetup(stage){
@@ -1576,11 +1576,12 @@ function stageRecoverySetup(stage){
 function recoveryMoney(n){return Number(n).toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:2})}
 function recoveryPlanPath(outcomes,params){
  const {setup,initialPnl,completedDays,overall,daily,buffer,staticFloor,mode,custom,consistencyPct}=params;
+ const winCap=Math.max(1,Math.min(10,Math.floor(Number(params.winCap)||setup.dailyCap)));
  let pnl=initialPnl,days=completedDays,day=0,dayStart=initialPnl,tradesToday=0,fail=false;
  const rr=setup.rr,items=[];
  for(let i=0;i<outcomes.length;i++){
   if(pnl>=setup.goal-0.005)break;
-  if(day===0||tradesToday>=setup.dailyCap){day++;dayStart=pnl;tradesToday=0}
+  if(day===0||tradesToday>=winCap){day++;dayStart=pnl;tradesToday=0}
   const beforeDaily=daily>0?daily+(pnl-dayStart):Infinity;
   const beforeOverall=staticFloor?overall+pnl:null;
   if(staticFloor&&beforeOverall<=buffer){fail=true;break}
@@ -1609,7 +1610,7 @@ function recoveryPlanPath(outcomes,params){
   else if(afterDaily!==null&&afterDaily<=0){status='Daily limit breached — account at risk';fail=true}
   items.push({step:i+1,day:days+day,win,before,risk,pnl,afterDaily,afterOverall,dayStop:dailyStop,status,consistencyNote});
   if(fail||pnl>=setup.goal-0.005)break;
-  if(dailyStop||tradesToday>=setup.dailyCap){day++;dayStart=pnl;tradesToday=0}
+  if(dailyStop||tradesToday>=winCap){day++;dayStart=pnl;tradesToday=0}
  }
  return {items,pnl,days:days+day,fail,hit:pnl>=setup.goal-0.005};
 }
@@ -1625,7 +1626,8 @@ function renderRecoveryPlanners(){
   const stageIsEval=stage!=='funded',cons=structure.consistency||{};
   const consistencyPct=cons.percent!=null&&(cons.stage==='evaluation-and-funded'||(stageIsEval&&cons.stage==='evaluation')||(!stageIsEval&&cons.stage==='funded'))?Number(cons.percent):null;
   const mode=snapshot.mode||'adaptive';
-  const params={setup,initialPnl:pnl,completedDays:days,daily,overall,buffer,staticFloor,mode,custom:Number(snapshot.custom)||0,consistencyPct};
+  const winCap=Math.max(1,Math.min(10,Math.floor(Number(snapshot.winCap)||2)));
+  const params={setup,initialPnl:pnl,completedDays:days,daily,overall,buffer,staticFloor,mode,custom:Number(snapshot.custom)||0,consistencyPct,winCap};
   const depth=Math.max(1,Math.min(8,Math.round(Number(snapshot.depth)||6)));
   const direct=recoveryPlanPath(['W'],{...params,mode:'fixed'});
   const directTrade=direct.items.find(x=>x.win),directRisk=directTrade?.risk||0;
@@ -1662,7 +1664,7 @@ function renderRecoveryPlanners(){
     if(item.stop)return '<tr><td>Day '+item.day+'</td><td colspan="6">'+item.stop+'</td></tr>';
     return '<tr><td>Day '+item.day+' · '+(item.win?'WIN':'LOSS')+'</td><td class="num">'+recoveryMoney(item.risk)+'</td><td class="num">'+recoveryMoney(item.win?item.risk*setup.rr:-item.risk)+'</td><td class="num">'+recoveryMoney(item.pnl)+'</td><td class="num">'+(item.afterDaily===null?'—':recoveryMoney(item.afterDaily))+'</td><td class="num">'+(item.afterOverall===null?'Verify live floor':recoveryMoney(item.afterOverall))+'</td><td>'+item.status+(item.consistencyNote?' · '+item.consistencyNote:'')+'</td></tr>';
    }).join('');
-   return '<details class="recovery-option"'+(k===0?' open':'')+'><summary><span>Option '+(scenarioPaths.indexOf(p)+2)+' · '+p.path.split('').join(' → ')+'</span><strong>'+status+' · '+recoveryMoney(sim.pnl)+'</strong></summary><p class="caption">W = win, L = loss. '+steps+' · '+sim.items.length+' modeled trades. LOSS closes that trading day; WIN may allow another trade when your daily cap permits.</p><div class="tablewrap"><table class="recovery-table"><thead><tr><th>Day / outcome</th><th>Trade risk</th><th>Trade P/L</th><th>Stage P/L</th><th>Daily buffer</th><th>Overall buffer</th><th>Next action</th></tr></thead><tbody>'+stepRows+'</tbody></table></div></details>';
+   return '<details class="recovery-option"'+(k===0?' open':'')+'><summary><span>Option '+(scenarioPaths.indexOf(p)+2)+' · '+p.path.split('').join(' → ')+'</span><strong>'+status+' · '+recoveryMoney(sim.pnl)+'</strong></summary><p class="caption">W = win, L = loss. '+steps+' · '+sim.items.length+' modeled trades. LOSS closes that trading day; WIN can continue the same day up to '+winCap+' trades (planner assumption).</p><div class="tablewrap"><table class="recovery-table"><thead><tr><th>Day / outcome</th><th>Trade risk</th><th>Trade P/L</th><th>Stage P/L</th><th>Daily buffer</th><th>Overall buffer</th><th>Next action</th></tr></thead><tbody>'+stepRows+'</tbody></table></div></details>';
   }).join('');
   const suggest=mode==='adaptive'?'Recover to break-even first, then size the next full winner toward the target, always limited by available buffer.':'Risk amount stays '+(mode==='custom'?'at your custom size':'at the stage S1 size')+' unless a buffer cap forces it down.';
   const caution=staticFloor?'Static overall floor: buffer = overall allowance + realized stage P/L. This is not live equity headroom.':'Trailing or stage-dependent overall floor: real buffer needs the broker high-water mark and current equity. Overall buffer is NOT verified by this scenario; risk caps are hypothetical.';
@@ -1671,11 +1673,11 @@ function renderRecoveryPlanners(){
    '<label>Current stage P/L ($)<input data-recovery-input="pnl" type="number" step="1" value="'+pnl+'"></label>'+
    '<label>Trading days completed<input data-recovery-input="days" type="number" min="0" step="1" value="'+days+'"></label>'+
    '<label>Risk strategy<select data-recovery-input="mode"><option value="adaptive"'+(mode==='adaptive'?' selected':'')+'>Recover then target</option><option value="fixed"'+(mode==='fixed'?' selected':'')+'>Repeat S1 risk</option><option value="custom"'+(mode==='custom'?' selected':'')+'>Fixed custom risk</option></select></label>'+
-   '<label>Custom risk ($)<input data-recovery-input="custom" type="number" min="0" step="1" value="'+(Number(snapshot.custom)||0)+'"></label>'+   '<label>Max trades per path<select data-recovery-input="depth">'+[3,4,5,6,7,8].map(v=>'<option value="'+v+'"'+(depth===v?' selected':'')+'>'+v+' trades</option>').join('')+'</select></label>'+   '<label>Show outcomes<select data-recovery-input="filter"><option value="all"'+((snapshot.filter||'all')==='all'?' selected':'')+'>All options</option><option value="target"'+(snapshot.filter==='target'?' selected':'')+'>Profit target reached</option><option value="failed"'+(snapshot.filter==='failed'?' selected':'')+'>Loss floor breached</option><option value="active"'+(snapshot.filter==='active'?' selected':'')+'>Still active / stalled</option></select></label>'+
+   '<label>Custom risk ($)<input data-recovery-input="custom" type="number" min="0" step="1" value="'+(Number(snapshot.custom)||0)+'"></label>'+   '<label>Max trades on a winning day<select data-recovery-input="winCap">'+[1,2,3,4,5,6].map(n=>'<option value="'+n+'"'+(winCap===n?' selected':'')+'>'+n+' trade'+(n===1?'':'s')+'</option>').join('')+'</select></label>'+   '<label>Max trades per path<select data-recovery-input="depth">'+[3,4,5,6,7,8].map(v=>'<option value="'+v+'"'+(depth===v?' selected':'')+'>'+v+' trades</option>').join('')+'</select></label>'+   '<label>Show outcomes<select data-recovery-input="filter"><option value="all"'+((snapshot.filter||'all')==='all'?' selected':'')+'>All options</option><option value="target"'+(snapshot.filter==='target'?' selected':'')+'>Profit target reached</option><option value="failed"'+(snapshot.filter==='failed'?' selected':'')+'>Loss floor breached</option><option value="active"'+(snapshot.filter==='active'?' selected':'')+'>Still active / stalled</option></select></label>'+
    '</div>'+
-   '<p class="caption">'+setup.name+' · '+setup.rr.toFixed(2)+'R · Target '+recoveryMoney(setup.goal)+' · Starting P/L '+recoveryMoney(pnl)+' · Minimum trading days '+setup.minDays+'. Each LOSS stops that day. A WIN may permit another trade if the stage daily trade cap allows.</p>'+
+   '<p class="caption">'+setup.name+' · '+setup.rr.toFixed(2)+'R · Target '+recoveryMoney(setup.goal)+' · Starting P/L '+recoveryMoney(pnl)+' · Minimum trading days '+setup.minDays+'. Each LOSS immediately stops trading for the day. Consecutive WINS may remain in the same day up to the planner winning-day limit ('+winCap+').</p>'+
    directCard+'<p class="caption">Strategy: '+suggest+'</p>'+   '<div class="recovery-stats"><span>Distinct modeled paths <b>'+(scenarioPaths.length+1)+'</b></span><span>Target-hit paths <b>'+countHit+'</b></span><span>Breached-floor paths <b>'+countFailed+'</b></span><span>Displayed <b>'+visible.length+'</b></span></div>'+   '<p class="caption">Option 1 always shows the direct S1 winning trade, independently of recovery strategy or outcome filters. Additional win/loss branches through '+depth+' trades end early when it hits its target, breaches a modeled loss floor, or runs out of usable risk. Counts are NOT probabilities. The trade-risk strategy is common to every branch.</p>'+heading+
-   '<p class="caption">'+caution+' Daily buffer uses the selected starting daily allowance, the new day’s P/L, and assumes no open positions, fees or slippage. A day with a loss is treated as closed by your personal risk policy even if the firm allows more trades. These are illustrative paths, not probabilities or guaranteed pass recommendations.</p>'+
+   '<p class="caption">'+caution+' Daily buffer uses the selected starting daily allowance, the new day’s P/L, and assumes no open positions, fees or slippage. A day with a loss is treated as closed by your personal risk policy. The planner winning-day limit is '+winCap+'; your separate saved stage trade cap is '+setup.dailyCap+'. '+(winCap>setup.dailyCap?'This scenario permits more wins per day than your saved stage setting; update the stage schedule before following it. ':'')+'These are illustrative paths, not probabilities or guaranteed pass recommendations.</p>'+
    '</details>';
   const open=host.querySelector('.recovery-details');if(open)open.open=snapshot.open===true;
  }
@@ -1686,6 +1688,7 @@ document.addEventListener('change',event=>{
  const snapshot=recoverySnapshot(host.dataset.recoveryStage),field=element.dataset.recoveryInput;
  if(field==='mode'||field==='filter')snapshot[field]=element.value;
  else if(field==='depth')snapshot.depth=Math.max(1,Math.min(8,Math.round(Number(element.value)||6)));
+ else if(field==='winCap')snapshot.winCap=Math.max(1,Math.min(6,Math.round(Number(element.value)||2)));
  else{const raw=Number(element.value);if(!Number.isFinite(raw))return;snapshot[field]=field==='days'?Math.max(0,Math.floor(raw)):field==='custom'?Math.max(0,raw):raw}
  snapshot.open=true;renderRecoveryPlanners();
 });
