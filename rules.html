@@ -514,7 +514,49 @@ function saveRules(){if(!chosen)return;const d=ruleDefaults(chosen.p,chosen.n),v
  try{localStorage.setItem(OVERRIDE_PREFIX+prefsKey(),JSON.stringify({v:1,values:v,savedAt:new Date().toISOString()}));renderRuleEditor();e('rulesSaveStatus').textContent='Saved for this account';sendParentSelection('studio-program-rules-updated');notifyProfileSaved();}catch(err){e('rulesSaveStatus').textContent='Could not save in this browser';}
 }
 function resetRules(){if(!chosen)return;try{localStorage.removeItem(OVERRIDE_PREFIX+prefsKey());}catch(_){}renderRuleEditor();sendParentSelection('studio-program-rules-updated');notifyProfileSaved();}
-const PREFS_PREFIX=userStoreKey("studio-trading-preferences-v1:");function prefsKey(){return e("program").value+":"+e("size").value}function getPrefs(){try{return JSON.parse(localStorage.getItem(PREFS_PREFIX+prefsKey())||"null")||{}}catch(_){return {}}}function savePrefs(){let v={};for(const id of ["winRate","rr","weeklySignals","p1Base","p2Base","fundedBase"]){let val=Number(e("pref-"+id).value);if(Number.isFinite(val)&&val>=0)v[id]=val}try{localStorage.setItem(PREFS_PREFIX+prefsKey(),JSON.stringify(v));e("prefsStatus").textContent="Saved automatically for this program and account size.";notifyProfileSaved();updateFirmRiskDiagnostic(true)}catch(_){e("prefsStatus").textContent="Browser storage unavailable; settings may not persist."}}function renderPrefs(){let v=getPrefs();const defaults={winRate:40,rr:3,weeklySignals:22,p1Base:350,p2Base:200,fundedBase:250};for(const id of Object.keys(defaults))e("pref-"+id).value=v[id]??defaults[id];e("prefsStatus").textContent="Settings are independent for each program and account size, stored in this browser.";updateFirmRiskDiagnostic(true)}const e=id=>document.getElementById(id),cash=n=>'$'+Number(n).toLocaleString('en-US'),row=(k,v)=>'<div class="item"><span>'+k+'</span><strong>'+v+'</strong></div>';function options(id,arr){e(id).replaceChildren(...arr.map(([val,label])=>{let o=document.createElement('option');o.value=val;o.textContent=label;return o}))}
+const PREFS_PREFIX=userStoreKey("studio-trading-preferences-v1:");
+const MAIN_PROFILE_PREFIX=userStoreKey("studio-account-profile-v1:");
+const TRADING_PREF_FIELDS=["winRate","rr","weeklySignals","p1Base","p2Base","fundedBase"];
+function prefsKey(){return e("program").value+":"+e("size").value}
+function getPrefs(){try{return JSON.parse(localStorage.getItem(PREFS_PREFIX+prefsKey())||"null")||{}}catch(_){return {}}}
+function canonicalPrefs(){
+ try{
+  const record=JSON.parse(localStorage.getItem(MAIN_PROFILE_PREFIX+prefsKey())||"null");
+  if(!record?.state||typeof record.state!=="object")return {};
+  return Object.fromEntries(TRADING_PREF_FIELDS.filter(k=>Number.isFinite(Number(record.state[k]))&&record.state[k]!=="").map(k=>[k,Number(record.state[k])]));
+ }catch(_){return {}}
+}
+function savePrefs(){
+ const v={};
+ for(const id of TRADING_PREF_FIELDS){
+  const raw=e("pref-"+id).value,number=Number(raw);
+  const valid=raw!==""&&Number.isFinite(number)&&number>=0&&number<=1e7&&
+   (id!=="winRate"||number<=100)&&(id!=="rr"||(number>=0.1&&number<=100));
+  if(!valid){e("prefsStatus").textContent="Check "+id+" before saving.";return}
+  v[id]=number;
+ }
+ try{
+  const key=prefsKey(),profileKey=MAIN_PROFILE_PREFIX+key;
+  const prev=JSON.parse(localStorage.getItem(profileKey)||"null");
+  const record=prev?.v===1&&prev.state&&typeof prev.state==="object"?prev:{v:1,state:{}};
+  const updated={...record,updatedAt:new Date().toISOString(),state:{...record.state,...v}};
+  // Save the primary account record first; the separate preferences key is a
+  // compatibility mirror, not an alternative source for simulation settings.
+  localStorage.setItem(profileKey,JSON.stringify(updated));
+  localStorage.setItem(PREFS_PREFIX+key,JSON.stringify(v));
+  e("prefsStatus").textContent="Synced to main Firms account profile.";
+  sendParentSelection("studio-program-preferences-updated");
+  notifyProfileSaved();
+  updateFirmRiskDiagnostic(true);
+ }catch(_){e("prefsStatus").textContent="Browser storage unavailable; settings may not persist."}
+}
+function renderPrefs(){
+ const defaults={winRate:40,rr:3,weeklySignals:22,p1Base:350,p2Base:200,fundedBase:250};
+ const values={...defaults,...getPrefs(),...canonicalPrefs()};
+ for(const id of Object.keys(defaults))e("pref-"+id).value=values[id];
+ e("prefsStatus").textContent="Values are loaded from this account's primary Firms profile. Changes sync to Overview and Portfolio Sim.";
+ updateFirmRiskDiagnostic(true);
+}const e=id=>document.getElementById(id),cash=n=>'$'+Number(n).toLocaleString('en-US'),row=(k,v)=>'<div class="item"><span>'+k+'</span><strong>'+v+'</strong></div>';function options(id,arr){e(id).replaceChildren(...arr.map(([val,label])=>{let o=document.createElement('option');o.value=val;o.textContent=label;return o}))}
 let lastRiskDiagnosticKey='';
 function updateFirmRiskDiagnostic(resetFields=false){
  const id=e('program').value,p=library?.programs?.[id];if(!p)return;
@@ -598,5 +640,5 @@ fetch('prop-firm-catalog.json',{cache:'no-store'}).then(r=>r.ok?r.json():Promise
   const link=document.createElement('a');link.href=item.url;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Official source';box.append(title,status,expand,link);el.append(box);
  }};show();e('marketFilter').addEventListener('change',show);
 }).catch(err=>{const x=e('researchFirmList');if(x)x.textContent='Research catalog unavailable: '+err.message});
-fetch('prop-firm-rules.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Could not load rules');return r.json()}).then(x=>{library=x;installResearchPrograms();restoringSelection=true;filterFirmOptions(false);try{const saved=JSON.parse(localStorage.getItem(LAST_SELECT_KEY)||'null');if(saved&&library.programs[saved.programId]&&!library.programs[saved.programId].researchOnly){e('firm').value=library.programs[saved.programId].firm;selectFirm();e('program').value=saved.programId;selectProgram();if(library.programs[saved.programId].sizes.includes(Number(saved.size)))e('size').value=String(saved.size);render()}}catch(_){}restoringSelection=false;sendParentSelection();if(window.parent!==window)window.parent.postMessage({type:'studio-rules-ready'},window.location.origin);sendParentHeight();e('marketFilter').onchange=()=>filterFirmOptions();e('firm').onchange=selectFirm;e('program').onchange=selectProgram;e('size').onchange=render;e('researchVariant').onchange=renderResearchProgram;e('riskDiagBase').oninput=()=>updateFirmRiskDiagnostic();e('riskDiagRR').oninput=()=>updateFirmRiskDiagnostic();e('saveRules').onclick=saveRules;e('resetRules').onclick=resetRules;e('saveSpecificRules').onclick=()=>{saveStage();persistSpecific(collectSpecific())};e('resetSpecificRules').onclick=resetSpecific;e('stageSelect').onchange=()=>{activeStage=e('stageSelect').value;renderStage()};e('stageReview').onchange=saveStage;e('stageNotes').oninput=saveStage;e('addCustomRule').onclick=addSpecificCustom;e('exportSpecificRules').onclick=exportSpecific;e('importSpecificRules').onclick=()=>e('specificImportFile').click();e('specificImportFile').onchange=ev=>{importSpecific(ev.target.files[0]);ev.target.value=''};for(const el of document.querySelectorAll('[id^="pref-"]'))el.addEventListener('input',savePrefs);if(window.parent!==window){new ResizeObserver(()=>sendParentHeight()).observe(document.querySelector('.wrap'));document.querySelectorAll('details').forEach(el=>el.addEventListener('toggle',()=>requestAnimationFrame(sendParentHeight)));requestAnimationFrame(sendParentHeight);e('apply').textContent='Open account trading settings ↓'}}).catch(err=>{e('status').textContent='Rules unavailable: '+err.message});
+fetch('prop-firm-rules.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Could not load rules');return r.json()}).then(x=>{library=x;installResearchPrograms();restoringSelection=true;filterFirmOptions(false);try{const saved=JSON.parse(localStorage.getItem(LAST_SELECT_KEY)||'null');if(saved&&library.programs[saved.programId]&&!library.programs[saved.programId].researchOnly){e('firm').value=library.programs[saved.programId].firm;selectFirm();e('program').value=saved.programId;selectProgram();if(library.programs[saved.programId].sizes.includes(Number(saved.size)))e('size').value=String(saved.size);render()}}catch(_){}restoringSelection=false;sendParentSelection();if(window.parent!==window)window.parent.postMessage({type:'studio-rules-ready'},window.location.origin);sendParentHeight();e('marketFilter').onchange=()=>filterFirmOptions();e('firm').onchange=selectFirm;e('program').onchange=selectProgram;e('size').onchange=render;e('researchVariant').onchange=renderResearchProgram;e('riskDiagBase').oninput=()=>updateFirmRiskDiagnostic();e('riskDiagRR').oninput=()=>updateFirmRiskDiagnostic();e('saveRules').onclick=saveRules;e('resetRules').onclick=resetRules;e('saveSpecificRules').onclick=()=>{saveStage();persistSpecific(collectSpecific())};e('resetSpecificRules').onclick=resetSpecific;e('stageSelect').onchange=()=>{activeStage=e('stageSelect').value;renderStage()};e('stageReview').onchange=saveStage;e('stageNotes').oninput=saveStage;e('addCustomRule').onclick=addSpecificCustom;e('exportSpecificRules').onclick=exportSpecific;e('importSpecificRules').onclick=()=>e('specificImportFile').click();e('specificImportFile').onchange=ev=>{importSpecific(ev.target.files[0]);ev.target.value=''};for(const el of document.querySelectorAll('[id^="pref-"]'))el.addEventListener('change',savePrefs);if(window.parent!==window){new ResizeObserver(()=>sendParentHeight()).observe(document.querySelector('.wrap'));document.querySelectorAll('details').forEach(el=>el.addEventListener('toggle',()=>requestAnimationFrame(sendParentHeight)));requestAnimationFrame(sendParentHeight);e('apply').textContent='Open account trading settings ↓'}}).catch(err=>{e('status').textContent='Rules unavailable: '+err.message});
 </script></body></html>
