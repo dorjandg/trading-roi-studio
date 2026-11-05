@@ -312,12 +312,13 @@ function oneTrial(p,config,rng,record=false){
   [{day:0,spent,receipts,net:receipts-spent,paid,bought,challengeSpent,activationSpent,
    live:liveCount(),burned:0}]:null;
  for(let day=1;day<=config.days;day++){
+  const dailyOpportunities=dynamic?(config.tradeSchedule?config.tradeSchedule[day-1]:config.tradesPerDay):config.tradesPerDay;
   if(dynamic){
    // Spend only when there is an available active slot. Closed/failed/blocked
    // accounts are replaced no earlier than the following trading day.
    const slots=Math.max(0,config.maxActive-liveCount());
    // A new account needs at least one of today's portfolio trade slots.
-   const dailyLimit=Math.min(slots,config.maxBuysPerDay,config.tradesPerDay,
+   const dailyLimit=Math.min(slots,config.maxBuysPerDay,dailyOpportunities,
     config.maxLifetime-accounts.length);
    for(let i=0;i<dailyLimit;i++){
     const available=config.budget+(config.reinvestPayouts?receipts:0)-spent-reserved();
@@ -334,7 +335,7 @@ function oneTrial(p,config,rng,record=false){
   const allocations=new Map();
   if(dynamic){
    const live=accounts.filter(a=>a.status==='active');
-   for(let ix=0;live.length&&ix<config.tradesPerDay;ix++){
+   for(let ix=0;live.length&&ix<dailyOpportunities;ix++){
     const ac=live[(day-1+ix)%live.length];
     if(!allocations.has(ac))allocations.set(ac,[]);
     allocations.get(ac).push(ix);
@@ -418,6 +419,8 @@ function simulatePortfolio(p,config={}){
   pairedSignals:config.pairedSignals===true,
   signalMode:config.signalMode==='shared'?'shared':'independent',
   trackDaily:config.trackCharts===true,
+  tradeSchedule:Array.isArray(config.tradeSchedule)&&config.tradeSchedule.length===
+   (clamp(config.days,1,120)|0)?config.tradeSchedule.map(x=>clamp(x,0,6)|0):null,
   purchaseMode:config.purchaseMode==='recycle'?'recycle':'upfront',
   maxActive:clamp(Math.floor(config.maxActive||1),1,20)|0,
   maxBuysPerDay:clamp(Math.floor(config.maxBuysPerDay||1),1,20)|0,
