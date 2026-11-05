@@ -209,12 +209,14 @@ function runAccountDay(p,ac,day,rand,config,record){
   if(risk<.01||risk+reserve>dailyHeadroom+1e-8||risk+reserve>overallHeadroom+1e-8){
    ac.blocked++;
    const overallBlocked=risk<.01||risk+reserve>overallHeadroom+1e-8;
-   // Overall exhaustion cannot recover without a smaller risk selection or new
-   // deposits (neither is allowed by the configured policy), so stop the account.
-   if(overallBlocked)ac.status='exhausted';
+   const impossibleDaily=Number.isFinite(p.dailyLoss)&&risk+reserve>p.dailyLoss+1e-8;
+   // A tier that cannot fit even on a fresh trading day, or cannot fit the
+   // overall headroom, is untradeable without changing the configured policy.
+   if(overallBlocked||impossibleDaily)ac.status='exhausted';
    if(record)ac.trace.push({day,stage,type:'blocked',risk,slot,
     label:overallBlocked?'Risk exhausted: selected tier exceeds remaining overall headroom':
-      'Daily risk blocked; retry on next trading day'});
+      impossibleDaily?'Risk exhausted: selected tier exceeds full fresh-day allowance':
+       'Daily risk blocked; retry on next trading day'});
    break;
   }
   const win=rand(day,ix,ac.id)<config.winRate;
