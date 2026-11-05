@@ -26,7 +26,8 @@ const columns=[
  ['payoutPending','PP','Funded accounts with payout requested and processing'],
  ['targetHit','TG','Cumulative funded accounts that have reached the modeled profit goal'],
  ['paid','PD','Cumulative accounts with first modeled payout received'],
- ['burned','BR','Cumulative failed or risk-exhausted accounts'],
+ ['failed','Fail','Actual loss-limit breaches'],
+ ['riskBlocked','Block','Configured risk no longer fits; not a firm failure'],
  ['dailySpend','Fees','Challenge and activation spending on this day'],
  ['dailyReceipts','Cash in','First-payout receipts on this day']
 ];
@@ -39,7 +40,7 @@ function daily(rows,averages=false,onlyChanges=true){
    dailySpend:diff(r,prior,'spent'),dailyReceipts:diff(r,prior,'receipts'),
    paidToday:diff(r,prior,'paid'),hitToday:diff(r,prior,'targetHit')};
  });
- const changes=['bought','burned','challenge','verification','fundedActive','fundingWait','payoutPending','qualificationToday',
+ const changes=['bought','burned','failed','riskBlocked','challenge','verification','fundedActive','fundingWait','payoutPending','qualificationToday',
   'targetHit','paid','spent','receipts','passed1','passed2','activated'];
  // Include days with actual trades, even when the account stays in the same
  // phase; otherwise an "Activity" view hides all trading from the user.
@@ -48,7 +49,7 @@ function daily(rows,averages=false,onlyChanges=true){
 }
 function combined(list,inputs){
  const days=Math.max(0,Math.floor(n(inputs.days)));
- const keys=['spent','receipts','net','paid','bought','challengeSpent','activationSpent','live','burned',
+ const keys=['spent','receipts','net','paid','bought','challengeSpent','activationSpent','live','burned','failed','riskBlocked',
   'challenge','verification','fundedActive','fundingWait','payoutPending','targetHit','activated','passed1','passed2',
   'opportunities','tradesToday','qualificationToday','unusedToday'];
  function sumRow(day,sample){
@@ -211,7 +212,8 @@ function dailyTradeRouting(results,selected,inputs,routePage=1,pageSize=10){
    challenge:data.reduce((v,d)=>v+n(d.challenge),0),
    verification:data.reduce((v,d)=>v+n(d.verification),0),
    funded:data.reduce((v,d)=>v+n(d.fundedActive),0),
-   failed:data.reduce((v,d)=>v+n(d.burned),0),
+   failed:data.reduce((v,d)=>v+n(d.failed),0),
+   blocked:data.reduce((v,d)=>v+n(d.riskBlocked),0),
    paid:data.reduce((v,d)=>v+n(d.paid),0),
    executed:data.reduce((v,d)=>v+n(d.tradesToday),0),
    minimum:data.reduce((v,d)=>v+n(d.qualificationToday),0),
@@ -238,7 +240,7 @@ function dailyTradeRouting(results,selected,inputs,routePage=1,pageSize=10){
   return '<tr><th scope="row">D'+day+'</th>'+cells+
    '<td class="num">'+counts.executed+'</td><td class="num">'+counts.minimum+'</td><td class="num">'+counts.bought+'</td>'+
    '<td class="num">'+counts.challenge+'</td><td class="num">'+counts.verification+'</td>'+
-   '<td class="num">'+counts.funded+'</td><td class="num">'+counts.pending+'</td><td class="num">'+counts.failed+'</td>'+
+   '<td class="num">'+counts.funded+'</td><td class="num">'+counts.pending+'</td><td class="num">'+counts.failed+'</td><td class="num">'+counts.blocked+'</td>'+
    '<td class="num">'+payouts.length+'</td><td class="num">'+counts.paid+'</td>'+ 
    '<td style="min-width:180px">'+([
      ...payouts.map(a=>'A'+a.id+' PAID '+usd(a.amount)),
@@ -249,10 +251,10 @@ function dailyTradeRouting(results,selected,inputs,routePage=1,pageSize=10){
  }).join('');
  const heading='<div class="journey-status-line"><strong>Daily trades → prop-firm accounts</strong> · '+days.length+
   ' trading days · '+entries.filter(e=>e.account!=null).length+' assigned signal slots</div>';
- const explain='<p class="journey-explainer">Payouts may happen without a trade that day. Min = modeled minimum-size qualification orders; their market P/L is not simulated. Pending = payout requests processing. Paid today is daily; Paid total is cumulative. A1, A2, etc. are permanent, unique account IDs across this displayed portfolio. New challenges always receive new numbers. CH → VR → FD → Payout/closed is forward-only: an account that passed CH can never be displayed in CH again. CH = Challenge, VR = Verification, FD = Funded; W/L = the modeled result of that assigned trade. '+(selected==='all'?'In split mode, the same trade number may appear for separate firms because signals are allocated by firm.':'')+'</p>';
+ const explain='<p class="journey-explainer">Breached means a genuine loss-limit failure; Risk blocked means the selected risk is too large, not a rule breach. Payouts may happen without a trade that day. Min = modeled minimum-size qualification orders; their market P/L is not simulated. Pending = payout requests processing. Paid today is daily; Paid total is cumulative. A1, A2, etc. are permanent, unique account IDs across this displayed portfolio. New challenges always receive new numbers. CH → VR → FD → Payout/closed is forward-only: an account that passed CH can never be displayed in CH again. CH = Challenge, VR = Verification, FD = Funded; W/L = the modeled result of that assigned trade. '+(selected==='all'?'In split mode, the same trade number may appear for separate firms because signals are allocated by firm.':'')+'</p>';
  return heading+warning+explain+'<div class="tablewrap journey-ledger-table" style="max-height:650px"><table class="journey-table" style="min-width:970px"><thead><tr><th>Day</th>'+
   Array.from({length:maxCells},(_,i)=>'<th>Trade '+(i+1)+'</th>').join('')+
-  '<th>Executed</th><th>Min</th><th>Bought</th><th>CH</th><th>VR</th><th>FD</th><th>Pending</th><th>Failed</th><th>Paid today</th><th>Paid total</th><th>Account events</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+pageNav(routePagination,'routePage');
+  '<th>Executed</th><th>Min</th><th>Bought</th><th>CH</th><th>VR</th><th>FD</th><th>Pending</th><th>Breached</th><th>Risk blocked</th><th>Paid today</th><th>Paid total</th><th>Account events</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+pageNav(routePagination,'routePage');
 }
 function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true,signalDay='1',routePage=1,summaryPage=1,pageSize=10}={}){
  if(!results.length)return '<p class="hint">Run a Portfolio Sim calculation to see account journeys.</p>';
@@ -284,7 +286,7 @@ function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true
   '<b>CH</b>, <b>VR</b>, and <b>FD</b> show current active accounts at each stage. '+
   '<b>P1P</b>, <b>P2P</b>, and <b>FA</b> are cumulative accounts passed Phase 1, passed Phase 2, and activated as Funded. '+
   '<b>TG</b> and <b>PD</b> are cumulative targets hit and first payouts (TG may include paid accounts), '+
-  '<b>BR</b> is cumulative burned. Cumulative milestones overlap, so never add TOT, P1P, P2P, FA, TG, PD and BR together. '+
+  '<b>Fail</b> = actual drawdown breach; <b>Block</b> = configured risk cannot fit remaining drawdown and is NOT a prop-firm failure. Cumulative milestones overlap. '+
   esc(span)+'. New and Fees are daily changes.</p>';
  const table='<div class="tablewrap journey-tablewrap"><table class="journey-table"><thead><tr><th>Day</th>'+
   columns.map(([key,label,help])=>'<th title="'+esc(help)+'">'+label+'</th>').join('')+
@@ -306,7 +308,8 @@ function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true
   ['Funded activated',fmt(d.activated,average)],
   ['Funded target hit',fmt(d.targetHit,average)],
   ['First payouts',fmt(d.paid,average)],
-  ['Failed / burned',fmt(d.burned,average)],
+  ['Actual loss-limit breaches',fmt(d.failed,average)],
+  ['Risk-blocked accounts',fmt(d.riskBlocked,average)],
   ['Total spent',usd(d.spent)],
   ['Total receipts',usd(d.receipts)],
   ['Net cash',usd(d.net)]
@@ -319,7 +322,8 @@ function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true
  const chart2=svg?svg([
   {name:'Target hit',values:allRows.map(d=>({x:d.day,y:n(d.targetHit)}))},
   {name:'Paid',values:allRows.map(d=>({x:d.day,y:n(d.paid)}))},
-  {name:'Burned',values:allRows.map(d=>({x:d.day,y:n(d.burned)}))}
+  {name:'Breached',values:allRows.map(d=>({x:d.day,y:n(d.failed)}))},
+  {name:'Risk blocked',values:allRows.map(d=>({x:d.day,y:n(d.riskBlocked)}))}
  ],'Trading day','count',detailRows):'';
  const utilization=svg?svg([
   {name:'Available',values:allRows.map(d=>({x:d.day,y:n(d.opportunities)}))},
@@ -337,7 +341,7 @@ function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true
   ' · Utilization '+utilized.toFixed(1)+'% · '+
   'Bought '+fmt(last.bought,average)+' · Funded activated '+fmt(last.activated,average)+
   ' · Goal hit '+fmt(last.targetHit,average)+' · Paid '+paid+
-  ' · Burned '+fmt(last.burned,average)+
+  ' · Breached '+fmt(last.failed,average)+' · Risk blocked '+fmt(last.riskBlocked,average)+
   ' · Eval '+usd(last.evaluationAllocation)+' · Funded '+usd(last.fundedAllocation)+
   ' · Spent '+usd(last.spent)+' · Received '+usd(last.receipts)+'</p>';
  const expectedPaid=selected==='all'?results.reduce((v,item)=>v+n(item.avg?.paid),0):n(r.avg?.paid);
