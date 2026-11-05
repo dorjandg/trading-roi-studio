@@ -212,10 +212,13 @@ function runAccountDay(p,ac,day,rand,config,record){
   const dailyHeadroom=p.dailyLoss-dayProfit;
   const overallHeadroom=ac.stagePnl-floorFor(p,ac);
   const reserve=Math.max(.01,p.riskReserve);
-  if(risk<.01||risk+reserve>dailyHeadroom+1e-8||risk+reserve>overallHeadroom+1e-8){
+  // The firm loss buffer includes the whole possible losing trade, including
+  // modelled trade cost. A trade that would breach daily/overall room is blocked.
+  const potentialLoss=risk+p.tradeCost+reserve;
+  if(risk<.01||potentialLoss>dailyHeadroom+1e-8||potentialLoss>overallHeadroom+1e-8){
    ac.blocked++;
-   const overallBlocked=risk<.01||risk+reserve>overallHeadroom+1e-8;
-   const impossibleDaily=Number.isFinite(p.dailyLoss)&&risk+reserve>p.dailyLoss+1e-8;
+   const overallBlocked=risk<.01||potentialLoss>overallHeadroom+1e-8;
+   const impossibleDaily=Number.isFinite(p.dailyLoss)&&potentialLoss>p.dailyLoss+1e-8;
    // A tier that cannot fit even on a fresh trading day, or cannot fit the
    // overall headroom, is untradeable without changing the configured policy.
    if(overallBlocked||impossibleDaily)ac.status='exhausted';
