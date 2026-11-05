@@ -136,6 +136,7 @@ function makeAccount(i){return {
  id:i,stageIndex:0,stageDay:0,activeDays:0,adminDays:0,totalAdminDays:0,
  stagePnl:0,history:'',dailyProfit:0,dayProfits:[],peakEod:0,bestDay:0,
  status:'active',trades:0,wins:0,losses:0,firstPaid:0,
+ grossProfit:0,grossLoss:0,winPnl:0,lossPnl:0,riskTotal:0,plannedReward:0,tradePnl:0,
  passes:[],totalR:0,realizedDD:0,peakPnl:0,blocked:0,
  fundedDays:0,fundedPositiveDays:0,funded150Days:0,trace:[]
 };}
@@ -233,7 +234,10 @@ function runAccountDay(p,ac,day,rand,config,record){
   const prior=ac.stagePnl;
   ac.stagePnl=money(ac.stagePnl+delta);dayProfit=money(dayProfit+delta);
   ac.trades++;hadTrade=true;ac.totalR+=delta/risk;
-  if(win){ac.wins++;winsToday++;}else ac.losses++;
+  ac.grossProfit+=Math.max(0,delta);ac.grossLoss+=Math.max(0,-delta);
+  ac.tradePnl+=delta;ac.riskTotal+=risk;ac.plannedReward+=risk*c.rr;
+  if(win){ac.wins++;winsToday++;ac.winPnl+=delta;}
+  else{ac.losses++;ac.lossPnl+=delta;}
   // Preserve only recent outcome prefix for deterministic risk policy.
   ac.history=(ac.history+(win?'W':'L')).slice(-8);
   ac.peakPnl=Math.max(ac.peakPnl,ac.stagePnl);
@@ -331,6 +335,16 @@ function oneTrial(p,config,rng,record=false){
  const net=receipts-spent;
  return {bought:n,paid,passes,funded,failed,exhausted,pending,spent,receipts,net,activations,
    trades:accounts.reduce((sum,a)=>sum+a.trades,0),
+   wins:accounts.reduce((sum,a)=>sum+a.wins,0),
+   losses:accounts.reduce((sum,a)=>sum+a.losses,0),
+   grossProfit:accounts.reduce((sum,a)=>sum+a.grossProfit,0),
+   grossLoss:accounts.reduce((sum,a)=>sum+a.grossLoss,0),
+   winPnl:accounts.reduce((sum,a)=>sum+a.winPnl,0),
+   lossPnl:accounts.reduce((sum,a)=>sum+a.lossPnl,0),
+   riskTotal:accounts.reduce((sum,a)=>sum+a.riskTotal,0),
+   plannedReward:accounts.reduce((sum,a)=>sum+a.plannedReward,0),
+   totalR:accounts.reduce((sum,a)=>sum+a.totalR,0),
+   tradePnl:accounts.reduce((sum,a)=>sum+a.tradePnl,0),
    qualifying:accounts.reduce((sum,a)=>sum+a.totalAdminDays,0),
    accountDetails:record?accounts.slice(0,3):[],
    accounts:record?accounts:undefined};
@@ -358,7 +372,8 @@ function simulatePortfolio(p,config={}){
   signalMode:config.signalMode==='shared'?'shared':'independent'
  };
  const results=[],stageTotals=p.stageList.filter(x=>x!=='funded').map(()=>0);
- const total={bought:0,paid:0,funded:0,failed:0,exhausted:0,pending:0,spent:0,receipts:0,net:0,activations:0,trades:0,qualifying:0};
+ const total={bought:0,paid:0,funded:0,failed:0,exhausted:0,pending:0,spent:0,receipts:0,net:0,activations:0,trades:0,qualifying:0,
+  wins:0,losses:0,grossProfit:0,grossLoss:0,winPnl:0,lossPnl:0,riskTotal:0,plannedReward:0,totalR:0,tradePnl:0};
  const rand=rngFactory(settings.seed);
  let withPayout=0,positiveNet=0,goalMet=0, sample=null;
  const goal=pos(config.netGoal);
@@ -373,10 +388,23 @@ function simulatePortfolio(p,config={}){
   if(x.net>=goal&&goal>0)goalMet++;
  }
  const avg=Object.fromEntries(Object.entries(total).map(([k,v])=>[k,v/trials]));
+ // Aggregate trade-weighted statistics across every account/trial, not the
+ // simple average of per-account ratios. Fees are included in each trade P/L.
+ const tradeKpis={
+  trades:total.trades,
+  wr:total.trades?total.wins/total.trades:null,
+  rr:total.riskTotal?total.plannedReward/total.riskTotal:null,
+  ar:total.trades?total.totalR/total.trades:null,
+  pf:total.grossLoss>1e-9?total.grossProfit/total.grossLoss:(total.grossProfit>1e-9?Infinity:null),
+  aw:total.wins?total.winPnl/total.wins:null,
+  al:total.losses?-total.lossPnl/total.losses:null,
+  ev:total.trades?total.tradePnl/total.trades:null,
+  gp:total.grossProfit,gl:total.grossLoss
+ };
  const nets=results.slice().sort((a,b)=>a-b);
  return {
   plan:p,config:settings,budget,desired,count,clipped,perUnit,feeReserve:reservedPer*count,
-  avg,stages:stageTotals.map(x=>x/trials),
+  avg,tradeKpis,stages:stageTotals.map(x=>x/trials),
   chancePayout:withPayout/trials,chanceProfit:positiveNet/trials,
   chanceGoal:goal?goalMet/trials:null,goal,
   roi:avg.spent>0?avg.net/avg.spent:0,
