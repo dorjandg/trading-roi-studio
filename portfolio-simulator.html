@@ -298,7 +298,7 @@ details p{margin:6px 0}
    <div class="field"><label for="maxBuysPerDay">Max new accounts / day</label><input id="maxBuysPerDay" type="number" min="1" max="20" step="1" value="1"></div>
    <div class="field"><label for="reinvestPayouts">Use payouts for new accounts</label><select id="reinvestPayouts"><option value="no" selected>No · initial budget only</option><option value="yes">Yes · reinvest first payouts</option></select></div>
   </div>
-  <p class="hint">Dynamic: buy on a trading day only if an open slot and sufficient available money exist. After an account fails, exhausts its risk, or gets paid, its slot can be reused the next trading day. The selected trade opportunities/day are shared across the portfolio: one selected account receives them that day. No unlimited replacement accounts.</p>
+  <p class="hint">Dynamic: buy on a trading day only if an open slot and sufficient available money exist. After an account fails, exhausts its risk, or gets paid, its slot can be reused the next trading day. Daily trade opportunities are assigned across available accounts. In split-budget mode they are also distributed across the selected firms, so opportunities are not multiplied. Replacement purchases use available budget, not unlimited credit.</p>
  </div>
  <div class="mode-group" role="group" aria-label="Budget allocation mode">
    <label><input type="radio" name="budgetMode" value="compare" checked> Compare each firm with full budget</label>
@@ -1045,6 +1045,7 @@ function currentDiscoveryInputs(row){
  const budget=Math.max(0,Number($('budget').value)||0);
  const weights=rows.reduce((a,r)=>a+Math.max(0,Number(r.weight)||0),0);
  const allocated=mode==='split'?weights>0?budget*Math.max(0,Number(row.weight)||0)/weights:0:budget;
+ const schedule=mode==='split'&&$('purchaseMode').value==='recycle'?sharedDailyTradeSchedules()?.[rows.indexOf(row)]:null;
  return {
   budget:allocated,netGoal:Math.max(0,Number($('netGoal').value)||0),
   winRate:Math.max(0,Math.min(100,Number($('winRate').value)||0)),
@@ -1053,7 +1054,8 @@ function currentDiscoveryInputs(row){
   purchaseMode:$('purchaseMode').value,
   maxActive:Math.max(1,Math.min(20,Math.floor(Number($('maxActive').value)||1))),
   maxBuysPerDay:Math.max(1,Math.min(20,Math.floor(Number($('maxBuysPerDay').value)||1))),
-  reinvestPayouts:$('reinvestPayouts').value==='yes'
+  reinvestPayouts:$('reinvestPayouts').value==='yes',
+  tradeSchedule:schedule
  };
 }
 $('discover').addEventListener('click',()=>{
@@ -1208,6 +1210,26 @@ $('ideaResults').addEventListener('click',event=>{
  run();
 });
 
+function sharedDailyTradeSchedules(){
+ const days=Math.max(1,Math.min(120,Math.floor(Number($('days').value)||20)));
+ const perDay=Math.max(1,Math.min(6,Math.floor(Number($('tradesPerDay').value)||2)));
+ const weights=rows.map(r=>Math.max(0,Number(r.weight)||0));
+ const total=weights.reduce((sum,x)=>sum+x,0);
+ if(total<=0)return null;
+ const credits=weights.map(()=>0);
+ const schedules=weights.map(()=>Array(days).fill(0));
+ for(let day=0;day<days;day++){
+  for(let ix=0;ix<perDay;ix++){
+   for(let i=0;i<credits.length;i++)credits[i]+=weights[i];
+   let chosen=-1;
+   for(let i=0;i<credits.length;i++)if(weights[i]>0&&(chosen<0||credits[i]>credits[chosen]))chosen=i;
+   if(chosen<0)break;
+   schedules[chosen][day]++;
+   credits[chosen]-=total;
+  }
+ }
+ return schedules;
+}
 function run(){
  const mode=document.querySelector('[name="budgetMode"]:checked').value;
  const inputs={budget:Math.max(0,Number($('budget').value)||0),netGoal:Math.max(0,Number($('netGoal').value)||0),
@@ -1229,10 +1251,11 @@ function run(){
    seen.add(id);
   }
  }
+ const schedules=mode==='split'&&inputs.purchaseMode==='recycle'?sharedDailyTradeSchedules():null;
  const jobs=rows.map((row,i)=>{
   const budget=mode==='split'?inputs.budget*Math.max(0,row.weight)/totalWeight:inputs.budget;
   const p=accountPlan(row),validation=E.validatePlan(p);
-  return {p,budget,validation,index:i};
+  return {p,budget,validation,index:i,tradeSchedule:schedules?.[i]||null};
  });
  const bad=jobs.filter(j=>j.validation.errors.length);
  if(bad.length){
@@ -1244,7 +1267,8 @@ function run(){
  requestAnimationFrame(()=>{
   try{
    const results=jobs.map(j=>E.simulatePortfolio(j.p,{
-    ...inputs,budget:j.budget,seed:inputs.seed+j.index*120011,maxAccounts:100,trackCharts:true}));
+    ...inputs,budget:j.budget,seed:inputs.seed+j.index*120011,maxAccounts:100,
+    tradeSchedule:j.tradeSchedule,trackCharts:true}));
    renderResults(results,inputs);
   }catch(e){
    $('status').textContent='Simulation error: '+e.message;$('status').style.color='var(--red)';
