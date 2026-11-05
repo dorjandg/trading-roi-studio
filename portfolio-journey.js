@@ -279,6 +279,23 @@ function dailyTradeRouting(results,selected,inputs,routePage=1,pageSize=10){
    .map(([label,key])=>routeTh(label,key)).join('')+
   '</tr></thead><tbody>'+rows+'</tbody></table></div>'+pageNav(routePagination,'routePage');
 }
+function passRateFunnel(result){
+ const rows=root.StudioPortfolioEngine?.stageFunnel?.(result)||[];
+ if(!rows.length)return '';
+ const percentage=v=>v==null?'—':(v*100).toFixed(1)+'%';
+ const title=esc(result.plan.firm+' · '+result.plan.programName+' · '+usd(result.plan.size));
+ const body=rows.map((r,i)=>'<tr><th scope="row" title="'+esc(r.label)+'">'+esc(r.label)+'</th>'+
+  '<td class="num">'+n(r.count).toFixed(2)+'</td>'+
+  '<td class="num" title="Count at this milestone divided by the previous milestone count">'+percentage(r.previousRate)+'</td>'+
+  '<td class="num" title="Count at this milestone divided by total accounts purchased">'+percentage(r.totalRate)+'</td></tr>').join('');
+ return '<div class="journey-funnel"><h4 style="margin:12px 0 5px">Pass rate · '+title+'</h4>'+
+  '<p class="journey-explainer">Monte Carlo expected account counts and cumulative conversions through the selected trading-day horizon. Step pass rate = reached this milestone ÷ reached prior milestone. Total = reached milestone ÷ all accounts purchased. Accounts still progressing count as not completed, so these are horizon conversion rates, not lifetime pass probabilities.</p>'+
+  '<div class="tablewrap"><table class="journey-table"><thead><tr>'+
+  '<th>Stage / milestone</th><th title="Mean account count across all trials">Average accounts</th>'+
+  '<th title="Of accounts that reached the prior milestone, the proportion that reached this one by the simulated horizon">From previous</th>'+
+  '<th title="Of all accounts purchased, the proportion reaching this milestone by the simulated horizon">From purchased</th>'+
+  '</tr></thead><tbody>'+body+'</tbody></table></div></div>';
+}
 function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true,signalDay='1',routePage=1,summaryPage=1,pageSize=10}={}){
  if(!results.length)return '<p class="hint">Run a Portfolio Sim calculation to see account journeys.</p>';
  const split=inputs.budgetMode==='split';
@@ -374,7 +391,7 @@ function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true
   ' paid accounts. '+(samplePaid===0&&expectedPaid>0?'Zero payouts in this sample does not mean all simulations had zero payouts. ':'')+
   'Funded targets may also be reached before the payout waiting period ends.</p>';
  const capInfo=selected==='all'?'Combined nominal allocation across different firms; firm limits are separate.':'Planning limits: Evaluation '+(n(cap.evaluation)>0?usd(cap.evaluation):'not set')+' · Funded '+(n(cap.funded)>0?usd(cap.funded):'not set')+'. These caps are enforced in new simulation runs: evaluation purchases stop at the cap, and funded activations wait for a free slot. A cap below one account size permits zero accounts. Caps are per selected account type, not pooled across different account sizes of the same firm.';
- return header+dailyTradeRouting(results,selected,inputs,routePage,pageSize)+total+estimateNote+'<p class="journey-explainer">'+capInfo+'</p>'+table+graphs+(!average&&selected!=='all'?sampleMilestones(r,signalDay):'')+note;
+ return header+(selected==='all'?results.map(passRateFunnel).join(''):passRateFunnel(results[Number(selected)]))+dailyTradeRouting(results,selected,inputs,routePage,pageSize)+total+estimateNote+'<p class="journey-explainer">'+capInfo+'</p>'+table+graphs+(!average&&selected!=='all'?sampleMilestones(r,signalDay):'')+note;
 }
 root.StudioPortfolioJourney={render,daily,combined,sampleMilestones};
 })(typeof window!=='undefined'?window:globalThis);
