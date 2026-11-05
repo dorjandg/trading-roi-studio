@@ -479,7 +479,7 @@ function simulatePortfolio(p,config={}){
    (clamp(config.days,1,120)|0)?config.tradeSchedule.map(x=>clamp(x,0,6)|0):null,
   purchaseMode:config.purchaseMode==='recycle'?'recycle':'upfront',
   capacityMode:config.capacityMode==='manual'?'manual':'automatic',
-  maxActive:clamp(Math.floor(config.maxActive||1),1,20)|0,
+  maxActive:clamp(Math.floor(config.maxActive||1),1,100)|0,
   maxBuysPerDay:clamp(Math.floor(config.maxBuysPerDay||1),1,20)|0,
   maxLifetime:clamp(Math.floor(config.maxAccounts||100),1,100)|0,
   budget,reinvestPayouts:config.reinvestPayouts===true
