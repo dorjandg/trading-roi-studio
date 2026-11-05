@@ -109,6 +109,12 @@ summary{cursor:pointer;font-weight:750;color:var(--text)}details .tablewrap{marg
 .discovery-kpi-key summary{font-size:11px;color:var(--muted);font-weight:600}
 .discovery-kpi-key p{margin:4px 0;color:var(--muted);line-height:1.5}
 @media(max-width:620px){.discovery-table td:first-child{min-width:288px;max-width:310px}.discovery-kpi{font-size:10px;padding:4px 4px}}
+
+.discovery-row-actions{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.discovery-row-actions button{font-size:11px;min-height:34px;padding:6px 8px}
+.discovery-row-actions button:last-child{border-color:var(--blue)}
+#firmsSendStatus a{font-weight:800;margin-left:8px}
+@media(max-width:620px){.discovery-row-actions{flex-direction:column;align-items:stretch}.discovery-row-actions button{min-height:34px}}
 </style>
 </head><body><div class="shell">
 <header class="top"><div class="brand"><span class="mark">4D</span><span>4Ds Trading Studio <span style="color:var(--green)">/ Portfolio Sim</span></span></div><nav class="nav"><a href="index.html">Overview & Firms</a><a href="labs.html">Labs</a><a href="comparison-lab.html">Compare Lab</a><a href="trade-lab.html">Trade Lab</a><button type="button" id="theme" aria-label="Toggle color theme">◐</button></nav></header>
@@ -158,6 +164,7 @@ summary{cursor:pointer;font-weight:750;color:var(--text)}details .tablewrap{marg
  <div class="actions"><button type="button" class="primary" id="discover">Find Better Models</button>
   <span id="ideaStatus" class="status" role="status">Run a model search to compare alternatives.</span></div>
  <div id="ideaResults"></div>
+ <div id="firmsSendStatus" class="status" style="margin-top:10px" aria-live="polite">Suggested models stay in Portfolio Sim until you explicitly send one to Firms.</div>
 </section>
 <section id="results" hidden>
 <section class="panel"><h2>4 · Results across prop firms</h2><p id="summaryCaption" class="hint"></p><div id="totals" class="kpis"></div>
@@ -173,6 +180,7 @@ summary{cursor:pointer;font-weight:750;color:var(--text)}details .tablewrap{marg
 </div>
 <script src="portfolio-engine.js"></script>
 <script src="portfolio-discovery.js"></script>
+<script src="portfolio-to-firms.js"></script>
 <script>
 (function(){
 'use strict';
@@ -191,6 +199,7 @@ let testRisks={}; // simulator-only R1/R2/R3 and RR experiments, never written t
 let discovered=null; // exploration candidates (not saved as Firms profile)
 let ideaReserveAccountKey='';
 const modelDiscovery=window.StudioModelDiscovery;
+const firmsTransfer=window.StudioFirmsTransfer;
 const historyState={}; // per-result paging/filter, independent from Monte Carlo calculations
 const openResultDetails=new Set();
 const savedViewKey=rootKey+'portfolio-simulator:v1';
@@ -441,7 +450,8 @@ function riskEditor(result,index){
     '</div></fieldset>';
   }).join('')+
   '<div class="actions"><button type="button" data-reset-test="'+index+'">Reset to Firms settings</button>'+
-  '<button type="button" class="primary" data-rerun-test="'+index+'">Re-run with these risks</button></div>'+
+  '<button type="button" class="primary" data-rerun-test="'+index+'">Re-run with these risks</button>'+
+  '<button type="button" data-firms-send-current="'+index+'">Send to Firms</button></div>'+
   '<p class="hint" data-test-note="'+index+'">Current results use the values shown. Use Re-run after editing.</p></section>';
 }
 function makeResultCard(result,index){
@@ -595,6 +605,13 @@ $('details').addEventListener('change',event=>{
  }
 });
 $('details').addEventListener('click',event=>{
+ const send=event.target.closest?.('[data-firms-send-current]');
+ if(send){
+  const index=Number(send.dataset.firmsSendCurrent),row=rows[index];
+  if(!row){$('firmsSendStatus').textContent='Account not found. Re-run Portfolio Sim.';return;}
+  sendPlanToFirms(accountPlan(row),'Current Portfolio Sim test');
+  return;
+ }
  const control=event.target.closest?.('[data-history-action]');
  if(control&&!control.disabled){
   const zone=control.closest('[data-history-index]');if(!zone)return;
@@ -740,7 +757,8 @@ function renderDiscovery(result,row,budget){
     '<td>'+usd(h.p10)+'</td>'+
     '<td>'+pct(h.chancePayout)+'</td>'+
     '<td>'+dec(h.avg.exhausted)+'</td>'+
-    '<td>'+(i<0?'Current':'<button type="button" data-discovery-apply="'+i+'">Test in Portfolio Sim</button>')+'</td></tr>';
+    '<td>'+(i<0?'Current':'<div class="discovery-row-actions"><button type="button" data-discovery-apply="'+i+'">Test</button>'+
+    '<button type="button" data-discovery-send="'+i+'" title="Copy this model into the matching Firms account after confirmation">Send to Firms</button></div>')+'</td></tr>';
  };
  const best=result.ideas.filter(c=>c.improvement>0).sort((a,b)=>b.improvement-a.improvement)[0];
  const sortKey=discoverySorts.some(s=>s[0]===discovered?.sortKey)?discovered.sortKey:'delta';
@@ -786,7 +804,7 @@ function renderDiscovery(result,row,budget){
   '<thead><tr><th>'+sorter('name','MOD')+'</th><th>'+sorter('net','NET')+'</th><th>'+sorter('delta','DLT')+'</th><th>'+sorter('p10','P10')+'</th>'+
   '<th>'+sorter('payout','CP')+'</th><th>'+sorter('blocked','BA')+'</th><th>GO</th></tr></thead><tbody>'+
   entry(result.baseline,-1)+sorted.map(x=>entry(x.idea,x.index)).join('')+'</tbody></table></div>'+
-  '<p class="discovery-note">Candidates are shortlisted using simulated discovery trials, then rechecked with different simulated outcomes. This is not a backtest of market price data or statistically established superiority. Win rate and RR remain fixed across candidates; changing RR without adjusting win rate would distort comparisons. Assumed firm rules and simplified payouts may differ from actual eligibility. Applying a model changes only Portfolio Sim experiments, never your saved Firms strategy.</p>'+
+  '<p class="discovery-note">Test changes only Portfolio Sim. Send to Firms explicitly replaces R1/R2/R3, RR, sequence, win caps and reserve for this account (after confirmation), with a backup for restoration. Candidates are synthetic simulations, not evidence of a trading edge or verified firm eligibility.</p>'+
   '</div>';
 }
 function currentDiscoveryInputs(row){
@@ -849,6 +867,59 @@ $('ideaResults').addEventListener('change',event=>{
  const el=event.target.closest?.('[data-discovery-sort="key"]');
  if(el)discoverySortSet(el.value,false);
 });
+function firmsAccountLabel(key){
+ const [id,size]=key.split(':');
+ return (catalog.programs[id]?.firm||id)+' · '+(catalog.programs[id]?.name||id)+' '+usd(Number(size));
+}
+function firmsOpenHref(key){return 'index.html?view=firms&account='+encodeURIComponent(key);}
+function savedFirmsBackupExists(key){
+ return localStorage.getItem(firmsTransfer.backupKey(user,key))!==null;
+}
+function sentStatus(key,message,error=false){
+ const link='<a href="'+esc(firmsOpenHref(key))+'">Open Firms</a>';
+ const undo=savedFirmsBackupExists(key)?
+  ' <button type="button" data-restore-firms="'+esc(key)+'">Restore previous</button>':'';
+ $('firmsSendStatus').style.color=error?'var(--red)':'var(--green)';
+ $('firmsSendStatus').innerHTML=esc(message)+(error?'':link+undo);
+}
+function sendPlanToFirms(plan,modelName){
+ if(!firmsTransfer){$('firmsSendStatus').textContent='Transfer feature failed to load';return false;}
+ const key=plan.id+':'+plan.size;
+ if(!rows.some(row=>row.id+':'+row.size===key)){
+  $('firmsSendStatus').textContent='The account changed. Select it again before sending.';
+  return false;
+ }
+ const label=firmsAccountLabel(key);
+ const message='Send "'+modelName+'" to '+label+' for user '+user.toUpperCase()+'?\n\n'+
+  'This will REPLACE the Firms account R1/R2/R3, RR, risk sequence, winning-day caps, and risk reserve.\n'+
+  'Profit targets, checkout fees, daily loss limits and other firm rules are preserved.\n'+
+  'The previous settings are backed up and can be restored.\n\n'+
+  'Simulated improvements do not guarantee future performance. Continue?';
+ if(!window.confirm(message))return false;
+ try{
+  firmsTransfer.transfer(localStorage,user,key,plan,modelName);
+  sentStatus(key,'"'+modelName+'" saved to '+label+'. Open Firms to review it.');
+  return true;
+ }catch(e){
+  sentStatus(key,e.message,true);
+  return false;
+ }
+}
+$('firmsSendStatus').addEventListener('click',event=>{
+ const btn=event.target.closest?.('[data-restore-firms]');
+ if(!btn)return;
+ const key=btn.dataset.restoreFirms;
+ if(!window.confirm('Restore the previous Firms settings for '+firmsAccountLabel(key)+'? This replaces the transferred settings.'))return;
+ try{
+  firmsTransfer.restore(localStorage,user,key);
+  $('firmsSendStatus').innerHTML='Previous settings restored for '+esc(firmsAccountLabel(key))+'. <a href="'+esc(firmsOpenHref(key))+'">Open Firms</a>';
+  $('firmsSendStatus').style.color='var(--green)';
+ }catch(e){
+  $('firmsSendStatus').textContent=e.message;
+  $('firmsSendStatus').style.color='var(--red)';
+ }
+});
+
 $('ideaResults').addEventListener('click',event=>{
  const column=event.target.closest?.('[data-discovery-sort-column]');
  if(column){discoverySortSet(column.dataset.discoverySortColumn,true);return;}
@@ -858,6 +929,13 @@ $('ideaResults').addEventListener('click',event=>{
    discovered.sortDirection=discovered.sortDirection==='asc'?'desc':'asc';
    renderDiscovery(discovered.result,discovered.row,discovered.budget);
   }
+  return;
+ }
+ const send=event.target.closest?.('[data-discovery-send]');
+ if(send){
+  if(!discovered||discovered.stale){$('firmsSendStatus').textContent='Run a fresh model search before sending to Firms.';return;}
+  const candidate=discovered.result.ideas[Number(send.dataset.discoverySend)];
+  if(candidate)sendPlanToFirms(candidate.plan,candidate.title);
   return;
  }
  const btn=event.target.closest?.('[data-discovery-apply]');
