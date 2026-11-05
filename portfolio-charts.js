@@ -87,7 +87,7 @@ function tradeCurve(ac,stage='all'){
  return {equity,drawdown,trades:index,net,maxDD};
 }
 function combinedResult(list,inputs){
- const days=Math.max(0,Math.floor(N(inputs.days))),keys=['spent','receipts','net','paid','bought','challengeSpent','activationSpent','live','burned','challenge','verification','fundedActive','fundingWait','targetHit','activated','passed1','passed2'];
+ const days=Math.max(0,Math.floor(N(inputs.days))),keys=['spent','receipts','net','paid','bought','challengeSpent','activationSpent','live','burned','challenge','verification','fundedActive','fundingWait','targetHit','activated','passed1','passed2','opportunities','tradesToday','unusedToday'];
  function cashAt(day,sample){
   const row={day,spent:0,receipts:0,net:0,paid:0};
   for(const r of list)for(const k of keys)row[k]+=N((sample?r.sample?.dailyCash:r.cashCurve)?.[day]?.[k]);
