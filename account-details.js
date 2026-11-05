@@ -2,6 +2,54 @@
 "use strict";
 function rows(id,items){const host=document.getElementById(id);if(!host)return;host.replaceChildren();for(const [label,value] of items){const item=document.createElement('div');item.className='item';const l=document.createElement('span');l.textContent=label;const v=document.createElement('strong');v.textContent=value===undefined||value===null||value===''?'Not verified in reference':String(value);item.append(l,v);host.append(item);}}
 function money(v){return v===null||v===undefined||!Number.isFinite(Number(v))?'Not verified':'$'+Number(v).toLocaleString('en-US');}
+window.fourDsRenderRiskDiagnostic=function(id,size,inputs){
+ const box=document.getElementById('firmRiskDiagnostic');if(!box)return;
+ box.replaceChildren();
+ const rec=window.fourDsOfficialAudit?.programs?.[id];
+ if(!rec?.riskStructure){box.textContent='Drawdown and consistency audit loading. No account risk limit is verified yet.';return;}
+ const risk=rec.riskStructure,cons=risk.consistency||{},n=Number(size)||0;
+ const label=document.createElement('div');label.className='risk-diagnostic-title';label.textContent='Loss floor & consistency · selected account';box.append(label);
+ const items=[
+  ['Drawdown type',risk.drawdownKind.replaceAll('-',' ').toUpperCase()],
+  ['Loss-floor behavior',risk.updateRule],
+  ['Daily consistency',cons.percent!=null?cons.percent+'% · '+String(cons.stage||'stage requires review'):'No universal numeric cap confirmed'],
+ ];
+ for(const [a,b]of items){const p=document.createElement('div');p.className='risk-diagnostic-line';const k=document.createElement('span');k.textContent=a;const v=document.createElement('strong');v.textContent=b;p.append(k,v);box.append(p)}
+ const note=document.createElement('p');note.className='muted';note.textContent=cons.description||'Check specific program terms';box.append(note);
+ const name=id==='topstep'?'Combine':cons.stage||'account';
+ const targets=rec.evaluation?.targetsUSDBySize||rec.evaluation?.profitTargetsUSD||{};
+ const percentage=rec.evaluation?.targetsPercent?.[0];
+ const target=Number(targets[n])||(percentage!=null&&n>0?n*percentage/100:0);
+ const isEvaluation=cons.stage==='evaluation'||cons.stage==='variant-dependent';
+ const applicable=cons.percent!=null&&isEvaluation&&target>0&&n>0&&id!=='fundednext-futures';
+ if(applicable){
+  const permitted=target*cons.percent/100;
+  const allowedRisk=Number(inputs?.rr)>0?permitted/inputs.rr:null;
+  const p=document.createElement('p');p.className='risk-diagnostic-example';
+  p.textContent='At a '+(n/1000)+'K account and '+Math.round(target).toLocaleString('en-US')+' profit target: best-day planning reference '+permitted.toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:2})+' ('+cons.percent+'% of total).'+(allowedRisk!==null?' At '+inputs.rr+'R, one full-size winner would use this amount at about '+allowedRisk.toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:2})+' risk.':'');
+  box.append(p);
+  if(Number(inputs?.base)>0&&Number(inputs?.rr)>0){
+    const profit=inputs.base*inputs.rr;
+    const signal=document.createElement('p');signal.className='risk-diagnostic-signal';
+    signal.textContent=profit>permitted?'Check daily profit sizing: one '+inputs.rr+'R win at your planned '+inputs.base.toFixed(0)+' USD risk produces '+profit.toFixed(0)+' USD, above the '+permitted.toFixed(0)+' USD planning reference. Lower exposure, stop after target, or expect to grow total profits over additional days.':'Planned one-trade winner '+profit.toFixed(0)+' USD stays below the '+permitted.toFixed(0)+' USD best-day planning reference. Multiple wins on the same day still add together.';
+    box.append(signal);
+  }
+ } else if(cons.percent!=null) {
+  const info=document.createElement('p');info.className='risk-diagnostic-example';info.textContent='This '+cons.percent+'% rule applies to '+(cons.stage||'specific stages')+'. Do not convert it into a fixed evaluation daily-profit cap without the funded cycle target or exact product variant.';box.append(info);
+ }
+ const d=rec.loss||{};
+ const max=Number(d.maximumUSDBySize?.[n])||(d.maximumPercent!=null&&n>0?n*Number(d.maximumPercent)/100:0);
+ const daily=Number(d.dailyUSDBySize?.[n])||(d.dailyPercent!=null&&n>0?n*Number(d.dailyPercent)/100:0);
+ if(Number(inputs?.base)>0&&(max>0||daily>0)){
+  const ref=document.createElement('p');ref.className='risk-diagnostic-signal';
+  let bits=[];
+  if(daily>0)bits.push('one planned loss uses '+(100*inputs.base/daily).toFixed(1)+'% of initial daily allowance');
+  if(max>0)bits.push((100*inputs.base/max).toFixed(1)+'% of initial overall loss allowance');
+  ref.textContent='Risk check: '+bits.join(' and ')+'. Remaining headroom may be lower after trades or a moving floor; include commission, slippage and open P/L.';
+  box.append(ref);
+ }
+ const warning=document.createElement('p');warning.className='muted';warning.textContent='Planning diagnosis only. Rule variants and funded-stage terms can change. Do not use this as an order-permission or hard broker-risk gate.';box.append(warning);
+};
 window.fourDsRenderAudit=function(id){
  const host=document.getElementById('officialAuditDetails');if(!host)return;
  const audit=window.fourDsOfficialAudit?.programs?.[id];
