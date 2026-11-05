@@ -149,20 +149,34 @@ function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true
     '</tr>').join('')+'</tbody></table></div>';
  const svg=root.StudioPortfolioCharts?.svgLine;
  const allRows=raw||[];
+ const detailRows=Object.fromEntries(allRows.map((d,i)=>[d.day,[
+  ['Trades executed',fmt(d.tradesToday,average)+' / '+fmt(d.opportunities,average)],
+  ['New accounts',fmt(i===0?d.bought:n(d.bought)-n(allRows[i-1].bought),average)],
+  ['Purchased total',fmt(d.bought,average)],
+  ['Phase 1 passed',fmt(d.passed1,average)],
+  ['Phase 2 passed',fmt(d.passed2,average)],
+  ['Funded activated',fmt(d.activated,average)],
+  ['Funded target hit',fmt(d.targetHit,average)],
+  ['First payouts',fmt(d.paid,average)],
+  ['Failed / burned',fmt(d.burned,average)],
+  ['Total spent',usd(d.spent)],
+  ['Total receipts',usd(d.receipts)],
+  ['Net cash',usd(d.net)]
+ ]]));
  const chart1=svg?svg([
   {name:'CH',values:allRows.map(d=>({x:d.day,y:n(d.challenge)}))},
   {name:'VR',values:allRows.map(d=>({x:d.day,y:n(d.verification)}))},
   {name:'FD',values:allRows.map(d=>({x:d.day,y:n(d.fundedActive)}))}
- ],'Trading day','count'):'';
+ ],'Trading day','count',detailRows):'';
  const chart2=svg?svg([
   {name:'Target hit',values:allRows.map(d=>({x:d.day,y:n(d.targetHit)}))},
   {name:'Paid',values:allRows.map(d=>({x:d.day,y:n(d.paid)}))},
   {name:'Burned',values:allRows.map(d=>({x:d.day,y:n(d.burned)}))}
- ],'Trading day','count'):'';
+ ],'Trading day','count',detailRows):'';
  const utilization=svg?svg([
   {name:'Available',values:allRows.map(d=>({x:d.day,y:n(d.opportunities)}))},
   {name:'Executed',values:allRows.map(d=>({x:d.day,y:n(d.tradesToday)}))}
- ],'Trading day','count'):'';
+ ],'Trading day','count',detailRows):'';
  const graphs='<div class="journey-chart-grid"><article><h4>Accounts by active stage</h4>'+
   chart1+'</article><article><h4>Cumulative milestones</h4>'+chart2+'</article>'+
   '<article><h4>Daily trade opportunities vs executed</h4>'+utilization+'</article></div>';
