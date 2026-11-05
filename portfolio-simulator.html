@@ -307,6 +307,13 @@ details p{margin:6px 0}
  .journey-table td,.journey-table th{padding:5px 6px}
 }
 
+
+.capacity-inline{font-size:11px;line-height:1.35;margin:5px 0 6px;
+ color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+.capacity-inline.capacity-warning{border-color:var(--amber);color:var(--text)}
+.capacity-quick{font-size:11px;min-height:31px;padding:5px 9px;margin:0 0 5px}
+.capacity-quick[hidden]{display:none!important}
+
 </style>
 <link rel="stylesheet" href="studio-nav.css?v=20261105-compact-v2"></head><body><div class="shell">
 <header class="studio-site-header"><a class="studio-site-brand" href="index.html?view=dashboard"><span class="studio-site-mark">F<small>↗</small></span><span class="studio-site-title"><strong>4Ds Trading Studio</strong><small>STRATEGY · PAYOUTS · CAPITAL ALLOCATION</small></span></a><div class="studio-site-tools"><label class="studio-site-user" for="studioUserSelect">User <select id="studioUserSelect" aria-label="Active Studio user"><option value="doen">Doen</option><option value="dori">Dori</option><option value="dona">Dona</option><option value="dion">Dion</option></select></label><button type="button" id="theme" class="studio-site-theme" aria-label="Switch theme" title="Switch theme">◐</button></div></header>
@@ -335,7 +342,9 @@ details p{margin:6px 0}
    <div class="field"><label for="maxBuysPerDay">Max new accounts/day (≤ trades/day)</label><input id="maxBuysPerDay" type="number" min="1" max="20" step="1" value="1"></div>
    <div class="field"><label for="reinvestPayouts">Use payouts for new accounts</label><select id="reinvestPayouts"><option value="no" selected>No · initial budget only</option><option value="yes">Yes · reinvest first payouts</option></select></div>
   </div>
-  <p class="hint">Dynamic: buy on a trading day only if an open slot and sufficient available money exist. After an account fails, exhausts its risk, or gets paid, its slot can be reused the next trading day. Daily trade opportunities are assigned across available accounts. In split-budget mode they are also distributed across the selected firms, so opportunities are not multiplied. Replacement purchases use available budget, not unlimited credit.</p>
+  <div class="capacity-inline" id="capacityHint" aria-live="polite"></div>
+  <button type="button" id="matchTradeCapacity" class="capacity-quick" hidden>Match account capacity to trading opportunities &amp; re-run</button>
+  <p class="hint">Dynamic: buy only when an active slot and sufficient money exist. An account in Phase 1, Verification or Funded occupies a slot until it burns or receives its first payout. Daily trades are shared across active accounts (and firms in split mode); per-phase max wins, first-loss stops, and reached targets can leave some opportunities unused. Replacements are never purchased on credit.</p>
  </div>
  <div class="mode-group" role="group" aria-label="Budget allocation mode">
    <label><input type="radio" name="budgetMode" value="compare" checked> Compare each firm with full budget</label>
@@ -595,11 +604,27 @@ function refreshIdeaCeiling(){
   ') − reserve '+usdExact(c.reserve)+' − trade cost '+usdExact(c.tradeCost)+
   '. A $0 test reserve still keeps $0.01 clearance. Limits are starting-state estimates; after losses, equity and drawdown headroom can be smaller.';
 }
+function updateCapacityHint(){
+ const opportunities=Math.max(1,Math.min(6,Math.floor(Number($('tradesPerDay').value)||2)));
+ const active=Math.max(1,Math.min(20,Math.floor(Number($('maxActive').value)||1)));
+ const buys=Math.max(1,Math.min(20,Math.floor(Number($('maxBuysPerDay').value)||1)));
+ const limited=active<opportunities||buys<opportunities;
+ const msg=limited?
+  'Capacity warning: '+opportunities+' trade opportunities/day, but only '+active+
+  ' concurrent account slot'+(active===1?'':'s')+' and '+buys+' new purchase'+(buys===1?'':'s')+
+  '/day. This can leave signals unused even with money remaining.':
+  'Daily capacity permits up to '+opportunities+' trade opportunities, subject to available budget and firm-stage rules.';
+ $('capacityHint').textContent=msg+' Stage win caps and the first-loss daily stop still apply.';
+ $('capacityHint').classList.toggle('capacity-warning',limited);
+ $('matchTradeCapacity').hidden=!limited||$('purchaseMode').value!=='recycle';
+ $('matchTradeCapacity').textContent='Allow '+opportunities+' account slots and new purchases/day · Re-run';
+}
 function syncPurchaseMode(){
  const dynamic=$('purchaseMode').value==='recycle';
  $('dynamicPurchaseSettings').hidden=!dynamic;
  $('tradesPerDay').closest('.field').querySelector('label').textContent=
   dynamic?'Trading opportunities / portfolio / day':'Trade opportunities / account / day';
+ updateCapacityHint();
 }
 function setStale(){
  if(lastResults.length){$('status').textContent='Inputs changed · run again for updated results';$('status').style.color='var(--amber)';}
@@ -629,9 +654,17 @@ $('reload').addEventListener('click',()=>{renderRows();setStale();$('status').te
 document.querySelectorAll('#budget,#netGoal,#winRate,#days,#tradesPerDay,#trials,#seed,#signalMode,#purchaseMode,#maxActive,#maxBuysPerDay,#reinvestPayouts,[name="budgetMode"]').forEach(el=>{
  el.addEventListener('change',()=>{
   if(el.name==='budgetMode')renderRows();
-  if(el.id==='purchaseMode')syncPurchaseMode();
+  if(['purchaseMode','tradesPerDay','maxActive','maxBuysPerDay'].includes(el.id))syncPurchaseMode();
   setStale();
  });
+});
+$('matchTradeCapacity').addEventListener('click',()=>{
+ const n=Math.max(1,Math.min(6,Math.floor(Number($('tradesPerDay').value)||2)));
+ $('maxActive').value=String(Math.max(n,Math.floor(Number($('maxActive').value)||1)));
+ $('maxBuysPerDay').value=String(Math.max(n,Math.floor(Number($('maxBuysPerDay').value)||1)));
+ syncPurchaseMode();
+ setStale();
+ if(catalog?.programs)run();
 });
 function trialSeriesStats(nets,goal){
  const sorted=nets.slice().sort((a,b)=>a-b);
