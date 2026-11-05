@@ -254,7 +254,7 @@ function render({results=[],inputs={},selection='',account='auto',group='overvie
   '<div class="sim-chart-toolbar sim-chart-extra">'+extra+'</div></details>'+
   '<div class="sim-chart-metrics">'+metrics.map(m=>'<span><b>'+e(m[0])+'</b><strong>'+e(m[1])+'</strong></span>').join('')+'</div>'+
   '<div class="sim-chart-grid">'+selectedItems.map(c=>c.html).join('')+'</div>'+
-  '<p class="sim-chart-note">Charts show simulated results, not historical trades. Portfolio cash NET is received first payouts minus incurred costs, <b>not</b> prop-firm equity. Example account trading equity and drawdown are from trial #1; evaluation-stage profits are not withdrawable. Day-range filtering changes the displayed days, not the simulation. Stage filtering applies only to sample trading charts. Outcome filtering applies only to the final NET and ROI histograms; all other graphs and KPI totals remain unfiltered.</p>';
+  '<p class="sim-chart-note">Charts show simulated results, not historical trades. Portfolio cash NET is received first payouts minus incurred costs, <b>not</b> prop-firm equity. Example account trading equity and drawdown are from trial #1; evaluation-stage profits are not withdrawable. Day-range filtering changes the displayed days, not the simulation. Stage filtering applies only to sample trading charts. Outcome filtering applies only to the final NET and ROI histograms; all other graphs and KPI totals remain unfiltered. Headline ROI divides average net by average spending, whereas the ROI histogram calculates each trial separately.</p>';
 }
 
 root.StudioPortfolioCharts={render,tradeCurve,combinedResult,svgLine,svgBars,svgHistogram,streaks,usage,cashWindow,chartOutcome};
