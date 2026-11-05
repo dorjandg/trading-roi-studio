@@ -119,7 +119,7 @@ function buildPlan(programId,size,program,profile={},snapshots={},audit=null){
    maxDays:clamp(dynamic(state,root==='funded'?'fundedDays':root+'Days',30),1,365),
    rr,r1:pos(r1),r2:pos(r2),r3:pos(r3),policy:isTopstep&&key==='p1'?{map:{},conflicts:[],mode:'flat'}:policy,
    consistency:isTopstep&&key==='p1'?.55:0,
-   name:key==='p1'?(isTopstep?'Evaluation':'Phase 1'):key==='p2'?'Phase 2':'Funded'
+   name:key==='p1'?(isTopstep?'Challenge · Trading Combine':'Phase 1'):key==='p2'?'Phase 2':(isTopstep?'Funded · XFA':'Funded')
   };
  }
  return result;
@@ -131,6 +131,11 @@ function validatePlan(p){
  if(!Number.isFinite(p.overallLoss))warnings.push('Overall drawdown limit is missing; no hard overall breach can be verified.');
  if(p.drawdownKind!=='static'&&p.id!=='topstep')warnings.push('Non-static or unknown trailing drawdown rules are not fully enforced.');
  if(p.id==='topstep')warnings.push('Topstep evaluation subscription renewals, contract caps and full payout eligibility are not verified; selected purchase-path fees are approximate.');
+ if(p.id==='topstep'){
+  const f=p.riskProfiles.funded;
+  if(f&&f.r3*f.rr-p.tradeCost<150)
+   warnings.push('Funded R3 × RR is below $150 net for one winning day. Since the model routes at most one strategy signal to each account per day, R3 cannot add a qualifying $150 day unless increased.');
+ }
  if(p.provisional)warnings.push('No saved account profile found: R1/R2/R3 are illustrative defaults. Configure this account in Firms.');
  if(p.riskProfiles.funded?.target<=0)errors.push('Set a positive first-payout planning target.');
  for(const [stage,c] of Object.entries(p.riskProfiles)){
