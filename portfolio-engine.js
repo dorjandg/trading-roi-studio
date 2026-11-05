@@ -420,7 +420,9 @@ function oneTrial(p,config,rng,record=false){
   }
   if(dailyCash){
    const tradesToday=accounts.reduce((sum,ac)=>sum+ac.trades,0)-tradesBefore;
-   const opportunities=dynamic?dailyOpportunities:dailyOpportunities*accounts.length;
+   // Signals are portfolio-wide in BOTH purchase modes: buying 50 accounts
+   // does not create 50 times as many daily signal opportunities.
+   const opportunities=dailyOpportunities;
    dailyCash.push({day,spent,receipts,net:receipts-spent,paid,
     bought,challengeSpent,activationSpent,live:liveCount(),
     opportunities,tradesToday,unusedToday:Math.max(0,opportunities-tradesToday),
