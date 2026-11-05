@@ -425,7 +425,7 @@ function oneTrial(p,config,rng,record=false){
    const assignedStage=stageName(p,ac);
    const dayConfig={...config,tradesPerDay:selected?1:0,
     tradeSlots:selected?[signalSlot]:[]};
-   const res=runAccountDay(p,ac,day,rand,dayConfig,record&&ac.id<=3);
+   const res=runAccountDay(p,ac,day,rand,dayConfig,record);
    if(record&&selected){
     const outcome=ac.trades>beforeTrades?(ac.wins>beforeWins?'W':'L'):'Skipped';
     tradeAssignments.push({day,signal:signalSlot+1,account:ac.id,
