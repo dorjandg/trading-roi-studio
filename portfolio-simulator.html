@@ -201,8 +201,9 @@ details p{margin:6px 0}
 }
 
 </style>
-<link rel="stylesheet" href="studio-nav.css"></head><body><div class="shell">
-<nav class="studio-primary-nav" aria-label="Studio pages"><a href="index.html?view=dashboard">Overview</a><a href="index.html?view=firms">Firms</a><a href="labs.html">Labs</a><a class="active" aria-current="page" href="portfolio-simulator.html">Portfolio Sim</a><a href="index.html?view=presets">Presets</a><a href="index.html?view=settings">Help</a><a href="index.html?view=profile">Profile</a><button type="button" id="theme" aria-label="Toggle color theme" title="Toggle theme">◐</button></nav>
+<link rel="stylesheet" href="studio-nav.css?v=20261105-compact-v2"></head><body><div class="shell">
+<header class="studio-site-header"><a class="studio-site-brand" href="index.html?view=dashboard"><span class="studio-site-mark">F<small>↗</small></span><span class="studio-site-title"><strong>4Ds Trading Studio</strong><small>STRATEGY · PAYOUTS · CAPITAL ALLOCATION</small></span></a><div class="studio-site-tools"><label class="studio-site-user" for="studioUserSelect">User <select id="studioUserSelect" aria-label="Active Studio user"><option value="doen">Doen</option><option value="dori">Dori</option><option value="dona">Dona</option><option value="dion">Dion</option></select></label><button type="button" id="theme" class="studio-site-theme" aria-label="Switch theme" title="Switch theme">◐</button></div></header>
+<nav class="studio-primary-nav" aria-label="Studio pages"><a href="index.html?view=dashboard">Overview</a><a href="index.html?view=firms">Firms</a><a href="labs.html">Labs</a><a href="portfolio-simulator.html" class="active" aria-current="page">Portfolio Sim</a><a href="index.html?view=presets">Presets</a><a href="index.html?view=settings">Help</a><a href="index.html?view=profile">Profile</a></nav>
 <nav class="studio-labs-nav" aria-label="Lab tabs"><a href="monitor.html">Monitor</a><a href="index.html?view=investments">Budget</a><a class="active" aria-current="page" href="portfolio-simulator.html">Portfolio Sim</a><a href="investment-lab.html">Invest Lab</a><a href="comparison-lab.html">Compare Lab</a><a href="trade-lab.html">Trade Lab</a></nav>
 <div class="eyebrow">Options-based Monte Carlo · cash risk · first payout</div>
 <h1>Budget → Challenges → Phases → Payout</h1>
@@ -1116,4 +1117,4 @@ async function init(){
 init();
 })();
 </script>
-</body></html>
+<script src="studio-header.js"></script></body></html>
