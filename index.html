@@ -113,6 +113,10 @@ table{width:100%;border-collapse:collapse;text-align:left;min-width:550px}th,td{
 .recovery-table{min-width:720px}
 html[data-theme="light"] .recovery-option{background:#fff;border-color:var(--border)}
 @media(max-width:700px){.recovery-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.recovery-option summary{display:block}.recovery-option summary strong{display:block;text-align:left;margin-top:3px}}
+.recovery-direct{border:1px solid var(--green);border-radius:10px;padding:12px;margin:12px 0;background:var(--panel)}
+.recovery-direct h4{margin:0 0 9px;font-size:14px}
+.recovery-direct .recovery-stats{margin:0 0 8px}
+html[data-theme="light"] .recovery-direct{background:#f0faf6;border-color:#8bcdb6}
 </style>
 <script>window.FOUR_DS_CLOUD_ENDPOINT = "https://script.google.com/macros/s/AKfycbyZW792ZLBPxusQwthCJr0bVdZwCjXyeNaklq4Dk-BuSQ8P9gdg2zdTiWFKEmYuy5sY9Q/exec";</script>
 <script src="cloud-bootstrap.js?v=4ds-auto-first-20261104-a"></script>
@@ -1623,6 +1627,13 @@ function renderRecoveryPlanners(){
   const mode=snapshot.mode||'adaptive';
   const params={setup,initialPnl:pnl,completedDays:days,daily,overall,buffer,staticFloor,mode,custom:Number(snapshot.custom)||0,consistencyPct};
   const depth=Math.max(1,Math.min(8,Math.round(Number(snapshot.depth)||6)));
+  const direct=recoveryPlanPath(['W'],{...params,mode:'fixed'});
+  const directTrade=direct.items.find(x=>x.win),directRisk=directTrade?.risk||0;
+  const required=setup.rr>0?Math.max(0,(setup.goal-pnl)/setup.rr):Infinity;
+  const directStatus=direct.hit?(direct.days>=setup.minDays?'PROFIT TARGET HIT':'TARGET HIT · MINIMUM DAYS PENDING'):directTrade?'TARGET NOT REACHED':'TRADE NOT EXECUTABLE';
+  const directCard='<div class="recovery-direct"><h4>Option 1 · First trade WIN — direct target check</h4>'+
+    '<div class="recovery-stats"><span>Strategy 1 risk<b>'+recoveryMoney(setup.base)+'</b></span><span>Trade risk after buffer check<b>'+recoveryMoney(directRisk)+'</b></span><span>WIN at '+setup.rr.toFixed(2)+'R<b>'+recoveryMoney(directRisk*setup.rr)+'</b></span><span>Stage P/L after WIN<b>'+recoveryMoney(directTrade?.pnl??pnl)+'</b></span><span>Risk required to hit target<b>'+recoveryMoney(required)+'</b></span></div>'+
+    '<p class="caption"><strong>'+directStatus+'.</strong> '+(direct.hit?'The first winning trade reaches the numerical target.':'The first win does not reach the target with these S1 settings.')+(directRisk+.005<setup.base?' Modeled risk was capped by remaining loss room.':'')+'</p></div>';
   const scenarioPaths=[];
   // Enumerate every win/loss outcome prefix; stop branching after target, breach, or no usable risk.
   const walk=(prefix)=>{
@@ -1634,6 +1645,7 @@ function renderRecoveryPlanners(){
     walk([...prefix,'W']);walk([...prefix,'L']);
   };
   walk(['W']);walk(['L']);
+  if(direct.hit){const duplicate=scenarioPaths.findIndex(x=>x.path==='W');if(duplicate>=0)scenarioPaths.splice(duplicate,1)}
   const getStatus=entry=>{
     const s=entry.sim;
     if(s.fail)return 'Loss floor breached';
@@ -1650,7 +1662,7 @@ function renderRecoveryPlanners(){
     if(item.stop)return '<tr><td>Day '+item.day+'</td><td colspan="6">'+item.stop+'</td></tr>';
     return '<tr><td>Day '+item.day+' · '+(item.win?'WIN':'LOSS')+'</td><td class="num">'+recoveryMoney(item.risk)+'</td><td class="num">'+recoveryMoney(item.win?item.risk*setup.rr:-item.risk)+'</td><td class="num">'+recoveryMoney(item.pnl)+'</td><td class="num">'+(item.afterDaily===null?'—':recoveryMoney(item.afterDaily))+'</td><td class="num">'+(item.afterOverall===null?'Verify live floor':recoveryMoney(item.afterOverall))+'</td><td>'+item.status+(item.consistencyNote?' · '+item.consistencyNote:'')+'</td></tr>';
    }).join('');
-   return '<details class="recovery-option"'+(k===0?' open':'')+'><summary><span>Option '+(scenarioPaths.indexOf(p)+1)+' · '+p.path.split('').join(' → ')+'</span><strong>'+status+' · '+recoveryMoney(sim.pnl)+'</strong></summary><p class="caption">W = win, L = loss. '+steps+' · '+sim.items.length+' modeled trades. LOSS closes that trading day; WIN may allow another trade when your daily cap permits.</p><div class="tablewrap"><table class="recovery-table"><thead><tr><th>Day / outcome</th><th>Trade risk</th><th>Trade P/L</th><th>Stage P/L</th><th>Daily buffer</th><th>Overall buffer</th><th>Next action</th></tr></thead><tbody>'+stepRows+'</tbody></table></div></details>';
+   return '<details class="recovery-option"'+(k===0?' open':'')+'><summary><span>Option '+(scenarioPaths.indexOf(p)+2)+' · '+p.path.split('').join(' → ')+'</span><strong>'+status+' · '+recoveryMoney(sim.pnl)+'</strong></summary><p class="caption">W = win, L = loss. '+steps+' · '+sim.items.length+' modeled trades. LOSS closes that trading day; WIN may allow another trade when your daily cap permits.</p><div class="tablewrap"><table class="recovery-table"><thead><tr><th>Day / outcome</th><th>Trade risk</th><th>Trade P/L</th><th>Stage P/L</th><th>Daily buffer</th><th>Overall buffer</th><th>Next action</th></tr></thead><tbody>'+stepRows+'</tbody></table></div></details>';
   }).join('');
   const suggest=mode==='adaptive'?'Recover to break-even first, then size the next full winner toward the target, always limited by available buffer.':'Risk amount stays '+(mode==='custom'?'at your custom size':'at the stage S1 size')+' unless a buffer cap forces it down.';
   const caution=staticFloor?'Static overall floor: buffer = overall allowance + realized stage P/L. This is not live equity headroom.':'Trailing or stage-dependent overall floor: real buffer needs the broker high-water mark and current equity. Overall buffer is NOT verified by this scenario; risk caps are hypothetical.';
@@ -1662,7 +1674,7 @@ function renderRecoveryPlanners(){
    '<label>Custom risk ($)<input data-recovery-input="custom" type="number" min="0" step="1" value="'+(Number(snapshot.custom)||0)+'"></label>'+   '<label>Max trades per path<select data-recovery-input="depth">'+[3,4,5,6,7,8].map(v=>'<option value="'+v+'"'+(depth===v?' selected':'')+'>'+v+' trades</option>').join('')+'</select></label>'+   '<label>Show outcomes<select data-recovery-input="filter"><option value="all"'+((snapshot.filter||'all')==='all'?' selected':'')+'>All options</option><option value="target"'+(snapshot.filter==='target'?' selected':'')+'>Profit target reached</option><option value="failed"'+(snapshot.filter==='failed'?' selected':'')+'>Loss floor breached</option><option value="active"'+(snapshot.filter==='active'?' selected':'')+'>Still active / stalled</option></select></label>'+
    '</div>'+
    '<p class="caption">'+setup.name+' · '+setup.rr.toFixed(2)+'R · Target '+recoveryMoney(setup.goal)+' · Starting P/L '+recoveryMoney(pnl)+' · Minimum trading days '+setup.minDays+'. Each LOSS stops that day. A WIN may permit another trade if the stage daily trade cap allows.</p>'+
-   '<p class="caption">Strategy: '+suggest+'</p>'+   '<div class="recovery-stats"><span>Distinct modeled paths <b>'+scenarioPaths.length+'</b></span><span>Target-hit paths <b>'+countHit+'</b></span><span>Breached-floor paths <b>'+countFailed+'</b></span><span>Displayed <b>'+visible.length+'</b></span></div>'+   '<p class="caption">All win/loss branches through '+depth+' trades, ending a branch early when it hits its target, breaches a modeled loss floor, or runs out of usable risk. Counts are NOT probabilities. The trade-risk strategy is common to every branch.</p>'+heading+
+   directCard+'<p class="caption">Strategy: '+suggest+'</p>'+   '<div class="recovery-stats"><span>Distinct modeled paths <b>'+(scenarioPaths.length+1)+'</b></span><span>Target-hit paths <b>'+countHit+'</b></span><span>Breached-floor paths <b>'+countFailed+'</b></span><span>Displayed <b>'+visible.length+'</b></span></div>'+   '<p class="caption">Option 1 always shows the direct S1 winning trade, independently of recovery strategy or outcome filters. Additional win/loss branches through '+depth+' trades end early when it hits its target, breaches a modeled loss floor, or runs out of usable risk. Counts are NOT probabilities. The trade-risk strategy is common to every branch.</p>'+heading+
    '<p class="caption">'+caution+' Daily buffer uses the selected starting daily allowance, the new day’s P/L, and assumes no open positions, fees or slippage. A day with a loss is treated as closed by your personal risk policy even if the firm allows more trades. These are illustrative paths, not probabilities or guaranteed pass recommendations.</p>'+
    '</details>';
   const open=host.querySelector('.recovery-details');if(open)open.open=snapshot.open===true;
