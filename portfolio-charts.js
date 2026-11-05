@@ -130,7 +130,7 @@ function svgHistogram(values,unit='usd'){
  const W=660,H=200,L=55,R=13,T=12,B=28,w=W-L-R,h=H-T-B,max=Math.max(1,...counts),step=w/bins;
  const bars=counts.map((v,i)=>{
   const x=L+i*step,bh=v/max*h,y=T+h-bh;
-  return const range=unit==='pct'?((lo+span*i/bins).toFixed(1)+'% to '+(lo+span*(i+1)/bins).toFixed(1)+'%'):usd(lo+span*i/bins)+' to '+usd(lo+span*(i+1)/bins);
+  const range=unit==='pct'?((lo+span*i/bins).toFixed(1)+'% to '+(lo+span*(i+1)/bins).toFixed(1)+'%'):usd(lo+span*i/bins)+' to '+usd(lo+span*(i+1)/bins);
   return '<rect tabindex="0" fill="var(--blue)" x="'+x.toFixed(2)+'" y="'+y.toFixed(2)+'" width="'+(step-2).toFixed(2)+'" height="'+bh.toFixed(2)+'"'+tipAttr('Outcome range',[['Range',range],['Trials',v]])+'/>';
  }).join('');
  const labels=[{x:L,v:lo},{x:L+w/2,v:(lo+hi)/2},{x:L+w,v:hi}].map(t=>
