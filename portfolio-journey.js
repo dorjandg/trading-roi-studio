@@ -11,9 +11,13 @@ const columns=[
  ['tradesToday','Tr','Trades actually executed on this trading day'],
  ['unusedToday','Unused','Daily opportunities not executed because of account or strategy restrictions'],
  ['new','New','New challenges purchased on this trading day'],
+ ['bought','TOT','Total challenges purchased cumulatively through this trading day'],
  ['challenge','CH','Challenges still in Phase 1 at end of day'],
+ ['passed1','P1P','Cumulative accounts that passed Phase 1 / Challenge'],
  ['verification','VR','Verification / Phase 2 at end of day'],
+ ['passed2','P2P','Cumulative accounts that passed Phase 2 / Verification'],
  ['fundedActive','FD','Active funded accounts at end of day'],
+ ['activated','FA','Cumulative accounts activated as Funded'],
  ['fundingWait','FW','Passed but waiting for funded activation capacity'],
  ['targetHit','TG','Cumulative funded accounts that have reached the modeled profit goal'],
  ['paid','PD','Cumulative accounts with first modeled payout received'],
@@ -132,9 +136,11 @@ function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true
   '<label>Show results<select data-journey-field="mode">'+options([['trial','Trial #1 · actual counts'],['average','Mean across '+n(inputs.trials)+' trials']],average?'average':'trial')+'</select></label>'+
   '<label>Days<select data-journey-field="onlyChanges">'+options([['true','Trades & stage changes'],['false','Every trading day']],onlyChanges?'true':'false')+'</select></label></div>';
  const note='<p class="journey-explainer"><b>Opp</b> = available opportunities, <b>Tr</b> = trades actually placed, <b>Unused</b> = remaining opportunities. A first loss stops that account for the day, a reached goal can stop further trades, and each phase has a separate max-win setting. D = simulated trading day, not a calendar date. '+
-  '<b>CH</b> is Phase 1, <b>VR</b> is verification, <b>FD</b> is active funded, '+
+  '<b>New</b> is purchases today; <b>TOT</b> is all purchased to date. '+
+  '<b>CH</b>, <b>VR</b>, and <b>FD</b> show current active accounts at each stage. '+
+  '<b>P1P</b>, <b>P2P</b>, and <b>FA</b> are cumulative accounts passed Phase 1, passed Phase 2, and activated as Funded. '+
   '<b>TG</b> and <b>PD</b> are cumulative targets hit and first payouts (TG may include paid accounts), '+
-  '<b>BR</b> is cumulative burned. End-of-day stage totals and cumulative milestones overlap; do not add them. '+
+  '<b>BR</b> is cumulative burned. Cumulative milestones overlap, so never add TOT, P1P, P2P, FA, TG, PD and BR together. '+
   esc(span)+'. New and Fees are daily changes.</p>';
  const table='<div class="tablewrap journey-tablewrap"><table class="journey-table"><thead><tr><th>Day</th>'+
   columns.map(([key,label,help])=>'<th title="'+esc(help)+'">'+label+'</th>').join('')+
