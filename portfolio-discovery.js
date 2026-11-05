@@ -8,6 +8,17 @@ const clamp=(x,lo,hi)=>Math.min(hi,Math.max(lo,Number(x)||0));
 const stages=['p1','p2','funded'];
 const copy=p=>({...p,riskProfiles:Object.fromEntries(Object.entries(p.riskProfiles).map(([k,v])=>[k,{...v,policy:{...v.policy,map:{...(v.policy?.map||{})},conflicts:[...(v.policy?.conflicts||[])]}}]))});
 const round=x=>Math.max(.01,Math.round(x*100)/100);
+const floorCent=x=>Math.floor((x+1e-9)*100)/100;
+function riskCeiling(base){
+ const daily=Number.isFinite(base.dailyLoss)?Math.max(0,base.dailyLoss):Infinity;
+ const overall=Number.isFinite(base.overallLoss)?Math.max(0,base.overallLoss):Infinity;
+ const reserve=Math.max(.01,Math.max(0,Number(base.riskReserve)||0));
+ const tradeCost=Math.max(0,Number(base.tradeCost)||0);
+ const gross=Math.min(daily,overall);
+ const maxRisk=Number.isFinite(gross)?Math.max(0,floorCent(gross-reserve-tradeCost)):null;
+ return {daily,overall,reserve,tradeCost,gross,maxRisk,
+  limiting:daily<=overall?'daily':'overall',hasVerifiedCeiling:Number.isFinite(gross)};
+}
 function propose(base){
  const list=[{key:'baseline',title:'Your current settings',reason:'No parameters changed',modify:()=>{}}];
  function add(key,title,reason,modify){list.push({key,title,reason,modify});}
@@ -76,8 +87,50 @@ function propose(base){
   p=>{for(const c of Object.values(p.riskProfiles)){
    c.r1=round(c.r1*.8);c.r2=round(c.r2*.8);c.r3=round(c.r3*.8);c.maxWinsPerDay=3;
   }});
- const cap=Math.min(base.dailyLoss,base.overallLoss);
- const permitted=Number.isFinite(cap)?Math.max(0,cap*.95-Math.max(0,base.riskReserve)):Infinity;
+ const ceiling=riskCeiling(base);
+ const max=ceiling.maxRisk;
+ // Search risk from fractions of the usable DAILY or OVERALL allowance, not only
+ // percentages of the original R1/R2/R3. Includes the full executable ceiling.
+ if(Number.isFinite(max)&&max>=.01){
+  const capRisk=(fraction)=>Math.max(.01,floorCent(max*fraction));
+  const setAll=(p,fn)=>{for(const [stage,c] of Object.entries(p.riskProfiles))fn(c,stage);};
+  for(const fraction of [.5,.65,.75,.85,.9,.95,1]){
+   const pct=Math.round(fraction*100);
+   add('limitInitial'+pct,
+    pct===100?'MAX initial risk · 100%':'Initial risk · '+pct+'% of limit',
+    'Initial risk at '+pct+'% of usable loss allowance; recovery tiers are smaller',
+    p=>setAll(p,c=>{c.r1=capRisk(fraction);c.r2=round(c.r1*.65);c.r3=round(c.r1*.35);c.policy={map:{},conflicts:[],mode:'streak'}}));
+  }
+  for(const fraction of [.7,.85,1]){
+   const pct=Math.round(fraction*100);
+   add('limitFlat'+pct,
+    pct===100?'MAX flat risk · 100%':'Flat risk · '+pct+'% of limit',
+    'Use the same executable risk every trade, including after losses',
+    p=>setAll(p,c=>{c.r1=capRisk(fraction);c.r2=c.r1;c.r3=c.r1;c.policy={map:{},conflicts:[],mode:'flat'}}));
+   add('limitRecovery'+pct,
+    pct===100?'MAX recovery risk · 100%':'Recovery risk · '+pct+'% of limit',
+    'Start smaller and test more risk after one loss; a second loss reduces R3',
+    p=>setAll(p,c=>{c.r1=capRisk(.55);c.r2=capRisk(fraction);c.r3=capRisk(.3);c.policy={map:{},conflicts:[],mode:'streak'}}));
+  }
+  for(const fraction of [.85,1]){
+   const pct=Math.round(fraction*100);
+   add('limitWin'+pct,pct===100?'MAX after WIN · 100%':'After-win risk · '+pct+'% of limit',
+    'Only after an observed win use larger R2; after a loss reduce to R3',
+    p=>setAll(p,c=>{c.r1=capRisk(.55);c.r2=capRisk(fraction);c.r3=capRisk(.3);c.policy={map:{},conflicts:[],mode:'after-win'}}));
+  }
+  add('limitPhase1','MAX Phase 1 only','Use the executable risk limit only during Phase 1; other stages unchanged',
+   p=>{if(p.riskProfiles.p1)p.riskProfiles.p1.r1=max});
+  add('limitPhase2','MAX Phase 2 only','Use the executable risk limit only during Phase 2; other stages unchanged',
+   p=>{if(p.riskProfiles.p2)p.riskProfiles.p2.r1=max});
+  add('limitFunded','MAX funded only','Use the executable risk limit only on the first trade in Funded',
+   p=>{if(p.riskProfiles.funded)p.riskProfiles.funded.r1=max});
+  add('limitAllFirst','MAX R1 across phases','Use the executable risk ceiling as R1 in all stages; keep R2 and R3',
+   p=>setAll(p,c=>{c.r1=max}));
+  add('oneWinTarget','Risk for one winning trade',
+   'Choose initial risk just large enough to hit each phase target in one win, where executable',
+   p=>setAll(p,c=>{c.r1=Math.min(max,Math.ceil(((c.target+ceiling.tradeCost)/c.rr)*100)/100)}));
+ }
+ const permitted=Number.isFinite(max)?max:Infinity;
  const seen=new Set(),out=[];
  for(const candidate of list){
   const plan=copy(base);candidate.modify(plan);
@@ -85,7 +138,7 @@ function propose(base){
   if(seen.has(signature))continue;
   seen.add(signature);
   if(candidate.key!=='baseline'&&Object.values(plan.riskProfiles).some(c=>['r1','r2','r3'].some(slot=>
-   !Number.isFinite(c[slot])||c[slot]<=0||c[slot]>permitted)))continue;
+   !Number.isFinite(c[slot])||c[slot]<=0||c[slot]>permitted+1e-9)))continue;
   out.push({...candidate,plan});
  }
  return out;
@@ -141,7 +194,12 @@ function search(base,options={}){
  }
  distinct.sort((a,b)=>score(b.train,objective)-score(a.train,objective));
  const top=distinct.filter(c=>c.key!=='baseline').slice(0,shortlist);
- const selected=[original,...top];
+ // Always present selected 100%-of-usable-limit examples even if their
+ // discovery score is poor. These are stress tests, not recommendations.
+ const boundaryKeys=['limitInitial100','limitFlat100','limitRecovery100','limitWin100','limitAllFirst','oneWinTarget'];
+ const boundary=boundaryKeys.map(k=>distinct.find(c=>c.key===k)).filter(Boolean);
+ const others=top.filter(c=>!boundary.some(b=>b.key===c.key));
+ const selected=[original,...boundary,...others];
  const validation=selected.map((c,i)=>{
   const holdout=E.simulatePortfolio(c.plan,testInput);
   return {...c,holdout};
@@ -154,11 +212,13 @@ function search(base,options={}){
  }));
  const robust=ideas.filter(c=>c.improvement>0);
  return {baseline,ideas,robust,
+  ceiling:riskCeiling(base),
+  boundaryCount:boundary.length,
   evaluated:candidates.length,selected:validation.length,
   objective,trainTrials:trainN,testTrials:testN,
   trainSeed:trainInput.seed,testSeed:testInput.seed,
   warning:robust.length?'Holdout outperformance is conditional on fixed assumptions; it does not establish a trading edge.':
    'No tested plan outperformed baseline on the chosen holdout objective. Retain baseline unless other tradeoffs matter.'};
 }
-root.StudioModelDiscovery={search,propose,score,clonePlan:copy};
+root.StudioModelDiscovery={search,propose,score,clonePlan:copy,riskCeiling};
 })(typeof window!=='undefined'?window:globalThis);
