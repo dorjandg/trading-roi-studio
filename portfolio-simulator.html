@@ -201,8 +201,9 @@ details p{margin:6px 0}
 }
 
 </style>
-</head><body><div class="shell">
-<header class="top"><div class="brand"><span class="mark">4D</span><span>4Ds Trading Studio <span style="color:var(--green)">/ Portfolio Sim</span></span></div><nav class="nav"><a href="index.html">Overview & Firms</a><a href="labs.html">Labs</a><a href="comparison-lab.html">Compare Lab</a><a href="trade-lab.html">Trade Lab</a><button type="button" id="theme" aria-label="Toggle color theme">◐</button></nav></header>
+<link rel="stylesheet" href="studio-nav.css"></head><body><div class="shell">
+<nav class="studio-primary-nav" aria-label="Studio pages"><a href="index.html?view=dashboard">Overview</a><a href="index.html?view=firms">Firms</a><a href="labs.html">Labs</a><a class="active" aria-current="page" href="portfolio-simulator.html">Portfolio Sim</a><a href="index.html?view=presets">Presets</a><a href="index.html?view=settings">Help</a><a href="index.html?view=profile">Profile</a><button type="button" id="theme" aria-label="Toggle color theme" title="Toggle theme">◐</button></nav>
+<nav class="studio-labs-nav" aria-label="Lab tabs"><a href="monitor.html">Monitor</a><a href="index.html?view=investments">Budget</a><a class="active" aria-current="page" href="portfolio-simulator.html">Portfolio Sim</a><a href="investment-lab.html">Invest Lab</a><a href="comparison-lab.html">Compare Lab</a><a href="trade-lab.html">Trade Lab</a></nav>
 <div class="eyebrow">Options-based Monte Carlo · cash risk · first payout</div>
 <h1>Budget → Challenges → Phases → Payout</h1>
 <p class="muted">Uses the saved RR, R1/R2/R3 and risk decisions from your account's phase options. It simulates random trade outcomes rather than choosing future winning paths. No orders are placed.</p>
