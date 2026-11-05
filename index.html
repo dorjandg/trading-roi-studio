@@ -1712,9 +1712,27 @@ function renderRecoveryPlanners(){
    return 'Still active at horizon';
   };
   const targetCount=entries.filter(x=>x.sim.hit).length,failedCount=entries.filter(x=>x.sim.fail).length;
-  const visible=entries.filter(x=>snapshot.filter==='target'?x.sim.hit:snapshot.filter==='failed'?x.sim.fail:snapshot.filter==='active'?!x.sim.hit&&!x.sim.fail:true);
-  const optionHtml=visible.map(entry=>{
-   const index=entries.indexOf(entry)+1,sim=entry.sim,path=entry.path,status=getStatus(entry);
+  const pathStats=entry=>{
+   const trades=entry.sim.items.filter(t=>typeof t.win==='boolean');
+   let high=pnl,dd=0;
+   for(const t of trades){dd=Math.max(dd,high-t.pnl);high=Math.max(high,t.pnl)}
+   return {trades:trades.length,days:new Set(trades.map(t=>t.day)).size,dd};
+  };
+  const ranked=[...entries].sort((a,b)=>{
+   const outcome=(a.sim.hit?0:a.sim.fail?2:1)-(b.sim.hit?0:b.sim.fail?2:1);
+   if(outcome)return outcome;
+   const x=pathStats(a),y=pathStats(b);
+   return snapshot.sortBy==='drawdown'?(x.dd-y.dd||x.days-y.days||x.trades-y.trades):
+    (x.days-y.days||x.trades-y.trades||x.dd-y.dd);
+  });
+  const selectedFilter=snapshot.filter||'target';
+  const filtered=ranked.filter(x=>selectedFilter==='target'?x.sim.hit:selectedFilter==='failed'?x.sim.fail:selectedFilter==='active'?!x.sim.hit&&!x.sim.fail:true);
+  const noTargetFallback=selectedFilter==='target'&&filtered.length===0;
+  const candidates=noTargetFallback?ranked.filter(x=>!x.sim.fail):filtered;
+  const viewCount=snapshot.viewCount==='all'?1000:Math.max(1,Math.min(100,Math.floor(Number(snapshot.viewCount)||8)));
+  const visible=candidates.slice(0,viewCount);
+  const optionHtml=visible.map((entry,k)=>{
+   const index=ranked.indexOf(entry)+1,sim=entry.sim,path=entry.path,status=getStatus(entry);
    const planned=entry.riskSequence.map((slot,i)=>'<label>Trade '+(i+1)+' · '+(path[i]==='W'?'WIN':'LOSS')+
     '<select data-option-path="'+path+'" data-option-step="'+i+'">'+RECOVERY_LEVELS.map(v=>
     '<option value="'+v+'"'+(slot===v?' selected':'')+'>'+v.toUpperCase()+' · '+recoveryMoney(levels[v])+'</option>').join('')+
@@ -1741,9 +1759,9 @@ function renderRecoveryPlanners(){
     (remainingMinDays?' · '+remainingMinDays+' more minimum day'+(remainingMinDays===1?'':'s')+' needed':'');
    const actualSequence=trades.map(x=>x.riskSlot.toUpperCase()).join(' → ');
    const outcomeLine=trades.map(x=>x.win?'W':'L').join(' → ');
-   return '<details class="recovery-option"'+(index===1?' open':'')+'>'+
+   return '<details class="recovery-option"'+(k===0?' open':'')+'>'+
     '<summary><span class="recovery-option-title">Option '+index+' · '+(outcomeLine||path.split('').join(' → '))+
-    '<small>'+actualSequence+' · '+setup.rr.toFixed(2)+'R reward/risk</small></span>'+
+    '<small>'+actualSequence+' · '+setup.rr.toFixed(2)+'R RR · Max drawdown '+recoveryMoney(pathStats(entry).dd)+'</small></span>'+
     '<span class="recovery-option-timing">'+outcomeTiming+
     '<small>'+trades.length+' trade'+(trades.length===1?'':'s')+' · '+(dayBreakdown||'No trades executed')+'</small>'+
     '<strong>'+status+' · '+recoveryMoney(sim.pnl)+'</strong></span></summary>'+
@@ -1773,8 +1791,9 @@ function renderRecoveryPlanners(){
    '<p class="caption">Every option uses the same risk slots and the same trade table. Default order: R1 first, R2 after one consecutive loss, R3 after two or more losses; a win resets the next trade to R1. Edit any trade’s risk selector inside its option. R3 is not automatically boosted.</p>'+
    '<p class="caption">'+setup.name+' · '+setup.rr.toFixed(2)+'R · Target '+recoveryMoney(setup.goal)+' · Starting P/L '+recoveryMoney(pnl)+
     ' · Minimum trading days '+setup.minDays+' · Saved stage trade cap '+setup.dailyCap+' · Winning-day planner cap '+winCap+'.'+(winCap>setup.dailyCap?' Planner wins may exceed the saved stage trade cap; update that setting before live use.':'')+'</p>'+
-   '<div class="recovery-stats"><span>Distinct options <b>'+entries.length+'</b></span><span>Target-hit options <b>'+targetCount+'</b></span><span>Breached-floor options <b>'+failedCount+'</b></span><span>Displayed <b>'+visible.length+'</b></span></div>'+
-   '<p class="caption">Option 1 is the first-trade WIN plan. All later options represent ordered WIN/LOSS paths. Each option has its own risk sequence; simulations use the selected risk amounts in order, and reduce trade size when the modeled buffer requires it. Options are scenarios, not probabilities.</p>'+
+   '<div class="recovery-stats"><span>Modeled paths <b>'+entries.length+'</b></span><span>Reach target <b>'+targetCount+'</b></span><span>Breach floor <b>'+failedCount+'</b></span><span>Showing <b>'+visible.length+' / '+candidates.length+'</b></span></div>'+
+   (noTargetFallback?'<p class="caption">No path reaches the target within '+depth+' trades at these risks and RR. Showing unfinished paths instead.</p>':'')+
+   '<p class="caption">Ranked by '+(snapshot.sortBy==='drawdown'?'lowest modeled drawdown':'fewest trading days and trades')+'. These are hypothetical outcome paths, NOT pass probabilities. You cannot choose in advance which trades win.</p>'+
    optionHtml+
    '<p class="caption">'+caution+' Losses close their trading day; wins may continue up to the planner winning-day trade cap. Fees, slippage, open positions, trailing drawdown, consistency and withdrawal rules may change real outcomes. This is not an account-safety guarantee.</p>'+
    '</details>';
