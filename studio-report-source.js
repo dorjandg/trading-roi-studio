@@ -30,6 +30,22 @@ function status(storage,user,accountKey,budget){
   return {state:'stale-settings',message:'Firms account or phase-plan settings changed since this simulation.',report:obj,row};
  if(Math.abs(Number(row.budget)-Number(budget))>.01)
   return {state:'different-budget',message:'Portfolio Sim used a different investment budget.',report:obj,row};
+ // Pending edits to the simulator are NOT a new report. Do not promote the
+ // previous run while any result-affecting input has since changed.
+ let view=null;
+ try{view=JSON.parse(storage.getItem('4ds:v1:'+user+':portfolio-simulator:v1')||'null')}catch(_){}
+ if(view&&obj.inputs){
+  const checks=['budget','netGoal','winRate','days','tradesPerDay','trials','seed',
+   'signalMode','budgetMode','purchaseMode','maxActive','maxBuysPerDay'];
+  if(checks.some(k=>view[k]!=null&&obj.inputs[k]!=null&&
+   String(view[k])!==String(obj.inputs[k])))
+   return {state:'stale-sim-inputs',message:'Portfolio Sim inputs changed after the last completed run.',report:obj,row};
+  if(view.reinvestPayouts!=null&&obj.inputs.reinvestPayouts!=null&&
+   (view.reinvestPayouts==='yes')!==(obj.inputs.reinvestPayouts===true))
+   return {state:'stale-sim-inputs',message:'Portfolio Sim payout-reinvestment settings changed since the last run.',report:obj,row};
+  if(Object.keys(view.testRisks?.[accountKey]||{}).length>0&&!row.hasTestOverrides)
+   return {state:'stale-sim-inputs',message:'There are pending Portfolio Sim test-risk changes for this account.',report:obj,row};
+ }
  if(!(Number.isFinite(row.net)&&Number.isFinite(row.roi)&&Number.isFinite(row.spent)))
   return {state:'invalid',message:'Saved simulation result is incomplete.',report:obj};
  return {state:'matched',message:'Latest matching Portfolio Sim result.',report:obj,row};
