@@ -300,6 +300,10 @@ function oneTrial(p,config,rng,record=false){
   return commonSignals.get(key);
  };
  let spent=p.fee*n,paid=0,receipts=0,activations=0;
+ // Optional actual day-by-day portfolio cash ledger. It tracks money paid
+ // for challenges/activations versus first-payout receipts, NOT prop equity.
+ const dailyCash=config.trackDaily===true?
+  [{day:0,spent,receipts,net:receipts-spent,paid}]:null;
  for(let day=1;day<=config.days;day++){
   // Funded positions that are paid/free at the end of a day release their
   // active-slot capacity for accounts that previously passed evaluation.
@@ -327,6 +331,7 @@ function oneTrial(p,config,rng,record=false){
    }
    if(res.paid){paid++;receipts+=ac.firstPaid;}
   }
+  if(dailyCash)dailyCash.push({day,spent,receipts,net:receipts-spent,paid});
  }
  const passes=p.stageList.filter(x=>x!=='funded').map(stage=>accounts.filter(x=>x.passes.some(y=>y.stage===stage)).length);
  // Evaluation passes waiting for a funded slot are not counted as activated.
@@ -349,6 +354,7 @@ function oneTrial(p,config,rng,record=false){
    tradePnl:accounts.reduce((sum,a)=>sum+a.tradePnl,0),
    qualifying:accounts.reduce((sum,a)=>sum+a.totalAdminDays,0),
    accountDetails:record?accounts.slice(0,3):[],
+   dailyCash:dailyCash||undefined,
    accounts:record?accounts:undefined};
 }
 function quantile(sorted,q){
@@ -371,17 +377,24 @@ function simulatePortfolio(p,config={}){
   winRate:clamp(config.winRate==null?p.winRate*100:config.winRate,0,100)/100,
   seed:config.seed||24717,
   pairedSignals:config.pairedSignals===true,
-  signalMode:config.signalMode==='shared'?'shared':'independent'
+  signalMode:config.signalMode==='shared'?'shared':'independent',
+  trackDaily:config.trackCharts===true
  };
  const results=[],stageTotals=p.stageList.filter(x=>x!=='funded').map(()=>0);
  const total={bought:0,paid:0,funded:0,failed:0,exhausted:0,pending:0,spent:0,receipts:0,net:0,activations:0,trades:0,qualifying:0,
   wins:0,losses:0,grossProfit:0,grossLoss:0,winPnl:0,lossPnl:0,riskTotal:0,plannedReward:0,totalR:0,tradePnl:0};
  const rand=rngFactory(settings.seed);
+ const chartSums=settings.trackDaily?Array.from({length:settings.days+1},
+  (_,day)=>({day,spent:0,receipts:0,net:0,paid:0})):null;
  let withPayout=0,positiveNet=0,goalMet=0, sample=null;
  const goal=pos(config.netGoal);
  for(let k=0;k<trials;k++){
   const x=oneTrial(p,{...settings,trialIndex:k},rand,k===0);
   if(k===0)sample=x;
+  if(chartSums)for(const d of x.dailyCash||[]){
+   const sum=chartSums[d.day];
+   for(const key of ['spent','receipts','net','paid'])sum[key]+=d[key];
+  }
   for(const key of Object.keys(total))total[key]+=x[key]||0;
   x.passes.forEach((count,i)=>stageTotals[i]+=count);
   results.push(x.net);
@@ -411,7 +424,9 @@ function simulatePortfolio(p,config={}){
   chanceGoal:goal?goalMet/trials:null,goal,
   roi:avg.spent>0?avg.net/avg.spent:0,
   median:quantile(nets,.5),p10:quantile(nets,.1),p90:quantile(nets,.9),
-  sample,nets
+  sample,nets,
+  cashCurve:chartSums?.map(d=>({day:d.day,spent:d.spent/trials,
+   receipts:d.receipts/trials,net:d.net/trials,paid:d.paid/trials}))||null
  };
 }
 root.StudioPortfolioEngine={buildPlan,validatePlan,resolvePolicy,plannedSlot,
