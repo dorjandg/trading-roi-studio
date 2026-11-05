@@ -24,11 +24,43 @@ h1{font-size:29px;margin:2px 0 5px}.intro{font-size:12px;line-height:1.35;margin
 .card .bottom{grid-column:2}
 .card p{-webkit-line-clamp:2}
 }
-</style></head><body><div class="wrap"><header><div class="brand"><a href="./">4Ds Trading Studio</a> <span style="color:var(--muted)">/ Labs</span></div><a href="./" class="back">← Main Studio</a></header><div class="eyebrow">Research & simulations</div><h1>Labs</h1><p class="intro">Choose the tool you need. Budget opens the existing account-linked planner; the other labs are separate research tools. Existing settings and scenarios remain saved.</p><div class="cards">
-<a class="card" href="monitor.html"><div class="icon">◎</div><div class="status">Automatic local audit</div><div><h2>Monitor</h2><p>Check account fees, rule sources, saved assumptions and unsupported simulations. Review findings before using financial forecasts.</p></div><div class="bottom">Open Monitor →</div></a>
-<a class="card" href="./?view=investments"><div class="icon">▦</div><div class="status">Existing planner · saved settings preserved</div><div><h2>Budget</h2><p>Manage the selected challenge's investment budget, affordable accounts, payout-goal scenarios, and spending sensitivity. Opens the existing Investments page.</p></div><div class="bottom">Open Budget →</div></a>
-<a class="card" href="portfolio-simulator.html"><div class="icon">▥</div><div class="status">Options-driven · budget to payout</div><div><h2>Portfolio Sim</h2><p>Compare FTMO, Hola Prime and Topstep using saved phase R1/R2/R3 risks, budget allocation, Monte Carlo stage outcomes and first-payout estimates.</p></div><div class="bottom">Open Sim →</div></a>
-<a class="card" href="investment-lab.html"><div class="icon">◈</div><div class="status">Available</div><div><h2>Invest Lab</h2><p>Compare capital deployment over 1, 3, 6, or 12 months. Explore expected returns, downside outcomes, and risk constraints.</p></div><div class="bottom">Open Invest →</div></a>
-<a class="card" href="comparison-lab.html"><div class="icon">⇄</div><div class="status">Available</div><div><h2>Compare Lab</h2><p>Compare prop firms, account combinations, or trading strategies side by side using the same budget and simulation assumptions.</p></div><div class="bottom">Open Compare →</div></a>
-<a class="card" href="trade-lab.html"><div class="icon">⌁</div><div class="status">Available</div><div><h2>Trade Lab</h2><p>Interactive equity curves, daily equity candles, losing and winning streaks, drawdowns, monthly results, and trade-by-trade statistics.</p></div><div class="bottom">Open Trade Lab →</div></a>
-</div><div class="note">The labs are exploratory planning tools. Their estimates are not verified historical performance or guarantees of prop-firm payouts.</div></div><script>try{document.documentElement.dataset.theme=localStorage.getItem('4ds:theme:v1')==='light'?'light':'dark'}catch(e){}</script></body></html>
+
+/* Labs: six compact, directly clickable tabs instead of tall cards. */
+.wrap{max-width:1280px;padding:11px 14px 25px}
+.lab-heading{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:1px 0 8px}
+.lab-heading h1{font-size:22px;line-height:1.12;margin:0}
+.lab-heading p{margin:0;font-size:11px;color:var(--muted)}
+.lab-tab-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.lab-tab{
+ display:flex;align-items:center;gap:9px;min-width:0;min-height:55px;padding:8px 10px;
+ border:1px solid var(--line);border-radius:9px;background:var(--panel);
+ color:var(--text);text-decoration:none;transition:border-color .12s,background .12s
+}
+.lab-tab:hover{border-color:var(--green);background:var(--panel2);text-decoration:none}
+.lab-tab:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.lab-tab .tab-icon{
+ flex:0 0 30px;display:grid;place-items:center;height:30px;border-radius:7px;
+ background:var(--panel2);font-size:17px;color:var(--green)
+}
+.lab-tab strong{display:block;font-size:13px;line-height:1.2}
+.lab-tab small{display:block;color:var(--muted);font-size:10px;margin-top:2px;line-height:1.15}
+.lab-footnote{font-size:10px;color:var(--muted);margin:9px 0 0}
+@media(max-width:760px){
+ .wrap{padding:8px 9px 22px}
+ .lab-tab-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+ .lab-tab{gap:7px;min-height:49px;padding:6px 7px;border-radius:7px}
+ .lab-tab .tab-icon{flex-basis:25px;height:25px;font-size:15px}
+ .lab-tab strong{font-size:12px}
+ .lab-tab small{font-size:9px}
+ .lab-heading{gap:7px;margin-bottom:7px}
+ .lab-heading h1{font-size:20px}
+}
+</style><link rel="stylesheet" href="studio-nav.css"></head><body><div class="wrap"><nav class="studio-primary-nav" aria-label="Studio pages">
+<a href="index.html?view=dashboard">Overview</a><a href="index.html?view=firms">Firms</a><a class="active" aria-current="page" href="labs.html">Labs</a><a href="portfolio-simulator.html">Portfolio Sim</a><a href="index.html?view=presets">Presets</a><a href="index.html?view=settings">Help</a><a href="index.html?view=profile">Profile</a></nav><div class="lab-heading"><h1>Labs</h1><p>Choose a tab to open its workspace. All saved settings stay intact.</p></div><div class="lab-tab-grid" aria-label="Available Labs">
+<a href="monitor.html" class="lab-tab"><span class="tab-icon">◎</span><span><strong>Monitor</strong><small>Rules · audit</small></span></a>
+<a href="index.html?view=investments" class="lab-tab"><span class="tab-icon">▦</span><span><strong>Budget</strong><small>Accounts · capital</small></span></a>
+<a href="portfolio-simulator.html" class="lab-tab"><span class="tab-icon">▥</span><span><strong>Portfolio Sim</strong><small>Risk · payouts</small></span></a>
+<a href="investment-lab.html" class="lab-tab"><span class="tab-icon">◈</span><span><strong>Invest Lab</strong><small>Returns · scenarios</small></span></a>
+<a href="comparison-lab.html" class="lab-tab"><span class="tab-icon">⇄</span><span><strong>Compare Lab</strong><small>Side by side</small></span></a>
+<a href="trade-lab.html" class="lab-tab"><span class="tab-icon">⌁</span><span><strong>Trade Lab</strong><small>Equity · trades</small></span></a>
+</div><p class="lab-footnote">Simulation results are illustrative, not guaranteed payouts.</p></div><script>try{document.documentElement.dataset.theme=localStorage.getItem('4ds:theme:v1')==='light'?'light':'dark'}catch(e){}</script></body></html>
