@@ -5,7 +5,60 @@ const N=x=>Number.isFinite(Number(x))?Number(x):0;
 const e=x=>String(x==null?'':x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const usd=x=>(N(x)<0?'-':'')+'$'+Math.round(Math.abs(N(x))).toLocaleString('en-US');
 const tick=x=>{const v=Math.abs(N(x));return(N(x)<0?'-':'')+'$'+(v>=1e6?(v/1e6).toFixed(1)+'m':v>=1000?(v/1000).toFixed(1)+'k':Math.round(v))};
-function svgLine(lines,xTitle='Day',unit='usd'){
+const numberLabel=(v,unit)=>unit==='usd'?usd(v):N(v).toLocaleString('en-US',{maximumFractionDigits:2});
+const tipAttr=(title,rows)=>' data-sim-tip="'+e(encodeURIComponent(JSON.stringify({title,rows})))+'"';
+function installTooltips(){
+ if(typeof document==='undefined'||document.getElementById('studio-chart-tooltip'))return;
+ const style=document.createElement('style');
+ style.textContent='.studio-chart-tooltip{position:fixed;z-index:10000;max-width:min(310px,calc(100vw - 20px));min-width:160px;background:#152235;color:#f0f5fc;border:1px solid #526580;border-radius:9px;box-shadow:0 12px 30px #0009;padding:10px 12px;font:12px/1.45 system-ui,sans-serif;pointer-events:none;white-space:normal}.studio-chart-tooltip .tip-title{font-weight:750;font-size:13px;margin-bottom:6px}.studio-chart-tooltip .tip-row{display:flex;justify-content:space-between;gap:22px;padding:2px 0}.studio-chart-tooltip .tip-row b{font-variant-numeric:tabular-nums;text-align:right}.studio-chart-tooltip .tip-row span{color:#b5c5d9}.sim-hover-target{cursor:crosshair}.sim-hover-target .sim-hover-guide{opacity:0;pointer-events:none}.sim-hover-target:hover .sim-hover-guide,.sim-hover-target:focus .sim-hover-guide{opacity:1}';
+ document.head.appendChild(style);
+ const tip=document.createElement('div');tip.id='studio-chart-tooltip';tip.className='studio-chart-tooltip';tip.hidden=true;document.body.appendChild(tip);
+ let current=null,touchLocked=false;
+ const target=el=>el?.closest?.('[data-sim-tip]');
+ const position=(x,y)=>{
+  const w=tip.offsetWidth||220,h=tip.offsetHeight||90;
+  tip.style.left=Math.max(8,Math.min(window.innerWidth-w-8,x+14))+'px';
+  tip.style.top=Math.max(8,Math.min(window.innerHeight-h-8,y+14))+'px';
+ };
+ const show=(el,x,y)=>{
+  if(!el)return;
+  if(el!==current){
+   current=el;let data;
+   try{data=JSON.parse(decodeURIComponent(el.getAttribute('data-sim-tip')))}catch(_){return}
+   tip.replaceChildren();
+   const heading=document.createElement('div');heading.className='tip-title';heading.textContent=data.title||'Chart details';tip.appendChild(heading);
+   for(const pair of data.rows||[]){
+    const row=document.createElement('div');row.className='tip-row';
+    const key=document.createElement('span');key.textContent=String(pair[0]);
+    const val=document.createElement('b');val.textContent=String(pair[1]);
+    row.append(key,val);tip.appendChild(row);
+   }
+  }
+  tip.hidden=false;position(x,y);
+ };
+ const hide=()=>{tip.hidden=true;current=null;touchLocked=false};
+ document.addEventListener('pointermove',event=>{
+  if(event.pointerType==='touch')return;
+  const el=target(event.target);
+  if(el)show(el,event.clientX,event.clientY);
+  else if(!touchLocked&&current)hide();
+ });
+ document.addEventListener('pointerdown',event=>{
+  if(event.pointerType!=='touch')return;
+  const el=target(event.target);
+  if(!el){hide();return}
+  touchLocked=true;const rect=el.getBoundingClientRect();
+  show(el,rect.left+rect.width/2,rect.top);
+ });
+ document.addEventListener('focusin',event=>{
+  const el=target(event.target);
+  if(el){const rect=el.getBoundingClientRect();show(el,rect.left+rect.width/2,rect.top)}
+ });
+ document.addEventListener('focusout',event=>{if(target(event.target)&&!touchLocked)hide()});
+ document.addEventListener('keydown',event=>{if(event.key==='Escape')hide()});
+}
+installTooltips();
+function svgLine(lines,xTitle='Day',unit='usd',details=null){
  const good=lines.map((s,i)=>({name:s.name,color:['var(--green)','var(--blue)','var(--amber)'][i%3],dash:!!s.dash,
   values:(s.values||[]).filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y))})).filter(s=>s.values.length>0);
  if(!good.length)return '<p class="sim-empty">No simulation values to graph.</p>';
@@ -26,10 +79,24 @@ function svgLine(lines,xTitle='Day',unit='usd'){
   const path=s.values.map((p,i)=>(i?'L':'M')+f(X(p.x))+','+f(Y(p.y))).join(' ');
   const step=Math.max(1,Math.ceil(s.values.length/80));
   const markers=s.values.filter((_,i)=>i%step===0||i===s.values.length-1).map(p=>
-   '<circle class="sim-pt" cx="'+f(X(p.x))+'" cy="'+f(Y(p.y))+'" r="3.0" fill="'+s.color+'"><title>'+
-    e(s.name+' · '+xTitle+' '+p.x+' · '+(unit==='usd'?usd(p.y):N(p.y).toFixed(2)))+'</title></circle>').join('');
+   '<circle class="sim-pt" cx="'+f(X(p.x))+'" cy="'+f(Y(p.y))+'" r="3.0" fill="'+s.color+'"/>').join('');
   return '<path fill="none" stroke="'+s.color+'" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"'+
     (s.dash?' stroke-dasharray="5 4"':'')+' d="'+path+'"/>'+markers;
+ }).join('');
+ const xs=[...new Set(allX)].sort((a,b)=>a-b);
+ const hitboxes=xs.map((x,i)=>{
+  const left=i===0?L:(X(xs[i-1])+X(x))/2;
+  const right=i===xs.length-1?W-R:(X(x)+X(xs[i+1]))/2;
+  const rows=good.map(serie=>{
+   const point=serie.values.find(p=>p.x===x);
+   return [serie.name,point?numberLabel(point.y,unit):'—'];
+  });
+  const extra=details?.[x];
+  if(Array.isArray(extra))rows.push(...extra);
+  return '<g class="sim-hover-target" tabindex="0" role="button" aria-label="'+e(xTitle+' '+x+' chart details')+'"'+
+   tipAttr(xTitle+' '+x,rows)+'>'+
+   '<rect x="'+f(left)+'" y="'+T+'" width="'+f(Math.max(.5,right-left))+'" height="'+h+'" fill="transparent" pointer-events="all"/>'+
+   '<line class="sim-hover-guide" x1="'+f(X(x))+'" x2="'+f(X(x))+'" y1="'+T+'" y2="'+(T+h)+'" stroke="var(--blue)" stroke-width="1.5" stroke-dasharray="4 3"/></g>';
  }).join('');
  const ticks=Array.from({length:5},(_,i)=>{
   const x=L+w*i/4,v=minX+(maxX-minX)*i/4;
@@ -37,7 +104,7 @@ function svgLine(lines,xTitle='Day',unit='usd'){
  }).join('');
  const legend=good.map(s=>'<span><i style="background:'+s.color+'"></i>'+e(s.name)+'</span>').join('');
  return '<svg class="sim-svg" role="img" aria-label="'+e('Simulated '+xTitle+' chart')+'" viewBox="0 0 '+W+' '+H+'">'+
-  grid+zero+series+ticks+'</svg><div class="sim-legend">'+legend+'</div>';
+  grid+zero+series+hitboxes+ticks+'</svg><div class="sim-legend">'+legend+'</div>';
 }
 function svgBars(items){
  if(!items.length)return '<p class="sim-empty">No account progression available.</p>';
@@ -50,8 +117,7 @@ function svgBars(items){
  }).join('');
  const bars=items.map((v,i)=>{
   const amount=Math.max(0,N(v.value)),bh=amount/max*h,x=L+slot*i+(slot-bw)/2,y=T+h-bh;
-  return '<rect rx="3" fill="var(--green)" x="'+x.toFixed(2)+'" y="'+y.toFixed(2)+'" width="'+bw.toFixed(2)+'" height="'+bh.toFixed(2)+'"><title>'+
-   e(v.label+' · '+amount.toFixed(1))+'</title></rect>'+
+  return '<rect rx="3" tabindex="0" fill="var(--green)" x="'+x.toFixed(2)+'" y="'+y.toFixed(2)+'" width="'+bw.toFixed(2)+'" height="'+bh.toFixed(2)+'"'+tipAttr(v.label,[['Accounts',amount.toFixed(1)]])+'/>'+
    '<text class="sim-tick" x="'+(x+bw/2).toFixed(2)+'" y="'+(H-8)+'" text-anchor="middle">'+e(v.label)+'</text>';
  }).join('');
  return '<svg class="sim-svg" role="img" aria-label="Mean account progression to first payout" viewBox="0 0 '+W+' '+H+'">'+grids+bars+'</svg>';
@@ -64,8 +130,8 @@ function svgHistogram(values,unit='usd'){
  const W=660,H=200,L=55,R=13,T=12,B=28,w=W-L-R,h=H-T-B,max=Math.max(1,...counts),step=w/bins;
  const bars=counts.map((v,i)=>{
   const x=L+i*step,bh=v/max*h,y=T+h-bh;
-  return '<rect fill="var(--blue)" x="'+x.toFixed(2)+'" y="'+y.toFixed(2)+'" width="'+(step-2).toFixed(2)+'" height="'+bh.toFixed(2)+'"><title>'+
-    e((unit==='pct'?((lo+span*i/bins).toFixed(1)+'% to '+(lo+span*(i+1)/bins).toFixed(1)+'%'):usd(lo+span*i/bins)+' to '+usd(lo+span*(i+1)/bins))+' · '+v+' trials')+'</title></rect>';
+  return const range=unit==='pct'?((lo+span*i/bins).toFixed(1)+'% to '+(lo+span*(i+1)/bins).toFixed(1)+'%'):usd(lo+span*i/bins)+' to '+usd(lo+span*(i+1)/bins);
+  return '<rect tabindex="0" fill="var(--blue)" x="'+x.toFixed(2)+'" y="'+y.toFixed(2)+'" width="'+(step-2).toFixed(2)+'" height="'+bh.toFixed(2)+'"'+tipAttr('Outcome range',[['Range',range],['Trials',v]])+'/>';
  }).join('');
  const labels=[{x:L,v:lo},{x:L+w/2,v:(lo+hi)/2},{x:L+w,v:hi}].map(t=>
   '<text class="sim-tick" x="'+t.x+'" y="'+(H-7)+'" text-anchor="middle">'+e(unit==='pct'?t.v.toFixed(1)+'%':tick(t.v))+'</text>').join('');
