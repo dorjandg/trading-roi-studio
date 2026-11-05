@@ -135,6 +135,18 @@ html[data-theme="light"] .recovery-direct{background:#f0faf6;border-color:#8bcdb
 .stage-extra-details summary,.legacy-risk-details summary,.legacy-estimator-details summary,.option-planner-settings summary{font-size:12px;color:var(--muted);font-weight:700;cursor:pointer}
 .stage-extra-details[open] summary,.legacy-risk-details[open] summary,.legacy-estimator-details[open] summary,.option-planner-settings[open] summary{color:var(--text);margin-bottom:9px}
 .legacy-risk-details .tablewrap{margin-top:12px}.legacy-estimator-details .panel{margin-top:12px}
+
+.recovery-options-toolbar{display:flex;flex-wrap:wrap;align-items:end;gap:10px 14px;margin:12px 0 6px}
+.recovery-options-toolbar label{font-size:12px;font-weight:650;color:var(--muted)}
+.recovery-options-toolbar select{display:block;min-width:140px;max-width:100%;margin-top:4px;background:var(--panel);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:7px 9px}
+.recovery-pages{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 12px;padding:10px 0}
+.recovery-pages-count{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.recovery-pages-controls{display:flex;align-items:center;gap:5px}
+.recovery-pages-controls button{font-size:18px;font-weight:650;color:var(--text);background:var(--panel2);border:1px solid var(--border);border-radius:8px;min-width:34px;min-height:34px;padding:3px 8px}
+.recovery-pages-controls button:disabled{opacity:.32;cursor:not-allowed}
+.recovery-pages-controls label{display:flex;gap:5px;align-items:center;white-space:nowrap;font-size:12px;color:var(--muted);margin:0 3px}
+.recovery-pages-controls select{color:var(--text);background:var(--panel);border:1px solid var(--border);border-radius:7px;min-height:34px;padding:4px 6px}
+@media(max-width:600px){.recovery-pages{justify-content:center}.recovery-pages-count{width:100%;text-align:center}.recovery-options-toolbar>*{flex:1;min-width:130px}.recovery-options-toolbar select{width:100%;min-width:0}}
 </style>
 <script>window.FOUR_DS_CLOUD_ENDPOINT = "https://script.google.com/macros/s/AKfycbyZW792ZLBPxusQwthCJr0bVdZwCjXyeNaklq4Dk-BuSQ8P9gdg2zdTiWFKEmYuy5sY9Q/exec";</script>
 <script src="cloud-bootstrap.js?v=4ds-auto-first-20261104-a"></script>
@@ -1590,8 +1602,11 @@ function recoverySnapshot(stage){
   let saved={};
   try{saved=JSON.parse(localStorage.getItem(recoveryStoreKey(stage))||'{}')||{}}catch(e){}
   recoverySnapshots[key]={
-   pnl:0,days:0,open:true,settingsOpen:false,openOptionPath:'',depth:6,filter:'target',winCap:2,viewCount:8,sortBy:'fast',
+   pnl:0,days:0,open:true,settingsOpen:false,openOptionPath:'',depth:6,filter:'all',winCap:2,page:1,pageSize:8,sortBy:'fast',
    ...saved,
+   page:Math.max(1,Math.floor(Number(saved.page)||1)),
+   pageSize:(saved.pageSize==='all'||saved.viewCount==='all'&&!Object.prototype.hasOwnProperty.call(saved,'pageSize'))?'all':
+     Math.max(1,Math.min(100,Math.floor(Number(saved.pageSize??saved.viewCount)||8))),
    levels:saved.levels&&typeof saved.levels==='object'?saved.levels:{},
    optionSequences:saved.optionSequences&&typeof saved.optionSequences==='object'?saved.optionSequences:{}
   };
@@ -1738,8 +1753,14 @@ function renderRecoveryPlanners(){
   const filtered=ranked.filter(x=>selectedFilter==='target'?x.sim.hit:selectedFilter==='failed'?x.sim.fail:selectedFilter==='active'?!x.sim.hit&&!x.sim.fail:true);
   const noTargetFallback=selectedFilter==='target'&&filtered.length===0;
   const candidates=noTargetFallback?ranked.filter(x=>!x.sim.fail):filtered;
-  const viewCount=snapshot.viewCount==='all'?1000:Math.max(1,Math.min(100,Math.floor(Number(snapshot.viewCount)||8)));
-  const visible=candidates.slice(0,viewCount);
+  const totalOptions=candidates.length;
+  const pageSize=snapshot.pageSize==='all'?Math.max(1,totalOptions):
+   Math.max(1,Math.min(100,Math.floor(Number(snapshot.pageSize)||8)));
+  const totalPages=Math.max(1,Math.ceil(totalOptions/pageSize));
+  const page=Math.max(1,Math.min(totalPages,Math.floor(Number(snapshot.page)||1)));
+  snapshot.page=page;
+  const firstIndex=(page-1)*pageSize;
+  const visible=candidates.slice(firstIndex,firstIndex+pageSize);
   const optionHtml=visible.map((entry,k)=>{
    const index=ranked.indexOf(entry)+1,sim=entry.sim,path=entry.path,status=getStatus(entry);
    // Only render trades actually executed toward the target/failure.
@@ -1783,10 +1804,21 @@ function renderRecoveryPlanners(){
     '<div class="recovery-option-risk-grid">'+planned+'</div>'+
     '<div class="tablewrap"><table class="recovery-table"><thead><tr><th>Day / outcome</th><th>Risk level</th><th>Trade risk</th><th>Trade P/L</th><th>Stage P/L</th><th>Daily buffer</th><th>Overall buffer</th><th>Next action</th></tr></thead><tbody>'+rows+'</tbody></table></div></details>';
   }).join('');
-  const filter=String(snapshot.filter||'target');
+  const filter=String(snapshot.filter||'all');
   const select=(name,values,current)=>'<select data-recovery-input="'+name+'">'+values.map(([value,label])=>
    '<option value="'+value+'"'+(String(value)===String(current)?' selected':'')+'>'+label+'</option>').join('')+'</select>';
   const options=[['all','All options'],['target','Profit target reached'],['failed','Loss floor breached'],['active','Still active / stalled']];
+  const pageChoices=Array.from({length:totalPages},(_,i)=>[i+1,String(i+1)]);
+  const pageControls='<nav class="recovery-pages" aria-label="'+setup.name+' option pages">'+
+   '<span class="recovery-pages-count">'+(totalOptions?
+    'Options '+(firstIndex+1)+'–'+(firstIndex+visible.length)+' of '+totalOptions:'No options match this filter')+'</span>'+
+   '<div class="recovery-pages-controls">'+
+    '<button type="button" data-recovery-page-nav="first" aria-label="First page"'+(page===1?' disabled':'')+'>«</button>'+
+    '<button type="button" data-recovery-page-nav="prev" aria-label="Previous page"'+(page===1?' disabled':'')+'>‹</button>'+
+    '<label>Page '+select('page',pageChoices,page)+' of '+totalPages+'</label>'+
+    '<button type="button" data-recovery-page-nav="next" aria-label="Next page"'+(page===totalPages?' disabled':'')+'>›</button>'+
+    '<button type="button" data-recovery-page-nav="last" aria-label="Last page"'+(page===totalPages?' disabled':'')+'>»</button>'+
+   '</div></nav>';
   const caution=staticFloor?'Static overall floor: modeled headroom = overall allowance + realized stage P/L. This is not live equity headroom.':'Trailing or stage-dependent overall floor: broker high-water mark and current equity are not available. The planner checks modeled daily room but cannot verify trailing overall headroom.';
   host.innerHTML='<details class="recovery-details"><summary>'+setup.name+' · Options to reach the target</summary>'+
    '<h4>Risk &amp; reward · '+setup.name+'</h4><div class="recovery-fields">'+
@@ -1799,16 +1831,16 @@ function renderRecoveryPlanners(){
    '<label>Trading days completed<input data-recovery-input="days" type="number" min="0" step="1" value="'+days+'"></label>'+
    '<label>Max trades on a winning day'+select('winCap',[[1,'1 trade'],[2,'2 trades'],[3,'3 trades'],[4,'4 trades'],[5,'5 trades'],[6,'6 trades']],requestedWinCap)+'</label>'+
    '<label>Max trades per option'+select('depth',[[3,'3 trades'],[4,'4 trades'],[5,'5 trades'],[6,'6 trades'],[7,'7 trades'],[8,'8 trades']],depth)+'</label>'+
-   '<label>Show outcomes'+select('filter',options,filter)+'</label>'+
-   '<label>Sort'+select('sortBy',[['fast','Fastest target'],['drawdown','Lowest modeled drawdown']],snapshot.sortBy||'fast')+'</label>'+
-   '<label>Show'+select('viewCount',[[8,'Top 8'],[20,'Top 20'],['all','All']],snapshot.viewCount||8)+'</label></div></details>'+
+   '<label>Sort'+select('sortBy',[['fast','Fastest target'],['drawdown','Lowest modeled drawdown']],snapshot.sortBy||'fast')+'</label></div></details>'+
    '<p class="caption">Default risk order: R1 first, R2 after one loss, R3 after two or more losses; a win resets to R1. Option-level selectors can override this sequence. The selected risk is used in full or the trade is blocked when the modeled loss allowance and reserve are insufficient.</p>'+
    '<p class="caption">'+setup.name+' · '+setup.rr.toFixed(2)+'R · Target '+recoveryMoney(setup.goal)+' · Starting P/L '+recoveryMoney(pnl)+
     ' · Minimum trading days '+setup.minDays+' · Saved stage trade cap '+setup.dailyCap+' · Winning-day planner cap '+winCap+'.'+(winCap>setup.dailyCap?' Planner wins may exceed the saved stage trade cap; update that setting before live use.':'')+'</p>'+
-   '<div class="recovery-stats"><span>Modeled paths <b>'+entries.length+'</b></span><span>Reach target <b>'+targetCount+'</b></span><span>Breach floor <b>'+failedCount+'</b></span><span>Showing <b>'+visible.length+' / '+candidates.length+'</b></span></div>'+
+   '<div class="recovery-stats"><span>Modeled paths <b>'+entries.length+'</b></span><span>Reach target <b>'+targetCount+'</b></span><span>Breach floor <b>'+failedCount+'</b></span><span>Page <b>'+page+' / '+totalPages+'</b></span></div>'+
    (noTargetFallback?'<p class="caption">No path reaches the target within '+depth+' trades at these risks and RR. Showing unfinished paths instead.</p>':'')+
    '<p class="caption">Ranked by '+(snapshot.sortBy==='drawdown'?'lowest modeled drawdown':'fewest trading days and trades')+'. These are hypothetical outcome paths, NOT pass probabilities. You cannot choose in advance which trades win.</p>'+
-   optionHtml+
+   '<div class="recovery-options-toolbar"><label>Options to show '+select('filter',options,filter)+'</label>'+
+   '<label>Options per page '+select('pageSize',[[5,'5'],[8,'8'],[10,'10'],[20,'20'],[50,'50'],[100,'100'],['all','All']],snapshot.pageSize||8)+'</label></div>'+
+   pageControls+optionHtml+pageControls+
    '<p class="caption">'+caution+' Losses close their trading day; wins may continue up to the planner winning-day trade cap. Fees, slippage, open positions, trailing drawdown, consistency and withdrawal rules may change real outcomes. This is not an account-safety guarantee.</p>'+
    '</details>';
   const open=host.querySelector('.recovery-details');if(open)open.open=snapshot.open===true;
@@ -1836,9 +1868,10 @@ document.addEventListener('change',event=>{
   const seq=plannerOptionSequence(snapshot,path);seq[step]=value;snapshot.optionSequences[path]=seq;
  }else if(el.hasAttribute('data-recovery-input')){
   const field=el.dataset.recoveryInput;
-  if(field==='filter')snapshot.filter=el.value;
-  else if(field==='sortBy')snapshot.sortBy=el.value==='drawdown'?'drawdown':'fast';
-  else if(field==='viewCount')snapshot.viewCount=el.value==='all'?'all':Math.max(1,Math.min(100,Math.floor(Number(el.value)||8)));
+  if(field==='filter'){snapshot.filter=el.value;snapshot.page=1;snapshot.openOptionPath='';}
+  else if(field==='sortBy'){snapshot.sortBy=el.value==='drawdown'?'drawdown':'fast';snapshot.page=1;snapshot.openOptionPath='';}
+  else if(field==='pageSize'){snapshot.pageSize=el.value==='all'?'all':Math.max(1,Math.min(100,Math.floor(Number(el.value)||8)));snapshot.page=1;snapshot.openOptionPath='';}
+  else if(field==='page'){snapshot.page=Math.max(1,Math.floor(Number(el.value)||1));snapshot.openOptionPath='';}
   else if(field==='depth')snapshot.depth=Math.max(1,Math.min(8,Math.floor(Number(el.value)||6)));
   else if(field==='winCap')snapshot.winCap=Math.max(1,Math.min(6,Math.floor(Number(el.value)||2)));
   else if(field==='days')snapshot.days=Math.max(0,Math.floor(Number(el.value)||0));
@@ -1846,6 +1879,22 @@ document.addEventListener('change',event=>{
   else return;
  }else return;
  snapshot.open=true;persistRecoverySnapshot(stage);render();
+});
+document.addEventListener('click',event=>{
+ const btn=event.target.closest?.('[data-recovery-page-nav]');
+ if(!btn)return;
+ const host=btn.closest('[data-recovery-stage]');if(!host||btn.disabled)return;
+ const stage=host.dataset.recoveryStage,snapshot=recoverySnapshot(stage);
+ const nav=btn.dataset.recoveryPageNav,current=Math.max(1,Math.floor(Number(snapshot.page)||1));
+ if(nav==='first')snapshot.page=1;
+ else if(nav==='prev')snapshot.page=Math.max(1,current-1);
+ else if(nav==='next')snapshot.page=current+1;
+ else if(nav==='last')snapshot.page=Number(btn.closest('.recovery-pages')?.querySelector('[data-recovery-input="page"]')?.options?.length)||current;
+ else return;
+ snapshot.openOptionPath='';
+ snapshot.open=true;
+ persistRecoverySnapshot(stage);
+ renderRecoveryPlanners();
 });
 document.addEventListener('toggle',event=>{
  const target=event.target,holder=target.closest?.('[data-recovery-stage]');
