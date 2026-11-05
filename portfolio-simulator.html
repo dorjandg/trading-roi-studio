@@ -75,6 +75,16 @@ summary{cursor:pointer;font-weight:750;color:var(--text)}details .tablewrap{marg
 .risk-phase-test input{min-height:39px;padding:7px 9px;font-size:14px}
 .risk-tester .actions{margin-bottom:0}
 @media(max-width:600px){.history-toolbar{display:block}.history-toolbar .history-filters{justify-content:flex-start;margin-bottom:8px}.history-toolbar .history-navigation{justify-content:center}.history-toolbar button{min-width:37px}.history-count{text-align:center}.risk-phase-test .fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.discovery-summary{font-size:12px;color:var(--muted);margin:10px 0}
+.discovery-card{margin-top:12px;padding:12px;background:var(--panel2);border:1px solid var(--line);border-radius:12px}
+.discovery-card h3{margin:0 0 6px}
+.discovery-card .actions{margin:8px 0 0}
+.discovery-table td:nth-child(2){white-space:normal;min-width:260px;max-width:500px;text-align:left}
+.discovery-table td{font-variant-numeric:tabular-nums}
+.discovery-table button{white-space:nowrap;padding:7px 10px;min-height:35px}
+.discovery-table small{display:block;font-size:11px;color:var(--muted);line-height:1.4;margin-top:4px}
+.discovery-note{margin-top:10px;color:var(--muted);font-size:12px}
 </style>
 </head><body><div class="shell">
 <header class="top"><div class="brand"><span class="mark">4D</span><span>4Ds Trading Studio <span style="color:var(--green)">/ Portfolio Sim</span></span></div><nav class="nav"><a href="index.html">Overview & Firms</a><a href="labs.html">Labs</a><a href="comparison-lab.html">Compare Lab</a><a href="trade-lab.html">Trade Lab</a><button type="button" id="theme" aria-label="Toggle color theme">◐</button></nav></header>
@@ -105,19 +115,37 @@ summary{cursor:pointer;font-weight:750;color:var(--text)}details .tablewrap{marg
  <div class="actions"><button id="addAccount" type="button">+ Add account to comparison</button><button id="reload" type="button">Reload saved stage settings</button><span id="profileStatus" class="hint"></span></div>
  <div class="actions"><button id="run" type="button" class="primary">Run Simulation</button><span id="status" class="status" role="status">Loading account catalog…</span></div>
 </section>
+<section class="panel" id="discovery">
+ <h2>3 · Find Better Models</h2>
+ <p class="hint">Automatically compare risk-sized models and trade-order rules using the same account, budget, win rate and RR. Candidates are selected on one random sample and checked on a separate sample. This tests <b>risk management</b>, not a new market edge.</p>
+ <div class="fields">
+  <div class="field"><label for="ideaAccount">Prop-firm account to optimize</label><select id="ideaAccount"></select></div>
+  <div class="field"><label for="ideaObjective">What should improve?</label><select id="ideaObjective">
+   <option value="balanced">Balanced · net + downside</option><option value="net">Highest expected net</option>
+   <option value="payout">Chance of first payout</option><option value="downside">Protect downside (P10)</option>
+   <option value="goal">Chance of net target</option></select></div>
+  <div class="field"><label for="ideaEffort">Search depth</label><select id="ideaEffort">
+   <option value="quick">Quick · 50 + 80 trials</option><option value="normal" selected>Standard · 80 + 150 trials</option>
+   <option value="deep">Detailed · 150 + 250 trials</option></select></div>
+ </div>
+ <div class="actions"><button type="button" class="primary" id="discover">Find Better Models</button>
+  <span id="ideaStatus" class="status" role="status">Run a model search to compare alternatives.</span></div>
+ <div id="ideaResults"></div>
+</section>
 <section id="results" hidden>
-<section class="panel"><h2>3 · Results across prop firms</h2><p id="summaryCaption" class="hint"></p><div id="totals" class="kpis"></div>
+<section class="panel"><h2>4 · Results across prop firms</h2><p id="summaryCaption" class="hint"></p><div id="totals" class="kpis"></div>
  <div class="tablewrap"><table><thead><tr><th>Firm / account</th><th>Budget</th><th>Challenges</th><th>Spent avg.</th><th>Phase 1 passes</th><th>Phase 2 passes</th><th>Funded</th><th>Paid</th><th>Payouts avg.</th><th>Net avg.</th><th>ROI</th><th>Chance ≥1 payout</th></tr></thead><tbody id="comparisonRows"></tbody></table></div>
  <p class="hint">Counts and profits are averages over simulated trials, not whole-account predictions. ROI = expected net / expected incurred costs. Starting budget is not account capital.</p>
  <div id="combined" hidden></div>
 </section>
-<section class="panel"><h2>4 · Detailed account simulations</h2><p class="hint">Open a firm below to test separate R1, R2 and R3 amounts for Phase 1, Phase 2 and Funded without changing your saved Firms settings. The example trade list has pages and shows only W/L trades by default; switch to All events to include qualification days and stage changes.</p><div id="details"></div></section>
+<section class="panel"><h2>5 · Detailed account simulations</h2><p class="hint">Open a firm below to test separate R1, R2 and R3 amounts for Phase 1, Phase 2 and Funded without changing your saved Firms settings. The example trade list has pages and shows only W/L trades by default; switch to All events to include qualification days and stage changes.</p><div id="details"></div></section>
 </section>
 <section class="panel"><h2>Model assumptions & limits</h2><details><summary>Read before interpreting an ROI estimate</summary><p class="hint">Evaluation challenges are purchased once at the start. No automatic replacements, retries, refund processing delays, repeated funded payouts or taxes are simulated. Topstep's subscription renewals, variant-specific activation rules, contract limits and full payout eligibility are not enforced. Its modeled initial payout is up to 50% of realized funded profit capped at $5,000; check the exact purchased path. FTMO/Hola pay a modeled split of funded profit after a planning target and waiting period, not a guaranteed withdrawal. Trailing drawdown is approximated for Topstep using end-of-day high-water marks and a zero-capped floor; intraday breaches and contract-size restrictions are not verified. Other firms' static initial floors are modeled where known. Fees, spread/slippage, evaluation activation delays, minimum qualifying trades and news restrictions may differ. If multiple accounts share a signal, outcomes may be correlated and diversification overstated. The model's risk-exhausted status does not mean an official failed-account breach.</p></details>
  <p class="footer">Research tool only. Sourced catalog rules are snapshots, not live purchase/eligibility confirmations. The simulator reads profiles locally; budget changes here don't overwrite the main Overview settings. The maximum of 100 modeled challenges per account type is a performance cap, not a prop-firm permission limit.</p>
 </section>
 </div>
 <script src="portfolio-engine.js"></script>
+<script src="portfolio-discovery.js"></script>
 <script>
 (function(){
 'use strict';
@@ -132,6 +160,8 @@ const user=localStorage.getItem('4ds:active-user:v1')||'dori';
 const rootKey='4ds:v1:'+user+':';
 let catalog=null,audit=null,rows=[],lastResults=[],lastInputs=null;
 let testRisks={}; // simulator-only R1/R2/R3 and RR experiments, never written to Firms
+let discovered=null; // exploration candidates (not saved as Firms profile)
+const modelDiscovery=window.StudioModelDiscovery;
 const historyState={}; // per-result paging/filter, independent from Monte Carlo calculations
 const openResultDetails=new Set();
 const savedViewKey=rootKey+'portfolio-simulator:v1';
@@ -161,6 +191,13 @@ function accountPlan(row){
     const value=Number(saved[field]);
     if(Number.isFinite(value)&&value>0)risk[field]=value;
    }
+  }
+  if(Object.prototype.hasOwnProperty.call(saved,'winCap')){
+   const value=Number(saved.winCap);
+   if(Number.isInteger(value)&&value>=1&&value<=6)risk.maxWinsPerDay=value;
+  }
+  if(['saved','flat','streak','after-win','protect-after-loss'].includes(saved.policyMode)){
+   risk.policy={...risk.policy,mode:saved.policyMode};
   }
  }
  return plan;
@@ -232,6 +269,10 @@ function renderRows(){
    '<button type="button" class="remove" data-remove="'+i+'" title="Remove this comparison row" aria-label="Remove account">×</button>'+
    '</div></article>';
  }).join('');
+ const priorIdea=$('ideaAccount').value;
+ $('ideaAccount').innerHTML=rows.map((row,i)=>
+  '<option value="'+i+'">'+esc(catalog.programs[row.id].firm+' · '+catalog.programs[row.id].name+' · '+usd(row.size))+'</option>').join('');
+ if(rows[Number(priorIdea)])$('ideaAccount').value=priorIdea;
  $('profileStatus').textContent=rows.length+' account type'+(rows.length===1?'':'s')+' selected.';
  $('budgetModeNote').textContent=mode==='compare'?
   'Every firm receives the FULL starting budget in its own alternative scenario. Do not add the row totals.':
