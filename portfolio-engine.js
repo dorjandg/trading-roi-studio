@@ -279,6 +279,17 @@ function oneTrial(p,config,rng,record=false){
  };
  let spent=p.fee*n,paid=0,receipts=0,activations=0;
  for(let day=1;day<=config.days;day++){
+  // Funded positions that are paid/free at the end of a day release their
+  // active-slot capacity for accounts that previously passed evaluation.
+  if(p.id==='topstep'){
+   let live=accounts.filter(a=>a.stageIndex===p.stageList.length-1&&a.status==='active').length;
+   for(const a of accounts){
+    if(live>=p.fundedMaxActive)break;
+    if(a.status!=='activation-wait')continue;
+    a.status='active';activations++;spent+=p.activationFee;live++;
+    if(record&&a.id<=3)a.trace.push({day,stage:'funded',type:'activation',label:'Funded slot available; activation starts this day'});
+   }
+  }
   for(const ac of accounts){
    if(ac.status!=='active')continue;
    // Global active-funded cap for Topstep is applied at activation, not at purchase.
