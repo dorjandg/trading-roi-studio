@@ -1558,7 +1558,7 @@ fetch('prop-firm-official-audit.json',{cache:'no-store'}).then(r=>{if(!r.ok)thro
 const recoverySnapshots={};
 function recoverySnapshot(stage){
  const key=String(activeProgramKey||'none')+':'+stage;
- if(!recoverySnapshots[key])recoverySnapshots[key]={pnl:0,days:0,custom:0,mode:'adaptive',open:false};
+ if(!recoverySnapshots[key])recoverySnapshots[key]={pnl:0,days:0,custom:0,mode:'adaptive',open:true};
  return recoverySnapshots[key];
 }
 function stageRecoverySetup(stage){
@@ -1635,7 +1635,7 @@ function renderRecoveryPlanners(){
     if(item.stop)return '<tr><td>Day '+item.day+'</td><td colspan="6">'+item.stop+'</td></tr>';
     return '<tr><td>Day '+item.day+' · '+(item.win?'WIN':'LOSS')+'</td><td class="num">'+recoveryMoney(item.risk)+'</td><td class="num">'+recoveryMoney(item.win?item.risk*setup.rr:-item.risk)+'</td><td class="num">'+recoveryMoney(item.pnl)+'</td><td class="num">'+(item.afterDaily===null?'—':recoveryMoney(item.afterDaily))+'</td><td class="num">'+(item.afterOverall===null?'Check trailing floor':recoveryMoney(item.afterOverall))+'</td><td>'+item.status+(item.consistencyNote?' · '+item.consistencyNote:'')+'</td></tr>';
    }).join('');
-   return '<details class="recovery-option"><summary><span>'+p.name+'</span><strong>'+status+' · '+recoveryMoney(sim.pnl)+'</strong></summary><p class="caption">'+p.note+'</p><div class="tablewrap"><table class="recovery-table"><thead><tr><th>Outcome</th><th>Trade risk</th><th>Trade P/L</th><th>Stage P/L</th><th>Daily buffer</th><th>Overall buffer</th><th>Action</th></tr></thead><tbody>'+stepRows+'</tbody></table></div></details>';
+   return '<details class="recovery-option"'+(k===0?' open':'')+'><summary><span>'+p.name+'</span><strong>'+status+' · '+recoveryMoney(sim.pnl)+'</strong></summary><p class="caption">'+p.note+'</p><div class="tablewrap"><table class="recovery-table"><thead><tr><th>Outcome</th><th>Trade risk</th><th>Trade P/L</th><th>Stage P/L</th><th>Daily buffer</th><th>Overall buffer</th><th>Action</th></tr></thead><tbody>'+stepRows+'</tbody></table></div></details>';
   }).join('');
   const suggest=mode==='adaptive'?'Recover to break-even first, then size the next full winner toward the target, always limited by available buffer.':'Risk amount stays '+(mode==='custom'?'at your custom size':'at the stage S1 size')+' unless a buffer cap forces it down.';
   const caution=staticFloor?'Static overall floor: buffer = overall allowance + realized stage P/L. This is not live equity headroom.':'Trailing or stage-dependent overall floor: real buffer needs the broker high-water mark and current equity. Overall buffer is NOT verified by this scenario; risk caps are hypothetical.';
