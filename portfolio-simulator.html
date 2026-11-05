@@ -264,7 +264,7 @@ details p{margin:6px 0}
 
 .dynamic-purchase-settings{border:1px solid var(--line);border-radius:8px;
  background:var(--panel2);padding:9px;margin:7px 0 4px}
-.dynamic-purchase-settings[hidden]{display:none!important}
+.dynamic-purchase-settings[hidden],#manualCapacityFields[hidden]{display:none!important}
 .dynamic-purchase-settings .fields{grid-template-columns:repeat(3,minmax(0,1fr))}
 .dynamic-purchase-settings .hint{margin:5px 0 0;font-size:11px}
 @media(max-width:650px){.dynamic-purchase-settings{padding:7px}
@@ -337,14 +337,17 @@ details p{margin:6px 0}
   <div class="field"><label for="purchaseMode">Buy challenge accounts</label><select id="purchaseMode"><option value="recycle" selected>Dynamic · when needed</option><option value="upfront">All upfront · day 0</option></select></div>
  </div>
  <div id="dynamicPurchaseSettings" class="dynamic-purchase-settings">
-  <div class="fields">
-   <div class="field"><label for="maxActive">Maximum concurrent accounts</label><input id="maxActive" type="number" min="1" max="20" step="1" value="1"></div>
+  <div class="fields"><div class="field"><label for="capacityMode">Account allocation</label>
+   <select id="capacityMode"><option value="automatic" selected>Automatic · reuse owned accounts first</option><option value="manual">Manual trading-capacity limit</option></select>
+  </div></div>
+  <div class="fields" id="manualCapacityFields">
+   <div class="field"><label for="maxActive">Maximum simultaneous trading accounts</label><input id="maxActive" type="number" min="1" max="100" step="1" value="1"></div>
    <div class="field"><label for="maxBuysPerDay">Max new accounts/day (≤ trades/day)</label><input id="maxBuysPerDay" type="number" min="1" max="20" step="1" value="1"></div>
    <div class="field"><label for="reinvestPayouts">Use payouts for new accounts</label><select id="reinvestPayouts"><option value="no" selected>No · initial budget only</option><option value="yes">Yes · reinvest first payouts</option></select></div>
   </div>
   <div class="capacity-inline" id="capacityHint" aria-live="polite"></div>
   <button type="button" id="matchTradeCapacity" class="capacity-quick" hidden>Match account capacity to trading opportunities &amp; re-run</button>
-  <p class="hint">Dynamic: buy only when an active slot and sufficient money exist. An account in Phase 1, Verification or Funded occupies a slot until it burns or receives its first payout. Daily trades are shared across active accounts (and firms in split mode); per-phase max wins, first-loss stops, and reached targets can leave some opportunities unused. Replacements are never purchased on credit.</p>
+  <p class="hint">Automatic (recommended): each daily signal goes to a different eligible purchased account. Previously bought accounts stay available in Phase 1, Verification and Funded. New challenges are purchased only when there are fewer eligible accounts than today's signals, subject to available budget. Use manual capacity limits only when deliberately restricting purchases.</p>
  </div>
  <div class="mode-group" role="group" aria-label="Budget allocation mode">
    <label><input type="radio" name="budgetMode" value="compare" checked> Compare each firm with full budget</label>
@@ -477,7 +480,7 @@ $('userLabel').textContent=user.toUpperCase();
 function saveView(){
  try{localStorage.setItem(savedViewKey,JSON.stringify({
   budget:$('budget').value,netGoal:$('netGoal').value,winRate:$('winRate').value,
-  purchaseMode:$('purchaseMode').value,maxActive:$('maxActive').value,
+  purchaseMode:$('purchaseMode').value,capacityMode:$('capacityMode').value,maxActive:$('maxActive').value,
   maxBuysPerDay:$('maxBuysPerDay').value,reinvestPayouts:$('reinvestPayouts').value,
   days:$('days').value,tradesPerDay:$('tradesPerDay').value,trials:$('trials').value,
   signalMode:$('signalMode').value,seed:$('seed').value,
@@ -490,7 +493,8 @@ function loadView(){
  const main=readJson(rootKey+'ftmo-roi-studio-v1',{});
  const prior=readJson(savedViewKey,{});
  $('purchaseMode').value=prior.purchaseMode==='upfront'?'upfront':'recycle';
- $('maxActive').value=String(Math.max(1,Math.min(20,Math.floor(Number(prior.maxActive)||1))));
+ $('capacityMode').value=prior.capacityMode==='manual'?'manual':'automatic';
+ $('maxActive').value=String(Math.max(1,Math.min(100,Math.floor(Number(prior.maxActive)||1))));
  $('maxBuysPerDay').value=String(Math.max(1,Math.min(20,Math.floor(Number(prior.maxBuysPerDay)||1))));
  $('reinvestPayouts').value=prior.reinvestPayouts==='yes'?'yes':'no';
  syncPurchaseMode();
@@ -606,15 +610,17 @@ function refreshIdeaCeiling(){
 }
 function updateCapacityHint(){
  const opportunities=Math.max(1,Math.min(6,Math.floor(Number($('tradesPerDay').value)||2)));
- const active=Math.max(1,Math.min(20,Math.floor(Number($('maxActive').value)||1)));
+ const manual=$('capacityMode').value==='manual';
+ const active=Math.max(1,Math.min(100,Math.floor(Number($('maxActive').value)||1)));
  const buys=Math.max(1,Math.min(20,Math.floor(Number($('maxBuysPerDay').value)||1)));
- const limited=active<opportunities||buys<opportunities;
- const msg=limited?
-  'Capacity warning: '+opportunities+' trade opportunities/day, but only '+active+
-  ' concurrent account slot'+(active===1?'':'s')+' and '+buys+' new purchase'+(buys===1?'':'s')+
-  '/day. This can leave signals unused even with money remaining.':
-  'Daily capacity permits up to '+opportunities+' trade opportunities, subject to available budget and firm-stage rules.';
- $('capacityHint').textContent=msg+' Stage win caps and the first-loss daily stop still apply.';
+ const limited=manual&&(active<opportunities||buys<opportunities);
+ const msg=!manual?
+  'Automatic routing: '+opportunities+' signals/day → '+opportunities+
+  ' DIFFERENT eligible existing accounts when available. All previously purchased accounts stay in rotation; purchase only to fill missing slots.':
+  limited?'Manual capacity limits '+opportunities+' signals/day to '+active+' simultaneous accounts and '+buys+
+   ' daily purchases. Some signals may go unused.':
+   'Manual capacity permits '+opportunities+' different accounts/day when the budget allows.';
+ $('capacityHint').textContent=msg+' Stage eligibility and remaining budget still matter.';
  $('capacityHint').classList.toggle('capacity-warning',limited);
  $('matchTradeCapacity').hidden=!limited||$('purchaseMode').value!=='recycle';
  $('matchTradeCapacity').textContent='Allow '+opportunities+' account slots and new purchases/day · Re-run';
@@ -622,8 +628,9 @@ function updateCapacityHint(){
 function syncPurchaseMode(){
  const dynamic=$('purchaseMode').value==='recycle';
  $('dynamicPurchaseSettings').hidden=!dynamic;
+ $('manualCapacityFields').hidden=!dynamic||$('capacityMode').value!=='manual';
  $('tradesPerDay').closest('.field').querySelector('label').textContent=
-  dynamic?'Trading opportunities / portfolio / day':'Trade opportunities / account / day';
+  'Trade signals / portfolio / day';
  updateCapacityHint();
 }
 function setStale(){
@@ -651,10 +658,10 @@ $('addAccount').addEventListener('click',()=>{
  rows.push({id,size:catalog.programs[id].sizes[0],weight:20});renderRows();setStale();
 });
 $('reload').addEventListener('click',()=>{renderRows();setStale();$('status').textContent='Saved phase settings reloaded from this browser'});
-document.querySelectorAll('#budget,#netGoal,#winRate,#days,#tradesPerDay,#trials,#seed,#signalMode,#purchaseMode,#maxActive,#maxBuysPerDay,#reinvestPayouts,[name="budgetMode"]').forEach(el=>{
+document.querySelectorAll('#budget,#netGoal,#winRate,#days,#tradesPerDay,#trials,#seed,#signalMode,#purchaseMode,#capacityMode,#maxActive,#maxBuysPerDay,#reinvestPayouts,[name="budgetMode"]').forEach(el=>{
  el.addEventListener('change',()=>{
   if(el.name==='budgetMode')renderRows();
-  if(['purchaseMode','tradesPerDay','maxActive','maxBuysPerDay'].includes(el.id))syncPurchaseMode();
+  if(['purchaseMode','capacityMode','tradesPerDay','maxActive','maxBuysPerDay'].includes(el.id))syncPurchaseMode();
   setStale();
  });
 });
@@ -830,7 +837,7 @@ function renderResults(list,inputs){
  const mixed=inputs.budgetMode==='split';
  $('summaryCaption').textContent=(mixed?'One budget distributed across accounts':'Independent alternatives, each using the full budget')+
   ' · '+inputs.days+' trading days · '+inputs.trials+' trials · '+dec(inputs.winRate)+'% win rate · '+inputs.signalMode+' outcomes · '+
-  (inputs.purchaseMode==='recycle'?'dynamic replacement purchases':'all challenges purchased upfront')+'.';
+  (inputs.purchaseMode==='recycle'?'automatic reuse-first purchasing':'all challenges purchased upfront')+'.';
  const comp=inputs.budgetMode==='compare';
  const grand=(key)=>list.reduce((a,r)=>a+r.avg[key],0);
  let netSeries=[],combinedStats=null,netTotal=0,spentTotal=0,paidTotal=0;
@@ -1178,8 +1185,8 @@ function currentDiscoveryInputs(row){
   winRate:Math.max(0,Math.min(100,Number($('winRate').value)||0)),
   days:Number($('days').value)||20,tradesPerDay:Number($('tradesPerDay').value)||2,
   signalMode:$('signalMode').value,seed:Number($('seed').value)||24717,
-  purchaseMode:$('purchaseMode').value,
-  maxActive:Math.max(1,Math.min(20,Math.floor(Number($('maxActive').value)||1))),
+  purchaseMode:$('purchaseMode').value,capacityMode:$('capacityMode').value,
+  maxActive:Math.max(1,Math.min(100,Math.floor(Number($('maxActive').value)||1))),
   maxBuysPerDay:Math.max(1,Math.min(20,Math.floor(Number($('maxBuysPerDay').value)||1))),
   reinvestPayouts:$('reinvestPayouts').value==='yes',
   tradeSchedule:schedule
@@ -1363,8 +1370,8 @@ function run(){
   winRate:Math.max(0,Math.min(100,Number($('winRate').value)||0)),
   days:Number($('days').value),tradesPerDay:Number($('tradesPerDay').value),trials:Number($('trials').value),
   signalMode:$('signalMode').value,seed:Number($('seed').value)||24717,budgetMode:mode,
-  purchaseMode:$('purchaseMode').value,
-  maxActive:Math.max(1,Math.min(20,Math.floor(Number($('maxActive').value)||1))),
+  purchaseMode:$('purchaseMode').value,capacityMode:$('capacityMode').value,
+  maxActive:Math.max(1,Math.min(100,Math.floor(Number($('maxActive').value)||1))),
   maxBuysPerDay:Math.max(1,Math.min(20,Math.floor(Number($('maxBuysPerDay').value)||1))),
   reinvestPayouts:$('reinvestPayouts').value==='yes'};
  if(!rows.length){$('status').textContent='Select at least one firm';return}
