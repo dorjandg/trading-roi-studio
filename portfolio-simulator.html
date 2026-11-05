@@ -283,6 +283,17 @@ details p{margin:6px 0}
 .journey-table th{white-space:nowrap}
 .journey-table td{font-variant-numeric:tabular-nums}
 .journey-table th[title]{cursor:help}
+.journey-table th.journey-help-head{position:relative;text-decoration:underline dotted rgba(140,174,210,.55);text-underline-offset:3px}
+.journey-table th.journey-help-head:focus-visible{outline:2px solid #6db6f6;outline-offset:-2px}
+.journey-table th.journey-help-head:hover::after,.journey-table th.journey-help-head:focus-visible::after{
+ content:attr(data-tooltip);position:absolute;z-index:50;top:calc(100% + 7px);left:0;
+ width:max-content;min-width:190px;max-width:min(330px,76vw);
+ white-space:normal;overflow-wrap:anywhere;padding:10px 12px;text-align:left;
+ background:#202f41;color:#f3f8ff;border:1px solid #6284a9;border-radius:8px;
+ box-shadow:0 7px 22px rgba(0,0,0,.48);font-size:12px;font-weight:400;line-height:1.5;pointer-events:none
+}
+.journey-table th.journey-help-head:last-child:hover::after,.journey-table th.journey-help-head:last-child:focus-visible::after{left:auto;right:0}
+
 .journey-explainer{font-size:11px;color:var(--muted);line-height:1.4;margin:7px 0 0}
 .journey-status-line{font-size:11px;margin:8px 0;padding:7px 9px;border-radius:7px;
  background:var(--panel2);border:1px solid var(--line)}
@@ -412,7 +423,7 @@ details p{margin:6px 0}
 <script src="portfolio-to-firms.js"></script>
 <script src="studio-report-source.js?v=20261105-account-rotation"></script>
 <script src="portfolio-charts.js?v=20261105-hover-details"></script>
-<script src="portfolio-journey.js?v=20261105-breached-vs-blocked-v2"></script>
+<script src="portfolio-journey.js?v=20261105-header-help"></script>
 <script>
 (function(){
 'use strict';
