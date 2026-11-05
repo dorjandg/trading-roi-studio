@@ -412,7 +412,7 @@ details p{margin:6px 0}
 <script src="portfolio-to-firms.js"></script>
 <script src="studio-report-source.js?v=20261105-account-rotation"></script>
 <script src="portfolio-charts.js?v=20261105-hover-details"></script>
-<script src="portfolio-journey.js?v=20261105-allocation-tracking"></script>
+<script src="portfolio-journey.js?v=20261105-daily-account-routing"></script>
 <script>
 (function(){
 'use strict';
@@ -438,7 +438,7 @@ const firmsTransfer=window.StudioFirmsTransfer;
 const historyState={}; // per-result paging/filter, independent from Monte Carlo calculations
 const chartDefaults={selection:'',account:'auto',group:'overview',daysRange:'all',stage:'all',cashView:'both',outcome:'all',filtersOpen:false};
 const chartState={...chartDefaults};
-const journeyState={selection:'',mode:'trial',onlyChanges:true,signalDay:'1'};
+const journeyState={selection:'',mode:'trial',onlyChanges:false,signalDay:'all'};
 let allocationLimits={};
 const openResultDetails=new Set();
 const savedViewKey=rootKey+'portfolio-simulator:v1';
@@ -513,8 +513,8 @@ function loadView(){
  $('journeyPanel').open=prior.journeyOpen===true;
  if(prior.journeyPrefs&&typeof prior.journeyPrefs==='object'){
   if(typeof prior.journeyPrefs.selection==='string')journeyState.selection=prior.journeyPrefs.selection;
-  if(['trial','average'].includes(prior.journeyPrefs.mode))journeyState.mode=prior.journeyPrefs.mode;
-  if(typeof prior.journeyPrefs.onlyChanges==='boolean')journeyState.onlyChanges=prior.journeyPrefs.onlyChanges;
+  journeyState.mode='trial'; // daily portfolio routing needs real whole-account assignments
+  journeyState.onlyChanges=false; // show every trading day for the portfolio routing view
   if(typeof prior.journeyPrefs.signalDay==='string')journeyState.signalDay=prior.journeyPrefs.signalDay;
  }
  if(prior.chartPrefs&&typeof prior.chartPrefs==='object'&&!Array.isArray(prior.chartPrefs)){
