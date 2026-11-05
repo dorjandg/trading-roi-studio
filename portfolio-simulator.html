@@ -461,6 +461,13 @@ function accountPlan(row){
  const snapshots={p1:snapFor(row.id,size,'p1'),p2:snapFor(row.id,size,'p2'),funded:snapFor(row.id,size,'funded')};
  const plan=E.buildPlan(row.id,size,program,profile,snapshots,audit?.programs?.[row.id]);
  const experiment=testRisks[row.id+':'+size]||{};
+ if(Object.prototype.hasOwnProperty.call(experiment,'__fundedTarget')){
+  const value=Number(experiment.__fundedTarget);
+  if(Number.isFinite(value)&&value>0){
+   plan.fundedTarget=value;
+   if(plan.riskProfiles.funded)plan.riskProfiles.funded.target=value;
+  }
+ }
  if(Object.prototype.hasOwnProperty.call(experiment,'__riskReserve')){
   const value=Number(experiment.__riskReserve);
   if(Number.isFinite(value)&&value>=0)plan.riskReserve=value;
@@ -586,6 +593,7 @@ function renderRows(){
    '<div class="field"'+(mode==='compare'?' style="display:none"':'')+'><label>Budget weight</label><input type="number" data-field="weight" min="0" step="5" value="'+r.weight+'"></div>'+
    '<div class="field"><label>Evaluation allocation cap ($)</label><input type="number" data-field="evaluationCap" min="0" step="10000" placeholder="No limit" value="'+(allocationLimits[r.id+':'+r.size]?.evaluation||'')+'"></div>'+
     '<div class="field"><label>Funded allocation cap ($)</label><input type="number" data-field="fundedCap" min="0" step="10000" placeholder="No limit" value="'+(allocationLimits[r.id+':'+r.size]?.funded||'')+'"></div>'+
+    '<div class="field"><label>Funded payout profit target ($)</label><input type="number" data-field="fundedTarget" min="0.01" step="100" value="'+accountPlan(r).riskProfiles.funded.target+'"></div>'+
     '<div class="source">'+rowSummary(r)+'</div>'+
    '<button type="button" class="remove" data-remove="'+i+'" title="Remove this comparison row" aria-label="Remove account">×</button>'+
    '</div></article>';
@@ -660,6 +668,14 @@ $('accounts').addEventListener('change',event=>{
  if(field==='id'){rows[index].id=input.value;rows[index].size=catalog.programs[input.value].sizes[0]}
  if(field==='size')rows[index].size=Number(input.value);
  if(field==='weight')rows[index].weight=Math.max(0,Number(input.value)||0);
+ if(field==='fundedTarget'){
+  const value=Number(input.value);
+  if(Number.isFinite(value)&&value>0&&value<=1e9){
+   const key=rows[index].id+':'+rows[index].size;
+   if(!testRisks[key])testRisks[key]={};
+   testRisks[key].__fundedTarget=value;
+  }else{$('status').textContent='Enter a positive funded payout target';renderRows();return;}
+ }
  if(field==='evaluationCap'||field==='fundedCap'){
   const key=rows[index].id+':'+rows[index].size;
   allocationLimits[key]={...(allocationLimits[key]||{}),[field==='evaluationCap'?'evaluation':'funded']:Math.max(0,Math.min(1e12,Number(input.value)||0))};
@@ -750,11 +766,12 @@ function historyMarkup(result,index){
 function riskEditor(result,index){
  const p=result.plan;
  return '<section class="risk-tester"><h4>Test phase risks · '+esc(p.firm)+' '+usd(p.size)+'</h4>'+
-  '<p class="hint">Change R1, R2, R3, RR, risk sequence, maximum wins per day or safety reserve and select Re-run. These experiments never modify Firms.</p>'+
+  '<p class="hint">Set the Funded payout profit target alongside R1, R2, R3, RR and other risk settings, then Re-run. These experiments never modify Firms.</p>'+
   '<div class="fields"><div class="field"><label>Safety reserve for this account (USD)</label><input type="number" min="0" step=".01" data-test-reserve="'+index+'" value="'+p.riskReserve+'"></div></div>'+
   p.stageList.map(stage=>{
    const r=p.riskProfiles[stage];
    return '<fieldset class="risk-phase-test"><legend>'+esc(r.name)+'</legend><div class="fields">'+
+    (stage==='funded'?'<div class="field"><label>Funded payout profit target (USD)</label><input type="number" min="0.01" step="100" data-test-funded-target="'+index+'" value="'+r.target+'"></div>':'')+
     ['r1','r2','r3','rr'].map(field=>
      '<div class="field"><label>'+field.toUpperCase()+(field==='rr'?' · reward / risk':' · USD risk')+'</label>'+
      '<input type="number" inputmode="decimal" min="'+(field==='rr'?'.1':'.01')+
@@ -946,6 +963,20 @@ function renderResults(list,inputs){
 
 $('details').addEventListener('change',event=>{
  const input=event.target;
+ if(input.matches?.('[data-test-funded-target]')){
+  const index=Number(input.dataset.testFundedTarget),result=lastResults[index];if(!result)return;
+  const value=Number(input.value);
+  if(!Number.isFinite(value)||value<=0||value>1e9){
+   input.value=String(result.plan.riskProfiles.funded.target);
+   $('status').textContent='Funded payout target must be positive';return;
+  }
+  const key=result.plan.id+':'+result.plan.size;
+  if(!testRisks[key])testRisks[key]={};
+  testRisks[key].__fundedTarget=value;
+  const note=input.closest('.risk-tester')?.querySelector('[data-test-note]');
+  if(note){note.textContent='Payout target changed · select Re-run';note.style.color='var(--amber)';}
+  renderRows();setStale();return;
+ }
  if(input.matches?.('[data-test-reserve]')){
   const index=Number(input.dataset.testReserve),result=lastResults[index];if(!result)return;
   const value=Number(input.value);
