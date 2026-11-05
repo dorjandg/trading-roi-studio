@@ -56,31 +56,68 @@ function combined(list,inputs){
 function options(list,chosen){
  return list.map(([value,label])=>'<option value="'+esc(value)+'"'+(value===chosen?' selected':'')+'>'+esc(label)+'</option>').join('');
 }
-function sampleMilestones(r){
+function sampleMilestones(r,signalDay='1'){
  const acs=r?.sample?.accountDetails||[];
- if(!acs.length)return '<p class="sim-empty">Choose an individual firm to see example account milestones.</p>';
- const milestones=acs.map(ac=>{
-  const passed1=ac.passes?.find(x=>x.stage==='p1')?.day;
-  const passed2=ac.passes?.find(x=>x.stage==='p2')?.day;
-  const parts=[
-   ['Purchased',ac.purchaseDay],
-   ...(r.plan.stageList.includes('p1')?[['Challenge passed',passed1]]:[]),
-   ...(r.plan.stageList.includes('p2')?[['Verification passed',passed2]]:[]),
-   ['Funded activated',ac.fundedActivatedDay],
-   ['Funded goal reached',ac.fundedTargetDay],
-   ['First payout',ac.paidDay],
-   ['Burned',ac.closedDay]
-  ].filter(([,day])=>day!==undefined&&day!==null);
-  return '<div class="journey-account"><strong>Account #'+ac.id+'</strong><span class="journey-status">'+
-   esc(ac.status.toUpperCase())+'</span><div class="journey-milestones">'+
-   parts.map(([label,day])=>'<span title="'+esc(label)+'"><b>D'+day+'</b> '+esc(label)+'</span>').join('')+
-   '</div></div>';
+ if(!acs.length)return '<p class="sim-empty">No accounts were purchased in this sampled trial.</p>';
+ const day=x=>x==null?'—':'D'+x;
+ const stage=ac=>{
+  if(ac.status==='paid')return 'Paid';
+  if(ac.status==='failed')return 'Failed';
+  if(ac.status==='exhausted')return 'Risk blocked';
+  if(ac.status==='activation-wait')return 'Awaiting activation';
+  return ac.status==='active'?(r.plan?.stageList?.[ac.stageIndex]==='p1'?'Challenge':
+   r.plan?.stageList?.[ac.stageIndex]==='p2'?'Verification':'Funded'):'Pending';
+ };
+ const counts={challenge:0,verification:0,funded:0,closed:0};
+ const rows=acs.map(ac=>{
+  const name=stage(ac);
+  if(name==='Challenge')counts.challenge++;
+  if(name==='Verification')counts.verification++;
+  if(name==='Funded')counts.funded++;
+  if(name==='Failed'||name==='Risk blocked')counts.closed++;
+  const p1=ac.passes?.find(x=>x.stage==='p1')?.day;
+  const p2=ac.passes?.find(x=>x.stage==='p2')?.day;
+  return '<tr><th scope="row">#'+ac.id+'</th><td>'+day(ac.purchaseDay)+'</td>'+
+   '<td>'+ac.trades+'</td><td>'+ac.wins+'</td><td>'+ac.losses+'</td>'+
+   '<td>'+esc(name)+'</td><td>'+day(p1)+'</td><td>'+day(p2)+'</td>'+
+   '<td>'+day(ac.fundedActivatedDay)+'</td><td>'+day(ac.fundedTargetDay)+'</td>'+
+   '<td>'+day(ac.paidDay)+'</td><td>'+day(ac.closedDay)+'</td></tr>';
  }).join('');
- return '<details class="journey-milestone-panel"><summary>Account-by-account milestones · first '+
-  acs.length+' accounts in trial #1</summary><div class="journey-accounts">'+milestones+'</div>'+
-  '<p class="hint">Milestones follow the simulation’s stage and payout assumptions. A passed evaluation may enter the next stage only on a later tradable day.</p></details>';
+ const ledger='<details class="journey-milestone-panel"><summary>All '+acs.length+
+  ' purchased accounts · trade totals, stage progress and exit dates</summary>'+
+  '<div class="journey-account-totals">Now: CH '+counts.challenge+
+  ' · VR '+counts.verification+' · FD '+counts.funded+
+  ' · Burned '+counts.closed+'</div>'+
+  '<div class="tablewrap journey-ledger-table"><table><thead><tr>'+
+  ['Account','Bought','Tr','W','L','Status','P1 pass','P2 pass',
+   'Funded','Target','Payout','Burned'].map(k=>'<th>'+k+'</th>').join('')+
+  '</tr></thead><tbody>'+rows+'</tbody></table></div>'+
+  '<p class="hint">All purchased accounts are retained. “Status” is the final status of this illustrative trial, while the day columns show when milestones occurred.</p></details>';
+ const assignments=r?.sample?.tradeAssignments||[];
+ const dates=[...new Set(assignments.map(a=>a.day))].sort((x,y)=>x-y);
+ const chosen=signalDay==='all'||dates.includes(Number(signalDay))?signalDay:String(dates[0]||1);
+ const filtered=chosen==='all'?assignments:assignments.filter(a=>a.day===Number(chosen));
+ const routeDays=[['all','All trading days'],...dates.map(x=>[String(x),'D'+x])];
+ const routeOptions=routeDays.map(([value,label])=>'<option value="'+esc(value)+'"'+
+  (value===chosen?' selected':'')+'>'+esc(label)+'</option>').join('');
+ const routeRows=filtered.map(a=>'<tr><th>D'+a.day+'</th><td>Trade '+a.signal+'</td>'+
+  '<td>'+(a.account==null?'—':'Account #'+a.account)+'</td>'+
+  '<td>'+esc(a.stage?.toUpperCase()||'—')+'</td><td>'+esc(a.outcome)+'</td>'+
+  '<td>'+esc(a.status||'')+'</td></tr>').join('');
+ const route='<details class="journey-milestone-panel"'+(signalDay!=='1'?' open':'')+'>'+
+  '<summary>Daily signal routing · Trade 1 → Account 1, Trade 2 → Account 2, etc.</summary>'+
+  '<label class="journey-route-filter">Trading day <select data-journey-field="signalDay">'+routeOptions+'</select></label>'+
+  '<div class="tablewrap journey-ledger-table"><table><thead><tr>'+
+  '<th>Day</th><th>Signal</th><th>Assigned to</th><th>Stage</th><th>Outcome</th><th>Account status</th>'+
+  '</tr></thead><tbody>'+routeRows+'</tbody></table></div>'+
+  '<p class="hint">Each signal is assigned to a different eligible account. “Unused” means no eligible account could take that signal. Previously purchased accounts return to the selection pool on future days unless they have closed or are waiting for a stage/payout milestone.</p></details>';
+ const firstDay=assignments.filter(x=>x.day===1);
+ const preview=firstDay.length?'<p class="journey-routing-preview"><strong>Day 1 routing:</strong> '+
+  firstDay.map(a=>'Trade '+a.signal+' → '+(a.account==null?'unused':'A'+a.account)).join(' · ')+
+  '</p>':'';
+ return preview+ledger+route;
 }
-function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true}={}){
+function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true,signalDay='1'}={}){
  if(!results.length)return '<p class="hint">Run a Portfolio Sim calculation to see account journeys.</p>';
  const split=inputs.budgetMode==='split';
  const choices=results.map((r,i)=>[String(i),r.plan.firm+' · '+r.plan.programName+' · '+usd(r.plan.size)]);
@@ -134,7 +171,7 @@ function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true
   ' · Goal hit '+fmt(last.targetHit,average)+' · Paid '+paid+
   ' · Burned '+fmt(last.burned,average)+
   ' · Spent '+usd(last.spent)+' · Received '+usd(last.receipts)+'</p>';
- return header+total+table+graphs+(!average&&selected!=='all'?sampleMilestones(r):'')+note;
+ return header+total+table+graphs+(!average&&selected!=='all'?sampleMilestones(r,signalDay):'')+note;
 }
 root.StudioPortfolioJourney={render,daily,combined,sampleMilestones};
 })(typeof window!=='undefined'?window:globalThis);
