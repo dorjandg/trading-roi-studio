@@ -289,7 +289,12 @@
     "topstep": {
       "status": "reviewed-partial",
       "evaluation": {
-        "consistency": "Best day below 55% of profit target; otherwise the target rises"
+        "consistency": "Best day below 55% of profit target; otherwise the target rises",
+        "targetsUSDBySize": {
+          "50000": 3000,
+          "100000": 6000,
+          "150000": 9000
+        }
       },
       "loss": {
         "type": "end-of-day trailing Maximum Loss Limit",
@@ -988,7 +993,13 @@
         "minDays": [
           1
         ],
-        "consistency": "35% max share of total evaluation profit on any single day; no monthly renewal"
+        "consistency": "35% max share of total evaluation profit on any single day; no monthly renewal",
+        "targetsUSDBySize": {
+          "25000": 1500,
+          "50000": 3000,
+          "100000": 6000,
+          "150000": 9000
+        }
       },
       "loss": {
         "type": "EOD trailing MLL; daily-loss soft pause rather than instant account failure"
@@ -1059,7 +1070,14 @@
           3
         ],
         "consistency": "40% max daily profit share; optional 50% paid add-on not available on 300K",
-        "minimumTradingDays": "3 days for standard Select; paid add-on 50% may allow passing in 2 days"
+        "minimumTradingDays": "3 days for standard Select; paid add-on 50% may allow passing in 2 days",
+        "targetsUSDBySize": {
+          "25000": 1500,
+          "50000": 3000,
+          "100000": 6000,
+          "150000": 9000,
+          "300000": 18000
+        }
       },
       "loss": {
         "dailyPercent": null,
