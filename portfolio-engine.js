@@ -203,7 +203,7 @@ function runAccountDay(p,ac,day,rand,config,record){
   return out;
  }
  let dayProfit=0,hadTrade=false,winsToday=0;
- const signals=clamp(config.tradesPerDay,0,6);
+ const signals=clamp(config.tradesPerDay,0,20);
  for(let ix=0;ix<signals;ix++){
   if(winsToday>=c.maxWinsPerDay)break;
   // Topstep needs enough winning days and may need additional profits to meet
@@ -482,14 +482,14 @@ function simulatePortfolio(p,config={}){
  const settings={
   days:clamp(config.days,1,120)|0,
   trials,count,evaluationAllocationCap,fundedAllocationCap,
-  tradesPerDay:clamp(config.tradesPerDay,1,6)|0,
+  tradesPerDay:clamp(config.tradesPerDay,1,20)|0,
   winRate:clamp(config.winRate==null?p.winRate*100:config.winRate,0,100)/100,
   seed:config.seed||24717,
   pairedSignals:config.pairedSignals===true,
   signalMode:config.signalMode==='shared'?'shared':'independent',
   trackDaily:config.trackCharts===true,
   tradeSchedule:Array.isArray(config.tradeSchedule)&&config.tradeSchedule.length===
-   (clamp(config.days,1,120)|0)?config.tradeSchedule.map(x=>clamp(x,0,6)|0):null,
+   (clamp(config.days,1,120)|0)?config.tradeSchedule.map(x=>clamp(x,0,20)|0):null,
   purchaseMode:config.purchaseMode==='recycle'?'recycle':'upfront',
   capacityMode:config.capacityMode==='manual'?'manual':'automatic',
   maxActive:clamp(Math.floor(config.maxActive||1),1,100)|0,
