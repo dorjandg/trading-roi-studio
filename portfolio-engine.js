@@ -39,8 +39,12 @@ function resolvePolicy(sequences){
  return {map,conflicts};
 }
 function plannedSlot(history,policy){
+ const mode=policy?.mode||'saved';
  const choices=policy&&policy.map||{};
- if(has(choices,history))return choices[history];
+ if(mode==='saved'&&has(choices,history))return choices[history];
+ if(mode==='flat')return 'r1';
+ if(mode==='after-win')return history.endsWith('W')?'r2':history.endsWith('L')?'r3':'r1';
+ if(mode==='protect-after-loss')return history.endsWith('L')?'r3':'r1';
  let streak=0;
  for(let i=history.length-1;i>=0&&history[i]==='L';i--)streak++;
  return streak===0?'r1':streak===1?'r2':'r3';
@@ -267,11 +271,20 @@ function runAccountDay(p,ac,day,rand,config,record){
  }
  return out;
 }
+function pairedSignal(seed,trial,day,ix,id){
+ let x=(Math.floor(Number(seed)||0)>>>0) ^ Math.imul((trial+1)>>>0,0x9E3779B1);
+ x^=Math.imul(day>>>0,0x85EBCA6B);x^=Math.imul((ix+1)>>>0,0xC2B2AE35);
+ x^=Math.imul((id+1)>>>0,0x27D4EB2F);
+ x^=x>>>16;x=Math.imul(x,0x7FEB352D);x^=x>>>15;
+ x=Math.imul(x,0x846CA68B);x^=x>>>16;
+ return (x>>>0)/4294967296;
+}
 function oneTrial(p,config,rng,record=false){
  const n=Math.max(0,Math.floor(config.count));
  const accounts=Array.from({length:n},(_,i)=>makeAccount(i+1));
  const commonSignals=new Map();
  const rand=(day,ix,id)=>{
+  if(config.pairedSignals)return pairedSignal(config.seed,config.trialIndex||0,day,ix,config.signalMode==='shared'?0:id);
   if(config.signalMode!=='shared')return rng();
   const key=day+':'+ix;
   if(!commonSignals.has(key))commonSignals.set(key,rng());
@@ -338,6 +351,7 @@ function simulatePortfolio(p,config={}){
   tradesPerDay:clamp(config.tradesPerDay,1,6)|0,
   winRate:clamp(config.winRate==null?p.winRate*100:config.winRate,0,100)/100,
   seed:config.seed||24717,
+  pairedSignals:config.pairedSignals===true,
   signalMode:config.signalMode==='shared'?'shared':'independent'
  };
  const results=[],stageTotals=p.stageList.filter(x=>x!=='funded').map(()=>0);
@@ -346,7 +360,7 @@ function simulatePortfolio(p,config={}){
  let withPayout=0,positiveNet=0,goalMet=0, sample=null;
  const goal=pos(config.netGoal);
  for(let k=0;k<trials;k++){
-  const x=oneTrial(p,settings,rand,k===0);
+  const x=oneTrial(p,{...settings,trialIndex:k},rand,k===0);
   if(k===0)sample=x;
   for(const key of Object.keys(total))total[key]+=x[key]||0;
   x.passes.forEach((count,i)=>stageTotals[i]+=count);
