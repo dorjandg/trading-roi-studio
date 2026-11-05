@@ -251,6 +251,16 @@ details p{margin:6px 0}
  .sim-charts-hint{font-size:10px}
  .sim-chart-toolbar select{font-size:16px}
 }
+
+/* Optional chart filters keep advanced controls out of the default view. */
+.sim-chart-toolbar{align-items:end;gap:6px}
+.sim-chart-advanced{padding:5px 7px!important;margin:0 0 8px!important;border-radius:7px!important}
+.sim-chart-advanced>summary{font-size:11px;color:var(--blue)}
+.sim-chart-extra{margin:6px 0 0}
+.sim-chart-extra label{flex:1 1 150px;max-width:230px}
+.sim-chart-toolbar>.sim-chart-reset{align-self:end;min-height:31px;padding:5px 8px;font-size:11px;border-radius:6px}
+@media(max-width:650px){.sim-chart-extra label{flex:1 1 120px}.sim-chart-toolbar>.sim-chart-reset{min-height:32px}}
+
 </style>
 <link rel="stylesheet" href="studio-nav.css?v=20261105-compact-v2"></head><body><div class="shell">
 <header class="studio-site-header"><a class="studio-site-brand" href="index.html?view=dashboard"><span class="studio-site-mark">F<small>↗</small></span><span class="studio-site-title"><strong>4Ds Trading Studio</strong><small>STRATEGY · PAYOUTS · CAPITAL ALLOCATION</small></span></a><div class="studio-site-tools"><label class="studio-site-user" for="studioUserSelect">User <select id="studioUserSelect" aria-label="Active Studio user"><option value="doen">Doen</option><option value="dori">Dori</option><option value="dona">Dona</option><option value="dion">Dion</option></select></label><button type="button" id="theme" class="studio-site-theme" aria-label="Switch theme" title="Switch theme">◐</button></div></header>
@@ -342,7 +352,8 @@ let ideaReserveAccountKey='';
 const modelDiscovery=window.StudioModelDiscovery;
 const firmsTransfer=window.StudioFirmsTransfer;
 const historyState={}; // per-result paging/filter, independent from Monte Carlo calculations
-const chartState={selection:'',account:'auto'};
+const chartDefaults={selection:'',account:'auto',group:'overview',daysRange:'all',stage:'all',cashView:'both',outcome:'all',filtersOpen:false};
+const chartState={...chartDefaults};
 const openResultDetails=new Set();
 const savedViewKey=rootKey+'portfolio-simulator:v1';
 const defaultRows=[['ftmo2',10000,40],['holaPrime',10000,40],['topstep',50000,20]];
@@ -396,13 +407,18 @@ function saveView(){
   days:$('days').value,tradesPerDay:$('tradesPerDay').value,trials:$('trials').value,
   signalMode:$('signalMode').value,seed:$('seed').value,
   budgetMode:document.querySelector('[name="budgetMode"]:checked').value,rows,testRisks,
-  chartsOpen:$('chartsPanel').open
+  chartsOpen:$('chartsPanel').open,chartPrefs:{...chartState}
  }))}catch(e){}
 }
 function loadView(){
  const main=readJson(rootKey+'ftmo-roi-studio-v1',{});
  const prior=readJson(savedViewKey,{});
  $('chartsPanel').open=prior.chartsOpen===true;
+ if(prior.chartPrefs&&typeof prior.chartPrefs==='object'&&!Array.isArray(prior.chartPrefs)){
+  for(const key of Object.keys(chartDefaults)){
+   if(typeof prior.chartPrefs[key]===typeof chartDefaults[key])chartState[key]=prior.chartPrefs[key];
+  }
+ }
  testRisks=prior.testRisks&&typeof prior.testRisks==='object'&&!Array.isArray(prior.testRisks)?prior.testRisks:{};
  const defaults={budget:main.budget||5000,netGoal:20000,winRate:main.winRate??40,days:20,
   tradesPerDay:2,trials:300,signalMode:'independent',seed:main.randomSeed||24717,budgetMode:'compare'};
@@ -629,9 +645,10 @@ function makeResultCard(result,index){
 
 function renderCharts(){
  if(!charts||!lastResults.length||!lastInputs)return;
+ const expanded=$('chartsContents').querySelector?.('[data-chart-advanced]');
+ if(expanded)chartState.filtersOpen=expanded.open;
  $('chartsContents').innerHTML=charts.render({
-  results:lastResults,inputs:lastInputs,
-  selection:chartState.selection,account:chartState.account
+  results:lastResults,inputs:lastInputs,...chartState
  });
 }
 $('chartsPanel').addEventListener('toggle',()=>{
@@ -639,14 +656,16 @@ $('chartsPanel').addEventListener('toggle',()=>{
  if($('chartsPanel').open)renderCharts();
 });
 $('chartsContents').addEventListener('change',event=>{
- if(event.target.matches?.('[data-chart-selection]')){
-  chartState.selection=event.target.value;
-  chartState.account='auto';
-  renderCharts();
- }else if(event.target.matches?.('[data-chart-account]')){
-  chartState.account=event.target.value;
-  renderCharts();
- }
+ const field=event.target.dataset?.chartField;
+ if(!field||!Object.prototype.hasOwnProperty.call(chartDefaults,field)||field==='filtersOpen')return;
+ chartState[field]=event.target.value;
+ if(field==='selection'){chartState.account='auto';chartState.stage='all';}
+ renderCharts();saveView();
+});
+$('chartsContents').addEventListener('click',event=>{
+ if(!event.target.closest?.('[data-chart-reset]'))return;
+ Object.assign(chartState,{...chartDefaults,selection:chartState.selection,account:chartState.account});
+ renderCharts();saveView();
 });
 function renderResults(list,inputs){
  lastResults=list;lastInputs=inputs;
@@ -659,7 +678,10 @@ function renderResults(list,inputs){
  const grand=(key)=>list.reduce((a,r)=>a+r.avg[key],0);
  let netSeries=[],combinedStats=null,netTotal=0,spentTotal=0,paidTotal=0;
  if(mixed){
-  netSeries=Array.from({length:inputs.trials},(_,i)=>list.reduce((total,r)=>total+(r.nets[i]||0),0));
+  // Pair same-index Monte Carlo trials, rather than each firm's sorted
+  // net results, to avoid inventing artificial cross-firm correlation.
+  netSeries=Array.from({length:inputs.trials},(_,i)=>list.reduce((total,r)=>
+   total+(r.chartTrials?.[i]?.net||0),0));
   combinedStats=trialSeriesStats(netSeries,inputs.netGoal);
   netTotal=grand('net');spentTotal=grand('spent');paidTotal=grand('paid');
  }
