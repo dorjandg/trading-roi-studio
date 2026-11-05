@@ -8,7 +8,8 @@ const usd=x=>(n(x)<0?'-':'')+'$'+Math.round(Math.abs(n(x))).toLocaleString('en-U
 const fmt=(v,average)=>average?n(v).toFixed(1):String(Math.round(n(v)));
 const columns=[
  ['opportunities','Opp','Maximum trading opportunities available on this day'],
- ['tradesToday','Tr','Trades actually executed on this trading day'],
+ ['tradesToday','Tr','Regular strategy trades on this trading day'],
+ ['qualificationToday','Min','Illustrative minimum-size qualification orders; market P/L not modeled'],
  ['unusedToday','Unused','Daily opportunities not executed because of account or strategy restrictions'],
  ['new','New','New challenges purchased on this trading day'],
  ['bought','TOT','Total challenges purchased cumulatively through this trading day'],
@@ -22,6 +23,7 @@ const columns=[
  ['fundedActive','FD','Active funded accounts at end of day'],
  ['activated','FA','Cumulative accounts activated as Funded'],
  ['fundingWait','FW','Passed but waiting for funded activation capacity'],
+ ['payoutPending','PP','Funded accounts with payout requested and processing'],
  ['targetHit','TG','Cumulative funded accounts that have reached the modeled profit goal'],
  ['paid','PD','Cumulative accounts with first modeled payout received'],
  ['burned','BR','Cumulative failed or risk-exhausted accounts'],
@@ -37,18 +39,18 @@ function daily(rows,averages=false,onlyChanges=true){
    dailySpend:diff(r,prior,'spent'),dailyReceipts:diff(r,prior,'receipts'),
    paidToday:diff(r,prior,'paid'),hitToday:diff(r,prior,'targetHit')};
  });
- const changes=['bought','burned','challenge','verification','fundedActive','fundingWait',
+ const changes=['bought','burned','challenge','verification','fundedActive','fundingWait','payoutPending','qualificationToday',
   'targetHit','paid','spent','receipts','passed1','passed2','activated'];
  // Include days with actual trades, even when the account stays in the same
  // phase; otherwise an "Activity" view hides all trading from the user.
- return onlyChanges?all.filter((row,i)=>i===0||row.tradesToday>0||
+ return onlyChanges?all.filter((row,i)=>i===0||row.tradesToday>0||row.qualificationToday>0||
   changes.some(key=>Math.abs(diff(row,all[i-1],key))>1e-9)):all;
 }
 function combined(list,inputs){
  const days=Math.max(0,Math.floor(n(inputs.days)));
  const keys=['spent','receipts','net','paid','bought','challengeSpent','activationSpent','live','burned',
-  'challenge','verification','fundedActive','fundingWait','targetHit','activated','passed1','passed2',
-  'opportunities','tradesToday','unusedToday'];
+  'challenge','verification','fundedActive','fundingWait','payoutPending','targetHit','activated','passed1','passed2',
+  'opportunities','tradesToday','qualificationToday','unusedToday'];
  function sumRow(day,sample){
   const row={day};
   for(const k of keys)row[k]=list.reduce((total,r)=>total+n((sample?r.sample?.dailyCash:r.cashCurve)?.[day]?.[k]),0);
@@ -72,6 +74,7 @@ function sampleMilestones(r,signalDay='1'){
   if(ac.status==='failed')return 'Failed';
   if(ac.status==='exhausted')return 'Risk blocked';
   if(ac.status==='activation-wait')return 'Awaiting activation';
+  if(ac.status==='payout-pending')return 'Payout requested';
   return ac.status==='active'?(r.plan?.stageList?.[ac.stageIndex]==='p1'?'Challenge':
    r.plan?.stageList?.[ac.stageIndex]==='p2'?'Verification':'Funded'):'Pending';
  };
@@ -88,7 +91,7 @@ function sampleMilestones(r,signalDay='1'){
    '<td>'+ac.trades+'</td><td>'+ac.wins+'</td><td>'+ac.losses+'</td>'+
    '<td>'+esc(name)+'</td><td>'+day(p1)+'</td><td>'+day(p2)+'</td>'+
    '<td>'+day(ac.fundedActivatedDay)+'</td><td>'+day(ac.fundedTargetDay)+'</td>'+
-   '<td>'+day(ac.paidDay)+'</td><td>'+day(ac.closedDay)+'</td></tr>';
+   '<td>'+day(ac.payoutRequestedDay)+'</td><td>'+day(ac.paidDay)+'</td><td>'+day(ac.closedDay)+'</td></tr>';
  }).join('');
  const ledger='<details class="journey-milestone-panel"><summary>All '+acs.length+
   ' purchased accounts · trade totals, stage progress and exit dates</summary>'+
@@ -97,7 +100,7 @@ function sampleMilestones(r,signalDay='1'){
   ' · Burned '+counts.closed+'</div>'+
   '<div class="tablewrap journey-ledger-table"><table><thead><tr>'+
   ['Account','Bought','Tr','W','L','Status','P1 pass','P2 pass',
-   'Funded','Target','Payout','Burned'].map(k=>'<th>'+k+'</th>').join('')+
+   'Funded','Target','Requested','Paid','Burned'].map(k=>'<th>'+k+'</th>').join('')+
   '</tr></thead><tbody>'+rows+'</tbody></table></div>'+
   '<p class="hint">All purchased accounts are retained. “Status” is the final status of this illustrative trial, while the day columns show when milestones occurred.</p></details>';
  const assignments=r?.sample?.tradeAssignments||[];
@@ -143,7 +146,7 @@ function pageNav(p,field){
 function dailyTradeRouting(results,selected,inputs,routePage=1,pageSize=10){
  const sources=selected==='all'?results:[results[Number(selected)]].filter(Boolean);
  const entries=[];
- const payoutsByDay=new Map(),targetsByDay=new Map();
+ const payoutsByDay=new Map(),targetsByDay=new Map(),requestsByDay=new Map(),qualificationByDay=new Map();
  // Give every purchased account one unique, immutable display ID across the
  // entire selected portfolio. Never restart A1 for a second firm/size.
  let offset=0;
@@ -156,6 +159,15 @@ function dailyTradeRouting(results,selected,inputs,routePage=1,pageSize=10){
   }
   for(const ac of ids){
    const id=offset+ac.id;
+   if(ac.payoutRequestedDay!=null){
+    if(!requestsByDay.has(ac.payoutRequestedDay))requestsByDay.set(ac.payoutRequestedDay,[]);
+    requestsByDay.get(ac.payoutRequestedDay).push({id,amount:n(ac.firstPaid)});
+   }
+   for(const t of ac.trace||[]){
+    if(t.type!=='admin')continue;
+    if(!qualificationByDay.has(t.day))qualificationByDay.set(t.day,[]);
+    qualificationByDay.get(t.day).push({id,lot:t.lot});
+   }
    if(ac.paidDay!=null){
     if(!payoutsByDay.has(ac.paidDay))payoutsByDay.set(ac.paidDay,[]);
     payoutsByDay.get(ac.paidDay).push({id,amount:n(ac.firstPaid)});
@@ -201,7 +213,9 @@ function dailyTradeRouting(results,selected,inputs,routePage=1,pageSize=10){
    funded:data.reduce((v,d)=>v+n(d.fundedActive),0),
    failed:data.reduce((v,d)=>v+n(d.burned),0),
    paid:data.reduce((v,d)=>v+n(d.paid),0),
-   executed:data.reduce((v,d)=>v+n(d.tradesToday),0)
+   executed:data.reduce((v,d)=>v+n(d.tradesToday),0),
+   minimum:data.reduce((v,d)=>v+n(d.qualificationToday),0),
+   pending:data.reduce((v,d)=>v+n(d.payoutPending),0)
   };
  };
  const tradeText=a=>{
@@ -216,24 +230,29 @@ function dailyTradeRouting(results,selected,inputs,routePage=1,pageSize=10){
  const routePagination=pageData(days,routePage,pageSize);
  const rows=routePagination.items.map(day=>{
   const events=byDay.get(day)||[],counts=daySummary(day);
-  const payouts=payoutsByDay.get(day)||[],targets=targetsByDay.get(day)||[];
+  const payouts=payoutsByDay.get(day)||[],targets=targetsByDay.get(day)||[],requests=requestsByDay.get(day)||[],qual=qualificationByDay.get(day)||[];
   const cells=Array.from({length:maxCells},(_,i)=>{
    const matches=events.filter(a=>a.signal===i+1);
    return '<td style="white-space:nowrap">'+(matches.length?matches.map(tradeText).join('<div style="margin-top:3px"></div>'):'—')+'</td>';
   }).join('');
   return '<tr><th scope="row">D'+day+'</th>'+cells+
-   '<td class="num">'+counts.executed+'</td><td class="num">'+counts.bought+'</td>'+
+   '<td class="num">'+counts.executed+'</td><td class="num">'+counts.minimum+'</td><td class="num">'+counts.bought+'</td>'+
    '<td class="num">'+counts.challenge+'</td><td class="num">'+counts.verification+'</td>'+
-   '<td class="num">'+counts.funded+'</td><td class="num">'+counts.failed+'</td>'+
+   '<td class="num">'+counts.funded+'</td><td class="num">'+counts.pending+'</td><td class="num">'+counts.failed+'</td>'+
    '<td class="num">'+payouts.length+'</td><td class="num">'+counts.paid+'</td>'+ 
-   '<td style="min-width:180px">'+(payouts.length?payouts.map(a=>'A'+a.id+' PAID '+usd(a.amount)).join(' · '):targets.length?targets.map(a=>'A'+a.id+' target hit; awaiting payout').join(' · '):'—')+'</td></tr>';
+   '<td style="min-width:180px">'+([
+     ...payouts.map(a=>'A'+a.id+' PAID '+usd(a.amount)),
+     ...requests.filter(a=>!payouts.some(p=>p.id===a.id)).map(a=>'A'+a.id+' payout requested '+usd(a.amount)),
+     ...targets.filter(a=>!requests.some(r=>r.id===a.id)).map(a=>'A'+a.id+' target reached'),
+     ...qual.map(a=>'A'+a.id+' min '+esc(a.lot))
+    ].join(' · ')||'—')+'</td></tr>';
  }).join('');
  const heading='<div class="journey-status-line"><strong>Daily trades → prop-firm accounts</strong> · '+days.length+
   ' trading days · '+entries.filter(e=>e.account!=null).length+' assigned signal slots</div>';
- const explain='<p class="journey-explainer">Payouts are account events and may happen without a trade that day. Paid today is a daily count; Paid total is cumulative. A1, A2, etc. are permanent, unique account IDs across this displayed portfolio. New challenges always receive new numbers. CH → VR → FD → Payout/closed is forward-only: an account that passed CH can never be displayed in CH again. CH = Challenge, VR = Verification, FD = Funded; W/L = the modeled result of that assigned trade. '+(selected==='all'?'In split mode, the same trade number may appear for separate firms because signals are allocated by firm.':'')+'</p>';
+ const explain='<p class="journey-explainer">Payouts may happen without a trade that day. Min = modeled minimum-size qualification orders; their market P/L is not simulated. Pending = payout requests processing. Paid today is daily; Paid total is cumulative. A1, A2, etc. are permanent, unique account IDs across this displayed portfolio. New challenges always receive new numbers. CH → VR → FD → Payout/closed is forward-only: an account that passed CH can never be displayed in CH again. CH = Challenge, VR = Verification, FD = Funded; W/L = the modeled result of that assigned trade. '+(selected==='all'?'In split mode, the same trade number may appear for separate firms because signals are allocated by firm.':'')+'</p>';
  return heading+warning+explain+'<div class="tablewrap journey-ledger-table" style="max-height:650px"><table class="journey-table" style="min-width:970px"><thead><tr><th>Day</th>'+
   Array.from({length:maxCells},(_,i)=>'<th>Trade '+(i+1)+'</th>').join('')+
-  '<th>Executed</th><th>Bought</th><th>CH</th><th>VR</th><th>FD</th><th>Failed</th><th>Paid today</th><th>Paid total</th><th>Payout events</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+pageNav(routePagination,'routePage');
+  '<th>Executed</th><th>Min</th><th>Bought</th><th>CH</th><th>VR</th><th>FD</th><th>Pending</th><th>Failed</th><th>Paid today</th><th>Paid total</th><th>Account events</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+pageNav(routePagination,'routePage');
 }
 function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true,signalDay='1',routePage=1,summaryPage=1,pageSize=10}={}){
  if(!results.length)return '<p class="hint">Run a Portfolio Sim calculation to see account journeys.</p>';
@@ -261,7 +280,7 @@ function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true
   (selected==='all'?'':'<label>Evaluation allocation limit ($)<input type="number" min="0" step="10000" placeholder="No limit set" data-journey-field="evaluationLimit" value="'+(n(cap.evaluation)||'')+'"></label>'+ 
   '<label>Funded allocation limit ($)<input type="number" min="0" step="10000" placeholder="No limit set" data-journey-field="fundedLimit" value="'+(n(cap.funded)||'')+'"></label>')+'</div>';
  const note='<p class="journey-explainer"><b>Opp</b> = available opportunities, <b>Tr</b> = trades actually placed, <b>Unused</b> = remaining opportunities. A first loss stops that account for the day, a reached goal can stop further trades, and each phase has a separate max-win setting. D = simulated trading day, not a calendar date. '+
-  '<b>New</b> is purchases today; <b>TOT</b> is all purchased to date. '+
+  '<b>Min</b> counts hypothetical minimum-size evaluation orders, separate from regular trade signals. <b>New</b> is purchases today; <b>TOT</b> is all purchased to date. '+
   '<b>CH</b>, <b>VR</b>, and <b>FD</b> show current active accounts at each stage. '+
   '<b>P1P</b>, <b>P2P</b>, and <b>FA</b> are cumulative accounts passed Phase 1, passed Phase 2, and activated as Funded. '+
   '<b>TG</b> and <b>PD</b> are cumulative targets hit and first payouts (TG may include paid accounts), '+
@@ -275,6 +294,8 @@ function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true
  const svg=root.StudioPortfolioCharts?.svgLine;
  const detailRows=Object.fromEntries(allRows.map((d,i)=>[d.day,[
   ['Trades executed',fmt(d.tradesToday,average)+' / '+fmt(d.opportunities,average)],
+  ['Minimum-size qualification orders',fmt(d.qualificationToday,average)],
+  ['Payout requests processing',fmt(d.payoutPending,average)],
   ['New accounts',fmt(i===0?d.bought:n(d.bought)-n(allRows[i-1].bought),average)],
   ['Purchased total',fmt(d.bought,average)],
   ['Purchased allocation',usd(d.purchasedAllocation)],
