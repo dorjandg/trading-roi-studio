@@ -348,12 +348,14 @@ details p{margin:6px 0}
 <script src="portfolio-engine.js"></script>
 <script src="portfolio-discovery.js"></script>
 <script src="portfolio-to-firms.js"></script>
+<script src="studio-report-source.js"></script>
 <script src="portfolio-charts.js"></script>
 <script>
 (function(){
 'use strict';
 const E=window.StudioPortfolioEngine;
 const charts=window.StudioPortfolioCharts;
+const reportSource=window.StudioReportSource;
 const $=id=>document.getElementById(id);
 const esc=x=>String(x==null?'':x).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const usd=n=>(Number(n)||0).toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0});
@@ -766,9 +768,18 @@ function renderResults(list,inputs){
  $('status').style.color='var(--green)';
  $('status').textContent='Completed · '+inputs.trials+' trials · '+list.length+' account types';
  try{localStorage.setItem(rootKey+'options-portfolio-summary-v1',JSON.stringify({
-  createdAt:new Date().toISOString(),inputs,
-  rows:list.map(r=>({id:r.plan.id,size:r.plan.size,budget:r.budget,
-   count:r.count,paid:r.avg.paid,net:r.avg.net,roi:r.roi,stagePasses:r.stages}))
+  v:2,user,createdAt:new Date().toISOString(),calculator:'Portfolio Sim · trade-based Monte Carlo',inputs,
+  rows:list.map(r=>{
+   const key=r.plan.id+':'+r.plan.size;
+   const hasTestOverrides=Object.keys(testRisks[key]||{}).length>0;
+   return {id:r.plan.id,size:r.plan.size,budget:r.budget,sourceSignature:
+    reportSource?.signature(localStorage,user,key)||null,hasTestOverrides,
+    count:r.count,bought:r.avg.bought,paid:r.avg.paid,funded:r.avg.funded,
+    failed:r.avg.failed,exhausted:r.avg.exhausted,spent:r.avg.spent,
+    receipts:r.avg.receipts,net:r.avg.net,roi:r.roi,
+    chancePayout:r.chancePayout,stages:r.stages,
+    p10:r.p10,median:r.median,p90:r.p90};
+  })
  }))}catch(e){}
 }
 
