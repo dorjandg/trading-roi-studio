@@ -1463,7 +1463,7 @@ function renderFirmHealth(){
  for(const stage of stages){
   const messages=[],risks=stage.keys.map(k=>({key:k,r:positive(state[k]),rr:tierRR(k)})),base=risks[0],recovery=risks[1];
   const sum=base.r+recovery.r,worst=stage.cap>=2?sum:base.r,win=Math.max(...risks.map(x=>x.r*x.rr));
-  if(!selectedAccountSupportsSimulation)messages.push(['warn','This program is research-only: the model may not match funded-stage restrictions.']);
+  if(!selectedAccountSupportsSimulation)messages.push(['warn','Research-only program: only source-documented initial limits are checked. The selected stage targets, payout cycles and other constraints are not certified for sizing suggestions.']);
   if(variant)messages.push(['warn','Drawdown terms vary by stage or purchased version; confirm the exact variant before sizing.']);
   if(dailyLimit!==null){
    if(worst>=dailyLimit){messages.push(['danger','Planned daily losing sequence '+healthDollar(worst)+' meets/exceeds the initial '+healthDollar(dailyLimit)+' daily loss allowance.']);}
@@ -1476,18 +1476,18 @@ function renderFirmHealth(){
    else if(worst>overallLimit*.5)messages.push(['warn','Worst planned trading day consumes '+(100*worst/overallLimit).toFixed(1)+'% of initial maximum-loss allowance.']);
   }else messages.push(['info','Overall loss allowance not available as a verified numeric value; trailing headroom cannot be guaranteed.']);
   let consistencyThreshold=null;
-  if(stageApplies(stage)&&stage.goal>0){
+  if(stageApplies(stage)&&stage.goal>0&&selectedAccountSupportsSimulation&&!variant){
    consistencyThreshold=stage.goal*Number(cons.percent)/100;
    const dailyWin=stage.cap>=2?Math.max(win,base.r*base.rr+recovery.r*recovery.rr):base.r*base.rr;
    if(dailyWin>=consistencyThreshold)messages.push(['warn','Potential winning day '+healthDollar(dailyWin)+' meets/exceeds '+Number(cons.percent)+'% of '+healthDollar(stage.goal)+' target ('+healthDollar(consistencyThreshold)+'). This can increase target or delay qualification.']);
    else messages.push(['ok','Potential winning-day reference '+healthDollar(dailyWin)+' is below '+healthDollar(consistencyThreshold)+'. Multiple trades, fees and profit history still matter.']);
-  }else if(hasNumeric)messages.push(['info','Consistency '+cons.percent+'% applies to '+cons.stage+'; no fixed '+stage.name+' daily cap can be calculated from the available stage target.']);
+  }else if(hasNumeric)messages.push(['info','Consistency '+cons.percent+'% applies to '+cons.stage+'. A reliable '+stage.name+' cash cap requires a verified stage/cycle target and the exact account variant.']);
   else messages.push(['info','No universal numeric consistency limit confirmed for this stage.']);
   const plannedCap=dailyLimit!==null?Math.max(0,dailyLimit*.8-(stage.cap>=2?recovery.r:0)):null;
   const overallCap=overallLimit!==null?overallLimit*.25:null;
   const consistencyCap=consistencyThreshold!==null&&base.rr>0?consistencyThreshold/base.rr:null;
   const candidates=[plannedCap,overallCap,consistencyCap].filter(x=>x!==null&&Number.isFinite(x));
-  if(candidates.length){
+  if(candidates.length&&selectedAccountSupportsSimulation&&!variant){
    const suggested=Math.max(0,Math.min(...candidates));
    messages.push(['tip','Conservative Strategy 1 test: risk up to '+healthDollar(suggested)+' using an 80% initial daily-loss budget, 25% initial overall-loss budget'+(consistencyCap!==null?' and best-day reference':'')+'. Not an approved lot size or guaranteed-safe risk.']);
   }
