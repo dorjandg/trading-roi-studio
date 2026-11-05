@@ -59,7 +59,9 @@ function buildPlan(programId,size,program,profile={},snapshots={},audit=null){
  const topstepDllBySize={50000:1000,100000:2000,150000:3000};
  const dailyLoss=isTopstep?(state.topstepDLL===true?topstepDllBySize[size]||0:0):
   dynamic(state,'dailyLoss',dailyFromRule);
- const fee=dynamic(state,'price',pos(program?.pricesUSD?.[size]));
+ const noActivationPath=isTopstep&&state.topstepPath==='noactivation';
+ const catalogFee=noActivationPath?pos(program?.noActivation?.[size]):pos(program?.pricesUSD?.[size]);
+ const fee=dynamic(state,'price',catalogFee);
  const extraCost=pos(state.extraCost);
  const riskReserve=dynamic(state,'buffer',0);
  const totalFee=fee+extraCost;
@@ -67,7 +69,7 @@ function buildPlan(programId,size,program,profile={},snapshots={},audit=null){
  const result={
   id:programId,size,firm:program.firm,programName:program.name,
   supported:supported.has(programId),fee:totalFee,monthlyFee:isTopstep,
-  activationFee:isTopstep?pos(dynamic(state,'topstepActivationFee',149)):0,
+  activationFee:isTopstep&&!noActivationPath?pos(dynamic(state,'topstepActivationFee',149)):0,
   fundedMaxActive:isTopstep?5:Infinity,
   dailyLoss:dailyLoss>0?dailyLoss:Infinity,
   overallLoss:maxLoss>0?maxLoss:Infinity,
@@ -116,7 +118,7 @@ function validatePlan(p){
  if(!p.size||!p.fee)errors.push('Account size or USD checkout fee is missing.');
  if(!Number.isFinite(p.overallLoss))warnings.push('Overall drawdown limit is missing; no hard overall breach can be verified.');
  if(p.drawdownKind!=='static'&&p.id!=='topstep')warnings.push('Non-static or unknown trailing drawdown rules are not fully enforced.');
- if(p.id==='topstep')warnings.push('Topstep evaluation subscription renewals, contract caps and the chosen payout-path variant are not verified.');
+ if(p.id==='topstep')warnings.push('Topstep evaluation subscription renewals, contract caps and full payout eligibility are not verified; selected purchase-path fees are approximate.');
  if(p.provisional)warnings.push('No saved account profile found: R1/R2/R3 are illustrative defaults. Configure this account in Firms.');
  if(p.riskProfiles.funded?.target<=0)errors.push('Set a positive first-payout planning target.');
  for(const [stage,c] of Object.entries(p.riskProfiles)){
