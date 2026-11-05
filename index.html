@@ -1590,7 +1590,7 @@ function recoverySnapshot(stage){
   let saved={};
   try{saved=JSON.parse(localStorage.getItem(recoveryStoreKey(stage))||'{}')||{}}catch(e){}
   recoverySnapshots[key]={
-   pnl:0,days:0,open:true,depth:6,filter:'all',winCap:2,
+   pnl:0,days:0,open:true,depth:6,filter:'target',winCap:2,viewCount:8,sortBy:'fast',
    ...saved,
    levels:saved.levels&&typeof saved.levels==='object'?saved.levels:{},
    optionSequences:saved.optionSequences&&typeof saved.optionSequences==='object'?saved.optionSequences:{}
@@ -1751,21 +1751,25 @@ function renderRecoveryPlanners(){
     '<div class="recovery-option-risk-grid">'+planned+'</div>'+
     '<div class="tablewrap"><table class="recovery-table"><thead><tr><th>Day / outcome</th><th>Risk level</th><th>Trade risk</th><th>Trade P/L</th><th>Stage P/L</th><th>Daily buffer</th><th>Overall buffer</th><th>Next action</th></tr></thead><tbody>'+rows+'</tbody></table></div></details>';
   }).join('');
-  const filter=String(snapshot.filter||'all');
+  const filter=String(snapshot.filter||'target');
   const select=(name,values,current)=>'<select data-recovery-input="'+name+'">'+values.map(([value,label])=>
    '<option value="'+value+'"'+(String(value)===String(current)?' selected':'')+'>'+label+'</option>').join('')+'</select>';
   const options=[['all','All options'],['target','Profit target reached'],['failed','Loss floor breached'],['active','Still active / stalled']];
   const caution=staticFloor?'Static overall floor: modeled headroom = overall allowance + realized stage P/L. This is not live equity headroom.':'Trailing or stage-dependent overall floor: the broker high-water mark and current equity are not available. Overall buffer and risk caps are illustrative.';
-  host.innerHTML='<details class="recovery-details"><summary>Recovery Scenarios · Unified risk sequence planner</summary>'+
-   '<div class="recovery-fields">'+
+  host.innerHTML='<details class="recovery-details"><summary>'+setup.name+' · Options to reach the target</summary>'+
+   '<h4>Risk &amp; reward · '+setup.name+'</h4><div class="recovery-fields">'+
+   '<label>Reward / Risk (RR)<input data-option-rr type="number" min="0.1" max="100" step="0.1" value="'+setup.rr+'"></label>'+
+   RECOVERY_LEVELS.map((level,index)=>'<label>'+(index===0?'R1 · Initial':index===1?'R2 · Recovery':'R3 · Additional')+' ($)'+
+    '<input type="number" min="0" step="1" data-risk-level="'+level+'" value="'+levels[level]+'"></label>').join('')+'</div>'+
+   '<p class="caption">Edit R1, R2 and R3 once, then assign them in each option.</p>'+
+   '<details class="option-planner-settings"><summary>Advanced: search settings, current progress and filters</summary><div class="recovery-fields">'+
    '<label>Current stage P/L ($)<input data-recovery-input="pnl" type="number" step="1" value="'+pnl+'"></label>'+
    '<label>Trading days completed<input data-recovery-input="days" type="number" min="0" step="1" value="'+days+'"></label>'+
    '<label>Max trades on a winning day'+select('winCap',[[1,'1 trade'],[2,'2 trades'],[3,'3 trades'],[4,'4 trades'],[5,'5 trades'],[6,'6 trades']],requestedWinCap)+'</label>'+
    '<label>Max trades per option'+select('depth',[[3,'3 trades'],[4,'4 trades'],[5,'5 trades'],[6,'6 trades'],[7,'7 trades'],[8,'8 trades']],depth)+'</label>'+
-   '<label>Show outcomes'+select('filter',options,filter)+'</label></div>'+
-   '<h4>Risk amounts · Editable for '+setup.name+'</h4><div class="recovery-fields">'+
-   RECOVERY_LEVELS.map((level,index)=>'<label>'+(index===0?'R1 · Initial':index===1?'R2 · Recovery':'R3 · Additional')+' ($)'+
-    '<input type="number" min="0" step="1" data-risk-level="'+level+'" value="'+levels[level]+'"></label>').join('')+'</div>'+
+   '<label>Show outcomes'+select('filter',options,filter)+'</label>'+
+   '<label>Sort'+select('sortBy',[['fast','Fastest target'],['drawdown','Lowest modeled drawdown']],snapshot.sortBy||'fast')+'</label>'+
+   '<label>Show'+select('viewCount',[[8,'Top 8'],[20,'Top 20'],['all','All']],snapshot.viewCount||8)+'</label></div></details>'+
    '<p class="caption">Every option uses the same risk slots and the same trade table. Default order: R1 first, R2 after one consecutive loss, R3 after two or more losses; a win resets the next trade to R1. Edit any trade’s risk selector inside its option. R3 is not automatically boosted.</p>'+
    '<p class="caption">'+setup.name+' · '+setup.rr.toFixed(2)+'R · Target '+recoveryMoney(setup.goal)+' · Starting P/L '+recoveryMoney(pnl)+
     ' · Minimum trading days '+setup.minDays+' · Saved stage trade cap '+setup.dailyCap+' · Winning-day planner cap '+winCap+'.'+(winCap>setup.dailyCap?' Planner wins may exceed the saved stage trade cap; update that setting before live use.':'')+'</p>'+
@@ -1784,6 +1788,15 @@ document.addEventListener('change',event=>{
   const level=el.dataset.riskLevel;
   if(!RECOVERY_LEVELS.includes(level))return;
   snapshot.levels[level]=Math.max(0,Number(el.value)||0);
+  if(level==='r1'||level==='r2'){
+   state[stage+(level==='r1'?'Base':'Recovery')]=snapshot.levels[level];
+   dirtySim=true;lastSim=null;save();
+  }
+ }else if(el.hasAttribute('data-option-rr')){
+  const value=Number(el.value);
+  if(!Number.isFinite(value)||value<0.1||value>100)return;
+  state.rrByTier={...(state.rrByTier||{}),[stage+'Base']:value,[stage+'Recovery']:value};
+  dirtySim=true;lastSim=null;save();
  }else if(el.hasAttribute('data-option-path')){
   const path=el.dataset.optionPath,step=Number(el.dataset.optionStep),value=el.value;
   if(!/^[WL]{1,8}$/.test(path)||!Number.isInteger(step)||step<0||step>=path.length||!RECOVERY_LEVELS.includes(value))return;
@@ -1791,13 +1804,15 @@ document.addEventListener('change',event=>{
  }else if(el.hasAttribute('data-recovery-input')){
   const field=el.dataset.recoveryInput;
   if(field==='filter')snapshot.filter=el.value;
+  else if(field==='sortBy')snapshot.sortBy=el.value==='drawdown'?'drawdown':'fast';
+  else if(field==='viewCount')snapshot.viewCount=el.value==='all'?'all':Math.max(1,Math.min(100,Math.floor(Number(el.value)||8)));
   else if(field==='depth')snapshot.depth=Math.max(1,Math.min(8,Math.floor(Number(el.value)||6)));
   else if(field==='winCap')snapshot.winCap=Math.max(1,Math.min(6,Math.floor(Number(el.value)||2)));
   else if(field==='days')snapshot.days=Math.max(0,Math.floor(Number(el.value)||0));
   else if(field==='pnl')snapshot.pnl=Number(el.value)||0;
   else return;
  }else return;
- snapshot.open=true;persistRecoverySnapshot(stage);renderRecoveryPlanners();
+ snapshot.open=true;persistRecoverySnapshot(stage);render();
 });
 document.addEventListener('toggle',event=>{
  const holder=event.target.closest?.('[data-recovery-stage]');
