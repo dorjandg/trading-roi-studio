@@ -127,6 +127,7 @@ function sampleMilestones(r,signalDay='1'){
 function dailyTradeRouting(results,selected,inputs){
  const sources=selected==='all'?results:[results[Number(selected)]].filter(Boolean);
  const entries=[];
+ const payoutsByDay=new Map(),targetsByDay=new Map();
  // Give every purchased account one unique, immutable display ID across the
  // entire selected portfolio. Never restart A1 for a second firm/size.
  let offset=0;
@@ -136,6 +137,16 @@ function dailyTradeRouting(results,selected,inputs){
   const highest=Math.max(0,...ids.map(a=>Number(a.id)||0));
   for(const a of source.sample?.tradeAssignments||[]){
    entries.push({...a,firm:label,globalAccount:a.account==null?null:offset+a.account});
+  }
+  for(const ac of ids){
+   const id=offset+ac.id;
+   if(ac.paidDay!=null){
+    if(!payoutsByDay.has(ac.paidDay))payoutsByDay.set(ac.paidDay,[]);
+    payoutsByDay.get(ac.paidDay).push({id,amount:n(ac.firstPaid)});
+   }else if(ac.fundedTargetDay!=null){
+    if(!targetsByDay.has(ac.fundedTargetDay))targetsByDay.set(ac.fundedTargetDay,[]);
+    targetsByDay.get(ac.fundedTargetDay).push({id});
+   }
   }
   offset+=Math.max(highest,Number(source.sample?.bought)||0);
  }
@@ -188,6 +199,7 @@ function dailyTradeRouting(results,selected,inputs){
  };
  const rows=days.map(day=>{
   const events=byDay.get(day)||[],counts=daySummary(day);
+  const payouts=payoutsByDay.get(day)||[],targets=targetsByDay.get(day)||[];
   const cells=Array.from({length:maxCells},(_,i)=>{
    const matches=events.filter(a=>a.signal===i+1);
    return '<td style="white-space:nowrap">'+(matches.length?matches.map(tradeText).join('<div style="margin-top:3px"></div>'):'—')+'</td>';
@@ -196,14 +208,15 @@ function dailyTradeRouting(results,selected,inputs){
    '<td class="num">'+counts.executed+'</td><td class="num">'+counts.bought+'</td>'+
    '<td class="num">'+counts.challenge+'</td><td class="num">'+counts.verification+'</td>'+
    '<td class="num">'+counts.funded+'</td><td class="num">'+counts.failed+'</td>'+
-   '<td class="num">'+counts.paid+'</td></tr>';
+   '<td class="num">'+payouts.length+'</td><td class="num">'+counts.paid+'</td>'+ 
+   '<td style="min-width:180px">'+(payouts.length?payouts.map(a=>'A'+a.id+' PAID '+usd(a.amount)).join(' · '):targets.length?targets.map(a=>'A'+a.id+' target hit; awaiting payout').join(' · '):'—')+'</td></tr>';
  }).join('');
  const heading='<div class="journey-status-line"><strong>Daily trades → prop-firm accounts</strong> · '+days.length+
   ' trading days · '+entries.filter(e=>e.account!=null).length+' assigned signal slots</div>';
- const explain='<p class="journey-explainer">A1, A2, etc. are permanent, unique account IDs across this displayed portfolio. New challenges always receive new numbers. CH → VR → FD → Payout/closed is forward-only: an account that passed CH can never be displayed in CH again. CH = Challenge, VR = Verification, FD = Funded; W/L = the modeled result of that assigned trade. '+(selected==='all'?'In split mode, the same trade number may appear for separate firms because signals are allocated by firm.':'')+'</p>';
+ const explain='<p class="journey-explainer">Payouts are account events and may happen without a trade that day. Paid today is a daily count; Paid total is cumulative. A1, A2, etc. are permanent, unique account IDs across this displayed portfolio. New challenges always receive new numbers. CH → VR → FD → Payout/closed is forward-only: an account that passed CH can never be displayed in CH again. CH = Challenge, VR = Verification, FD = Funded; W/L = the modeled result of that assigned trade. '+(selected==='all'?'In split mode, the same trade number may appear for separate firms because signals are allocated by firm.':'')+'</p>';
  return heading+warning+explain+'<div class="tablewrap journey-ledger-table" style="max-height:650px"><table class="journey-table" style="min-width:970px"><thead><tr><th>Day</th>'+
   Array.from({length:maxCells},(_,i)=>'<th>Trade '+(i+1)+'</th>').join('')+
-  '<th>Executed</th><th>Bought</th><th>CH</th><th>VR</th><th>FD</th><th>Failed</th><th>Paid</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  '<th>Executed</th><th>Bought</th><th>CH</th><th>VR</th><th>FD</th><th>Failed</th><th>Paid today</th><th>Paid total</th><th>Payout events</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
 }
 function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true,signalDay='1'}={}){
  if(!results.length)return '<p class="hint">Run a Portfolio Sim calculation to see account journeys.</p>';
@@ -279,7 +292,7 @@ function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true
  const used=allRows.reduce((sum,x)=>sum+n(x.tradesToday),0);
  const possible=allRows.reduce((sum,x)=>sum+n(x.opportunities),0);
  const utilized=possible>0?100*used/possible:0;
- const total='<p class="journey-status-line">'+(average?'Average portfolio':'Trial #1')+' · '+
+ const total='<p class="journey-status-line">'+(average?'Average portfolio':'One sampled portfolio path')+' · '+
   'Trading opportunities '+fmt(possible,average)+' · Executed '+fmt(used,average)+
   ' · Utilization '+utilized.toFixed(1)+'% · '+
   'Bought '+fmt(last.bought,average)+' · Funded activated '+fmt(last.activated,average)+
@@ -287,8 +300,14 @@ function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true
   ' · Burned '+fmt(last.burned,average)+
   ' · Eval '+usd(last.evaluationAllocation)+' · Funded '+usd(last.fundedAllocation)+
   ' · Spent '+usd(last.spent)+' · Received '+usd(last.receipts)+'</p>';
+ const expectedPaid=selected==='all'?results.reduce((v,item)=>v+n(item.avg?.paid),0):n(r.avg?.paid);
+ const samplePaid=n(last.paid);
+ const estimateNote='<p class="journey-explainer"><strong>Payout comparison:</strong> The daily table shows one sampled portfolio path with '+samplePaid+
+  ' paid account(s) by Day '+n(inputs.days)+'. The mean across '+n(inputs.trials)+' simulations is '+expectedPaid.toFixed(2)+
+  ' paid accounts. '+(samplePaid===0&&expectedPaid>0?'Zero payouts in this sample does not mean all simulations had zero payouts. ':'')+
+  'Funded targets may also be reached before the payout waiting period ends.</p>';
  const capInfo=selected==='all'?'Combined nominal allocation across different firms; firm limits are separate.':'Planning limits: Evaluation '+(n(cap.evaluation)>0?usd(cap.evaluation):'not set')+' · Funded '+(n(cap.funded)>0?usd(cap.funded):'not set')+'. These caps are enforced in new simulation runs: evaluation purchases stop at the cap, and funded activations wait for a free slot. A cap below one account size permits zero accounts. Caps are per selected account type, not pooled across different account sizes of the same firm.';
- return header+dailyTradeRouting(results,selected,inputs)+total+'<p class="journey-explainer">'+capInfo+'</p>'+table+graphs+(!average&&selected!=='all'?sampleMilestones(r,signalDay):'')+note;
+ return header+dailyTradeRouting(results,selected,inputs)+total+estimateNote+'<p class="journey-explainer">'+capInfo+'</p>'+table+graphs+(!average&&selected!=='all'?sampleMilestones(r,signalDay):'')+note;
 }
 root.StudioPortfolioJourney={render,daily,combined,sampleMilestones};
 })(typeof window!=='undefined'?window:globalThis);
