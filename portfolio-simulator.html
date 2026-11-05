@@ -882,7 +882,16 @@ function sentStatus(key,message,error=false){
  $('firmsSendStatus').style.color=error?'var(--red)':'var(--green)';
  $('firmsSendStatus').innerHTML=esc(message)+(error?'':link+undo);
 }
-function sendPlanToFirms(plan,modelName){
+function findingsForModel(candidate){
+ const h=candidate.holdout,k=h?.tradeKpis||{};
+ return {
+  net:h?.avg?.net,delta:candidate.delta?.net,p10:h?.p10,chancePayout:h?.chancePayout,
+  profitFactor:k.pf,winRate:k.wr,rewardRisk:k.rr,realizedR:k.ar,
+  avgWin:k.aw,avgLoss:k.al,expectancy:k.ev,tradesPerTrial:h?.avg?.trades,
+  trials:h?.config?.trials,budget:h?.budget
+ };
+}
+function sendPlanToFirms(plan,modelName,findings=null){
  if(!firmsTransfer){$('firmsSendStatus').textContent='Transfer feature failed to load';return false;}
  const key=plan.id+':'+plan.size;
  if(!rows.some(row=>row.id+':'+row.size===key)){
@@ -897,7 +906,7 @@ function sendPlanToFirms(plan,modelName){
   'Simulated improvements do not guarantee future performance. Continue?';
  if(!window.confirm(message))return false;
  try{
-  firmsTransfer.transfer(localStorage,user,key,plan,modelName);
+  firmsTransfer.transfer(localStorage,user,key,plan,modelName,findings);
   sentStatus(key,'"'+modelName+'" saved to '+label+'. Open Firms to review it.');
   return true;
  }catch(e){
@@ -935,7 +944,7 @@ $('ideaResults').addEventListener('click',event=>{
  if(send){
   if(!discovered||discovered.stale){$('firmsSendStatus').textContent='Run a fresh model search before sending to Firms.';return;}
   const candidate=discovered.result.ideas[Number(send.dataset.discoverySend)];
-  if(candidate)sendPlanToFirms(candidate.plan,candidate.title);
+  if(candidate)sendPlanToFirms(candidate.plan,candidate.title,findingsForModel(candidate));
   return;
  }
  const btn=event.target.closest?.('[data-discovery-apply]');
