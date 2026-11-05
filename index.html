@@ -1194,6 +1194,9 @@ function deriveBudgetAccounts(){
 function applyPortfolioReportToOverview(){
  const source=$('overviewReportSource');
  const account=String(activeProgramKey||'');
+ const openSim='portfolio-simulator.html'+(account?'?account='+encodeURIComponent(account):'');
+ const link=document.querySelector('.overview-summary-actions a[href^="portfolio-simulator.html"]');
+ if(link)link.href=openSim;
  const reader=window.StudioReportSource;
  const box=$('overviewAnalysisPanel');
  const economics=$('economicsTitle')?.closest('.panel');
@@ -1224,7 +1227,7 @@ function applyPortfolioReportToOverview(){
   source.innerHTML='<strong>Overview source: '+(phaseModel().topstep?
   'separate Topstep two-payout estimate':'manual stage-rate planning model')+'.</strong> '+safe(report.message)+
    ' These are separate, simplified assumptions—not Portfolio Sim NET/ROI. '+
-   '<a href="portfolio-simulator.html">Run Portfolio Sim</a> to make its trade-based figures the Overview reference.';
+   '<a href="'+openSim+'">Run Portfolio Sim</a> to make its trade-based figures the Overview reference.';
   source.style.borderColor='var(--border)';
   if($('kpiROILabel'))$('kpiROILabel').textContent=phaseModel().topstep?
    'Legacy Topstep ROI · expected fees':'Manual estimate · ROI on incurred costs';
@@ -1244,7 +1247,7 @@ function applyPortfolioReportToOverview(){
    safe(date)+' · '+safe(String(trials))+' trials · '+safe(String(horizon))+
    ' trading days · '+safe(modelType)+
    ' · '+safe(String(inputs.winRate))+'% WR. '+
-   '<a href="portfolio-simulator.html">Inspect full report</a>';
+   '<a href="'+openSim+'">Inspect full report</a>';
  source.style.borderColor='var(--green)';
  $('kpiCost').textContent=moneyValue(r.spent);
  $('kpiReceipts').textContent=moneyValue(r.receipts);
