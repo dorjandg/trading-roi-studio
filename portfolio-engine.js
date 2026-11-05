@@ -53,9 +53,9 @@ function buildPlan(programId,size,program,profile={},snapshots={},audit=null){
  size=pos(size);
  const state=profile&&profile.state||profile||{};
  const stages=phasesFor(programId);
- const maxLoss=dynamic(state,'overallLoss',
-  dynamic(audit?.loss?.maximumUSDBySize,String(size),
-   size*pos(program?.max)/100));
+ const topstepLimits={50000:2000,100000:3000,150000:4500};
+ const maxLoss=programId==='topstep'?topstepLimits[size]:
+  dynamic(state,'overallLoss',dynamic(audit?.loss?.maximumUSDBySize,String(size),size*pos(program?.max)/100));
  const dailyFromRule=program?.daily==null?0:size*pos(program.daily)/100;
  const isTopstep=programId==='topstep';
  // Topstep's Daily Loss Limit is optional; the generic saved dailyLoss
@@ -89,7 +89,7 @@ function buildPlan(programId,size,program,profile={},snapshots={},audit=null){
   qualificationSize:isTopstep?'1 micro contract':'0.01 lot',
   winRate:clamp(dynamic(state,'winRate',40),0,100)/100,
   riskProfiles:{},sourceSaved:!!profile?.state,provisional:!profile?.state,
-  stageList:stages,drawdownKind:audit?.riskStructure?.drawdownKind||'unverified',
+  stageList:stages,drawdownKind:isTopstep?'eod-trailing':audit?.riskStructure?.drawdownKind||'unverified',
   auditStatus:audit?.status||'unverified',
   maxFundedPerCycle:isTopstep?5:Infinity
  };
@@ -117,7 +117,7 @@ function buildPlan(programId,size,program,profile={},snapshots={},audit=null){
    minDays:clamp(minDays,0,60),
    maxWinsPerDay:clamp(dynamic(snap,'winCap',2),1,6),
    maxDays:clamp(dynamic(state,root==='funded'?'fundedDays':root+'Days',30),1,365),
-   rr,r1:pos(r1),r2:pos(r2),r3:pos(r3),policy,
+   rr,r1:pos(r1),r2:pos(r2),r3:pos(r3),policy:isTopstep&&key==='p1'?{map:{},conflicts:[],mode:'flat'}:policy,
    consistency:isTopstep&&key==='p1'?.55:0,
    name:key==='p1'?(isTopstep?'Evaluation':'Phase 1'):key==='p2'?'Phase 2':'Funded'
   };
@@ -135,7 +135,7 @@ function validatePlan(p){
  if(p.riskProfiles.funded?.target<=0)errors.push('Set a positive first-payout planning target.');
  for(const [stage,c] of Object.entries(p.riskProfiles)){
   if(c.target<=0)errors.push(stage+': profit target missing.');
-  if(c.rr<=0||c.r1<=0||c.r2<=0||c.r3<=0)errors.push(stage+': set positive RR and all three risk amounts.');
+  if(c.rr<=0||c.r1<=0||((p.id!=='topstep'||stage!=='p1')&&(c.r2<=0||c.r3<=0)))errors.push(stage+': set positive RR and required risk amounts.');
   if(c.policy.conflicts.length)warnings.push(stage+': conflicting saved option risk choices at '+c.policy.conflicts.length+' history prefixes; default risk rules apply there.');
  }
  return {errors,warnings};
@@ -156,8 +156,8 @@ function isEvaluation(stage){return stage==='p1'||stage==='p2'}
 function floorFor(p,ac){
  const cap=p.overallLoss;
  if(!Number.isFinite(cap))return -Infinity;
+ if(p.id==='topstep')return Math.min(0,ac.peakEod-cap); // EOD watermark; MLL locks at zero
  if(p.drawdownKind==='static')return -cap;
- if(p.id==='topstep')return Math.min(0,ac.peakEod-cap);
  // Unknown trailing model: static proxy, but flagged in plan warnings.
  return -cap;
 }
@@ -239,7 +239,12 @@ function runAccountDay(p,ac,day,rand,config,record){
   const bestDayOk=!c.consistency||ac.bestDay<=Math.max(0,ac.stagePnl)*c.consistency+1e-7;
   const payoutDaysOk=stage!=='funded'||p.id==='topstep'&&ac.funded150Days<5;
   if(ac.stagePnl>=c.target-.005&&bestDayOk&&!payoutDaysOk)break;
-  const slot=plannedSlot(ac.history,c.policy);
+  const qualificationTopstep=stage==='funded'&&p.id==='topstep'&&
+   ac.fundedTargetDay!==null&&ac.funded150Days<5;
+  // Combine uses the one Challenge R1. XFA uses R3 once the target is
+  // reached, while further eligible $150 winning days are required.
+  const slot=p.id==='topstep'&&stage==='p1'?'r1':
+   qualificationTopstep?'r3':plannedSlot(ac.history,c.policy);
   const risk=pos(c[slot]);
   // User-selected risk is always exact; no hidden downsizing.
   const dailyHeadroom=p.dailyLoss-dayProfit;
@@ -296,7 +301,14 @@ function runAccountDay(p,ac,day,rand,config,record){
    if(dayProfit>=150)ac.funded150Days++;
   }
  }
- if(p.id==='topstep')ac.peakEod=Math.max(ac.peakEod,ac.stagePnl);
+ if(p.id==='topstep'){
+  const oldFloor=floorFor(p,ac);
+  // The MLL changes after a trading day's closing balance, not intraday.
+  ac.peakEod=Math.max(ac.peakEod,ac.stagePnl);
+  const newFloor=floorFor(p,ac);
+  if(record&&newFloor>oldFloor+1e-9)ac.trace.push({day,stage,type:'eod-mll',
+   floor:newFloor,pnl:ac.stagePnl,label:'Topstep EOD trailing MLL updated'});
+ }
  const consistent=!c.consistency||ac.bestDay<=Math.max(0,ac.stagePnl)*c.consistency+1e-7;
  if(isEvaluation(stage)&&ac.status==='active'&&ac.stagePnl>=c.target-.005){
   if(!consistent&&record)ac.trace.push({day,stage,type:'consistency',label:'Best-day consistency not yet satisfied'});
