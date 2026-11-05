@@ -1551,7 +1551,7 @@ function renderRecoveryPlanners(){
   ['Current S1',setting.base],
   ['Recover to $0',rr>0?Math.max(0,-pnl)/rr:0],
   ['Target in one win',rr>0?Math.max(0,remaining)/rr:0],
-  ['Conservative test',rr>0?Math.min(Math.max(0,remaining)/rr,softBudget):0],
+  ['Conservative test',rr>0?Math.min(pnl<0?Math.max(0,-pnl)/rr:Math.max(0,remaining)/rr,softBudget):0],
   ...(Number(scenario.custom)>0?[['Custom risk',Number(scenario.custom)]]:[])
  ];
  const unique=[];for(const [name,risk]of candidates){if(!Number.isFinite(risk)||risk<=0)continue;if(unique.some(x=>Math.abs(x.risk-risk)<.01))continue;unique.push({name,risk})}
@@ -1576,13 +1576,13 @@ function renderRecoveryPlanners(){
  '<div class="recovery-stats"><span>Initial daily limit <b>'+fmt(daily)+'</b></span><span>'+(fixed?'Static remaining overall loss room':'Initial overall allowance only')+' <b>'+(fixed?fmt(overallHeadroom):fmt(overall))+'</b></span><span>Recommended risk test <b>'+(riskSuggested>0?fmt(riskSuggested):'None')+'</b></span></div>'+
  '<div class="tablewrap"><table class="recovery-table"><thead><tr><th>Next trade</th><th>Risk</th><th>P/L after WIN</th><th>P/L after LOSS</th><th>Risk to finish after WIN</th><th>Status</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
  '<p class="caption">Risk-to-finish = remaining target after the win ÷ RR, assuming another complete winner. The next trade must respect the daily trade limit ('+setting.dailyCap+'), a new daily-loss calculation, minimum trading days and remaining drawdown. '+(setting.minDays?'This phase requires at least '+setting.minDays+' trading days; '+days+' completed. ':'')+'The *target reached* label means numerical profit only, not verified phase completion.</p>'+
- '<p class="caption">'+(fixed?'Static overall loss floor: room changes with realized P/L; daily loss can reset and floating P/L can breach the limit.':'Trailing or unverified overall loss floor: current headroom CANNOT be determined from cumulative P/L alone. Risk suggestions are illustrative and must be checked against actual broker equity and trailing peak.')+' The conservative test uses at most 80% of the initial daily allowance, 50% of estimated total room, and subtracts your risk buffer. It is not mathematically optimal or broker-approved.</p>'+
+ '<p class="caption">'+(fixed?'Static overall loss floor: room changes with realized P/L; daily loss can reset and floating P/L can breach the limit.':'Trailing or unverified overall loss floor: current headroom CANNOT be determined from cumulative P/L alone. Risk suggestions are illustrative and must be checked against actual broker equity and trailing peak.')+' The conservative test first targets restoring realized losses if the stage is negative; otherwise it targets the remaining profit, capped by 80% of initial daily allowance and 50% of estimated total room, less your risk buffer. It is not mathematically optimal or broker-approved.</p>'+
  '</details>';
  // Retain the currently expanded planner during edits.
  const exp=host.querySelector('details');exp.open=scenario.open===true;
  }
 }
-document.addEventListener('input',event=>{
+document.addEventListener('change',event=>{
  const element=event.target.closest?.('[data-recovery-input]');if(!element)return;
  const host=element.closest('[data-recovery-stage]');if(!host)return;
  const snapshot=recoverySnapshot(host.dataset.recoveryStage),field=element.dataset.recoveryInput;
@@ -1590,7 +1590,7 @@ document.addEventListener('input',event=>{
  snapshot[field]=field==='days'?Math.max(0,Math.floor(raw)):field==='custom'?Math.max(0,raw):raw;
  snapshot.open=true;
  renderRecoveryPlanners();
- const fieldAgain=host.querySelector('[data-recovery-input="'+field+'"]');if(fieldAgain){fieldAgain.focus();fieldAgain.setSelectionRange?.(String(fieldAgain.value).length,String(fieldAgain.value).length)}
+
 });
 document.addEventListener('toggle',event=>{
  const holder=event.target.closest?.('[data-recovery-stage]');if(!holder||event.target.tagName!=='DETAILS')return;
