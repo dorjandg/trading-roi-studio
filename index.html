@@ -1214,10 +1214,15 @@ function applyPortfolioReportToOverview(){
   if(source)source.innerHTML='<strong>Report source:</strong> Select and save an account in Firms, then run Portfolio Sim for a trade-based report.';
   return;
  }
- const report=reader.status(localStorage,activeUser,account,state.budget);
+ let report=reader.status(localStorage,activeUser,account,state.budget);
+ if(report.state==='matched'&&Math.abs(Number(report.report.inputs?.winRate)-Number(state.winRate))>.01){
+  report={...report,state:'different-winrate',
+   message:'Portfolio Sim used a different win rate from the current Firms/Overview setting.'};
+ }
  const safe=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  if(report.state!=='matched'){
-  source.innerHTML='<strong>Overview source: stage-rate planning model.</strong> '+safe(report.message)+
+  source.innerHTML='<strong>Overview source: '+(phaseModel().topstep?
+  'separate Topstep two-payout estimate':'manual stage-rate planning model')+'.</strong> '+safe(report.message)+
    ' These are separate, simplified assumptions—not Portfolio Sim NET/ROI. '+
    '<a href="portfolio-simulator.html">Run Portfolio Sim</a> to make its trade-based figures the Overview reference.';
   source.style.borderColor='var(--border)';
@@ -1233,7 +1238,7 @@ function applyPortfolioReportToOverview(){
  const expectedBought=Number(r.bought??r.count)||0;
  const horizon=Math.floor(Number(inputs.days)||0);
  const trials=Math.floor(Number(inputs.trials)||0);
- const chance=(x)=>Number.isFinite(Number(x))?pct(Number(x)):'—';
+ const chance=(x)=>x!=null&&Number.isFinite(Number(x))?pct(Number(x)):'—';
  const modelType=inputs.purchaseMode==='recycle'?'dynamic daily purchases':'upfront purchases';
  source.innerHTML='<strong>Overview source: Portfolio Sim · matched Firms settings.</strong> '+
    safe(date)+' · '+safe(String(trials))+' trials · '+safe(String(horizon))+
