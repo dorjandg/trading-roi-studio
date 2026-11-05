@@ -33,8 +33,9 @@ html[data-theme="light"]{color-scheme:light;--bg:#f3f6fa;--panel:#fff;--panel2:#
  .field select,.selectors select,select{font-size:12px;min-height:39px;height:39px}
  select option,select optgroup{font-size:12px}
 }
-</style></head><body><main class="wrap">
-<header><a class="titlelink brand" href="labs.html" title="View all labs">Trade Lab <span class="muted">/ ← Labs</span></a><nav class="links" aria-label="Research navigation"><a class="btn" href="labs.html">All Labs</a><a class="btn" href="./">Studio</a></nav></header>
+</style><link rel="stylesheet" href="studio-nav.css"><link rel="stylesheet" href="studio-labs-dense.css"></head><body class="studio-lab-page"><main class="wrap">
+<nav class="studio-primary-nav" aria-label="Studio pages"><a href="index.html?view=dashboard">Overview</a><a href="index.html?view=firms">Firms</a><a href="labs.html" class="active" aria-current="page">Labs</a><a href="portfolio-simulator.html">Portfolio Sim</a><a href="index.html?view=presets">Presets</a><a href="index.html?view=settings">Help</a><a href="index.html?view=profile">Profile</a></nav>
+<nav class="studio-labs-nav" aria-label="Lab tabs"><a href="monitor.html">Monitor</a><a href="index.html?view=investments">Budget</a><a href="portfolio-simulator.html">Portfolio Sim</a><a href="investment-lab.html">Invest Lab</a><a href="comparison-lab.html">Compare Lab</a><a href="trade-lab.html" class="active" aria-current="page">Trade Lab</a></nav>
 <section class="panel"><div class="eyebrow">Equity · Streaks · Risk</div><h1><a class="titlelink" href="labs.html" title="View all labs">Trade Lab</a></h1><p class="muted">Simulate trade-by-trade account paths, view equity curves and equity candles, and explore streaks, drawdowns, and month-by-month results. Runs locally; no trades are placed and no saved Studio settings are changed.</p></section>
 <section class="panel"><h2>Account rules</h2><p class="hint">Choose an account and evaluation stage. This uses modeled daily results and simplified loss rules; it does not claim complete prop-firm compliance.</p>
 <div class="fields">
