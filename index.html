@@ -1734,6 +1734,7 @@ function renderRecoveryPlanners(){
    const percentage=n=>(Number(n)*100).toFixed(1)+'%';
    const parts=['Imported: '+String(saved.name||'Portfolio Sim model')];
    if(Number.isFinite(m.net))parts.push('NET '+amount(m.net));
+   if(Number.isFinite(m.roi))parts.push('ROI '+percentage(m.roi));
    if(Number.isFinite(m.delta))parts.push('DLT '+amount(m.delta));
    if(Number.isFinite(m.p10))parts.push('P10 '+amount(m.p10));
    if(Number.isFinite(m.chancePayout))parts.push('CP '+percentage(m.chancePayout));
