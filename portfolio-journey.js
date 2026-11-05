@@ -144,6 +144,25 @@ function pageNav(p,field){
   '<button type="button" data-journey-page="'+field+'" data-journey-step="1"'+(p.current===p.pages?' disabled':'')+' aria-label="Next page">Next ›</button>'+
   '</div>';
 }
+// Each header explains whether it is a daily flow, current balance, or cumulative total.
+const routeHeaderHelp={
+ day:'Trading-day number in one sampled simulation. D1 = first modeled trading day, not a calendar date.',
+ executed:'DAILY: successful strategy trades executed on this day. Maximum is the configured signals/day; blocked or unavailable trades are not counted.',
+ min:'DAILY: illustrative smallest-size evaluation qualification orders. Their market profit/loss is not modeled. Topstep normally shows zero.',
+ bought:'CUMULATIVE: total distinct accounts purchased from Day 1 through this day. These are not purchases made only today. An account number is never reused.',
+ ch:'CURRENT at END of day: live Challenge/Trading Combine accounts that have not passed or closed. This is not the number purchased.',
+ vr:'CURRENT at END of day: active Verification accounts. Topstep has no Verification phase, so this stays zero.',
+ fd:'CURRENT at END of day: funded accounts, including those frozen and waiting for payout. Not the cumulative number ever funded.',
+ pending:'CURRENT at END of day: funded accounts whose payout request is in processing. These are included in FD, so do not add them to FD.',
+ breached:'CUMULATIVE: accounts that actually hit the modeled loss limit. A loss by itself does not mean an account breached. The Topstep drawdown limit trails at end of day.',
+ blocked:'CUMULATIVE: accounts removed from normal trade routing because the selected risk is larger than their remaining allowed loss room. They have NOT breached the prop-firm drawdown limit. The model does not lower their risk automatically.',
+ paidToday:'DAILY: number of accounts whose first modeled payout was received on this day. Requesting a payout and receiving it can happen on different days.',
+ paidTotal:'CUMULATIVE: total distinct accounts with a first modeled payout received by this day. These are included in Paid today only on the payment day.',
+ events:'Account-specific milestones, including target achieved, payout requested, payout received, and modeled minimum-size qualification days.',
+ trade:'DAILY SIGNAL SLOT: identifies which unique account received this numbered strategy signal. A# is the permanent account ID; CH = Challenge, VR = Verification, FD = Funded, W = win, L = loss, Skipped = no trade executed.'
+};
+const routeTh=(label,key)=>'<th class="journey-help-head" tabindex="0" title="'+esc(routeHeaderHelp[key])+
+ '" data-tooltip="'+esc(routeHeaderHelp[key])+'">'+label+'</th>';
 function dailyTradeRouting(results,selected,inputs,routePage=1,pageSize=10){
  const sources=selected==='all'?results:[results[Number(selected)]].filter(Boolean);
  const entries=[];
@@ -252,9 +271,13 @@ function dailyTradeRouting(results,selected,inputs,routePage=1,pageSize=10){
  const heading='<div class="journey-status-line"><strong>Daily trades → prop-firm accounts</strong> · '+days.length+
   ' trading days · '+entries.filter(e=>e.account!=null).length+' assigned signal slots</div>';
  const explain='<p class="journey-explainer">Breached means a genuine loss-limit failure; Risk blocked means the selected risk is too large, not a rule breach. Payouts may happen without a trade that day. Min = modeled minimum-size qualification orders; their market P/L is not simulated. Pending = payout requests processing. Paid today is daily; Paid total is cumulative. A1, A2, etc. are permanent, unique account IDs across this displayed portfolio. New challenges always receive new numbers. CH → VR → FD → Payout/closed is forward-only: an account that passed CH can never be displayed in CH again. CH = Challenge, VR = Verification, FD = Funded; W/L = the modeled result of that assigned trade. '+(selected==='all'?'In split mode, the same trade number may appear for separate firms because signals are allocated by firm.':'')+'</p>';
- return heading+warning+explain+'<div class="tablewrap journey-ledger-table" style="max-height:650px"><table class="journey-table" style="min-width:970px"><thead><tr><th>Day</th>'+
-  Array.from({length:maxCells},(_,i)=>'<th>Trade '+(i+1)+'</th>').join('')+
-  '<th>Executed</th><th>Min</th><th>Bought</th><th>CH</th><th>VR</th><th>FD</th><th>Pending</th><th>Breached</th><th>Risk blocked</th><th>Paid today</th><th>Paid total</th><th>Account events</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+pageNav(routePagination,'routePage');
+ return heading+warning+explain+'<div class="tablewrap journey-ledger-table" style="max-height:650px"><table class="journey-table" style="min-width:970px"><thead><tr>'+routeTh('Day','day')+
+  Array.from({length:maxCells},(_,i)=>routeTh('Trade '+(i+1),'trade')).join('')+
+  [['Executed','executed'],['Min','min'],['Bought','bought'],['CH','ch'],['VR','vr'],['FD','fd'],
+   ['Pending','pending'],['Breached','breached'],['Risk blocked','blocked'],
+   ['Paid today','paidToday'],['Paid total','paidTotal'],['Account events','events']]
+   .map(([label,key])=>routeTh(label,key)).join('')+
+  '</tr></thead><tbody>'+rows+'</tbody></table></div>'+pageNav(routePagination,'routePage');
 }
 function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true,signalDay='1',routePage=1,summaryPage=1,pageSize=10}={}){
  if(!results.length)return '<p class="hint">Run a Portfolio Sim calculation to see account journeys.</p>';
