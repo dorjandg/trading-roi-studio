@@ -562,6 +562,115 @@ $('details').addEventListener('toggle',event=>{
  else openResultDetails.delete(index);
 },true);
 
+
+function formatDiscoveryPlan(p){
+ return p.stageList.map(stage=>{
+  const c=p.riskProfiles[stage];
+  const policy={saved:'Saved option choices',streak:'After-loss tiers',flat:'Flat R1','after-win':'After-win boost','protect-after-loss':'After-loss protection'}[c.policy?.mode||'saved'];
+  return '<span class="risk-chip">'+esc(c.name)+': R1 <b>'+usd(c.r1)+'</b> · R2 <b>'+usd(c.r2)+
+   '</b> · R3 <b>'+usd(c.r3)+'</b> · '+dec(c.rr)+'R · '+policy+' · '+c.maxWinsPerDay+' wins/day</span>';
+ }).join('');
+}
+function renderDiscovery(result,row,budget){
+ const baseline=result.baseline.holdout,objectiveLabel={
+  balanced:'Balanced net and downside',net:'Expected net profit',
+  payout:'Chance of first payout',downside:'Downside P10',goal:'Chance of net target'
+ }[result.objective];
+ const showDifference=(val,isPct=false)=>{
+  const positive=val>=0;
+  return '<span class="'+(positive?'good':'bad')+'">'+(positive?'+':'')+(isPct?dec(val)+' pp':usd(val))+'</span>';
+ };
+ const entry=(c,i)=>{
+  const h=c.holdout,delta=i===0?null:c.delta;
+  const policySummary='<div class="risks">'+formatDiscoveryPlan(c.plan)+'</div>';
+  return '<tr><td><b>'+esc(c.title)+'</b><small>'+esc(c.reason)+'</small>'+
+    '<details><summary>Show exact R1/R2/R3 and phase policies</summary>'+policySummary+'</details></td>'+
+    '<td class="'+(h.avg.net>=0?'good':'bad')+'">'+usd(h.avg.net)+'</td>'+
+    '<td>'+(delta?showDifference(delta.net):'Baseline')+'</td>'+
+    '<td>'+usd(h.p10)+'</td>'+
+    '<td>'+pct(h.chancePayout)+'</td>'+
+    '<td>'+dec(h.avg.exhausted)+'</td>'+
+    '<td>'+(i===0?'Current':'<button type="button" data-discovery-apply="'+(i-1)+'">Test in Portfolio Sim</button>')+'</td></tr>';
+ };
+ const best=result.ideas.find(c=>c.improvement>0);
+ const summary=best?
+  'One or more ideas improved the selected score on this separate validation sample. The first is <b>'+esc(best.title)+'</b>'+
+  ' with net '+showDifference(best.delta.net)+' and payout probability '+showDifference(best.delta.payout,true)+
+  ' compared with your starting plan. Downside P10 moved '+showDifference(best.delta.p10)+'.':
+  'No candidate in the shortlisted group beat your current plan on the selected validation score. Keeping the original settings is reasonable.';
+ $('ideaResults').innerHTML=
+  '<div class="discovery-card"><h3>Model search · '+esc(row.id)+' '+usd(row.size)+'</h3>'+
+  '<p class="discovery-summary">Budget '+usd(budget)+' · '+result.evaluated+' different candidate plans · ranked on '+
+  result.trainTrials+' discovery trials · verified on '+result.testTrials+
+  ' separate trials · objective: '+esc(objectiveLabel)+'.</p>'+
+  '<div class="alert">'+summary+'</div>'+
+  '<div class="tablewrap"><table class="discovery-table" style="min-width:940px">'+
+  '<thead><tr><th>Risk model</th><th>Expected net</th><th>Change vs yours</th><th>Downside P10</th>'+
+  '<th>Chance of payout</th><th>Blocked accounts</th><th>Test</th></tr></thead><tbody>'+
+  [result.baseline,...result.ideas].map(entry).join('')+'</tbody></table></div>'+
+  '<p class="discovery-note">Candidates were shortlisted using the discovery sample, not the separate validation sample. Their rank is not proof of future superiority; the same assumed win rate, RR, firm rules and market opportunity count were used. Results depend on your inputs and simplified payout rules. Applying a model changes only Portfolio Sim experiments, never your saved Firms strategy.</p>'+
+  '</div>';
+}
+function currentDiscoveryInputs(row){
+ const mode=document.querySelector('[name="budgetMode"]:checked').value;
+ const budget=Math.max(0,Number($('budget').value)||0);
+ const weights=rows.reduce((a,r)=>a+Math.max(0,Number(r.weight)||0),0);
+ const allocated=mode==='split'?weights>0?budget*Math.max(0,Number(row.weight)||0)/weights:0:budget;
+ return {
+  budget:allocated,netGoal:Math.max(0,Number($('netGoal').value)||0),
+  winRate:Math.max(0,Math.min(100,Number($('winRate').value)||0)),
+  days:Number($('days').value)||20,tradesPerDay:Number($('tradesPerDay').value)||2,
+  signalMode:$('signalMode').value,seed:Number($('seed').value)||24717
+ };
+}
+$('discover').addEventListener('click',()=>{
+ if(!modelDiscovery){$('ideaStatus').textContent='Model discovery calculation is unavailable';return;}
+ const index=Number($('ideaAccount').value),row=rows[index];
+ if(!row){$('ideaStatus').textContent='Select a prop-firm account for the search';return;}
+ const inputs=currentDiscoveryInputs(row);
+ if(inputs.budget<=0){$('ideaStatus').textContent='Allocate a positive budget to this account first';return;}
+ const plan=accountPlan(row),v=E.validatePlan(plan);
+ if(v.errors.length){$('ideaStatus').textContent=v.errors.join(' · ');return;}
+ const effort=$('ideaEffort').value,study=effort==='deep'?[150,250]:effort==='quick'?[50,80]:[80,150];
+ $('discover').disabled=true;
+ $('ideaStatus').style.color='var(--muted)';
+ $('ideaStatus').textContent='Comparing alternative risk plans with separate discovery and validation samples…';
+ requestAnimationFrame(()=>{
+  try{
+   const outcome=modelDiscovery.search(plan,{...inputs,
+    objective:$('ideaObjective').value,trainTrials:study[0],testTrials:study[1],shortlist:6});
+   discovered={result:outcome,row:{...row},rowIndex:index,budget:inputs.budget};
+   renderDiscovery(outcome,row,inputs.budget);
+   $('ideaStatus').textContent='Complete · '+outcome.evaluated+' models tested · '+outcome.ideas.length+' shortlisted';
+   $('ideaStatus').style.color='var(--green)';
+  }catch(e){
+   $('ideaStatus').textContent='Model discovery error: '+e.message;
+   $('ideaStatus').style.color='var(--red)';
+  }finally{$('discover').disabled=false;}
+ });
+});
+$('ideaResults').addEventListener('click',event=>{
+ const btn=event.target.closest?.('[data-discovery-apply]');
+ if(!btn||!discovered)return;
+ const selected=discovered.result.ideas[Number(btn.dataset.discoveryApply)];
+ if(!selected)return;
+ const id=discovered.row.id+':'+discovered.row.size;
+ if(!rows.some(row=>row.id+':'+row.size===id)){
+  $('ideaStatus').textContent='The account selection changed. Run a new search before applying.';return;
+ }
+ const tests={};
+ for(const stage of selected.plan.stageList){
+  const c=selected.plan.riskProfiles[stage];
+  tests[stage]={r1:c.r1,r2:c.r2,r3:c.r3,rr:c.rr,winCap:c.maxWinsPerDay,policyMode:c.policy?.mode||'saved'};
+ }
+ testRisks[id]=tests;
+ saveView();renderRows();
+ $('ideaStatus').style.color='var(--green)';
+ $('ideaStatus').textContent='Testing '+selected.title+' for '+discovered.row.id+' '+usd(discovered.row.size)+
+  ' · other firm profiles unchanged';
+ run();
+});
+
 function run(){
  const mode=document.querySelector('[name="budgetMode"]:checked').value;
  const inputs={budget:Math.max(0,Number($('budget').value)||0),netGoal:Math.max(0,Number($('netGoal').value)||0),
