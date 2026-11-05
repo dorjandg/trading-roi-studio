@@ -412,7 +412,7 @@ details p{margin:6px 0}
 <script src="portfolio-to-firms.js"></script>
 <script src="studio-report-source.js?v=20261105-account-rotation"></script>
 <script src="portfolio-charts.js?v=20261105-hover-details"></script>
-<script src="portfolio-journey.js?v=20261105-hover-details"></script>
+<script src="portfolio-journey.js?v=20261105-allocation-tracking"></script>
 <script>
 (function(){
 'use strict';
@@ -439,6 +439,7 @@ const historyState={}; // per-result paging/filter, independent from Monte Carlo
 const chartDefaults={selection:'',account:'auto',group:'overview',daysRange:'all',stage:'all',cashView:'both',outcome:'all',filtersOpen:false};
 const chartState={...chartDefaults};
 const journeyState={selection:'',mode:'trial',onlyChanges:true,signalDay:'1'};
+let allocationLimits={};
 const openResultDetails=new Set();
 const savedViewKey=rootKey+'portfolio-simulator:v1';
 const defaultRows=[['ftmo2',10000,40],['holaPrime',10000,40],['topstep',50000,20]];
@@ -495,12 +496,13 @@ function saveView(){
   signalMode:$('signalMode').value,seed:$('seed').value,
   budgetMode:document.querySelector('[name="budgetMode"]:checked').value,rows,testRisks,
   chartsOpen:$('chartsPanel').open,chartPrefs:{...chartState},
-  journeyOpen:$('journeyPanel').open,journeyPrefs:{...journeyState}
+  journeyOpen:$('journeyPanel').open,journeyPrefs:{...journeyState},allocationLimits
  }))}catch(e){}
 }
 function loadView(){
  const main=readJson(rootKey+'ftmo-roi-studio-v1',{});
  const prior=readJson(savedViewKey,{});
+ allocationLimits=prior.allocationLimits&&typeof prior.allocationLimits==='object'&&!Array.isArray(prior.allocationLimits)?prior.allocationLimits:{};
  $('purchaseMode').value=prior.purchaseMode==='upfront'?'upfront':'recycle';
  $('capacityMode').value=prior.capacityMode==='manual'?'manual':'automatic';
  $('maxActive').value=String(Math.max(1,Math.min(100,Math.floor(Number(prior.maxActive)||1))));
@@ -795,7 +797,7 @@ function makeResultCard(result,index){
 
 function renderJourney(){
  if(!journey||!lastResults.length||!lastInputs)return;
- $('journeyContents').innerHTML=journey.render({results:lastResults,inputs:lastInputs,...journeyState});
+ $('journeyContents').innerHTML=journey.render({results:lastResults,inputs:{...lastInputs,allocationLimits},...journeyState});
 }
 $('journeyPanel').addEventListener('toggle',()=>{
  saveView();
@@ -807,6 +809,13 @@ $('journeyContents').addEventListener('change',event=>{
  else if(field==='mode')journeyState.mode=event.target.value==='average'?'average':'trial';
  else if(field==='onlyChanges')journeyState.onlyChanges=event.target.value==='true';
  else if(field==='signalDay')journeyState.signalDay=event.target.value;
+  else if(field==='evaluationLimit'||field==='fundedLimit'){
+   const selected=journeyState.selection!==''?journeyState.selection:(lastInputs?.budgetMode==='split'?'all':'0');
+   const account=lastResults[Number(selected)];if(!account||selected==='all')return;
+   const key=account.plan.id+':'+account.plan.size;
+   const value=Math.max(0,Math.min(1e12,Number(event.target.value)||0));
+   allocationLimits[key]={...(allocationLimits[key]||{}),[field==='evaluationLimit'?'evaluation':'funded']:value};
+  }
  else return;
  renderJourney();saveView();
 });
