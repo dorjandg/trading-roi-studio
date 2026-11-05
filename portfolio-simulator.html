@@ -412,7 +412,7 @@ details p{margin:6px 0}
 <script src="portfolio-to-firms.js"></script>
 <script src="studio-report-source.js?v=20261105-account-rotation"></script>
 <script src="portfolio-charts.js?v=20261105-hover-details"></script>
-<script src="portfolio-journey.js?v=20261105-payout-visibility"></script>
+<script src="portfolio-journey.js?v=20261105-paginated-journey"></script>
 <script>
 (function(){
 'use strict';
@@ -438,7 +438,7 @@ const firmsTransfer=window.StudioFirmsTransfer;
 const historyState={}; // per-result paging/filter, independent from Monte Carlo calculations
 const chartDefaults={selection:'',account:'auto',group:'overview',daysRange:'all',stage:'all',cashView:'both',outcome:'all',filtersOpen:false};
 const chartState={...chartDefaults};
-const journeyState={selection:'',mode:'trial',onlyChanges:false,signalDay:'all'};
+const journeyState={selection:'',mode:'trial',onlyChanges:false,signalDay:'all',routePage:1,summaryPage:1,pageSize:10};
 let allocationLimits={};
 const openResultDetails=new Set();
 const savedViewKey=rootKey+'portfolio-simulator:v1';
@@ -516,6 +516,8 @@ function loadView(){
   journeyState.mode='trial'; // daily portfolio routing needs real whole-account assignments
   journeyState.onlyChanges=false; // show every trading day for the portfolio routing view
   if(typeof prior.journeyPrefs.signalDay==='string')journeyState.signalDay=prior.journeyPrefs.signalDay;
+  if([5,10,20,30].includes(Number(prior.journeyPrefs.pageSize)))journeyState.pageSize=Number(prior.journeyPrefs.pageSize);
+  for(const key of ['routePage','summaryPage'])if(Number.isInteger(Number(prior.journeyPrefs[key]))&&Number(prior.journeyPrefs[key])>0)journeyState[key]=Number(prior.journeyPrefs[key]);
  }
  if(prior.chartPrefs&&typeof prior.chartPrefs==='object'&&!Array.isArray(prior.chartPrefs)){
   for(const key of Object.keys(chartDefaults)){
@@ -811,10 +813,12 @@ $('journeyPanel').addEventListener('toggle',()=>{
 });
 $('journeyContents').addEventListener('change',event=>{
  const field=event.target.dataset?.journeyField;
- if(field==='selection')journeyState.selection=event.target.value;
+ if(field==='selection'){journeyState.selection=event.target.value;journeyState.routePage=1;journeyState.summaryPage=1;}
  else if(field==='mode')journeyState.mode=event.target.value==='average'?'average':'trial';
- else if(field==='onlyChanges')journeyState.onlyChanges=event.target.value==='true';
+ else if(field==='onlyChanges'){journeyState.onlyChanges=event.target.value==='true';journeyState.summaryPage=1;}
  else if(field==='signalDay')journeyState.signalDay=event.target.value;
+ else if(field==='routePage'||field==='summaryPage')journeyState[field]=Math.max(1,Math.floor(Number(event.target.value)||1));
+ else if(field==='pageSize'){journeyState.pageSize=[5,10,20,30].includes(Number(event.target.value))?Number(event.target.value):10;journeyState.routePage=1;journeyState.summaryPage=1;}
   else if(field==='evaluationLimit'||field==='fundedLimit'){
    const selected=journeyState.selection!==''?journeyState.selection:(lastInputs?.budgetMode==='split'?'all':'0');
    const account=lastResults[Number(selected)];if(!account||selected==='all')return;
@@ -824,6 +828,13 @@ $('journeyContents').addEventListener('change',event=>{
   }
  else return;
  if(field==='evaluationLimit'||field==='fundedLimit'){saveView();renderRows();setStale();run();return;}
+ renderJourney();saveView();
+});
+$('journeyContents').addEventListener('click',event=>{
+ const button=event.target.closest?.('[data-journey-page]');if(!button||button.disabled)return;
+ const field=button.dataset.journeyPage;
+ if(field!=='routePage'&&field!=='summaryPage')return;
+ journeyState[field]=Math.max(1,journeyState[field]+Number(button.dataset.journeyStep||0));
  renderJourney();saveView();
 });
 function renderCharts(){
