@@ -238,6 +238,8 @@ function runAccountDay(p,ac,day,rand,config,record){
   const delta=(win?risk*c.rr:-risk)-p.tradeCost;
   const prior=ac.stagePnl;
   ac.stagePnl=money(ac.stagePnl+delta);dayProfit=money(dayProfit+delta);
+  if(stage==='funded'&&ac.stagePnl>=c.target-.005&&ac.fundedTargetDay===null)
+   ac.fundedTargetDay=day;
   ac.trades++;hadTrade=true;ac.totalR+=delta/risk;
   ac.grossProfit+=Math.max(0,delta);ac.grossLoss+=Math.max(0,-delta);
   ac.tradePnl+=delta;ac.riskTotal+=risk;ac.plannedReward+=risk*c.rr;
