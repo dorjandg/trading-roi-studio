@@ -172,6 +172,9 @@ function search(base,options={}){
   days:options.days,tradesPerDay:options.tradesPerDay,
   winRate:options.winRate,signalMode:options.signalMode,
   budget:options.budget,netGoal:options.netGoal,
+  purchaseMode:options.purchaseMode==='recycle'?'recycle':'upfront',
+  maxActive:options.maxActive,maxBuysPerDay:options.maxBuysPerDay,
+  reinvestPayouts:options.reinvestPayouts===true,
   pairedSignals:true,maxAccounts:100
  };
  const seed=(Math.floor(Number(options.seed)||24717)>>>0)||24717;
