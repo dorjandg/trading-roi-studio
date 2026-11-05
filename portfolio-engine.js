@@ -80,7 +80,11 @@ function buildPlan(programId,size,program,profile={},snapshots={},audit=null){
   riskReserve,split,refund:clamp(dynamic(state,'refund',pos(program?.refund)||0),0,100)/100,
   tradeCost:pos(state.tradeCost),minRisk:pos(state.minRisk),
   fundedTarget:pos(dynamic(state,'profitTarget',isTopstep?dynamic(state,'topstepFirstPayoutBalance',4000):size*.08)),
+  // Approximate calendar-day payout eligibility on a trading-day timeline.
+  // The clock starts with the first trade in the funded stage, not activation.
   fundedWaitDays:clamp(Math.ceil(pos(dynamic(state,'daysBeforeRequest',isTopstep?5:14))*5/7),0,100),
+  payoutProcessingTradingDays:clamp(Math.ceil((pos(state.reviewDays)+pos(state.payoutProcessingDays))*5/7),0,60),
+  qualificationSize:isTopstep?'1 micro contract':'0.01 lot',
   winRate:clamp(dynamic(state,'winRate',40),0,100)/100,
   riskProfiles:{},sourceSaved:!!profile?.state,provisional:!profile?.state,
   stageList:stages,drawdownKind:audit?.riskStructure?.drawdownKind||'unverified',
@@ -137,8 +141,8 @@ function validatePlan(p){
 function makeAccount(i){return {
  id:i,stageIndex:0,stageDay:0,activeDays:0,adminDays:0,totalAdminDays:0,
  stagePnl:0,history:'',dailyProfit:0,dayProfits:[],peakEod:0,bestDay:0,
- status:'active',trades:0,wins:0,losses:0,firstPaid:0,
- purchaseDay:0,fundedActivatedDay:null,fundedTargetDay:null,paidDay:null,closedDay:null,
+ status:'active',trades:0,qualificationTrades:0,wins:0,losses:0,firstPaid:0,
+ purchaseDay:0,fundedActivatedDay:null,fundedFirstTradeDay:null,fundedTargetDay:null,payoutRequestedDay:null,paidDay:null,closedDay:null,
  grossProfit:0,grossLoss:0,winPnl:0,lossPnl:0,riskTotal:0,plannedReward:0,tradePnl:0,
  passes:[],totalR:0,realizedDD:0,peakPnl:0,blocked:0,
  fundedDays:0,fundedPositiveDays:0,funded150Days:0,trace:[]
@@ -170,37 +174,59 @@ function firstPayout(p,ac){
  return money(payout + (p.id==='topstep'?0:p.fee*p.refund));
 }
 function runAccountDay(p,ac,day,rand,config,record){
+ if(ac.status==='payout-pending'){
+  if(day>=ac.payoutRequestedDay+p.payoutProcessingTradingDays){
+   ac.status='paid';ac.paidDay=day;
+   if(record)ac.trace.push({day,stage:'funded',type:'paid',label:'Modeled payout received',cash:ac.firstPaid});
+   return {stagePass:false,paid:true,activation:false};
+  }
+  return {stagePass:false,paid:false,activation:false};
+ }
  if(ac.status!=='active')return {stagePass:false,paid:false,activation:false};
  const stage=stageName(p,ac),c=p.riskProfiles[stage];
  if(!c){ac.status='invalid';return {stagePass:false,paid:false,activation:false}}
  ac.stageDay++;
  const out={stagePass:false,paid:false,activation:false};
  if(stage==='funded')ac.fundedDays++;
+ const eligiblePayout=()=>ac.fundedFirstTradeDay!==null &&
+  (p.id==='topstep'?ac.funded150Days>=5:day-ac.fundedFirstTradeDay+1>=p.fundedWaitDays);
+ const requestPayout=()=>{
+  ac.firstPaid=firstPayout(p,ac);
+  ac.payoutRequestedDay=day;
+  if(record)ac.trace.push({day,stage:'funded',type:'payout-request',label:'Payout requested; funded trading frozen',cash:ac.firstPaid});
+  if(p.payoutProcessingTradingDays<=0){
+   ac.status='paid';ac.paidDay=day;
+   if(record)ac.trace.push({day,stage:'funded',type:'paid',label:'Modeled payout received',cash:ac.firstPaid});
+   out.paid=true;
+  }else ac.status='payout-pending';
+ };
  const alreadyTarget=ac.stagePnl>=c.target-.005;
  if(stage==='funded'&&alreadyTarget&&ac.fundedTargetDay===null)ac.fundedTargetDay=day;
  const consistentNow=!c.consistency||ac.bestDay<=Math.max(0,ac.stagePnl)*c.consistency+1e-7;
  if(isEvaluation(stage)&&alreadyTarget&&consistentNow && ac.activeDays<c.minDays){
-  ac.adminDays++;ac.totalAdminDays++;
-  // Administration-only day is NOT included in any W/L trade series.
-  // Firm-specific tiny qualifying orders are outside this estimate.
+  ac.adminDays++;ac.totalAdminDays++;ac.qualificationTrades++;
+  // One synthetic smallest-size qualification trade for the day. Not one of
+  // the strategy signals. Its actual P/L/margin cannot be computed without
+  // symbol contract specifications, so do not invent a zero-risk live order.
   ac.activeDays++;
-  if(record)ac.trace.push({day,stage,type:'admin',label:'Minimum-day qualification assumption — no W/L trade modeled'});
+  if(record)ac.trace.push({day,stage,type:'admin',lot:p.qualificationSize,
+   label:'Illustrative minimum-size qualification order ('+p.qualificationSize+'); market P/L not modeled'});
  }
  if(isEvaluation(stage)&&alreadyTarget&&consistentNow&&ac.activeDays>=c.minDays){
   nextStage(p,ac,day,record);out.stagePass=true;out.activation=stage==='p1'&&!p.stageList.includes('p2');
   if(stage==='p2')out.activation=true;
   return out;
  }
- const fundedReady=stage==='funded'&&ac.stagePnl>=c.target-.005 &&
-  (p.id==='topstep'?ac.funded150Days>=5:ac.fundedDays>=p.fundedWaitDays);
- if(fundedReady){
-  ac.firstPaid=firstPayout(p,ac);ac.status='paid';ac.paidDay=day;
-  if(record)ac.trace.push({day,stage,type:'paid',label:'First modeled payout',cash:ac.firstPaid});
-  out.paid=true;return out;
- }
- if(stage==='funded'&&ac.stagePnl>=c.target-.005&&p.id!=='topstep'){
-  if(record)ac.trace.push({day,stage,type:'waiting',label:'Funded profit goal reached; payout waiting period remains'});
-  return out;
+ if(stage==='funded'&&alreadyTarget){
+  if(eligiblePayout()){requestPayout();return out;}
+  // FTMO/Hola: profit is locked at the COMPLETED winning trade even when
+  // it overshoots the target. Topstep may need additional winning days for
+  // its separate payout eligibility rule.
+  if(p.id!=='topstep'||ac.funded150Days>=5){
+   if(record)ac.trace.push({day,stage,type:'waiting',
+    label:'Funded target locked; no more trades until payout eligibility'});
+   return out;
+  }
  }
  let dayProfit=0,hadTrade=false,winsToday=0;
  const signals=clamp(config.tradesPerDay,0,20);
@@ -209,8 +235,8 @@ function runAccountDay(p,ac,day,rand,config,record){
   // Topstep needs enough winning days and may need additional profits to meet
   // the 55% evaluation best-day test. Do not stop only at the dollar goal.
   const bestDayOk=!c.consistency||ac.bestDay<=Math.max(0,ac.stagePnl)*c.consistency+1e-7;
-  const payoutDaysOk=stage!=='funded'||p.id!=='topstep'||ac.funded150Days>=5;
-  if(ac.stagePnl>=c.target-.005&&bestDayOk&&payoutDaysOk)break;
+  const payoutDaysOk=stage!=='funded'||p.id==='topstep'&&ac.funded150Days<5;
+  if(ac.stagePnl>=c.target-.005&&bestDayOk&&!payoutDaysOk)break;
   const slot=plannedSlot(ac.history,c.policy);
   const risk=pos(c[slot]);
   // User-selected risk is always exact; no hidden downsizing.
@@ -236,6 +262,7 @@ function runAccountDay(p,ac,day,rand,config,record){
   const slotIndex=config.tradeSlots?.[ix]??ix;
   const win=rand(day,slotIndex,ac.id)<config.winRate;
   const delta=(win?risk*c.rr:-risk)-p.tradeCost;
+  if(stage==='funded'&&ac.fundedFirstTradeDay===null)ac.fundedFirstTradeDay=day;
   const prior=ac.stagePnl;
   ac.stagePnl=money(ac.stagePnl+delta);dayProfit=money(dayProfit+delta);
   if(stage==='funded'&&ac.stagePnl>=c.target-.005&&ac.fundedTargetDay===null)
@@ -276,14 +303,8 @@ function runAccountDay(p,ac,day,rand,config,record){
    out.activation=stage==='p2'||(stage==='p1'&&!p.stageList.includes('p2'));
   }
  }
- if(stage==='funded'&&ac.status==='active'&&ac.stagePnl>=c.target-.005){
-  const eligible=p.id==='topstep'?ac.funded150Days>=5:ac.fundedDays>=p.fundedWaitDays;
-  if(eligible){
-   ac.firstPaid=firstPayout(p,ac);ac.status='paid';ac.paidDay=day;
-   if(record)ac.trace.push({day,stage,type:'paid',label:'First modeled payout',cash:ac.firstPaid});
-   out.paid=true;
-  }
- }
+ if(stage==='funded'&&ac.status==='active'&&ac.stagePnl>=c.target-.005&&eligiblePayout())
+  requestPayout();
  return out;
 }
 function pairedSignal(seed,trial,day,ix,id){
