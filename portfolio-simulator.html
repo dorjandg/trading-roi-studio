@@ -821,7 +821,7 @@ function discoveryKpis(h){
   ['TC',n(h.avg.trades,1),'Average executed trades per portfolio trial']
  ];
  return '<div class="discovery-kpis">'+chips.map(([label,value,help])=>
-  '<span class="discovery-kpi" title="'+esc(help)+'"><b>'+label+'</b><span>'+esc(value)+'</span></span>').join('')+'</div>';
+  '<span class="discovery-kpi" title="'+esc(label+' '+value+' · '+help)+'"><b>'+label+'</b><span>'+esc(value)+'</span></span>').join('')+'</div>';
 }
 function renderDiscovery(result,row,budget){
  const baseline=result.baseline.holdout,objectiveLabel={
@@ -835,7 +835,7 @@ function renderDiscovery(result,row,budget){
  const entry=(c,i)=>{
   const h=c.holdout,delta=i<0?null:c.delta;
   const policySummary='<div class="risks">'+formatDiscoveryPlan(c.plan)+'</div>';
-  return '<tr><td><b>'+esc(c.title)+'</b><small>'+esc(c.reason)+'</small>'+
+  return '<tr><td><b>'+esc(c.title)+'</b><small title="'+esc(c.reason)+'">'+esc(c.reason)+'</small>'+
     discoveryKpis(h)+
     '<details><summary>R1/R2/R3 · phases</summary>'+policySummary+'</details></td>'+
     '<td class="'+(h.avg.net>=0?'good':'bad')+'">'+usd(h.avg.net)+'</td>'+
