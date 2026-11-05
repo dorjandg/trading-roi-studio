@@ -62,3 +62,66 @@
   min-height:30px;padding:5px 8px;font-size:11px;
  }
 }
+
+
+/* Unified, very compact header on every Studio and Lab page. */
+.studio-site-header{
+ box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;
+ gap:10px;min-width:0;margin:0;padding:5px 0 7px;
+ border-bottom:1px solid var(--line,var(--border,#29374a));
+}
+.studio-site-brand{display:flex;align-items:center;gap:9px;min-width:0;
+ color:var(--text,#f0f5fc);text-decoration:none}
+.studio-site-brand:hover{text-decoration:none;color:var(--text,#f0f5fc)}
+.studio-site-mark{
+ position:relative;flex:0 0 35px;height:35px;border-radius:10px;
+ display:grid;place-items:center;color:#07141e;font-weight:900;font-size:22px;
+ background:linear-gradient(135deg,#42d2b6,#357bbd);
+}
+.studio-site-mark small{font-size:11px;position:absolute;right:-3px;bottom:-5px}
+.studio-site-title{display:flex;flex-direction:column;min-width:0;line-height:1.2}
+.studio-site-title strong{font-size:15px;font-weight:800;letter-spacing:-.2px;white-space:nowrap}
+.studio-site-title small{font-size:9px;color:var(--muted,#90a2b8);
+ font-weight:600;letter-spacing:.3px;margin-top:2px;white-space:nowrap}
+.studio-site-tools{display:flex;align-items:center;gap:6px;flex:0 0 auto}
+.studio-site-user{display:inline-flex;align-items:center;gap:5px;
+ font-size:11px;color:var(--muted,#90a2b8);font-weight:650}
+.studio-site-user select{
+ box-sizing:border-box;max-width:102px;min-width:70px;width:auto;min-height:32px;
+ margin:0;padding:4px 20px 4px 7px;border-radius:7px;
+ border:1px solid var(--line,var(--border,#29374a));
+ color:var(--text,#f0f5fc);background:var(--panel2,#142033);
+ font:inherit;font-size:12px;cursor:pointer;
+}
+.studio-site-theme{
+ display:grid;place-items:center;flex:0 0 33px!important;
+ width:33px!important;height:33px!important;min-width:33px!important;min-height:33px!important;
+ margin:0!important;padding:0!important;border-radius:7px!important;
+ border:1px solid var(--line,var(--border,#29374a))!important;
+ background:var(--panel2,#142033)!important;color:var(--text,#f0f5fc)!important;
+ font-size:18px!important;line-height:1!important;cursor:pointer;
+}
+.studio-site-theme:hover{border-color:var(--blue,#81aaff)!important}
+.studio-site-header+.studio-primary-nav,
+.studio-site-header+.nav.studio-primary-nav{
+ margin:0 0 8px!important;padding:5px 0!important;border-bottom:1px solid var(--line,var(--border,#29374a));
+ position:sticky;top:0;z-index:100;background:var(--bg,#080d16);
+}
+.studio-site-header+.studio-primary-nav>a,
+.studio-site-header+.nav.studio-primary-nav>button{
+ min-height:30px;padding:5px 9px;font-size:12px;
+}
+.studio-export-row{display:flex;justify-content:flex-end;align-items:center;margin:0 0 7px}
+.studio-export-row .btn{padding:5px 9px;font-size:11px}
+@media(max-width:600px){
+ .studio-site-header{gap:5px;padding:4px 0 6px}
+ .studio-site-brand{gap:6px}
+ .studio-site-mark{flex-basis:29px;height:29px;font-size:18px;border-radius:7px}
+ .studio-site-title strong{font-size:12px}
+ .studio-site-title small{display:none}
+ .studio-site-user{gap:3px;font-size:10px}
+ .studio-site-user select{min-height:30px;min-width:61px;max-width:81px;font-size:12px;padding:3px 16px 3px 5px}
+ .studio-site-tools{gap:4px}
+ .studio-site-theme{width:30px!important;height:30px!important;flex-basis:30px!important;min-width:30px!important;min-height:30px!important;font-size:16px!important}
+ .studio-site-header+.studio-primary-nav{padding:4px 0!important}
+}
