@@ -272,13 +272,17 @@ function renderRows(){
  const priorIdea=$('ideaAccount').value;
  $('ideaAccount').innerHTML=rows.map((row,i)=>
   '<option value="'+i+'">'+esc(catalog.programs[row.id].firm+' · '+catalog.programs[row.id].name+' · '+usd(row.size))+'</option>').join('');
- if(rows[Number(priorIdea)])$('ideaAccount').value=priorIdea;
+ if(priorIdea!==''&&rows[Number(priorIdea)])$('ideaAccount').value=priorIdea;
  $('profileStatus').textContent=rows.length+' account type'+(rows.length===1?'':'s')+' selected.';
  $('budgetModeNote').textContent=mode==='compare'?
   'Every firm receives the FULL starting budget in its own alternative scenario. Do not add the row totals.':
   'One starting budget is split across the selected firms in proportion to the weights above. The combined result is calculated as one portfolio.';
 }
-function setStale(){if(lastResults.length){$('status').textContent='Inputs changed · run again for updated results';$('status').style.color='var(--amber)';}saveView()}
+function setStale(){
+ if(lastResults.length){$('status').textContent='Inputs changed · run again for updated results';$('status').style.color='var(--amber)';}
+ if(discovered){$('ideaStatus').textContent='Inputs changed · run Find Better Models again for updated suggestions';$('ideaStatus').style.color='var(--amber)';}
+ saveView();
+}
 $('accounts').addEventListener('change',event=>{
  const input=event.target.closest('[data-field]'),card=event.target.closest('[data-row]');if(!input||!card)return;
  const index=Number(card.dataset.row),field=input.dataset.field;
@@ -359,7 +363,7 @@ function historyMarkup(result,index){
 function riskEditor(result,index){
  const p=result.plan;
  return '<section class="risk-tester"><h4>Test phase risks · '+esc(p.firm)+' '+usd(p.size)+'</h4>'+
-  '<p class="hint">Change R1, R2, R3 or RR here and select Re-run. These tests are saved only for Portfolio Sim; your original settings in Firms are not modified.</p>'+
+  '<p class="hint">Change R1, R2, R3, RR, risk sequence or maximum wins per day and select Re-run. These tests are saved only for Portfolio Sim; your original settings in Firms are not modified.</p>'+
   p.stageList.map(stage=>{
    const r=p.riskProfiles[stage];
    return '<fieldset class="risk-phase-test"><legend>'+esc(r.name)+'</legend><div class="fields">'+
@@ -368,6 +372,13 @@ function riskEditor(result,index){
      '<input type="number" inputmode="decimal" min="'+(field==='rr'?'.1':'.01')+
      '" max="'+(field==='rr'?'100':'10000000')+'" step="'+(field==='rr'?'.1':'.01')+
      '" data-test-risk="'+index+'" data-stage="'+stage+'" data-field="'+field+'" value="'+r[field]+'"></div>').join('')+
+    '<div class="field"><label>Risk sequence approach</label><select data-test-config="'+index+'" data-stage="'+stage+'" data-setting="policyMode">'+
+    [['saved','Saved options'],['streak','After-loss tiers'],['flat','Flat R1 only'],['after-win','Increase after WIN'],['protect-after-loss','Protect after LOSS']].map(([val,label])=>
+      '<option value="'+val+'"'+((r.policy?.mode||'saved')===val?' selected':'')+'>'+label+'</option>').join('')+
+    '</select></div>'+
+    '<div class="field"><label>Max wins per day</label><select data-test-config="'+index+'" data-stage="'+stage+'" data-setting="winCap">'+
+    [1,2,3,4,5,6].map(val=>'<option value="'+val+'"'+(r.maxWinsPerDay===val?' selected':'')+'>'+val+'</option>').join('')+
+    '</select></div>'+
     '</div></fieldset>';
   }).join('')+
   '<div class="actions"><button type="button" data-reset-test="'+index+'">Reset to Firms settings</button>'+
@@ -463,6 +474,23 @@ function renderResults(list,inputs){
 
 $('details').addEventListener('change',event=>{
  const input=event.target;
+ if(input.matches?.('[data-test-config]')){
+  const index=Number(input.dataset.testConfig),result=lastResults[index];
+  if(!result)return;
+  const stage=input.dataset.stage,setting=input.dataset.setting;
+  if(!result.plan.stageList.includes(stage))return;
+  const key=result.plan.id+':'+result.plan.size;
+  if(!testRisks[key])testRisks[key]={};
+  if(!testRisks[key][stage])testRisks[key][stage]={};
+  if(setting==='policyMode'&&['saved','streak','flat','after-win','protect-after-loss'].includes(input.value))
+    testRisks[key][stage].policyMode=input.value;
+  else if(setting==='winCap'&&Number(input.value)>=1&&Number(input.value)<=6)
+    testRisks[key][stage].winCap=Number(input.value);
+  else return;
+  const note=input.closest('.risk-tester')?.querySelector('[data-test-note]');
+  if(note){note.textContent='Edited · select Re-run with these risks to recalculate';note.style.color='var(--amber)';}
+  renderRows();setStale();return;
+ }
  if(input.matches?.('[data-history-field]')){
   const zone=input.closest('[data-history-index]');if(!zone)return;
   const index=Number(zone.dataset.historyIndex),settings=historySettings(index);
