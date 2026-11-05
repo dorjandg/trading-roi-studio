@@ -123,6 +123,13 @@ html[data-theme="light"] .recovery-direct{background:#f0faf6;border-color:#8bcdb
 .recovery-option-risk-grid select{display:block;width:100%;min-width:0;margin-top:4px;min-height:34px;border:1px solid var(--border);border-radius:8px;padding:5px 7px;background:var(--panel);color:var(--text)}
 .recovery-details h4{font-size:13px;margin:12px 0 3px}
 
+
+.recovery-option summary .recovery-option-title,.recovery-option summary .recovery-option-timing{display:flex;flex-direction:column;gap:3px;min-width:0}
+.recovery-option summary .recovery-option-title{flex:1}
+.recovery-option summary .recovery-option-timing{text-align:right;align-items:flex-end;flex:1}
+.recovery-option summary small{display:block;font-size:11px;line-height:1.35;color:var(--muted);font-weight:500;overflow-wrap:anywhere}
+.recovery-option summary .recovery-option-timing>strong{font-size:11px}
+@media(max-width:700px){.recovery-option summary .recovery-option-timing{align-items:flex-start;text-align:left;margin-top:6px}}
 </style>
 <script>window.FOUR_DS_CLOUD_ENDPOINT = "https://script.google.com/macros/s/AKfycbyZW792ZLBPxusQwthCJr0bVdZwCjXyeNaklq4Dk-BuSQ8P9gdg2zdTiWFKEmYuy5sY9Q/exec";</script>
 <script src="cloud-bootstrap.js?v=4ds-auto-first-20261104-a"></script>
@@ -1655,7 +1662,9 @@ function recoveryPlanPath(outcomes,params){
   if(fail||pnl>=setup.goal-0.005)break;
   if(!win||tradesToday>=winCap){day++;dayStart=pnl;tradesToday=0}
  }
- return {items,pnl,days:days+day,fail,hit:pnl>=setup.goal-0.005};
+ // Count only trading days that actually contain executed trades (not the next unused day).
+ const usedDays=new Set(items.filter(x=>typeof x.win==='boolean').map(x=>x.day)).size;
+ return {items,pnl,days:completedDays+usedDays,usedDays,fail,hit:pnl>=setup.goal-0.005};
 }
 function renderRecoveryPlanners(){
  const audit=firmHealthAudit?.programs?.[String(activeProgramKey||'').split(':')[0]];
@@ -1715,9 +1724,23 @@ function renderRecoveryPlanners(){
      '<td class="num">'+(item.afterOverall===null?'Verify live floor':recoveryMoney(item.afterOverall))+'</td>'+
      '<td>'+item.status+(item.consistencyNote?' · '+item.consistencyNote:'')+(item.risk+.005<item.intended?' · Risk capped':'')+'</td></tr>';
    }).join('');
-   const sequence=entry.riskSequence.map(x=>x.toUpperCase()).join(' → ');
+   const trades=sim.items.filter(item=>typeof item.win==='boolean');
+   const perDay=new Map();
+   for(const trade of trades)perDay.set(trade.day,(perDay.get(trade.day)||0)+1);
+   const elapsedDays=perDay.size;
+   const dayBreakdown=[...perDay.entries()].map(([day,count])=>'Day '+(day-days)+': '+count+' trade'+(count===1?'':'s')).join(' · ');
+   const remainingMinDays=sim.hit?Math.max(0,setup.minDays-sim.days):0;
+   const timeToResult=sim.fail?'Failed after ':sim.hit?'Target after ':'Active after ';
+   const outcomeTiming=timeToResult+elapsedDays+' trading day'+(elapsedDays===1?'':'s')+
+    (remainingMinDays?' · '+remainingMinDays+' more minimum day'+(remainingMinDays===1?'':'s')+' needed':'');
+   const actualSequence=trades.map(x=>x.riskSlot.toUpperCase()).join(' → ');
+   const outcomeLine=trades.map(x=>x.win?'W':'L').join(' → ');
    return '<details class="recovery-option"'+(index===1?' open':'')+'>'+
-    '<summary><span>Option '+index+' · '+path.split('').join(' → ')+' · '+sequence+'</span><strong>'+status+' · '+recoveryMoney(sim.pnl)+'</strong></summary>'+
+    '<summary><span class="recovery-option-title">Option '+index+' · '+(outcomeLine||path.split('').join(' → '))+
+    '<small>'+actualSequence+' · '+setup.rr.toFixed(2)+'R reward/risk</small></span>'+
+    '<span class="recovery-option-timing">'+outcomeTiming+
+    '<small>'+trades.length+' trade'+(trades.length===1?'':'s')+' · '+(dayBreakdown||'No trades executed')+'</small>'+
+    '<strong>'+status+' · '+recoveryMoney(sim.pnl)+'</strong></span></summary>'+
     '<p class="caption">Outcome plan: '+path.split('').join(' → ')+'. Set a risk level for every planned trade. WIN can continue within the daily trade cap; LOSS closes the day.</p>'+
     '<div class="recovery-option-risk-grid">'+planned+'</div>'+
     '<div class="tablewrap"><table class="recovery-table"><thead><tr><th>Day / outcome</th><th>Risk level</th><th>Trade risk</th><th>Trade P/L</th><th>Stage P/L</th><th>Daily buffer</th><th>Overall buffer</th><th>Next action</th></tr></thead><tbody>'+rows+'</tbody></table></div></details>';
