@@ -1558,7 +1558,7 @@ fetch('prop-firm-official-audit.json',{cache:'no-store'}).then(r=>{if(!r.ok)thro
 const recoverySnapshots={};
 function recoverySnapshot(stage){
  const key=String(activeProgramKey||'none')+':'+stage;
- if(!recoverySnapshots[key])recoverySnapshots[key]={pnl:0,days:0,custom:0,mode:'adaptive',open:true};
+ if(!recoverySnapshots[key])recoverySnapshots[key]={pnl:0,days:0,custom:0,mode:'adaptive',open:true,depth:6,filter:'all'};
  return recoverySnapshots[key];
 }
 function stageRecoverySetup(stage){
@@ -1588,7 +1588,7 @@ function recoveryPlanPath(outcomes,params){
   let intended;
   if(mode==='fixed')intended=setup.base;
   else if(mode==='custom'&&custom>0)intended=custom;
-  else intended=(deficit>0?deficit:remaining)/rr;
+  else intended=(i===0&&Math.abs(initialPnl)<0.005?setup.base:(deficit>0?deficit:remaining)/rr);
   if(mode==='adaptive'&&deficit>0)intended=Math.max(0.01,intended);
   const risk=Math.max(0,Math.min(intended,riskLimit));
   if(!Number.isFinite(risk)||risk<0.01){items.push({step:i+1,day,pnl,beforeDaily:dailyRoom,beforeOverall:staticFloor?totalRoom:null,risk:0,stop:'No usable risk buffer'});break}
@@ -1622,20 +1622,35 @@ function renderRecoveryPlanners(){
   const consistencyPct=cons.percent!=null&&(cons.stage==='evaluation-and-funded'||(stageIsEval&&cons.stage==='evaluation')||(!stageIsEval&&cons.stage==='funded'))?Number(cons.percent):null;
   const mode=snapshot.mode||'adaptive';
   const params={setup,initialPnl:pnl,completedDays:days,daily,overall,buffer,staticFloor,mode,custom:Number(snapshot.custom)||0,consistencyPct};
-  const patterns=[
-   {name:'Option 1 · Recover → Target',path:['W','W'],note:'Win recovery, then win remaining target'},
-   {name:'Option 2 · Loss → Recover → Target',path:['L','W','W'],note:'One more losing day, then two winning days'},
-   {name:'Option 3 · Three recovery losses',path:['L','L','L'],note:'Stop after every loss; failure only if an actual loss floor is reached'},
-   {name:'Option 4 · Win / Loss / Win',path:['W','L','W'],note:'Shows buffer gained by a win and consumed by the next loss'}
-  ];
-  const heading=patterns.map((p,k)=>{
-   const sim=recoveryPlanPath(p.path,params);
-   const status=sim.fail?'Floor breach':sim.hit?(sim.days>=setup.minDays?'Profit target hit':'Min days pending'):'Still active';
+  const depth=Math.max(1,Math.min(8,Math.round(Number(snapshot.depth)||6)));
+  const scenarioPaths=[];
+  // Enumerate every win/loss outcome prefix; stop branching after target, breach, or no usable risk.
+  const walk=(prefix)=>{
+    const sim=recoveryPlanPath(prefix,params);
+    const last=sim.items[sim.items.length-1];
+    if(sim.hit||sim.fail||last?.stop||prefix.length>=depth){
+      scenarioPaths.push({path:prefix.join(''),sim});return;
+    }
+    walk([...prefix,'W']);walk([...prefix,'L']);
+  };
+  walk(['W']);walk(['L']);
+  const getStatus=entry=>{
+    const s=entry.sim;
+    if(s.fail)return 'Loss floor breached';
+    if(s.hit)return s.days>=setup.minDays?'Profit target hit':'Profit target · days pending';
+    if(s.items.some(x=>x.stop))return 'No risk room';
+    return 'Still active at horizon';
+  };
+  const countHit=scenarioPaths.filter(x=>x.sim.hit).length;
+  const countFailed=scenarioPaths.filter(x=>x.sim.fail).length;
+  const visible=scenarioPaths.filter(x=>snapshot.filter==='target'?x.sim.hit:snapshot.filter==='failed'?x.sim.fail:snapshot.filter==='active'?!x.sim.hit&&!x.sim.fail:true);
+  const heading=visible.map((p,k)=>{
+   const sim=p.sim,status=getStatus(p),steps=sim.items.map(t=>t.win?'W':'L').join(' → ');
    const stepRows=sim.items.map(item=>{
     if(item.stop)return '<tr><td>Day '+item.day+'</td><td colspan="6">'+item.stop+'</td></tr>';
-    return '<tr><td>Day '+item.day+' · '+(item.win?'WIN':'LOSS')+'</td><td class="num">'+recoveryMoney(item.risk)+'</td><td class="num">'+recoveryMoney(item.win?item.risk*setup.rr:-item.risk)+'</td><td class="num">'+recoveryMoney(item.pnl)+'</td><td class="num">'+(item.afterDaily===null?'—':recoveryMoney(item.afterDaily))+'</td><td class="num">'+(item.afterOverall===null?'Check trailing floor':recoveryMoney(item.afterOverall))+'</td><td>'+item.status+(item.consistencyNote?' · '+item.consistencyNote:'')+'</td></tr>';
+    return '<tr><td>Day '+item.day+' · '+(item.win?'WIN':'LOSS')+'</td><td class="num">'+recoveryMoney(item.risk)+'</td><td class="num">'+recoveryMoney(item.win?item.risk*setup.rr:-item.risk)+'</td><td class="num">'+recoveryMoney(item.pnl)+'</td><td class="num">'+(item.afterDaily===null?'—':recoveryMoney(item.afterDaily))+'</td><td class="num">'+(item.afterOverall===null?'Verify live floor':recoveryMoney(item.afterOverall))+'</td><td>'+item.status+(item.consistencyNote?' · '+item.consistencyNote:'')+'</td></tr>';
    }).join('');
-   return '<details class="recovery-option"'+(k===0?' open':'')+'><summary><span>'+p.name+'</span><strong>'+status+' · '+recoveryMoney(sim.pnl)+'</strong></summary><p class="caption">'+p.note+'</p><div class="tablewrap"><table class="recovery-table"><thead><tr><th>Outcome</th><th>Trade risk</th><th>Trade P/L</th><th>Stage P/L</th><th>Daily buffer</th><th>Overall buffer</th><th>Action</th></tr></thead><tbody>'+stepRows+'</tbody></table></div></details>';
+   return '<details class="recovery-option"'+(k===0?' open':'')+'><summary><span>Option '+(scenarioPaths.indexOf(p)+1)+' · '+p.path.split('').join(' → ')+'</span><strong>'+status+' · '+recoveryMoney(sim.pnl)+'</strong></summary><p class="caption">W = win, L = loss. '+steps+' · '+sim.items.length+' modeled trades. LOSS closes that trading day; WIN may allow another trade when your daily cap permits.</p><div class="tablewrap"><table class="recovery-table"><thead><tr><th>Day / outcome</th><th>Trade risk</th><th>Trade P/L</th><th>Stage P/L</th><th>Daily buffer</th><th>Overall buffer</th><th>Next action</th></tr></thead><tbody>'+stepRows+'</tbody></table></div></details>';
   }).join('');
   const suggest=mode==='adaptive'?'Recover to break-even first, then size the next full winner toward the target, always limited by available buffer.':'Risk amount stays '+(mode==='custom'?'at your custom size':'at the stage S1 size')+' unless a buffer cap forces it down.';
   const caution=staticFloor?'Static overall floor: buffer = overall allowance + realized stage P/L. This is not live equity headroom.':'Trailing or stage-dependent overall floor: real buffer needs the broker high-water mark and current equity. Overall buffer is NOT verified by this scenario; risk caps are hypothetical.';
@@ -1644,10 +1659,10 @@ function renderRecoveryPlanners(){
    '<label>Current stage P/L ($)<input data-recovery-input="pnl" type="number" step="1" value="'+pnl+'"></label>'+
    '<label>Trading days completed<input data-recovery-input="days" type="number" min="0" step="1" value="'+days+'"></label>'+
    '<label>Risk strategy<select data-recovery-input="mode"><option value="adaptive"'+(mode==='adaptive'?' selected':'')+'>Recover then target</option><option value="fixed"'+(mode==='fixed'?' selected':'')+'>Repeat S1 risk</option><option value="custom"'+(mode==='custom'?' selected':'')+'>Fixed custom risk</option></select></label>'+
-   '<label>Custom risk ($)<input data-recovery-input="custom" type="number" min="0" step="1" value="'+(Number(snapshot.custom)||0)+'"></label>'+
+   '<label>Custom risk ($)<input data-recovery-input="custom" type="number" min="0" step="1" value="'+(Number(snapshot.custom)||0)+'"></label>'+   '<label>Max trades per path<select data-recovery-input="depth">'+[3,4,5,6,7,8].map(v=>'<option value="'+v+'"'+(depth===v?' selected':'')+'>'+v+' trades</option>').join('')+'</select></label>'+   '<label>Show outcomes<select data-recovery-input="filter"><option value="all"'+((snapshot.filter||'all')==='all'?' selected':'')+'>All options</option><option value="target"'+(snapshot.filter==='target'?' selected':'')+'>Profit target reached</option><option value="failed"'+(snapshot.filter==='failed'?' selected':'')+'>Loss floor breached</option><option value="active"'+(snapshot.filter==='active'?' selected':'')+'>Still active / stalled</option></select></label>'+
    '</div>'+
    '<p class="caption">'+setup.name+' · '+setup.rr.toFixed(2)+'R · Target '+recoveryMoney(setup.goal)+' · Starting P/L '+recoveryMoney(pnl)+' · Minimum trading days '+setup.minDays+'. Each LOSS stops that day. A WIN may permit another trade if the stage daily trade cap allows.</p>'+
-   '<p class="caption">Strategy: '+suggest+'</p>'+heading+
+   '<p class="caption">Strategy: '+suggest+'</p>'+   '<div class="recovery-stats"><span>Distinct modeled paths <b>'+scenarioPaths.length+'</b></span><span>Target-hit paths <b>'+countHit+'</b></span><span>Breached-floor paths <b>'+countFailed+'</b></span><span>Displayed <b>'+visible.length+'</b></span></div>'+   '<p class="caption">All win/loss branches through '+depth+' trades, ending a branch early when it hits its target, breaches a modeled loss floor, or runs out of usable risk. Counts are NOT probabilities. The trade-risk strategy is common to every branch.</p>'+heading+
    '<p class="caption">'+caution+' Daily buffer uses the selected starting daily allowance, the new day’s P/L, and assumes no open positions, fees or slippage. A day with a loss is treated as closed by your personal risk policy even if the firm allows more trades. These are illustrative paths, not probabilities or guaranteed pass recommendations.</p>'+
    '</details>';
   const open=host.querySelector('.recovery-details');if(open)open.open=snapshot.open===true;
@@ -1657,7 +1672,8 @@ document.addEventListener('change',event=>{
  const element=event.target.closest?.('[data-recovery-input]');if(!element)return;
  const host=element.closest('[data-recovery-stage]');if(!host)return;
  const snapshot=recoverySnapshot(host.dataset.recoveryStage),field=element.dataset.recoveryInput;
- if(field==='mode')snapshot.mode=element.value;
+ if(field==='mode'||field==='filter')snapshot[field]=element.value;
+ else if(field==='depth')snapshot.depth=Math.max(1,Math.min(8,Math.round(Number(element.value)||6)));
  else{const raw=Number(element.value);if(!Number.isFinite(raw))return;snapshot[field]=field==='days'?Math.max(0,Math.floor(raw)):field==='custom'?Math.max(0,raw):raw}
  snapshot.open=true;renderRecoveryPlanners();
 });
