@@ -423,7 +423,8 @@ html[data-theme="light"] #page-firms .cash-risk-table td:nth-child(4){background
 html[data-theme="light"] .firm-health-card .firm-health-meta,html[data-theme="light"] .firm-health-card .firm-health-info{color:#53677c}
 html[data-theme="light"] .recovery-details .caption{color:#53677c}
 </style>
-<link rel="stylesheet" href="studio-nav.css?v=20261105-compact-v2"></head>
+<link rel="stylesheet" href="studio-nav.css?v=20261105-compact-v2"><script src="studio-report-source.js"></script>
+</head>
 <body>
 <div class="shell">
 <header class="studio-site-header"><a class="studio-site-brand" href="index.html?view=dashboard"><span class="studio-site-mark">F<small>↗</small></span><span class="studio-site-title"><strong>4Ds Trading Studio</strong><small>STRATEGY · PAYOUTS · CAPITAL ALLOCATION</small></span></a><div class="studio-site-tools"><label class="studio-site-user" for="activeUserSelect">User <select id="activeUserSelect" aria-label="Active Studio user"><option value="doen">Doen</option><option value="dori">Dori</option><option value="dona">Dona</option><option value="dion">Dion</option></select></label><button type="button" id="themeToggle" class="studio-site-theme" aria-label="Switch theme" title="Switch theme">◐</button></div></header>
@@ -511,7 +512,10 @@ html[data-theme="light"] .recovery-details .caption{color:#53677c}
   <div class="panel" style="margin-top:19px"><div class="panel-header"><div><h2>Simulation results</h2><p>Estimated pass rates, trade counts and risk exhaustion from the latest simulation. Winning profits are already shown inside each phase above.</p></div></div><div id="simResults" class="notice">Run the simulation to estimate stage pass rates and average trade counts.</div></div>
 </div>
 </section>
-<section id="page-dashboard" class="page active"><div class="studio-export-row"><button class="btn small quiet" id="exportTop" type="button">Export scenario</button></div><div class="panel" style="margin-bottom:14px"><div class="panel-header"><div><h2>Overview account</h2><p>Choose firm, account type and amount. Available amounts depend on the account type; the dashboard updates automatically.</p></div></div><div class="formgrid overview-account-grid"><div class="field"><label for="overviewFirmSelect">1. Prop firm</label><select id="overviewFirmSelect"><option value="">Loading firms…</option></select></div><div class="field"><label for="overviewSizeSelect">2. Account amount</label><select id="overviewSizeSelect"><option value="">Choose amount</option></select></div><div class="field"><label for="overviewProgramSelect">3. Account type</label><select id="overviewProgramSelect"><option value="">Choose account type</option></select></div></div><div style="margin-top:12px"><button class="btn small" type="button" data-nav="firms">Edit selected account in Prop firms</button></div><p class="caption" id="overviewAccountHint" style="margin-top:10px">Choose an account to load its trading rules, risk settings, payout assumptions and ROI.</p></div><div id="activeAccountProfile" class="caption" style="margin:0 0 12px"></div>
+<section id="page-dashboard" class="page active"><div class="studio-export-row"><button class="btn small quiet" id="exportTop" type="button">Export scenario</button></div><div class="panel" style="margin-bottom:14px"><div class="panel-header"><div><h2>Overview account</h2><p>Choose firm, account type and amount. Available amounts depend on the account type; the dashboard updates automatically.</p></div></div><div class="formgrid overview-account-grid"><div class="field"><label for="overviewFirmSelect">1. Prop firm</label><select id="overviewFirmSelect"><option value="">Loading firms…</option></select></div><div class="field"><label for="overviewSizeSelect">2. Account amount</label><select id="overviewSizeSelect"><option value="">Choose amount</option></select></div><div class="field"><label for="overviewProgramSelect">3. Account type</label><select id="overviewProgramSelect"><option value="">Choose account type</option></select></div></div><div style="margin-top:12px"><button class="btn small" type="button" data-nav="firms">Edit selected account in Prop firms</button></div><p class="caption" id="overviewAccountHint" style="margin-top:10px">Choose an account to load its trading rules, risk settings, payout assumptions and ROI.</p></div><div id="activeAccountProfile" class="caption" style="margin:0 0 6px"></div>
+<div class="notice" id="overviewReportSource" aria-live="polite" style="margin:0 0 10px">
+ <strong>Report source:</strong> Choose an account. Portfolio Sim results will appear here after a matching run.
+</div>
   <div class="panel overview-investment" style="margin-bottom:14px"><div class="panel-header"><div><h2>Investment plan</h2><p>Enter your investment budget. The number of challenges and all results update automatically.</p></div></div><div class="overview-investment-grid"><div class="field"><label for="overviewBudget">Available investment budget (USD)</label><input id="overviewBudget" type="number" min="0" step="1" inputmode="decimal"></div><div class="field"><label>Challenges covered by budget</label><strong id="overviewDerivedCount">—</strong></div><div class="field"><label id="overviewUnitCostLabel">Cost per challenge</label><strong id="overviewUnitCost">—</strong></div><div class="field"><label id="overviewFundedLabel">Expected funded accounts</label><strong id="overviewAffordable" aria-live="polite">—</strong></div></div><div id="overviewBudgetStatus" class="caption" style="margin-top:12px"></div><div id="topstepBudgetBreakdown" class="panel" style="display:none;margin-top:12px;padding:14px"></div></div>
   <div class="overview-summary-strip"><div><span class="section-tag">Modeled payout probability</span><strong id="heroRate">—</strong><span class="caption" id="overviewStageFormula">Selected account stages × payout collection</span></div><div class="overview-summary-actions"><span class="tag" id="modeLabel">Manual stage estimates</span><a class="btn small primary" href="portfolio-simulator.html" style="display:inline-flex;align-items:center">Run Portfolio Sim</a><button class="btn small" id="overviewSimulate" type="button" title="Legacy stage-probability estimate. The new R1/R2/R3 portfolio simulator is separate.">Legacy Estimate</button><button class="btn small" data-nav="firms">Edit trading settings</button><button class="btn small" data-nav="scaling">Compare investments</button></div></div>
   <div class="notice" id="overviewModelStatus" style="margin-bottom:14px" role="status"></div><div class="panel" id="topstepStageCounts" style="display:none;padding:16px;margin-bottom:16px"></div><div class="panel" id="overviewIssueHelp" style="display:none;margin-bottom:16px;padding:16px"></div>
@@ -1183,6 +1187,100 @@ function deriveBudgetAccounts(){
  const unit=positive(state.price)+positive(state.extraCost)+topstepReserveFee();
  state.accounts=unit>0?Math.max(0,Math.min(1000,Math.floor(positive(state.budget)/unit))):0;
 }
+
+/* Overview has historically been an independent stage-probability estimator.
+   Promote a *matching* Portfolio Sim snapshot to the headline result only
+   when Firms settings and budget are unchanged. Never combine estimates. */
+function applyPortfolioReportToOverview(){
+ const source=$('overviewReportSource');
+ const account=String(activeProgramKey||'');
+ const reader=window.StudioReportSource;
+ const box=$('overviewAnalysisPanel');
+ const economics=$('economicsTitle')?.closest('.panel');
+ const setLegacyVisible=visible=>{
+  if(box)box.style.display=visible?'':'none';
+  if(economics)economics.style.display=visible?'':'none';
+ };
+ const label=$('overviewDerivedCount')?.closest('.field')?.querySelector('label');
+ if(label)label.textContent='Challenges covered by budget';
+ const defaultReceiptNote=$('kpiReceipts')?.closest('.kpi')?.querySelector('.note');
+ if(defaultReceiptNote)defaultReceiptNote.textContent='Includes expected challenge refunds';
+ const costMeta=$('kpiCost')?.closest('.kpi')?.querySelector('.meta');
+ if(costMeta)costMeta.textContent='Planned challenge spending';
+ const header=$('heroRate')?.closest('.overview-summary-strip')?.querySelector('.section-tag');
+ if(header)header.textContent='Modeled payout probability';
+ setLegacyVisible(true);
+ if(!reader||!account||!source){
+  if(source)source.innerHTML='<strong>Report source:</strong> Select and save an account in Firms, then run Portfolio Sim for a trade-based report.';
+  return;
+ }
+ const report=reader.status(localStorage,activeUser,account,state.budget);
+ const safe=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ if(report.state!=='matched'){
+  source.innerHTML='<strong>Overview source: stage-rate planning model.</strong> '+safe(report.message)+
+   ' These are separate, simplified assumptions—not Portfolio Sim NET/ROI. '+
+   '<a href="portfolio-simulator.html">Run Portfolio Sim</a> to make its trade-based figures the Overview reference.';
+  source.style.borderColor='var(--border)';
+  if($('kpiROILabel'))$('kpiROILabel').textContent=phaseModel().topstep?
+   'Legacy Topstep ROI · expected fees':'Manual estimate · ROI on incurred costs';
+  if($('kpiNetNote'))$('kpiNetNote').textContent=
+   'Legacy stage success assumptions; not Portfolio Sim trade paths';
+  return;
+ }
+ const r=report.row,inputs=report.report.inputs||{},d=new Date(report.report.createdAt);
+ const date=Number.isFinite(d.getTime())?d.toLocaleString():'last run';
+ const moneyValue=n=>money(Number(n)||0);
+ const expectedBought=Number(r.bought??r.count)||0;
+ const horizon=Math.floor(Number(inputs.days)||0);
+ const trials=Math.floor(Number(inputs.trials)||0);
+ const chance=(x)=>Number.isFinite(Number(x))?pct(Number(x)):'—';
+ const modelType=inputs.purchaseMode==='recycle'?'dynamic daily purchases':'upfront purchases';
+ source.innerHTML='<strong>Overview source: Portfolio Sim · matched Firms settings.</strong> '+
+   safe(date)+' · '+safe(String(trials))+' trials · '+safe(String(horizon))+
+   ' trading days · '+safe(modelType)+
+   ' · '+safe(String(inputs.winRate))+'% WR. '+
+   '<a href="portfolio-simulator.html">Inspect full report</a>';
+ source.style.borderColor='var(--green)';
+ $('kpiCost').textContent=moneyValue(r.spent);
+ $('kpiReceipts').textContent=moneyValue(r.receipts);
+ $('kpiNet').textContent=moneyValue(r.net);
+ $('kpiNet').className='val '+(r.net>=0?'green':'red');
+ $('kpiROI').textContent=chance(r.roi);
+ $('kpiROI').className='val '+(r.roi>=0?'green':'red');
+ $('kpiROILabel').textContent='Portfolio Sim · net ROI on incurred costs';
+ $('kpiROIx').textContent='NET ÷ incurred fees · '+trials+' Monte Carlo trials';
+ $('kpiNetNote').textContent='First modeled payouts − incurred fees';
+ $('kpiBudget').textContent=safe(modelType)+' · '+moneyValue(r.budget)+' initial allocation';
+ if(defaultReceiptNote)defaultReceiptNote.textContent='First modeled payout receipts; not prop-firm account balance';
+ if(costMeta)costMeta.textContent='Expected incurred challenge and activation fees';
+ $('overviewDerivedCount').textContent=expectedBought.toFixed(2);
+ if(label)label.textContent='Expected purchased challenges · Sim';
+ if($('overviewAffordable'))$('overviewAffordable').textContent=(Number(r.funded)||0).toFixed(2);
+ if($('overviewBudgetStatus'))$('overviewBudgetStatus').textContent=
+  'Portfolio Sim assumes '+safe(modelType)+' · average challenge purchases '+expectedBought.toFixed(2)+
+  ' · incurred spend '+moneyValue(r.spent)+' · initial budget '+moneyValue(r.budget)+'.';
+ $('heroRate').textContent=chance(r.chancePayout);
+ if(header)header.textContent='Portfolio Sim · chance ≥1 first payout';
+ $('overviewStageFormula').textContent='Simulated trades · evaluation · funded · first payout';
+ $('modeLabel').textContent='Portfolio Sim · matched run';
+ $('overviewModelStatus').textContent=
+  'These NET, ROI, payout and progression figures come from the last matching Portfolio Sim run, not the separate manual pass-rate calculator. Results are illustrative, not a historical backtest.';
+ const stageNames=phaseModel().phase2?['Phase 1 passed','Phase 2 passed']:['Evaluation passed'];
+ const rows=[['Purchased challenges',expectedBought]];
+ (r.stages||[]).forEach((value,i)=>rows.push([stageNames[i]||('Stage '+(i+1)+' passed'),value]));
+ rows.push(['Funded activated',Number(r.funded)||0],['First payouts',Number(r.paid)||0]);
+ $('funnel').innerHTML=rows.map(([name,value])=>funnelRow(name,value,expectedBought)).join('');
+ $('pipelineDescription').textContent='Portfolio Sim: trade-based account progression from the matching run.';
+ $('pOne').textContent=chance(r.chancePayout);
+ $('pThree').textContent=chance(r.chance3x);
+ $('pFour').textContent=chance(r.chance4x);
+ if($('topstepStageCounts'))$('topstepStageCounts').style.display='none';
+ if($('topstepPipelineFinance'))$('topstepPipelineFinance').style.display='none';
+ // Economy and analysis panels are based on another model. Hide them rather
+ // than displaying conflicting forecasts alongside a Portfolio Sim report.
+ setLegacyVisible(false);
+}
+
 function render(){renderFirmHealth();renderRecoveryPlanners();syncOverviewProgressMode();if(phaseModel().topstep)state.topstepActivationFee=topstepReserveFee();deriveBudgetAccounts();applyPhaseVisibility();
  const p1=document.querySelector('[data-phase-meta="p1"]'),p2=document.querySelector('[data-phase-meta="p2"]'),fund=document.querySelector('[data-phase-meta="funded"]');
  if(p1)p1.textContent='Profit target: '+money(state.p1Target)+' · Minimum trading days: '+state.p1MinDays+' · Set by selected firm rules above.';
@@ -1334,7 +1432,7 @@ if(scenarioRows?.length)for(const row of scenarioRows)updateScenarioMetrics(row)
   }
  $('scenarioNote').textContent=mode==='simulation'?(dirtySim?'Simulation estimates may be stale. Rerun after editing trading rules.':'Stage rates derived from simplified Monte Carlo paths. Payout collection remains a manual assumption.'):'These pass rates are manual planning estimates, including prior illustrative 40%/50% presets—not verified live account success rates.';
  $('marginNotice').textContent=instrumentReady()?instrumentLabel()+' · Planned funded base '+money(state.fundedBase)+' → estimated margin '+money(marginForRisk(state.fundedBase))+'; boost '+money(state.fundedBoost)+' → estimated margin '+money(marginForRisk(state.fundedBoost))+'. Starting-equity margin ceiling: '+money(state.accountSize*prob(state.marginCeiling))+'. Actual broker/exchange margin may differ.':'Planned initial stop-loss risk: Phase 1 '+money(state.p1Base)+'; Phase 2 '+money(state.p2Base)+'; Funded '+money(state.fundedBase)+'. Dollar-risk simulation works without contract settings; executable lot size and broker margin are not yet checked.';renderSymbolSummary();
- renderScaling();showWarnings(c);renderOverviewAnalysis(c,model,topstep);if(lastSim)renderSim();else{$('simResults').className='notice';$('simResults').textContent='Run the USD stop-loss simulation for illustrative stage pass rates. Contract sizing and broker margin are not modeled.';}renderPresetLibrary();scheduleAutomaticEstimate();}
+ renderScaling();showWarnings(c);renderOverviewAnalysis(c,model,topstep);if(lastSim)renderSim();else{$('simResults').className='notice';$('simResults').textContent='Run the USD stop-loss simulation for illustrative stage pass rates. Contract sizing and broker margin are not modeled.';}renderPresetLibrary();scheduleAutomaticEstimate();applyPortfolioReportToOverview();}
 function renderScaling(){const budgets=[250,500,1000,2000,4000,8000,16000];const c=calc();const unit=c.unit;const selected=positive(state.budget);if(!budgets.includes(selected))budgets.push(selected);budgets.sort((x,y)=>x-y);
  $('budgetRows').innerHTML=budgets.map(b=>{const n=unit>0?Math.floor(b/unit):0;if(n<=0)return `<tr><td>${money(b)}</td><td colspan="6" class="subtle">Budget below one challenge</td></tr>`;const x=calc(Math.min(n,1000));return `<tr><td>${money(b)}</td><td class="num">${x.count}</td><td class="num">${money(x.cost)}</td><td class="num">${x.successes.toFixed(2)}</td><td class="num ${x.net>=0?'green':'red'}">${money(x.net)}</td><td class="num">${pct(x.roi)}</td><td class="num">${pct(x.chance(4))}</td></tr>`;}).join('');
  $('mirrorRows').innerHTML=[1,2,3,4,5].map(m=>{const x=calc(state.accounts,m);return `<tr><td>${m} account${m===1?'':'s'} / signal ${m===state.mirror?'<span class="tag">selected</span>':''}</td><td class="num">${money(x.net)}</td><td class="num">${pct(x.atLeast)}</td><td class="num">${pct(x.chance(3))}</td><td class="num">${pct(x.chance(4))}</td></tr>`;}).join('');}
