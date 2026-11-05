@@ -127,9 +127,17 @@ function sampleMilestones(r,signalDay='1'){
 function dailyTradeRouting(results,selected,inputs){
  const sources=selected==='all'?results:[results[Number(selected)]].filter(Boolean);
  const entries=[];
+ // Give every purchased account one unique, immutable display ID across the
+ // entire selected portfolio. Never restart A1 for a second firm/size.
+ let offset=0;
  for(const source of sources){
   const label=source.plan.firm+' '+usd(source.plan.size);
-  for(const a of source.sample?.tradeAssignments||[])entries.push({...a,firm:label});
+  const ids=source.sample?.accountDetails||[];
+  const highest=Math.max(0,...ids.map(a=>Number(a.id)||0));
+  for(const a of source.sample?.tradeAssignments||[]){
+   entries.push({...a,firm:label,globalAccount:a.account==null?null:offset+a.account});
+  }
+  offset+=Math.max(highest,Number(source.sample?.bought)||0);
  }
  entries.sort((a,b)=>a.day-b.day||a.signal-b.signal||a.firm.localeCompare(b.firm));
  // A purchased account has one permanent ID within its account type.
@@ -139,10 +147,10 @@ function dailyTradeRouting(results,selected,inputs){
  const violations=[];
  for(const e of entries.slice().sort((a,b)=>a.day-b.day||a.signal-b.signal)){
   if(e.account==null||!(e.stage in phaseRank))continue;
-  const key=e.firm+':'+e.account;
+  const key=e.globalAccount;
   const before=progress.get(key);
   const rank=phaseRank[e.stage];
-  if(before!==undefined&&rank<before)violations.push('A'+e.account+' '+e.firm+' on D'+e.day);
+  if(before!==undefined&&rank<before)violations.push('A'+e.globalAccount+' '+e.firm+' on D'+e.day);
   progress.set(key,Math.max(before??rank,rank));
  }
  const warning=violations.length?'<p class="journey-status-line" style="color:var(--red)">Account-stage regression detected: '+esc(violations.slice(0,5).join(', '))+'. Check simulation data.</p>':'';
@@ -171,7 +179,7 @@ function dailyTradeRouting(results,selected,inputs){
  };
  const tradeText=a=>{
   if(!a||a.account==null)return '<span style="color:var(--muted)">Unused</span>';
-  const name='A'+a.account+(selected==='all'?' · '+esc(a.firm):'');
+  const name='A'+a.globalAccount+(selected==='all'?' · '+esc(a.firm):'');
   const result=a.outcome==='W'?'W':a.outcome==='L'?'L':esc(a.outcome||'—');
   const stage=a.stage==='p1'?'CH':a.stage==='p2'?'VR':a.stage==='funded'?'FD':'—';
   const color=result==='W'?'var(--green)':result==='L'?'var(--red)':'var(--muted)';
@@ -192,7 +200,7 @@ function dailyTradeRouting(results,selected,inputs){
  }).join('');
  const heading='<div class="journey-status-line"><strong>Daily trades → prop-firm accounts</strong> · '+days.length+
   ' trading days · '+entries.filter(e=>e.account!=null).length+' assigned signal slots</div>';
- const explain='<p class="journey-explainer">A1, A2, etc. are permanent purchased-account IDs, never reassigned to new purchases. An account moves only CH → VR → FD → Payout/closed. After it passes CH, the same ID never returns to CH. CH = Challenge, VR = Verification, FD = Funded; W/L = simulated trade outcome. Each row shows daily trade routing and end-of-day account totals. These are complete account assignments from one simulated portfolio path, not an average or only one account. Account IDs restart for each firm. '+(selected==='all'?'In a split portfolio each firm has its own local trade slot numbering; the same Trade number across firms does not necessarily mean the same global signal.':'')+'</p>';
+ const explain='<p class="journey-explainer">A1, A2, etc. are permanent, unique account IDs across this displayed portfolio. New challenges always receive new numbers. CH → VR → FD → Payout/closed is forward-only: an account that passed CH can never be displayed in CH again. CH = Challenge, VR = Verification, FD = Funded; W/L = the modeled result of that assigned trade. '+(selected==='all'?'In split mode, the same trade number may appear for separate firms because signals are allocated by firm.':'')+'</p>';
  return heading+warning+explain+'<div class="tablewrap journey-ledger-table" style="max-height:650px"><table class="journey-table" style="min-width:970px"><thead><tr><th>Day</th>'+
   Array.from({length:maxCells},(_,i)=>'<th>Trade '+(i+1)+'</th>').join('')+
   '<th>Executed</th><th>Bought</th><th>CH</th><th>VR</th><th>FD</th><th>Failed</th><th>Paid</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
