@@ -325,9 +325,10 @@ function oneTrial(p,config,rng,record=false){
  });
  const dailyCash=config.trackDaily===true?
   [{day:0,spent,receipts,net:receipts-spent,paid,bought,challengeSpent,activationSpent,
-   live:liveCount(),burned:0,...journeyCounts()}]:null;
+   live:liveCount(),burned:0,opportunities:0,tradesToday:0,unusedToday:0,...journeyCounts()}]:null;
  for(let day=1;day<=config.days;day++){
   const dailyOpportunities=dynamic?(config.tradeSchedule?config.tradeSchedule[day-1]:config.tradesPerDay):config.tradesPerDay;
+  const tradesBefore=accounts.reduce((sum,ac)=>sum+ac.trades,0);
   if(dynamic){
    // Spend only when there is an available active slot. Closed/failed/blocked
    // accounts are replaced no earlier than the following trading day.
@@ -387,10 +388,15 @@ function oneTrial(p,config,rng,record=false){
    }
    if(res.paid){paid++;receipts+=ac.firstPaid;}
   }
-  if(dailyCash)dailyCash.push({day,spent,receipts,net:receipts-spent,paid,
-   bought,challengeSpent,activationSpent,live:liveCount(),
-   burned:accounts.filter(a=>a.status==='failed'||a.status==='exhausted').length,
-   ...journeyCounts()});
+  if(dailyCash){
+   const tradesToday=accounts.reduce((sum,ac)=>sum+ac.trades,0)-tradesBefore;
+   const opportunities=dynamic?dailyOpportunities:dailyOpportunities*accounts.length;
+   dailyCash.push({day,spent,receipts,net:receipts-spent,paid,
+    bought,challengeSpent,activationSpent,live:liveCount(),
+    opportunities,tradesToday,unusedToday:Math.max(0,opportunities-tradesToday),
+    burned:accounts.filter(a=>a.status==='failed'||a.status==='exhausted').length,
+    ...journeyCounts()});
+  }
  }
  const passes=p.stageList.filter(x=>x!=='funded').map(stage=>accounts.filter(x=>x.passes.some(y=>y.stage===stage)).length);
  // Evaluation passes waiting for a funded slot are not counted as activated.
@@ -453,7 +459,8 @@ function simulatePortfolio(p,config={}){
  const chartTrials=settings.trackDaily?[]:null;
  const chartSums=settings.trackDaily?Array.from({length:settings.days+1},
   (_,day)=>({day,spent:0,receipts:0,net:0,paid:0,bought:0,challengeSpent:0,activationSpent:0,live:0,burned:0,
-   challenge:0,verification:0,fundedActive:0,fundingWait:0,targetHit:0,activated:0,passed1:0,passed2:0})):null;
+   challenge:0,verification:0,fundedActive:0,fundingWait:0,targetHit:0,activated:0,passed1:0,passed2:0,
+   opportunities:0,tradesToday:0,unusedToday:0})):null;
  let withPayout=0,positiveNet=0,goalMet=0, sample=null;
  const goal=pos(config.netGoal);
  for(let k=0;k<trials;k++){
@@ -467,7 +474,7 @@ function simulatePortfolio(p,config={}){
   if(chartSums)for(const d of x.dailyCash||[]){
    const sum=chartSums[d.day];
    for(const key of ['spent','receipts','net','paid','bought','challengeSpent','activationSpent','live','burned','challenge','verification','fundedActive',
-    'fundingWait','targetHit','activated','passed1','passed2'])sum[key]+=d[key];
+    'fundingWait','targetHit','activated','passed1','passed2','opportunities','tradesToday','unusedToday'])sum[key]+=d[key];
   }
   for(const key of Object.keys(total))total[key]+=x[key]||0;
   x.passes.forEach((count,i)=>stageTotals[i]+=count);
@@ -508,7 +515,9 @@ function simulatePortfolio(p,config={}){
    activationSpent:d.activationSpent/trials,live:d.live/trials,burned:d.burned/trials,
    challenge:d.challenge/trials,verification:d.verification/trials,fundedActive:d.fundedActive/trials,
    fundingWait:d.fundingWait/trials,targetHit:d.targetHit/trials,activated:d.activated/trials,
-   passed1:d.passed1/trials,passed2:d.passed2/trials}))||null
+   passed1:d.passed1/trials,passed2:d.passed2/trials,
+   opportunities:d.opportunities/trials,tradesToday:d.tradesToday/trials,
+   unusedToday:d.unusedToday/trials}))||null
  };
 }
 root.StudioPortfolioEngine={buildPlan,validatePlan,resolvePolicy,plannedSlot,
