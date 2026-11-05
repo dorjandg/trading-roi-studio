@@ -1590,7 +1590,7 @@ function recoverySnapshot(stage){
   let saved={};
   try{saved=JSON.parse(localStorage.getItem(recoveryStoreKey(stage))||'{}')||{}}catch(e){}
   recoverySnapshots[key]={
-   pnl:0,days:0,open:true,depth:6,filter:'target',winCap:2,viewCount:8,sortBy:'fast',
+   pnl:0,days:0,open:true,settingsOpen:false,openOptionPath:'',depth:6,filter:'target',winCap:2,viewCount:8,sortBy:'fast',
    ...saved,
    levels:saved.levels&&typeof saved.levels==='object'?saved.levels:{},
    optionSequences:saved.optionSequences&&typeof saved.optionSequences==='object'?saved.optionSequences:{}
@@ -1759,7 +1759,7 @@ function renderRecoveryPlanners(){
     (remainingMinDays?' · '+remainingMinDays+' more minimum day'+(remainingMinDays===1?'':'s')+' needed':'');
    const actualSequence=trades.map(x=>x.riskSlot.toUpperCase()).join(' → ');
    const outcomeLine=trades.map(x=>x.win?'W':'L').join(' → ');
-   return '<details class="recovery-option"'+(k===0?' open':'')+'>'+
+   return '<details class="recovery-option" data-outcome-path="'+path+'"'+((snapshot.openOptionPath?snapshot.openOptionPath===path:k===0)?' open':'')+'>'+
     '<summary><span class="recovery-option-title">Option '+index+' · '+(outcomeLine||path.split('').join(' → '))+
     '<small>'+actualSequence+' · '+setup.rr.toFixed(2)+'R RR · Max drawdown '+recoveryMoney(pathStats(entry).dd)+'</small></span>'+
     '<span class="recovery-option-timing">'+outcomeTiming+
@@ -1780,7 +1780,7 @@ function renderRecoveryPlanners(){
    RECOVERY_LEVELS.map((level,index)=>'<label>'+(index===0?'R1 · Initial':index===1?'R2 · Recovery':'R3 · Additional')+' ($)'+
     '<input type="number" min="0" step="1" data-risk-level="'+level+'" value="'+levels[level]+'"></label>').join('')+'</div>'+
    '<p class="caption">Edit R1, R2 and R3 once, then assign them in each option.</p>'+
-   '<details class="option-planner-settings"><summary>Advanced: search settings, current progress and filters</summary><div class="recovery-fields">'+
+   '<details class="option-planner-settings"'+(snapshot.settingsOpen?' open':'')+'><summary>Advanced: search settings, current progress and filters</summary><div class="recovery-fields">'+
    '<label>Current stage P/L ($)<input data-recovery-input="pnl" type="number" step="1" value="'+pnl+'"></label>'+
    '<label>Trading days completed<input data-recovery-input="days" type="number" min="0" step="1" value="'+days+'"></label>'+
    '<label>Max trades on a winning day'+select('winCap',[[1,'1 trade'],[2,'2 trades'],[3,'3 trades'],[4,'4 trades'],[5,'5 trades'],[6,'6 trades']],requestedWinCap)+'</label>'+
@@ -1834,13 +1834,15 @@ document.addEventListener('change',event=>{
  snapshot.open=true;persistRecoverySnapshot(stage);render();
 });
 document.addEventListener('toggle',event=>{
- const holder=event.target.closest?.('[data-recovery-stage]');
- if(!holder||event.target.tagName!=='DETAILS'||!event.target.classList.contains('recovery-details'))return;
- const stage=holder.dataset.recoveryStage;
- recoverySnapshot(stage).open=event.target.open;
+ const target=event.target,holder=target.closest?.('[data-recovery-stage]');
+ if(!holder||target.tagName!=='DETAILS')return;
+ const stage=holder.dataset.recoveryStage,snapshot=recoverySnapshot(stage);
+ if(target.classList.contains('recovery-details'))snapshot.open=target.open;
+ else if(target.classList.contains('option-planner-settings'))snapshot.settingsOpen=target.open;
+ else if(target.classList.contains('recovery-option')&&target.open)snapshot.openOptionPath=target.dataset.outcomePath||'';
+ else return;
  persistRecoverySnapshot(stage);
 },true);
-
 let selectedAccountSupportsSimulation=true;
 function useSelectedAccount(x,force=false){
  if(!x||x.v!==1||!x.programId||!Number.isFinite(Number(x.size))||Number(x.size)<=0)return;
