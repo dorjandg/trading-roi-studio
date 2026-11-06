@@ -628,7 +628,9 @@ details p{margin:6px 0}
 <details class="sim-charts-panel numbered-panel" id="gptResearchPanel"><summary><strong>11 · GPT Research &amp; Suggestions</strong><span class="sim-charts-summary" id="gptResearchSummary"> · Verified findings · tests · website improvements</span><span class="sim-charts-hint">Show / hide</span></summary>
  <div class="numbered-content">
   <p class="hint">Scheduled GPT reviews can publish verified, non-personal research and suggestions here. Reports distinguish measured simulation results, hypotheses, verified rule references, and completed code fixes. This section does not automatically change your strategy settings. Private simulation records stay in your cloud workspace, not in this public report feed.</p>
-  <div class="actions"><button type="button" id="gptResearchRefresh">Refresh GPT reports</button><small id="gptResearchStatus" class="hint" role="status">Loading published reports…</small></div>
+  <details class="gpt-research-item" id="gptResearchReadiness"><summary><strong>Simulation evidence readiness</strong><span class="sim-charts-summary"> · Local saved history · Show / hide</span></summary>
+   <div class="gpt-research-content"><div id="gptEvidenceReadiness">Checking saved history…</div><p class="hint">Calculate Investment stores summary statistics; Run Full Simulation saves sampled account traces. A new full run may be needed for detailed loss-limit diagnostics. This check reads only the selected workspace in this browser; it does not upload data.</p></div></details>
+  <div class="actions"><button type="button" id="gptResearchRefresh">Refresh GPT reports &amp; evidence</button><small id="gptResearchStatus" class="hint" role="status">Loading published reports…</small></div>
   <div id="gptResearchReports"></div>
  </div>
 </details>
