@@ -15,6 +15,9 @@ import subprocess
 import sys
 import tempfile
 import time
+import urllib.error
+import urllib.parse
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -167,6 +170,82 @@ def extract_captions(video, tmpdir):
         "youtube_title": video_title[-1] if len(video_title) == 2 and video_title[0] == vid else None,
     }
 
+def extract_supadata(video):
+    """Use hosted captions so GitHub runner does not scrape YouTube itself.
+
+    Native-only deliberately prevents an unapproved speech-to-text bill.
+    Never log API keys or raw provider responses.
+    """
+    key = os.environ.get("JJ_SUPADATA_API_KEY", "").strip()
+    if not key:
+        return {"status": "needs_review", "reason": "supadata_api_key_missing"}
+    endpoint = "https://api.supadata.ai/v1/transcript"
+    params = urllib.parse.urlencode({
+        "url": "https://www.youtube.com/watch?v=" + video["id"],
+        "lang": "en", "text": "false", "mode": "native",
+    })
+    def request_json(url):
+        req = urllib.request.Request(url, headers={
+            "x-api-key": key, "Accept": "application/json",
+            "User-Agent": "JJ-Academy-Research/1.0",
+        })
+        try:
+            with urllib.request.urlopen(req, timeout=35) as response:
+                return json.load(response)
+        except urllib.error.HTTPError as err:
+            if err.code in (401, 403):
+                return {"_error": "provider_auth_or_forbidden"}
+            if err.code == 402:
+                return {"_error": "provider_no_credits"}
+            if err.code == 429:
+                return {"_error": "provider_rate_limited"}
+            return {"_error": "provider_http_" + str(err.code)}
+        except (OSError, ValueError):
+            return {"_error": "provider_network_or_response_error"}
+    data = request_json(endpoint + "?" + params)
+    for attempt in range(8):
+        if "_error" in data:
+            return {"status": "needs_review", "reason": data["_error"]}
+        job_id = data.get("jobId")
+        if not job_id:
+            break
+        if not isinstance(job_id, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,100}", job_id):
+            return {"status": "needs_review", "reason": "provider_invalid_job"}
+        time.sleep(8)
+        data = request_json(endpoint + "/" + urllib.parse.quote(job_id))
+        if data.get("status") == "failed":
+            return {"status": "needs_review", "reason": "provider_job_failed"}
+        if data.get("status") in ("queued", "active"):
+            data = {"jobId": job_id}
+            continue
+        break
+    if data.get("jobId"):
+        return {"status": "needs_review", "reason": "provider_job_pending"}
+    content = data.get("content")
+    if not isinstance(content, list) or not content:
+        return {"status": "needs_review", "reason": "provider_no_timestamped_transcript"}
+    cues = []
+    for segment in content:
+        if not isinstance(segment, dict):
+            continue
+        text = segment.get("text")
+        offset = segment.get("offset")
+        if not isinstance(text, str) or not isinstance(offset, (int, float)):
+            continue
+        if not text.strip() or offset < 0:
+            continue
+        seconds = int(offset // 1000)
+        timecode = f"{seconds//3600:02d}:{(seconds//60)%60:02d}:{seconds%60:02d}.{int(offset)%1000:03d}"
+        cues.append({"time": timecode, "text": text.strip()})
+    if not cues:
+        return {"status": "needs_review", "reason": "provider_empty_cues"}
+    return {
+        "status": "caption_imported", "caption_language": data.get("lang", "en"),
+        "cues": cues, "youtube_title": None,
+        "provider": "supadata_native_captions",
+    }
+
+
 def find_existing(drive, folder, video_id):
     q = "name = '" + video_id + ".captions.json' and '" + folder.replace("'", "\\'") + "' in parents and trashed = false"
     records = drive.files().list(q=q, fields="files(id,name),nextPageToken",
@@ -218,7 +297,7 @@ def main():
                 print(f"{vid}: already stored; skipped")
                 continue
             with tempfile.TemporaryDirectory() as tmp:
-                result = extract_captions(video, tmp)
+                result = extract_supadata(video) if os.environ.get("JJ_SUPADATA_API_KEY") else extract_captions(video, tmp)
             if result["status"] != "caption_imported":
                 failed += 1
                 print(f"{vid}: {result['status']} ({result['reason']}; yt_dlp_exit={result.get('exit_code', 'n/a')})")
@@ -233,6 +312,7 @@ def main():
                 "youtube_title": result["youtube_title"], "published": video["published"],
                 "url": video["url"], "caption_language": result["caption_language"],
                 "verification": "auto_or_manual_caption_not_chart_verified",
+                "provider": result.get("provider", "yt_dlp"),
                 "imported_at": datetime.now(timezone.utc).isoformat(), "cues": result["cues"],
             }
             upload_json(drive, folder, vid + ".captions.json", payload)
