@@ -35,7 +35,9 @@ function create({user,element,endpoint}){
    fundedActivatedDay:a.fundedActivatedDay,fundedFirstTradeDay:a.fundedFirstTradeDay,
    fundedTargetDay:a.fundedTargetDay,payoutRequestedDay:a.payoutRequestedDay,
    paidDay:a.paidDay,closedDay:a.closedDay,firstPaid:a.firstPaid,
-   tradeCount:a.trades,wins:a.wins,losses:a.losses,stagePnl:a.stagePnl};
+   tradeCount:a.trades,wins:a.wins,losses:a.losses,stagePnl:a.stagePnl,
+   realizedDD:a.realizedDD,peakPnl:a.peakPnl,riskBlockedAttempts:a.blocked,
+   trace:(a.trace||[]).slice(-120).map(e=>({...e}))};
  }
  function summarize(result){
   return {
@@ -44,7 +46,10 @@ function create({user,element,endpoint}){
    risk:compact(result.plan.riskProfiles),
    caps:{overallLoss:result.plan.overallLoss,dailyLoss:result.plan.dailyLoss,
     drawdownKind:result.plan.drawdownKind,fee:result.plan.fee,
-    fundedMaxActive:result.plan.fundedMaxActive},
+    fundedMaxActive:result.plan.fundedMaxActive,tradeCost:result.plan.tradeCost,
+    reserve:result.plan.riskReserve,split:result.plan.split,
+    fundedWaitDays:result.plan.fundedWaitDays,
+    payoutProcessingTradingDays:result.plan.payoutProcessingTradingDays},
    avg:compact(result.avg),stages:compact(result.stages),
    conversions:root.StudioPortfolioEngine?.stageFunnel?.(result)||[],
    chancePayout:result.chancePayout,chanceGoal:result.chanceGoal,
@@ -58,6 +63,12 @@ function create({user,element,endpoint}){
   const r=c.result;
   return {riskScale:c.scale,riskMode:c.riskMode||'saved',r3Route:c.r3Route||'legacy',rrVariant:c.rrVariant||null,initialBudget:c.initialBudget,accountsBudgeted:c.units,
    score:compact(c.score),
+   planSnapshot:{overallLoss:c.plan?.overallLoss,dailyLoss:c.plan?.dailyLoss,
+    riskReserve:c.plan?.riskReserve,tradeCost:c.plan?.tradeCost,
+    drawdownKind:c.plan?.drawdownKind,fee:c.plan?.fee,
+    fundedWaitDays:c.plan?.fundedWaitDays,
+    payoutProcessingTradingDays:c.plan?.payoutProcessingTradingDays,
+    riskProfiles:compact(c.plan?.riskProfiles||{})},
    stages:(r?.plan?.stageList||c.plan?.stageList||[]).map(stage=>{
     const x=(r?.plan?.riskProfiles||c.plan?.riskProfiles||{})[stage]||{};
     return {stage,name:x.name,r1:x.r1,r2:x.r2,r3:x.r3,rr:x.rr,rrByTier:x.rrByTier||null,target:x.target};
