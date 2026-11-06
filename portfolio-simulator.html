@@ -491,6 +491,9 @@ details p{margin:6px 0}
 .report-source-actions{display:flex;gap:6px;flex-wrap:wrap}
 .report-source-actions button{min-height:29px;padding:5px 9px;font-size:11px}
 .report-source-actions button:disabled{opacity:.55;cursor:default}
+.report-jump-links{display:flex;gap:9px;flex:1 1 100%;font-size:11px;padding-top:5px;border-top:1px solid var(--line);flex-wrap:wrap}
+.report-jump-links a{color:var(--blue);text-decoration:none;font-weight:650}
+.report-jump-links a:hover{text-decoration:underline}
 @media(max-width:650px){.report-source-bar{padding:7px;gap:5px}.report-source-actions{width:100%}.report-source-actions button{flex:1 1 135px;min-height:34px}}
 
 /* Compact independent pagination for saved Simulation History. */
@@ -566,7 +569,7 @@ details p{margin:6px 0}
  <div id="firmsSendStatus" class="status" style="margin-top:10px" aria-live="polite">Suggested models stay in Portfolio Sim until you explicitly send one to Firms.</div>
 </div></details>
 <section id="results" hidden>
-<div id="reportSourceBar" class="report-source-bar" role="group" aria-label="Detailed report source"><strong>Detailed reports · Sections 4–7</strong><span id="reportSourceLabel">Run Simulation</span><div class="report-source-actions"><button type="button" data-report-source="run" disabled>Run Simulation</button><button type="button" data-report-source="investment" disabled>Investment scenario</button></div></div>
+<div id="reportSourceBar" class="report-source-bar" role="group" aria-label="Detailed report source"><strong>Detailed reports · Sections 4–7</strong><span id="reportSourceLabel">Run Simulation</span><div class="report-source-actions"><button type="button" data-report-source="run" disabled>Run Simulation</button><button type="button" data-report-source="investment" disabled>Investment scenario</button></div><nav class="report-jump-links" aria-label="Detailed reports"><a href="#section4Panel" data-report-jump="section4Panel">4 · Results</a><a href="#chartsPanel" data-report-jump="chartsPanel">5 · Charts</a><a href="#journeyPanel" data-report-jump="journeyPanel">6 · Journey</a><a href="#section7Panel" data-report-jump="section7Panel">7 · Trades</a></nav></div>
 <details class="sim-charts-panel numbered-panel" id="section4Panel" open><summary><strong>4 · Results across prop firms</strong><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><p id="summaryCaption" class="hint"></p><div id="totals" class="kpis"></div>
  <div class="tablewrap"><table><thead><tr><th>Firm / account</th><th>Budget</th><th>Challenges</th><th>Spent avg.</th><th>Phase 1 passes</th><th>Phase 2 passes</th><th>Funded</th><th>Paid</th><th>Payouts avg.</th><th>Net avg.</th><th>ROI</th><th>Chance ≥1 payout</th></tr></thead><tbody id="comparisonRows"></tbody></table></div>
  <p class="hint">Counts and profits are averages over simulated trials, not whole-account predictions. ROI = expected net / expected incurred costs. Starting budget is not account capital.</p>
@@ -1825,6 +1828,13 @@ function run(){
  });
 }
 $('reportSourceBar').addEventListener('click',event=>{
+ const jump=event.target.closest?.('[data-report-jump]');
+ if(jump){
+  event.preventDefault();
+  const panel=$(jump.dataset.reportJump);
+  if(panel){panel.open=true;panel.scrollIntoView({behavior:'smooth',block:'start'});}
+  return;
+ }
  const button=event.target.closest?.('[data-report-source]');
  if(!button||button.disabled)return;
  const source=button.dataset.reportSource;
