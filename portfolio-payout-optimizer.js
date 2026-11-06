@@ -268,11 +268,11 @@ async function optimize({plan,perPayout,maxInvestment,minRoi=2,minNetRoi=0,minNe
  });
  return {requiredPayouts:count,profitPerAccount:profitNeeded(plan,perPayout),
   targetCash:null,perPayout,maxInvestment,minRoi,minNetRoi,minNetPnl,minRR,maxRR,checked,
-  feasible:candidates.some(meetsAll),payoutCountFeasible:candidates.some(reachesPayouts),
-  fastestFirst:candidates.filter(c=>c.score.firstPayoutDay!=null&&c.score.chanceAnyPayout>=.5).slice().sort((a,b)=>
+  feasible:candidates.some(x=>r3Executable(x)&&meetsAll(x)),payoutCountFeasible:candidates.some(x=>r3Executable(x)&&reachesPayouts(x)),
+  fastestFirst:candidates.filter(c=>r3Executable(c)&&c.score.firstPayoutDay!=null&&c.score.chanceAnyPayout>=.5).slice().sort((a,b)=>
    a.score.firstPayoutDay-b.score.firstPayoutDay||
    b.score.hit-a.score.hit)[0]||null,
-  fastestGoal:candidates.filter(c=>c.score.goalPayoutDay!=null).slice().sort((a,b)=>
+  fastestGoal:candidates.filter(c=>r3Executable(c)&&c.score.goalPayoutDay!=null).slice().sort((a,b)=>
    a.score.goalPayoutDay-b.score.goalPayoutDay||
    b.score.hit-a.score.hit)[0]||null,
   candidates:(()=>{
@@ -587,7 +587,7 @@ function render(out,sortMode='model',currentPlan=null){
  }).join('');
  return '<div class="reverse-sort-bar"><label for="payoutResultsSort"><strong>Sort scenarios by</strong></label><select id="payoutResultsSort" aria-label="Sort validated scenarios">'+
   Object.entries(payoutSortModes).map(([value,label])=>'<option value="'+value+'"'+(selectedSort===value?' selected':'')+'>'+escapeHtml(label)+'</option>').join('')+
-  '</select><small>Ranking only '+out.candidates.length+' validated options shown (not all '+out.checked+' searched). Changing sort does not rerun the model.</small></div>'+
+  '</select><small>Optimizer order favors R3 paths executable after two losses. Other sort choices may put a blocked reference first. Displayed options are a validated shortlist ('+out.candidates.length+' of '+out.checked+' tested), not every combination. Sorting does not rerun the model.</small></div>'+
   '<details class="reverse-info-section"><summary><strong>Target &amp; calculation rules</strong> <span>· '+out.requiredPayouts+' minimum payouts · '+money(out.minNetPnl)+' net goal</span></summary><p class="hint">Net P&L target: '+money(out.minNetPnl)+' after incurred fees. Minimum '+out.requiredPayouts+
   ' first payouts at '+money(out.perPayout)+' each before fees; more may be needed to cover purchase costs. Allowed trade RR: '+out.minRR.toFixed(2)+'–'+out.maxRR.toFixed(2)+'R. Minimum fee-based ROI: '+pct(out.minRoi)+'. Minimum net ROI on starting investment: '+pct(out.minNetRoi)+'. Minimum net P&L: '+money(out.minNetPnl)+'. The account must first reach approximately '+
   money(out.profitPerAccount)+' funded trading profit (based on the modeled profit payout split, excluding any refunded challenge fee). Probability is the share of trials reaching the minimum first-payout count AND net P&L target within the trading-day horizon.</p></details>'+
