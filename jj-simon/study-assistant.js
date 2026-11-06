@@ -125,17 +125,112 @@ function jjHelperSearch(question){
 }
 function jjHelperNode(tag,css,text){const el=document.createElement(tag);if(css)el.className=css;if(text!==undefined)el.textContent=text;return el}
 let jjHelperQuestion='';
+
+/* Unanswered-question queue. Browser storage is the fallback when no shared backend exists. */
+const jjQuestionQueueKey='jj-unanswered-questions-v1';
+function jjQueueRead(){
+ try{const data=JSON.parse(localStorage.getItem(jjQuestionQueueKey)||'[]');return Array.isArray(data)?data:[]}
+ catch(_){return []}
+}
+function jjQueueWrite(items){
+ try{localStorage.setItem(jjQuestionQueueKey,JSON.stringify(items.slice(-200)));return true}
+ catch(_){return false}
+}
+function jjQuestionId(q){return q.toLowerCase().replace(/\s+/g,' ').trim()}
+function jjQueueAdd(question,reason,matchCount){
+ const q=String(question||'').trim().slice(0,1000);if(q.length<8)return {ok:false,reason:'Question needs at least 8 characters'};
+ const now=new Date().toISOString();const rows=jjQueueRead();const key=jjQuestionId(q);
+ const found=rows.find(x=>x.key===key&&x.status!=='resolved');
+ if(found){found.lastSeen=now;found.occurrences=(found.occurrences||1)+1;found.reasons=[...new Set([...(found.reasons||[]),reason])]}
+ else rows.push({id:'UQ-'+Date.now().toString(36)+'-'+Math.floor(Math.random()*100000).toString(36),key,question:q,status:'unanswered',reason,reasons:[reason],matchCount,createdAt:now,lastSeen:now,occurrences:1});
+ const saved=jjQueueWrite(rows);jjQueueRender();
+ if(saved)jjQueueTrySync(q,reason,matchCount).catch(()=>{});
+ return {ok:saved,alreadyKnown:!!found};
+}
+async function jjQueueTrySync(question,reason,matchCount){
+ /* Shared queue endpoint is optional. Never claim cloud submission if not configured. */
+ const response=await fetch('./api/questions',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question,reason,matchCount})});
+ if(!response.ok)throw Error('Shared queue unavailable');
+ const result=await response.json();
+ if(result.ok){
+  const key=jjQuestionId(question);const rows=jjQueueRead();
+  for(const row of rows)if(row.key===key){row.synced=true;row.serverId=result.id}
+  jjQueueWrite(rows);jjQueueRender();
+ }
+}
+function jjQueueRender(){
+ const root=document.getElementById('jj-helper-app');if(!root)return;
+ const container=root.querySelector('#jj-question-queue');if(!container)return;
+ const rows=jjQueueRead(),open=rows.filter(x=>x.status!=='resolved');
+ container.replaceChildren();
+ const heading=jjHelperNode('div','jj-queue-heading');
+ heading.append(jjHelperNode('strong','','Unanswered-question register'),jjHelperNode('span','',open.length+' open'));
+ container.append(heading);
+ const helper=jjHelperNode('p','jj-helper-hint','Questions are saved in this browser. When a shared Cloudflare backend is connected, new questions can also be submitted for GPT research. Local entries do not automatically notify ChatGPT.');
+ container.append(helper);
+ if(!open.length){container.append(jjHelperNode('p','jj-helper-hint','No unanswered questions recorded yet.'));return}
+ const list=jjHelperNode('div','jj-queue-list');
+ for(const row of open.slice(-25).reverse()){
+  const item=jjHelperNode('div','jj-queue-item');
+  item.append(jjHelperNode('strong','',row.question));
+  const sub=jjHelperNode('small','',row.reasons?.join(' · ')||row.reason);
+  item.append(sub);
+  const meta=jjHelperNode('small','',row.synced?'Shared queue submitted':'Saved locally · shared submission unconfirmed');
+  item.append(meta);
+  const actions=jjHelperNode('div','jj-queue-actions');
+  const retry=jjHelperNode('button','','Search again');retry.type='button';retry.onclick=()=>{
+   jjHelperQuestion=row.question;const input=root.querySelector('.jj-helper-form textarea');if(input)input.value=row.question;jjHelperAnswer();
+  };
+  const resolved=jjHelperNode('button','','Mark resolved locally');resolved.type='button';resolved.onclick=()=>{
+   const current=jjQueueRead();const target=current.find(x=>x.id===row.id);if(target){target.status='resolved';target.resolvedAt=new Date().toISOString();jjQueueWrite(current);jjQueueRender()}
+  };
+  actions.append(retry,resolved);item.append(actions);list.append(item);
+ }
+ container.append(list);
+ const options=jjHelperNode('div','jj-queue-actions');
+ const copy=jjHelperNode('button','','Copy review queue');copy.type='button';
+ copy.onclick=()=>{
+  const content=open.map(x=>'- '+x.question+' | '+(x.reasons?.join('; ')||x.reason)+' | '+x.createdAt).join('\n');
+  if(navigator.clipboard?.writeText)navigator.clipboard.writeText(content).catch(()=>{});
+  else {const temp=document.createElement('textarea');temp.value=content;document.body.append(temp);temp.select();document.execCommand('copy');temp.remove()}
+ };
+ const exportButton=jjHelperNode('button','','Export JSON');exportButton.type='button';
+ exportButton.onclick=()=>{
+  const blob=new Blob([JSON.stringify(open,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='jj-unanswered-questions.json';a.click();URL.revokeObjectURL(url);
+ };
+ options.append(copy,exportButton);container.append(options);
+}
+function jjQueueFeedback(question,hits){
+ const root=document.getElementById('jj-helper-app');if(!root)return;
+ const place=root.querySelector('#jj-helper-feedback');if(!place)return;
+ place.replaceChildren();
+ if(!question.trim())return;
+ if(!hits.length){
+  const already=jjQueueRead().some(x=>x.key===jjQuestionId(question)&&x.status!=='resolved');
+  place.append(jjHelperNode('p','jj-queue-warning',already?'No relevant matches. This question is registered for research.':'No relevant matches. Registering this question for research.'));
+  if(!already)jjQueueAdd(question,'No source match',0);
+ }else{
+  place.append(jjHelperNode('span','','Did these sources answer your question?'));
+  const no=jjHelperNode('button','','No — register for research');no.type='button';
+  no.onclick=()=>{const res=jjQueueAdd(question,'Sources do not answer question',hits.length);no.textContent=res.ok?'Registered locally':'Could not save locally';no.disabled=!!res.ok};
+  place.append(no);
+ }
+}
+
 function jjHelperAnswer(){
  const root=document.getElementById('jj-helper-app');if(!root)return;
  const output=root.querySelector('#jj-helper-results');output.replaceChildren();
  const hits=jjHelperSearch(jjHelperQuestion);
  if(!jjHelperQuestion.trim()){
+  jjQueueFeedback('',[]);
   output.append(jjHelperNode('p','jj-helper-hint','Ask a question to find the most relevant course passages.'));
   return;
  }
  const title=jjHelperNode('div','jj-helper-answer-header');
  title.append(jjHelperNode('strong','',hits.length?'Relevant course findings':'No supported answer found'));
  title.append(jjHelperNode('span','',hits.length+' source matches'));output.append(title);
+ jjQueueFeedback(jjHelperQuestion,hits);
  if(!hits.length){
   output.append(jjHelperNode('p','jj-helper-hint','The currently indexed Academy material does not establish an answer. Try a shorter question, a specific trading term, or the Trading Dictionary.'));
   return;
@@ -179,8 +274,11 @@ function jjHelperMount(){
  }
  root.append(examples);
  const results=jjHelperNode('div','jj-helper-results');results.id='jj-helper-results';results.setAttribute('aria-live','polite');root.append(results);
+ const feedback=jjHelperNode('div','jj-helper-feedback');feedback.id='jj-helper-feedback';root.append(feedback);
+ const queue=jjHelperNode('section','jj-question-queue');queue.id='jj-question-queue';root.append(queue);
  const toc=article.querySelector(':scope > .chapter-toc');if(toc)toc.before(root);else article.append(root);
  jjHelperAnswer();
+ jjQueueRender();
 }
 const jjHelperBeforeRender=render;
 render=function(){jjHelperBeforeRender();if(active===jjHelperSlug)jjHelperMount()};
