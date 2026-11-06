@@ -150,7 +150,7 @@ def extract_captions(video, tmpdir):
 def find_existing(drive, folder, video_id):
     q = "name = '" + video_id + ".captions.json' and '" + folder.replace("'", "\\'") + "' in parents and trashed = false"
     records = drive.files().list(q=q, fields="files(id,name),nextPageToken",
-        supportsAllDrives=True, includeItemsFromAllDrives=True, page_size=10).execute().get("files", [])
+        supportsAllDrives=True, includeItemsFromAllDrives=True, pageSize=10).execute().get("files", [])
     return records[0]["id"] if records else None
 
 def upload_json(drive, folder, filename, obj, existing=None):
