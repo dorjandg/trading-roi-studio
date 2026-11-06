@@ -240,7 +240,7 @@ function create({user,element,endpoint}){
   },
   saveOptimizer(data){
    const record=makeOptimizerRecord(data);
-   if(writeLocal([record,...runs])){render();cloudSync()}
+   if(writeLocal([record,...runs])){page=1;render();cloudSync()}
    return record;
   },
   getRuns(){return runs.slice()},
