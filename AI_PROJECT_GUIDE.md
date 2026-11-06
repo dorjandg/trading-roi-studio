@@ -70,6 +70,15 @@ Calculation:
 - Optimizer tries several investment budgets and scaled risk profiles, validates shortlisted options on separate random outcomes and displays the failed target gaps. Search is approximate and currently considers one account type at a time.
 - Do not equate gross withdrawals with net after expenses: requesting both $10,000 cash payouts and $10,000 net after fees may require greater gross cash receipts.
 
+## Fastest-payout and target-based risk optimization (Nov 6 update)
+- Reverse payout optimizer now tries two risk sizing styles: saved-tier scaling and **target-sized** risk. Target sizing computes R1 from the phase profit target / R1 RR, bounded by modeled daily and overall loss headroom. Scale is capped at 1 for the first risk to avoid deliberate first-win overshoot.
+- After an R1 loss, `streak` risk policy selects R2 on a later trading day; its risk target is calculated to cover the first loss and complete the phase profit target on a win, but is capped by remaining overall/daily drawdown. This is a strategy hypothesis, not guaranteed loss recovery. R3 is separate.
+- Example FTMO $10k Phase 1 $1k target, 3R, zero cost: R1 about $333.34; after one loss R2 about $444.45, producing net cumulative ~+$1k if R2 wins. Min 4 trading days can still delay phase advancement.
+- Engine now supports optional per-tier RR and reports Monte Carlo conditional mean day of **first paid payout**, mean day of **full payout-count/cash goal** in trials that achieved it, and their occurrence rates. These measures include the modeled phase min-days, funded wait, and payment-processing assumptions.
+- UI shows compact fastest-payout KPIs and a collapsed sizing explanation; detailed actual simulated account trade paths remain collapsed. A faster result based on rare wins is not preferred for the first-payout KPI without at least 50% modeled chance of receiving some payout. Treat KPI days as conditional, not forecasts.
+- Optimizer's phase table now includes the profit target, R1/R2/R3, and tier RR. First payout speed does not override firm drawdown/risk-blocking rules. Results are still finite-grid Monte Carlo estimates, not a guarantee or global optimum.
+- History stores the selected sizing mode and payout timing.
+
 ## History / latest-run retrieval
 - Per-user local history key: 4ds:v1:<user>:portfolio-simulation-history:v1.
 - Run Simulation records have schema 4ds-portfolio-simulation-v1.
