@@ -110,14 +110,22 @@ function buildPlan(programId,size,program,profile={},snapshots={},audit=null){
   const rrBase=dynamic(state.rrByTier,root+'Base',dynamic(state,'rr',3));
   const rr=clamp(rrBase,.1,100);
   const policy=resolvePolicy(snap.optionSequences||{});
-  if(['saved','streak','flat','after-win','protect-after-loss'].includes(snap.policyMode))
+  if(['saved','streak','flat','after-win','protect-after-loss','target-now','repair-r2','buffered-target','eval-recovery-burn','funded-profit-ladder','funded-staged-recovery'].includes(snap.policyMode))
    policy.mode=snap.policyMode;
   result.riskProfiles[key]={
    target:pos(target),
    minDays:clamp(minDays,0,60),
    maxWinsPerDay:clamp(dynamic(snap,'winCap',2),1,6),
    maxDays:clamp(dynamic(state,root==='funded'?'fundedDays':root+'Days',30),1,365),
-   rr,r1:pos(r1),r2:pos(r2),r3:pos(r3),policy:isTopstep&&key==='p1'?{map:{},conflicts:[],mode:'flat'}:policy,
+   rr,r1:pos(r1),r2:pos(r2),r3:pos(r3),
+   rrByTier:snap.rrByTier&&['r1','r2','r3'].every(t=>Number.isFinite(Number(snap.rrByTier[t]))&&Number(snap.rrByTier[t])>0)?
+    Object.fromEntries(['r1','r2','r3'].map(t=>[t,Number(snap.rrByTier[t])])):undefined,
+   dynamicMaxRisk:snap.dynamicMaxRisk!=null&&Number(snap.dynamicMaxRisk)>0?Number(snap.dynamicMaxRisk):undefined,
+   fundedStarterRisk:key==='funded'&&snap.fundedStarterRisk!=null&&Number(snap.fundedStarterRisk)>0?Number(snap.fundedStarterRisk):undefined,
+   fundedRecoveryLevels:key==='funded'&&Array.isArray(snap.fundedRecoveryLevels)&&snap.fundedRecoveryLevels.length===4&&
+    snap.fundedRecoveryLevels.every(n=>Number.isFinite(Number(n))&&Number(n)>0)?
+    snap.fundedRecoveryLevels.map(Number):undefined,
+   policy:isTopstep&&key==='p1'?{map:{},conflicts:[],mode:'flat'}:policy,
    consistency:isTopstep&&key==='p1'?.55:0,
    name:key==='p1'?(isTopstep?'Challenge · Trading Combine':'Phase 1'):key==='p2'?'Phase 2':(isTopstep?'Funded · XFA':'Funded')
   };
