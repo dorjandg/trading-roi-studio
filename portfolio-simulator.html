@@ -451,6 +451,37 @@ details p{margin:6px 0}
 .portfolio-advice-item p{margin:3px 0;line-height:1.4}
 .portfolio-advice-more small{display:block;color:var(--muted);line-height:1.4;margin-top:5px}
 
+
+/* Compact mobile accordion headers. Controls receive a dedicated second row. */
+@media(max-width:650px){
+ .sim-charts-panel{margin:6px 0;border-radius:9px}
+ .sim-charts-panel>summary,.numbered-panel>summary,#payoutOptimizerPanel>summary{
+  display:grid;grid-template-columns:12px minmax(0,1fr);align-items:center;
+  column-gap:8px;row-gap:5px;padding:10px 11px;min-height:20px;
+ }
+ .sim-charts-panel>summary::before{grid-column:1;grid-row:1;font-size:12px;align-self:center}
+ .sim-charts-panel>summary>strong{
+  grid-column:2;grid-row:1;min-width:0;flex:none;
+  font-size:13px;line-height:1.25;font-weight:700;
+  white-space:normal;overflow-wrap:break-word;
+ }
+ .sim-charts-panel>summary>.sim-charts-summary,
+ .sim-charts-panel>summary>.sim-charts-hint{display:none}
+ #section2Panel>summary .section-run-btn,
+ #discovery>summary .section-run-btn,
+ #payoutOptimizerPanel>summary .section-run-btn{
+  grid-column:2;grid-row:2;justify-self:stretch;display:flex;
+  width:100%;height:31px;min-height:31px;max-height:31px;
+  flex:none;margin:1px 0 0;padding:4px 8px;font-size:12px;
+  font-weight:700;white-space:nowrap;border-radius:6px;
+ }
+ #payoutOptimizerPanel>summary strong,
+ #section2Panel>summary strong,#discovery>summary strong{font-size:13px}
+ .numbered-panel>.numbered-content{padding:7px 6px 6px}
+ #assumptionsPanel>.numbered-content{padding:8px}
+ #assumptionsPanel .footer{font-size:11px;line-height:1.4;margin:7px 0}
+}
+
 /* Compact independent pagination for saved Simulation History. */
 .simulation-history-pages{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap;margin:6px 0 2px;font-size:11px;color:var(--muted)}
 .simulation-history-pages label{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
@@ -548,9 +579,9 @@ details p{margin:6px 0}
 <details class="sim-charts-panel numbered-panel" id="section9Panel"><summary><strong>9 · Daily Spending Ledger</strong><span class="sim-charts-summary">Daily purchases · fees · payouts · net cash</span><span class="sim-charts-hint">Show / hide</span></summary>
  <div class="numbered-content" id="spendingLedgerContents"><p class="hint">Run a simulation to view daily spending.</p></div>
 </details>
-<section class="panel"><h2>Model assumptions & limits</h2><details><summary>Read before interpreting an ROI estimate</summary><p class="hint">Challenge purchases follow the selected buying mode: upfront on day 0, or dynamic day-by-day purchases and replacements when trading slots and budget permit. Dynamic replacements respond to failed, risk-exhausted, or first-paid accounts; minimum-day and funded eligibility assumptions still apply. Taxes, automatic refund processing delays, and repeated funded payouts are not simulated. Topstep's subscription renewals, variant-specific activation rules, contract limits and full payout eligibility are not enforced. Its modeled initial payout is up to 50% of realized funded profit capped at $5,000; check the exact purchased path. FTMO/Hola pay a modeled split of funded profit after a planning target and waiting period, not a guaranteed withdrawal. Topstep Standard Trading Combine → Express Funded is modeled as exactly two stages; later optional Live Funded promotion is outside this first-payout model. Topstep's MLL is an end-of-day trailing loss floor, updated upward after each session's closing balance and permanently locked at $0 once reached. The floor is monitored against modeled realized trade outcomes; unrealized intratrade breaches and contract-size restrictions are not verified. Other firms' static initial floors are modeled where known. The funded target is a threshold, not a cap on the final trade: a completed trade can finish above it. FTMO/Hola funded accounts stop receiving further strategy trades at that threshold, then wait for the first-funded-trade payout eligibility clock and any modeled processing days. Topstep can require further qualifying winning days. Evaluation minimum-size qualification orders are synthetic placeholders (0.01 lot for CFD programs, 1 micro for Topstep) and have no modeled P/L, trading costs or actual lot eligibility: real minimum-size trades can gain or lose money. Calendar waits are approximated using trading days. Fees, spread/slippage, evaluation activation delays and news restrictions may differ. If multiple accounts share a signal, outcomes may be correlated and diversification overstated. The model's risk-exhausted status does not mean an official failed-account breach.</p></details>
+<details class="sim-charts-panel numbered-panel" id="assumptionsPanel"><summary><strong>Model assumptions &amp; limits</strong></summary><div class="numbered-content"><details><summary>Read before interpreting an ROI estimate</summary><p class="hint">Challenge purchases follow the selected buying mode: upfront on day 0, or dynamic day-by-day purchases and replacements when trading slots and budget permit. Dynamic replacements respond to failed, risk-exhausted, or first-paid accounts; minimum-day and funded eligibility assumptions still apply. Taxes, automatic refund processing delays, and repeated funded payouts are not simulated. Topstep's subscription renewals, variant-specific activation rules, contract limits and full payout eligibility are not enforced. Its modeled initial payout is up to 50% of realized funded profit capped at $5,000; check the exact purchased path. FTMO/Hola pay a modeled split of funded profit after a planning target and waiting period, not a guaranteed withdrawal. Topstep Standard Trading Combine → Express Funded is modeled as exactly two stages; later optional Live Funded promotion is outside this first-payout model. Topstep's MLL is an end-of-day trailing loss floor, updated upward after each session's closing balance and permanently locked at $0 once reached. The floor is monitored against modeled realized trade outcomes; unrealized intratrade breaches and contract-size restrictions are not verified. Other firms' static initial floors are modeled where known. The funded target is a threshold, not a cap on the final trade: a completed trade can finish above it. FTMO/Hola funded accounts stop receiving further strategy trades at that threshold, then wait for the first-funded-trade payout eligibility clock and any modeled processing days. Topstep can require further qualifying winning days. Evaluation minimum-size qualification orders are synthetic placeholders (0.01 lot for CFD programs, 1 micro for Topstep) and have no modeled P/L, trading costs or actual lot eligibility: real minimum-size trades can gain or lose money. Calendar waits are approximated using trading days. Fees, spread/slippage, evaluation activation delays and news restrictions may differ. If multiple accounts share a signal, outcomes may be correlated and diversification overstated. The model's risk-exhausted status does not mean an official failed-account breach.</p></details>
  <p class="footer">Research tool only. Sourced catalog rules are snapshots, not live purchase/eligibility confirmations. The simulator reads profiles locally; budget changes here don't overwrite the main Overview settings. The maximum of 100 modeled challenges per account type is a performance cap, not a prop-firm permission limit.</p>
-</section>
+</div></details>
 </div>
 <script src="portfolio-engine.js?v=20261106-dynamic-risk-v2"></script>
 <script src="portfolio-payout-optimizer.js?v=20261106-visual-hierarchy-v9"></script>
@@ -688,7 +719,12 @@ function loadView(){
   for(const id of ['section1Panel','section2Panel','discovery','section4Panel','section7Panel','section8Panel','section9Panel'])
    if(typeof prior.numberedOpen[id]==='boolean')$(id).open=prior.numberedOpen[id];
  }
- if(prior.journeyPrefs&&typeof prior.journeyPrefs==='object'){
+ // Mobile sections always begin collapsed, regardless of desktop saved state.
+ // The user may reopen any section normally; this does not erase settings.
+ if(window.matchMedia('(max-width:650px)').matches){
+  for(const section of document.querySelectorAll('details.sim-charts-panel'))section.open=false;
+ }
+  if(prior.journeyPrefs&&typeof prior.journeyPrefs==='object'){
   if(typeof prior.journeyPrefs.selection==='string')journeyState.selection=prior.journeyPrefs.selection;
   journeyState.mode='trial'; // daily portfolio routing needs real whole-account assignments
   journeyState.onlyChanges=false; // show every trading day for the portfolio routing view
