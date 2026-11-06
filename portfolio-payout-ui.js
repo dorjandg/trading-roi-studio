@@ -1016,6 +1016,7 @@ function start(){
   box.innerHTML=lastOptimizerOutput?
    solver.renderUnifiedInvestmentModels(lastOptimizerOutput,lastModelSearch,
     moreSortKey,moreDescending,moreColumnView,moreSourceFilter):'';
+  if(lastOptimizerOutput)root.StudioModelDiscovery?.renderFundedPaths?.(box,lastModelSearch);
   refreshAdvisor();
  }
  function renderLastOptimizer(){
