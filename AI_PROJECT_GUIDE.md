@@ -215,3 +215,11 @@ Independent 3A assumptions are stored per selected account in the existing per-u
 - Preserve dense UI across future iterations.
 
 Suggested new-chat handoff: "Continue 4Ds Trading Studio from GitHub dorjandg/trading-roi-studio. Read AGENTS.md and AI_PROJECT_GUIDE.md, inspect current code, and implement directly. For my latest simulation use connected 4Ds Trading Studio Cloud Data and distinguish Calculate Investment from Run Simulation."
+
+## Calculate Investment → Full Simulation (Nov 6, 2026)
+- The **Run Full Simulation · Sections 4–7** action in Section 3A now starts a *new* call to `StudioPortfolioEngine.simulatePortfolio`; it no longer simply displays the optimizer's cached 200-trial validation sample.
+- Uses the exact selected optimizer candidate plan (including stage-specific R1/R2/R3, RR, sequence policy, and 50-point/adaptive-target routing), its proposed starting investment, and optimizer's required payout/net goal constraints. Other simulation settings come from the optimizer search inputs.
+- Uses the **Monte Carlo trials** selection and random seed from the normal simulator controls (Section 1); thus 100/300/750/1500 trials can produce slightly different outputs from the optimizer's 200-trial ranking. The result includes cash curves, account sample paths, charts and report sections 4–7.
+- The chosen experimental risk plan **does not overwrite** Firms' saved account profiles or Section 2's selection. This achieves full simulation equivalence without silently modifying the user's trading configuration.
+- The ordinary Run Simulation report stays available via the report-source switcher; the new investment-specific report is stored separately in memory. Do not imply the investment experiment was automatically promoted to a saved Firms profile or written to normal simulation history.
+- Validation: deterministic smoke tests on 50K Topstep and 10K FTMO produced 300 chart trials and populated report-ready account paths; end-to-end browser/Cloudflare deployment remains to be checked.
