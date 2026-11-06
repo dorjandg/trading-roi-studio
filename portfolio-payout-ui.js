@@ -1073,8 +1073,8 @@ function start(){
     if(status)status.textContent='Funded $450 Recovery module unavailable.';return;
    }
    if(funded450.disabled)return;
-   const oldLabel=funded450.textContent;funded450.disabled=true;funded450.textContent='Testing $450 recovery…';
-   if(status)status.textContent='Comparing two 3R funded strategies with the same +$450 first milestone and matching evaluation-risk sequence…';
+   const oldLabel=funded450.textContent;funded450.disabled=true;funded450.textContent='Testing funded compounding…';
+   if(status)status.textContent='Comparing $450 → $1,800 → $7,200 compounded profit milestones with funded loss recovery and real risk ceilings…';
    try{
     await new Promise(resolve=>requestAnimationFrame(resolve));
     const effort=$('payoutMoreEffort').value;
@@ -1088,9 +1088,10 @@ function start(){
     moreSortKey='goal';moreDescending=true;moreSourceFilter='all';
     renderUnifiedTable();
     $('payoutOptModelComparison').open=true;
-    if(status)status.textContent='Compared $450 target profit-ladder with 150/200/250/200 loss sequence. '+
-     'After two losses then a $250 win, the balance reaches +$400 (not $450); after three losses a $200 win reaches $0. '+
-     'Check actual breaches, funded progress, payout probability and timing. Original strategy settings unchanged.';
+    if(status)status.textContent='Compared two funded risk methods for +$1,800 and optional +$7,200 targets. '+
+     '+$450 is a milestone, not an automatic payout: $150 risk winning at 3R gives +$450; risking $450 and winning gives +$1,800. '+
+     'A third $1,800-risk attempt may be capped by the firm daily loss limit, so +$7,200 can require more trades. '+
+     'Loss recovery uses $150/$200/$250/$200. See model targets, actual breaches, payout timing and net results. Saved settings unchanged.';
     $('payoutOptModelComparison').scrollIntoView({behavior:'smooth',block:'start'});
    }catch(error){if(status)status.textContent='Funded recovery test failed: '+(error?.message||'Unknown error');}
    finally{funded450.disabled=false;funded450.textContent=oldLabel;}
