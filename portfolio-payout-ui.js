@@ -259,7 +259,7 @@ function start(){
   const metrics={net:candidate.score.avgNet,roi:candidate.score.roi,chancePayout:candidate.score.chanceAnyPayout,budget:candidate.initialBudget};
   const ok=bridge.sendOptimizerToFirms?.(candidate.plan,'Reverse payout option '+index,metrics);
   if(status)status.textContent=ok?'Risk settings saved to Firms after confirmation. Open Firms to review or use Restore previous in the Firms transfer notice.':'No changes applied. See the Firms transfer status for details.';
-  if(ok)renderLastOptimizer();
+  // Preserve the confirmation message in the expanded option; the saved Firms comparison refreshes on the next render.
  });
  $('payoutOptResults').addEventListener('change',event=>{
   if(event.target.id==='payoutResultsSort'){
