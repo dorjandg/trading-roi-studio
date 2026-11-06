@@ -60,13 +60,6 @@ window.PERSONAL_HUB_DATA = {
       "icon": "heart",
       "description": "Wellness, fitness and everyday tools",
       "order": 8
-    },
-    {
-      "id": "services",
-      "name": "Tools & Services",
-      "icon": "layers",
-      "description": "Online services, reference sites and other links",
-      "order": 9
     }
   ],
   "links": [
