@@ -622,6 +622,7 @@ function render(out,sortMode='model',currentPlan=null){
    '<div class="reverse-option-actions"><button type="button" class="primary" data-reverse-analyze="'+pathIndex+'">Run Full Simulation · Sections 5–8</button>'+
    '<button type="button" data-reverse-more-models="'+pathIndex+'">Find More Risk Models</button>'+
    '<button type="button" data-reverse-lower-risk="'+pathIndex+'" title="Compare the unchanged model against 85%, 70%, 55%, 40%, funded-only and evaluation-only risk reductions with the same trade signals and budget">Compare Lower Risk</button>'+
+   '<button type="button" data-reverse-target-exact="'+pathIndex+'" title="Search dynamic risk that targets only remaining profit in each phase, subject to firm risk caps">Find Target-Exact Models</button>'+
    '<button type="button" data-reverse-advisor="'+pathIndex+'">Ask Results Advisor</button>'+
    '<button type="button" data-reverse-ledger="'+pathIndex+'">View Daily Spending Ledger · Section 9</button>'+
    '<small>Use this option’s exact R1/R2/R3 policy to simulate detailed results and daily spending. Both reports keep Firms defaults unchanged.</small></div>'+
