@@ -1062,6 +1062,40 @@ function start(){
    $('payoutResultsAdvisor').scrollIntoView({behavior:'smooth',block:'start'});
    return;
   }
+  const funded450=event.target.closest?.('[data-reverse-funded-450]');
+  if(funded450){
+   const index=Number(funded450.dataset.reverseFunded450),candidate=lastOptimizerOutput?.candidates?.[index];
+   const status=funded450.closest('.reverse-candidate-body')?.querySelector('.reverse-review-status');
+   if(!candidate||!lastOptimizerInputs||candidate.plan.id+':'+candidate.plan.size!==lastOptimizerAccountKey){
+    if(status)status.textContent='Scenario changed. Calculate Investment again.';return;
+   }
+   if(!root.StudioModelDiscovery?.compareFundedRecovery450){
+    if(status)status.textContent='Funded $450 Recovery module unavailable.';return;
+   }
+   if(funded450.disabled)return;
+   const oldLabel=funded450.textContent;funded450.disabled=true;funded450.textContent='Testing $450 recovery…';
+   if(status)status.textContent='Comparing two 3R funded strategies with the same +$450 first milestone and matching evaluation-risk sequence…';
+   try{
+    await new Promise(resolve=>requestAnimationFrame(resolve));
+    const effort=$('payoutMoreEffort').value;
+    const trials=effort==='deep'?250:effort==='quick'?80:150;
+    const opts={...lastOptimizerInputs,budget:candidate.initialBudget,
+     netGoal:lastOptimizerOutput.minNetPnl,requiredPayouts:lastOptimizerOutput.requiredPayouts,
+     testTrials:trials};
+    const result=root.StudioModelDiscovery.compareFundedRecovery450(
+     root.StudioModelDiscovery.clonePlan(candidate.plan),opts);
+    lastModelSearch={candidate,result,origin:'Investment Option '+(index+1)+' · Funded $450 recovery'};
+    moreSortKey='goal';moreDescending=true;moreSourceFilter='all';
+    renderUnifiedTable();
+    $('payoutOptModelComparison').open=true;
+    if(status)status.textContent='Compared $450 target profit-ladder with 150/200/250/200 loss sequence. '+
+     'After two losses then a $250 win, the balance reaches +$400 (not $450); after three losses a $200 win reaches $0. '+
+     'Check actual breaches, funded progress, payout probability and timing. Original strategy settings unchanged.';
+    $('payoutOptModelComparison').scrollIntoView({behavior:'smooth',block:'start'});
+   }catch(error){if(status)status.textContent='Funded recovery test failed: '+(error?.message||'Unknown error');}
+   finally{funded450.disabled=false;funded450.textContent=oldLabel;}
+   return;
+  }
   const ladder=event.target.closest?.('[data-reverse-recovery-ladder]');
   if(ladder){
    const index=Number(ladder.dataset.reverseRecoveryLadder),candidate=lastOptimizerOutput?.candidates?.[index];
