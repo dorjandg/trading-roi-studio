@@ -617,9 +617,6 @@ function render(out,sortMode='model',currentPlan=null){
    '</div></details>';
  }).join('');
  return '<div class="reverse-section-divider reverse-section-global"><strong>01 · RESULT OVERVIEW</strong><span>Targets, validation and timing</span></div>'+
- '<div class="reverse-sort-bar"><label for="payoutResultsSort"><strong>Sort scenarios by</strong></label><select id="payoutResultsSort" aria-label="Sort validated scenarios">'+
-  Object.entries(payoutSortModes).map(([value,label])=>'<option value="'+value+'"'+(selectedSort===value?' selected':'')+'>'+escapeHtml(label)+'</option>').join('')+
-  '</select><small>Only distinct R3-executable risk setups appear as selectable scenarios. Blocked original sizing is separated below. Showing '+out.candidates.length+' unique options from '+out.checked+' tests; sorting does not rerun.</small></div>'+
   '<details class="reverse-info-section"><summary><strong>Target &amp; calculation rules</strong> <span>· '+out.requiredPayouts+' minimum payouts · '+money(out.minNetPnl)+' net goal</span></summary><p class="hint">Net P&L target: '+money(out.minNetPnl)+' after incurred fees. Minimum '+out.requiredPayouts+
   ' first payouts at '+money(out.perPayout)+' each before fees; more may be needed to cover purchase costs. Allowed trade RR: '+out.minRR.toFixed(2)+'–'+out.maxRR.toFixed(2)+'R. Minimum fee-based ROI: '+pct(out.minRoi)+'. Minimum net ROI on starting investment: '+pct(out.minNetRoi)+'. Minimum net P&L: '+money(out.minNetPnl)+'. The account must first reach approximately '+
   money(out.profitPerAccount)+' funded trading profit (based on the modeled profit payout split, excluding any refunded challenge fee). Probability is the share of trials reaching the minimum first-payout count AND net P&L target within the trading-day horizon.</p></details>'+
@@ -634,7 +631,11 @@ function render(out,sortMode='model',currentPlan=null){
   (out.fastestGoal?'Full '+out.requiredPayouts+'-payout goal: day '+out.fastestGoal.score.goalPayoutDay.toFixed(1)+
    ' in successful trials':'Net profit / payout-count goal not reached in validated trials')+
   '<small> · Conditional averages, not guaranteed dates; minimum-day and processing waits included.</small></div></details>'+
-  '<div class="reverse-section-divider reverse-section-scenarios"><strong>02 · SCENARIO OPTIONS</strong><span>'+out.candidates.length+' distinct tested setups</span></div>'+cards+
+  '<div class="reverse-section-divider reverse-section-scenarios"><strong>02 · SCENARIO OPTIONS</strong><span>'+out.candidates.length+' distinct tested setups</span></div>'+ 
+'<div class="reverse-sort-bar"><label for="payoutResultsSort"><strong>Sort scenarios by</strong></label><select id="payoutResultsSort" aria-label="Sort validated scenarios">'+
+  Object.entries(payoutSortModes).map(([value,label])=>'<option value="'+value+'"'+(selectedSort===value?' selected':'')+'>'+escapeHtml(label)+'</option>').join('')+
+  '</select><small>Only distinct R3-executable risk setups appear as selectable scenarios. Blocked original sizing is separated below. Showing '+out.candidates.length+' unique options from '+out.checked+' tests; sorting does not rerun.</small></div>'+
+  cards+
   '<div class="reverse-section-divider reverse-section-reference"><strong>03 · REFERENCES</strong><span>Excluded risks and methodology</span></div>'+(out.blockedReference?'<details class="reverse-info-section"><summary><strong>Excluded reference · blocked R3</strong> <span>· previous risk sizing, not recommended as an executable sequence</span></summary><p class="hint">The original R3 amount does not fit after two consecutive losses in at least one stage. It remains in the search results for comparison, but is excluded from the selectable and transferable scenario cards. For comparison, its Phase 1 R1/R2/R3 amounts were '+
   (out.blockedReference.plan.riskProfiles.p1?['r1','r2','r3'].map(t=>money(out.blockedReference.plan.riskProfiles.p1[t])).join(' / '):'not applicable')+
   '. These results are model assumptions, not permission to exceed a firm loss limit.</p></details>':'')+
