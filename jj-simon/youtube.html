@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JJ Academy | YouTube Research Library</title>
+<style>
+:root{color-scheme:dark;--bg:#0c121b;--panel:#151f2b;--line:#28394b;--text:#e9f2fa;--muted:#a1b2c6;--accent:#67d9b0}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--text);font:14px/1.5 system-ui,Arial,sans-serif;max-width:1100px;margin:auto;padding:22px}a{color:var(--accent)}.back{display:inline-block;margin-bottom:15px}
+h1{font-size:clamp(24px,4vw,35px);margin:8px 0}p{color:var(--muted)}.filters{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}input,select{background:var(--panel);border:1px solid var(--line);border-radius:8px;color:var(--text);padding:11px;font:inherit}input{flex:1;min-width:190px}select{min-width:145px}.stats{display:flex;gap:12px;flex-wrap:wrap;margin:13px 0}.metric{border:1px solid var(--line);background:var(--panel);border-radius:9px;padding:12px;min-width:145px}.metric strong{display:block;font-size:25px}.metric small{color:var(--muted)}.item{border:1px solid var(--line);padding:13px 15px;border-radius:10px;background:var(--panel);margin:9px 0;display:flex;gap:12px;justify-content:space-between;flex-wrap:wrap}.item h2{font-size:15px;margin:0 0 6px}.date,.status{font-size:12px;color:var(--muted)}.status{padding:3px 9px;border:1px solid var(--line);border-radius:16px;white-space:nowrap}.actions{display:flex;gap:12px;flex-wrap:wrap;font-size:13px;margin-top:8px}footer{border-top:1px solid var(--line);margin-top:24px;padding-top:12px;color:var(--muted);font-size:12px}.empty{padding:25px;color:var(--muted)}.small{font-size:12px}
+</style></head><body>
+<a class="back" href="./index.html">← Academy home</a>
+<div class="small">JJ SIMON · SOURCE INVENTORY</div><h1>YouTube Research Library</h1>
+<p>Validated video links from your Google Sheet. Video inventory is not proof of transcript extraction, chart review, or strategy validation. Existing researched videos are labeled separately.</p>
+<div class="stats"><div class="metric"><strong id="count">—</strong><small>Videos indexed</small></div><div class="metric"><strong id="research">—</strong><small>Existing research links</small></div><div class="metric"><strong id="pending">—</strong><small>Awaiting transcript verification</small></div></div>
+<div class="filters"><input id="q" type="search" placeholder="Search video titles..." aria-label="Search video titles"><select id="filter" aria-label="Research status"><option value="all">All videos</option><option value="researched">Existing research</option><option value="pending">Not researched</option></select><select id="sort" aria-label="Sort videos"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="az">Title A–Z</option></select></div>
+<p class="small" id="shown" aria-live="polite"></p><div id="list"></div>
+<footer>Source: <a href="https://docs.google.com/spreadsheets/d/1a6pfEVUAit_bdxbfE8eND1X7sRJDtGC30WFjrwIG08E/edit?gid=1955261849" target="_blank" rel="noopener noreferrer">NoteBookLM YT — JJ Simon</a>. This page uses a validated repository snapshot; it does not live-sync the Sheet. Transcript collection is a separate guarded process. The private course takes priority over public interpretations.</footer>
+<script>
+const researchIds=new Set(['UVKVSWKFlvo','GMDUiamqgig','8lbkj0PF1uM']); // JJ-authored videos with existing source-linked public-video research
+const $=id=>document.getElementById(id);
+const safe=s=>String(s||'');
+let videos=[];
+function draw(){
+const q=$('q').value.toLocaleLowerCase().trim(),f=$('filter').value,sort=$('sort').value;
+let rows=videos.filter(v=>(v.title+' '+v.id).toLocaleLowerCase().includes(q)).filter(v=>f==='all'||(f==='researched')===researchIds.has(v.id));
+if(sort==='az')rows.sort((a,b)=>a.title.localeCompare(b.title));
+else rows.sort((a,b)=>String(a.published).localeCompare(String(b.published))*(sort==='newest'?-1:1));
+$('shown').textContent=rows.length+' of '+videos.length+' videos';
+const frag=document.createDocumentFragment();
+for(const v of rows){
+const article=document.createElement('article');article.className='item';
+const left=document.createElement('div');left.style.flex='1';left.style.minWidth='220px';
+const h=document.createElement('h2');h.textContent=v.title;left.append(h);
+const date=document.createElement('div');date.className='date';date.textContent=(v.published||'').slice(0,10)+' · '+v.id;left.append(date);
+const actions=document.createElement('div');actions.className='actions';
+const a=document.createElement('a');a.href='https://www.youtube.com/watch?v='+encodeURIComponent(v.id);a.target='_blank';a.rel='noopener noreferrer';a.textContent='Watch on YouTube';actions.append(a);
+if(researchIds.has(v.id)){const b=document.createElement('a');b.href='./index.html?topic=youtube-transcript-research';b.textContent='Academy research';actions.append(b)}
+left.append(actions);article.append(left);
+const status=document.createElement('div');status.className='status';status.textContent=researchIds.has(v.id)?'Research indexed · charts unverified':'Transcript not yet verified';article.append(status);frag.append(article);
+}
+$('list').replaceChildren(frag);
+if(!rows.length){const e=document.createElement('p');e.className='empty';e.textContent='No matching videos.';$('list').append(e)}
+}
+fetch('./youtube-video-inventory.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Inventory unavailable');return r.json()}).then(data=>{
+videos=(data.videos||[]).filter(v=>/^[a-zA-Z0-9_-]{11}$/.test(v.id));
+$('count').textContent=videos.length;$('research').textContent=videos.filter(v=>researchIds.has(v.id)).length;
+$('pending').textContent=videos.length-videos.filter(v=>researchIds.has(v.id)).length;draw();
+}).catch(e=>{$('list').textContent='Video inventory is unavailable. Please retry later.'});
+for(const id of ['q','filter','sort'])$(id).addEventListener(id==='q'?'input':'change',draw);
+</script></body></html>
