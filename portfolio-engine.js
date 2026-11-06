@@ -133,7 +133,7 @@ function validatePlan(p){
  if(p.id==='topstep')warnings.push('Topstep evaluation subscription renewals, contract caps and full payout eligibility are not verified; selected purchase-path fees are approximate.');
  if(p.id==='topstep'){
   const f=p.riskProfiles.funded;
-  if(f&&f.r3*f.rr-p.tradeCost<150)
+  if(f&&f.r3*(f.rrByTier?.r3??f.rr)-p.tradeCost<150)
    warnings.push('Funded R3 × RR is below $150 net for one winning day. Since the model routes at most one strategy signal to each account per day, R3 cannot add a qualifying $150 day unless increased.');
  }
  if(p.provisional)warnings.push('No saved account profile found: R1/R2/R3 are illustrative defaults. Configure this account in Firms.');
@@ -141,6 +141,8 @@ function validatePlan(p){
  for(const [stage,c] of Object.entries(p.riskProfiles)){
   if(c.target<=0)errors.push(stage+': profit target missing.');
   if(c.rr<=0||c.r1<=0||((p.id!=='topstep'||stage!=='p1')&&(c.r2<=0||c.r3<=0)))errors.push(stage+': set positive RR and required risk amounts.');
+   if(c.rrByTier&&['r1','r2','r3'].some(t=>!Number.isFinite(c.rrByTier[t])||c.rrByTier[t]<=0))
+    errors.push(stage+': every tier reward/risk must be positive.');
   if(c.policy.conflicts.length)warnings.push(stage+': conflicting saved option risk choices at '+c.policy.conflicts.length+' history prefixes; default risk rules apply there.');
  }
  return {errors,warnings};
@@ -251,6 +253,7 @@ function runAccountDay(p,ac,day,rand,config,record){
   const slot=p.id==='topstep'&&stage==='p1'?'r1':
    qualificationTopstep?'r3':plannedSlot(ac.history,c.policy);
   const risk=pos(c[slot]);
+  const tradeRR=Number(c.rrByTier?.[slot]??c.rr);
   // User-selected risk is always exact; no hidden downsizing.
   const dailyHeadroom=p.dailyLoss-dayProfit;
   const overallHeadroom=ac.stagePnl-floorFor(p,ac);
@@ -273,7 +276,7 @@ function runAccountDay(p,ac,day,rand,config,record){
   }
   const slotIndex=config.tradeSlots?.[ix]??ix;
   const win=rand(day,slotIndex,ac.id)<config.winRate;
-  const delta=(win?risk*c.rr:-risk)-p.tradeCost;
+  const delta=(win?risk*tradeRR:-risk)-p.tradeCost;
   if(stage==='funded'&&ac.fundedFirstTradeDay===null)ac.fundedFirstTradeDay=day;
   const prior=ac.stagePnl;
   ac.stagePnl=money(ac.stagePnl+delta);dayProfit=money(dayProfit+delta);
@@ -281,14 +284,14 @@ function runAccountDay(p,ac,day,rand,config,record){
    ac.fundedTargetDay=day;
   ac.trades++;hadTrade=true;ac.totalR+=delta/risk;
   ac.grossProfit+=Math.max(0,delta);ac.grossLoss+=Math.max(0,-delta);
-  ac.tradePnl+=delta;ac.riskTotal+=risk;ac.plannedReward+=risk*c.rr;
+  ac.tradePnl+=delta;ac.riskTotal+=risk;ac.plannedReward+=risk*tradeRR;
   if(win){ac.wins++;winsToday++;ac.winPnl+=delta;}
   else{ac.losses++;ac.lossPnl+=delta;}
   // Preserve only recent outcome prefix for deterministic risk policy.
   ac.history=(ac.history+(win?'W':'L')).slice(-8);
   ac.peakPnl=Math.max(ac.peakPnl,ac.stagePnl);
   ac.realizedDD=Math.max(ac.realizedDD,ac.peakPnl-ac.stagePnl);
-  if(record)ac.trace.push({day,stage,type:win?'win':'loss',slot,risk,rr:c.rr,delta,pnl:ac.stagePnl,trade:ac.trades});
+  if(record)ac.trace.push({day,stage,type:win?'win':'loss',slot,risk,rr:tradeRR,delta,pnl:ac.stagePnl,trade:ac.trades});
   if(ac.stagePnl<=floorFor(p,ac)+1e-9 ||
      dayProfit<=-p.dailyLoss+1e-9){
    ac.status='failed';ac.closedDay=day;if(record)ac.trace.push({day,stage,type:'failed',label:'Modeled loss floor breached'});
