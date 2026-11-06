@@ -1,0 +1,21 @@
+/* JJ Academy grouped navigation, responsive; preserving mobile-fixes.css rules. */
+.jj-nav-group{margin:12px 0 5px;border-top:1px solid var(--stroke);padding-top:7px}
+.jj-nav-group>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;padding:8px 9px;color:var(--accent);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;border-radius:6px}
+.jj-nav-group>summary::-webkit-details-marker{display:none}
+.jj-nav-group>summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.jj-nav-group>summary span{font-size:10px;font-weight:500;border:1px solid var(--stroke);border-radius:20px;padding:0 6px;color:var(--muted)}
+.jj-nav-group[open]>summary{background:var(--hover)}
+.jj-nav-group>button{padding-left:11px}
+.jj-dashboard-group{min-width:0;margin:0 0 15px}
+.jj-dashboard-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 3px 7px;border-bottom:1px solid var(--stroke);margin-bottom:7px}
+.jj-dashboard-heading strong{color:var(--accent);font-size:12px;letter-spacing:.025em}
+.jj-dashboard-heading span{color:var(--muted);font-size:10px;white-space:nowrap}
+.jj-dashboard-rows{display:grid;gap:6px}
+.jj-dashboard-group .dash-module{min-width:0}
+@media(max-width:750px){
+ .jj-dashboard-group{margin-bottom:12px}
+ .jj-dashboard-heading{padding:7px 1px 6px;margin-bottom:6px}
+ .jj-dashboard-heading strong{font-size:12px}
+ .jj-dashboard-heading span{font-size:10px}
+ .jj-dashboard-rows{gap:5px}
+}
