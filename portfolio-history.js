@@ -12,6 +12,13 @@ function create({user,element,endpoint}){
  const key='4ds:v1:'+user+':portfolio-simulation-history:v1';
  const remoteValid=/^https:\/\/script\.google\.com\/macros\/s\/[^/?]+\/exec(?:\?.*)?$/.test(endpoint||'');
  let runs=[],syncing=false,syncQueued=false,lastCloudStatus='not verified';
+ const pagingKey=key+':view';
+ let page=1,pageSize=5;
+ try{const view=JSON.parse(localStorage.getItem(pagingKey)||'{}');
+  if([5,10,15].includes(Number(view.pageSize)))pageSize=Number(view.pageSize);
+ }catch(_){}
+ function savePaging(){try{localStorage.setItem(pagingKey,JSON.stringify({pageSize}))}catch(_){}}
+
  const now=()=>new Date().toISOString();
  const status=(message)=>{lastCloudStatus=message;const target=element.querySelector('[data-history-status]');if(target)target.textContent=message;};
  function readLocal(){
@@ -82,7 +89,11 @@ function create({user,element,endpoint}){
  }
  function render(){
   const body=element.querySelector('[data-history-body]');if(!body)return;
-  body.innerHTML=runs.map((r,i)=>{
+  const pages=Math.max(1,Math.ceil(runs.length/pageSize));
+  page=Math.max(1,Math.min(page,pages));
+  const start=(page-1)*pageSize;
+  body.innerHTML=runs.slice(start,start+pageSize).map((r,offset)=>{
+   const i=start+offset;
    const isOptimizer=r.kind==='calculate-investment'||r.schema==='4ds-payout-optimizer-v1';
    if(isOptimizer){
     const best=r.candidates?.[0],x=best?.score||{};
@@ -110,6 +121,18 @@ function create({user,element,endpoint}){
   }).join('')||'<tr><td colspan="6">No saved runs yet. Run Simulation or Calculate Investment to create the first record.</td></tr>';
   const count=element.querySelector('[data-history-count]');
   if(count)count.textContent=runs.length+' saved run(s)';
+  const controls=element.querySelector('[data-history-pages]');
+  if(controls){
+   controls.innerHTML='<label>Rows per page <select data-history-page-size aria-label="Simulation history rows per page">'+
+    [5,10,15].map(n=>'<option value="'+n+'"'+(n===pageSize?' selected':'')+'>'+n+'</option>').join('')+
+    '</select></label>'+
+    '<span class="history-page-range">'+(runs.length?start+1:0)+'–'+Math.min(start+pageSize,runs.length)+' of '+runs.length+'</span>'+
+    '<button type="button" data-history-page="prev"'+(page<=1?' disabled':'')+'>Previous</button>'+
+    '<label>Page <select data-history-page-number aria-label="Simulation history page">'+
+    Array.from({length:pages},(_,i)=>'<option value="'+(i+1)+'"'+(i+1===page?' selected':'')+'>'+(i+1)+'</option>').join('')+
+    '</select> / '+pages+'</label>'+
+    '<button type="button" data-history-page="next"'+(page>=pages?' disabled':'')+'>Next</button>';
+  }
  }
  function download(payload,name){
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
@@ -181,8 +204,22 @@ function create({user,element,endpoint}){
    status('Loaded cloud history · '+list.length+' online run(s)');
   }catch(err){status('Cloud history could not be loaded: '+err.message)}
  }
+ element.addEventListener('change',event=>{
+  const target=event.target;
+  if(target.matches('[data-history-page-size]')){
+   pageSize=[5,10,15].includes(Number(target.value))?Number(target.value):5;
+   page=1;savePaging();render();
+  }else if(target.matches('[data-history-page-number]')){
+   page=Math.max(1,Math.floor(Number(target.value)||1));render();
+  }
+ });
  element.addEventListener('click',event=>{
   const target=event.target.closest('button');if(!target)return;
+  if(target.hasAttribute('data-history-page')){
+   const action=target.dataset.historyPage;
+   page+=action==='next'?1:action==='prev'?-1:0;
+   render();return;
+  }
   if(target.hasAttribute('data-history-export')){
    const r=runs[Number(target.dataset.historyExport)];if(r)download(r,'4ds-'+(r.kind==='calculate-investment'?'calculate-investment':'simulation')+'-'+user+'-'+r.timestamp.replace(/[:.]/g,'-')+'.json');
   }else if(target.hasAttribute('data-history-export-all')){
@@ -198,7 +235,7 @@ function create({user,element,endpoint}){
     id:Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,9),
     timestamp:now(),user,inputs:compact(inputs),
     accounts:compact(rows),firms:results.map(summarize)};
-   if(writeLocal([record,...runs])){render();cloudSync()}
+   if(writeLocal([record,...runs])){page=1;render();cloudSync()}
    return record;
   },
   saveOptimizer(data){
