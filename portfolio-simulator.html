@@ -705,11 +705,22 @@ function accountPlan(row){
     if(Number.isFinite(value)&&value>0)risk[field]=value;
    }
   }
+  if(saved.rrByTier&&typeof saved.rrByTier==='object'){
+   risk.rrByTier={...risk.rrByTier};
+   for(const tier of ['r1','r2','r3']){
+    const rr=Number(saved.rrByTier[tier]);
+    if(Number.isFinite(rr)&&rr>0)risk.rrByTier[tier]=rr;
+   }
+  }
+  if(Object.prototype.hasOwnProperty.call(saved,'dynamicMaxRisk')){
+   const cap=Number(saved.dynamicMaxRisk);
+   if(Number.isFinite(cap)&&cap>0)risk.dynamicMaxRisk=cap;
+  }
   if(Object.prototype.hasOwnProperty.call(saved,'winCap')){
    const value=Number(saved.winCap);
    if(Number.isInteger(value)&&value>=1&&value<=6)risk.maxWinsPerDay=value;
   }
-  if(['saved','flat','streak','after-win','protect-after-loss'].includes(saved.policyMode)){
+  if(['saved','flat','streak','after-win','protect-after-loss','target-now','repair-r2','buffered-target'].includes(saved.policyMode)){
    risk.policy={...risk.policy,mode:saved.policyMode};
   }
   if(plan.id==='topstep'&&stage==='p1')risk.policy={map:{},conflicts:[],mode:'flat'};
@@ -1756,6 +1767,8 @@ function applyDiscoveryRiskModel(selected){
  for(const stage of selected.plan.stageList){
   const p=selected.plan.riskProfiles[stage];
   tests[stage]={r1:p.r1,r2:p.r2,r3:p.r3,rr:p.rr,
+   rrByTier:p.rrByTier?{...p.rrByTier}:undefined,
+   dynamicMaxRisk:p.dynamicMaxRisk,
    winCap:p.maxWinsPerDay,policyMode:p.policy?.mode||'saved'};
  }
  tests.__riskReserve=selected.plan.riskReserve;
