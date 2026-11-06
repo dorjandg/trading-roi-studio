@@ -276,20 +276,27 @@ async function optimize({plan,perPayout,maxInvestment,minRoi=2,minNetRoi=0,minNe
    a.score.goalPayoutDay-b.score.goalPayoutDay||
    b.score.hit-a.score.hit)[0]||null,
   candidates:(()=>{
-   const shown=[],used=new Set();
-   const addCandidate=x=>{if(x&&!used.has(x)){shown.push(x);used.add(x)}};
-   // Show the best executable route first; keep alternatives and the
-   // original route available for transparent comparison.
-   candidates.slice(0,1).forEach(addCandidate);
-   // When target-sized routes exist, include at least one independently
-   // validated representative of each distinct R3 policy.
-   for(const route of ['ladder','headroom','balanced','defensive','legacy']){
-    if(shown.length>=6)break;
-    addCandidate(candidates.find(x=>x.r3Route===route));
+   const shown=[],seen=new Set();
+   const signature=x=>x.plan.stageList.map(stage=>{
+    const r=x.plan.riskProfiles[stage];
+    return [r.r1,r.r2,r.r3,r.rrByTier?.r1??r.rr,r.rrByTier?.r2??r.rr,r.rrByTier?.r3??r.rr,r.policy?.mode,r.maxWinsPerDay].join(':');
+   }).join('|');
+   const add=x=>{
+    if(!x||!r3Executable(x))return;
+    const key=signature(x);
+    if(!seen.has(key)){seen.add(key);shown.push(x)}
+   };
+   // Select only executable, unique configurations for normal scenario cards.
+   // Place the top ranked valid candidate first and retain diverse R3 routes.
+   candidates.slice(0,1).forEach(add);
+   for(const route of ['ladder','headroom','balanced','defensive','saved']){
+    if(shown.length>=5)break;
+    add(candidates.find(x=>x.r3Route===route&&r3Executable(x)));
    }
-   candidates.forEach(x=>{if(shown.length<6)addCandidate(x)});
-   return shown.slice(0,6).sort((a,b)=>candidates.indexOf(a)-candidates.indexOf(b));
-  })(),firm:plan.firm,size:plan.size,
+   for(const x of candidates){if(shown.length>=5)break;add(x)}
+   return shown.sort((a,b)=>candidates.indexOf(a)-candidates.indexOf(b));
+  })(),
+  blockedReference:candidates.find(x=>!r3Executable(x))||null,firm:plan.firm,size:plan.size,
   inputs:{days:inputs.days,tradesPerDay:inputs.tradesPerDay,winRate:inputs.winRate,
    purchaseMode:inputs.purchaseMode,capacityMode:inputs.capacityMode}};
 }
@@ -587,7 +594,7 @@ function render(out,sortMode='model',currentPlan=null){
  }).join('');
  return '<div class="reverse-sort-bar"><label for="payoutResultsSort"><strong>Sort scenarios by</strong></label><select id="payoutResultsSort" aria-label="Sort validated scenarios">'+
   Object.entries(payoutSortModes).map(([value,label])=>'<option value="'+value+'"'+(selectedSort===value?' selected':'')+'>'+escapeHtml(label)+'</option>').join('')+
-  '</select><small>Optimizer order favors R3 paths executable after two losses. Other sort choices may put a blocked reference first. Displayed options are a validated shortlist ('+out.candidates.length+' of '+out.checked+' tested), not every combination. Sorting does not rerun the model.</small></div>'+
+  '</select><small>Only distinct R3-executable risk setups appear as selectable scenarios. Blocked original sizing is separated below. Showing '+out.candidates.length+' unique options from '+out.checked+' tests; sorting does not rerun.</small></div>'+
   '<details class="reverse-info-section"><summary><strong>Target &amp; calculation rules</strong> <span>· '+out.requiredPayouts+' minimum payouts · '+money(out.minNetPnl)+' net goal</span></summary><p class="hint">Net P&L target: '+money(out.minNetPnl)+' after incurred fees. Minimum '+out.requiredPayouts+
   ' first payouts at '+money(out.perPayout)+' each before fees; more may be needed to cover purchase costs. Allowed trade RR: '+out.minRR.toFixed(2)+'–'+out.maxRR.toFixed(2)+'R. Minimum fee-based ROI: '+pct(out.minRoi)+'. Minimum net ROI on starting investment: '+pct(out.minNetRoi)+'. Minimum net P&L: '+money(out.minNetPnl)+'. The account must first reach approximately '+
   money(out.profitPerAccount)+' funded trading profit (based on the modeled profit payout split, excluding any refunded challenge fee). Probability is the share of trials reaching the minimum first-payout count AND net P&L target within the trading-day horizon.</p></details>'+
@@ -602,7 +609,10 @@ function render(out,sortMode='model',currentPlan=null){
   (out.fastestGoal?'Full '+out.requiredPayouts+'-payout goal: day '+out.fastestGoal.score.goalPayoutDay.toFixed(1)+
    ' in successful trials':'Net profit / payout-count goal not reached in validated trials')+
   '<small> · Conditional averages, not guaranteed dates; minimum-day and processing waits included.</small></div></details>'+
-  cards+'<details class="reverse-info-section"><summary><strong>How to interpret these estimates</strong> <span>· Monte Carlo methodology and ROI definitions</span></summary><p class="hint">Estimates use 200 independent validation trials per shortlisted scenario after 50-trial searches across risk levels and investment amounts. ROI on incurred fees = expected net cash / expected fees actually incurred. Net ROI on investment = expected net cash / tested starting budget. Both may be negative. Starting budget is cash made available for challenge and activation costs, NOT the total fees actually incurred; any refunded challenge fees are tracked in modeled cash receipts. Payout counts and earnings can differ between trials. Searches are approximate, account purchases are capped at 100 per type, and risk safety depends on modeled firm rules. Scenarios do not change your saved Firms risk settings.</p></details>';
+  cards+(out.blockedReference?'<details class="reverse-info-section"><summary><strong>Excluded reference · blocked R3</strong> <span>· previous risk sizing, not recommended as an executable sequence</span></summary><p class="hint">The original R3 amount does not fit after two consecutive losses in at least one stage. It remains in the search results for comparison, but is excluded from the selectable and transferable scenario cards. For comparison, its Phase 1 R1/R2/R3 amounts were '+
+  (out.blockedReference.plan.riskProfiles.p1?['r1','r2','r3'].map(t=>money(out.blockedReference.plan.riskProfiles.p1[t])).join(' / '):'not applicable')+
+  '. These results are model assumptions, not permission to exceed a firm loss limit.</p></details>':'')+
+  '<details class="reverse-info-section"><summary><strong>How to interpret these estimates</strong> <span>· Monte Carlo methodology and ROI definitions</span></summary><p class="hint">Estimates use 200 independent validation trials per shortlisted scenario after 50-trial searches across risk levels and investment amounts. ROI on incurred fees = expected net cash / expected fees actually incurred. Net ROI on investment = expected net cash / tested starting budget. Both may be negative. Starting budget is cash made available for challenge and activation costs, NOT the total fees actually incurred; any refunded challenge fees are tracked in modeled cash receipts. Payout counts and earnings can differ between trials. Searches are approximate, account purchases are capped at 100 per type, and risk safety depends on modeled firm rules. Scenarios do not change your saved Firms risk settings.</p></details>';
 }
 root.StudioPayoutOptimizer={needed,profitNeeded,planFor,assess,optimize,render,renderAccountPath,sampleAccounts,diagnoseScenario};
 })(typeof window!=='undefined'?window:globalThis);
