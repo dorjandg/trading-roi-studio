@@ -492,27 +492,34 @@ function sortedPayoutCandidates(out,sortMode='model'){
  });
 }
 function renderScenarioAccountFunnel(result){
- const steps=E.stageFunnel?.(result)||[];
+ // Display-only view: omit the redundant activation milestone while keeping
+ // the same source data as Account Journey. Recompute "from prior" using the
+ // preceding VISIBLE milestone, not the hidden activation stage.
+ const steps=(E.stageFunnel?.(result)||[]).filter(step=>step.label!=='Funded activated'&&step.label!=='Express Funded activated');
  if(!steps.length)return '<p class="hint">Account-stage progression is unavailable for this scenario.</p>';
  const fmt=v=>Number(v).toFixed(2);
  const percent=v=>v==null||!Number.isFinite(v)?'—':(100*v).toFixed(1)+'%';
  const purchased=steps[0].count;
  const rows=steps.map((step,i)=>{
   const width=purchased>0?Math.max(0,Math.min(100,100*step.count/purchased)):0;
+  const previous=i?steps[i-1].count:null;
+  const fromPrevious=i?(previous>0?step.count/previous:null):null;
   return '<div class="reverse-funnel-row">'+
    '<span class="reverse-funnel-label">'+escapeHtml(step.label)+'</span>'+
    '<span class="reverse-funnel-rail" role="img" aria-label="'+escapeHtml(step.label)+
    ': '+fmt(step.count)+' average accounts, '+percent(step.totalRate)+' of purchased">'+
    '<span class="reverse-funnel-fill" style="width:'+width.toFixed(2)+'%"></span></span>'+
    '<strong class="reverse-funnel-number">'+fmt(step.count)+'</strong>'+
-   '<span class="reverse-funnel-step" title="Share of accounts reaching the previous milestone">'+
-   (i===0?'Starting pool':percent(step.previousRate)+' from prior')+'</span>'+
+   '<span class="reverse-funnel-step" title="Percentage reaching this step from the preceding visible milestone">'+
+   (i===0?'Starting pool':percent(fromPrevious)+' prior')+'</span>'+
+   '<strong class="reverse-funnel-total" title="Percentage of purchased challenges reaching this milestone">'+
+   percent(step.totalRate)+' total</strong>'+
    '</div>';
  }).join('');
- return '<p class="hint">Mean accounts per Monte Carlo trial, tracked through the selected trading-day horizon. Each bar is scaled to purchased challenges; these are stage milestones, not account balances or guaranteed lifetime pass rates.</p>'+
+ return '<p class="hint">Average accounts per Monte Carlo trial through the selected trading-day horizon. Bars and total percentages are relative to purchased challenges. Stage milestones are not account balances or guaranteed lifetime pass rates.</p>'+
   '<div class="reverse-funnel-grid">'+rows+'</div>'+
-  '<p class="hint">From prior = accounts reaching this milestone ÷ accounts reaching the preceding milestone. The final payout conversion from purchased is '+
-  percent(steps[steps.length-1].totalRate)+'. Accounts still progressing may pass or pay after the modeled horizon.</p>';
+  '<p class="hint">Prior = conversion from the preceding displayed stage · Total = conversion from all purchased challenges. Final payout conversion: '+
+  percent(steps[steps.length-1].totalRate)+' of purchased. Accounts still progressing may pass or pay after the modeled horizon.</p>';
 }
 function render(out,sortMode='model',currentPlan=null){
  const selectedSort=Object.prototype.hasOwnProperty.call(payoutSortModes,sortMode)?sortMode:'model';
