@@ -222,6 +222,10 @@ def main():
             if result["status"] != "caption_imported":
                 failed += 1
                 print(f"{vid}: {result['status']} ({result['reason']}; yt_dlp_exit={result.get('exit_code', 'n/a')})")
+                if result["reason"] in ("youtube_auth_required", "youtube_captcha", "youtube_rate_limited"):
+                    print("STOP: YouTube requires interactive authentication or is rate-limiting this GitHub runner. "
+                          "Do not retry all videos here; use the local caption importer.", flush=True)
+                    break
                 continue
             payload = {
                 "schema": 1, "source_type": "youtube_caption", "source": "JJ Simon public video",
