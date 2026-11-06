@@ -46,6 +46,16 @@ function jjHelperTokens(query){
 }
 function jjHelperDocuments(){
  const corpus=[];
+ if(typeof jjApprovedAnswers!=='undefined')for(const item of jjApprovedAnswers){
+  const refs=(item.evidence_ids||[]).map(id=>jjEvidenceRecords.find(e=>e.id===id)).filter(Boolean);
+  corpus.push({id:'approved:'+item.id,type:'Reviewed course answer',title:item.title,
+   searchText:[item.title,item.answer,...refs.map(e=>e.title+' '+e.quote)].join(' '),
+   text:item.answer,quoted:null,footnote:'Reviewed Academy explanation. Original transcripts remain machine-generated and chart verification may still be pending.',
+   sourceLabel:refs.length+' indexed source references',
+   sourceUrl:refs[0]?'https://drive.google.com/file/d/'+encodeURIComponent(refs[0].source)+'/view':null,
+   chapter:refs[0]?.related||'source-evidence-explorer'});
+ }
+
  for(const record of jjEvidenceRecords){
   corpus.push({id:'ev:'+record.id,type:'Transcript evidence',title:record.title,
    searchText:[record.title,record.topic,record.type,record.quote,record.interpretation,record.caveat].join(' '),
@@ -118,6 +128,7 @@ function jjHelperSearch(question){
   score+=match/core.length*12;
   if(normalContent.join(' ').includes(core.join(' ')))score+=14;
   if(doc.type==='Transcript evidence')score+=2;
+  if(doc.type==='Reviewed course answer')score+=10;
   if(doc.type==='Trading Dictionary'&&core.every(t=>normalTitle.includes(t)))score+=7;
   if(doc.type==='Student Q&A')score+=1;
   return {...doc,score,match};
