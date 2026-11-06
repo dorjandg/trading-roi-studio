@@ -519,7 +519,7 @@ details p{margin:6px 0}
 <details class="sim-charts-panel numbered-panel" id="section8Panel"><summary><strong>8 · Simulation History</strong><span class="sim-charts-summary">Saved runs · settings · daily account journeys · exports</span><span class="sim-charts-hint">Show / hide</span></summary>
  <div class="numbered-content" id="simulationHistory">
   <p class="hint">Completed simulations are saved under your selected 4Ds user, with recent runs backed up to your shared Google cloud profile when available. This workspace has no login. Export JSON and attach it to ChatGPT for analysis.</p>
-  <div class="actions"><button type="button" data-history-refresh>Load cloud history</button><button type="button" data-history-export-all>Export all saved runs (JSON)</button><strong data-history-count class="hint"></strong></div>
+  <div class="actions"><button type="button" data-history-refresh>Load cloud history</button><button type="button" data-history-sync>Retry cloud save</button><button type="button" data-history-export-all>Export all saved runs (JSON)</button><strong data-history-count class="hint"></strong></div>
   <p data-history-status class="hint" role="status">Loading history…</p>
   <div class="tablewrap"><table class="journey-table"><thead><tr><th>Date / time</th><th>Account types</th><th>Simulation inputs</th><th>Expected net</th><th>Expected paid</th><th>Download</th></tr></thead><tbody data-history-body></tbody></table></div>
  </div>
@@ -532,14 +532,14 @@ details p{margin:6px 0}
 </section>
 </div>
 <script src="portfolio-engine.js?v=20261105-phase-rates"></script>
-<script src="portfolio-payout-optimizer.js?v=20261106-net-pnl-usd-v1"></script>
+<script src="portfolio-payout-optimizer.js?v=20261106-target-search-v2"></script>
 <script src="portfolio-discovery.js?v=20261105-account-rotation"></script>
 <script src="portfolio-to-firms.js"></script>
 <script src="studio-report-source.js?v=20261105-account-rotation"></script>
 <script src="portfolio-charts.js?v=20261106-ledger-section"></script>
 <script src="portfolio-journey.js?v=20261106-hide-explanations"></script>
 <script src="cloud-config.js"></script>
-<script src="portfolio-history.js?v=20261106-optimizer-history-v2"></script>
+<script src="portfolio-history.js?v=20261106-cloud-status-v3"></script>
 <script>
 (function(){
 'use strict';
