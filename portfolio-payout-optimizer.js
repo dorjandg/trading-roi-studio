@@ -49,7 +49,7 @@ function assess(r,count,total){
   budgetRoi:r.budget>0?val(r.avg.net)/r.budget:0,
   avgPayout:r.avg.paid?val(r.avg.receipts)/r.avg.paid:0};
 }
-async function optimize({plan,total,perPayout,maxInvestment,minRoi=2,minNetRoi=0,inputs,onProgress}){
+async function optimize({plan,total,perPayout,maxInvestment,minRoi=2,minNetRoi=0,minNetPnl=0,inputs,onProgress}){
  const count=needed(total,perPayout);
  if(!E)throw Error('Simulator engine is unavailable.');
  if(!plan)throw Error('Select a prop-firm account.');
@@ -57,6 +57,8 @@ async function optimize({plan,total,perPayout,maxInvestment,minRoi=2,minNetRoi=0
   throw Error('Enter an ROI on incurred fees between 0% and 10,000%.');
  if(!Number.isFinite(minNetRoi)||minNetRoi<0||minNetRoi>100)
   throw Error('Enter a net ROI on starting investment between 0% and 10,000%.');
+ if(!Number.isFinite(minNetPnl)||minNetPnl<0)
+  throw Error('Enter a valid nonnegative net P&L target in USD.');
  const unit=plan.fee+(plan.id==='topstep'?plan.activationFee:0);
  if(unit<=0)throw Error('Purchase and activation fees are unavailable.');
  const maxUnits=Math.min(100,Math.floor(maxInvestment/unit));
@@ -97,7 +99,7 @@ async function optimize({plan,total,perPayout,maxInvestment,minRoi=2,minNetRoi=0
  if(!coarse.length)throw Error('No valid risk candidates could be simulated.');
  const reachesPayouts=x=>x.score.avgPaid+1e-8>=count&&x.score.avgReceipts+1e-8>=total;
  const meetsAll=x=>reachesPayouts(x)&&x.score.roi+1e-8>=minRoi&&
-  x.score.budgetRoi+1e-8>=minNetRoi;
+  x.score.budgetRoi+1e-8>=minNetRoi&&x.score.avgNet+1e-8>=minNetPnl;
  // Shortlist feasible options and closest misses. Independently validate
  // the shortlist with fresh random outcomes to avoid ranking on training noise.
  coarse.sort((a,b)=>{
@@ -106,7 +108,7 @@ async function optimize({plan,total,perPayout,maxInvestment,minRoi=2,minNetRoi=0
   const ac=reachesPayouts(a),bc=reachesPayouts(b);
   if(ac!==bc)return ac?-1:1;
   if(ap&&bp)return a.units-b.units||b.score.hit-a.score.hit;
-  if(ac&&bc)return b.score.roi-a.score.roi||a.units-b.units;
+  if(ac&&bc)return Number(b.score.avgNet>=minNetPnl)-Number(a.score.avgNet>=minNetPnl)||b.score.roi-a.score.roi||a.units-b.units;
   return Math.min(count,b.score.avgPaid)-Math.min(count,a.score.avgPaid)||
    Math.min(total,b.score.avgReceipts)-Math.min(total,a.score.avgReceipts)||
    b.score.hit-a.score.hit;
@@ -124,12 +126,12 @@ async function optimize({plan,total,perPayout,maxInvestment,minRoi=2,minNetRoi=0
   const ac=reachesPayouts(a),bc=reachesPayouts(b);
   if(ac!==bc)return ac?-1:1;
   if(ap&&bp)return a.initialBudget-b.initialBudget||b.score.hit-a.score.hit;
-  if(ac&&bc)return b.score.roi-a.score.roi||a.initialBudget-b.initialBudget;
+  if(ac&&bc)return Number(b.score.avgNet>=minNetPnl)-Number(a.score.avgNet>=minNetPnl)||b.score.roi-a.score.roi||a.initialBudget-b.initialBudget;
   return b.score.avgPaid-a.score.avgPaid||
    b.score.avgReceipts-a.score.avgReceipts||b.score.roi-a.score.roi;
  });
  return {requiredPayouts:count,profitPerAccount:profitNeeded(plan,perPayout),
-  targetCash:total,perPayout,maxInvestment,minRoi,minNetRoi,checked,
+  targetCash:total,perPayout,maxInvestment,minRoi,minNetRoi,minNetPnl,checked,
   feasible:candidates.some(meetsAll),payoutCountFeasible:candidates.some(reachesPayouts),
   candidates:candidates.slice(0,5),firm:plan.firm,size:plan.size};
 }
@@ -156,10 +158,10 @@ function render(out){
    '<div class="tablewrap"><table class="journey-table"><thead><tr><th>Phase</th><th>R1</th><th>R2</th><th>R3</th><th>RR</th></tr></thead><tbody>'+risks+'</tbody></table></div></div>';
  }).join('');
  return '<p class="hint">Goal: '+money(out.targetCash)+' received across at least '+out.requiredPayouts+
-  ' separate first payouts of '+money(out.perPayout)+' each. Minimum fee-based ROI: '+pct(out.minRoi)+'. Minimum net ROI on starting investment: '+pct(out.minNetRoi)+'. The account must first reach approximately '+
+  ' separate first payouts of '+money(out.perPayout)+' each. Minimum fee-based ROI: '+pct(out.minRoi)+'. Minimum net ROI on starting investment: '+pct(out.minNetRoi)+'. Minimum net P&L: '+money(out.minNetPnl)+'. The account must first reach approximately '+
   money(out.profitPerAccount)+' funded trading profit (based on the modeled profit payout split, excluding any refunded challenge fee). Probability is the share of trials meeting BOTH payout count and cash received before the chosen trading-day horizon.</p>'+
-  (out.feasible?'<p class="good"><strong>At least one validated scenario met the expected payout-count, payout-cash, fee-based ROI and net ROI targets.</strong></p>':
-   '<p class="bad"><strong>No validated scenario met all three targets within your investment ceiling and time horizon.</strong> Closest tested alternatives are shown. Payout-goal probability remains reported separately; an expected target is not a reliable guarantee.</p>')+
+  (out.feasible?'<p class="good"><strong>At least one validated scenario met the expected payout-count, payout-cash, ROI and USD net P&L targets.</strong></p>':
+   '<p class="bad"><strong>No validated scenario met all payout-count, cash, ROI and net P&L targets within your investment ceiling and time horizon.</strong> Closest tested alternatives are shown. Payout-goal probability remains reported separately; an expected target is not a reliable guarantee.</p>')+
   cards+'<p class="hint">Estimates use 150 independent validation trials for shortlisted scenarios after 50-trial searches across risk levels and investment amounts. ROI on incurred fees = expected net cash / expected fees actually incurred. Net ROI on investment = expected net cash / tested starting budget. Both may be negative. Starting budget is cash made available for challenge and activation costs, NOT the total fees actually incurred; any refunded challenge fees are tracked in modeled cash receipts. Payout counts and earnings can differ between trials. Searches are approximate, account purchases are capped at 100 per type, and risk safety depends on modeled firm rules. Scenarios do not change your saved Firms risk settings.</p>';
 }
 root.StudioPayoutOptimizer={needed,profitNeeded,planFor,assess,optimize,render};
