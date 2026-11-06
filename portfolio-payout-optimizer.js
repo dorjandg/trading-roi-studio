@@ -297,9 +297,26 @@ function render(out){
    const c=p.riskProfiles[stage];
    return '<tr><td>'+c.name+'</td><td>'+money(c.target)+'</td><td>'+money(c.r1)+'</td><td>'+money(c.r2)+'</td><td>'+money(c.r3)+'</td><td>'+['r1','r2','r3'].map(t=>Number(c.rrByTier?.[t]??c.rr).toFixed(2)+'R').join(' / ')+'</td></tr>';
   }).join('');
-  return '<div class="reverse-candidate">'+
-   '<h4>'+(index===0?'Best tested scenario':'Alternative '+(index+1))+' · '+candidate.scale.toFixed(2)+'× risk · '+escapeHtml(candidate.rrVariant||'')+
-   ' · '+(candidate.riskMode==='target'?'Target-sized':'Saved-sized')+'</h4>'+
+  const goalMet=s.avgNet+1e-8>=out.minNetPnl&&s.avgPaid+1e-8>=out.requiredPayouts&&
+   s.roi+1e-8>=out.minRoi&&s.budgetRoi+1e-8>=out.minNetRoi;
+  const summaryMetric=(label,value,extra='')=>'<span class="reverse-compact-metric '+extra+'"><small>'+
+   label+'</small><strong>'+value+'</strong></span>';
+  return '<details class="reverse-candidate">'+
+   '<summary class="reverse-candidate-summary">'+
+   '<span class="reverse-candidate-name">'+(index===0?'Top scenario':'Option '+(index+1))+
+   ' · '+candidate.scale.toFixed(2)+'× · '+escapeHtml(candidate.rrVariant||'')+
+   ' · '+(candidate.riskMode==='target'?'Target':'Saved')+' risk'+
+   '<span class="reverse-candidate-status '+(goalMet?'reverse-status-met':'')+'">'+
+   (goalMet?'Targets met':'Below target')+'</span></span>'+
+   '<span class="reverse-summary-kpis">'+
+   summaryMetric('Net P&L',money(s.avgNet))+
+   summaryMetric('Net ROI',pct(s.budgetRoi))+
+   summaryMetric('Fee ROI',pct(s.roi))+
+   summaryMetric('Investment',money(candidate.initialBudget))+
+   summaryMetric('Payouts',s.avgPaid.toFixed(2))+
+   summaryMetric('Goal chance',pct(s.hit))+'</span>'+
+   '<span class="reverse-summary-toggle">Details</span></summary>'+
+   '<div class="reverse-candidate-body">'+
    '<p class="hint" style="margin:4px 0 6px"><strong>Target checks:</strong> '+
    (gaps(out,s).length?gaps(out,s).join(' · '):'All expected targets met')+'</p>'+
    '<div class="reverse-kpis"><div><small>First payout day (paid trials)</small><strong>'+ (s.firstPayoutDay==null?'Not reached':'Day '+s.firstPayoutDay.toFixed(1))+'</strong></div>'+
@@ -329,7 +346,7 @@ function render(out){
      '<span class="hint">Select any account to inspect exact trade and phase progression.</span></div>'+
      '<div data-reverse-path-body="'+index+'">'+renderAccountPath(candidate,example.id)+'</div></details>';
    })():'<p class="hint">Trade-by-trade account details unavailable for this scenario.</p>')+
-   '</div>';
+   '</div></details>';
  }).join('');
  return '<p class="hint">Net P&L target: '+money(out.minNetPnl)+' after incurred fees. Minimum '+out.requiredPayouts+
   ' first payouts at '+money(out.perPayout)+' each before fees; more may be needed to cover purchase costs. Allowed trade RR: '+out.minRR.toFixed(2)+'–'+out.maxRR.toFixed(2)+'R. Minimum fee-based ROI: '+pct(out.minRoi)+'. Minimum net ROI on starting investment: '+pct(out.minNetRoi)+'. Minimum net P&L: '+money(out.minNetPnl)+'. The account must first reach approximately '+
