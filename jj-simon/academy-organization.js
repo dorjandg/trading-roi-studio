@@ -8,7 +8,7 @@ function jjGeneralButton(slug){const m=curriculum.find(x=>x.slug===slug);if(!m)r
 const jjCategoryOverrides={
 'master-strategy-encyclopedia':'Learn Strategies','fair-price':'Learn Strategies','bos-entry':'Learn Strategies','winning-days':'Learn Strategies','trading-rules-playbook':'Learn Strategies',
 'funded-plan':'Account Management','account-management':'Account Management','evaluation':'Account Management','scaling':'Account Management','portfolio-risk':'Account Management','prop-firm-reference':'Account Management',
-'kpi-library':'Math & Research','kpi-workbench':'Math & Research','risk-math':'Math & Research','source-coverage':'Math & Research','critical-rules':'Math & Research',
+'public-web-research':'Math & Research','kpi-library':'Math & Research','kpi-workbench':'Math & Research','risk-math':'Math & Research','source-coverage':'Math & Research','critical-rules':'Math & Research',
 'examples':'Student Q&A','live-qa-extract':'Student Q&A','live-qa-deep-dive':'Student Q&A','live-claim-verification':'Student Q&A','qa-contradictions':'Student Q&A'
 };
 function jjGroupFor(m){
@@ -30,7 +30,7 @@ function jjDisplayChapterTitle(m,position){
 const jjPreferredChapterOrder={
  'Learn Strategies':['master-strategy-encyclopedia','strategy-decision-tree','fair-price','bos-entry','winning-days','trading-rules-playbook'],
  'Account Management':['funded-plan','evaluation','account-management','scaling','portfolio-risk','prop-firm-reference'],
- 'Math & Research':['research-completion-dashboard','source-evidence-explorer','risk-math','kpi-library','kpi-workbench','source-coverage','critical-rules','research-verification-tracker','visual-evidence-worklist','course-conflict-register'],
+ 'Math & Research':['public-web-research','research-completion-dashboard','source-evidence-explorer','risk-math','kpi-library','kpi-workbench','source-coverage','critical-rules','research-verification-tracker','visual-evidence-worklist','course-conflict-register'],
  'Student Q&A':['student-qa-library','examples','live-qa-extract','live-qa-deep-dive','live-claim-verification']
 };
 function jjCurrentOrderedMembers(group){
