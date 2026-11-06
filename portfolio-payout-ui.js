@@ -46,7 +46,13 @@ function start(){
   '<p class="hint">These values apply only to Calculate Investment. The main simulator and saved Firms settings are not changed.</p>'+
   '</details><p class="hint" id="payoutOptMath">10 first payouts required.</p>'+
   '<p id="payoutOptStatus" class="status" role="status">Choose targets, then Calculate Investment.</p>'+
-  '<div id="payoutOptResults"></div><div id="payoutOptMoreModels"></div></div>';
+  '<div id="payoutOptResults"></div>'+
+  '<details id="payoutMoreSearchSettings" class="payout-more-settings"><summary>More model search settings</summary>'+
+  '<div class="payout-more-settings-fields">'+
+  '<label>Goal to improve<select id="payoutMoreObjective"><option value="goal">Chance of net target</option><option value="balanced">Balanced · net + downside</option><option value="net">Highest expected net</option><option value="payout">Chance of first payout</option><option value="downside">Protect downside P10</option></select></label>'+
+  '<label>Search depth<select id="payoutMoreEffort"><option value="quick">Quick · 50 + 80 trials</option><option value="normal" selected>Standard · 80 + 150 trials</option><option value="deep">Detailed · 150 + 250 trials</option></select></label>'+
+  '</div><p class="hint">Uses the chosen option’s own safety reserve, firm limits and risk policy. New models have the same investment budget.</p></details>'+
+  '<div id="payoutOptMoreModels"></div></div>';
  document.getElementById('results').before(panel);
  const $=id=>document.getElementById(id);
  const style=document.createElement('style');
@@ -323,7 +329,21 @@ function start(){
  .reverse-model-phase{font-size:10px;line-height:1.35;white-space:normal;padding:2px 0}
  .reverse-option-actions button[data-reverse-more-models]{font-size:11px}
 
- #payoutOptMoreModels:not(:empty){margin:13px 0;border-top:2px solid var(--line);padding-top:8px}
+ .payout-more-settings{border:1px solid var(--line);border-radius:6px;margin:8px 0 5px;padding:5px 8px}
+ .payout-more-settings>summary{cursor:pointer;font-weight:650;font-size:11px}
+ .payout-more-settings-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:8px 0}
+ .payout-more-settings-fields label{font-size:10px;font-weight:650;display:flex;flex-direction:column;gap:4px;min-width:0}
+ .payout-more-settings-fields select{width:100%;min-height:30px;font-size:12px}
+ .payout-more-sort{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:5px 0}
+ .payout-more-sort label{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:650}
+ .payout-more-sort select{min-height:30px;max-width:220px;font-size:11px}
+ .payout-more-sort button{min-height:29px;padding:5px 9px;font-size:11px}
+ .payout-more-sort .hint{flex:1 1 150px;font-size:10px}
+ .payout-more-model-reason{display:block;margin:4px 0;color:var(--muted);font-weight:400;max-width:250px;white-space:normal;font-size:10px;line-height:1.35}
+ .payout-more-help{margin:5px 0;padding:4px 0;font-size:10px}
+ .payout-more-help>summary{cursor:pointer;font-weight:650}
+ @media(max-width:650px){.payout-more-settings-fields{grid-template-columns:1fr}.payout-more-settings-fields select,.payout-more-sort select{font-size:16px;min-height:35px}}
+  #payoutOptMoreModels:not(:empty){margin:13px 0;border-top:2px solid var(--line);padding-top:8px}
  .payout-more-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
  .payout-more-title strong{font-size:13px}
  .payout-more-title small{font-size:10px;color:var(--muted);flex:1 1 220px}
@@ -412,7 +432,7 @@ function start(){
  $('payoutOptReset').addEventListener('click',()=>{loadAssumptions(true);storeAssumptions();save()});
  $('payoutOptAccount').addEventListener('change',()=>{loadAssumptions();loadedAssumptionsAccount=acctValue();save()});
  let currentSortMode=['model','net','budgetRoi','feeRoi','chance','payouts','investment','firstDay'].includes(prior.sortMode)?prior.sortMode:'model';
- let lastOptimizerOutput=null,lastOptimizerAccountKey='',lastOptimizerInputs=null,lastModelSearch=null;
+ let lastOptimizerOutput=null,lastOptimizerAccountKey='',lastOptimizerInputs=null,lastModelSearch=null,moreSortKey='improvement',moreDescending=true;
  document.addEventListener('portfolio-investment-import',event=>{
   const key=event.detail?.accountKey||'';
   if(!key||!bridge.getRows().some(r=>r.id+':'+r.size===key))return;
@@ -447,12 +467,15 @@ function start(){
    if(status)status.textContent='Testing new risk models using this investment amount and its trading assumptions.';
    try{
     await new Promise(resolve=>requestAnimationFrame(resolve));
+    const effort=$('payoutMoreEffort').value;
+    const trials=effort==='deep'?[150,250]:effort==='quick'?[50,80]:[80,150];
     const opts={...lastOptimizerInputs,budget:candidate.initialBudget,
-     netGoal:lastOptimizerOutput.minNetPnl,objective:'goal',
-     trainTrials:80,testTrials:150,shortlist:10};
+     netGoal:lastOptimizerOutput.minNetPnl,objective:$('payoutMoreObjective').value,
+     trainTrials:trials[0],testTrials:trials[1],shortlist:10};
     const result=root.StudioModelDiscovery.search(root.StudioModelDiscovery.clonePlan(candidate.plan),opts);
     lastModelSearch={candidate,result,origin:'Investment Option '+(index+1)};
-    $('payoutOptMoreModels').innerHTML=solver.renderMoreInvestmentModels(result,lastModelSearch.origin);
+    moreSortKey='improvement';moreDescending=true;
+    $('payoutOptMoreModels').innerHTML=solver.renderMoreInvestmentModels(result,lastModelSearch.origin,moreSortKey,moreDescending);
     if(status)status.textContent=result.ideas.length+' additional models compared below in Section 3A.';
     $('payoutOptMoreModels').scrollIntoView({behavior:'smooth',block:'start'});
    }catch(error){if(status)status.textContent='Model search failed: '+(error?.message||'Unknown error');}
@@ -509,7 +532,19 @@ function start(){
   if(status)status.textContent=ok?'Risk settings saved to Firms after confirmation. Open Firms to review or use Restore previous in the Firms transfer notice.':'No changes applied. See the Firms transfer status for details.';
   // Preserve the confirmation message in the expanded option; the saved Firms comparison refreshes on the next render.
  });
- $('payoutOptMoreModels').addEventListener('click',async event=>{
+ $('payoutOptMoreModels').addEventListener('change',event=>{
+  if(!event.target.matches?.('[data-more-sort]')||!lastModelSearch)return;
+  moreSortKey=event.target.value;
+  $('payoutOptMoreModels').innerHTML=solver.renderMoreInvestmentModels(
+   lastModelSearch.result,lastModelSearch.origin,moreSortKey,moreDescending);
+ });
+  $('payoutOptMoreModels').addEventListener('click',async event=>{
+  if(event.target.closest?.('[data-more-direction]')&&lastModelSearch){
+   moreDescending=!moreDescending;
+   $('payoutOptMoreModels').innerHTML=solver.renderMoreInvestmentModels(
+    lastModelSearch.result,lastModelSearch.origin,moreSortKey,moreDescending);
+   return;
+  }
   if(event.target.closest?.('[data-more-close]')){
    lastModelSearch=null;$('payoutOptMoreModels').innerHTML='';return;
   }
