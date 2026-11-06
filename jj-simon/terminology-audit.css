@@ -1,0 +1,36 @@
+/* JJ terminology audit: compact collapsible definition cards. */
+.jj-terms-app{border:1px solid var(--stroke);border-radius:10px;padding:13px;margin:9px 0 15px;background:var(--panel);min-width:0}
+.jj-terms-app h3{font-size:15px;margin:0 0 5px;line-height:1.35}
+.jj-terms-intro{font-size:11px;line-height:1.55;color:var(--muted);margin:6px 0 11px}
+.jj-terms-filters{display:grid;grid-template-columns:1.5fr 1fr;gap:9px}
+.jj-terms-filters label{display:flex;flex-direction:column;gap:5px;min-width:0;font-size:11px;font-weight:600;color:var(--muted)}
+.jj-terms-filters input,.jj-terms-filters select{font-size:13px;width:100%;min-width:0;min-height:41px;padding:9px;background:var(--bg);color:var(--text);border:1px solid var(--stroke);border-radius:7px}
+.jj-terms-bar{display:flex;gap:9px;align-items:center;flex-wrap:wrap;padding:10px 0}
+.jj-terms-check{display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer}
+.jj-terms-check input{width:16px;height:16px;accent-color:var(--accent)}
+.jj-terms-bar button,.jj-term-actions button{border:1px solid var(--stroke);border-radius:6px;background:var(--bg);color:var(--accent);font-size:11px;min-height:36px;padding:7px 10px;cursor:pointer}
+.jj-terms-count{font-size:11px;color:var(--muted);margin-left:auto}
+.jj-terms-results{display:grid;gap:7px}
+.jj-term-item{border:1px solid var(--stroke);border-radius:8px;background:var(--bg);overflow:hidden}
+.jj-term-item>summary{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px;list-style:none}
+.jj-term-item>summary::-webkit-details-marker{display:none}
+.jj-term-item>summary:before{content:'+';font-weight:700;color:var(--accent)}
+.jj-term-item[open]>summary:before{content:'−'}
+.jj-term-item[open]>summary{background:var(--hover);border-bottom:1px solid var(--stroke)}
+.jj-term-left{display:flex;gap:8px;align-items:center;flex:1;min-width:0}
+.jj-term-left strong{font-size:12px;overflow-wrap:anywhere}
+.jj-term-id{font-size:10px;color:var(--accent);border:1px solid var(--stroke);border-radius:4px;padding:2px 5px}
+.jj-term-category{font-size:10px;color:var(--muted);text-align:right}
+.jj-term-body{padding:12px}
+.jj-term-field{display:block;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-size:10px;margin:10px 0 4px}
+.jj-term-body p{font-size:12px;line-height:1.55;margin:4px 0 9px;overflow-wrap:anywhere}
+.jj-term-body .jj-term-warning{border-left:2px solid #c99b57;padding-left:9px}
+.jj-term-evidence{border-top:1px solid var(--stroke);padding-top:4px}
+.jj-term-evidence-row{padding:8px 0;border-bottom:1px solid var(--stroke)}
+.jj-term-evidence-row>strong{font-size:11px}
+.jj-term-evidence-row blockquote{border-left:3px solid var(--accent);padding:7px 10px;margin:7px 0;font-style:italic;background:var(--panel);font-size:11px;line-height:1.5}
+.jj-term-evidence-row a{font-size:11px;color:var(--accent)}
+.jj-term-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.jj-term-body .jj-term-footer{font-size:10px;color:var(--muted);margin-top:11px}
+.jj-terms-app input:focus-visible,.jj-terms-app select:focus-visible,.jj-terms-app button:focus-visible,.jj-term-item>summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(max-width:750px){.jj-terms-app{padding:10px;margin:7px 0}.jj-terms-app h3{font-size:14px}.jj-terms-filters{grid-template-columns:1fr}.jj-terms-filters input,.jj-terms-filters select{font-size:16px;min-height:43px}.jj-term-item>summary{flex-wrap:wrap;gap:5px}.jj-term-left{min-width:0}.jj-term-category{margin-left:27px}.jj-terms-count{margin-left:0}.jj-term-body{padding:10px}}
