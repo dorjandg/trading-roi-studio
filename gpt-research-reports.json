@@ -1,0 +1,26 @@
+{
+  "schema": "4ds-gpt-research-v1",
+  "updatedAt": "2026-11-06T19:20:00Z",
+  "visibility": "public-generic",
+  "reviews": [
+    {
+      "id": "risk-block-v1",
+      "date": "2026-11-06",
+      "category": "Simulation integrity",
+      "status": "investigated",
+      "priority": "high",
+      "title": "Risk-blocked accounts are not firm breaches",
+      "finding": "The engine preflights the next configured risk against the remaining overall and daily loss allowance. If the policy cannot take that risk, the account can be removed from simulation routing without an actual loss-limit breach.",
+      "suggestion": "Compare lower-risk models at the same budget, trading horizon and paired signal seed. Review per-account closure reasons and remaining headroom before changing strategy settings.",
+      "measurements": [
+        "Compare cumulative risk-blocked versus breached accounts",
+        "Check phase-by-phase account survival",
+        "Compare expected net, payouts, and downside at equal budget"
+      ],
+      "action": "Improved Account Journey closure reasons and added fixed-budget Compare Lower Risk.",
+      "source": "GitHub engine code review; deterministic smoke tests",
+      "codeCommit": "4f67100844141184b882114e9cc33708f28efc9d",
+      "verified": "Code and deterministic test only; live deployment and real performance unverified"
+    }
+  ]
+}
