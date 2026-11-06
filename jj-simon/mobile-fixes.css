@@ -1,0 +1,85 @@
+/* JJ Study Academy mobile refinement v1 — desktop layout unchanged. */
+@media (max-width:750px){
+ html,body{max-width:100%;overflow-x:clip}
+ body{font-size:12px;line-height:1.45;-webkit-text-size-adjust:100%}
+ header{height:46px;padding:0 11px;gap:7px}
+ .brand{font-size:14px;white-space:nowrap}
+ .head{gap:7px;min-width:0}
+ .head .back{display:none}
+ .layout{min-height:calc(100dvh - 46px)}
+ main{padding:9px 10px 26px;min-width:0}
+ h1{font-size:22px;line-height:1.14}
+ .lead{font-size:11px;line-height:1.35;margin:5px 0 9px}
+ .tools{display:grid;grid-template-columns:minmax(0,115px) minmax(0,1fr);gap:7px;margin:8px 0 8px;align-items:stretch}
+ .mobile{width:100%;max-width:none;min-width:0;height:38px;font-size:12px;padding:0 5px;text-overflow:ellipsis}
+ .search-wrap{min-width:0;width:100%}
+ .search{width:100%;height:38px;font-size:12px;padding:8px 9px}
+ .suggestions{width:min(100%,calc(100vw - 20px));max-height:55dvh;overflow-y:auto}
+ .suggest-item{padding:11px;font-size:12px}
+ .stats{margin:5px 0 8px;gap:4px}
+ .stats .pill{font-size:10px;padding:3px 7px;white-space:normal}
+ .dashboard{margin:4px 0 8px;padding:9px 10px;border-radius:8px}
+ .dash-top{display:flex;flex-direction:row;justify-content:space-between;align-items:baseline;gap:5px;flex-wrap:wrap}
+ .dash-title{font-size:12px;min-width:0}
+ .dash-number{font-size:11px;line-height:1.35;text-align:right;white-space:normal}
+ .dash-sub{font-size:10px;line-height:1.35}
+ .bar{height:5px;margin:7px 0}
+ .display-options{gap:7px 12px;margin:5px 0 9px}
+ .display-options .muted-small{display:none}
+ .smallcheck{font-size:10px;line-height:1.3}
+ .dash-overview{gap:5px}
+ .dash-module{padding:9px 10px;min-height:42px;border-radius:7px;gap:8px;align-items:center;flex-direction:row}
+ .dash-module-left{display:block;min-width:0;flex:1 1 auto;font-size:12px;line-height:1.28;overflow-wrap:anywhere}
+ .dash-module-left>.module-line{gap:6px;align-items:flex-start}
+ .dash-module-left>.module-line .module-name{min-width:0}
+ .dash-module-left>.statusdot{margin-right:5px}
+ .dash-description{display:none}
+ .dash-module-right{flex:0 0 auto;font-size:10px;white-space:nowrap;color:var(--muted);margin-left:auto}
+ .chapter{padding:10px;margin-bottom:8px;border-radius:8px;min-width:0}
+ .chapter h2{font-size:17px;line-height:1.25;margin:4px 0 6px;overflow-wrap:anywhere}
+ .chapter .intro,.chapter .module-note,.chapter-inside{display:none}
+ .chapter-stat{gap:5px;margin-bottom:5px}
+ .chapter-stat .pill{font-size:10px;padding:3px 7px}
+ .chapter-mode main{padding-top:6px}
+ .chapter-mode .tools{margin:5px 0}
+ .chapter-crumb{font-size:10px;line-height:1.3;overflow-wrap:anywhere}
+ .chapter-mode .stats .pill:nth-child(2){display:none}
+ .section{margin-top:5px}
+ .section summary{padding:10px 11px;min-height:44px;gap:6px;flex-wrap:wrap;font-size:12px;line-height:1.4}
+ .section-head{min-width:0;flex:1 1 100%}
+ .section-head .name{min-width:0;overflow-wrap:anywhere}
+ .check-study{margin-left:auto;margin-right:5px;font-size:10px;min-height:24px}
+ .content{padding:0 10px 11px;overflow-wrap:anywhere}
+ .content li{font-size:12px;line-height:1.55}
+ .sources a{font-size:10px;overflow-wrap:anywhere}
+ .chapter-toc{margin:5px 0;padding:7px;border-radius:6px;font-size:11px}
+ .chapter-toc button,.related button{padding:8px;font-size:11px;max-width:100%;overflow-wrap:anywhere;text-align:left}
+ .teaching{padding:8px;margin:8px 0}
+ .fbox{font-size:12px;line-height:1.45;overflow-wrap:anywhere}
+ .case-grid,.calc-fields,.wb-results,.audit-tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .case-grid>div,.wb-results>div,.audit-tiles>div{min-width:0;padding:7px}
+ .case-grid strong,.wb-results strong,.audit-tiles strong{font-size:clamp(12px,3.4vw,17px);line-height:1.2;overflow-wrap:anywhere}
+ .case-grid small,.wb-results small,.audit-tiles small{font-size:10px;overflow-wrap:anywhere}
+ .calc-fields label{min-width:0}
+ .calc-fields input{width:100%;font-size:14px;min-width:0}
+ .jj-workbench,.jj-audit,.jj-warnings,.jj-firms{padding:9px;margin:8px 0;min-width:0;overflow-wrap:anywhere}
+ .jj-workbench h2,.jj-audit h2,.jj-warnings h2,.jj-firms h2{font-size:15px;line-height:1.3}
+ .table-scroll{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+ .ref-table{font-size:10px}
+ .ref-table td,.ref-table th{padding:6px 7px}
+ .viz{max-width:100%;height:auto}
+ .foot{font-size:10px}
+}
+@media (max-width:380px){
+ main{padding-left:8px;padding-right:8px}
+ .tools{grid-template-columns:minmax(0,99px) minmax(0,1fr);gap:5px}
+ .brand{font-size:13px}
+ .dash-module{padding:8px}
+ .dash-module-left{font-size:11px}
+ .dash-module-right{font-size:9px}
+ .case-grid strong,.wb-results strong,.audit-tiles strong{font-size:12px}
+}
+@media (max-width:310px){
+ .wb-results,.audit-tiles,.case-grid,.calc-fields{grid-template-columns:minmax(0,1fr)}
+ .dash-module-right{font-size:9px}
+}
