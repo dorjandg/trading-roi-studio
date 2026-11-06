@@ -68,6 +68,11 @@ function start(){
  .payout-assumptions-reset{font-size:10px;padding:4px 7px;min-height:25px}
  @media(max-width:900px){.payout-assumptions-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
  @media(max-width:600px){.payout-assumptions-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.payout-assumptions-grid input,.payout-assumptions-grid select{font-size:16px;height:35px;min-height:35px}}
+ .reverse-sort-bar{display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:5px 7px;margin:5px 0;border:1px solid var(--line);border-radius:6px}
+ .reverse-sort-bar label{font-size:11px}
+ .reverse-sort-bar select{min-height:27px;max-width:220px;padding:3px 6px;font-size:11px;border-radius:5px}
+ .reverse-sort-bar small{font-size:10px;color:var(--muted);flex:1 1 220px}
+ @media(max-width:600px){.reverse-sort-bar select{font-size:16px;min-height:35px}}
  .reverse-candidate{border:1px solid var(--line);border-radius:7px;padding:0;margin:5px 0;overflow:hidden}
  .reverse-candidate>summary{list-style:none;cursor:pointer}
  .reverse-candidate>summary::-webkit-details-marker{display:none}
@@ -195,7 +200,7 @@ function start(){
   try{localStorage.setItem(key,JSON.stringify({per:$('payoutOptPer').value,
    max:$('payoutOptMax').value,roi:$('payoutOptRoi').value,netRoi:$('payoutOptNetRoi').value,netPnl:$('payoutOptNetPnl').value,minRR:$('payoutOptMinRR').value,maxRR:$('payoutOptMaxRR').value,
    assumptionsByAccount:accountAssumptions,assumptionsOpen:$('payoutOptAssumptions').open,
-   account:$('payoutOptAccount').value,open:panel.open}))}catch(_){}
+   account:$('payoutOptAccount').value,sortMode:currentSortMode,open:panel.open}))}catch(_){}
  }
  function math(){
   const a=Number($('payoutOptNetPnl').value),b=Number($('payoutOptPer').value);
@@ -213,8 +218,15 @@ function start(){
  for(const id of Object.values(assumptionIds))$(id).addEventListener('change',()=>{storeAssumptions();save()});
  $('payoutOptReset').addEventListener('click',()=>{loadAssumptions(true);storeAssumptions();save()});
  $('payoutOptAccount').addEventListener('change',()=>{loadAssumptions();loadedAssumptionsAccount=acctValue();save()});
+ let currentSortMode=['model','net','budgetRoi','feeRoi','chance','payouts','investment','firstDay'].includes(prior.sortMode)?prior.sortMode:'model';
  let lastOptimizerOutput=null;
  $('payoutOptResults').addEventListener('change',event=>{
+  if(event.target.id==='payoutResultsSort'){
+   currentSortMode=event.target.value;
+   save();
+   if(lastOptimizerOutput)$('payoutOptResults').innerHTML=solver.render(lastOptimizerOutput,currentSortMode);
+   return;
+  }
   const select=event.target.closest('select[data-reverse-path]');
   if(!select||!lastOptimizerOutput)return;
   const index=Number(select.dataset.reversePath),candidate=lastOptimizerOutput.candidates[index];
@@ -271,7 +283,7 @@ function start(){
    const output=await solver.optimize({plan:selectedPlan,perPayout,
     maxInvestment,minRoi:minRoiPct/100,minNetRoi:minNetRoiPct/100,minNetPnl,minRR,maxRR,inputs,onProgress:text=>status.textContent=text});
    lastOptimizerOutput=output;
-   $('payoutOptResults').innerHTML=solver.render(output);
+   $('payoutOptResults').innerHTML=solver.render(output,currentSortMode);
    let historyResult=' · history not available';
    try{
     const record=bridge.saveOptimizer?.({output,inputs,account:{
