@@ -70,7 +70,7 @@ function create({user,element,endpoint}){
    id:'opt-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,9),
    timestamp:now(),user,
    account:compact(account||{firm:output.firm,size:output.size}),
-   targets:{totalCash:output.targetCash,perPayout:output.perPayout,
+   targets:{targetBasis:'net-pnl',totalCash:null,perPayout:output.perPayout,
     requiredPayouts:output.requiredPayouts,minRoi:output.minRoi,
     minNetRoi:output.minNetRoi,minNetPnl:output.minNetPnl,
     maxInvestment:output.maxInvestment,profitPerAccount:output.profitPerAccount,minRR:output.minRR,maxRR:output.maxRR},
@@ -89,8 +89,10 @@ function create({user,element,endpoint}){
     return '<tr><td>'+escapeHtml(new Date(r.timestamp).toLocaleString())+
      '<small style="display:block">Calculate Investment</small></td>'+
      '<td>'+escapeHtml(r.account?.firm||'')+' '+USD(r.account?.size||0)+'</td>'+
-     '<td>'+escapeHtml(r.targets?.requiredPayouts||0)+' payouts · '+USD(r.targets?.totalCash||0)+
-     ' target · '+escapeHtml(r.inputs?.days||0)+'d</td>'+
+     '<td>'+escapeHtml(r.targets?.requiredPayouts||0)+' payouts · '+
+     USD(r.targets?.targetBasis==='net-pnl'?r.targets.minNetPnl:r.targets?.totalCash||0)+
+     (r.targets?.targetBasis==='net-pnl'?' net target':' cash target')+
+     ' · '+escapeHtml(r.inputs?.days||0)+'d</td>'+
      '<td class="num">'+USD(x.avgNet)+'</td>'+
      '<td class="num">'+number(x.avgPaid).toFixed(2)+'</td>'+
      '<td><button type="button" data-history-export="'+i+'" title="Download full Calculate Investment result">Export</button></td></tr>';
