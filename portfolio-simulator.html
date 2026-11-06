@@ -482,6 +482,17 @@ details p{margin:6px 0}
  #assumptionsPanel .footer{font-size:11px;line-height:1.4;margin:7px 0}
 }
 
+
+/* Selected optimizer analysis shares sections 4–7 but never replaces saved run results. */
+.report-source-bar{display:flex;align-items:center;gap:9px;flex-wrap:wrap;
+ margin:9px 0 11px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel2)}
+.report-source-bar strong{font-size:12px}
+.report-source-bar>span{font-size:11px;color:var(--muted);flex:1 1 180px}
+.report-source-actions{display:flex;gap:6px;flex-wrap:wrap}
+.report-source-actions button{min-height:29px;padding:5px 9px;font-size:11px}
+.report-source-actions button:disabled{opacity:.55;cursor:default}
+@media(max-width:650px){.report-source-bar{padding:7px;gap:5px}.report-source-actions{width:100%}.report-source-actions button{flex:1 1 135px;min-height:34px}}
+
 /* Compact independent pagination for saved Simulation History. */
 .simulation-history-pages{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap;margin:6px 0 2px;font-size:11px;color:var(--muted)}
 .simulation-history-pages label{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
@@ -555,6 +566,7 @@ details p{margin:6px 0}
  <div id="firmsSendStatus" class="status" style="margin-top:10px" aria-live="polite">Suggested models stay in Portfolio Sim until you explicitly send one to Firms.</div>
 </div></details>
 <section id="results" hidden>
+<div id="reportSourceBar" class="report-source-bar" role="group" aria-label="Detailed report source"><strong>Detailed reports · Sections 4–7</strong><span id="reportSourceLabel">Run Simulation</span><div class="report-source-actions"><button type="button" data-report-source="run" disabled>Run Simulation</button><button type="button" data-report-source="investment" disabled>Investment scenario</button></div></div>
 <details class="sim-charts-panel numbered-panel" id="section4Panel" open><summary><strong>4 · Results across prop firms</strong><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><p id="summaryCaption" class="hint"></p><div id="totals" class="kpis"></div>
  <div class="tablewrap"><table><thead><tr><th>Firm / account</th><th>Budget</th><th>Challenges</th><th>Spent avg.</th><th>Phase 1 passes</th><th>Phase 2 passes</th><th>Funded</th><th>Paid</th><th>Payouts avg.</th><th>Net avg.</th><th>ROI</th><th>Chance ≥1 payout</th></tr></thead><tbody id="comparisonRows"></tbody></table></div>
  <p class="hint">Counts and profits are averages over simulated trials, not whole-account predictions. ROI = expected net / expected incurred costs. Starting budget is not account capital.</p>
@@ -1074,7 +1086,7 @@ function portfolioAdviceMarkup(result,inputs){
    issues.map(item=>'<div class="portfolio-advice-item"><b>'+esc(item.title)+'</b><p>'+esc(item.evidence)+'</p><p><b>Test:</b> '+esc(item.test)+'</p></div>').join('')+
    '<small>Based on this Run Simulation, not Calculate Investment. These are observations and sensitivity tests, not causal proof, verified trading improvements or changes to firm rules. No settings are changed automatically.</small></details>';
 }
-function makeResultCard(result,index){
+function makeResultCard(result,index,isInvestmentReport=false){
  const p=result.plan,c=result.avg,v=E.validatePlan(p);
  const stageNames=p.stageList.filter(x=>x!=='funded');
  const stageInfo=p.stageList.map(stage=>{
@@ -1093,9 +1105,9 @@ function makeResultCard(result,index){
    '<div><small>Net distribution P10 / median / P90</small><strong style="font-size:14px">'+usd(result.p10)+' / '+usd(result.median)+' / '+usd(result.p90)+'</strong></div>'+
    '<div><small>Avg. risk-blocked accounts</small><strong>'+dec(c.exhausted)+'</strong></div></div>'+
    '<details data-result-detail="'+index+'"'+(openResultDetails.has(index)?' open':'')+'>'+
-   '<summary>Test phase risks · modeled limitations · example trade history</summary>'+
+   '<summary>'+(isInvestmentReport?'Selected scenario rules · account trade history':'Test phase risks · modeled limitations · example trade history')+'</summary>'+
     stagePassSummary(result)+'<div class="risks">'+stageInfo+'</div>'+
-    riskEditor(result,index)+
+    (isInvestmentReport?'<p class="hint">Read-only investment scenario: the exact selected risk strategy is preserved. Change the option in Calculate Investment to compare another scenario.</p>':riskEditor(result,index))+
     '<h4 style="margin:16px 0 5px">Example trade history · paginated</h4>'+
     '<p class="hint">Illustrative account #'+(historyAccount(result)?.id||1)+' from trial #1. This is one possible history, not the average. Choose All events to inspect stage transitions and qualification-only days.</p>'+
     (warns||'')+
@@ -1180,8 +1192,20 @@ $('chartsContents').addEventListener('click',event=>{
  Object.assign(chartState,{...chartDefaults,selection:chartState.selection,account:chartState.account});
  renderCharts();saveView();
 });
-function renderResults(list,inputs){
+let regularReport=null,investmentReport=null,reportMode='run';
+function renderResults(list,inputs,source='run'){
+ reportMode=source==='investment'?'investment':'run';
+ if(source==='run')regularReport={list,inputs};
  lastResults=list;lastInputs=inputs;
+ const sourceBar=$('reportSourceBar');
+ if(sourceBar){
+  $('reportSourceLabel').textContent=reportMode==='investment'?investmentReport?.label||'Selected investment scenario':'Run Simulation';
+  for(const button of sourceBar.querySelectorAll('[data-report-source]')){
+   const which=button.dataset.reportSource;
+   button.disabled=(which==='run'&&!regularReport)||(which==='investment'&&!investmentReport)||which===reportMode;
+  }
+ }
+
  $('results').hidden=false;
  if($('chartsPanel').open)renderCharts();
  if($('journeyPanel').open)renderJourney();
@@ -1236,9 +1260,10 @@ function renderResults(list,inputs){
    '<div><small>Net P90 (upside)</small><strong>'+usd(combinedStats.p90)+'</strong></div>'+
    '<div><small>Chance of positive net</small><strong>'+pct(combinedStats.chancePositive)+'</strong></div></div></div>';
  }
- $('details').innerHTML=list.map((result,index)=>makeResultCard(result,index)).join('');
+ $('details').innerHTML=list.map((result,index)=>makeResultCard(result,index,reportMode==='investment')).join('');
  $('status').style.color='var(--green)';
- $('status').textContent='Completed · '+inputs.trials+' trials · '+list.length+' account types';
+ $('status').textContent=reportMode==='investment'?'Viewing selected investment scenario · '+inputs.trials+' validated trials':'Completed · '+inputs.trials+' trials · '+list.length+' account types';
+ if(source!=='run')return;
  try{localStorage.setItem(rootKey+'options-portfolio-summary-v1',JSON.stringify({
   v:2,user,createdAt:new Date().toISOString(),calculator:'Portfolio Sim · trade-based Monte Carlo',inputs,
   rows:list.map(r=>{
@@ -1788,6 +1813,15 @@ function run(){
   }finally{$('run').disabled=false}
  });
 }
+$('reportSourceBar').addEventListener('click',event=>{
+ const button=event.target.closest?.('[data-report-source]');
+ if(!button||button.disabled)return;
+ const source=button.dataset.reportSource;
+ const stored=source==='investment'?investmentReport:regularReport;
+ if(!stored)return;
+ chartState.selection='0';journeyState.selection='0';spendingLedgerState.selection='0';
+ renderResults(stored.list,stored.inputs,source==='investment'?'investment':'restore');
+});
 $('run').addEventListener('click',event=>{event.preventDefault();event.stopPropagation();run();});
 async function init(){
  try{
@@ -1805,6 +1839,35 @@ async function init(){
 }
 window.StudioPayoutBridge={
  user,
+ analyzeOptimizerCandidate:(candidate,optimizer,sourceInputs,label)=>{
+  if(!candidate?.result?.sample||!candidate?.plan||!candidate?.result?.plan)return false;
+  const r=candidate.result;
+  if(r.plan.id!==candidate.plan.id||r.plan.size!==candidate.plan.size)return false;
+  const cfg=r.config||{};
+  const inputs={
+   days:Number(sourceInputs?.days)||cfg.days||30,
+   tradesPerDay:Number(sourceInputs?.tradesPerDay)||cfg.tradesPerDay||1,
+   winRate:Number(sourceInputs?.winRate??(cfg.winRate*100))||0,
+   seed:Number(cfg.seed)||Number(sourceInputs?.seed)||24717,
+   trials:Number(cfg.trials)||200,
+   signalMode:sourceInputs?.signalMode||cfg.signalMode||'independent',
+   purchaseMode:sourceInputs?.purchaseMode||cfg.purchaseMode||'recycle',
+   capacityMode:sourceInputs?.capacityMode||cfg.capacityMode||'automatic',
+   budget:Number(candidate.initialBudget)||Number(r.budget)||0,
+   netGoal:Number(optimizer?.minNetPnl)||Number(sourceInputs?.netGoal)||0,
+   budgetMode:'compare',
+   maxActive:Number(sourceInputs?.maxActive)||cfg.maxActive||1,
+   maxBuysPerDay:Number(sourceInputs?.maxBuysPerDay)||cfg.maxBuysPerDay||1,
+   reinvestPayouts:sourceInputs?.reinvestPayouts===true
+  };
+  investmentReport={list:[r],inputs,label:label||'Selected investment option'};
+  chartState.selection='0';journeyState.selection='0';spendingLedgerState.selection='0';
+  renderResults(investmentReport.list,investmentReport.inputs,'investment');
+  $('section4Panel').open=true;
+  $('results').scrollIntoView({behavior:'smooth',block:'start'});
+  return true;
+ },
+
  saveOptimizer:data=>simulationHistory?.saveOptimizer(data),
  getRows:()=>rows.slice(),
  getPlan:row=>accountPlan(row),
