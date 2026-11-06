@@ -10,7 +10,9 @@ function start(){
  panel.innerHTML='<summary><strong>3A · Calculate Investment &amp; Compare Models</strong>'+
   '<button class="primary section-run-btn" type="button" id="runPayoutOptimizer">Calculate Investment</button>'+
   '<span class="sim-charts-hint">Show / hide</span></summary>'+
-  '<div class="numbered-content"><p class="hint">Search investment and risk combinations for a payout goal. Open any result to compare its R1/R2/R3 and trade KPIs, or search additional risk models in Section 3A without leaving these results. These are separate from Run Simulation.</p>'+
+  '<div class="numbered-content"><details id="payoutOptInputsPanel" class="payout-opt-inputs" open>'+
+  '<summary><strong>Investment inputs</strong><span id="payoutOptInputsSummary"> · Set target, account, payout and budget</span><span class="payout-opt-inputs-toggle">Show / hide</span></summary>'+
+  '<div class="payout-opt-inputs-body"><p class="hint">Search investment and risk combinations for a payout goal. Open any result to compare its R1/R2/R3 and trade KPIs, or search additional risk models in Section 3A without leaving these results. These are separate from Run Simulation.</p>'+
   '<div class="payout-opt-fields">'+
   '<label><span class="payout-opt-field-title">Target net P&L (USD)</span><input id="payoutOptNetPnl" type="number" min="1" step="500" value="5000" title="Net cash receipts minus incurred costs"></label>'+
 
@@ -44,7 +46,7 @@ function start(){
   '</div><p class="hint" id="payoutOptLimits"></p>'+
   '<button type="button" class="payout-assumptions-reset" id="payoutOptReset">Reset assumptions from Section 1 / Firms</button>'+
   '<p class="hint">These values apply only to Calculate Investment. The main simulator and saved Firms settings are not changed.</p>'+
-  '</details><p class="hint" id="payoutOptMath">10 first payouts required.</p>'+
+  '</details><p class="hint" id="payoutOptMath">10 first payouts required.</p></div></details>'+
   '<p id="payoutOptStatus" class="status" role="status">Choose targets, then Calculate Investment.</p>'+
   '<div id="payoutOptResults"></div>'+
   '<details id="payoutMoreSearchSettings" class="payout-more-settings"><summary>More model search settings</summary>'+
@@ -58,6 +60,17 @@ function start(){
  const style=document.createElement('style');
  style.textContent=`
  #payoutOptimizerPanel>.numbered-content{padding:8px 5px}
+ #payoutOptimizerPanel .payout-opt-inputs{margin:1px 0 7px;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+ #payoutOptimizerPanel .payout-opt-inputs>summary{display:flex;align-items:center;flex-wrap:wrap;gap:6px;cursor:pointer;background:var(--panel2);padding:8px 10px;list-style:none;font-size:12px}
+ #payoutOptimizerPanel .payout-opt-inputs>summary::-webkit-details-marker{display:none}
+ #payoutOptimizerPanel .payout-opt-inputs>summary:before{content:'▸';font-size:11px;color:var(--muted)}
+ #payoutOptimizerPanel .payout-opt-inputs[open]>summary:before{content:'▾'}
+ #payoutOptimizerPanel .payout-opt-inputs>summary strong{font-size:12px}
+ #payoutOptimizerPanel #payoutOptInputsSummary{flex:1 1 190px;font-size:11px;color:var(--muted)}
+ #payoutOptimizerPanel .payout-opt-inputs-toggle{font-size:10px;color:var(--muted)}
+ #payoutOptimizerPanel .payout-opt-inputs[open]>summary{border-bottom:1px solid var(--line)}
+ #payoutOptimizerPanel .payout-opt-inputs-body{padding:7px 8px}
+ @media(max-width:650px){#payoutOptimizerPanel .payout-opt-inputs>summary{padding:7px 8px}#payoutOptimizerPanel .payout-opt-inputs-body{padding:6px}}
  #payoutOptimizerPanel>summary .section-run-btn{height:34px;min-height:34px;flex:0 0 170px;width:170px;padding:5px 8px;font-size:12px}
  #payoutOptimizerPanel>summary .sim-charts-hint{margin-left:0}
  .payout-opt-fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:end;gap:5px;margin:5px 0}
@@ -419,13 +432,22 @@ function start(){
    assumptionsByAccount:accountAssumptions,assumptionsOpen:$('payoutOptAssumptions').open,
    account:$('payoutOptAccount').value,sortMode:currentSortMode,open:panel.open}))}catch(_){}
  }
+ function updateInputSummary(){
+  const account=$('payoutOptAccount'),accountName=account?.selectedOptions?.[0]?.textContent?.trim()||'Select account';
+  const n=Number($('payoutOptNetPnl').value),p=Number($('payoutOptPer').value),budget=Number($('payoutOptMax').value);
+  const value=x=>Number.isFinite(x)?String.fromCharCode(36)+x.toLocaleString('en-US',{maximumFractionDigits:0}):'—';
+  $('payoutOptInputsSummary').textContent=' · '+accountName+' · Goal '+value(n)+
+   ' · Payout '+value(p)+' · Limit '+value(budget);
+ }
  function math(){
   const a=Number($('payoutOptNetPnl').value),b=Number($('payoutOptPer').value);
+  updateInputSummary();
   $('payoutOptMath').textContent=a>0&&b>0?
    'At least '+Math.ceil(a/b)+' payouts at $'+b.toLocaleString('en-US')+' each before fees. Additional payouts may be required to net $'+a.toLocaleString('en-US')+'.':
    'Enter positive payout amounts.';
  }
  $('payoutOptAssumptions').open=prior.assumptionsOpen===true;
+ $('payoutOptInputsPanel').open=true;
  syncOptions();math();
  for(const id of ['payoutOptPer','payoutOptMax','payoutOptRoi','payoutOptNetRoi','payoutOptNetPnl','payoutOptMinRR','payoutOptMaxRR','payoutOptAccount']){
   $(id).addEventListener('change',()=>{math();save()});
@@ -645,6 +667,8 @@ function start(){
    lastOptimizerAccountKey=selected;
    lastOptimizerInputs={...inputs};
    renderLastOptimizer();
+   updateInputSummary();
+   $('payoutOptInputsPanel').open=false;
    let historyResult=' · history not available';
    try{
     const record=bridge.saveOptimizer?.({output,inputs,account:{
