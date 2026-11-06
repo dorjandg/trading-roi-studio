@@ -645,6 +645,7 @@ function start(){
  $('payoutOptReset').addEventListener('click',()=>{loadAssumptions(true);storeAssumptions();save()});
  $('payoutOptAccount').addEventListener('change',()=>{loadAssumptions();loadedAssumptionsAccount=acctValue();save()});
  let currentSortMode=['model','net','budgetRoi','feeRoi','chance','payouts','investment','firstDay'].includes(prior.sortMode)?prior.sortMode:'model';
+ let lastOptimizerRecordId=null;
  let lastOptimizerOutput=null,lastOptimizerAccountKey='',lastOptimizerInputs=null,lastModelSearch=null,moreSortKey='net',moreDescending=true,moreColumnView='trading',moreSourceFilter='all';
  document.addEventListener('portfolio-investment-import',event=>{
   const key=event.detail?.accountKey||'';
@@ -1052,6 +1053,37 @@ function start(){
  $('payoutAdvisorQuestion').addEventListener('keydown',event=>{
   if(event.key==='Enter'){event.preventDefault();submitAdvisorQuestion();}
  });
+ async function runFundedComparison(index,{scroll=false}={}){
+  const candidate=lastOptimizerOutput?.candidates?.[index];
+  if(!candidate||!lastOptimizerInputs)throw Error('Calculate Investment first.');
+  if(candidate.plan.id+':'+candidate.plan.size!==lastOptimizerAccountKey)
+   throw Error('Account changed. Calculate Investment again.');
+  const discovery=root.StudioModelDiscovery;
+  if(typeof discovery?.compareFundedRecovery450!=='function')
+   throw Error('Funded compounding module is not loaded.');
+  const effort=$('payoutMoreEffort')?.value;
+  const trials=effort==='deep'?250:effort==='quick'?80:150;
+  await new Promise(resolve=>requestAnimationFrame(resolve));
+  const result=discovery.compareFundedRecovery450(discovery.clonePlan(candidate.plan),{
+   ...lastOptimizerInputs,budget:candidate.initialBudget,
+   netGoal:lastOptimizerOutput.minNetPnl,
+   requiredPayouts:lastOptimizerOutput.requiredPayouts,testTrials:trials
+  });
+  if(result?.ideas?.length!==4)throw Error('Expected four funded variants; found '+(result?.ideas?.length??0));
+  lastModelSearch={candidate,result,origin:'Investment Option '+(index+1)+' · Funded compounding'};
+  moreSortKey='goal';moreDescending=true;moreSourceFilter='all';
+  renderUnifiedTable();
+  $('payoutOptModelComparison').open=true;
+  let saved=' · comparison only available in browser';
+  if(lastOptimizerRecordId){
+   try{
+    const count=bridge.updateOptimizerComparison?.(lastOptimizerRecordId,result);
+    if(count===4)saved=' · 4 variants saved to Section 10 (cloud sync attempted)';
+   }catch(e){saved=' · history update error: '+e.message;}
+  }
+  if(scroll)$('payoutOptModelComparison').scrollIntoView({behavior:'smooth',block:'start'});
+  return {total:lastOptimizerOutput.candidates.length+result.ideas.length,saved};
+ }
  $('payoutOptResults').addEventListener('click',async event=>{
   const openAdvisor=event.target.closest?.('[data-reverse-advisor]');
   if(openAdvisor){
@@ -1077,23 +1109,8 @@ function start(){
    const oldLabel=funded450.textContent;funded450.disabled=true;funded450.textContent='Testing funded compounding…';
    if(status)status.textContent='Comparing $450 → $1,800 → $7,200 compounded profit milestones with funded loss recovery and real risk ceilings…';
    try{
-    await new Promise(resolve=>requestAnimationFrame(resolve));
-    const effort=$('payoutMoreEffort').value;
-    const trials=effort==='deep'?250:effort==='quick'?80:150;
-    const opts={...lastOptimizerInputs,budget:candidate.initialBudget,
-     netGoal:lastOptimizerOutput.minNetPnl,requiredPayouts:lastOptimizerOutput.requiredPayouts,
-     testTrials:trials};
-    const result=root.StudioModelDiscovery.compareFundedRecovery450(
-     root.StudioModelDiscovery.clonePlan(candidate.plan),opts);
-    lastModelSearch={candidate,result,origin:'Investment Option '+(index+1)+' · Funded $450 recovery'};
-    moreSortKey='goal';moreDescending=true;moreSourceFilter='all';
-    renderUnifiedTable();
-    $('payoutOptModelComparison').open=true;
-    if(status)status.textContent='Compared two funded risk methods for +$1,800 and optional +$7,200 targets. '+
-     '+$450 is a milestone, not an automatic payout: $150 risk winning at 3R gives +$450; risking $450 and winning gives +$1,800. '+
-     'A third $1,800-risk attempt may be capped by the firm daily loss limit, so +$7,200 can require more trades. '+
-     'Loss recovery uses $150/$200/$250/$200. See model targets, actual breaches, payout timing and net results. Saved settings unchanged.';
-    $('payoutOptModelComparison').scrollIntoView({behavior:'smooth',block:'start'});
+    const done=await runFundedComparison(index,{scroll:true});
+    if(status)status.textContent='Funded compounding: '+done.total+' models visible.'+done.saved;
    }catch(error){if(status)status.textContent='Funded recovery test failed: '+(error?.message||'Unknown error');}
    finally{funded450.disabled=false;funded450.textContent=oldLabel;}
    return;
@@ -1424,7 +1441,7 @@ function start(){
    status.textContent='Enter valid payout amounts, ROI targets, and nonnegative net P&L in USD.';return;
   }
   busy=true;button.disabled=true;status.textContent='Running reverse payout scenarios…';
-  lastOptimizerOutput=null;lastOptimizerInputs=null;lastModelSearch=null;moreSourceFilter='all';
+  lastOptimizerRecordId=null;lastOptimizerOutput=null;lastOptimizerInputs=null;lastModelSearch=null;moreSourceFilter='all';
   $('payoutOptResults').innerHTML='';renderUnifiedTable();save();
   try{
    const output=await solver.optimize({plan:selectedPlan,perPayout,
@@ -1442,21 +1459,19 @@ function start(){
      id:row.id,size:row.size,firm:output.firm,
      programName:bridge.label(row)
     }});
-    if(record?.id)historyResult=' · saved to Section 10 (cloud sync attempted)';
+    if(record?.id){lastOptimizerRecordId=record.id;historyResult=' · saved to Section 10 (cloud sync attempted)';}
    }catch(saveError){historyResult=' · history save failed: '+saveError.message}
    status.textContent='Finished · '+output.checked+' scenarios evaluated · '+output.requiredPayouts+
     ' minimum payouts before fees. '+(output.feasible?'Expected net P&L, payout count and ROI filters were met.':'No validated scenario met all selected targets.')+historyResult;
-   // Two-step CFD research uses the user's opt-in funded compounding scenario
-   // as the default additional comparison, rather than hiding it behind
-   // Investment Option 1. Persisted risk profiles remain untouched.
    if(selectedPlan.stageList?.includes('p2')&&selectedPlan.id!=='topstep'){
-    const action=$('payoutOptResults').querySelector('[data-reverse-funded-450="0"]');
-    if(action&&root.StudioModelDiscovery?.compareFundedRecovery450){
-     status.textContent+=' · Adding funded compounding variants to Model comparison…';
+    try{
+     status.textContent+=' · Computing four funded variants…';
+     const done=await runFundedComparison(0);
+     status.textContent='Finished · '+output.checked+' optimizer scenarios · '+done.total+
+      ' models visible (four funded compounding variants).'+historyResult+done.saved;
+    }catch(e){
+     status.textContent+=' · FUNDED COMPARISON FAILED: '+e.message;
      $('payoutOptModelComparison').open=true;
-     action.click();
-    }else{
-     status.textContent+=' · Funded compounding module unavailable; 5 baseline models only.';
     }
    }
   }catch(error){status.textContent='Reverse optimizer: '+error.message}
