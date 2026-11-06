@@ -83,6 +83,16 @@ function start(){
  .reverse-compact-metric strong{font-size:11px}
  .reverse-summary-toggle{color:var(--muted);font-size:10px;white-space:nowrap}
  .reverse-candidate-body{padding:3px 7px 6px;border-top:1px solid var(--line)}
+ .reverse-candidate-advice{display:block;flex:1 0 100%;padding-left:16px;font-size:10px;line-height:1.2;color:var(--muted)}
+ .reverse-advice{border:1px solid var(--line);border-radius:6px;padding:5px 7px;margin:4px 0 6px;font-size:10px;line-height:1.3}
+ .reverse-advice>strong{font-size:11px}
+ .reverse-advice-item{display:grid;grid-template-columns:minmax(120px,1fr) minmax(180px,1.3fr) minmax(180px,1.5fr);gap:6px;margin-top:4px;padding-top:4px;border-top:1px solid var(--line);align-items:start}
+ .reverse-advice-item>strong{font-size:10px}
+ .reverse-advice-item>span{color:var(--muted)}
+ .reverse-advice-item>em{font-style:normal}
+ .reverse-advice>small{display:block;margin-top:5px;color:var(--muted);font-size:9px}
+ @media(max-width:700px){.reverse-advice-item{display:flex;flex-direction:column;gap:2px}.reverse-candidate-advice{padding-left:0}}
+
  @media(max-width:900px){.reverse-summary-kpis{justify-content:flex-start;width:100%;flex-basis:100%}}
  @media(max-width:600px){.reverse-compact-metric{padding:2px 4px;gap:3px}.reverse-compact-metric small{font-size:9px}.reverse-compact-metric strong{font-size:10px}.reverse-candidate-name{white-space:normal}}
 
