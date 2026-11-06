@@ -139,6 +139,8 @@ let jjHelperQuestion='';
 
 /* Unanswered-question queue. Browser storage is the fallback when no shared backend exists. */
 const jjQuestionQueueKey='jj-unanswered-questions-v1';
+const jjQuestionShareKey='jj-question-sharing-consent-v1';
+function jjQuestionShareEnabled(){try{return localStorage.getItem(jjQuestionShareKey)==='yes'}catch(_){return false}}
 function jjQueueRead(){
  try{const data=JSON.parse(localStorage.getItem(jjQuestionQueueKey)||'[]');return Array.isArray(data)?data:[]}
  catch(_){return []}
@@ -155,7 +157,7 @@ function jjQueueAdd(question,reason,matchCount){
  if(found){found.lastSeen=now;found.occurrences=(found.occurrences||1)+1;found.reasons=[...new Set([...(found.reasons||[]),reason])]}
  else rows.push({id:'UQ-'+Date.now().toString(36)+'-'+Math.floor(Math.random()*100000).toString(36),key,question:q,status:'unanswered',reason,reasons:[reason],matchCount,createdAt:now,lastSeen:now,occurrences:1});
  const saved=jjQueueWrite(rows);jjQueueRender();
- if(saved)jjQueueTrySync(q,reason,matchCount).catch(()=>{});
+ if(saved&&jjQuestionShareEnabled())jjQueueTrySync(q,reason,matchCount).catch(()=>{});
  return {ok:saved,alreadyKnown:!!found};
 }
 async function jjQueueTrySync(question,reason,matchCount){
@@ -177,7 +179,7 @@ function jjQueueRender(){
  const heading=jjHelperNode('div','jj-queue-heading');
  heading.append(jjHelperNode('strong','','Unanswered-question register'),jjHelperNode('span','',open.length+' open'));
  container.append(heading);
- const helper=jjHelperNode('p','jj-helper-hint','Questions are saved in this browser. When a shared Cloudflare backend is connected, new questions can also be submitted for GPT research. Local entries do not automatically notify ChatGPT.');
+ const helper=jjHelperNode('p','jj-helper-hint','Questions are saved in this browser. With your opt-in, unanswered questions can be sent to a private research queue when configured, where a GPT reviewer can process them. Local-only entries do not notify ChatGPT.');
  container.append(helper);
  if(!open.length){container.append(jjHelperNode('p','jj-helper-hint','No unanswered questions recorded yet.'));return}
  const list=jjHelperNode('div','jj-queue-list');
@@ -269,7 +271,11 @@ function jjHelperMount(){
  const article=document.getElementById(jjHelperSlug);if(!article||article.querySelector('#jj-helper-app'))return;
  const root=jjHelperNode('section','jj-helper-app');root.id='jj-helper-app';
  root.append(jjHelperNode('h3','','Ask about JJ’s trading course'));
- root.append(jjHelperNode('p','jj-helper-hint','Source-based help using indexed Academy content. Your questions stay in the browser; no external model connection is active.'));
+ root.append(jjHelperNode('p','jj-helper-hint','Searches use Academy material in this browser. Unanswered questions remain local unless you opt into private research submissions. Do not enter passwords or sensitive personal information. A GPT review backend is not yet active.'));
+ const shareLabel=jjHelperNode('label','jj-helper-share');
+ const share=jjHelperNode('input');share.type='checkbox';share.checked=jjQuestionShareEnabled();
+ share.addEventListener('change',()=>{try{localStorage.setItem(jjQuestionShareKey,share.checked?'yes':'no')}catch(_){};jjQueueRender()});
+ shareLabel.append(share,jjHelperNode('span','','Allow unanswered questions to be sent to the private review queue when connected'));root.append(shareLabel);
  const form=jjHelperNode('form','jj-helper-form');
  const input=jjHelperNode('textarea');input.rows=2;input.placeholder='Example: When does JJ use BOS instead of displacement on funded accounts?';input.value=jjHelperQuestion;input.setAttribute('aria-label','Question about JJ Academy');
  form.append(input);
