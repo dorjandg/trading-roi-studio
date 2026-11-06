@@ -106,6 +106,7 @@ function start(){
  let prior={};try{prior=JSON.parse(localStorage.getItem(key)||'{}')}catch(_){}
  for(const [name,id] of [['per','payoutOptPer'],['max','payoutOptMax'],['roi','payoutOptRoi'],['netRoi','payoutOptNetRoi'],['netPnl','payoutOptNetPnl'],['minRR','payoutOptMinRR'],['maxRR','payoutOptMaxRR']])
   if(prior[name]!=null)$(id).value=String(prior[name]);
+ if(Number($('payoutOptNetPnl').value)<=0)$('payoutOptNetPnl').value='5000';
  panel.open=prior.open===true;
 
  $('payoutOptSignals').innerHTML=Array.from({length:20},(_,i)=>'<option>'+String(i+1)+'</option>').join('');
