@@ -330,19 +330,6 @@ function render({results=[],inputs={},selection='',account='auto',group='overvie
   control('stage','Trade stage',[['all','All phases'],['p1','Phase 1'],['p2','Phase 2'],['funded','Funded']],stageKey,chosen==='all')+
   control('cashView','Cash lines',[['both','Mean + trial #1'],['mean','Mean only'],['example','Trial #1 only']],cashView)+
   control('outcome','Final-trial filter',[['all','All trials'],['positive','Positive NET'],['negative','Negative NET'],['payout','At least 1 payout'],['no-payout','No payouts']],outcome);
- const ledgerRows=spendingDays.map(d=>{
-  const full=r.cashCurve?.[d.day]||{};
-  return '<tr><td>'+d.day+'</td><td>'+d.purchased.toFixed(2)+'</td>'+
-   '<td>'+d.burned.toFixed(2)+'</td><td>'+d.live.toFixed(2)+'</td>'+
-   '<td>'+usd(d.challenge)+'</td><td>'+usd(d.activation)+'</td>'+
-   '<td>'+usd(full.spent)+'</td><td>'+usd(full.receipts)+'</td>'+
-   '<td>'+usd(full.net)+'</td></tr>';
- }).join('');
- const ledger='<details class="sim-ledger"><summary>Daily spending ledger · '+spendingDays.length+
-  ' days shown (trial averages)</summary><div class="tablewrap"><table>'+
-  '<thead><tr><th>Day</th><th>New</th><th>Burned</th><th>Open</th>'+
-  '<th>New fees</th><th>Activation</th><th>Total spent</th><th>Payouts</th><th>Net cash</th>'+
-  '</tr></thead><tbody>'+ledgerRows+'</tbody></table></div></details>';
  const metrics=[['NET',usd(r.avg.net)],['ROI',(N(r.roi)*100).toFixed(1)+'%'],['P10',usd(r.p10)],
   ['P90',usd(r.p90)],['Ex. trades',trade.trades],['Ex. max DD',usd(trade.maxDD)]];
  return '<div class="sim-chart-toolbar">'+portfolios+accounts+views+
@@ -351,9 +338,39 @@ function render({results=[],inputs={},selection='',account='auto',group='overvie
   '><summary>Advanced filters · Days / Stage / Trial view / Outcome</summary>'+
   '<div class="sim-chart-toolbar sim-chart-extra">'+extra+'</div></details>'+
   '<div class="sim-chart-metrics">'+metrics.map(m=>'<span><b>'+e(m[0])+'</b><strong>'+e(m[1])+'</strong></span>').join('')+'</div>'+
-  '<div class="sim-chart-grid">'+selectedItems.map(c=>c.html).join('')+'</div>'+ledger+
+  '<div class="sim-chart-grid">'+selectedItems.map(c=>c.html).join('')+'</div>'+
   '<p class="sim-chart-note">Charts show simulated results, not historical trades. Portfolio cash NET is received first payouts minus incurred costs, <b>not</b> prop-firm equity. Example account trading equity and drawdown are from trial #1; evaluation-stage profits are not withdrawable. Day-range filtering changes the displayed days, not the simulation. Daily purchases and activation fees are shown when actually incurred. Stage filtering applies only to sample trading charts. Outcome filtering applies only to the final NET and ROI histograms; all other graphs and KPI totals remain unfiltered. Headline ROI divides average net by average spending, whereas the ROI histogram calculates each trial separately.</p>';
 }
 
-root.StudioPortfolioCharts={render,tradeCurve,combinedResult,svgLine,svgBars,svgHistogram,streaks,usage,cashWindow,chartOutcome};
+function renderSpendingLedger({results=[],inputs={},selection='',daysRange='all'}={}){
+ if(!results.length)return '<p class="hint">Run a simulation to see daily spending.</p>';
+ const split=inputs.budgetMode==='split';
+ const options=results.map((r,i)=>({id:String(i),label:r.plan.firm+' · '+r.plan.programName+' '+usd(r.plan.size)}));
+ if(split)options.unshift({id:'all',label:'Combined split portfolio'});
+ const chosen=options.some(o=>o.id===selection)?selection:(split?'all':'0');
+ const result=chosen==='all'?combinedResult(results,inputs):results[Number(chosen)];
+ const cash=cashWindow(result.cashCurve,daysRange);
+ const rows=cash.map(d=>{
+  const prior=d.day>0?result.cashCurve?.[d.day-1]:null;
+  const purchases=N(d.bought)-N(prior?.bought),burned=N(d.burned)-N(prior?.burned);
+  const newFees=N(d.challengeSpent)-N(prior?.challengeSpent);
+  const activation=N(d.activationSpent)-N(prior?.activationSpent);
+  return '<tr><td>'+d.day+'</td><td>'+purchases.toFixed(2)+'</td>'+
+   '<td>'+burned.toFixed(2)+'</td><td>'+N(d.live).toFixed(2)+'</td>'+
+   '<td>'+usd(newFees)+'</td><td>'+usd(activation)+'</td>'+
+   '<td>'+usd(d.spent)+'</td><td>'+usd(d.receipts)+'</td><td>'+usd(d.net)+'</td></tr>';
+ }).join('');
+ const select=(field,label,choices,selected)=>
+  '<label>'+e(label)+'<select data-ledger-field="'+e(field)+'">'+
+  choices.map(([value,name])=>'<option value="'+e(value)+'"'+(String(value)===String(selected)?' selected':'')+'>'+e(name)+'</option>').join('')+'</select></label>';
+ const controls='<div class="sim-chart-toolbar">'+
+  select('selection','Account / portfolio',options.map(o=>[o.id,o.label]),chosen)+
+  select('daysRange','Trading days',[['all','Full horizon'],['7','Last 7'],['14','Last 14'],['30','Last 30'],['60','Last 60']],daysRange)+
+  '</div>';
+ return controls+'<p class="hint">Daily spending and account counts are Monte Carlo trial averages. New and Burned are daily changes; Open is active accounts; Total spent, Payouts and Net cash are cumulative. Burned includes risk-blocked accounts, not only official drawdown breaches.</p>'+
+  '<div class="tablewrap"><table class="journey-table"><thead><tr><th>Day</th><th>New</th><th>Burned</th><th>Open</th>'+
+  '<th>New fees</th><th>Activation</th><th>Total spent</th><th>Payouts</th><th>Net cash</th>'+
+  '</tr></thead><tbody>'+rows+'</tbody></table></div>';
+}
+root.StudioPortfolioCharts={render,renderSpendingLedger,tradeCurve,combinedResult,svgLine,svgBars,svgHistogram,streaks,usage,cashWindow,chartOutcome};
 })(typeof window!=='undefined'?window:globalThis);
