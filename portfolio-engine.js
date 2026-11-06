@@ -706,6 +706,35 @@ function stageFunnel(result,useSample=false){
    totalRate:purchased>0?stage.count/purchased:null};
  });
 }
+// Preview consecutive losing trades using the SAME sizing function as
+// live Monte Carlo. Each preview trade occurs on a separate trading day;
+// figures are hypothetical risk amounts, not the sample's actual outcomes.
+function previewLossPath(p,stage,steps=3){
+ const cfg=p.riskProfiles?.[stage];if(!cfg)return [];
+ const ac={stagePnl:0,history:'',repairSlot:'r1',repairAnchor:0,
+  peakEod:0,fundedTargetDay:null,funded150Days:0};
+ const arr=[];
+ for(let i=0;i<steps;i++){
+  const prior=ac.stagePnl;
+  const selected=chooseTradeRisk(p,ac,stage,cfg,0);
+  const risk=selected.risk;
+  const cost=pos(p.tradeCost),reserve=Math.max(.01,pos(p.riskReserve));
+  const floor=floorFor(p,ac);
+  const available=Math.min(ac.stagePnl-floor,p.dailyLoss)-cost-reserve;
+  const allowed=risk>=.01&&risk<=available+1e-8;
+  arr.push({step:i+1,slot:selected.slot,risk:allowed?risk:0,
+   calculatedRisk:risk,allowed,before:prior,after:allowed?prior-risk-cost:prior});
+  if(!allowed)break;
+  ac.stagePnl=prior-risk-cost;
+  ac.history=(ac.history+'L').slice(-8);
+  if(cfg.policy?.mode==='repair-r2'){
+   if(selected.slot==='r1')ac.repairSlot='r2';
+   else if(selected.slot==='r2'){ac.repairAnchor=prior;ac.repairSlot='r3'}
+   else ac.repairSlot='r3';
+  }
+ }
+ return arr;
+}
 root.StudioPortfolioEngine={buildPlan,validatePlan,resolvePolicy,plannedSlot,
-  runAccountDay,simulatePortfolio,rngFactory,phasesFor,supported,oneTrial,stageFunnel};
+  runAccountDay,simulatePortfolio,rngFactory,phasesFor,supported,oneTrial,stageFunnel,previewLossPath};
 })(typeof window!=='undefined'?window:globalThis);
