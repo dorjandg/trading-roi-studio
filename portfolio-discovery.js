@@ -323,5 +323,56 @@ function compareLowerRisk(base,options={}){
   objective:'balanced',trainTrials:0,testTrials:trials,trainSeed:seed,testSeed:seed,
   warning:'Paired-trial scenario sensitivity only. Lower risk can reduce blocks but also delay phase passes and payouts. This is not an independent holdout test or proof of future performance.'};
 }
-root.StudioModelDiscovery={search,propose,score,compareLowerRisk,clonePlan:copy,riskCeiling};
+// Dedicated target-exact search. Each adaptive trade sizes against the REMAINING
+// stage target after costs rather than a fixed wager that may overshoot it.
+// Never mutate the saved base policy; paired trials preserve model assumptions.
+function searchTargetExact(base,options={}){
+ const max=riskCeiling(base).maxRisk;
+ if(!Number.isFinite(max)||max<.01)throw Error('Verified daily and overall loss limits are required for target-exact search.');
+ const trials=clamp(Math.floor(options.testTrials||150),50,400);
+ const seed=((Math.floor(Number(options.seed)||24717)>>>0)||24717);
+ const common={
+  days:options.days,tradesPerDay:options.tradesPerDay,winRate:options.winRate,
+  signalMode:options.signalMode,purchaseMode:options.purchaseMode==='recycle'?'recycle':'upfront',
+  capacityMode:options.capacityMode==='manual'?'manual':'automatic',
+  maxActive:options.maxActive,maxBuysPerDay:options.maxBuysPerDay,
+  evaluationAllocationCap:options.evaluationAllocationCap||0,
+  fundedAllocationCap:options.fundedAllocationCap||0,
+  tradeSchedule:options.tradeSchedule||null,reinvestPayouts:options.reinvestPayouts===true,
+  budget:options.budget,netGoal:options.netGoal,requiredPayouts:options.requiredPayouts||0,
+  pairedSignals:true,seed,trials,maxAccounts:100,trackCharts:true
+ };
+ const variants=[{key:'baseline',title:'Selected investment option · unchanged',reason:'Reference: original saved risk policy'}];
+ for(const factor of [1,.9,.75,.6,.45]){
+  variants.push({key:'targetNow'+Math.round(factor*100),
+   title:'Target exact · '+Math.round(factor*100)+'% risk cap',
+   reason:'Size each trade to the remaining phase/payout target at its tier RR; hard cap '+Math.round(factor*100)+'% of the firm allowance',
+   factor});
+ }
+ const results=variants.map(v=>{
+  const plan=copy(base);
+  if(v.factor){
+   for(const [stage,c] of Object.entries(plan.riskProfiles)){
+    const riskCap=Math.max(.01,floorCent(max*v.factor));
+    c.dynamicMaxRisk=riskCap;
+    c.r1=riskCap;c.r2=riskCap;c.r3=riskCap;
+    // Keep the protected Topstep evaluation rule in place; other phases
+    // use the live engine's state-aware target-now formula.
+    if(!(plan.id==='topstep'&&stage==='p1'))
+     c.policy={map:{},conflicts:[],mode:'target-now'};
+   }
+  }
+  return {...v,plan,holdout:E.simulatePortfolio(plan,common)};
+ });
+ const baseline=results[0];
+ const ideas=results.slice(1).map(v=>({
+  ...v,delta:candidateDelta(v.holdout,baseline.holdout),
+  improvement:score(v.holdout,'goal')-score(baseline.holdout,'goal')
+ }));
+ return {baseline,ideas,robust:ideas.filter(v=>v.improvement>0),
+  ceiling:riskCeiling(base),evaluated:variants.length,selected:variants.length,
+  objective:'goal',trainTrials:0,testTrials:trials,trainSeed:seed,testSeed:seed,
+  warning:'Paired sensitivity comparison, not independently validated performance. Exact-to-target is conditional on a winning trade and modeled fill/costs; loss-limit safety may cap the trade below the one-win target. Topstep evaluation keeps its existing Combine rule.'};
+}
+root.StudioModelDiscovery={search,propose,score,compareLowerRisk,searchTargetExact,clonePlan:copy,riskCeiling};
 })(typeof window!=='undefined'?window:globalThis);
