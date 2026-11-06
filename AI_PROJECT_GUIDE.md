@@ -79,6 +79,14 @@ Independent 3A assumptions are stored per selected account in the existing per-u
 - Suggestions may involve safer tier sizing, checking signal capacity and account availability, reviewing payouts/costs, or testing a longer horizon. Never shorten mandatory firm delays or claim a causal improvement from a single result.
 - This is distinct from the existing Section 3A Calculate Investment diagnostics. It does not change either calculation engine.
 
+## Adaptive risk tier display correction (Nov 6)
+- User flagged Adaptive Target Phase 1/2/Funded all showing `$449/$449/$449` as R1/R2/R3. These are **risk caps** set by the optimizer; the engine recalculates actual risk per trade. Labeling them as tier risks was materially misleading.
+- The engine now exposes `previewLossPath(plan,stage,3)`, using the actual `chooseTradeRisk` and drawdown floor on a hypothetical three consecutive losses (one trade per separate trading day) to show the actual initial, after-first-loss and after-second-loss sizing, selected slot labels and blocked states.
+- The optimizer phase table displays those actual two-decimal risk amounts with the active R1/R2/R3 tier in small text for adaptive modes. Adaptive Target intentionally selects R1 every trade; Repair R2 moves R1→R2→R3 after losses. Fixed strategies still display configured R1/R2/R3 normally.
+- Example fixture: FTMO 10K, 3R, $50 reserve, zero cost, $449 cap: Phase 1 `333.34/444.45/172.21`, Phase 2 `166.67/222.23/296.30`, Funded `416.67/449.00/84.32` for the three-loss branch. Repair R2 Phase 1 `333.34(R1)/444.45(R2)/148.15(R3)`. These are previews, not future predictions or particular saved-run trade traces.
+- The Firms before/after comparison now labels adaptive proposals as a **maximum per-trade risk cap**, not static R1/R2/R3. Unsupported adaptive policies remain non-transferable. No scenario results, risk sizing formulas, historical records or Firms defaults were changed; the corrected code is display and preview only.
+- JavaScript syntax and representative preview/render smoke tests passed, but live browser and deployment were not verified.
+
 ## Analyze This Scenario across Sections 4–7 (Nov 6)
 - Each expanded Calculate Investment option now offers **Analyze This Scenario · Sections 4–7**. It uses the candidate's **already validated** `candidate.result` (200-trial Monte Carlo aggregate and sample account paths) and exact `candidate.plan`, not a new simulation or a rebuilt plan.
 - `portfolio-payout-ui.js` retains the precise inputs for the last optimizer calculation and calls `StudioPayoutBridge.analyzeOptimizerCandidate(candidate,output,inputs,label)`. Candidate is validated against its account key. The normal Run Simulation model, account controls and Firms profile are untouched.
