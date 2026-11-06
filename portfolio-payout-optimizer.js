@@ -581,13 +581,13 @@ function render(out,sortMode='model',currentPlan=null){
    '<span class="reverse-candidate-advice">Suggestion: '+escapeHtml(advice.headline)+'</span></summary>'+
    '<div class="reverse-candidate-body">'+
    '<div class="reverse-detail-label">SCENARIO DETAILS</div>'+setupMarkup+r3Markup+
-   '<div class="reverse-advice"><strong>Why this scenario struggles · what to test</strong>'+
+   '<details class="reverse-diagnostic"><summary><strong>4 · Diagnostics &amp; suggestions</strong><small> · Why this scenario struggles</small></summary><div class="reverse-advice"><strong>Why this scenario struggles · what to test</strong>'+
    advice.items.map(d=>'<div class="reverse-advice-item"><strong>'+escapeHtml(d.name)+'</strong>'+
     '<span>'+escapeHtml(d.evidence)+'</span><em>'+escapeHtml(d.test)+'</em></div>').join('')+
-   '<small>Suggestions are diagnostic hypotheses based on this simulated result, not proof that changing a setting will improve real trading. Recalculate after each change.</small></div>'+ 
+   '<small>Suggestions are diagnostic hypotheses based on this simulated result, not proof that changing a setting will improve real trading. Recalculate after each change.</small></div></details>'+ 
    '<p class="hint" style="margin:4px 0 6px"><strong>Target checks:</strong> '+
    (gaps(out,s).length?gaps(out,s).join(' · '):'All expected targets met')+'</p>'+
-   '<div class="reverse-kpis"><div><small>First payout day (paid trials)</small><strong>'+ (s.firstPayoutDay==null?'Not reached':'Day '+s.firstPayoutDay.toFixed(1))+'</strong></div>'+
+   '<div class="reverse-detail-label">5 · DETAILED PERFORMANCE</div><div class="reverse-kpis"><div><small>First payout day (paid trials)</small><strong>'+ (s.firstPayoutDay==null?'Not reached':'Day '+s.firstPayoutDay.toFixed(1))+'</strong></div>'+
    '<div><small>Full payout goal day</small><strong>'+(s.goalPayoutDay==null?'Not reached':'Day '+s.goalPayoutDay.toFixed(1))+'</strong></div>'+
    '<div><small>Tested starting budget</small><strong>'+money(candidate.initialBudget)+'</strong></div>'+
    '<div><small>ROI on incurred fees</small><strong>'+pct(s.roi)+'</strong></div>'+ 
