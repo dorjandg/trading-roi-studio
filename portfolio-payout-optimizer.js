@@ -22,7 +22,7 @@ function profitNeeded(plan,perPayout){
  if(!plan.split||plan.split<=0)throw Error('This account has no positive payout split.');
  return Math.max(.01,perPayout/plan.split);
 }
-function planFor(base,scale,perPayout){
+function planFor(base,scale,perPayout,rrVariant=null){
  const p={...base,riskProfiles:{}};
  const maxRisk=Math.min(Number.isFinite(base.dailyLoss)?base.dailyLoss:Infinity,
   Number.isFinite(base.overallLoss)?base.overallLoss:Infinity)-val(base.riskReserve)-val(base.tradeCost)-1;
@@ -31,6 +31,10 @@ function planFor(base,scale,perPayout){
   const stageRisk={...c,policy:{...c.policy,map:{...(c.policy?.map||{})}}};
   for(const field of ['r1','r2','r3']){
    stageRisk[field]=Math.max(.01,Math.min(maxRisk,Math.round(val(c[field])*scale*100)/100));
+  }
+  if(rrVariant){
+   stageRisk.rr=rrVariant.r1;
+   stageRisk.rrByTier={r1:rrVariant.r1,r2:rrVariant.r2,r3:rrVariant.r3};
   }
   p.riskProfiles[stage]=stageRisk;
  }
@@ -49,7 +53,7 @@ function assess(r,count,total){
   budgetRoi:r.budget>0?val(r.avg.net)/r.budget:0,
   avgPayout:r.avg.paid?val(r.avg.receipts)/r.avg.paid:0};
 }
-async function optimize({plan,total,perPayout,maxInvestment,minRoi=2,minNetRoi=0,minNetPnl=0,inputs,onProgress}){
+async function optimize({plan,total,perPayout,maxInvestment,minRoi=2,minNetRoi=0,minNetPnl=0,minRR=1.5,maxRR=3,inputs,onProgress}){
  const count=needed(total,perPayout);
  if(!E)throw Error('Simulator engine is unavailable.');
  if(!plan)throw Error('Select a prop-firm account.');
@@ -59,12 +63,24 @@ async function optimize({plan,total,perPayout,maxInvestment,minRoi=2,minNetRoi=0
   throw Error('Enter a net ROI on starting investment between 0% and 10,000%.');
  if(!Number.isFinite(minNetPnl)||minNetPnl<0)
   throw Error('Enter a valid nonnegative net P&L target in USD.');
+ if(!Number.isFinite(minRR)||!Number.isFinite(maxRR)||minRR<0.1||maxRR>20||minRR>maxRR)
+  throw Error('Choose RR bounds with minimum >= 0.1R, maximum <= 20R and minimum <= maximum.');
  const unit=plan.fee+(plan.id==='topstep'?plan.activationFee:0);
  if(unit<=0)throw Error('Purchase and activation fees are unavailable.');
  const maxUnits=Math.min(100,Math.floor(maxInvestment/unit));
  if(maxUnits<1)throw Error('Investment ceiling cannot cover one account purchase and activation reserve.');
  // Each distinct account produces at most one modeled first payout.
- const scaleValues=[.45,.6,.75,.9,1,1.15,1.3,1.5];
+ // Respect user's allowed RR range. Tier R2 can target more than R1,
+ // e.g. first trade 1.5R, second after loss 3R.
+ const rounded=n=>Math.round(n*100)/100;
+ const mid=rounded((minRR+maxRR)/2);
+ const rrVariants=[
+  {name:'Conservative',r1:minRR,r2:minRR,r3:minRR},
+  {name:'Balanced',r1:mid,r2:mid,r3:mid},
+  {name:'Recovery RR',r1:minRR,r2:maxRR,r3:mid},
+  {name:'Higher R2',r1:mid,r2:maxRR,r3:minRR}
+ ].filter((v,i,a)=>a.findIndex(z=>z.r1===v.r1&&z.r2===v.r2&&z.r3===v.r3)===i);
+ const scaleValues=[.55,.8,1,1.25];
  const candidates=[];
  let checked=0;
  const simulate=(p,units,trials,seed)=>E.simulatePortfolio(p,{
@@ -84,16 +100,16 @@ async function optimize({plan,total,perPayout,maxInvestment,minRoi=2,minNetRoi=0
  const unitCounts=[...countGrid].filter(x=>x>0&&x<=maxUnits).sort((a,b)=>a-b);
  const coarse=[];
  const coarseTrials=50,validationTrials=200;
- for(const scale of scaleValues){
-  const p=planFor(plan,scale,perPayout);
+ for(const rrVariant of rrVariants)for(const scale of scaleValues){
+  const p=planFor(plan,scale,perPayout,rrVariant);
   const v=E.validatePlan(p);
   if(v.errors.length)continue;
   for(const units of unitCounts){
    const r=simulate(p,units,coarseTrials,inputs.seed+7771);
    const score=assess(r,count,total);
    checked++;
-   coarse.push({scale,units,plan:p,score});
-   onProgress?.('Testing '+scale.toFixed(2)+'× risk · '+checked+' scenarios checked');
+   coarse.push({scale,units,rrVariant:rrVariant.name,plan:p,score});
+   onProgress?.('Testing '+rrVariant.name+' · '+scale.toFixed(2)+'× risk · '+checked+' scenarios checked');
    if(checked%4===0)await pause();
   }
  }
@@ -132,7 +148,7 @@ async function optimize({plan,total,perPayout,maxInvestment,minRoi=2,minNetRoi=0
    b.score.avgReceipts-a.score.avgReceipts||b.score.roi-a.score.roi;
  });
  return {requiredPayouts:count,profitPerAccount:profitNeeded(plan,perPayout),
-  targetCash:total,perPayout,maxInvestment,minRoi,minNetRoi,minNetPnl,checked,
+  targetCash:total,perPayout,maxInvestment,minRoi,minNetRoi,minNetPnl,minRR,maxRR,checked,
   feasible:candidates.some(meetsAll),payoutCountFeasible:candidates.some(reachesPayouts),
   candidates:candidates.slice(0,5),firm:plan.firm,size:plan.size};
 }
@@ -208,17 +224,17 @@ function renderAccountPath(candidate,accountId){
   '<div class="reverse-path-table tablewrap"><table><thead><tr><th>Day</th><th>Phase</th><th>Trade</th><th>Result / event</th>'+
   '<th>Tier</th><th>Risk</th><th>RR</th><th>Trade P&L</th><th>Phase P&L</th></tr></thead>'+
   '<tbody>'+rows+'</tbody></table></div>'+
-  '<p class="hint">Next trade risk depends on the active phase risk-sequence policy and remaining drawdown. A win adds risk × phase RR minus modeled trade cost; a loss subtracts risk plus cost. Passing also requires the phase profit target and any minimum trading days.</p>';
+  '<p class="hint">Next trade risk depends on the active phase risk-sequence policy and remaining drawdown. A win adds risk × selected tier RR minus modeled trade cost; a loss subtracts risk plus cost. Passing also requires the phase profit target and any minimum trading days.</p>';
 }
 function render(out){
  const cards=out.candidates.map((candidate,index)=>{
   const s=candidate.score,p=candidate.plan;
   const risks=p.stageList.map(stage=>{
    const c=p.riskProfiles[stage];
-   return '<tr><td>'+c.name+'</td><td>'+money(c.r1)+'</td><td>'+money(c.r2)+'</td><td>'+money(c.r3)+'</td><td>'+c.rr.toFixed(2)+'R</td></tr>';
+   return '<tr><td>'+c.name+'</td><td>'+money(c.r1)+'</td><td>'+money(c.r2)+'</td><td>'+money(c.r3)+'</td><td>'+['r1','r2','r3'].map(t=>Number(c.rrByTier?.[t]??c.rr).toFixed(2)+'R').join(' / ')+'</td></tr>';
   }).join('');
   return '<div class="reverse-candidate">'+
-   '<h4>'+(index===0?'Best tested scenario':'Alternative '+(index+1))+' · '+candidate.scale.toFixed(2)+'× saved risk</h4>'+
+   '<h4>'+(index===0?'Best tested scenario':'Alternative '+(index+1))+' · '+candidate.scale.toFixed(2)+'× saved risk · '+escapeHtml(candidate.rrVariant||'')+'</h4>'+
    '<p class="hint" style="margin:4px 0 6px"><strong>Target checks:</strong> '+
    (gaps(out,s).length?gaps(out,s).join(' · '):'All expected targets met')+'</p>'+
    '<div class="reverse-kpis"><div><small>Tested starting budget</small><strong>'+money(candidate.initialBudget)+'</strong></div>'+
@@ -232,7 +248,7 @@ function render(out){
    '<div><small>Avg. challenges bought</small><strong>'+s.avgPurchased.toFixed(2)+'</strong></div>'+ 
    '<div><small>Avg. funded reached</small><strong>'+s.avgFunded.toFixed(2)+'</strong></div>'+ 
    '<div><small>Risk-blocked / breached</small><strong>'+s.avgRiskBlocked.toFixed(1)+' / '+s.avgBreached.toFixed(1)+'</strong></div></div>'+
-   '<div class="tablewrap"><table class="journey-table"><thead><tr><th>Phase</th><th>R1</th><th>R2</th><th>R3</th><th>RR</th></tr></thead><tbody>'+risks+'</tbody></table></div>'+
+   '<div class="tablewrap"><table class="journey-table"><thead><tr><th>Phase</th><th>R1</th><th>R2</th><th>R3</th><th>RR (R1 / R2 / R3)</th></tr></thead><tbody>'+risks+'</tbody></table></div>'+
    (sampleAccounts(candidate).length?(()=>{
     const accounts=sampleAccounts(candidate),example=chooseExampleAccount(accounts);
     const options=accounts.map(ac=>'<option value="'+escapeHtml(ac.id)+'"'+(ac.id===example.id?' selected':'')+'>'+
@@ -246,7 +262,7 @@ function render(out){
    '</div>';
  }).join('');
  return '<p class="hint">Goal: '+money(out.targetCash)+' received across at least '+out.requiredPayouts+
-  ' separate first payouts of '+money(out.perPayout)+' each. Minimum fee-based ROI: '+pct(out.minRoi)+'. Minimum net ROI on starting investment: '+pct(out.minNetRoi)+'. Minimum net P&L: '+money(out.minNetPnl)+'. The account must first reach approximately '+
+  ' separate first payouts of '+money(out.perPayout)+' each. Allowed trade RR: '+out.minRR.toFixed(2)+'–'+out.maxRR.toFixed(2)+'R. Minimum fee-based ROI: '+pct(out.minRoi)+'. Minimum net ROI on starting investment: '+pct(out.minNetRoi)+'. Minimum net P&L: '+money(out.minNetPnl)+'. The account must first reach approximately '+
   money(out.profitPerAccount)+' funded trading profit (based on the modeled profit payout split, excluding any refunded challenge fee). Probability is the share of trials meeting BOTH payout count and cash received before the chosen trading-day horizon.</p>'+
   (out.feasible?'<p class="good"><strong>At least one validated scenario met the expected payout-count, payout-cash, ROI and USD net P&L targets.</strong></p>':
    '<p class="bad"><strong>No validated scenario met all payout-count, cash, ROI and net P&L targets within your investment ceiling and time horizon.</strong> Closest tested alternatives are shown. Payout-goal probability remains reported separately; an expected target is not a reliable guarantee.</p>')+
