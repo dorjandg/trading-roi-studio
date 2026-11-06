@@ -1860,31 +1860,59 @@ async function init(){
 }
 window.StudioPayoutBridge={
  user,
- analyzeOptimizerCandidate:(candidate,optimizer,sourceInputs,label)=>{
-  if(!candidate?.result?.sample||!candidate?.plan||!candidate?.result?.plan)return false;
-  const r=candidate.result;
-  if(r.plan.id!==candidate.plan.id||r.plan.size!==candidate.plan.size)return false;
-  const cfg=r.config||{};
-  const inputs={
-   days:Number(sourceInputs?.days)||cfg.days||30,
-   tradesPerDay:Number(sourceInputs?.tradesPerDay)||cfg.tradesPerDay||1,
-   winRate:Number(sourceInputs?.winRate??(cfg.winRate*100))||0,
-   seed:Number(cfg.seed)||Number(sourceInputs?.seed)||24717,
-   trials:Number(cfg.trials)||200,
-   signalMode:sourceInputs?.signalMode||cfg.signalMode||'independent',
+ analyzeOptimizerCandidate:async(candidate,optimizer,sourceInputs,label)=>{
+  // Re-run the selected *optimized plan* with the same full phase/account
+  // simulation engine and Monte Carlo depth as Section 2. Do not replace
+  // the user's saved Firms risk settings or normal Run Simulation results.
+  if(!candidate?.plan||!candidate?.result?.plan)return false;
+  if(candidate.result.plan.id!==candidate.plan.id||
+     candidate.result.plan.size!==candidate.plan.size)return false;
+  const validated=E.validatePlan(candidate.plan);
+  if(validated.errors.length)throw Error(validated.errors.join(' · '));
+  const cfg=candidate.result.config||{};
+  const bounded=(n,min,max,fallback)=>{
+   const v=Number(n);
+   return Number.isFinite(v)&&v>0?Math.max(min,Math.min(max,Math.floor(v))):fallback;
+  };
+  const number=(a,b,fallback)=>{
+   const x=Number(a);
+   return Number.isFinite(x)?x:(Number.isFinite(Number(b))?Number(b):fallback);
+  };
+  const trials=bounded($('trials').value,50,3000,300);
+  const budget=number(candidate.initialBudget,candidate.result.budget,0);
+  if(!(budget>0))throw Error('Selected scenario has no positive investment budget.');
+  const config={
+   days:bounded(sourceInputs?.days,1,120,bounded(cfg.days,1,120,30)),
+   tradesPerDay:bounded(sourceInputs?.tradesPerDay,1,20,bounded(cfg.tradesPerDay,1,20,1)),
+   winRate:number(sourceInputs?.winRate,cfg.winRate*100,40),
+   seed:bounded($('seed').value,1,2147483647,24717),
+   trials,signalMode:sourceInputs?.signalMode||cfg.signalMode||'independent',
    purchaseMode:sourceInputs?.purchaseMode||cfg.purchaseMode||'recycle',
    capacityMode:sourceInputs?.capacityMode||cfg.capacityMode||'automatic',
-   budget:Number(candidate.initialBudget)||Number(r.budget)||0,
-   netGoal:Number(optimizer?.minNetPnl)||Number(sourceInputs?.netGoal)||0,
-   budgetMode:'compare',
-   maxActive:Number(sourceInputs?.maxActive)||cfg.maxActive||1,
-   maxBuysPerDay:Number(sourceInputs?.maxBuysPerDay)||cfg.maxBuysPerDay||1,
-   reinvestPayouts:sourceInputs?.reinvestPayouts===true
+   maxActive:bounded(sourceInputs?.maxActive,1,100,bounded(cfg.maxActive,1,100,1)),
+   maxBuysPerDay:bounded(sourceInputs?.maxBuysPerDay,1,20,bounded(cfg.maxBuysPerDay,1,20,1)),
+   reinvestPayouts:sourceInputs?.reinvestPayouts===true,
+   evaluationAllocationCap:number(sourceInputs?.evaluationAllocationCap,cfg.evaluationAllocationCap,0),
+   fundedAllocationCap:number(sourceInputs?.fundedAllocationCap,cfg.fundedAllocationCap,0),
+   requiredPayouts:number(optimizer?.requiredPayouts,cfg.requiredPayouts,0),
+   netGoal:number(optimizer?.minNetPnl,cfg.netGoal,0),
+   budget,maxAccounts:100,trackCharts:true
   };
-  investmentReport={list:[r],inputs,label:label||'Selected investment option'};
+  $('status').textContent='Running full Section 2 simulation for selected investment scenario ('+trials+' trials)…';
+  $('status').style.color='var(--muted)';
+  $('section2Panel').open=true;
+  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+  const result=E.simulatePortfolio(candidate.plan,config);
+  if(!result?.sample||result.plan?.id!==candidate.plan.id||
+     result.plan?.size!==candidate.plan.size||
+     result.chartTrials?.length!==trials)throw Error('Full simulation did not return the expected account paths.');
+  const inputs={...config,budgetMode:'compare'};
+  investmentReport={list:[result],inputs,label:(label||'Selected investment option')+' · Full simulation · '+trials+' trials'};
   chartState.selection='0';journeyState.selection='0';spendingLedgerState.selection='0';
   renderResults(investmentReport.list,investmentReport.inputs,'investment');
   $('section4Panel').open=true;
+  $('status').textContent='Full scenario simulation completed · '+trials+' trials · results in Sections 4–7.';
+  $('status').style.color='var(--green)';
   $('results').scrollIntoView({behavior:'smooth',block:'start'});
   return true;
  },
