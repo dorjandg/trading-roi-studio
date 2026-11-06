@@ -348,7 +348,11 @@ function start(){
  .payout-more-title strong{font-size:13px}
  .payout-more-title small{font-size:10px;color:var(--muted);flex:1 1 220px}
  .payout-more-title button{font-size:11px;min-height:28px;padding:5px 9px}
- .payout-more-table{width:100%;min-width:1040px;border-collapse:collapse;font-size:10px}
+ .payout-more-table{width:100%;min-width:770px;border-collapse:collapse;font-size:10px}
+ .payout-more-table[data-view="trading"] .payout-col-accounts{display:none}
+ .payout-more-table[data-view="accounts"] .payout-col-trading{display:none}
+ .payout-more-table[data-view="accounts"]{min-width:750px}
+ .payout-more-table[data-view="all"]{min-width:1350px}
  .payout-more-table th,.payout-more-table td{padding:6px 7px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap;font-variant-numeric:tabular-nums}
  .payout-more-table th:first-child{text-align:left;min-width:180px}
  .payout-more-table thead{background:var(--panel2)}
@@ -432,7 +436,7 @@ function start(){
  $('payoutOptReset').addEventListener('click',()=>{loadAssumptions(true);storeAssumptions();save()});
  $('payoutOptAccount').addEventListener('change',()=>{loadAssumptions();loadedAssumptionsAccount=acctValue();save()});
  let currentSortMode=['model','net','budgetRoi','feeRoi','chance','payouts','investment','firstDay'].includes(prior.sortMode)?prior.sortMode:'model';
- let lastOptimizerOutput=null,lastOptimizerAccountKey='',lastOptimizerInputs=null,lastModelSearch=null,moreSortKey='improvement',moreDescending=true;
+ let lastOptimizerOutput=null,lastOptimizerAccountKey='',lastOptimizerInputs=null,lastModelSearch=null,moreSortKey='improvement',moreDescending=true,moreColumnView='trading';
  document.addEventListener('portfolio-investment-import',event=>{
   const key=event.detail?.accountKey||'';
   if(!key||!bridge.getRows().some(r=>r.id+':'+r.size===key))return;
@@ -474,8 +478,8 @@ function start(){
      trainTrials:trials[0],testTrials:trials[1],shortlist:10};
     const result=root.StudioModelDiscovery.search(root.StudioModelDiscovery.clonePlan(candidate.plan),opts);
     lastModelSearch={candidate,result,origin:'Investment Option '+(index+1)};
-    moreSortKey='improvement';moreDescending=true;
-    $('payoutOptMoreModels').innerHTML=solver.renderMoreInvestmentModels(result,lastModelSearch.origin,moreSortKey,moreDescending);
+    moreSortKey='improvement';moreDescending=true;moreColumnView='trading';
+    $('payoutOptMoreModels').innerHTML=solver.renderMoreInvestmentModels(result,lastModelSearch.origin,moreSortKey,moreDescending,moreColumnView);
     if(status)status.textContent=result.ideas.length+' additional models compared below in Section 3A.';
     $('payoutOptMoreModels').scrollIntoView({behavior:'smooth',block:'start'});
    }catch(error){if(status)status.textContent='Model search failed: '+(error?.message||'Unknown error');}
@@ -533,16 +537,23 @@ function start(){
   // Preserve the confirmation message in the expanded option; the saved Firms comparison refreshes on the next render.
  });
  $('payoutOptMoreModels').addEventListener('change',event=>{
-  if(!event.target.matches?.('[data-more-sort]')||!lastModelSearch)return;
+  if(!lastModelSearch)return;
+  if(event.target.matches?.('[data-more-columns]')){
+   moreColumnView=event.target.value;
+   $('payoutOptMoreModels').innerHTML=solver.renderMoreInvestmentModels(
+    lastModelSearch.result,lastModelSearch.origin,moreSortKey,moreDescending,moreColumnView);
+   return;
+  }
+  if(!event.target.matches?.('[data-more-sort]'))return;
   moreSortKey=event.target.value;
   $('payoutOptMoreModels').innerHTML=solver.renderMoreInvestmentModels(
-   lastModelSearch.result,lastModelSearch.origin,moreSortKey,moreDescending);
+   lastModelSearch.result,lastModelSearch.origin,moreSortKey,moreDescending,moreColumnView);
  });
   $('payoutOptMoreModels').addEventListener('click',async event=>{
   if(event.target.closest?.('[data-more-direction]')&&lastModelSearch){
    moreDescending=!moreDescending;
    $('payoutOptMoreModels').innerHTML=solver.renderMoreInvestmentModels(
-    lastModelSearch.result,lastModelSearch.origin,moreSortKey,moreDescending);
+    lastModelSearch.result,lastModelSearch.origin,moreSortKey,moreDescending,moreColumnView);
    return;
   }
   if(event.target.closest?.('[data-more-close]')){
