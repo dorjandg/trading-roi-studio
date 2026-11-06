@@ -362,8 +362,40 @@ function diagnoseScenario(candidate,out){
  }
  return {headline:details[0].name,items:details.slice(0,4)};
 }
-function render(out){
- const cards=out.candidates.map((candidate,index)=>{
+const payoutSortModes={
+ model:'Optimizer ranking',
+ net:'Highest net P&L',
+ budgetRoi:'Highest investment ROI',
+ feeRoi:'Highest fee ROI',
+ chance:'Highest goal probability',
+ payouts:'Most first payouts',
+ investment:'Lowest starting investment',
+ firstDay:'Earliest first payout'
+};
+function sortedPayoutCandidates(out,sortMode='model'){
+ const items=(out.candidates||[]).map((candidate,originalIndex)=>({candidate,originalIndex}));
+ const key=Object.prototype.hasOwnProperty.call(payoutSortModes,sortMode)?sortMode:'model';
+ if(key==='model')return items;
+ return items.sort((a,b)=>{
+  const x=a.candidate,y=b.candidate;
+  const num=(candidate,field)=>Number(candidate.score?.[field]??0);
+  let delta=0;
+  switch(key){
+   case 'net':delta=num(y,'avgNet')-num(x,'avgNet');break;
+   case 'budgetRoi':delta=num(y,'budgetRoi')-num(x,'budgetRoi');break;
+   case 'feeRoi':delta=num(y,'roi')-num(x,'roi');break;
+   case 'chance':delta=num(y,'hit')-num(x,'hit');break;
+   case 'payouts':delta=num(y,'avgPaid')-num(x,'avgPaid');break;
+   case 'investment':delta=Number(x.initialBudget)-Number(y.initialBudget);break;
+   case 'firstDay':delta=(x.score.firstPayoutDay??Infinity)-(y.score.firstPayoutDay??Infinity);break;
+  }
+  return delta||a.originalIndex-b.originalIndex;
+ });
+}
+function render(out,sortMode='model'){
+ const selectedSort=Object.prototype.hasOwnProperty.call(payoutSortModes,sortMode)?sortMode:'model';
+ const cards=sortedPayoutCandidates(out,selectedSort).map(({candidate,originalIndex},index)=>{
+ const pathIndex=originalIndex;
   const s=candidate.score,p=candidate.plan,advice=diagnoseScenario(candidate,out);
   const risks=p.stageList.map(stage=>{
    const c=p.riskProfiles[stage];
@@ -375,7 +407,7 @@ function render(out){
    label+'</small><strong>'+value+'</strong></span>';
   return '<details class="reverse-candidate">'+
    '<summary class="reverse-candidate-summary">'+
-   '<span class="reverse-candidate-name">'+(index===0?'Top scenario':'Option '+(index+1))+
+   '<span class="reverse-candidate-name">'+(index===0?(selectedSort==='model'?'Top by optimizer':'Top by '+payoutSortModes[selectedSort]):'Option '+(index+1))+
    ' · '+candidate.scale.toFixed(2)+'× · '+escapeHtml(candidate.rrVariant||'')+
    ' · '+(candidate.riskMode==='target'?'Target':'Saved')+' risk'+
    '<span class="reverse-candidate-status '+(goalMet?'reverse-status-met':'')+'">'+
@@ -419,13 +451,16 @@ function render(out){
      'Account #'+escapeHtml(ac.id)+' · '+escapeHtml(ac.status)+
      ' · '+(ac.trades||0)+' trades'+(ac.paidDay!=null?' · Paid day '+ac.paidDay:'')+'</option>').join('');
     return '<details class="reverse-trade-details"><summary>Trade-by-trade example · show / hide <small>(trial #1 · '+accounts.length+' accounts)</small></summary>'+
-     '<div class="reverse-path-controls"><label>Account <select data-reverse-path="'+index+'">'+options+'</select></label>'+
+     '<div class="reverse-path-controls"><label>Account <select data-reverse-path="'+pathIndex+'">'+options+'</select></label>'+
      '<span class="hint">Select any account to inspect exact trade and phase progression.</span></div>'+
-     '<div data-reverse-path-body="'+index+'">'+renderAccountPath(candidate,example.id)+'</div></details>';
+     '<div data-reverse-path-body="'+pathIndex+'">'+renderAccountPath(candidate,example.id)+'</div></details>';
    })():'<p class="hint">Trade-by-trade account details unavailable for this scenario.</p>')+
    '</div></details>';
  }).join('');
- return '<details class="reverse-info-section"><summary><strong>Target &amp; calculation rules</strong> <span>· '+out.requiredPayouts+' minimum payouts · '+money(out.minNetPnl)+' net goal</span></summary><p class="hint">Net P&L target: '+money(out.minNetPnl)+' after incurred fees. Minimum '+out.requiredPayouts+
+ return '<div class="reverse-sort-bar"><label for="payoutResultsSort"><strong>Sort scenarios by</strong></label><select id="payoutResultsSort" aria-label="Sort validated scenarios">'+
+  Object.entries(payoutSortModes).map(([value,label])=>'<option value="'+value+'"'+(selectedSort===value?' selected':'')+'>'+escapeHtml(label)+'</option>').join('')+
+  '</select><small>Ranking only '+out.candidates.length+' validated options shown (not all '+out.checked+' searched). Changing sort does not rerun the model.</small></div>'+
+  '<details class="reverse-info-section"><summary><strong>Target &amp; calculation rules</strong> <span>· '+out.requiredPayouts+' minimum payouts · '+money(out.minNetPnl)+' net goal</span></summary><p class="hint">Net P&L target: '+money(out.minNetPnl)+' after incurred fees. Minimum '+out.requiredPayouts+
   ' first payouts at '+money(out.perPayout)+' each before fees; more may be needed to cover purchase costs. Allowed trade RR: '+out.minRR.toFixed(2)+'–'+out.maxRR.toFixed(2)+'R. Minimum fee-based ROI: '+pct(out.minRoi)+'. Minimum net ROI on starting investment: '+pct(out.minNetRoi)+'. Minimum net P&L: '+money(out.minNetPnl)+'. The account must first reach approximately '+
   money(out.profitPerAccount)+' funded trading profit (based on the modeled profit payout split, excluding any refunded challenge fee). Probability is the share of trials reaching the minimum first-payout count AND net P&L target within the trading-day horizon.</p></details>'+
   '<div class="reverse-result-overview"><strong>Result summary</strong> · '+(out.feasible?'<span class="good">Target met in a validated scenario</span>':'<span class="bad">No scenario met all targets</span>')+'</div>'+ (out.feasible?'<details class="reverse-info-section"><summary>Validation explanation</summary><p class="good"><strong>At least one validated scenario met the payout-count, ROI and USD net P&L targets.</strong></p></details>':
