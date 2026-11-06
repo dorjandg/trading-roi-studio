@@ -179,11 +179,13 @@ function chooseTradeRisk(p,ac,stage,c,dayProfit=0){
   const room=Math.max(0,Math.min(ac.stagePnl-floorFor(p,ac),p.dailyLoss-dayProfit)-cost-reserve);
   const match=ac.history.match(/L+$/),streak=match?match[0].length:0;
   const levels=c.fundedRecoveryLevels||[150,200,250,200];
-  // Fixed third risk is a deliberate cap, not an exact target-recovery size.
-  // After a win below target, size the next risk for the remaining gap.
+  // On a positive winning path, compound the accumulated funded profit:
+  // +450 -> risk 450 -> +1800 -> risk 1800 if firm's limits permit.
+  // A losing streak uses the explicitly requested 150/200/250/200 tiers.
+  // A winning recovery that reaches zero restarts at the initial 150 tier.
+  const positiveWin=ac.stagePnl>0.05&&ac.history.endsWith('W');
   const desired=streak?levels[Math.min(streak,levels.length-1)]:
-   ac.stagePnl< c.target-.005&&ac.history.includes('W')?
-   Math.ceil((c.target-ac.stagePnl+cost)/rr*100)/100:levels[0];
+   positiveWin?Math.max(0,ac.stagePnl-cost):levels[0];
   const risk=Math.max(0,Math.floor(Math.min(room,Math.max(0,desired))*100)/100);
   return {slot:streak===0?'r1':streak===1?'r2':'r3',risk,rr};
  }
