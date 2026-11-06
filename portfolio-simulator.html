@@ -539,7 +539,7 @@ details p{margin:6px 0}
 <script src="portfolio-charts.js?v=20261106-ledger-section"></script>
 <script src="portfolio-journey.js?v=20261106-hide-explanations"></script>
 <script src="cloud-config.js"></script>
-<script src="portfolio-history.js?v=20261106-history-v1"></script>
+<script src="portfolio-history.js?v=20261106-optimizer-history-v2"></script>
 <script>
 (function(){
 'use strict';
@@ -1690,6 +1690,7 @@ async function init(){
 }
 window.StudioPayoutBridge={
  user,
+ saveOptimizer:data=>simulationHistory?.saveOptimizer(data),
  getRows:()=>rows.slice(),
  getPlan:row=>accountPlan(row),
  label:row=>catalog?.programs?.[row.id]?catalog.programs[row.id].firm+' · '+catalog.programs[row.id].name+' · '+usd(row.size):row.id+' '+row.size,
