@@ -141,3 +141,73 @@ body.light .side-link.active{color:#4654ba}.light .featured-card:before{opacity:
 @media(max-width:690px){.topbar{gap:8px;height:64px;min-height:64px;padding:0 15px}.topbar-leading{gap:0}.breadcrumb{display:none}.topbar-actions{gap:8px;width:100%;justify-content:flex-end}.search-shell{flex:1;max-width:none;min-width:0}.search-shell kbd{display:none}.top-add{padding:10px 12px;height:38px}.top-add span{display:none}.main-content{padding:25px 16px}.hero{align-items:flex-start;flex-direction:column;gap:18px;margin-bottom:24px}.hero-title{font-size:33px}.hero-stats{width:100%}.stat{min-width:0;flex:1}.featured-grid,.link-grid{grid-template-columns:1fr}.collection-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.featured-card{min-height:205px}.collection-card{padding:13px;min-height:130px}.section-top h1{font-size:24px}.section{margin-bottom:27px}.notice-card{align-items:flex-start}.notice-card button{align-self:center}.page-footer span:last-child{display:none}}
 @media(max-width:360px){.collection-grid{grid-template-columns:1fr}.hero-title{font-size:29px}.search-shell input{font-size:11px}.topbar{padding:0 10px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+/* v1.1 compact layout — smaller cards and tighter vertical rhythm. */
+.sidebar{width:238px;min-width:238px}
+.brand{height:74px;padding:0 21px}
+.sidebar-inner{padding-top:14px}
+.side-link{padding:8px 11px;gap:10px}
+.side-divider{margin:15px 12px 17px}
+.topbar{height:66px;min-height:66px;padding-left:clamp(18px,3vw,40px);padding-right:clamp(18px,3vw,40px)}
+.main-content{padding:clamp(20px,2.6vw,34px) clamp(18px,3vw,40px)}
+.hero{margin-bottom:22px}
+.hero-title{font-size:clamp(29px,2.8vw,40px)}
+.hero-subtitle{font-size:13px;margin-top:8px;line-height:1.5}
+.eyebrow{margin-bottom:8px}
+.hero-stats{gap:8px}
+.stat{min-width:88px;padding:9px 12px}
+.stat b{font-size:20px}
+.section{margin-bottom:23px}
+.section-heading{margin-bottom:11px}
+.section-heading h2{font-size:15px}
+.featured-grid,.link-grid,.collection-grid{gap:11px}
+.featured-card,.link-card,.collection-card{border-radius:12px}
+.featured-card{padding:16px;min-height:175px}
+.featured-card .card-logo{width:42px;height:42px;border-radius:12px;font-size:14px}
+.card-title{font-size:15px;margin:13px 0 4px}
+.card-desc{font-size:11px;line-height:1.5}
+.card-foot{padding-top:10px}
+.type-pill{font-size:9px;padding:3px 7px}
+.card-open{font-size:10px}
+.card-action{width:29px;height:29px}
+.card-action svg{width:15px;height:15px}
+.link-card{padding:14px;min-height:154px}
+.link-card .card-logo{width:34px;height:34px;border-radius:10px;font-size:12px}
+.link-card .card-title{font-size:13px;margin:11px 0 4px}
+.link-card .card-desc{font-size:11px}
+.link-card .card-foot{padding-top:10px}
+.collection-card{padding:13px;min-height:108px;gap:10px}
+.collection-icon{width:30px;height:30px;border-radius:9px}
+.collection-icon svg{width:16px;height:16px}
+.collection-card h3{font-size:11px}
+.collection-card p{font-size:10px}
+.collection-count{font-size:10px}
+.section-top{margin-bottom:15px}
+.section-top h1{font-size:25px}
+.filter-row{margin-bottom:14px}
+.notice-card{margin-bottom:20px;padding:12px 15px}
+.page-footer{padding:14px clamp(18px,3vw,40px)}
+@media(max-width:1020px){
+  .main-content{padding:24px 22px}
+  .topbar{padding:0 22px}
+}
+@media(max-width:690px){
+  .topbar{height:60px;min-height:60px;padding:0 13px}
+  .main-content{padding:20px 14px}
+  .hero{gap:12px;margin-bottom:18px}
+  .hero-title{font-size:30px}
+  .hero-subtitle{font-size:12px}
+  .stat{padding:8px 10px}
+  .section{margin-bottom:20px}
+  .featured-grid,.link-grid{grid-template-columns:1fr}
+  .featured-card{min-height:166px;padding:15px}
+  .link-card{min-height:146px}
+  .collection-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .collection-card{padding:12px;min-height:105px}
+  .section-top h1{font-size:23px}
+}
+@media(max-width:360px){
+  .collection-grid{grid-template-columns:1fr}
+  .hero-title{font-size:28px}
+  .topbar{padding:0 10px}
+}
