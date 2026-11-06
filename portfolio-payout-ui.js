@@ -436,7 +436,7 @@ function start(){
  $('payoutOptReset').addEventListener('click',()=>{loadAssumptions(true);storeAssumptions();save()});
  $('payoutOptAccount').addEventListener('change',()=>{loadAssumptions();loadedAssumptionsAccount=acctValue();save()});
  let currentSortMode=['model','net','budgetRoi','feeRoi','chance','payouts','investment','firstDay'].includes(prior.sortMode)?prior.sortMode:'model';
- let lastOptimizerOutput=null,lastOptimizerAccountKey='',lastOptimizerInputs=null,lastModelSearch=null,moreSortKey='improvement',moreDescending=true,moreColumnView='trading';
+ let lastOptimizerOutput=null,lastOptimizerAccountKey='',lastOptimizerInputs=null,lastModelSearch=null,moreSortKey='net',moreDescending=true,moreColumnView='trading',moreSourceFilter='all';
  document.addEventListener('portfolio-investment-import',event=>{
   const key=event.detail?.accountKey||'';
   if(!key||!bridge.getRows().some(r=>r.id+':'+r.size===key))return;
@@ -451,11 +451,18 @@ function start(){
   math();save();panel.open=true;
   panel.scrollIntoView({behavior:'smooth',block:'start'});
  }); 
+ function renderUnifiedTable(){
+  const box=$('payoutOptMoreModels');
+  box.innerHTML=lastOptimizerOutput?
+   solver.renderUnifiedInvestmentModels(lastOptimizerOutput,lastModelSearch,
+    moreSortKey,moreDescending,moreColumnView,moreSourceFilter):'';
+ }
  function renderLastOptimizer(){
   if(!lastOptimizerOutput)return;
   const row=bridge.getRows().find(r=>r.id+':'+r.size===lastOptimizerAccountKey);
   const saved=row?bridge.getSavedPlan?.(row):null;
   $('payoutOptResults').innerHTML=solver.render(lastOptimizerOutput,currentSortMode,saved);
+  renderUnifiedTable();
  }
  $('payoutOptResults').addEventListener('click',async event=>{
   const more=event.target.closest?.('[data-reverse-more-models]');
@@ -478,9 +485,9 @@ function start(){
      trainTrials:trials[0],testTrials:trials[1],shortlist:10};
     const result=root.StudioModelDiscovery.search(root.StudioModelDiscovery.clonePlan(candidate.plan),opts);
     lastModelSearch={candidate,result,origin:'Investment Option '+(index+1)};
-    moreSortKey='improvement';moreDescending=true;moreColumnView='trading';
-    $('payoutOptMoreModels').innerHTML=solver.renderMoreInvestmentModels(result,lastModelSearch.origin,moreSortKey,moreDescending,moreColumnView);
-    if(status)status.textContent=result.ideas.length+' additional models compared below in Section 3A.';
+    moreSortKey='net';moreDescending=true;moreSourceFilter='all';
+    renderUnifiedTable();
+    if(status)status.textContent=result.ideas.length+' additional risk models added to the single comparison table in Section 3A.';
     $('payoutOptMoreModels').scrollIntoView({behavior:'smooth',block:'start'});
    }catch(error){if(status)status.textContent='Model search failed: '+(error?.message||'Unknown error');}
    finally{more.disabled=false;more.textContent='Find More Risk Models';}
@@ -537,40 +544,40 @@ function start(){
   // Preserve the confirmation message in the expanded option; the saved Firms comparison refreshes on the next render.
  });
  $('payoutOptMoreModels').addEventListener('change',event=>{
-  if(!lastModelSearch)return;
-  if(event.target.matches?.('[data-more-columns]')){
-   moreColumnView=event.target.value;
-   $('payoutOptMoreModels').innerHTML=solver.renderMoreInvestmentModels(
-    lastModelSearch.result,lastModelSearch.origin,moreSortKey,moreDescending,moreColumnView);
-   return;
-  }
-  if(!event.target.matches?.('[data-more-sort]'))return;
-  moreSortKey=event.target.value;
-  $('payoutOptMoreModels').innerHTML=solver.renderMoreInvestmentModels(
-   lastModelSearch.result,lastModelSearch.origin,moreSortKey,moreDescending,moreColumnView);
+  if(!lastOptimizerOutput)return;
+  const el=event.target;
+  if(el.matches?.('[data-more-sort]'))moreSortKey=el.value;
+  else if(el.matches?.('[data-more-columns]'))moreColumnView=el.value;
+  else if(el.matches?.('[data-more-source]'))moreSourceFilter=el.value;
+  else return;
+  renderUnifiedTable();
  });
-  $('payoutOptMoreModels').addEventListener('click',async event=>{
-  if(event.target.closest?.('[data-more-direction]')&&lastModelSearch){
-   moreDescending=!moreDescending;
-   $('payoutOptMoreModels').innerHTML=solver.renderMoreInvestmentModels(
-    lastModelSearch.result,lastModelSearch.origin,moreSortKey,moreDescending,moreColumnView);
-   return;
-  }
-  if(event.target.closest?.('[data-more-close]')){
-   lastModelSearch=null;$('payoutOptMoreModels').innerHTML='';return;
+ $('payoutOptMoreModels').addEventListener('click',async event=>{
+  if(event.target.closest?.('[data-more-direction]')){
+   moreDescending=!moreDescending;renderUnifiedTable();return;
   }
   const button=event.target.closest?.('[data-more-analyze]');
-  if(!button||!lastModelSearch)return;
-  const index=Number(button.dataset.moreAnalyze),{result,candidate}=lastModelSearch;
-  const record=index===0?{title:'Original investment baseline',plan:result.baseline.plan,holdout:result.baseline.holdout}:result.ideas[index-1];
-  if(!record||button.disabled)return;
+  if(!button||!lastOptimizerOutput||button.disabled)return;
+  const match=/^(original|extra):(\\d+)$/.exec(button.dataset.moreAnalyze||'');
+  if(!match)return;
+  const index=Number(match[2]);
+  let model,label;
+  if(match[1]==='original'){
+   const item=lastOptimizerOutput.candidates?.[index];
+   if(!item)return;
+   model=item;label='Investment Option '+(index+1);
+  }else{
+   const idea=lastModelSearch?.result?.ideas?.[index];
+   if(!idea||!lastModelSearch)return;
+   model={plan:idea.plan,result:idea.holdout,initialBudget:lastModelSearch.candidate.initialBudget};
+   label=idea.title;
+  }
   button.disabled=true;button.textContent='Analyzing…';
   try{
-   const model={plan:record.plan,result:record.holdout,initialBudget:candidate.initialBudget};
-   const ok=await bridge.analyzeOptimizerCandidate?.(model,lastOptimizerOutput,lastOptimizerInputs,record.title);
-   if(!ok)throw Error('Detailed report was unavailable');
+   const ok=await bridge.analyzeOptimizerCandidate?.(model,lastOptimizerOutput,lastOptimizerInputs,label);
+   if(!ok)throw Error('Detailed report unavailable');
   }catch(error){$('payoutOptStatus').textContent='Analyze model: '+(error?.message||'Unknown error');}
-  finally{button.disabled=false;button.textContent='Analyze'}
+  finally{button.disabled=false;button.textContent='Analyze';}
  });
  $('payoutOptResults').addEventListener('change',event=>{
   if(event.target.id==='payoutResultsSort'){
@@ -629,8 +636,8 @@ function start(){
    status.textContent='Enter valid payout amounts, ROI targets, and nonnegative net P&L in USD.';return;
   }
   busy=true;button.disabled=true;status.textContent='Running reverse payout scenarios…';
-  lastOptimizerOutput=null;lastOptimizerInputs=null;lastModelSearch=null;
-  $('payoutOptResults').innerHTML='';$('payoutOptMoreModels').innerHTML='';save();
+  lastOptimizerOutput=null;lastOptimizerInputs=null;lastModelSearch=null;moreSourceFilter='all';
+  $('payoutOptResults').innerHTML='';renderUnifiedTable();save();
   try{
    const output=await solver.optimize({plan:selectedPlan,perPayout,
     maxInvestment,minRoi:minRoiPct/100,minNetRoi:minNetRoiPct/100,minNetPnl,minRR,maxRR,inputs,onProgress:text=>status.textContent=text});
