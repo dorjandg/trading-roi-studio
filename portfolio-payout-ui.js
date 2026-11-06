@@ -1087,9 +1087,16 @@ function start(){
     renderUnifiedTable();
     const baseline=result.baseline.holdout.avg;
     const fewer=result.ideas.filter(x=>x.holdout.avg.exhausted<baseline.exhausted-0.01);
-    if(status)status.textContent=result.ideas.length+' lower-risk variants compared. '+
-     fewer.length+' reduce the average blocked-account count; see trade-offs in the table. '+
-     'No Firms settings were changed.';
+    const best=fewer.slice().sort((a,b)=>b.holdout.avg.net-a.holdout.avg.net)[0];
+    const details=best?
+     ' Best expected net among variants with fewer blocks: '+best.title+
+     ' · blocked '+Number(best.holdout.avg.exhausted).toFixed(2)+' vs '+Number(baseline.exhausted).toFixed(2)+
+     ' · net '+advisorMoney(best.holdout.avg.net)+' vs '+advisorMoney(baseline.net)+
+     ' · paid '+Number(best.holdout.avg.paid).toFixed(2)+' vs '+Number(baseline.paid).toFixed(2)+'.':
+     ' None reduced the blocked count under these assumptions.';
+    if(status)status.textContent=result.ideas.length+' fixed-budget, paired-trial variants compared; '+
+     fewer.length+' reduce risk blocks.'+details+
+     ' These are model projections, not proof of trading performance. Firms settings unchanged.';
     $('payoutOptModelComparison').open=true;
     $('payoutOptModelComparison').scrollIntoView({behavior:'smooth',block:'start'});
    }catch(error){
