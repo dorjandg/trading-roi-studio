@@ -280,6 +280,16 @@ details p{margin:6px 0}
 .discovery-table-panel>summary span{font-size:11px;color:var(--muted)}
 .discovery-table-panel>.tablewrap{margin:0}
 .discovery-table-panel>summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+/* Results summary: concise KPI strip instead of oversized cards. */
+#results #totals.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin:7px 0 10px}
+#results #totals .kpi{padding:8px 10px;min-height:64px;display:flex;flex-direction:column;justify-content:center;gap:3px;border-radius:8px;cursor:help}
+#results #totals .kpi small{font-size:11px;line-height:1.15}
+#results #totals .kpi strong{font-size:19px;line-height:1.2;margin:0;letter-spacing:-.3px}
+#results #totals .kpi:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(max-width:900px){#results #totals.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:550px){#results #totals.kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+ #results #totals .kpi{min-height:56px;padding:6px 8px}
+ #results #totals .kpi strong{font-size:17px}}
 /* Account setup: two compact input rows, with phase details on demand. */
 .account-card{position:relative;padding:10px 12px;margin:6px 0}
 .account-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 10px;align-items:end;padding-right:26px}
@@ -979,7 +989,7 @@ function renderResults(list,inputs){
    ['Expected payout accounts',dec(paidTotal),'First payout only'],
    ['Chance net goal',pct(combinedStats.chanceGoal),'Across all selected accounts']
   ];
- $('totals').innerHTML=totalHtml.map(([k,v,n])=>'<div class="kpi"><small>'+k+'</small><strong>'+v+'</strong><em>'+n+'</em></div>').join('');
+ $('totals').innerHTML=totalHtml.map(([k,v,n])=>'<div class="kpi" title="'+esc(k+': '+n)+'" tabindex="0"><small>'+esc(k)+'</small><strong>'+esc(v)+'</strong></div>').join('');
  $('comparisonRows').innerHTML=list.map(r=>{
   const p=r.plan,c=r.avg;
   return '<tr><td>'+esc(p.firm+' · '+p.programName)+' <small class="hint">'+usd(p.size)+'</small></td>'+
