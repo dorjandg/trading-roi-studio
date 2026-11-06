@@ -49,7 +49,7 @@ function create({user,element,endpoint}){
  }
  function summarizeOptimizerCandidate(c){
   const r=c.result;
-  return {riskScale:c.scale,rrVariant:c.rrVariant||null,initialBudget:c.initialBudget,accountsBudgeted:c.units,
+  return {riskScale:c.scale,riskMode:c.riskMode||'saved',rrVariant:c.rrVariant||null,initialBudget:c.initialBudget,accountsBudgeted:c.units,
    score:compact(c.score),
    stages:(r?.plan?.stageList||c.plan?.stageList||[]).map(stage=>{
     const x=(r?.plan?.riskProfiles||c.plan?.riskProfiles||{})[stage]||{};
@@ -75,7 +75,9 @@ function create({user,element,endpoint}){
     minNetRoi:output.minNetRoi,minNetPnl:output.minNetPnl,
     maxInvestment:output.maxInvestment,profitPerAccount:output.profitPerAccount,minRR:output.minRR,maxRR:output.maxRR},
    inputs:compact(inputs),summary:{checked:output.checked,feasible:output.feasible,
-    payoutCountFeasible:output.payoutCountFeasible},
+    payoutCountFeasible:output.payoutCountFeasible,
+    fastestFirstDay:output.fastestFirst?.score?.firstPayoutDay??null,
+    fastestFullPayoutDay:output.fastestGoal?.score?.goalPayoutDay??null},
    candidates};
  }
  function render(){
