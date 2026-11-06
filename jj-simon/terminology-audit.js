@@ -45,7 +45,7 @@ function jjTermsRenderResults(){
   const actions=jjTermEl('div','jj-term-actions');
   const related=jjTermEl('button','','Open related chapter');related.type='button';related.onclick=()=>pick(t.related);actions.append(related);
   const source=jjTermEl('button','','Open Source Explorer');source.type='button';source.onclick=()=>pick('source-evidence-explorer');actions.append(source);
-  inner.append(actions,jjTermEl('p','jj-term-footer','Verification: '+({conflict:'Conflicting interpretation remains unresolved',video:'Original chart/video review needed',firm:'Current provider rules require independent verification',math:'Conceptual math reviewed; assumptions remain',transcript:'Machine transcript available; audio unverified',general:'General educational definition; not claimed to be a direct JJ quotation'}[t.verification]||'Further review needed')));
+  inner.append(actions,jjTermEl('p','jj-term-footer','Verification: '+({conflict:'Conflicting interpretation remains unresolved',video:'Original chart/video review needed',firm:'Current provider rules require independent verification',math:'Conceptual math reviewed; assumptions remain',transcript:'Machine transcript available; audio unverified',general:'General educational definition; not claimed to be a direct JJ quotation',public:'Public website description only; cross-check original JJ lesson and source context'}[t.verification]||'Further review needed')));
   item.append(inner);list.append(item);
  }
 }
