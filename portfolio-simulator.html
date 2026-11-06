@@ -1772,6 +1772,14 @@ window.StudioPayoutBridge={
  saveOptimizer:data=>simulationHistory?.saveOptimizer(data),
  getRows:()=>rows.slice(),
  getPlan:row=>accountPlan(row),
+ getSavedPlan:row=>{
+  if(!catalog?.programs?.[row.id])return null;
+  const savedProfile=profileFor(row.id,Number(row.size));
+  if(!savedProfile)return null;
+  return E.buildPlan(row.id,Number(row.size),catalog.programs[row.id],savedProfile,
+   {p1:snapFor(row.id,row.size,'p1'),p2:snapFor(row.id,row.size,'p2'),funded:snapFor(row.id,row.size,'funded')},audit?.programs?.[row.id]);
+ },
+ sendOptimizerToFirms:(plan,name,metrics)=>sendPlanToFirms(plan,name,metrics),
  label:row=>catalog?.programs?.[row.id]?catalog.programs[row.id].firm+' · '+catalog.programs[row.id].name+' · '+usd(row.size):row.id+' '+row.size,
  getInputs:row=>{
   const p=accountPlan(row),limit=allocationLimits[p.id+':'+p.size]||{};
