@@ -1,8 +1,28 @@
 {
   "schema": "4ds-gpt-research-v1",
-  "updatedAt": "2026-11-06T19:20:00Z",
+  "updatedAt": "2026-11-06T20:00:00Z",
   "visibility": "public-generic",
   "reviews": [
+    {
+      "id": "review-evidence-v1",
+      "date": "2026-11-06",
+      "category": "Research readiness",
+      "status": "recommended",
+      "priority": "high",
+      "title": "Full account-level reviews need traceable simulation evidence",
+      "finding": "Stored optimizer summaries provide aggregate scenarios and risk-tier values, but legacy history does not retain the complete risk-policy snapshot or sampled account trade/closure events. Therefore an individual account's exact blocking trigger cannot be established from optimizer summaries alone.",
+      "suggestion": "Analyze the chosen investment model through Run Full Simulation and verify that the saved history includes risk-policy snapshots and sampled trade events. Compare preflight risk, remaining overall and daily loss allowance, risk-blocked status and genuine loss-limit breaches.",
+      "measurements": [
+        "Presence of model plan and phase-specific R1/R2/R3 policy in saved history",
+        "Number of sampled account events available",
+        "Count of actual drawdown breaches separately from risk-tier blocks",
+        "Changes in payout probabilities and blocked counts when risk is reduced at fixed budget"
+      ],
+      "action": "Added an evidence-readiness checker to Section 11 and expanded future history records. Older saved records cannot be automatically backfilled.",
+      "source": "Connected simulation-history schema inspection and GitHub simulator/serialization code review",
+      "codeCommit": "7ba567b72d10060a8a6f40c6064720c633e6eaf9",
+      "verified": "Source records and JavaScript syntax inspected. End-to-end browser deployment and new-format cloud write not yet independently verified."
+    },
     {
       "id": "risk-block-v1",
       "date": "2026-11-06",
