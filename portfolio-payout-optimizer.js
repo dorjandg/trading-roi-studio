@@ -247,7 +247,20 @@ async function optimize({plan,perPayout,maxInvestment,minRoi=2,minNetRoi=0,minNe
   fastestGoal:candidates.filter(c=>c.score.goalPayoutDay!=null).slice().sort((a,b)=>
    a.score.goalPayoutDay-b.score.goalPayoutDay||
    b.score.hit-a.score.hit)[0]||null,
-  candidates:candidates.slice(0,5),firm:plan.firm,size:plan.size,
+  candidates:(()=>{
+   const shown=[],used=new Set();
+   const addCandidate=x=>{if(x&&!used.has(x)){shown.push(x);used.add(x)}};
+   // The first scenario retains the original optimization ranking.
+   candidates.slice(0,2).forEach(addCandidate);
+   // When target-sized routes exist, include at least one independently
+   // validated representative of each distinct R3 policy.
+   for(const route of ['headroom','balanced','defensive']){
+    if(shown.length>=5)break;
+    addCandidate(candidates.find(x=>x.r3Route===route));
+   }
+   candidates.forEach(x=>{if(shown.length<5)addCandidate(x)});
+   return shown.slice(0,5);
+  })(),firm:plan.firm,size:plan.size,
   inputs:{days:inputs.days,tradesPerDay:inputs.tradesPerDay,winRate:inputs.winRate,
    purchaseMode:inputs.purchaseMode,capacityMode:inputs.capacityMode}};
 }
