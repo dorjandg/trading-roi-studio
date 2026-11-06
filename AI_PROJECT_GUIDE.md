@@ -57,6 +57,8 @@ Seven editable fields:
 6. Minimum net ROI on investment (%).
 7. Target net P&L (USD); zero disables this additional constraint.
 
+Collapsed **RR guidance** filters (added Nov 6): Min RR and Max RR (default 1.5R–3R). Investment optimization varies R1/R2/R3 tier-specific RR values within these bounds, for example R1 1.5R then R2 3R after a loss **if the current risk policy selects R2**. This is optional in the engine via `riskProfiles[phase].rrByTier={r1,r2,r3}`; older saved Firms risk profiles without this field continue using the phase-wide `rr`. Optimizer records persist the range, variant and tier values; the collapsed account trade walk-through shows each trade's selected tier and actual RR. Default funded 5R is no longer forced into optimized runs when max RR is 3R. Do not mistake bound values for actual live fills or a guaranteed trade outcome.
+
 Calculation:
 - Required distinct first payouts = ceil(total cash / payout per account). $10,000 / $1,000 -> 10 first payouts.
 - For a CFD account with 80% modeled payout split, $1,000 withdrawal requires $1,250 funded trading profit, excluding any fee refund.
