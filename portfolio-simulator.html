@@ -591,7 +591,7 @@ details p{margin:6px 0}
  <div id="firmsSendStatus" class="status" style="margin-top:10px" aria-live="polite">Suggested models stay in Portfolio Sim until you explicitly send one to Firms.</div>
 </div></details>
 <section id="results" hidden>
-<div id="reportSourceBar" class="report-source-bar" role="group" aria-label="Detailed report source"><strong>Detailed reports · Sections 4–7</strong><span id="reportSourceLabel">Run Simulation</span><div class="report-source-actions"><button type="button" data-report-source="run" disabled>Run Simulation</button><button type="button" data-report-source="investment" disabled>Investment scenario</button></div><nav class="report-jump-links" aria-label="Detailed reports"><a href="#section4Panel" data-report-jump="section4Panel">4 · Results</a><a href="#chartsPanel" data-report-jump="chartsPanel">6 · Charts</a><a href="#journeyPanel" data-report-jump="journeyPanel">6 · Journey</a><a href="#section7Panel" data-report-jump="section7Panel">7 · Trades</a></nav></div>
+<div id="reportSourceBar" class="report-source-bar" role="group" aria-label="Detailed report source"><strong>Detailed reports · Sections 5–9</strong><span id="reportSourceLabel">Run Simulation</span><div class="report-source-actions"><button type="button" data-report-source="run" disabled>Run Simulation</button><button type="button" data-report-source="investment" disabled>Investment scenario</button></div><nav class="report-jump-links" aria-label="Detailed reports"><a href="#section4Panel" data-report-jump="section4Panel">5 · Results</a><a href="#chartsPanel" data-report-jump="chartsPanel">6 · Charts</a><a href="#journeyPanel" data-report-jump="journeyPanel">7 · Journey</a><a href="#section7Panel" data-report-jump="section7Panel">8 · Trades</a><a href="#section9Panel" data-report-jump="section9Panel">9 · Spending</a></nav></div>
 <details class="sim-charts-panel numbered-panel" id="section4Panel" open><summary><strong>5 · Results across prop firms</strong><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><p id="summaryCaption" class="hint"></p><div id="totals" class="kpis"></div>
  <div class="tablewrap"><table><thead><tr><th>Firm / account</th><th>Budget</th><th>Challenges</th><th>Spent avg.</th><th>Phase 1 passes</th><th>Phase 2 passes</th><th>Funded</th><th>Paid</th><th>Payouts avg.</th><th>Net avg.</th><th>ROI</th><th>Chance ≥1 payout</th></tr></thead><tbody id="comparisonRows"></tbody></table></div>
  <p class="hint">Counts and profits are averages over simulated trials, not whole-account predictions. ROI = expected net / expected incurred costs. Starting budget is not account capital.</p>
@@ -2018,7 +2018,7 @@ window.StudioPayoutBridge={
   chartState.selection='0';journeyState.selection='0';spendingLedgerState.selection='0';
   renderResults(investmentReport.list,investmentReport.inputs,'investment');
   $('section4Panel').open=true;
-  $('status').textContent='Full scenario simulation completed · '+trials+' trials · results in Sections 4–7.';
+  $('status').textContent='Full scenario simulation completed · '+trials+' trials · reports in Sections 5–9.';
   $('status').style.color='var(--green)';
   $('results').scrollIntoView({behavior:'smooth',block:'start'});
   return true;
