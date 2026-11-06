@@ -1,0 +1,46 @@
+name: JJ Academy unanswered-question review
+on:
+  schedule:
+    - cron: '17 */3 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: jj-academy-question-review
+  cancel-in-progress: false
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jj-simon-knowledge-hub
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify review logic
+        run: node --test jj-simon/automation/reviewer.test.mjs
+      - name: Check private queue configuration
+        id: access
+        env:
+          JJ_QUESTIONS_ENDPOINT: ${{ secrets.JJ_QUESTIONS_ENDPOINT }}
+          JJ_REVIEW_TOKEN: ${{ secrets.JJ_REVIEW_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [ -n "$JJ_QUESTIONS_ENDPOINT" ] && [ -n "$JJ_REVIEW_TOKEN" ] && [ -n "$OPENAI_API_KEY" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::JJ question-review backend or credentials not configured. Only tests ran."
+          fi
+      - name: Research up to three unanswered questions
+        if: steps.access.outputs.ready == 'true'
+        env:
+          JJ_QUESTIONS_ENDPOINT: ${{ secrets.JJ_QUESTIONS_ENDPOINT }}
+          JJ_REVIEW_TOKEN: ${{ secrets.JJ_REVIEW_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          JJ_RESEARCH_MODEL: gpt-6-luna
+          JJ_MAX_REVIEW_ITEMS: '3'
+        run: node jj-simon/automation/review-questions.mjs
