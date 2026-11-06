@@ -41,7 +41,7 @@ export async function onRequestGet({request,env}){
  const url=new URL(request.url);const status=url.searchParams.get('status')||'';
  const allowed=['new','researching','needs_review','approved','resolved','rejected'];
  if(status&&!allowed.includes(status))return json({ok:false,error:'Invalid status'},400);
- const sql=status?"SELECT id,question,reason,match_count,status,research_notes,proposed_commit,occurrences,created_at,updated_at FROM jj_unanswered_questions WHERE status=? ORDER BY updated_at DESC LIMIT 200":"SELECT id,question,reason,match_count,status,research_notes,proposed_commit,occurrences,created_at,updated_at FROM jj_unanswered_questions ORDER BY updated_at DESC LIMIT 200";
+ const sql=status?"SELECT id,question,reason,match_count,status,research_notes,proposed_commit,approved_public_title,approved_public_answer,approved_evidence_ids,occurrences,created_at,updated_at FROM jj_unanswered_questions WHERE status=? ORDER BY updated_at DESC LIMIT 200":"SELECT id,question,reason,match_count,status,research_notes,proposed_commit,approved_public_title,approved_public_answer,approved_evidence_ids,occurrences,created_at,updated_at FROM jj_unanswered_questions ORDER BY updated_at DESC LIMIT 200";
  try{
   const stmt=env.JJ_QUESTIONS.prepare(sql);
   const rows=await (status?stmt.bind(status):stmt).all();
@@ -57,8 +57,13 @@ export async function onRequestPatch({request,env}){
  if(!/^uq_[a-f0-9]{22}$/.test(id)||!['new','researching','needs_review','approved','resolved','rejected'].includes(status))return json({ok:false,error:'Invalid ID/status'},400);
  const notes=String(input.research_notes||'').slice(0,10000);
  const commit=String(input.proposed_commit||'').slice(0,200);
+ const title=String(input.approved_public_title||'').trim();
+ const answer=String(input.approved_public_answer||'').trim();
+ const ids=Array.isArray(input.approved_evidence_ids)?input.approved_evidence_ids:[];
+ if(status==='approved'&&(!title||!answer||!ids.length))return json({ok:false,error:'Public title, answer and evidence IDs required for approval'},400);
+ if(title.length>180||answer.length>3500||ids.length>15||ids.some(v=>typeof v!=='string'||!/^EV[0-9]{2,3}$/.test(v)))return json({ok:false,error:'Invalid publishable content'},400);
  try{
-  const result=await env.JJ_QUESTIONS.prepare("UPDATE jj_unanswered_questions SET status=?, research_notes=?, proposed_commit=?, updated_at=datetime('now') WHERE id=?").bind(status,notes,commit,id).run();
+  const result=await env.JJ_QUESTIONS.prepare("UPDATE jj_unanswered_questions SET status=?, research_notes=?, proposed_commit=?, approved_public_title=?, approved_public_answer=?, approved_evidence_ids=?, updated_at=datetime('now') WHERE id=?").bind(status,notes,commit,title,answer,JSON.stringify(ids),id).run();
   return json({ok:result.meta?.changes>0,id,status},result.meta?.changes>0?200:404);
  }catch(_){return json({ok:false,error:'Unable to update queue'},503)}
 }
