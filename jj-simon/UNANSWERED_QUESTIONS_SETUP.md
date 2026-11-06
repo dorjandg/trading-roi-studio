@@ -37,3 +37,38 @@ To enable full automatic work safely:
 Never send user-submitted question text to public GitHub issues or PRs without explicit consent. This repository is public. Avoid logging medical, personal, financial-account, authentication or other private details in public code.
 
 The existing hourly JJ Simon research automation is separate and cannot observe browser localStorage. A direct ChatGPT alert requires a supported connected event source or a scheduled, authenticated bridge that can actually read the shared queue; this has **not yet been configured**.
+
+## Automated research reviewer and approved-answer PRs (code implemented; activation pending)
+
+**GitHub workflow entries are present on the default `main` branch**:
+- `.github/workflows/jj-questions-review.yml` — runs at minute 17 every 3 hours (UTC), checks out `jj-simon-knowledge-hub`, tests evidence parsing, and processes at most three new questions if configured.
+- `.github/workflows/jj-answers-propose.yml` — manually triggered only; creates an unmerged PR for separately approved, public-safe answer text.
+
+**Required configuration in GitHub repository Settings → Secrets and variables → Actions**:
+- Secret `JJ_QUESTIONS_ENDPOINT`: exact HTTPS URL of the deployed private queue endpoint, normally `https://jj-simon-knowledge.pages.dev/api/questions`.
+- Secret `JJ_REVIEW_TOKEN`: must equal the Cloudflare Pages `JJ_REVIEW_TOKEN` secret.
+- Secret `OPENAI_API_KEY`: an OpenAI Platform API key with a suitable usage budget. The current code selects `gpt-6-luna`; set the model in the workflow to an authorized model if needed.
+- Variable `JJ_ENABLE_PUBLIC_PROPOSALS`: initially absent/false. Set to `true` only when the organization has a public-content privacy review policy and a trusted reviewer who explicitly approves public answers.
+
+**Required Cloudflare configuration**:
+- Create D1 database, run `cloudflare/questions-schema.sql`, bind `JJ_QUESTIONS`, set `JJ_HASH_SECRET` and `JJ_REVIEW_TOKEN` as server-side secrets, and verify Cloudflare Pages recognizes `jj-simon/functions/api/questions.js`. Do not assume the `functions` directory is picked up when the Pages root is the repository root.
+- If the database was created with the prior schema, add its new review columns once:
+  ```sql
+  ALTER TABLE jj_unanswered_questions ADD COLUMN approved_public_title TEXT;
+  ALTER TABLE jj_unanswered_questions ADD COLUMN approved_public_answer TEXT;
+  ALTER TABLE jj_unanswered_questions ADD COLUMN approved_evidence_ids TEXT;
+  ```
+  Do not apply these ALTER statements when creating a fresh database from the updated schema.
+
+**Privacy and consent**:
+- A student must opt in to shared review submission via the Study Assistant checkbox. Without consent, questions are kept in that browser's local storage and cannot trigger the researcher.
+- With consent and working Cloudflare D1, unanswered questions sync to a private queue. The GPT research reviewer sends that question and selected machine-transcript excerpts to the configured OpenAI API with `store:false`, then stores a source-linked draft privately as `needs_review`.
+- Private question text and GPT draft notes must never be automatically copied into public GitHub PRs. The admin must explicitly set `approved` and supply separately curated `approved_public_title`, `approved_public_answer`, and `approved_evidence_ids` via authenticated PATCH.
+- Only after that approval, an authorized admin can manually run the **JJ Academy propose approved answers** workflow. It writes `jj-simon/approved-answers.js` on a review branch and opens a PR targeting `jj-simon-knowledge-hub`; it never merges the PR automatically.
+- Merging a reviewed PR updates the public site's source-answer catalog when the Pages site is deployed from the target branch. The Study Assistant prioritizes these reviewed answers.
+
+**Pending work / not yet live**:
+- D1 database, secret bindings, and deployment verification have **not** been performed. No end-to-end cloud submission or OpenAI request has been tested.
+- No actual ChatGPT-native alert is wired to the private D1 queue. GitHub Actions notices are visible to repository administrators in GitHub Actions, but they are not ChatGPT app notifications. A ChatGPT automation or other event bridge is required for that part.
+- Schedule execution is a GitHub Actions trigger, not a guarantee of exact execution time. No automatic PR merge or direct production edit is enabled.
+- Current-source citations are machine transcripts; independent original video and chart verification remains pending.
