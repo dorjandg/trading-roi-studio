@@ -46,18 +46,20 @@ function assess(r,count,total){
   avgNet:val(r.avg.net),avgSpent:val(r.avg.spent),p10:val(r.p10),
   avgPurchased:val(r.avg.bought),avgFunded:val(r.avg.funded),
   avgBreached:val(r.avg.failed),avgRiskBlocked:val(r.avg.exhausted),roi:val(r.roi),
+  budgetRoi:r.budget>0?val(r.avg.net)/r.budget:0,
   avgPayout:r.avg.paid?val(r.avg.receipts)/r.avg.paid:0};
 }
-async function optimize({plan,total,perPayout,maxInvestment,probability,inputs,onProgress}){
+async function optimize({plan,total,perPayout,maxInvestment,minRoi=2,inputs,onProgress}){
  const count=needed(total,perPayout);
  if(!E)throw Error('Simulator engine is unavailable.');
  if(!plan)throw Error('Select a prop-firm account.');
+ if(!Number.isFinite(minRoi)||minRoi<0||minRoi>100)
+  throw Error('Enter an ROI target between 0% and 10,000%.');
  const unit=plan.fee+(plan.id==='topstep'?plan.activationFee:0);
  if(unit<=0)throw Error('Purchase and activation fees are unavailable.');
  const maxUnits=Math.min(100,Math.floor(maxInvestment/unit));
- if(maxUnits<1)throw Error('Investment ceiling cannot cover one account purchase and required activation reserve.');
- // Minimum 1 payout per account is modeled: the simulator stops after its
- // first payout, and the model's profit target is calibrated above.
+ if(maxUnits<1)throw Error('Investment ceiling cannot cover one account purchase and activation reserve.');
+ // Each distinct account produces at most one modeled first payout.
  const scaleValues=[.55,.8,1,1.2];
  const candidates=[];
  let checked=0;
@@ -71,40 +73,62 @@ async function optimize({plan,total,perPayout,maxInvestment,probability,inputs,o
   evaluationAllocationCap:inputs.evaluationAllocationCap||0,
   fundedAllocationCap:inputs.fundedAllocationCap||0});
  const pause=()=>new Promise(resolve=>requestAnimationFrame(resolve));
+ // Unlike payout probability, ROI is not monotone in investment. A binary
+ // budget search would skip valid ROI peaks. Sample a spread of budgets.
+ const countGrid=new Set([1,maxUnits,Math.min(maxUnits,count),Math.min(maxUnits,count*2)]);
+ for(let i=1;i<=10;i++)countGrid.add(Math.max(1,Math.round(i*maxUnits/10)));
+ const unitCounts=[...countGrid].filter(x=>x>0&&x<=maxUnits).sort((a,b)=>a-b);
+ const coarse=[];
  for(const scale of scaleValues){
   const p=planFor(plan,scale,perPayout);
   const v=E.validatePlan(p);
   if(v.errors.length)continue;
-  let low=1,high=maxUnits,firstPassing=null,prior=null;
-  while(low<=high){
-   const units=Math.floor((low+high)/2);
+  for(const units of unitCounts){
    const r=simulate(p,units,50,inputs.seed+7771);
    const score=assess(r,count,total);
    checked++;
-   if(score.hit>=probability){firstPassing={scale,units,plan:p,score};high=units-1}
-   else{if(!prior||score.hit>prior.score.hit)prior={scale,units,plan:p,score};low=units+1}
+   coarse.push({scale,units,plan:p,score});
    onProgress?.('Testing '+scale.toFixed(2)+'× risk · '+checked+' scenarios checked');
-   if(checked%3===0)await pause();
+   if(checked%4===0)await pause();
   }
-  const candidate=firstPassing||prior;
-  if(candidate){
-   const confirmed=simulate(p,candidate.units,150,inputs.seed+37013);
-   checked++;
-   candidates.push({...candidate,score:assess(confirmed,count,total),result:confirmed,initialBudget:candidate.units*unit});
-  }
-  await pause();
  }
- if(!candidates.length)throw Error('No valid risk candidates could be simulated.');
- candidates.sort((a,b)=>{
-  const ap=a.score.hit>=probability,bp=b.score.hit>=probability;
+ if(!coarse.length)throw Error('No valid risk candidates could be simulated.');
+ const reachesPayouts=x=>x.score.avgPaid+1e-8>=count&&x.score.avgReceipts+1e-8>=total;
+ const meetsAll=x=>reachesPayouts(x)&&x.score.roi+1e-8>=minRoi;
+ // Shortlist feasible options and closest misses. Independently validate
+ // the shortlist with fresh random outcomes to avoid ranking on training noise.
+ coarse.sort((a,b)=>{
+  const ap=meetsAll(a),bp=meetsAll(b);
   if(ap!==bp)return ap?-1:1;
+  const ac=reachesPayouts(a),bc=reachesPayouts(b);
+  if(ac!==bc)return ac?-1:1;
+  if(ap&&bp)return a.units-b.units||b.score.hit-a.score.hit;
+  if(ac&&bc)return b.score.roi-a.score.roi||a.units-b.units;
+  return Math.min(count,b.score.avgPaid)-Math.min(count,a.score.avgPaid)||
+   Math.min(total,b.score.avgReceipts)-Math.min(total,a.score.avgReceipts)||
+   b.score.hit-a.score.hit;
+ });
+ for(const candidate of coarse.slice(0,8)){
+  const confirmed=simulate(candidate.plan,candidate.units,150,inputs.seed+37013);
+  checked++;
+  candidates.push({...candidate,score:assess(confirmed,count,total),
+   result:confirmed,initialBudget:candidate.units*unit});
+  if(checked%3===0)await pause();
+ }
+ candidates.sort((a,b)=>{
+  const ap=meetsAll(a),bp=meetsAll(b);
+  if(ap!==bp)return ap?-1:1;
+  const ac=reachesPayouts(a),bc=reachesPayouts(b);
+  if(ac!==bc)return ac?-1:1;
   if(ap&&bp)return a.initialBudget-b.initialBudget||b.score.hit-a.score.hit;
-  return b.score.hit-a.score.hit||a.initialBudget-b.initialBudget;
+  if(ac&&bc)return b.score.roi-a.score.roi||a.initialBudget-b.initialBudget;
+  return b.score.avgPaid-a.score.avgPaid||
+   b.score.avgReceipts-a.score.avgReceipts||b.score.roi-a.score.roi;
  });
  return {requiredPayouts:count,profitPerAccount:profitNeeded(plan,perPayout),
-  targetCash:total,perPayout,maxInvestment,probability,checked,
-  feasible:candidates.some(x=>x.score.hit>=probability),
-  candidates,firm:plan.firm,size:plan.size};
+  targetCash:total,perPayout,maxInvestment,minRoi,checked,
+  feasible:candidates.some(meetsAll),payoutCountFeasible:candidates.some(reachesPayouts),
+  candidates:candidates.slice(0,5),firm:plan.firm,size:plan.size};
 }
 function render(out){
  const cards=out.candidates.map((candidate,index)=>{
@@ -116,6 +140,8 @@ function render(out){
   return '<div class="reverse-candidate">'+
    '<h4>'+(index===0?'Best tested scenario':'Alternative '+(index+1))+' · '+candidate.scale.toFixed(2)+'× saved risk</h4>'+
    '<div class="reverse-kpis"><div><small>Tested starting budget</small><strong>'+money(candidate.initialBudget)+'</strong></div>'+
+   '<div><small>ROI on incurred fees</small><strong>'+pct(s.roi)+'</strong></div>'+ 
+   '<div><small>ROI on starting budget</small><strong>'+pct(s.budgetRoi)+'</strong></div>'+ 
    '<div><small>Chance of payout goal</small><strong>'+pct(s.hit)+'</strong></div>'+
    '<div><small>Avg. first payouts</small><strong>'+s.avgPaid.toFixed(2)+'</strong></div>'+
    '<div><small>Avg. cash received</small><strong>'+money(s.avgReceipts)+'</strong></div>'+
@@ -127,11 +153,11 @@ function render(out){
    '<div class="tablewrap"><table class="journey-table"><thead><tr><th>Phase</th><th>R1</th><th>R2</th><th>R3</th><th>RR</th></tr></thead><tbody>'+risks+'</tbody></table></div></div>';
  }).join('');
  return '<p class="hint">Goal: '+money(out.targetCash)+' received across at least '+out.requiredPayouts+
-  ' separate first payouts of '+money(out.perPayout)+' each. The account must first reach approximately '+
+  ' separate first payouts of '+money(out.perPayout)+' each. Requested minimum ROI: '+pct(out.minRoi)+'. The account must first reach approximately '+
   money(out.profitPerAccount)+' funded trading profit (based on the modeled profit payout split, excluding any refunded challenge fee). Probability is the share of trials meeting BOTH payout count and cash received before the chosen trading-day horizon.</p>'+
-  (out.feasible?'<p class="good"><strong>At least one tested candidate met the selected probability threshold.</strong></p>':
-   '<p class="bad"><strong>No tested candidate met the selected probability threshold within this investment ceiling and horizon.</strong> Best tested alternatives are shown; do not treat them as a guaranteed solution.</p>')+
-  cards+'<p class="hint">Estimates use 150 validation Monte Carlo trials per shortlisted risk scale after 50-trial searches. Starting budget is cash made available for challenge and activation costs, NOT the total fees actually incurred; any refunded challenge fees are tracked in modeled cash receipts. Payout counts and earnings can differ between trials. Searches are approximate, account purchases are capped at 100 per type, and risk safety depends on modeled firm rules. Scenarios do not change your saved Firms risk settings.</p>';
+  (out.feasible?'<p class="good"><strong>At least one validated scenario met the expected payout-count, payout-cash and ROI targets.</strong></p>':
+   '<p class="bad"><strong>No validated scenario met all three targets within your investment ceiling and time horizon.</strong> Closest tested alternatives are shown. Payout-goal probability remains reported separately; an expected target is not a reliable guarantee.</p>')+
+  cards+'<p class="hint">Estimates use 150 independent validation trials for shortlisted scenarios after 50-trial searches across risk levels and investment amounts. ROI on incurred fees = expected net cash / expected fees actually incurred. ROI on starting budget = expected net cash / tested starting budget. Both may be negative. Starting budget is cash made available for challenge and activation costs, NOT the total fees actually incurred; any refunded challenge fees are tracked in modeled cash receipts. Payout counts and earnings can differ between trials. Searches are approximate, account purchases are capped at 100 per type, and risk safety depends on modeled firm rules. Scenarios do not change your saved Firms risk settings.</p>';
 }
 root.StudioPayoutOptimizer={needed,profitNeeded,planFor,assess,optimize,render};
 })(typeof window!=='undefined'?window:globalThis);
