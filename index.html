@@ -1039,7 +1039,7 @@ function scenarioAdvice(row,result){
 }
 function scenarioAdviceElement(row,result){
  const notes=scenarioAdvice(row,result),wrap=document.createElement('div');
- wrap.className='scenario-advisor';
+ wrap.className='scenario-advisor';wrap.id='scenario-'+row.id+'-advisor';
  const h=document.createElement('strong');h.textContent='Scenario Advisor · '+notes.length+' insight'+(notes.length===1?'':'s');wrap.append(h);
  for(const item of notes){
   const section=document.createElement('div');section.className='scenario-advisor-item scenario-advisor-'+item.level;
@@ -1095,6 +1095,7 @@ function updateScenarioMetrics(row){
   const cell=document.getElementById(id+'-'+key);if(cell)cell.textContent=text;
  }
  const mode=document.getElementById(id+'-source');if(mode){const insights=scenarioAdvice(row,result);mode.textContent=(row.linked?'Linked to Prop firms':'Custom assumptions')+' · '+(insights[0]?.level==='critical'?'⚠ '+insights[0].title:insights[0]?.title||'');mode.title=insights[0]?.why||'';}
+ const advisor=document.getElementById(id+'-advisor');if(advisor)advisor.replaceWith(scenarioAdviceElement(row,result));
  const det=document.getElementById(id+'-details-note');
  if(det)det.textContent='Spent '+money(result.cost)+' · Payout received per successful account '+money(result.paid)+' · Required payouts for this goal: '+(Number.isFinite(result.required)?result.required:'unreachable')+' · Combined success chance '+pct(result.pass)+'.';
 }
