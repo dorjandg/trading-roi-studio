@@ -245,7 +245,7 @@ function start(){
     if(record?.id)historyResult=' · saved to Section 8 (cloud sync attempted)';
    }catch(saveError){historyResult=' · history save failed: '+saveError.message}
    status.textContent='Finished · '+output.checked+' scenarios evaluated · '+output.requiredPayouts+
-    ' payouts required. '+(output.feasible?'Expected payout and ROI targets were met in validation.':'No validated scenario reached all targets.')+historyResult;
+    ' minimum payouts before fees. '+(output.feasible?'Expected net P&L, payout count and ROI filters were met.':'No validated scenario met all selected targets.')+historyResult;
   }catch(error){status.textContent='Reverse optimizer: '+error.message}
   finally{busy=false;button.disabled=false;}
  });
