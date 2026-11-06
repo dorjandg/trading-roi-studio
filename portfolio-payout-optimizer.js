@@ -621,6 +621,7 @@ function render(out,sortMode='model',currentPlan=null){
    '<div class="reverse-candidate-body">'+
    '<div class="reverse-option-actions"><button type="button" class="primary" data-reverse-analyze="'+pathIndex+'">Run Full Simulation · Sections 5–8</button>'+
    '<button type="button" data-reverse-more-models="'+pathIndex+'">Find More Risk Models</button>'+
+   '<button type="button" data-reverse-advisor="'+pathIndex+'">Ask Results Advisor</button>'+
    '<button type="button" data-reverse-ledger="'+pathIndex+'">View Daily Spending Ledger · Section 9</button>'+
    '<small>Use this option’s exact R1/R2/R3 policy to simulate detailed results and daily spending. Both reports keep Firms defaults unchanged.</small></div>'+
    '<p class="reverse-review-status" role="status" aria-live="polite"></p>'+
