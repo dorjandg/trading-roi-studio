@@ -65,6 +65,11 @@ Key calculations:
 
 Independent 3A assumptions are stored per selected account in the existing per-user payout optimizer preferences and do not modify Section 1 or saved Firms settings. The compact editor begins with inherited values and offers Reset to Section 1 / Firms. Risk limits and reserves are read-only.
 
+## Compact scenario cards (Nov 6 update)
+- Each Calculate Investment tested scenario is rendered as a nested `<details class="reverse-candidate">` **closed by default**. The summary always shows: average net P&L (USD), net ROI on starting investment, ROI on incurred fees, tested investment, mean first payouts, and probability of meeting the net goal (plus a target-status label).
+- Expanding a scenario reveals its additional KPIs, target checks, phase risk table, and separately collapsed trade-by-trade example and risk explanation.
+- Keep the header compact, responsive, and visible while collapsed. Do not make it a tall statistics card or remove essential KPIs. These are Monte Carlo averages, not guaranteed outcomes.
+
 ## Fastest-payout and target-based risk optimization (Nov 6 update)
 - Reverse payout optimizer now tries two risk sizing styles: saved-tier scaling and **target-sized** risk. Target sizing computes R1 from the phase profit target / R1 RR, bounded by modeled daily and overall loss headroom. Scale is capped at 1 for the first risk to avoid deliberate first-win overshoot.
 - After an R1 loss, `streak` risk policy selects R2 on a later trading day; its risk target is calculated to cover the first loss and complete the phase profit target on a win, but is capped by remaining overall/daily drawdown. This is a strategy hypothesis, not guaranteed loss recovery. R3 is separate.
