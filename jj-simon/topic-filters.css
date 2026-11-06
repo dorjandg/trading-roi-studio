@@ -1,0 +1,9 @@
+/* Concise topic controls inside individual Academy chapters. */
+.jj-topic-bar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px;margin:9px 0 11px;background:var(--panel);border:1px solid var(--stroke);border-radius:8px}
+.jj-topic-bar label{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:11px;font-weight:600;min-width:0}
+.jj-topic-bar select{min-width:170px;max-width:100%;font-size:12px;min-height:36px;background:var(--bg);color:var(--text);border:1px solid var(--stroke);border-radius:6px;padding:7px 8px}
+.jj-topic-count{font-size:11px;color:var(--muted);margin-left:auto}
+.jj-topic-bar button{font-size:11px;min-height:36px;padding:7px 10px;color:var(--accent);background:var(--bg);border:1px solid var(--stroke);border-radius:6px;cursor:pointer}
+.jj-topic-bar select:focus-visible,.jj-topic-bar button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.chapter>details.section[hidden]{display:none!important}
+@media(max-width:750px){.jj-topic-bar{padding:8px;gap:6px}.jj-topic-bar label{flex:1 1 100%;justify-content:space-between}.jj-topic-bar select{font-size:16px;min-height:41px;flex:1;min-width:0}.jj-topic-count{margin-left:0}.jj-topic-bar button{margin-left:auto;min-height:39px}}
