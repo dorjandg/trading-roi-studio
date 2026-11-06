@@ -408,6 +408,7 @@ function render(out,sortMode='model',currentPlan=null){
    const difference=!currentPlan?'No saved profile':(changed.length||changedOther?'Changed':'Same');
    return '<tr><td>'+escapeHtml(x.name||stage)+'</td>'+
     '<td>'+escapeHtml(policyLabels[mode]||mode)+'</td>'+
+    '<td>'+money(x.target)+'</td>'+ 
     '<td>'+Number(x.maxWinsPerDay||1)+'</td>'+
     '<td>'+Number(x.minDays||0)+'</td>'+
     '<td>'+money(x.r1)+' / '+money(x.r2)+' / '+money(x.r3)+'</td>'+
@@ -417,13 +418,27 @@ function render(out,sortMode='model',currentPlan=null){
   const sim=out.inputs||{};
   const checks=currentPlan?'<p class="hint">Compared with the current saved Firms account profile. “Changed” refers to phase risks, tier RR, policy or winning-day cap, not firm-required limits.</p>':
    '<p class="hint">No saved Firms profile was found for this account. Open the account in Firms and save a profile before transferring.</p>';
+  const compareMarkup=currentPlan?'<details class="reverse-review-panel"><summary><strong>Compare risk with current Firms defaults</strong> · before / proposed</summary>'+
+   '<div class="tablewrap"><table class="journey-table"><thead><tr><th>Phase</th><th>Parameter</th><th>Current Firms</th><th>Scenario</th></tr></thead><tbody>'+
+   p.stageList.flatMap(stage=>{
+    const a=currentPlan.riskProfiles?.[stage]||{},b=p.riskProfiles?.[stage]||{};
+    const rr=t=>Number(b.rrByTier?.[t]??b.rr),ar=t=>Number(a.rrByTier?.[t]??a.rr);
+    const rows=[...['r1','r2','r3'].map(t=>[t.toUpperCase()+' USD risk',money(a[t]),money(b[t])]),
+     ...['r1','r2','r3'].map(t=>[t.toUpperCase()+' RR',ar(t).toFixed(2)+'R',rr(t).toFixed(2)+'R']),
+     ['Risk sequence',a.policy?.mode||'saved',b.policy?.mode||'saved'],
+     ['Max winning trades/day',a.maxWinsPerDay??'—',b.maxWinsPerDay??'—'],
+     ['Safety reserve',money(currentPlan.riskReserve),money(p.riskReserve)]];
+    return rows.filter(([name,oldValue,newValue])=>String(oldValue)!==String(newValue)).map(([name,oldValue,newValue])=>
+     '<tr><td>'+escapeHtml(a.name||stage)+'</td><td>'+escapeHtml(name)+'</td><td>'+escapeHtml(oldValue)+'</td><td><b>'+escapeHtml(newValue)+'</b></td></tr>');
+   }).join('')+'</tbody></table></div><p class="hint">Only differences are shown. Account targets, fees and firm limits remain unchanged by transfer.</p></details>':'';
   const setupMarkup='<details class="reverse-review-panel"><summary><strong>Trading rules &amp; risks</strong> · phase-by-phase setup</summary>'+
-   '<div class="tablewrap"><table class="journey-table"><thead><tr><th>Phase</th><th>Risk sequence</th><th>Max wins/day</th><th>Min trading days</th><th>R1 / R2 / R3</th><th>RR per tier</th><th>vs Firms</th></tr></thead><tbody>'+limitInfo+'</tbody></table></div>'+checks+
+   '<div class="tablewrap"><table class="journey-table"><thead><tr><th>Phase</th><th>Risk sequence</th><th>Target</th><th>Max wins/day</th><th>Min trading days</th><th>R1 / R2 / R3</th><th>RR per tier</th><th>vs Firms</th></tr></thead><tbody>'+limitInfo+'</tbody></table></div>'+checks+
    '<p class="hint">Risk amounts are USD per trade; RR is the simulated reward/risk ratio. Actual account margin and trade execution are not verified.</p></details>'+
    '<details class="reverse-review-panel"><summary><strong>Account &amp; simulation assumptions</strong> · budget, frequency and payout rules</summary>'+
    '<div class="reverse-review-grid">'+
    [['Starting budget',money(candidate.initialBudget)],['Challenge fee',money(p.fee)],['Safety reserve',money(p.riskReserve)],['Daily / overall loss',money(p.dailyLoss)+' / '+money(p.overallLoss)],['Trading days',sim.days??'—'],['Signals per day',sim.tradesPerDay??'—'],['Assumed win rate',sim.winRate==null?'—':Number(sim.winRate).toFixed(1)+'%'],['Signal outcomes',sim.signalMode||'—'],['Buying mode',sim.purchaseMode||'—'],['Allocation',sim.capacityMode||'—'],['Payout per account',money(out.perPayout)],['Funded wait / processing',Number(p.payoutWaitCalendarDays||0)+' / '+Number(p.payoutProcessingCalendarDays||0)+' calendar days']].map(([name,value])=>'<div><small>'+escapeHtml(name)+'</small><strong>'+escapeHtml(value)+'</strong></div>').join('')+
    '</div><p class="hint">Search assumptions and investment budget are not Firms account defaults. Firm fees, drawdown limits and mandatory qualification requirements stay protected.</p></details>'+
+   compareMarkup+
    '<div class="reverse-review-actions"><button type="button" data-reverse-send-firms="'+pathIndex+'">Send this risk setup to Firms</button>'+
    '<span class="hint">Optional · confirmation required · previous Firms settings backed up. The saved account is not changed by simply opening this option.</span></div>'+ 
    '<p class="reverse-review-status" role="status" aria-live="polite"></p>';
