@@ -79,6 +79,13 @@ Independent 3A assumptions are stored per selected account in the existing per-u
 - Suggestions may involve safer tier sizing, checking signal capacity and account availability, reviewing payouts/costs, or testing a longer horizon. Never shorten mandatory firm delays or claim a causal improvement from a single result.
 - This is distinct from the existing Section 3A Calculate Investment diagnostics. It does not change either calculation engine.
 
+## Sortable validated payout scenarios (Nov 6 update)
+- Reverse Engineer Payouts has a **Sort scenarios by** selector above the collapsed scenario cards, defaulting to **Optimizer ranking**. User's selection is saved with per-user payout optimizer preferences.
+- Available display sorting: highest average net P&L, investment ROI, fee ROI, goal probability, average first payouts; lowest starting investment; earliest conditional first payout day. Null first-payout days sort last. Ties preserve optimizer order.
+- This is a display-only sort of the **five validated candidates already retained by the optimizer**, NOT of all coarse combinations explored (e.g. 131). It does not rerun or modify simulations, Firms risks, scenario results, original result identities, history records, or the saved search selection.
+- Original optimizer ranking prioritizes feasibility, payout count and net target attainment, then payout timing and ROI; it does **not** always maximize net P&L. Label the first displayed option **Top by [selected sort]** rather than imply it maximizes every KPI.
+- Account trade-by-trade select events must use original candidate indices after sorting; preserve this mapping when changing render behavior.
+
 ## Compact scenario cards (Nov 6 update)
 - Each Calculate Investment tested scenario is rendered as a nested `<details class="reverse-candidate">` **closed by default**. The summary always shows: average net P&L (USD), net ROI on starting investment, ROI on incurred fees, tested investment, mean first payouts, and probability of meeting the net goal (plus a target-status label).
 - Expanding a scenario reveals its additional KPIs, target checks, phase risk table, and separately collapsed trade-by-trade example and risk explanation.
