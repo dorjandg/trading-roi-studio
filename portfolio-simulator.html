@@ -169,6 +169,23 @@ details p{margin:6px 0}
 .risk-phase-test{padding:7px;margin-top:7px;border-radius:7px}
 .risk-phase-test .fields{gap:6px}
 .risk-phase-test input{min-height:33px;padding:5px 7px;font-size:13px}
+/* Compact Test phase risks editor: six inputs per desktop row. */
+.risk-tester{padding:7px 9px;margin-top:6px;border-radius:7px}
+.risk-tester h4{font-size:13px;line-height:1.2;margin:0 0 2px}
+.risk-tester>p.hint{font-size:10.5px;line-height:1.3;margin:2px 0 5px}
+.risk-tester>.fields{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;margin:0 0 3px}
+.risk-tester .field{min-width:0}
+.risk-tester .field label{font-size:10px;line-height:1.12;margin-bottom:2px}
+.risk-tester .field input,.risk-tester .field select{width:100%;min-height:29px;height:29px;padding:3px 7px;border-radius:6px;font-size:12px}
+.risk-phase-test{padding:4px 7px 6px;margin:5px 0 0;border-radius:6px}
+.risk-phase-test legend{font-size:11px;line-height:1.2;padding:0 4px}
+.risk-phase-test .fields{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px 7px}
+.risk-phase-test .hint{font-size:10px;line-height:1.2;margin:2px 0}
+.risk-tester .actions{display:flex;align-items:center;gap:5px;margin:6px 0 2px;flex-wrap:wrap}
+.risk-tester .actions button{min-height:29px;padding:4px 8px;font-size:11px;border-radius:6px}
+@media(max-width:1100px){.risk-phase-test .fields,.risk-tester>.fields{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:680px){.risk-phase-test .fields,.risk-tester>.fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .risk-tester .field input,.risk-tester .field select{height:35px;min-height:35px;font-size:16px}}
 .history-zone{margin:7px 0}
 .history-toolbar{gap:5px 8px;margin:7px 0}
 .history-toolbar select,.history-toolbar button{min-height:31px;padding:4px 6px}
