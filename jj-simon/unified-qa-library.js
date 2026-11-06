@@ -70,4 +70,5 @@ function jjQAMount(){
 }
 const jjQAPreviousRender=render;
 render=function(){jjQAPreviousRender();if(active===jjQAHubSlug)jjQAMount()};
+if(new URLSearchParams(location.search).get('topic')===jjQAHubSlug)active=jjQAHubSlug;
 jjRebuildMobileSelector();renderNav();render();
