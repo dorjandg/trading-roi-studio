@@ -202,13 +202,34 @@ function start(){
   #payoutOptResults .reverse-candidate-name{flex-basis:100%}
   #payoutOptResults .reverse-candidate-advice{padding-left:0}
  }
+
+ /* Injected 3A panel: same compact mobile header as every other section. */
+ @media(max-width:650px){
+  #payoutOptimizerPanel>summary{
+   display:grid;grid-template-columns:12px minmax(0,1fr);
+   align-items:center;column-gap:8px;row-gap:5px;padding:10px 11px
+  }
+  #payoutOptimizerPanel>summary::before{grid-column:1;grid-row:1}
+  #payoutOptimizerPanel>summary>strong{
+   grid-column:2;grid-row:1;min-width:0;font-size:13px;
+   line-height:1.25;font-weight:700;overflow-wrap:break-word
+  }
+  #payoutOptimizerPanel>summary .sim-charts-hint{display:none}
+  #payoutOptimizerPanel>summary .section-run-btn{
+   grid-column:2;grid-row:2;display:flex;justify-self:stretch;
+   width:100%;height:31px;min-height:31px;max-height:31px;
+   flex:none;margin:1px 0 0;padding:4px 8px;font-size:12px;
+   border-radius:6px
+  }
+  #payoutOptimizerPanel>.numbered-content{padding:7px 6px}
+ }
  `;document.head.appendChild(style);
  const key='4ds:v1:'+bridge.user+':payout-optimizer:v1';
  let prior={};try{prior=JSON.parse(localStorage.getItem(key)||'{}')}catch(_){}
  for(const [name,id] of [['per','payoutOptPer'],['max','payoutOptMax'],['roi','payoutOptRoi'],['netRoi','payoutOptNetRoi'],['netPnl','payoutOptNetPnl'],['minRR','payoutOptMinRR'],['maxRR','payoutOptMaxRR']])
   if(prior[name]!=null)$(id).value=String(prior[name]);
  if(Number($('payoutOptNetPnl').value)<=0)$('payoutOptNetPnl').value='5000';
- panel.open=prior.open===true;
+ panel.open=!window.matchMedia('(max-width:650px)').matches&&prior.open===true;
 
  $('payoutOptSignals').innerHTML=Array.from({length:20},(_,i)=>'<option>'+String(i+1)+'</option>').join('');
  const assumptionIds={days:'payoutOptDays',tradesPerDay:'payoutOptSignals',winRate:'payoutOptWinRate',
