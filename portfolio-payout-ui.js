@@ -1062,6 +1062,40 @@ function start(){
    $('payoutResultsAdvisor').scrollIntoView({behavior:'smooth',block:'start'});
    return;
   }
+  const ladder=event.target.closest?.('[data-reverse-recovery-ladder]');
+  if(ladder){
+   const index=Number(ladder.dataset.reverseRecoveryLadder),candidate=lastOptimizerOutput?.candidates?.[index];
+   const status=ladder.closest('.reverse-candidate-body')?.querySelector('.reverse-review-status');
+   if(!candidate||!lastOptimizerInputs||candidate.plan.id+':'+candidate.plan.size!==lastOptimizerAccountKey){
+    if(status)status.textContent='Scenario changed. Calculate Investment again before testing.';return;
+   }
+   if(!root.StudioModelDiscovery?.compareRecoveryLadder){if(status)status.textContent='Recovery + Funded Ladder module unavailable.';return;}
+   if(ladder.disabled)return;
+   const starter=Number(ladder.closest('.reverse-candidate-body')?.querySelector('[data-reverse-starter]')?.value);
+   if(!Number.isFinite(starter)||starter<10||starter>1000){
+    if(status)status.textContent='Funded starter must be between $10 and $1,000.';return;
+   }
+   const oldLabel=ladder.textContent;ladder.disabled=true;ladder.textContent='Testing recovery + ladder…';
+   if(status)status.textContent='Comparing evaluation risk recovery and profit-only funded ladders, with the selected original model unchanged…';
+   try{
+    await new Promise(resolve=>requestAnimationFrame(resolve));
+    const effort=$('payoutMoreEffort').value;
+    const trials=effort==='deep'?250:effort==='quick'?80:150;
+    const opts={...lastOptimizerInputs,budget:candidate.initialBudget,
+     netGoal:lastOptimizerOutput.minNetPnl,requiredPayouts:lastOptimizerOutput.requiredPayouts,
+     fundedStarterRisk:starter,testTrials:trials};
+    const result=root.StudioModelDiscovery.compareRecoveryLadder(
+     root.StudioModelDiscovery.clonePlan(candidate.plan),opts);
+    lastModelSearch={candidate,result,origin:'Investment Option '+(index+1)+' · Evaluation Recovery / Funded Ladder'};
+    moreSortKey='goal';moreDescending=true;moreSourceFilter='all';
+    renderUnifiedTable();
+    $('payoutOptModelComparison').open=true;
+    if(status)status.textContent='Five funded starter variants tested with 3R evaluation recovery. A third consecutive evaluation loss can breach; funded profits can return to zero. Compare goal chance, average payout day, net and blocked accounts in the table. These are simulated scenarios; your saved strategy is unchanged.';
+    $('payoutOptModelComparison').scrollIntoView({behavior:'smooth',block:'start'});
+   }catch(error){if(status)status.textContent='Recovery + Funded Ladder test failed: '+(error?.message||'Unknown error');}
+   finally{ladder.disabled=false;ladder.textContent=oldLabel;}
+   return;
+  }
   const exact=event.target.closest?.('[data-reverse-target-exact]');
   if(exact){
    const index=Number(exact.dataset.reverseTargetExact),candidate=lastOptimizerOutput?.candidates?.[index];
