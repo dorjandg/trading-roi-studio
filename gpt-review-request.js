@@ -82,6 +82,19 @@ async function send(){
   '. Try again; no GPT review has been started.');}
  finally{busy=false;button.disabled=false;}
 }
+const live=document.getElementById('gptReviewLive');
+const livePrompt='Run my existing enabled Trading Studio GPT Review scheduled task now, once, without changing its daily schedule. Inspect the newest Google Drive Trading Studio Cloud Data simulation history, Section 11 GPT review request queue, Results Advisor questions and existing GitHub research reports. Investigate anomalies, test relevant issues, publish evidence-based non-personal findings to Section 11, preserve private data and do not alter my risk strategies without approval. Report what was verified, published and still needs review.';
+function openLive(){
+ // This is a ChatGPT handoff, not an API call, embedded model or instant execution.
+ // Optional local notes are intentionally not placed in the external URL.
+ const target='https://chatgpt.com/?prompt='+encodeURIComponent(livePrompt);
+ const link=document.createElement('a');
+ link.href=target;link.target='_blank';link.rel='noopener noreferrer';
+ document.body.appendChild(link);link.click();link.remove();
+ const guidance=document.getElementById('gptRequestGuidance');
+ if(guidance)guidance.textContent='Live review: ChatGPT requested in a new tab. Press Send there to run the existing task once. If the draft is not prefilled, ask ChatGPT to run Trading Studio GPT Review now. The optional local note was not shared in the link. Queued requests remain available here.';
+}
+live?.addEventListener('click',openLive);
 button.addEventListener('click',send);
 setStatus(configured?'Ready to send to the selected workspace cloud profile ('+user+').':
  'Cloud endpoint unavailable; manual requests cannot be saved.');
