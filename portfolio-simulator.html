@@ -521,7 +521,16 @@ details p{margin:6px 0}
 @media(max-width:650px){#journeyContents .journey-data-panel{margin:5px 0}#journeyContents .journey-data-panel>summary{padding:8px 9px}#journeyContents .journey-data-body{padding:5px}}
 
 </style>
-<link rel="stylesheet" href="studio-nav.css?v=20261105-compact-v2"></head><body><div class="shell">
+<link rel="stylesheet" href="studio-nav.css?v=20261105-compact-v2"><style>
+#gptResearchPanel .gpt-research-item{border:1px solid var(--line);border-radius:8px;margin:6px 0;background:var(--panel2);overflow:hidden}
+#gptResearchPanel .gpt-research-item>summary{cursor:pointer;padding:9px 12px;font-size:12px;line-height:1.5}
+#gptResearchPanel .gpt-research-item>summary strong{font-weight:700}
+#gptResearchPanel .gpt-research-content{border-top:1px solid var(--line);padding:9px 12px;font-size:12px;line-height:1.55}
+#gptResearchPanel .gpt-research-content p{margin:5px 0}
+#gptResearchPanel .gpt-research-content ul{padding-left:20px;margin:5px 0}
+#gptResearchPanel #gptResearchRefresh{font-size:12px;padding:7px 10px}
+</style>
+</head><body><div class="shell">
 <header class="studio-site-header"><a class="studio-site-brand" href="index.html?view=dashboard"><span class="studio-site-mark">F<small>↗</small></span><span class="studio-site-title"><strong>4Ds Trading Studio</strong><small>STRATEGY · PAYOUTS · CAPITAL ALLOCATION</small></span></a><div class="studio-site-tools"><label class="studio-site-user" for="studioUserSelect">User <select id="studioUserSelect" aria-label="Active Studio user"><option value="doen">Doen</option><option value="dori">Dori</option><option value="dona">Dona</option><option value="dion">Dion</option></select></label><button type="button" id="theme" class="studio-site-theme" aria-label="Switch theme" title="Switch theme">◐</button></div></header>
 <nav class="studio-primary-nav" aria-label="Studio pages"><a href="index.html?view=dashboard">Overview</a><a href="index.html?view=firms">Firms</a><a href="labs.html">Labs</a><a href="portfolio-simulator.html" class="active" aria-current="page">Portfolio Sim</a><a href="index.html?view=presets">Presets</a><a href="index.html?view=settings">Help</a><a href="index.html?view=profile">Profile</a></nav>
 <nav class="studio-labs-nav" aria-label="Lab tabs"><a href="monitor.html">Monitor</a><a href="index.html?view=investments">Budget</a><a class="active" aria-current="page" href="portfolio-simulator.html">Portfolio Sim</a><a href="investment-lab.html">Invest Lab</a><a href="comparison-lab.html">Compare Lab</a><a href="trade-lab.html">Trade Lab</a></nav>
@@ -614,6 +623,13 @@ details p{margin:6px 0}
   <p data-history-status class="hint" role="status">Loading history…</p>
   <div class="tablewrap"><table class="journey-table"><thead><tr><th>Date / time</th><th>Account types</th><th>Simulation inputs</th><th>Expected net</th><th>Expected paid</th><th>Download</th></tr></thead><tbody data-history-body></tbody></table></div>
    <div class="simulation-history-pages" data-history-pages aria-label="Simulation history pagination"></div>
+ </div>
+</details>
+<details class="sim-charts-panel numbered-panel" id="gptResearchPanel"><summary><strong>11 · GPT Research &amp; Suggestions</strong><span class="sim-charts-summary" id="gptResearchSummary"> · Verified findings · tests · website improvements</span><span class="sim-charts-hint">Show / hide</span></summary>
+ <div class="numbered-content">
+  <p class="hint">Scheduled GPT reviews can publish verified, non-personal research and suggestions here. Reports distinguish measured simulation results, hypotheses, verified rule references, and completed code fixes. This section does not automatically change your strategy settings. Private simulation records stay in your cloud workspace, not in this public report feed.</p>
+  <div class="actions"><button type="button" id="gptResearchRefresh">Refresh GPT reports</button><small id="gptResearchStatus" class="hint" role="status">Loading published reports…</small></div>
+  <div id="gptResearchReports"></div>
  </div>
 </details>
 <details class="sim-charts-panel numbered-panel" id="assumptionsPanel"><summary><strong>Model assumptions &amp; limits</strong></summary><div class="numbered-content"><details><summary>Read before interpreting an ROI estimate</summary><p class="hint">Challenge purchases follow the selected buying mode: upfront on day 0, or dynamic day-by-day purchases and replacements when trading slots and budget permit. Dynamic replacements respond to failed, risk-exhausted, or first-paid accounts; minimum-day and funded eligibility assumptions still apply. Taxes, automatic refund processing delays, and repeated funded payouts are not simulated. Topstep's subscription renewals, variant-specific activation rules, contract limits and full payout eligibility are not enforced. Its modeled initial payout is up to 50% of realized funded profit capped at $5,000; check the exact purchased path. FTMO/Hola pay a modeled split of funded profit after a planning target and waiting period, not a guaranteed withdrawal. Topstep Standard Trading Combine → Express Funded is modeled as exactly two stages; later optional Live Funded promotion is outside this first-payout model. Topstep's MLL is an end-of-day trailing loss floor, updated upward after each session's closing balance and permanently locked at $0 once reached. The floor is monitored against modeled realized trade outcomes; unrealized intratrade breaches and contract-size restrictions are not verified. Other firms' static initial floors are modeled where known. The funded target is a threshold, not a cap on the final trade: a completed trade can finish above it. FTMO/Hola funded accounts stop receiving further strategy trades at that threshold, then wait for the first-funded-trade payout eligibility clock and any modeled processing days. Topstep can require further qualifying winning days. Evaluation minimum-size qualification orders are synthetic placeholders (0.01 lot for CFD programs, 1 micro for Topstep) and have no modeled P/L, trading costs or actual lot eligibility: real minimum-size trades can gain or lose money. Calendar waits are approximated using trading days. Fees, spread/slippage, evaluation activation delays and news restrictions may differ. If multiple accounts share a signal, outcomes may be correlated and diversification overstated. The model's risk-exhausted status does not mean an official failed-account breach.</p></details>
@@ -2051,5 +2067,6 @@ window.StudioPayoutBridge={
 init();
 })();
 </script>
+<script src="gpt-research-reports.js?v=20261106-gpt-review-v1"></script>
 <script src="portfolio-payout-ui.js?v=20261106-lower-risk-comparison-v2"></script>
 <script src="studio-header.js"></script></body></html>
