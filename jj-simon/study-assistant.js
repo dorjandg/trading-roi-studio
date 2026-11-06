@@ -218,7 +218,7 @@ function jjQueueRender(){
  const heading=jjHelperNode('div','jj-queue-heading');
  heading.append(jjHelperNode('strong','','Unanswered-question register'),jjHelperNode('span','',open.length+' open'));
  container.append(heading);
- const helper=jjHelperNode('p','jj-helper-hint','Questions are saved in this browser. With your opt-in, unanswered questions can be sent to a private research queue when configured, where a GPT reviewer can process them. Local-only entries do not notify ChatGPT.');
+ const helper=jjHelperNode('p','jj-helper-hint','Questions are saved in this browser. With your opt-in, unanswered questions can be sent to a private research queue when configured, where the existing JJ research automation can process them. Local-only entries do not notify ChatGPT.');
  container.append(helper);
  if(!open.length){container.append(jjHelperNode('p','jj-helper-hint','No unanswered questions recorded yet.'));return}
  const list=jjHelperNode('div','jj-queue-list');
@@ -227,7 +227,7 @@ function jjQueueRender(){
   item.append(jjHelperNode('strong','',row.question));
   const sub=jjHelperNode('small','',row.reasons?.join(' · ')||row.reason);
   item.append(sub);
-  const meta=jjHelperNode('small','',row.synced?'Google Drive verified':'Saved locally · Google sync not verified');
+  const meta=jjHelperNode('small','',row.synced?'Google Drive verified':jjCloudEndpoint()?'Saved locally · Google sync not verified':'Saved locally · Google sync not configured');
   item.append(meta);
   const actions=jjHelperNode('div','jj-queue-actions');
   const retry=jjHelperNode('button','','Search again');retry.type='button';retry.onclick=()=>{
@@ -318,7 +318,7 @@ function jjHelperMount(){
  const article=document.getElementById(jjHelperSlug);if(!article||article.querySelector('#jj-helper-app'))return;
  const root=jjHelperNode('section','jj-helper-app');root.id='jj-helper-app';
  root.append(jjHelperNode('h3','','Ask about JJ’s trading course'));
- root.append(jjHelperNode('p','jj-helper-hint','Searches use Academy material in this browser. Unanswered questions remain local unless you opt into private research submissions. Do not enter passwords or sensitive personal information. A GPT review backend is not yet active.'));
+ root.append(jjHelperNode('p','jj-helper-hint','Searches use Academy material in this browser. Unanswered questions remain local unless you opt into private research submissions. Do not enter passwords or sensitive personal information. An existing hourly research automation checks the private sheet after questions are successfully synced.'));
  const shareLabel=jjHelperNode('label','jj-helper-share');
  const share=jjHelperNode('input');share.type='checkbox';share.checked=jjQuestionShareEnabled();
  share.addEventListener('change',()=>{try{localStorage.setItem(jjQuestionShareKey,share.checked?'yes':'no')}catch(_){};jjQueueRender();if(share.checked)jjQueueSyncPending().catch(()=>{})});
@@ -343,6 +343,7 @@ function jjHelperMount(){
  const toc=article.querySelector(':scope > .chapter-toc');if(toc)toc.before(root);else article.append(root);
  jjHelperAnswer();
  jjQueueRender();
+ if(jjQuestionShareEnabled()&&jjCloudEndpoint())jjQueueSyncPending().catch(()=>{});
 }
 const jjHelperBeforeRender=render;
 render=function(){jjHelperBeforeRender();if(active===jjHelperSlug)jjHelperMount()};
