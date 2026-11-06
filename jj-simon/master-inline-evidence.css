@@ -1,0 +1,27 @@
+/* Evidence panels inside the Master Strategy encyclopedia. */
+.jj-inline-evidence{border:1px solid var(--stroke);border-radius:8px;margin:13px 0;background:var(--panel);overflow:hidden;min-width:0}
+.jj-inline-evidence>summary{list-style:none;cursor:pointer;font-weight:700;font-size:12px;padding:11px 12px;color:var(--accent);border-bottom:1px solid transparent}
+.jj-inline-evidence>summary::-webkit-details-marker{display:none}
+.jj-inline-evidence>summary:before{content:'+';margin-right:9px;font-weight:800}
+.jj-inline-evidence[open]>summary:before{content:'−'}
+.jj-inline-evidence[open]>summary{border-bottom-color:var(--stroke)}
+.jj-inline-evidence>summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.jj-inline-disclaimer{font-size:11px;line-height:1.5;color:var(--muted);margin:10px 12px}
+.jj-inline-record{border-top:1px solid var(--stroke);margin:0 10px;padding:12px 2px}
+.jj-inline-record:first-of-type{border-top:0}
+.jj-inline-head{display:flex;justify-content:space-between;align-items:flex-start;gap:9px;font-size:11px}
+.jj-inline-head strong{overflow-wrap:anywhere}
+.jj-inline-head span{color:var(--muted);white-space:nowrap;font-size:10px}
+.jj-inline-quote{font-size:12px;line-height:1.55;border-left:3px solid var(--accent);padding:9px 10px;margin:9px 0;background:var(--bg);font-style:italic;overflow-wrap:anywhere}
+.jj-inline-record p{font-size:11px;line-height:1.55;margin:4px 0 8px;overflow-wrap:anywhere}
+.jj-inline-record .jj-inline-caveat{color:var(--muted)}
+.jj-inline-sub{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.jj-inline-links{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.jj-inline-links a,.jj-inline-links button{display:inline-block;color:var(--accent);font-size:11px;text-decoration:none;background:var(--bg);border:1px solid var(--stroke);border-radius:6px;padding:8px 10px;cursor:pointer;text-align:left}
+@media(max-width:750px){
+ .jj-inline-evidence{margin:10px 0}
+ .jj-inline-evidence>summary{font-size:11px;padding:10px}
+ .jj-inline-head{flex-wrap:wrap;gap:3px}
+ .jj-inline-quote{font-size:12px}
+ .jj-inline-links a,.jj-inline-links button{min-height:38px}
+}
