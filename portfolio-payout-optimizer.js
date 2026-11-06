@@ -259,7 +259,7 @@ async function optimize({plan,perPayout,maxInvestment,minRoi=2,minNetRoi=0,minNe
     addCandidate(candidates.find(x=>x.r3Route===route));
    }
    candidates.forEach(x=>{if(shown.length<5)addCandidate(x)});
-   return shown.slice(0,5);
+   return shown.slice(0,5).sort((a,b)=>candidates.indexOf(a)-candidates.indexOf(b));
   })(),firm:plan.firm,size:plan.size,
   inputs:{days:inputs.days,tradesPerDay:inputs.tradesPerDay,winRate:inputs.winRate,
    purchaseMode:inputs.purchaseMode,capacityMode:inputs.capacityMode}};
