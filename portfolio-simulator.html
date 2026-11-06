@@ -522,6 +522,10 @@ details p{margin:6px 0}
 
 </style>
 <link rel="stylesheet" href="studio-nav.css?v=20261105-compact-v2"><style>
+#gptResearchPanel .gpt-review-request{border:1px solid var(--line);border-radius:8px;padding:10px;margin:8px 0;background:var(--panel2)}
+#gptResearchPanel .gpt-review-request label{display:block;font-size:12px}
+#gptResearchPanel .gpt-review-request textarea{box-sizing:border-box;display:block;width:100%;min-height:56px;max-height:115px;margin:7px 0;resize:vertical;font:inherit;font-size:12px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:8px}
+#gptResearchPanel .gpt-review-request .actions{display:flex;flex-wrap:wrap;gap:7px}
 #gptResearchPanel .gpt-research-item{border:1px solid var(--line);border-radius:8px;margin:6px 0;background:var(--panel2);overflow:hidden}
 #gptResearchPanel .gpt-research-item>summary{cursor:pointer;padding:9px 12px;font-size:12px;line-height:1.5}
 #gptResearchPanel .gpt-research-item>summary strong{font-weight:700}
@@ -630,9 +634,14 @@ details p{margin:6px 0}
   <p class="hint">Scheduled GPT reviews can publish verified, non-personal research and suggestions here. Reports distinguish measured simulation results, hypotheses, verified rule references, and completed code fixes. This section does not automatically change your strategy settings. Private simulation records stay in your cloud workspace, not in this public report feed.</p>
   <details class="gpt-research-item" id="gptResearchReadiness"><summary><strong>Simulation evidence readiness</strong><span class="sim-charts-summary"> · Local saved history · Show / hide</span></summary>
    <div class="gpt-research-content"><div id="gptEvidenceReadiness">Checking saved history…</div><p class="hint">Calculate Investment stores summary statistics; Run Full Simulation saves sampled account traces. A new full run may be needed for detailed loss-limit diagnostics. This check reads only the selected workspace in this browser; it does not upload data.</p></div></details>
-  <div class="actions"><button type="button" class="primary" id="gptReviewRequestNow" title="Open a prepared GPT review request in ChatGPT; send it there to request a run">Request GPT Review Now</button><button type="button" id="gptResearchRefresh">Refresh GPT reports &amp; evidence</button></div>
+  <div class="gpt-review-request">
+   <label for="gptReviewNote"><strong>Send GPT review request</strong><span class="hint"> · Optional instruction for the next scheduled review</span></label>
+   <textarea id="gptReviewNote" rows="2" maxlength="600" placeholder="Check the latest simulations, account risk blocks and unanswered questions…"></textarea>
+   <div class="actions"><button type="button" class="primary" id="gptReviewRequestNow">Send GPT Review Request</button><button type="button" id="gptResearchRefresh">Refresh GPT reports &amp; evidence</button></div>
+   <p class="hint" id="gptReviewRequestStatus" role="status">No request sent in this session.</p>
+   <p class="hint" id="gptRequestGuidance">Saves a review request in your selected workspace cloud profile. The next scheduled GPT review can read it; this does not immediately execute ChatGPT.</p>
+  </div>
   <p class="hint" id="gptReviewMeta">Last published report: checking… · Pending questions: checking…</p>
-  <p class="hint" id="gptRequestGuidance">Request GPT Review opens ChatGPT with a prepared request. Submit the message in ChatGPT to trigger the existing task. This button does not directly run the automation.</p>
   <small id="gptResearchStatus" class="hint" role="status">Loading published reports…</small>
   <div id="gptResearchReports"></div>
  </div>
