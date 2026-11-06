@@ -67,6 +67,17 @@ function planFor(base,scale,perPayout,rrVariant=null,riskMode='saved'){
  p.fundedTarget=payoutTarget;p.riskProfiles.funded.target=payoutTarget;
  return p;
 }
+function earliestPayoutTimeline(p){
+ const phases=(p.stageList||[]).filter(stage=>stage!=='funded').map(stage=>({
+  stage,days:Math.max(1,Math.ceil(Number(p.riskProfiles?.[stage]?.minDays)||1))
+ }));
+ const fundedStart=1+phases.reduce((sum,x)=>sum+x.days,0);
+ const waiting=p.id==='topstep'?Math.max(4,Math.ceil(p.fundedWaitDays||0)-1):
+  Math.max(0,Math.ceil(p.fundedWaitDays||0)-1);
+ const processing=Math.ceil(p.payoutProcessingTradingDays||0);
+ return {phases,fundedStart,waiting,processing,
+  earliestDay:fundedStart+waiting+processing};
+}
 function assess(r,count,total){
  const trials=r.chartTrials||[];
  const successes=trials.filter(t=>val(t.paid)>=count&&val(t.receipts)+1e-8>=total).length;
@@ -74,7 +85,8 @@ function assess(r,count,total){
   avgPaid:val(r.avg.paid),avgReceipts:val(r.avg.receipts),
   avgNet:val(r.avg.net),avgSpent:val(r.avg.spent),p10:val(r.p10),
   avgPurchased:val(r.avg.bought),avgFunded:val(r.avg.funded),
-  avgBreached:val(r.avg.failed),avgRiskBlocked:val(r.avg.exhausted),roi:val(r.roi),
+  avgBreached:val(r.avg.failed),avgRiskBlocked:val(r.avg.exhausted),
+  avgFundedTargets:val(r.avg.targetHit),avgRequests:val(r.avg.payoutRequested),roi:val(r.roi),
   budgetRoi:r.budget>0?val(r.avg.net)/r.budget:0,
   avgPayout:r.avg.paid?val(r.avg.receipts)/r.avg.paid:0,
   chanceAnyPayout:val(r.chancePayout),
