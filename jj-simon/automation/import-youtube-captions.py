@@ -116,6 +116,26 @@ def parse_vtt(path):
     flush()
     return out
 
+def classify_youtube_failure(stderr, returncode):
+    """Report actionable categories without printing external command output or URLs."""
+    message = (stderr or "").lower()
+    checks = (
+        ("youtube_auth_required", ("sign in to confirm", "sign in to prove", "login required", "cookies are required", "use --cookies")),
+        ("youtube_rate_limited", ("http error 429", "too many requests")),
+        ("youtube_forbidden", ("http error 403", "forbidden")),
+        ("youtube_unavailable", ("video unavailable", "private video", "this video is unavailable")),
+        ("youtube_captcha", ("captcha", "not a bot", "confirm you're not a bot")),
+        ("youtube_js_runtime", ("javascript runtime", "js runtime", "challenge solving failed", "n challenge")),
+        ("youtube_unsupported_client", ("requested format is not available", "no supported youtube js runtime")),
+        ("youtube_network_error", ("timed out", "network is unreachable", "connection reset", "certificate verify failed")),
+        ("youtube_no_captions", ("there are no subtitles", "no subtitles", "did not match any subtitles")),
+    )
+    for name, phrases in checks:
+        if any(p in message for p in phrases):
+            return name
+    return "youtube_command_failed" if returncode else "youtube_no_caption_file"
+
+
 def extract_captions(video, tmpdir):
     vid = video["id"]
     template = str(Path(tmpdir) / "%(id)s.%(language)s.%(ext)s")
@@ -134,8 +154,8 @@ def extract_captions(video, tmpdir):
         return {"status": "failed", "reason": "youtube_timeout"}
     files = sorted(Path(tmpdir).glob(vid + ".*.vtt"), key=lambda x: ("en." not in x.name, len(x.name)))
     if not files:
-        reason = "captions_unavailable" if completed.returncode == 0 else "youtube_fetch_failed"
-        return {"status": "needs_review", "reason": reason}
+        reason = classify_youtube_failure(completed.stderr, completed.returncode)
+        return {"status": "needs_review", "reason": reason, "exit_code": completed.returncode}
     cues = parse_vtt(files[0])
     if not cues:
         return {"status": "needs_review", "reason": "empty_caption_file"}
@@ -201,7 +221,7 @@ def main():
                 result = extract_captions(video, tmp)
             if result["status"] != "caption_imported":
                 failed += 1
-                print(f"{vid}: {result['status']} ({result['reason']})")
+                print(f"{vid}: {result['status']} ({result['reason']}; yt_dlp_exit={result.get('exit_code', 'n/a')})")
                 continue
             payload = {
                 "schema": 1, "source_type": "youtube_caption", "source": "JJ Simon public video",
