@@ -664,8 +664,16 @@ function start(){
  const advisorSelectedUser=localStorage.getItem('4ds:active-user:v1');
  const advisorUser=['doen','dori','dona','dion'].includes(advisorSelectedUser)?advisorSelectedUser:'dori';
  const advisorLogKey='4ds:v1:'+advisorUser+':results-advisor-review:v1';
+ function needsAdvisorReview(question,topic){
+  const q=String(question||'').toLowerCase();
+  return topic==='unknown'||/why.{0,70}(funded|risk|risking|drawdown)|(?:funded|risk|risking).{0,55}(too much|too high|excessive|unsafe)/.test(q);
+ }
+ function normalizeAdvisorEntries(items){
+  return items.map(x=>x&&typeof x==='object'&&needsAdvisorReview(x.question,x.topic)&&x.status==='answered'?
+   {...x,status:'needs-review',reviewNotes:x.reviewNotes||'Qualitative risk diagnosis requires GPT investigation; generic risk settings are not a sufficient explanation.'}:x);
+ }
  function readAdvisorLog(){
-  try{const x=JSON.parse(localStorage.getItem(advisorLogKey)||'[]');return Array.isArray(x)?x:[];}catch(_){return [];}
+  try{const x=JSON.parse(localStorage.getItem(advisorLogKey)||'[]');return Array.isArray(x)?normalizeAdvisorEntries(x):[];}catch(_){return [];}
  }
  const advisorEndpoint=String(root.FOUR_DS_CLOUD_ENDPOINT||'').trim();
  const advisorCloudValid=/^https:\/\/script\.google\.com\/macros\/s\/[^/?]+\/exec(?:\?.*)?$/.test(advisorEndpoint);
@@ -703,7 +711,7 @@ function start(){
        !old.entries||typeof old.entries!=='object'))throw new Error('Unexpected cloud profile format');
     let cloudRecords=[];
     try{const x=JSON.parse(old?.entries?.[advisorLogKey]||'[]');if(Array.isArray(x))cloudRecords=x;}catch(_){}
-    const combined=mergeAdvisorLogs(readAdvisorLog(),cloudRecords);
+    const combined=normalizeAdvisorEntries(mergeAdvisorLogs(readAdvisorLog(),cloudRecords));
     const entries={...(old?.entries||{}),[advisorLogKey]:JSON.stringify(combined)};
     const nonce=Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
     const snapshot={schema:'4ds-profile-export-v1',user:advisorUser,nonce,entries};
@@ -752,7 +760,7 @@ function start(){
    timestamp:new Date().toISOString(),user:advisorUser,model:record.name,modelKey:record.key,
    account:{firm:record.plan?.firm||'',size:record.plan?.size||0},
    question:String(question).slice(0,240),topic,
-   status:topic==='unknown'?'needs-review':'answered',
+   status:needsAdvisorReview(question,topic)?'needs-review':'answered',
    answer:{title:reply.title,lines:reply.lines,tests:reply.tests},
    metrics:{net:avg.net,spent:avg.spent,bought:avg.bought,failed:avg.failed,
     exhausted:avg.exhausted,funded:avg.funded,paid:avg.paid,goalChance:score.hit,
@@ -843,6 +851,14 @@ function start(){
     add(item.label+': '+Number(item.count).toFixed(2)+' mean accounts · '+(i?'prior '+advisorPct(prior)+' · ':'')+'total '+advisorPct(total)+'.');
    });
    test('Check the stage with the weakest completed conversion. These percentages reflect the selected horizon, not lifetime eventual pass rates.');
+  }else if(topic==='rr'){
+   title='Planned risk-to-reward (RR)';
+   for(const stage of plan.stageList||[]){
+    const p=plan.riskProfiles?.[stage];if(!p)continue;
+    add((p.name||stage)+': planned reward-to-risk '+Number(p.rr||0).toFixed(2)+'R per trade (for example, 3R means planned profit is three times planned loss).');
+   }
+   add('These are the configured target RRs, not the actual realized average RR or a guarantee of hitting take profit.');
+   test('To inspect realized trade outcomes, use the Trade Risks & Detailed Accounts report and compare average win/loss sizes.');
   }else if(topic==='risk'){
    title='Risk sizing and recovery';
    for(const stage of plan.stageList||[]){
@@ -892,7 +908,8 @@ function start(){
  function advisorTopicForQuestion(question){
   const q=String(question||'').toLowerCase();
   if(/compar|better model|best model|which model|other model/.test(q))return 'compare';
-  if(/r1|r2|r3|risk|drawdown|loss|rr|stop/.test(q))return 'risk';
+  if(/\brr\b|risk.reward|reward.risk/.test(q))return 'rr';
+  if(/r1|r2|r3|risk|drawdown|loss|stop/.test(q))return 'risk';
   if(/funnel|phase|conversion|funded|pass rate|challenge/.test(q))return 'funnel';
   if(/payout|waiting|delay|day|timing|when paid/.test(q))return 'payout';
   if(/roi|cost|fee|invest|budget|spend|net profit/.test(q))return 'cost';
