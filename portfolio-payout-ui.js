@@ -302,6 +302,11 @@ function start(){
  #payoutOptResults .reverse-compact-metric{padding:2px 5px}
  #payoutOptResults .reverse-sort-bar small{display:none}
 }
+
+ .reverse-option-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:1px 0 10px;padding-bottom:9px;border-bottom:1px solid var(--line)}
+ .reverse-option-actions button{min-height:32px;padding:6px 11px;font-size:11px;white-space:normal;text-align:center}
+ .reverse-option-actions small{font-size:10px;color:var(--muted);flex:1 1 240px}
+ @media(max-width:650px){.reverse-option-actions button{flex:1 1 100%}}
  `;document.head.appendChild(style);
  const key='4ds:v1:'+bridge.user+':payout-optimizer:v1';
  let prior={};try{prior=JSON.parse(localStorage.getItem(key)||'{}')}catch(_){}
@@ -379,7 +384,7 @@ function start(){
  $('payoutOptReset').addEventListener('click',()=>{loadAssumptions(true);storeAssumptions();save()});
  $('payoutOptAccount').addEventListener('change',()=>{loadAssumptions();loadedAssumptionsAccount=acctValue();save()});
  let currentSortMode=['model','net','budgetRoi','feeRoi','chance','payouts','investment','firstDay'].includes(prior.sortMode)?prior.sortMode:'model';
- let lastOptimizerOutput=null,lastOptimizerAccountKey=''; 
+ let lastOptimizerOutput=null,lastOptimizerAccountKey='',lastOptimizerInputs=null; 
  function renderLastOptimizer(){
   if(!lastOptimizerOutput)return;
   const row=bridge.getRows().find(r=>r.id+':'+r.size===lastOptimizerAccountKey);
@@ -387,6 +392,19 @@ function start(){
   $('payoutOptResults').innerHTML=solver.render(lastOptimizerOutput,currentSortMode,saved);
  }
  $('payoutOptResults').addEventListener('click',event=>{
+  const analyze=event.target.closest?.('[data-reverse-analyze]');
+  if(analyze){
+   const index=Number(analyze.dataset.reverseAnalyze),candidate=lastOptimizerOutput?.candidates?.[index];
+   const status=analyze.closest('.reverse-candidate-body')?.querySelector('.reverse-review-status');
+   if(!candidate||!lastOptimizerInputs||!lastOptimizerOutput||candidate.plan.id+':'+candidate.plan.size!==lastOptimizerAccountKey){
+    if(status)status.textContent='Scenario no longer available. Recalculate Investment before analyzing.';
+    return;
+   }
+   const name=(index+1)+' · '+(candidate.riskMode==='adaptive'?candidate.r3Route:candidate.riskMode+' / '+candidate.r3Route);
+   const ok=bridge.analyzeOptimizerCandidate?.(candidate,lastOptimizerOutput,lastOptimizerInputs,'Investment Option '+name);
+   if(!ok&&status)status.textContent='Could not open the detailed analysis for this scenario.';
+   return;
+  }
   const button=event.target.closest?.('[data-reverse-send-firms]');
   if(!button)return;
   const n=Number(button.dataset.reverseSendFirms);
@@ -467,13 +485,14 @@ function start(){
    status.textContent='Enter valid payout amounts, ROI targets, and nonnegative net P&L in USD.';return;
   }
   busy=true;button.disabled=true;status.textContent='Running reverse payout scenarios…';
-  lastOptimizerOutput=null;
+  lastOptimizerOutput=null;lastOptimizerInputs=null;
   $('payoutOptResults').innerHTML='';save();
   try{
    const output=await solver.optimize({plan:selectedPlan,perPayout,
     maxInvestment,minRoi:minRoiPct/100,minNetRoi:minNetRoiPct/100,minNetPnl,minRR,maxRR,inputs,onProgress:text=>status.textContent=text});
    lastOptimizerOutput=output;
    lastOptimizerAccountKey=selected;
+   lastOptimizerInputs={...inputs};
    renderLastOptimizer();
    let historyResult=' · history not available';
    try{
