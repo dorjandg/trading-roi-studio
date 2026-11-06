@@ -152,6 +152,7 @@ html[data-theme="light"] .recovery-direct{background:#f0faf6;border-color:#8bcdb
 .recovery-pages-controls label{display:flex;gap:5px;align-items:center;white-space:nowrap;font-size:12px;color:var(--muted);margin:0 3px}
 .recovery-pages-controls select{color:var(--text);background:var(--panel);border:1px solid var(--border);border-radius:7px;min-height:34px;padding:4px 6px}
 @media(max-width:600px){.recovery-pages{justify-content:center}.recovery-pages-count{width:100%;text-align:center}.recovery-options-toolbar>*{flex:1;min-width:130px}.recovery-options-toolbar select{width:100%;min-width:0}}
+.scenario-advisor{margin-top:10px;padding:10px;border:1px solid var(--border,#526071);border-radius:9px;display:grid;gap:8px}.scenario-advisor-item{padding:7px 9px;border-left:3px solid #7790a5;background:rgba(127,127,127,.06);border-radius:4px}.scenario-advisor-critical{border-left-color:#cc6161}.scenario-advisor-warning{border-left-color:#d2a64b}.scenario-advisor-good{border-left-color:#4aaf83}.scenario-advisor-item p{margin:3px 0;font-size:12px;line-height:1.4}.scenario-advisor small{opacity:.75;font-size:11px}
 </style>
 <script>window.FOUR_DS_CLOUD_ENDPOINT = "https://script.google.com/macros/s/AKfycbyZW792ZLBPxusQwthCJr0bVdZwCjXyeNaklq4Dk-BuSQ8P9gdg2zdTiWFKEmYuy5sY9Q/exec";</script>
 <script src="cloud-bootstrap.js?v=4ds-auto-first-20261104-a"></script>
@@ -990,6 +991,66 @@ function scenarioResult(row){
  const chance=cost>0?scenarioGoalChance(n,pass,Math.max(1,Math.round(src.mirror)),required):NaN;
  return {cost,pass,paid,expectedPayouts,net,roi,required,chance};
 }
+function scenarioAdvice(row,result){
+ const src=row.linked===true?{...row,price:state.price,extraCost:state.extraCost,p1:state.p1,p2:state.p2,pf:state.pf,pc:state.pc,target:state.profitTarget,split:state.split,payoutPct:state.payoutPct,payoutFixed:state.payoutFixed,refund:state.refund,mirror:state.mirror}:row;
+ const n=Math.max(1,Math.round(positive(row.accounts,1,1000)));
+ const fee=positive(src.price)+positive(src.extraCost);
+ const neededForBreakEven=result.paid>0?result.cost/result.paid:Infinity;
+ const breakEvenRate=result.paid>0?fee/result.paid:Infinity;
+ const maxRoi=fee>0?result.paid/fee-1:NaN;
+ const goalRoi=positive(row.goal,0,100);
+ const recommendations=[];
+ function add(level,title,why,test){recommendations.push({level,title,why,test})}
+ if(fee<=0||result.paid<=0){
+  add('critical','Missing or zero-value economics','The challenge cost or net payout is zero. ROI and probability cannot be interpreted reliably.','Verify the selected account fee, funded profit target, split and payout costs in Prop Firms.');
+  return recommendations;
+ }
+ if(maxRoi+1e-9<goalRoi){
+  add('critical','Goal is mathematically unreachable','Even if every purchased account pays out, the highest possible net ROI is '+pct(maxRoi)+', below your '+pct(goalRoi)+' goal.','Reduce the goal or compare legitimate account products with different fee-to-net-payout economics. Buying more identical accounts cannot fix this.');
+ }
+ if(breakEvenRate>1){
+  add('critical','Break-even is impossible under these assumptions','A successful payout yields '+money(result.paid)+' versus '+money(fee)+' purchased per account.','Review payout target and fixed costs; do not raise pass rates to compensate for impossible payout economics.');
+ }else if(result.pass<breakEvenRate){
+  add('warning','Expected success rate is below break-even','Current modeled end-to-end success is '+pct(result.pass)+'; break-even requires '+pct(breakEvenRate)+' of purchased accounts to produce a paid payout.','Investigate phase pass rates and funded payout completion; sensitivity-test each assumption separately instead of increasing all rates.');
+ }
+ const stageDefs=[
+  ...(phaseModel().phase1?[['Phase 1',prob(src.p1)]]:[]),
+  ...(phaseModel().phase2?[['Phase 2',prob(src.p2)]]:[]),
+  ['Funded target',prob(src.pf)],['Payout collection',prob(src.pc)]
+ ];
+ const weakest=stageDefs.slice().sort((a,b)=>a[1]-b[1])[0];
+ if(weakest&&weakest[1]<0.75){
+  add('warning',weakest[0]+' is the weakest success assumption',weakest[0]+' uses '+pct(weakest[1])+'. Since stage probabilities multiply, a low value can sharply reduce paid accounts.','Test +5 percentage points for '+weakest[0]+' only, then validate whether historical evidence justifies the improvement.');
+ }
+ if(result.required>n&&maxRoi>=goalRoi-1e-9){
+  add('warning','This goal requires more payouts than accounts','The goal needs '+result.required+' successful payouts but only '+n+' accounts are purchased.','Check payout accounting and goal definition before adjusting trading assumptions.');
+ }
+ if(result.chance<0.2&&result.required<=n){
+  add('info','Low chance of hitting the selected net-profit goal','The modeled goal probability is '+pct(result.chance)+' and requires '+result.required+' paid accounts out of '+n+'.','Compare 2×, 3× and 5× goals with identical assumptions; use the probability as a model estimate, not a guaranteed outcome.');
+ }
+ if(Math.round(src.mirror)>1){
+  add('info','Mirrored accounts share trade outcomes','Your mirror setting is '+Math.round(src.mirror)+' accounts per signal. Correlated accounts reduce diversification; adding identical mirrors does not create independent opportunities.','Compare mirror 1 against your current setting while keeping trade frequency and strategy unchanged.');
+ }
+ if(!recommendations.length){
+  add('good','No obvious mathematical bottleneck','Expected ROI is '+pct(result.roi)+' with an estimated '+result.expectedPayouts.toFixed(2)+' payouts. This does not establish that the assumed stage rates are realistic.','Stress-test lower pass rates, consecutive losses and payout delays before scaling purchases.');
+ }
+ if(row.linked)recommendations.forEach(x=>{if(!x.test.includes('Prop Firms'))x.test+=' Linked firm terms stay unchanged; test adjustable assumptions in a custom copy.'});
+ return recommendations.slice(0,3);
+}
+function scenarioAdviceElement(row,result){
+ const notes=scenarioAdvice(row,result),wrap=document.createElement('div');
+ wrap.className='scenario-advisor';
+ const h=document.createElement('strong');h.textContent='Scenario Advisor · '+notes.length+' insight'+(notes.length===1?'':'s');wrap.append(h);
+ for(const item of notes){
+  const section=document.createElement('div');section.className='scenario-advisor-item scenario-advisor-'+item.level;
+  const head=document.createElement('strong');head.textContent=(item.level==='critical'?'⚠ ':item.level==='good'?'✓ ':'• ')+item.title;
+  const why=document.createElement('p');why.textContent=item.why;
+  const test=document.createElement('p');test.textContent='Suggested test: '+item.test;
+  section.append(head,why,test);wrap.append(section);
+ }
+ const footer=document.createElement('small');footer.textContent='Sensitivity suggestions only · No automatic edits · Firm rules remain sourced from Prop Firms.';wrap.append(footer);
+ return wrap;
+}
 function scenarioControl(row,key,step,styleClass){
  const input=document.createElement('input');input.type=key==='name'?'text':'number';
  input.className='scenario-input '+(styleClass||'');
@@ -1033,7 +1094,7 @@ function updateScenarioMetrics(row){
  for(const [key,text] of Object.entries(output)){
   const cell=document.getElementById(id+'-'+key);if(cell)cell.textContent=text;
  }
- const mode=document.getElementById(id+'-source');if(mode)mode.textContent=row.linked?'Linked to Prop firms':'Custom assumptions';
+ const mode=document.getElementById(id+'-source');if(mode){const insights=scenarioAdvice(row,result);mode.textContent=(row.linked?'Linked to Prop firms':'Custom assumptions')+' · '+(insights[0]?.level==='critical'?'⚠ '+insights[0].title:insights[0]?.title||'');mode.title=insights[0]?.why||'';}
  const det=document.getElementById(id+'-details-note');
  if(det)det.textContent='Spent '+money(result.cost)+' · Payout received per successful account '+money(result.paid)+' · Required payouts for this goal: '+(Number.isFinite(result.required)?result.required:'unreachable')+' · Combined success chance '+pct(result.pass)+'.';
 }
@@ -1087,6 +1148,7 @@ function renderScenarioTable(){
    const note=document.createElement('p');note.className='scenario-inline-note';note.id='scenario-'+row.id+'-details-note';
    td.append(note);
    }
+   td.append(scenarioAdviceElement(row,scenarioResult(row)));
    detailRow.append(td);tbody.append(detailRow);
   }
   updateScenarioMetrics(row);
