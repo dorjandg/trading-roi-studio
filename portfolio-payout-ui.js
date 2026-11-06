@@ -56,7 +56,19 @@ function start(){
   '</div><p class="hint">Uses the chosen option’s own safety reserve, firm limits and risk policy. New models have the same investment budget.</p></details>'+
   '<details id="payoutOptModelComparison" class="payout-model-collapse">'+
   '<summary><strong>Model comparison</strong><span id="payoutOptModelSummary"> · Results appear after Calculate Investment</span><span class="payout-model-collapse-toggle">Show / hide</span></summary>'+
-  '<div id="payoutOptMoreModels" class="payout-model-collapse-body"></div></details></div>';
+  '<div id="payoutOptMoreModels" class="payout-model-collapse-body"></div></details>'+
+  '<details id="payoutResultsAdvisor" class="payout-advisor" hidden>'+
+  '<summary><strong>Results Advisor</strong><span id="payoutAdvisorSummary"> · Explain your simulation results · Free, rule-based</span></summary>'+
+  '<div class="payout-advisor-body"><div class="payout-advisor-controls">'+
+  '<label>Model<select id="payoutAdvisorModel"></select></label>'+
+  '<label>Question<input id="payoutAdvisorQuestion" type="text" maxlength="240" placeholder="Why is my payout chance low?"></label>'+
+  '<button type="button" id="payoutAdvisorAsk">Explain</button></div>'+
+  '<div class="payout-advisor-topics" role="group" aria-label="Common questions">'+
+  [['overview','Overview'],['bottleneck','Bottlenecks'],['funnel','Account funnel'],['risk','R1 / R2 / R3'],['payout','Payout timing'],['cost','Costs & ROI'],['compare','Compare models']].map(([id,name])=>
+   '<button type="button" data-advisor-topic="'+id+'">'+name+'</button>').join('')+
+  '</div><div id="payoutAdvisorAnswer" class="payout-advisor-answer" aria-live="polite"></div>'+
+  '<p class="hint">Based only on the selected simulated results. No AI API, subscription or automatic changes. Suggestions are tests, not proof of future trading performance.</p>'+
+  '</div></details></div>';
  document.getElementById('results').before(panel);
  // Section 4: one tooltip for every results-table header, including tables
  // that are replaced when sorting, changing a model or selecting an account.
@@ -616,7 +628,157 @@ function start(){
   math();save();panel.open=true;
   panel.scrollIntoView({behavior:'smooth',block:'start'});
  }); 
- function renderUnifiedTable(){
+
+ let advisorTopic='overview';
+ function advisorRecords(){
+  if(!lastOptimizerOutput)return [];
+  const base=lastOptimizerOutput.candidates.map((candidate,i)=>({
+   key:'original:'+i,name:'Investment Option '+(i+1)+' · '+(candidate.r3Route||candidate.riskMode),
+   plan:candidate.plan,result:candidate.result,score:candidate.score,budget:candidate.initialBudget
+  }));
+  const extra=lastModelSearch?.result?.ideas?.map((idea,i)=>({
+   key:'extra:'+i,name:idea.title,plan:idea.plan,result:idea.holdout,
+   score:solver.assess(idea.holdout,lastOptimizerOutput.requiredPayouts,
+    lastOptimizerOutput.minNetPnl,lastOptimizerOutput.perPayout),
+   budget:lastModelSearch.candidate.initialBudget
+  }))||[];
+  return [...base,...extra];
+ }
+ function advisorMoney(n){
+  return Number.isFinite(Number(n))?String.fromCharCode(36)+Math.round(Number(n)).toLocaleString('en-US'):'—';
+ }
+ function advisorPct(n){
+  return Number.isFinite(Number(n))?(100*Number(n)).toFixed(1)+'%':'—';
+ }
+ function advisorAnswer(topic,record,all){
+  const s=record.score||{},r=record.result||{},avg=r.avg||{},plan=record.plan||{};
+  const input=lastOptimizerOutput||{},settings=lastOptimizerInputs||{};
+  const bought=Number(avg.bought)||0,paid=Number(avg.paid)||0;
+  const funded=Number(avg.funded)||0,net=Number(avg.net)||0,spent=Number(avg.spent)||0;
+  const stages=root.StudioPortfolioEngine?.stageFunnel?.(r)||[];
+  const visible=stages.filter(x=>!/Funded activated|Express Funded activated/.test(x.label));
+  const eligible=visible.slice(1).filter(x=>x.previousRate!=null&&x.previousRate>=0);
+  const weakest=eligible.length?eligible.reduce((a,b)=>a.previousRate<=b.previousRate?a:b):null;
+  const blocked=Number(avg.exhausted)||0,breached=Number(avg.failed)||0;
+  const lines=[],tests=[];
+  const add=(sentence)=>lines.push(sentence);
+  const test=(sentence)=>tests.push(sentence);
+  let title='';
+  if(topic==='overview'){
+   title='Summary of '+record.name;
+   add('Expected net P&L '+advisorMoney(net)+' with '+advisorMoney(spent)+' mean incurred fees and '+advisorPct(s.hit)+' chance of completing both payout-count and net-profit targets in the modeled horizon.');
+   add('On average: '+bought.toFixed(2)+' purchased challenges, '+funded.toFixed(2)+' funded accounts, and '+paid.toFixed(2)+' accounts with a first payout.');
+   add('Reported win rate '+advisorPct(r.tradeKpis?.wr)+'; modeled fee ROI '+advisorPct(r.roi)+'. These describe simulated results, not real-world win-rate evidence.');
+   if(paid<Number(input.requiredPayouts||0))test('Inspect stage conversion and payout delays before increasing the number of purchased accounts.');
+   else test('Stress-test lower win rates and payout delays before relying on these averages.');
+  }else if(topic==='bottleneck'){
+   title='Main observed bottlenecks';
+   if(!bought)add('No challenges were purchased in the modeled trials. Without purchased accounts, funded payouts are impossible.');
+   else{
+    if(weakest)add('Lowest adjacent milestone conversion: '+weakest.label+' · '+advisorPct(weakest.previousRate)+' from the prior milestone within '+settings.days+' trading days.');
+    if(blocked>=Math.max(.5,bought*.1))add(blocked.toFixed(2)+' accounts on average are risk-blocked versus '+breached.toFixed(2)+' breached. Risk-blocked does not mean a firm-rule breach.');
+    if(funded>paid&&paid<funded*.6)add('Only '+paid.toFixed(2)+' of '+funded.toFixed(2)+' average funded accounts reach their first payout by the horizon; some are still progressing or awaiting eligibility.');
+    if(net<Number(input.minNetPnl||0))add('Average net profit is '+advisorMoney(Number(input.minNetPnl)-net)+' below the requested net target. A positive average alone does not establish goal probability.');
+   }
+   if(lines.length===0)add('No single dominant bottleneck meets the advisor thresholds; inspect downside P10, model variance and payout completion before choosing a model.');
+   test('Compare a longer realistic horizon and verify that risk size, trade opportunity count and account capacity are consistent with your trading plan.');
+  }else if(topic==='funnel'){
+   title='Where accounts progress or stop';
+   if(!visible.length)add('No phase-funnel data was returned for this model.');
+   visible.forEach((item,i)=>{
+    const prior=i&&visible[i-1].count>0?item.count/visible[i-1].count:null;
+    const total=bought>0?item.count/bought:null;
+    add(item.label+': '+Number(item.count).toFixed(2)+' mean accounts · '+(i?'prior '+advisorPct(prior)+' · ':'')+'total '+advisorPct(total)+'.');
+   });
+   test('Check the stage with the weakest completed conversion. These percentages reflect the selected horizon, not lifetime eventual pass rates.');
+  }else if(topic==='risk'){
+   title='Risk sizing and recovery';
+   for(const stage of plan.stageList||[]){
+    const p=plan.riskProfiles?.[stage];
+    if(!p)continue;
+    const mode=p.policy?.mode||'saved';
+    const dynamic=['target-now','repair-r2','buffered-target'].includes(mode);
+    const risks=dynamic&&root.StudioPortfolioEngine?.previewLossPath?
+     root.StudioPortfolioEngine.previewLossPath(plan,stage,3).map(t=>t.allowed?advisorMoney(t.risk)+' ('+t.slot.toUpperCase()+')':'blocked'):
+     ['r1','r2','r3'].map(t=>advisorMoney(p[t]));
+    add((p.name||stage)+': '+mode+' · '+(dynamic?'first trade / after losses ':'R1 / R2 / R3 ')+risks.join(' / ')+
+     ' · planned RR '+Number(p.rr||0).toFixed(2)+'R.');
+   }
+   add('Simulation: '+blocked.toFixed(2)+' risk-blocked and '+breached.toFixed(2)+' breached accounts on average.');
+   test('Compare smaller risk caps or recovery policies in Find More Risk Models. Adaptive trade amounts change with account P&L and remaining headroom.');
+  }else if(topic==='payout'){
+   title='Payout path and timing';
+   add('Average accounts: funded '+funded.toFixed(2)+', funded profit target reached '+Number(avg.targetHit||0).toFixed(2)+', payout requested '+Number(avg.payoutRequested||0).toFixed(2)+', first payout received '+paid.toFixed(2)+'.');
+   add('Average first payout day (only trials with a paid account): '+(s.firstPayoutDay==null?'not reached':'day '+Number(s.firstPayoutDay).toFixed(1))+
+    '. Selected horizon: '+(settings.days||'—')+' trading days.');
+   add('Chance of at least one payout '+advisorPct(r.chancePayout)+'; chance of BOTH payout count and net cash target '+advisorPct(s.hit)+'.');
+   test('Test a longer trading horizon while preserving mandatory stage minimum days, payout waits, and processing delays.');
+  }else if(topic==='cost'){
+   title='Spending and investment efficiency';
+   add('Average payouts received '+advisorMoney(avg.receipts)+' minus incurred costs '+advisorMoney(spent)+' = expected net '+advisorMoney(net)+'.');
+   add('Starting investment '+advisorMoney(record.budget)+'; fee ROI '+advisorPct(r.roi)+' and return on starting investment '+advisorPct(record.budget>0?net/record.budget:null)+'.');
+   add('Average challenges bought '+bought.toFixed(2)+'. Reserved starting budget and incurred fees are different quantities.');
+   test('Use Section 9 Daily Spending Ledger for purchase and payout timing; compare expected net dollars alongside ROI.');
+  }else if(topic==='compare'){
+   title='Comparison with available models';
+   const ranked=all.slice().sort((a,b)=>(b.result?.avg?.net||0)-(a.result?.avg?.net||0));
+   if(ranked.length<2)add('Only one model is available. Run Find More Risk Models for alternatives before comparing.');
+   else{
+    const best=ranked[0],difference=(best.result.avg.net||0)-net;
+    add('Highest average net in the currently available models: '+best.name+' at '+advisorMoney(best.result.avg.net)+'; selected model '+advisorMoney(net)+'; difference '+advisorMoney(difference)+'.');
+    add('The highest-net model uses '+advisorMoney(best.budget)+' starting budget versus '+advisorMoney(record.budget)+' here. Different budgets and validation trial batches can make direct comparisons misleading.');
+    add('Selected goal chance '+advisorPct(s.hit)+'; highest-net model goal chance '+advisorPct(best.score?.hit)+'. These are modeled sensitivities, not proven improvements.');
+   }
+   test('Compare identical budgets and trial assumptions before interpreting differences. Re-test promising models in the full simulation.');
+  }else{
+   title='Question outside supported rules';
+   add('This free advisor answers questions about net results, payout chances and timing, phase conversion, risks, costs, and comparing existing models. It cannot answer unrestricted questions or predict live market performance.');
+   test('Try a question containing payout, funded, risk, R1, costs, ROI, models, or why.');
+  }
+  return {title,lines,tests};
+ }
+ function advisorTopicForQuestion(question){
+  const q=String(question||'').toLowerCase();
+  if(/compar|better model|best model|which model|other model/.test(q))return 'compare';
+  if(/r1|r2|r3|risk|drawdown|loss|rr|stop/.test(q))return 'risk';
+  if(/funnel|phase|conversion|funded|pass rate|challenge/.test(q))return 'funnel';
+  if(/payout|waiting|delay|day|timing|when paid/.test(q))return 'payout';
+  if(/roi|cost|fee|invest|budget|spend|net profit/.test(q))return 'cost';
+  if(/why|problem|wrong|bottleneck|fail|improv|suggest/.test(q))return 'bottleneck';
+  if(/overview|summary|result|performance/.test(q))return 'overview';
+  return 'unknown';
+ }
+ function refreshAdvisor(options={}){
+  const box=$('payoutResultsAdvisor'),select=$('payoutAdvisorModel');
+  const records=advisorRecords();
+  box.hidden=!records.length;
+  if(!records.length){$('payoutAdvisorAnswer').textContent='';return;}
+  const old=select.value;
+  select.innerHTML=records.map(r=>'<option value="'+escape(r.key)+'">'+escape(r.name)+'</option>').join('');
+  select.value=records.some(r=>r.key===old)?old:records[0].key;
+  $('payoutAdvisorSummary').textContent=' · '+records.length+' models · Free, rule-based';
+  if(options.answer!==false)askAdvisor(advisorTopic);
+ }
+ function askAdvisor(topic){
+  if(!lastOptimizerOutput)return;
+  advisorTopic=topic;
+  const records=advisorRecords(),record=records.find(r=>r.key===$('payoutAdvisorModel').value)||records[0];
+  if(!record)return;
+  const reply=advisorAnswer(topic,record,records),answer=$('payoutAdvisorAnswer');
+  answer.textContent='';
+  const heading=document.createElement('strong');
+  heading.textContent=reply.title;answer.appendChild(heading);
+  for(const line of reply.lines){
+   const p=document.createElement('p');p.textContent=line;answer.appendChild(p);
+  }
+  for(const suggestion of reply.tests){
+   const p=document.createElement('p'),label=document.createElement('b');
+   label.textContent='Test: ';p.appendChild(label);p.appendChild(document.createTextNode(suggestion));answer.appendChild(p);
+  }
+  for(const button of boxTopics())button.setAttribute('aria-pressed',String(button.dataset.advisorTopic===topic));
+ }
+ function boxTopics(){return Array.from($('payoutResultsAdvisor').querySelectorAll('[data-advisor-topic]'));}
+  function renderUnifiedTable(){
   const box=$('payoutOptMoreModels'),comparison=$('payoutOptModelComparison');
   const original=lastOptimizerOutput?.candidates?.length||0;
   const extra=lastModelSearch?.result?.ideas?.length||0;
