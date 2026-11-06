@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "description": "Public-video research review ledger. Raw captions remain in the private Google Sheets caption store. This ledger never stores copied transcript text.",
+  "reviewed": [
+    {
+      "video_id": "UVKVSWKFlvo",
+      "source": "https://www.youtube.com/watch?v=UVKVSWKFlvo",
+      "review_date": "2026-11-07",
+      "caption_source": "Supadata native-caption import in private owner-controlled Google Sheet",
+      "caption_entries": 330,
+      "status": "caption_text_reviewed_chart_unverified",
+      "published_module": "youtube-transcript-research.js",
+      "published_section": "Video 08 — Native-caption audit: trigger types, precise risk tiers and exceptions"
+    }
+  ]
+}
