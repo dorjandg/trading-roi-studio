@@ -625,6 +625,7 @@ function render(out,sortMode='model',currentPlan=null){
    '<button type="button" data-reverse-target-exact="'+pathIndex+'" title="Search dynamic risk that targets only remaining profit in each phase, subject to firm risk caps">Find Target-Exact Models</button>'+
    '<label class="reverse-ladder-control">Funded starter $ <input data-reverse-starter type="number" min="10" max="1000" step="10" value="150" aria-label="Funded starter risk USD"></label>'+
    '<button type="button" data-reverse-recovery-ladder="'+pathIndex+'" title="Compare evaluation recovery/third loss breach plus funded profit-only risk using the selected starter">Test Recovery + Funded Ladder</button>'+
+   '<button type="button" data-reverse-funded-450="'+pathIndex+'" title="Test funded $450 first target: risk 150, then 200, 250 and 200 after consecutive losses, at 3R">Test Funded $450 Recovery</button>'+
    '<button type="button" data-reverse-advisor="'+pathIndex+'">Ask Results Advisor</button>'+
    '<button type="button" data-reverse-ledger="'+pathIndex+'">View Daily Spending Ledger · Section 9</button>'+
    '<small>Use this option’s exact R1/R2/R3 policy to simulate detailed results and daily spending. Both reports keep Firms defaults unchanged.</small></div>'+
