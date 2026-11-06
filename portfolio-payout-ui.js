@@ -68,7 +68,24 @@ function start(){
  .payout-assumptions-reset{font-size:10px;padding:4px 7px;min-height:25px}
  @media(max-width:900px){.payout-assumptions-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
  @media(max-width:600px){.payout-assumptions-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.payout-assumptions-grid input,.payout-assumptions-grid select{font-size:16px;height:35px;min-height:35px}}
- .reverse-candidate{border:1px solid var(--line);border-radius:7px;padding:6px 7px;margin:5px 0}
+ .reverse-candidate{border:1px solid var(--line);border-radius:7px;padding:0;margin:5px 0;overflow:hidden}
+ .reverse-candidate>summary{list-style:none;cursor:pointer}
+ .reverse-candidate>summary::-webkit-details-marker{display:none}
+ .reverse-candidate-summary{display:flex;align-items:center;gap:7px;padding:5px 7px;min-width:0;flex-wrap:wrap}
+ .reverse-candidate-summary::before{content:'▸';font-size:11px;color:var(--muted);flex:0 0 auto}
+ .reverse-candidate[open]>.reverse-candidate-summary::before{content:'▾'}
+ .reverse-candidate-name{font-size:11px;font-weight:700;line-height:1.2;white-space:nowrap;min-width:0}
+ .reverse-candidate-status{font-weight:600;color:var(--muted);font-size:10px;margin-left:5px}
+ .reverse-status-met{color:#087e63}
+ .reverse-summary-kpis{display:flex;flex:1 1 auto;min-width:0;justify-content:flex-end;gap:3px;flex-wrap:wrap}
+ .reverse-compact-metric{display:flex;gap:4px;align-items:center;white-space:nowrap;padding:3px 6px;border:1px solid var(--line);border-radius:5px;font-size:10px}
+ .reverse-compact-metric small{font-size:9px;color:var(--muted)}
+ .reverse-compact-metric strong{font-size:11px}
+ .reverse-summary-toggle{color:var(--muted);font-size:10px;white-space:nowrap}
+ .reverse-candidate-body{padding:3px 7px 6px;border-top:1px solid var(--line)}
+ @media(max-width:900px){.reverse-summary-kpis{justify-content:flex-start;width:100%;flex-basis:100%}}
+ @media(max-width:600px){.reverse-compact-metric{padding:2px 4px;gap:3px}.reverse-compact-metric small{font-size:9px}.reverse-compact-metric strong{font-size:10px}.reverse-candidate-name{white-space:normal}}
+
  .reverse-candidate h4{font-size:13px;line-height:1.18;margin:0 0 3px}
  .reverse-candidate .hint{font-size:10px;line-height:1.25;margin:2px 0 4px!important}
  .reverse-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;margin:5px 0}
