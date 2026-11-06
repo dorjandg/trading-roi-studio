@@ -540,7 +540,8 @@ function render(out,sortMode='model',currentPlan=null){
      ['Safety reserve',money(currentPlan.riskReserve),money(p.riskReserve)]];
     return rows.filter(([name,oldValue,newValue])=>String(oldValue)!==String(newValue)).map(([name,oldValue,newValue])=>
      '<tr><td>'+escapeHtml(a.name||stage)+'</td><td>'+escapeHtml(name)+'</td><td>'+escapeHtml(oldValue)+'</td><td><b>'+escapeHtml(newValue)+'</b></td></tr>');
-   }).join('')+'</tbody></table></div><p class="hint">Only differences are shown. Adaptive scenarios calculate trade risk dynamically; their risk caps are not three fixed R1/R2/R3 order sizes. Account targets, fees and firm limits remain unchanged by transfer.</p></details>':'';
+   }).join('')+'</tbody></table></div><p class="hint">Only differences are shown. Adaptive scenarios calculate trade risk dynamically; their risk caps are not three fixed R1/R2/R3 order sizes. Account targets, fees and firm limits remain unchanged by transfer.</p></details>':
+   '<details class="reverse-review-panel"><summary><strong>3 · Compare with Firms defaults</strong> · no saved profile</summary><p class="hint">No saved Firms account risk profile is available. This investment model is not transferred automatically.</p></details>';
   const r3Paths=p.stageList.map(stage=>{
    const r=p.riskProfiles[stage],x=r.r3Analysis;
    if(!x)return '';
@@ -550,10 +551,11 @@ function render(out,sortMode='model',currentPlan=null){
     (x.afterR3Win>=0?'+':'−')+money(Math.abs(x.afterR3Win))+'</td></tr>';
   }).join('');
   const r3Descriptions={legacy:'Original recovery amount (may be blocked by drawdown)',headroom:'Use the maximum R3 risk that still fits after two modeled losses',balanced:'Reduce R2 to preserve additional room for R3',defensive:'Use half of the remaining safe R3 headroom',ladder:'Size all three risks together so an R3 win after two losses can reach the phase target when mathematically feasible'};
-  const r3Markup=r3Paths?'<details class="reverse-review-panel"><summary><strong>1A · R3 alternative route</strong> · '+escapeHtml(candidate.r3Route||'legacy')+' sizing and feasibility</summary>'+
+  const r3Markup=r3Paths?'<details class="reverse-review-panel"><summary><strong>4 · R3 recovery feasibility</strong> · '+escapeHtml(candidate.r3Route||'legacy')+' sizing and feasibility</summary>'+
    '<p class="hint">'+escapeHtml(r3Descriptions[candidate.r3Route]||r3Descriptions.legacy)+'</p>'+
    '<div class="tablewrap"><table class="journey-table"><thead><tr><th>Phase</th><th>R1 / R2 / R3</th><th>R3 headroom after LL</th><th>Can R3 trade?</th><th>Stage P&L after LLW</th></tr></thead><tbody>'+r3Paths+'</tbody></table></div>'+
-   '<p class="hint">LL = R1 loss then R2 loss on later trading days; LLW adds an R3 win. Headroom assumes no earlier gains or losses in that phase, and includes modeled costs/reserve and a $1 buffer. A legal R3 win may still leave the phase below its profit target. The engine checks every actual trade separately. These are alternative hypotheses, not guaranteed recovery.</p></details>':'';
+   '<p class="hint">LL = R1 loss then R2 loss on later trading days; LLW adds an R3 win. Headroom assumes no earlier gains or losses in that phase, and includes modeled costs/reserve and a $1 buffer. A legal R3 win may still leave the phase below its profit target. The engine checks every actual trade separately. These are alternative hypotheses, not guaranteed recovery.</p></details>':
+   '<details class="reverse-review-panel"><summary><strong>4 · Recovery feasibility</strong> · no standalone R3 test</summary><p class="hint">This model has no separate R3 recovery-path stress test. Check the trade history for its actual modeled risk decisions.</p></details>';
   const setupMarkup='<details class="reverse-review-panel"><summary><strong>1 · Trading rules &amp; risks</strong> · phase-by-phase setup</summary>'+
    '<div class="tablewrap"><table class="journey-table"><thead><tr><th>Phase</th><th>Risk sequence</th><th>Target</th><th>Max wins/day</th><th>Min trading days</th>'+(dynamicOption?'<th>First trade</th><th>After 1 loss</th><th>After 2 losses</th>':'<th>R1 / R2 / R3</th>')+'<th>RR per tier</th><th>vs Firms</th></tr></thead><tbody>'+limitInfo+'</tbody></table></div>'+checks+
    '<p class="hint">'+(dynamicOption?
@@ -590,14 +592,16 @@ function render(out,sortMode='model',currentPlan=null){
    '<div class="reverse-option-actions"><button type="button" class="primary" data-reverse-analyze="'+pathIndex+'">Run Full Simulation · Sections 4–7</button>'+
    '<button type="button" data-reverse-more-models="'+pathIndex+'">Find More Risk Models</button>'+
    '<small>Recalculate with Section 2 Monte Carlo trial count and this option’s exact R1/R2/R3 setup, then view results, charts, account journey and trade history below.</small></div>'+
-   '<div class="reverse-detail-label">SCENARIO DETAILS</div>'+setupMarkup+r3Markup+
-   '<details class="reverse-diagnostic"><summary><strong>4 · Diagnostics &amp; suggestions</strong><small> · Why this scenario struggles</small></summary><div class="reverse-advice"><strong>Why this scenario struggles · what to test</strong>'+
+   '<div class="reverse-detail-label">SCENARIO DETAILS · EXPAND A TOPIC</div>'+setupMarkup+r3Markup+
+   '<details class="reverse-diagnostic"><summary><strong>5 · Diagnostics &amp; suggestions</strong><small> · Why this scenario struggles</small></summary><div class="reverse-advice"><strong>Why this scenario struggles · what to test</strong>'+
    advice.items.map(d=>'<div class="reverse-advice-item"><strong>'+escapeHtml(d.name)+'</strong>'+
     '<span>'+escapeHtml(d.evidence)+'</span><em>'+escapeHtml(d.test)+'</em></div>').join('')+
    '<small>Suggestions are diagnostic hypotheses based on this simulated result, not proof that changing a setting will improve real trading. Recalculate after each change.</small></div></details>'+ 
-   '<p class="hint" style="margin:4px 0 6px"><strong>Target checks:</strong> '+
-   (gaps(out,s).length?gaps(out,s).join(' · '):'All expected targets met')+'</p>'+
-   '<div class="reverse-detail-label">5 · DETAILED PERFORMANCE</div><div class="reverse-kpis"><div><small>First payout day (paid trials)</small><strong>'+ (s.firstPayoutDay==null?'Not reached':'Day '+s.firstPayoutDay.toFixed(1))+'</strong></div>'+
+   '<details class="reverse-review-panel"><summary><strong>6 · Target checks</strong> · '+
+   (gaps(out,s).length?gaps(out,s).length+' gaps to review':'All expected targets met')+
+   '</summary><p class="hint">'+escapeHtml(gaps(out,s).length?gaps(out,s).join(' · '):'All expected targets met')+'</p></details>'+
+   '<details class="reverse-review-panel"><summary><strong>7 · Detailed performance</strong> · Net '+
+   money(s.avgNet)+' · ROI '+pct(s.budgetRoi)+' · Paid '+s.avgPaid.toFixed(2)+'</summary><div class="reverse-kpis"><div><small>First payout day (paid trials)</small><strong>'+ (s.firstPayoutDay==null?'Not reached':'Day '+s.firstPayoutDay.toFixed(1))+'</strong></div>'+
    '<div><small>Full payout goal day</small><strong>'+(s.goalPayoutDay==null?'Not reached':'Day '+s.goalPayoutDay.toFixed(1))+'</strong></div>'+
    '<div><small>Tested starting budget</small><strong>'+money(candidate.initialBudget)+'</strong></div>'+
    '<div><small>ROI on incurred fees</small><strong>'+pct(s.roi)+'</strong></div>'+ 
@@ -614,6 +618,8 @@ function render(out,sortMode='model',currentPlan=null){
    (candidate.riskMode==='target'?'<details class="reverse-sizing-info"><summary>How the risks are calculated</summary><p class="hint">'+
    'R1 aims at the stage profit target with a single win at its R1 RR. Following one loss, the streak policy selects R2; recovery sizing includes the previous loss and trade costs, but is capped by remaining drawdown headroom. Stage minimum trading days and payout waiting still apply. If recovery cannot fit within the loss limit, no risk value can guarantee an immediate recovery.</p></details>':'')+
 
+   '</details>'+
+   '<details class="reverse-review-panel"><summary><strong>8 · Trade-by-trade example</strong> · sample account history</summary>'+
    (sampleAccounts(candidate).length?(()=>{
     const accounts=sampleAccounts(candidate),example=chooseExampleAccount(accounts);
     const options=accounts.map(ac=>'<option value="'+escapeHtml(ac.id)+'"'+(ac.id===example.id?' selected':'')+'>'+
@@ -624,7 +630,7 @@ function render(out,sortMode='model',currentPlan=null){
      '<span class="hint">Select any account to inspect exact trade and phase progression.</span></div>'+
      '<div data-reverse-path-body="'+pathIndex+'">'+renderAccountPath(candidate,example.id)+'</div></details>';
    })():'<p class="hint">Trade-by-trade account details unavailable for this scenario.</p>')+
-   '</div></details>';
+   '</details></div></details>';
  }).join('');
  return '<div class="reverse-simple-heading">Simulation result</div>'+
   '<details class="reverse-info-section"><summary><strong>Target &amp; calculation rules</strong> <span>· '+out.requiredPayouts+' minimum payouts · '+money(out.minNetPnl)+' net goal</span></summary><p class="hint">Net P&L target: '+money(out.minNetPnl)+' after incurred fees. Minimum '+out.requiredPayouts+
