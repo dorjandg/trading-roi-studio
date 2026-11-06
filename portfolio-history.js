@@ -11,9 +11,9 @@ const capRecords=(records,limit=15)=>records.filter(x=>x&&x.id&&x.timestamp).sor
 function create({user,element,endpoint}){
  const key='4ds:v1:'+user+':portfolio-simulation-history:v1';
  const remoteValid=/^https:\/\/script\.google\.com\/macros\/s\/[^/?]+\/exec(?:\?.*)?$/.test(endpoint||'');
- let runs=[],syncing=false,syncQueued=false;
+ let runs=[],syncing=false,syncQueued=false,lastCloudStatus='not verified';
  const now=()=>new Date().toISOString();
- const status=(message)=>{const target=element.querySelector('[data-history-status]');if(target)target.textContent=message;};
+ const status=(message)=>{lastCloudStatus=message;const target=element.querySelector('[data-history-status]');if(target)target.textContent=message;};
  function readLocal(){
   try{const parsed=JSON.parse(localStorage.getItem(key)||'[]');return Array.isArray(parsed)?capRecords(parsed):[]}catch(_){return []}
  }
@@ -162,7 +162,7 @@ function create({user,element,endpoint}){
    const verified=await getRemote();
    if(verified.snapshot?.nonce!==snap.nonce)throw new Error('Cloud write could not be verified (profile may have changed)');
    localStorage.setItem('4ds:cloud:last-revision:'+user,verified.revision||'');
-   status('Cloud synced · '+new Date().toLocaleTimeString()+' · '+proposed.length+' recent runs online');
+   status('Cloud verified · '+new Date().toLocaleTimeString()+' · '+proposed.length+' recent runs online');
   }catch(err){status('Saved in this browser · cloud sync unavailable: '+err.message);}
   finally{syncing=false;if(syncQueued){syncQueued=false;cloudSync()}}
  }
@@ -184,6 +184,7 @@ function create({user,element,endpoint}){
   }else if(target.hasAttribute('data-history-export-all')){
    download({schema:'4ds-portfolio-history-v1',user,exportedAt:now(),runs},'4ds-simulation-history-'+user+'.json');
   }else if(target.hasAttribute('data-history-refresh'))loadCloud();
+  else if(target.hasAttribute('data-history-sync'))cloudSync();
  });
  runs=readLocal();render();status(remoteValid?'History stored locally · checking cloud…':'History stored in this browser only');
  if(remoteValid)loadCloud();
@@ -202,6 +203,7 @@ function create({user,element,endpoint}){
    return record;
   },
   getRuns(){return runs.slice()},
+  getCloudStatus(){return lastCloudStatus},
   sync:cloudSync
  };
 }
