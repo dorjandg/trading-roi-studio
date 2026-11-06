@@ -1062,6 +1062,44 @@ function start(){
    $('payoutResultsAdvisor').scrollIntoView({behavior:'smooth',block:'start'});
    return;
   }
+  const exact=event.target.closest?.('[data-reverse-target-exact]');
+  if(exact){
+   const index=Number(exact.dataset.reverseTargetExact),candidate=lastOptimizerOutput?.candidates?.[index];
+   const status=exact.closest('.reverse-candidate-body')?.querySelector('.reverse-review-status');
+   if(!candidate||!lastOptimizerInputs||candidate.plan.id+':'+candidate.plan.size!==lastOptimizerAccountKey){
+    if(status)status.textContent='Scenario changed. Calculate Investment again.';return;
+   }
+   if(!root.StudioModelDiscovery?.searchTargetExact){if(status)status.textContent='Target-exact search module unavailable.';return;}
+   if(exact.disabled)return;
+   const oldLabel=exact.textContent;exact.disabled=true;exact.textContent='Finding target-exact models…';
+   if(status)status.textContent='Testing risk sized to each remaining phase target with fixed budget, RR and paired trade outcomes…';
+   try{
+    await new Promise(resolve=>requestAnimationFrame(resolve));
+    const effort=$('payoutMoreEffort').value;
+    const trials=effort==='deep'?250:effort==='quick'?80:150;
+    const opts={...lastOptimizerInputs,budget:candidate.initialBudget,
+     netGoal:lastOptimizerOutput.minNetPnl,
+     requiredPayouts:lastOptimizerOutput.requiredPayouts,testTrials:trials};
+    const result=root.StudioModelDiscovery.searchTargetExact(
+     root.StudioModelDiscovery.clonePlan(candidate.plan),opts);
+    lastModelSearch={candidate,result,origin:'Investment Option '+(index+1)+' · Target-exact'};
+    moreSortKey='goal';moreDescending=true;moreSourceFilter='all';
+    renderUnifiedTable();
+    $('payoutOptModelComparison').open=true;
+    const baseline=result.baseline.holdout;
+    const bySpeed=result.ideas.filter(x=>x.holdout.avgFirstPayoutDay!=null)
+     .slice().sort((a,b)=>(a.holdout.avgFirstPayoutDay??Infinity)-(b.holdout.avgFirstPayoutDay??Infinity))[0];
+    if(status)status.textContent='Target-exact search tested '+result.ideas.length+
+     ' cap variants against unchanged baseline; '+(bySpeed?
+      'fastest variant '+bySpeed.title+' averages day '+Number(bySpeed.holdout.avgFirstPayoutDay).toFixed(1)+
+      ' for first payout (baseline '+(baseline.avgFirstPayoutDay==null?'not reached':'day '+Number(baseline.avgFirstPayoutDay).toFixed(1))+'). ':
+      'No variant achieved a first payout during this horizon. ')+
+     'See goal chance, net P&L, blocked accounts and phase risk in the unified table. Original settings unchanged.';
+    $('payoutOptModelComparison').scrollIntoView({behavior:'smooth',block:'start'});
+   }catch(error){if(status)status.textContent='Target-exact search failed: '+(error?.message||'Unknown error');}
+   finally{exact.disabled=false;exact.textContent=oldLabel;}
+   return;
+  }
   const lower=event.target.closest?.('[data-reverse-lower-risk]');
   if(lower){
    const index=Number(lower.dataset.reverseLowerRisk),candidate=lastOptimizerOutput?.candidates?.[index];
