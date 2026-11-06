@@ -79,6 +79,13 @@ Independent 3A assumptions are stored per selected account in the existing per-u
 - Suggestions may involve safer tier sizing, checking signal capacity and account availability, reviewing payouts/costs, or testing a longer horizon. Never shorten mandatory firm delays or claim a causal improvement from a single result.
 - This is distinct from the existing Section 3A Calculate Investment diagnostics. It does not change either calculation engine.
 
+## Blocked R3 and duplicated-option UI correction (Nov 6)
+- Connected cloud history confirmed the user's 12:49:24 UTC Calculate Investment run used the new algorithm (339 tested), but included duplicate identical headroom options and retained the original Phase 1 $333.34/$444.45/$449 blocked R3 as a sixth normal scenario.
+- Optimizer display now deduplicates by all phase risk-tier amounts, tier RR, sequence mode and winning-day caps, not by candidate object identity or budget. Only routes passing the explicit 3-loss headroom check are presented as normal selectable/transferable options.
+- The blocked original is shown in a separate collapsed **Excluded reference · blocked R3** explanation, with Phase 1 numbers, not as a normal option or exportable risk recommendation. It is still included in tested combinations for comparison, not removed from source calculations.
+- The first normal option remains the best ranked executable distinct setup; 5 options is an upper bound. Other sort choices reorder only these valid options.
+- A fresh Calculate Investment run is needed to see the corrected cards; prior Section 8 history is unchanged. JavaScript syntax verified; live browser deployment not verified.
+
 ## Corrected latest-run R3 sizing and ranking (Nov 6)
 - User's actual latest connected Dori Calculate Investment run at 2026-11-06 12:38:39 UTC evaluated 286 scenarios, but the first two options were still legacy target-sized Phase 1 risks R1 333.34 / R2 444.45 / R3 449, with an R3 blocked after two losses. The new headroom/defensive/balanced options existed but earned lower Monte Carlo net and were ranked later. This was a selection problem, not proof that alternatives were absent.
 - Added **ladder** R3 mode: start with allowed safe R3 capacity (respecting margin reserve, daily and overall losses), then size R1/R2 together to permit the L-L-W outcome to reach each phase's trading profit target when mathematically feasible; scale varies the earlier risk budget. Example FTMO 10K, 3R, reserve $50, zero costs, Phase 1 target $1,000 yields R1 $173.50 / R2 $173.50 / R3 $449, and L-L-W = +$1,000.
