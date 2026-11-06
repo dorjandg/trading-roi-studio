@@ -228,7 +228,7 @@ function search(base,options={}){
   capacityMode:options.capacityMode==='manual'?'manual':'automatic',
   tradeSchedule:options.tradeSchedule||null,
   reinvestPayouts:options.reinvestPayouts===true,
-  pairedSignals:true,maxAccounts:100
+  pairedSignals:true,maxAccounts:100,trackCharts:options.trackCharts===true
  };
  const seed=(Math.floor(Number(options.seed)||24717)>>>0)||24717;
  const trainInput={...common,trials:trainN,seed};
