@@ -5,6 +5,13 @@ const jjDictionaryCategoryMap={
  'Probability and math':'Statistics & EV','Probability & Statistics':'Statistics & EV',
  'Account stage':'Accounts & Prop Firms','Account Survival':'Accounts & Prop Firms',
  'Portfolio risk':'Portfolio & Scaling','Portfolio management':'Portfolio & Scaling','Portfolio Execution':'Portfolio & Scaling','Payouts & Scaling':'Portfolio & Scaling',
- 'Accounting':'Accounting & Payouts'
+ 'Accounting':'Accounting & Payouts',
+ 'Structure & Liquidity':'Structure & Strategy',
+ 'Sessions & Timing':'Sessions & Timing',
+ 'Trade Execution':'Trades & Instruments',
+ 'Statistical Metrics':'Statistics & EV',
+ 'Research Methods':'Research & Evidence',
+ 'Provider Rules':'Accounts & Prop Firms',
+ 'Cashflow & Payouts':'Accounting & Payouts'
 };
 for(const term of jjTerms){term.subcategory=term.category;term.category=jjDictionaryCategoryMap[term.category]||term.category;}
