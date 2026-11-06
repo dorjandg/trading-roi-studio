@@ -184,8 +184,13 @@ function chooseTradeRisk(p,ac,stage,c,dayProfit=0){
   // A losing streak uses the explicitly requested 150/200/250/200 tiers.
   // A winning recovery that reaches zero restarts at the initial 150 tier.
   const positiveWin=ac.stagePnl>0.05&&ac.history.endsWith('W');
-  const desired=streak?levels[Math.min(streak,levels.length-1)]:
-   positiveWin?Math.max(0,ac.stagePnl-cost):levels[0];
+  // A profit-only loss that returns the account to breakeven restarts
+  // the funded sequence at $150; it is not the first recovery loss.
+  const flat=Math.abs(ac.stagePnl)<=.05;
+  const desired=flat?levels[0]:
+   positiveWin?Math.max(0,ac.stagePnl-cost):
+   ac.stagePnl>0.05?Math.max(0,ac.stagePnl-cost):
+   streak?levels[Math.min(streak,levels.length-1)]:levels[0];
   const risk=Math.max(0,Math.floor(Math.min(room,Math.max(0,desired))*100)/100);
   return {slot:streak===0?'r1':streak===1?'r2':'r3',risk,rr};
  }
