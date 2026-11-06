@@ -254,6 +254,30 @@ function create({user,element,endpoint}){
    if(writeLocal([record,...runs])){page=1;render();cloudSync()}
    return record;
   },
+  updateOptimizerComparison(recordId,comparison){
+   const item=runs.find(x=>x.id===recordId&&x.kind==='calculate-investment');
+   if(!item)throw Error('Saved optimizer record not found; comparison not attached');
+   if(!comparison||!Array.isArray(comparison.ideas))throw Error('Invalid scenario comparison');
+   // Compact source of truth for cloud-side GPT review: risk policy, target,
+   // main payout statistics, and reproducibility metadata; no personal details.
+   const extra=comparison.ideas.map(v=>({
+    key:v.key,title:v.title,reason:v.reason,
+    stagePolicies:Object.fromEntries(v.plan.stageList.map(stage=>{
+     const c=v.plan.riskProfiles[stage];
+     return [stage,{target:c.target,policy:c.policy?.mode,rr:c.rr,
+      rrByTier:c.rrByTier||null,starter:c.fundedStarterRisk??null,
+      recoveryLevels:c.fundedRecoveryLevels||null}];
+    })),
+    score:{avgNet:v.holdout.avg.net,avgPaid:v.holdout.avg.paid,
+     avgFailed:v.holdout.avg.failed,avgBlocked:v.holdout.avg.exhausted,
+     chancePayout:v.holdout.chancePayout,firstPayoutDay:v.holdout.avgFirstPayoutDay,
+     goalPayoutDay:v.holdout.avgGoalPayoutDay}
+   }));
+   item.additionalModels={schema:'4ds-model-comparison-v1',type:'funded-compounding',
+    savedAt:now(),testTrials:comparison.testTrials,variants:extra};
+   if(!writeLocal(runs))throw Error('Could not save additional models locally');
+   render();cloudSync();return extra.length;
+  },
   getRuns(){return runs.slice()},
   getCloudStatus(){return lastCloudStatus},
   sync:cloudSync
