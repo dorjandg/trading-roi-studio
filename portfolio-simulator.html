@@ -1774,9 +1774,11 @@ function sendPlanToFirms(plan,modelName,findings=null){
  const label=firmsAccountLabel(key);
  const message='Send "'+modelName+'" to '+label+' for user '+user.toUpperCase()+'?\n\n'+
   'This replaces this account default risk tiers, per-tier RR, dynamic risk policy, funded recovery, winning-day caps and risk reserve.\n'+
-  'The funded profit planning target changes to 
-  'The previous settings are backed up and can be restored.\n\n'+
-  'Simulated improvements do not guarantee future performance. Continue?';
+  'The funded profit planning target changes to $'+Number(plan.riskProfiles.funded.target).toLocaleString()+'.\n'+
+  'Firm daily/overall loss limits, fees and official rules remain unchanged.\n'+
+  'Advanced risk policies are preserved for simulations, but the Firms visual editor may not expose every advanced setting. Review before live use.\n'+
+  'Previous settings are backed up and can be restored.\n\n'+
+  'Simulated results do not guarantee future performance. Continue?';
  if(!window.confirm(message))return false;
  try{
   firmsTransfer.transfer(localStorage,user,key,plan,modelName,findings);
