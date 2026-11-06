@@ -533,14 +533,14 @@ function render(out,sortMode='model',currentPlan=null){
    p.stageList.flatMap(stage=>{
     const a=currentPlan.riskProfiles?.[stage]||{},b=p.riskProfiles?.[stage]||{};
     const rr=t=>Number(b.rrByTier?.[t]??b.rr),ar=t=>Number(a.rrByTier?.[t]??a.rr);
-    const rows=[...['r1','r2','r3'].map(t=>[t.toUpperCase()+' USD risk',money(a[t]),money(b[t])]),
+    const rows=[...(candidate.riskMode==='adaptive'?[['Maximum risk per trade',money(a.dynamicMaxRisk??Math.max(Number(a.r1)||0,Number(a.r2)||0,Number(a.r3)||0)),money(b.dynamicMaxRisk??b.r1)]]:['r1','r2','r3'].map(t=>[t.toUpperCase()+' USD risk',money(a[t]),money(b[t])])),
      ...['r1','r2','r3'].map(t=>[t.toUpperCase()+' RR',ar(t).toFixed(2)+'R',rr(t).toFixed(2)+'R']),
      ['Risk sequence',a.policy?.mode||'saved',b.policy?.mode||'saved'],
      ['Max winning trades/day',a.maxWinsPerDay??'—',b.maxWinsPerDay??'—'],
      ['Safety reserve',money(currentPlan.riskReserve),money(p.riskReserve)]];
     return rows.filter(([name,oldValue,newValue])=>String(oldValue)!==String(newValue)).map(([name,oldValue,newValue])=>
      '<tr><td>'+escapeHtml(a.name||stage)+'</td><td>'+escapeHtml(name)+'</td><td>'+escapeHtml(oldValue)+'</td><td><b>'+escapeHtml(newValue)+'</b></td></tr>');
-   }).join('')+'</tbody></table></div><p class="hint">Only differences are shown. Account targets, fees and firm limits remain unchanged by transfer.</p></details>':'';
+   }).join('')+'</tbody></table></div><p class="hint">Only differences are shown. Adaptive scenarios calculate trade risk dynamically; their risk caps are not three fixed R1/R2/R3 order sizes. Account targets, fees and firm limits remain unchanged by transfer.</p></details>':'';
   const r3Paths=p.stageList.map(stage=>{
    const r=p.riskProfiles[stage],x=r.r3Analysis;
    if(!x)return '';
