@@ -42,7 +42,38 @@ function draw(data){
  }
  status.textContent='Published GPT research reports · public, non-personal findings only';
 }
+function evidenceReadiness(){
+ const el=document.getElementById('gptEvidenceReadiness');if(!el)return;
+ let user='dori',runs=[];
+ try{
+  const selected=localStorage.getItem('4ds:active-user:v1');
+  if(['doen','dori','dona','dion'].includes(selected))user=selected;
+  const raw=JSON.parse(localStorage.getItem('4ds:v1:'+user+':portfolio-simulation-history:v1')||'[]');
+  runs=Array.isArray(raw)?raw:[];
+ }catch(e){el.textContent='Saved history unavailable in this browser: '+e.message;return;}
+ runs.sort((a,b)=>String(b.timestamp||'').localeCompare(String(a.timestamp||'')));
+ el.replaceChildren();
+ if(!runs.length){paragraph(el,'No locally loaded simulation records. Run a simulation or load cloud history in Section 10.');return;}
+ const latest=runs[0],kind=latest.kind==='calculate-investment'?'Calculate Investment':'Run Full Simulation';
+ const detail=kind==='Calculate Investment'?
+  !!latest.candidates?.length&&latest.candidates.every(c=>c.planSnapshot?.riskProfiles):
+  !!latest.firms?.length&&latest.firms.every(f=>f.risk&&f.caps);
+ const accountCount=kind==='Run Full Simulation'?
+  latest.firms.reduce((n,f)=>n+(f.sample?.accounts?.length||0),0):0;
+ const traceCount=kind==='Run Full Simulation'?
+  latest.firms.reduce((n,f)=>n+(f.sample?.accounts||[]).reduce((v,a)=>v+(a.trace?.length||0),0),0):0;
+ const recordDate=latest.timestamp?new Date(latest.timestamp).toLocaleString():'unknown date';
+ paragraph(el,'Latest saved record: '+kind+' · '+recordDate+'.');
+ paragraph(el,detail?'Risk-policy snapshots: available.':'Risk-policy snapshots: incomplete or legacy format.');
+ if(kind==='Calculate Investment')
+  paragraph(el,'Account event traces: not included in optimizer history. Run Full Simulation on the exact model to inspect account closures.');
+ else paragraph(el,'Sampled account event traces: '+traceCount+' events across '+accountCount+' sampled accounts. These do not include all Monte Carlo trials.');
+ paragraph(el,'Next step: '+(!detail||kind==='Calculate Investment'?
+  'Run Full Simulation using the chosen model, then save and sync in Section 10.' :
+  'Review account closure events and distinguish firm loss breaches from risk-tier blocks.'));
+}
 async function refresh(){
+ evidenceReadiness();
  status.textContent='Loading latest research reports…';
  try{
   const response=await fetch(reportName+'?t='+Date.now(),{cache:'no-store'});
