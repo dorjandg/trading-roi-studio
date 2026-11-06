@@ -79,6 +79,13 @@ Independent 3A assumptions are stored per selected account in the existing per-u
 - Suggestions may involve safer tier sizing, checking signal capacity and account availability, reviewing payouts/costs, or testing a longer horizon. Never shorten mandatory firm delays or claim a causal improvement from a single result.
 - This is distinct from the existing Section 3A Calculate Investment diagnostics. It does not change either calculation engine.
 
+## Mobile Portfolio Sim accordion reset and compact headers (Nov 6)
+- On viewport width <=650px, all **top-level Portfolio Sim sections** (1/2/3/3A/4/5/6/7/8/9) begin collapsed on each page load, even if desktop-local saved `numberedOpen`, `chartsOpen`, `journeyOpen`, or payout optimizer `prior.open` were true. User taps still open/close normally. Existing non-mobile saved state and simulation input settings remain intact.
+- The earlier always-visible `Model assumptions & limits` section is a top-level collapsed details panel now; its original explanatory detail and footer remain inside it.
+- On mobile, top-level section summaries have a one-line or naturally wrapped title with chevron, no repeated Show/hide or long subtitle. Sections with Run Simulation / Find Better Models / Calculate Investment place the action as a compact full-width second row, removing the old squeezed multiple-line side-by-side layout. Action button IDs and event handlers are unchanged.
+- Section 3A is injected from `portfolio-payout-ui.js` and needs its own mobile style override and closed-on-mobile default. The injected script cache key is refreshed in `portfolio-simulator.html`.
+- Scope limited to markup, responsive CSS and mobile open state. No changes to trading calculations, Firms data, history records, or user input values. JS syntax and section structure checked; live mobile browser verification remains unconfirmed.
+
 ## Reverse payout visual hierarchy redesign (Nov 6)
 - Section 3A Calculate Investment results now display three visually separated regions: `01 · RESULT OVERVIEW`, `02 · SCENARIO OPTIONS`, `03 · REFERENCES`. Sort scenarios is placed inside region 02, immediately before the option cards.
 - Scenario cards have an emphasized header band and stronger open-state border, with KPI chips remaining compact. Each opened card clearly contains `SCENARIO DETAILS`, numbered nested panels (1 Trading rules, 1A R3 route when applicable, 2 Assumptions, 3 Firms comparison, 4 Diagnostics, 5 detailed performance KPIs), plus trade path details.
