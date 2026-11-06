@@ -96,7 +96,7 @@ function start(){
  .reverse-path-table th,.reverse-path-table td{padding:4px 6px;white-space:nowrap}
  .reverse-event-row{color:var(--muted);font-style:italic}
  @media(max-width:600px){.reverse-path-controls select{font-size:16px;height:35px;min-height:35px;max-width:230px}}
- @media(max-width:1000px){.payout-opt-fields{grid-template-columns:repeat(3,minmax(0,1fr))}.reverse-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+ @media(max-width:1000px){.payout-opt-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.reverse-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
  @media(max-width:600px){.payout-opt-fields{grid-template-columns:repeat(2,minmax(0,1fr))}
  .payout-opt-fields input,.payout-opt-fields select{font-size:16px;min-height:35px;height:35px;max-height:35px}
  #payoutOptimizerPanel>summary .section-run-btn{width:144px;flex-basis:144px;min-height:30px;height:30px;padding:4px;font-size:11px}
