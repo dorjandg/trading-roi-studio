@@ -1,3 +1,9 @@
+## Lower-risk blocked-account sensitivity comparison (Nov 6)
+- Each Calculate Investment option now includes **Compare Lower Risk**, alongside Find More Risk Models. This runs paired outcome streams at unchanged budget, win-rate, day horizon, account settings and policy, comparing unchanged risk with all-phase 85/70/55/40%, funded-only 70/50%, and evaluation-only 70% risk. Adaptive scenarios scale both per-tier amounts and the actual dynamic cap.
+- The results appear in the existing single unified Model comparison table with original investment models (no second table); sorting initially highlights lower risk-blocked counts. The action's status summary reports the best expected-net variant among those reducing blocked accounts and compares blocks, net cash and paid account averages with the *recomputed same-trial baseline*.
+- Neither the risk engine, saved Firms defaults nor user settings are altered. Experiment outcomes are conditional projections, not independently validated trading performance. The experiment preserves fixed random input settings but actual account routing may differ as risk changes. The review window defaults to 150 trials (80 quick, 250 detailed).
+- Syntax checked for engine, discovery, payout UI and optimizer. Deterministic FTMO-style test ran 7 variants; Topstep smoke test confirmed seven variants, finite net/block metrics, identical budgets, preserved original plan and unchanged policy modes. No claim of live browser/Cloudflare verification.
+
 # 4Ds Trading Studio — Project Context for Future Chats
 
 Updated: 2026-11-06. Read this together with AGENTS.md. Repository code is authoritative; this is a handoff, not a deployment verification.
