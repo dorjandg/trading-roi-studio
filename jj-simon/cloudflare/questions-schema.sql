@@ -8,6 +8,9 @@ CREATE TABLE IF NOT EXISTS jj_unanswered_questions (
   status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new','researching','needs_review','approved','resolved','rejected')),
   research_notes TEXT,
   proposed_commit TEXT,
+  approved_public_title TEXT,
+  approved_public_answer TEXT,
+  approved_evidence_ids TEXT,
   occurrences INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
