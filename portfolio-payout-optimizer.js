@@ -491,32 +491,6 @@ function sortedPayoutCandidates(out,sortMode='model'){
   return delta||a.originalIndex-b.originalIndex;
  });
 }
-function portfolioModelComparison(out,order){
- const ranked=sortedPayoutCandidates(out,order);
- const number=n=>n==null||!Number.isFinite(Number(n))?'—':Number(n).toFixed(2);
- const rows=ranked.map(({candidate},i)=>{
-  const k=candidate.result?.tradeKpis||{},s=candidate.score,p=candidate.plan;
-  const details=p.stageList.map(stage=>{
-   const r=p.riskProfiles[stage],dynamic=candidate.riskMode==='adaptive';
-   const v=dynamic&&E.previewLossPath?
-    E.previewLossPath(p,stage,3).map(x=>x.allowed?number(x.risk):'Blocked'):
-    ['r1','r2','r3'].map(t=>number(r[t]));
-   return '<div class="reverse-model-phase"><b>'+escapeHtml(r.name||stage)+'</b> · '+
-    escapeHtml(r.policy?.mode||'saved')+' · '+v.join(' / ')+' USD · '+
-    ['r1','r2','r3'].map(t=>number(r.rrByTier?.[t]??r.rr)).join(' / ')+'R</div>';
-  }).join('');
-  return '<tr><th scope="row">Option '+(i+1)+' · '+escapeHtml(candidate.r3Route||'saved')+
-   '<details><summary>R1 / R2 / R3 by phase</summary>'+details+'</details></th>'+
-   '<td>'+money(s.avgNet)+'</td><td>'+pct(s.budgetRoi)+'</td><td>'+pct(s.hit)+'</td>'+
-   '<td>'+number(k.pf)+'</td><td>'+(k.wr==null?'—':pct(k.wr))+'</td><td>'+number(k.rr)+'</td>'+
-   '<td>'+number(k.ar)+'</td><td>'+(k.aw==null?'—':money(k.aw))+'</td><td>'+(k.al==null?'—':money(k.al))+'</td><td>'+(k.ev==null?'—':money(k.ev))+'</td>'+
-   '<td>'+number(candidate.result?.avg?.trades)+'</td></tr>';
- }).join('');
- return '<details class="reverse-model-comparison"><summary><strong>Compare trading models &amp; R1/R2/R3</strong> · same KPI format as Section 3</summary>'+
-  '<p class="hint">These are the validated investment scenarios, not another model search. Adaptive values represent the calculated consecutive-loss path, not fixed trade risks.</p>'+
-  '<div class="tablewrap"><table class="reverse-model-table"><thead><tr><th>Model</th><th>Net</th><th>ROI</th><th>Goal</th><th>PF</th><th>WR</th><th>RR</th><th>AR</th><th>AW</th><th>AL</th><th>EV</th><th>Trades</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
-  '<p class="hint">PF = profit factor · WR = win rate · RR = planned reward/risk · AR = realized R · AW / AL = average winning / losing trade · EV = average trade P&L. Open a phase to inspect its risk sequence.</p></details>';
-}
 function render(out,sortMode='model',currentPlan=null){
  const selectedSort=Object.prototype.hasOwnProperty.call(payoutSortModes,sortMode)?sortMode:'model';
  const cards=sortedPayoutCandidates(out,selectedSort).map(({candidate,originalIndex},index)=>{
