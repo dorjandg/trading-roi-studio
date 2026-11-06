@@ -22,7 +22,7 @@ function profitNeeded(plan,perPayout){
  if(!plan.split||plan.split<=0)throw Error('This account has no positive payout split.');
  return Math.max(.01,perPayout/plan.split);
 }
-function planFor(base,scale,perPayout,rrVariant=null){
+function planFor(base,scale,perPayout,rrVariant=null,riskMode='saved'){
  const p={...base,riskProfiles:{}};
  const maxRisk=Math.min(Number.isFinite(base.dailyLoss)?base.dailyLoss:Infinity,
   Number.isFinite(base.overallLoss)?base.overallLoss:Infinity)-val(base.riskReserve)-val(base.tradeCost)-1;
@@ -35,6 +35,29 @@ function planFor(base,scale,perPayout,rrVariant=null){
   if(rrVariant){
    stageRisk.rr=rrVariant.r1;
    stageRisk.rrByTier={r1:rrVariant.r1,r2:rrVariant.r2,r3:rrVariant.r3};
+  }
+  if(riskMode==='target'){
+   // Size a clean first win near the stage target, without paying for
+   // large overshoot. On a loss, the next tier aims to recover the loss
+   // and still clear the original target, subject to real drawdown headroom.
+   const rr1=stageRisk.rrByTier?.r1??stageRisk.rr;
+   const rr2=stageRisk.rrByTier?.r2??stageRisk.rr;
+   const rr3=stageRisk.rrByTier?.r3??stageRisk.rr;
+   const cost=val(p.tradeCost),reserve=Math.max(.01,val(p.riskReserve));
+   const tier1=Math.min(maxRisk,Math.ceil((stageRisk.target+cost)/rr1*100)/100);
+   stageRisk.r1=Math.max(.01,tier1);
+   const afterLossHeadroom=Math.min(
+    Number.isFinite(p.overallLoss)?p.overallLoss-tier1-cost-reserve:Infinity,
+    Number.isFinite(p.dailyLoss)?p.dailyLoss-cost-reserve:Infinity,
+    maxRisk);
+   const recovery=Math.ceil((stageRisk.target+tier1+2*cost)/rr2*100)/100;
+   stageRisk.r2=Math.max(.01,Math.min(recovery,afterLossHeadroom));
+   stageRisk.r3=Math.max(.01,Math.min(maxRisk,Math.ceil((stageRisk.target+tier1+stageRisk.r2+3*cost)/rr3*100)/100));
+   // The intended R2 is selected after a loss; no automatic R2 on a win.
+   if(stage!=='p1'||p.id!=='topstep')stageRisk.policy={map:{},conflicts:[],mode:'streak'};
+   stageRisk.targetSizing={cleanWin:tier1*rr1-cost,
+    recoveryWin:stageRisk.r2*rr2-cost,
+    recoveryPossible:recovery<=afterLossHeadroom+1e-8};
   }
   p.riskProfiles[stage]=stageRisk;
  }
@@ -51,7 +74,10 @@ function assess(r,count,total){
   avgPurchased:val(r.avg.bought),avgFunded:val(r.avg.funded),
   avgBreached:val(r.avg.failed),avgRiskBlocked:val(r.avg.exhausted),roi:val(r.roi),
   budgetRoi:r.budget>0?val(r.avg.net)/r.budget:0,
-  avgPayout:r.avg.paid?val(r.avg.receipts)/r.avg.paid:0};
+  avgPayout:r.avg.paid?val(r.avg.receipts)/r.avg.paid:0,
+  firstPayoutDay:Number.isFinite(r.avgFirstPayoutDay)?r.avgFirstPayoutDay:null,
+  goalPayoutDay:Number.isFinite(r.avgGoalPayoutDay)?r.avgGoalPayoutDay:null,
+  chanceGoalPayoutDay:val(r.chanceGoalPayoutDay)};
 }
 async function optimize({plan,total,perPayout,maxInvestment,minRoi=2,minNetRoi=0,minNetPnl=0,minRR=1.5,maxRR=3,inputs,onProgress}){
  const count=needed(total,perPayout);
@@ -81,6 +107,7 @@ async function optimize({plan,total,perPayout,maxInvestment,minRoi=2,minNetRoi=0
   {name:'Higher R2',r1:mid,r2:maxRR,r3:minRR}
  ].filter((v,i,a)=>a.findIndex(z=>z.r1===v.r1&&z.r2===v.r2&&z.r3===v.r3)===i);
  const scaleValues=[.55,.8,1,1.25];
+ const riskModes=['target','saved'];
  const candidates=[];
  let checked=0;
  const simulate=(p,units,trials,seed)=>E.simulatePortfolio(p,{
@@ -90,6 +117,7 @@ async function optimize({plan,total,perPayout,maxInvestment,minRoi=2,minNetRoi=0
   purchaseMode:inputs.purchaseMode,capacityMode:inputs.capacityMode,
   maxActive:inputs.maxActive,maxBuysPerDay:inputs.maxBuysPerDay,
   reinvestPayouts:inputs.reinvestPayouts,maxAccounts:100,trackCharts:true,
+  requiredPayouts:count,
   evaluationAllocationCap:inputs.evaluationAllocationCap||0,
   fundedAllocationCap:inputs.fundedAllocationCap||0});
  const pause=()=>new Promise(resolve=>requestAnimationFrame(resolve));
@@ -100,16 +128,16 @@ async function optimize({plan,total,perPayout,maxInvestment,minRoi=2,minNetRoi=0
  const unitCounts=[...countGrid].filter(x=>x>0&&x<=maxUnits).sort((a,b)=>a-b);
  const coarse=[];
  const coarseTrials=50,validationTrials=200;
- for(const rrVariant of rrVariants)for(const scale of scaleValues){
-  const p=planFor(plan,scale,perPayout,rrVariant);
+ for(const riskMode of riskModes)for(const rrVariant of rrVariants)for(const scale of scaleValues){
+  const p=planFor(plan,scale,perPayout,rrVariant,riskMode);
   const v=E.validatePlan(p);
   if(v.errors.length)continue;
   for(const units of unitCounts){
    const r=simulate(p,units,coarseTrials,inputs.seed+7771);
    const score=assess(r,count,total);
    checked++;
-   coarse.push({scale,units,rrVariant:rrVariant.name,plan:p,score});
-   onProgress?.('Testing '+rrVariant.name+' · '+scale.toFixed(2)+'× risk · '+checked+' scenarios checked');
+   coarse.push({scale,units,riskMode,rrVariant:rrVariant.name,plan:p,score});
+   onProgress?.('Testing '+riskMode+' sizing · '+rrVariant.name+' · '+checked+' scenarios checked');
    if(checked%4===0)await pause();
   }
  }
@@ -124,8 +152,11 @@ async function optimize({plan,total,perPayout,maxInvestment,minRoi=2,minNetRoi=0
   if(ap!==bp)return ap?-1:1;
   const ac=reachesPayouts(a),bc=reachesPayouts(b);
   if(ac!==bc)return ac?-1:1;
-  if(ap&&bp)return a.units-b.units||b.score.hit-a.score.hit;
-  if(ac&&bc)return Number(b.score.avgNet>=minNetPnl)-Number(a.score.avgNet>=minNetPnl)||b.score.roi-a.score.roi||a.units-b.units;
+  if(ap&&bp)return (a.score.goalPayoutDay??Infinity)-(b.score.goalPayoutDay??Infinity)||
+   (a.score.firstPayoutDay??Infinity)-(b.score.firstPayoutDay??Infinity)||a.units-b.units||b.score.hit-a.score.hit;
+  if(ac&&bc)return Number(b.score.avgNet>=minNetPnl)-Number(a.score.avgNet>=minNetPnl)||
+  (a.score.goalPayoutDay??Infinity)-(b.score.goalPayoutDay??Infinity)||
+  (a.score.firstPayoutDay??Infinity)-(b.score.firstPayoutDay??Infinity)||b.score.roi-a.score.roi||a.units-b.units;
   return Math.min(count,b.score.avgPaid)-Math.min(count,a.score.avgPaid)||
    Math.min(total,b.score.avgReceipts)-Math.min(total,a.score.avgReceipts)||
    b.score.hit-a.score.hit;
@@ -142,14 +173,20 @@ async function optimize({plan,total,perPayout,maxInvestment,minRoi=2,minNetRoi=0
   if(ap!==bp)return ap?-1:1;
   const ac=reachesPayouts(a),bc=reachesPayouts(b);
   if(ac!==bc)return ac?-1:1;
-  if(ap&&bp)return a.initialBudget-b.initialBudget||b.score.hit-a.score.hit;
-  if(ac&&bc)return Number(b.score.avgNet>=minNetPnl)-Number(a.score.avgNet>=minNetPnl)||b.score.roi-a.score.roi||a.initialBudget-b.initialBudget;
+  if(ap&&bp)return (a.score.goalPayoutDay??Infinity)-(b.score.goalPayoutDay??Infinity)||
+   a.initialBudget-b.initialBudget||b.score.hit-a.score.hit;
+  if(ac&&bc)return Number(b.score.avgNet>=minNetPnl)-Number(a.score.avgNet>=minNetPnl)||
+  (a.score.goalPayoutDay??Infinity)-(b.score.goalPayoutDay??Infinity)||
+  (a.score.firstPayoutDay??Infinity)-(b.score.firstPayoutDay??Infinity)||b.score.roi-a.score.roi||a.initialBudget-b.initialBudget;
   return b.score.avgPaid-a.score.avgPaid||
    b.score.avgReceipts-a.score.avgReceipts||b.score.roi-a.score.roi;
  });
  return {requiredPayouts:count,profitPerAccount:profitNeeded(plan,perPayout),
   targetCash:total,perPayout,maxInvestment,minRoi,minNetRoi,minNetPnl,minRR,maxRR,checked,
   feasible:candidates.some(meetsAll),payoutCountFeasible:candidates.some(reachesPayouts),
+  fastest:candidates.filter(c=>c.score.firstPayoutDay!=null).slice().sort((a,b)=>
+   (a.score.goalPayoutDay??Infinity)-(b.score.goalPayoutDay??Infinity)||
+   a.score.firstPayoutDay-b.score.firstPayoutDay)[0]||null,
   candidates:candidates.slice(0,5),firm:plan.firm,size:plan.size};
 }
 function gaps(out,score){
@@ -234,10 +271,13 @@ function render(out){
    return '<tr><td>'+c.name+'</td><td>'+money(c.r1)+'</td><td>'+money(c.r2)+'</td><td>'+money(c.r3)+'</td><td>'+['r1','r2','r3'].map(t=>Number(c.rrByTier?.[t]??c.rr).toFixed(2)+'R').join(' / ')+'</td></tr>';
   }).join('');
   return '<div class="reverse-candidate">'+
-   '<h4>'+(index===0?'Best tested scenario':'Alternative '+(index+1))+' · '+candidate.scale.toFixed(2)+'× saved risk · '+escapeHtml(candidate.rrVariant||'')+'</h4>'+
+   '<h4>'+(index===0?'Best tested scenario':'Alternative '+(index+1))+' · '+candidate.scale.toFixed(2)+'× risk · '+escapeHtml(candidate.rrVariant||'')+
+   ' · '+(candidate.riskMode==='target'?'Target-sized':'Saved-sized')+'</h4>'+
    '<p class="hint" style="margin:4px 0 6px"><strong>Target checks:</strong> '+
    (gaps(out,s).length?gaps(out,s).join(' · '):'All expected targets met')+'</p>'+
-   '<div class="reverse-kpis"><div><small>Tested starting budget</small><strong>'+money(candidate.initialBudget)+'</strong></div>'+
+   '<div class="reverse-kpis"><div><small>First payout day (paid trials)</small><strong>'+ (s.firstPayoutDay==null?'Not reached':'Day '+s.firstPayoutDay.toFixed(1))+'</strong></div>'+
+   '<div><small>Full payout goal day</small><strong>'+(s.goalPayoutDay==null?'Not reached':'Day '+s.goalPayoutDay.toFixed(1))+'</strong></div>'+
+   '<div><small>Tested starting budget</small><strong>'+money(candidate.initialBudget)+'</strong></div>'+
    '<div><small>ROI on incurred fees</small><strong>'+pct(s.roi)+'</strong></div>'+ 
    '<div><small>Net ROI on investment</small><strong>'+pct(s.budgetRoi)+'</strong></div>'+ 
    '<div><small>Chance of payout goal</small><strong>'+pct(s.hit)+'</strong></div>'+
@@ -268,6 +308,9 @@ function render(out){
    '<p class="bad"><strong>No validated scenario met all payout-count, cash, ROI and net P&L targets within your investment ceiling and time horizon.</strong> Closest tested alternatives are shown. Payout-goal probability remains reported separately; an expected target is not a reliable guarantee.</p>')+
   (out.candidates[0]?'<p class="hint"><strong>Most important gap:</strong> '+
    (gaps(out,out.candidates[0].score)[0]||'No expected-value target gap; check payout probability and downside risk')+'</p>':'')+
+  (out.fastest?'<p class="hint"><strong>Fastest first payout among shortlisted scenarios:</strong> '+
+   'Day '+out.fastest.score.firstPayoutDay?.toFixed(1)+' on average in trials that received a payout; ' +
+   'risk mode '+escapeHtml(out.fastest.riskMode)+'. This is not a guaranteed payout date.</p>':'')+
   cards+'<p class="hint">Estimates use 200 independent validation trials for 12 shortlisted scenarios after 50-trial searches across risk levels and investment amounts. ROI on incurred fees = expected net cash / expected fees actually incurred. Net ROI on investment = expected net cash / tested starting budget. Both may be negative. Starting budget is cash made available for challenge and activation costs, NOT the total fees actually incurred; any refunded challenge fees are tracked in modeled cash receipts. Payout counts and earnings can differ between trials. Searches are approximate, account purchases are capped at 100 per type, and risk safety depends on modeled firm rules. Scenarios do not change your saved Firms risk settings.</p>';
 }
 root.StudioPayoutOptimizer={needed,profitNeeded,planFor,assess,optimize,render,renderAccountPath,sampleAccounts};
