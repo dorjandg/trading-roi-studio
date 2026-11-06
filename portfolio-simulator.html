@@ -2064,6 +2064,7 @@ window.StudioPayoutBridge={
  },
 
  saveOptimizer:data=>simulationHistory?.saveOptimizer(data),
+ updateOptimizerComparison:(id,comparison)=>simulationHistory?.updateOptimizerComparison(id,comparison),
  getRows:()=>rows.slice(),
  getPlan:row=>accountPlan(row),
  getSavedPlan:row=>{
