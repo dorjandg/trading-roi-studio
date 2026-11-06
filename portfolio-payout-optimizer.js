@@ -754,7 +754,7 @@ function renderUnifiedInvestmentModels(out,more=null,sortKey='net',descending=tr
  const rows=models.map(m=>{
   const r=m.result,k=r.tradeKpis||{},s=m.score;
   const risks=m.plan.stageList.map(stage=>{
-   const p=m.plan.riskProfiles[stage],adaptive=['target-now','repair-r2','buffered-target','eval-recovery-burn','funded-profit-ladder'].includes(p.policy?.mode);
+   const p=m.plan.riskProfiles[stage],adaptive=['target-now','repair-r2','buffered-target','eval-recovery-burn','funded-profit-ladder','funded-staged-recovery'].includes(p.policy?.mode);
    const preview=adaptive&&E.previewLossPath?E.previewLossPath(m.plan,stage,3):[];
    const risks=adaptive?preview.map(v=>v.allowed?fmt(v.risk)+' ('+v.slot.toUpperCase()+')':'Blocked'):
     ['r1','r2','r3'].map(t=>fmt(p[t]));
