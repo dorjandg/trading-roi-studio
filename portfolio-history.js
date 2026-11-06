@@ -109,7 +109,9 @@ function create({user,element,endpoint}){
    if(isOptimizer){
     const best=r.candidates?.[0],x=best?.score||{};
     return '<tr><td>'+escapeHtml(new Date(r.timestamp).toLocaleString())+
-     '<small style="display:block">Calculate Investment</small></td>'+
+     '<small style="display:block">Calculate Investment · '+(r.candidates?.length||0)+
+     ' optimizer models'+(r.additionalModels?.variants?.length?' + '+r.additionalModels.variants.length+' funded variants':'')+
+     '</small></td>'+
      '<td>'+escapeHtml(r.account?.firm||'')+' '+USD(r.account?.size||0)+'</td>'+
      '<td>'+escapeHtml(r.targets?.requiredPayouts||0)+' payouts · '+
      USD(r.targets?.targetBasis==='net-pnl'?r.targets.minNetPnl:r.targets?.totalCash||0)+
