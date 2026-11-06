@@ -44,7 +44,8 @@ function assess(r,count,total){
  return {hit:trials.length?successes/trials.length:0,
   avgPaid:val(r.avg.paid),avgReceipts:val(r.avg.receipts),
   avgNet:val(r.avg.net),avgSpent:val(r.avg.spent),p10:val(r.p10),
-  avgPurchased:val(r.avg.bought),roi:val(r.roi),
+  avgPurchased:val(r.avg.bought),avgFunded:val(r.avg.funded),
+  avgBreached:val(r.avg.failed),avgRiskBlocked:val(r.avg.exhausted),roi:val(r.roi),
   avgPayout:r.avg.paid?val(r.avg.receipts)/r.avg.paid:0};
 }
 async function optimize({plan,total,perPayout,maxInvestment,probability,inputs,onProgress}){
@@ -114,20 +115,23 @@ function render(out){
   }).join('');
   return '<div class="reverse-candidate">'+
    '<h4>'+(index===0?'Best tested scenario':'Alternative '+(index+1))+' · '+candidate.scale.toFixed(2)+'× saved risk</h4>'+
-   '<div class="reverse-kpis"><div><small>Required initial budget (tested)</small><strong>'+money(candidate.initialBudget)+'</strong></div>'+
+   '<div class="reverse-kpis"><div><small>Tested starting budget</small><strong>'+money(candidate.initialBudget)+'</strong></div>'+
    '<div><small>Chance of payout goal</small><strong>'+pct(s.hit)+'</strong></div>'+
-   '<div><small>Avg. payouts</small><strong>'+s.avgPaid.toFixed(2)+'</strong></div>'+
+   '<div><small>Avg. first payouts</small><strong>'+s.avgPaid.toFixed(2)+'</strong></div>'+
    '<div><small>Avg. cash received</small><strong>'+money(s.avgReceipts)+'</strong></div>'+
    '<div><small>Avg. incurred fees</small><strong>'+money(s.avgSpent)+'</strong></div>'+
-   '<div><small>Avg. net after fees</small><strong>'+money(s.avgNet)+'</strong></div></div>'+
+   '<div><small>Avg. net after fees</small><strong>'+money(s.avgNet)+'</strong></div>'+ 
+   '<div><small>Avg. challenges bought</small><strong>'+s.avgPurchased.toFixed(2)+'</strong></div>'+ 
+   '<div><small>Avg. funded reached</small><strong>'+s.avgFunded.toFixed(2)+'</strong></div>'+ 
+   '<div><small>Risk-blocked / breached</small><strong>'+s.avgRiskBlocked.toFixed(1)+' / '+s.avgBreached.toFixed(1)+'</strong></div></div>'+
    '<div class="tablewrap"><table class="journey-table"><thead><tr><th>Phase</th><th>R1</th><th>R2</th><th>R3</th><th>RR</th></tr></thead><tbody>'+risks+'</tbody></table></div></div>';
  }).join('');
  return '<p class="hint">Goal: '+money(out.targetCash)+' received across at least '+out.requiredPayouts+
   ' separate first payouts of '+money(out.perPayout)+' each. The account must first reach approximately '+
-  money(out.profitPerAccount)+' funded trading profit (based on modeled payout split/refund). Probability is the share of trials meeting BOTH payout count and cash received before the chosen trading-day horizon.</p>'+
+  money(out.profitPerAccount)+' funded trading profit (based on the modeled profit payout split, excluding any refunded challenge fee). Probability is the share of trials meeting BOTH payout count and cash received before the chosen trading-day horizon.</p>'+
   (out.feasible?'<p class="good"><strong>At least one tested candidate met the selected probability threshold.</strong></p>':
    '<p class="bad"><strong>No tested candidate met the selected probability threshold within this investment ceiling and horizon.</strong> Best tested alternatives are shown; do not treat them as a guaranteed solution.</p>')+
-  cards+'<p class="hint">Estimates use 150 validation Monte Carlo trials per shortlisted risk scale after 50-trial searches. Initial budget is available funding, NOT expected fees incurred; earnings and payout counts can differ between trials. Searches are approximate, account purchases are capped at 100 per type, and risk safety depends on modeled firm rules. Scenarios do not change your saved Firms risk settings.</p>';
+  cards+'<p class="hint">Estimates use 150 validation Monte Carlo trials per shortlisted risk scale after 50-trial searches. Starting budget is cash made available for challenge and activation costs, NOT the total fees actually incurred; any refunded challenge fees are tracked in modeled cash receipts. Payout counts and earnings can differ between trials. Searches are approximate, account purchases are capped at 100 per type, and risk safety depends on modeled firm rules. Scenarios do not change your saved Firms risk settings.</p>';
 }
 root.StudioPayoutOptimizer={needed,profitNeeded,planFor,assess,optimize,render};
 })(typeof window!=='undefined'?window:globalThis);
