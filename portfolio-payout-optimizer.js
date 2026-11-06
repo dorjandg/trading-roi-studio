@@ -515,6 +515,7 @@ function render(out,sortMode='model',currentPlan=null){
     '<td>'+difference+'</td></tr>';
   }).join('');
   const sim=out.inputs||{};
+  const dynamicOption=candidate.riskMode==='adaptive';
   const checks=currentPlan?'<p class="hint">Compared with the current saved Firms account profile. “Changed” refers to phase risks, tier RR, policy or winning-day cap, not firm-required limits.</p>':
    '<p class="hint">No saved Firms profile was found for this account. Open the account in Firms and save a profile before transferring.</p>';
   const compareMarkup=currentPlan?'<details class="reverse-review-panel"><summary><strong>Compare risk with current Firms defaults</strong> · before / proposed</summary>'+
@@ -544,8 +545,10 @@ function render(out,sortMode='model',currentPlan=null){
    '<div class="tablewrap"><table class="journey-table"><thead><tr><th>Phase</th><th>R1 / R2 / R3</th><th>R3 headroom after LL</th><th>Can R3 trade?</th><th>Stage P&L after LLW</th></tr></thead><tbody>'+r3Paths+'</tbody></table></div>'+
    '<p class="hint">LL = R1 loss then R2 loss on later trading days; LLW adds an R3 win. Headroom assumes no earlier gains or losses in that phase, and includes modeled costs/reserve and a $1 buffer. A legal R3 win may still leave the phase below its profit target. The engine checks every actual trade separately. These are alternative hypotheses, not guaranteed recovery.</p></details>':'';
   const setupMarkup='<details class="reverse-review-panel"><summary><strong>Trading rules &amp; risks</strong> · phase-by-phase setup</summary>'+
-   '<div class="tablewrap"><table class="journey-table"><thead><tr><th>Phase</th><th>Risk sequence</th><th>Target</th><th>Max wins/day</th><th>Min trading days</th><th>R1 / R2 / R3</th><th>RR per tier</th><th>vs Firms</th></tr></thead><tbody>'+limitInfo+'</tbody></table></div>'+checks+
-   '<p class="hint">Risk amounts are USD per trade; RR is the simulated reward/risk ratio. Actual account margin and trade execution are not verified.</p></details>'+
+   '<div class="tablewrap"><table class="journey-table"><thead><tr><th>Phase</th><th>Risk sequence</th><th>Target</th><th>Max wins/day</th><th>Min trading days</th><th>'+(dynamicOption?'Risk caps R1 / R2 / R3':'R1 / R2 / R3')+'</th><th>RR per tier</th><th>vs Firms</th></tr></thead><tbody>'+limitInfo+'</tbody></table></div>'+checks+
+   '<p class="hint">'+(dynamicOption?
+   'The amounts above are PER-TRADE RISK CAPS, not actual executed risk values. Each trading day the simulator calculates the risk from remaining target, current stage P&L, daily loss limit, remaining overall drawdown and buffer. Repair R2 tracks the R3 repair state. Open the trade-by-trade example to see exact selected risks.':
+   'The configured risk amounts are USD per trade and RR is the simulated reward/risk ratio. Actual lot-size margin and trade execution are not verified.')+'</p></details>'+
    '<details class="reverse-review-panel"><summary><strong>Account &amp; simulation assumptions</strong> · budget, frequency and payout rules</summary>'+
    '<div class="reverse-review-grid">'+
    [['Starting budget',money(candidate.initialBudget)],['Challenge fee',money(p.fee)],['Safety reserve',money(p.riskReserve)],['Daily / overall loss',money(p.dailyLoss)+' / '+money(p.overallLoss)],['Trading days',sim.days??'—'],['Signals per day',sim.tradesPerDay??'—'],['Assumed win rate',sim.winRate==null?'—':Number(sim.winRate).toFixed(1)+'%'],['Signal outcomes',sim.signalMode||'—'],['Buying mode',sim.purchaseMode||'—'],['Allocation',sim.capacityMode||'—'],['Payout per account',money(out.perPayout)],['Funded wait / processing',Number(p.payoutWaitCalendarDays||0)+' / '+Number(p.payoutProcessingCalendarDays||0)+' calendar days']].map(([name,value])=>'<div><small>'+escapeHtml(name)+'</small><strong>'+escapeHtml(value)+'</strong></div>').join('')+
