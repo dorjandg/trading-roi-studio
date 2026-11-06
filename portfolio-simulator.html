@@ -621,8 +621,8 @@ details p{margin:6px 0}
 </div></details>
 </div>
 <script src="portfolio-engine.js?v=20261106-risk-preview-v3"></script>
-<script src="portfolio-payout-optimizer.js?v=20261106-risk-preview-v13"></script>
-<script src="portfolio-discovery.js?v=20261105-account-rotation"></script>
+<script src="portfolio-payout-optimizer.js?v=20261106-workflow-linked-v14"></script>
+<script src="portfolio-discovery.js?v=20261106-adaptive-workflow-v2"></script>
 <script src="portfolio-to-firms.js"></script>
 <script src="studio-report-source.js?v=20261105-account-rotation"></script>
 <script src="portfolio-charts.js?v=20261106-ledger-section"></script>
@@ -1560,7 +1560,7 @@ function renderDiscovery(result,row,budget){
     '<td>'+usd(h.p10)+'</td>'+
     '<td>'+pct(h.chancePayout)+'</td>'+
     '<td>'+dec(h.avg.exhausted)+'</td>'+
-    '<td>'+(i<0?'Current':fromInvestment?'<span class="hint">Comparison only</span>':'<div class="discovery-row-actions"><button type="button" data-discovery-apply="'+i+'">Test</button>'+
+    '<td>'+(i<0?(fromInvestment?'Investment baseline':'Current'):fromInvestment?'<span class="hint">Comparison only</span>':'<div class="discovery-row-actions"><button type="button" data-discovery-apply="'+i+'">Test</button>'+
     '<button type="button" data-discovery-send="'+i+'" title="Copy this model into the matching Firms account after confirmation">Send to Firms</button></div>')+'</td></tr>';
  };
  const best=result.ideas.filter(c=>c.improvement>0).sort((a,b)=>b.improvement-a.improvement)[0];
@@ -2006,5 +2006,5 @@ window.StudioPayoutBridge={
 init();
 })();
 </script>
-<script src="portfolio-payout-ui.js?v=20261106-risk-preview-v13"></script>
+<script src="portfolio-payout-ui.js?v=20261106-workflow-linked-v14"></script>
 <script src="studio-header.js"></script></body></html>
