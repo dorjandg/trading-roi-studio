@@ -1,6 +1,6 @@
 /* Unified JJ terminology and consistency audit — editorial scope, original evidence remains intact. */
 const jjTermsSlug='terminology-consistency-audit';
-const jjTermsChapter={slug:jjTermsSlug,group:'Research',title:'Trading Dictionary & Terminology',intro:'A categorized reference of trading concepts defined consistently across the Academy, with separate contextual exceptions, source evidence IDs, and verification needs. Definitions are research aids, not live prop-firm rules.',status:'Categorized definitions · unresolved claims remain flagged',sections:[{title:'How to use the terminology audit',points:['Each definition describes the meaning used in this Academy. Original JJ transcript wording and any contradictory lesson examples are preserved separately.','Use the named account stage, probability horizon and instrument units whenever interpreting a figure. Identical words can mean different things in evaluation, newly-funded, winning-day and payout contexts.','A terminology standard does not resolve missing chart marks, original audio ambiguities or current provider rules. Evidence citations and verification status remain visible.'],src:[['Risk of Ruin Bankroll Management','00:00–05:20','1VOJtRPDpy9LB4UakPYfZChROyAtPLQfv']]}]};
+const jjTermsChapter={slug:jjTermsSlug,group:'Research',title:'Trading Dictionary & Terminology',intro:'A categorized reference of trading concepts defined consistently across the Academy, with separate contextual exceptions, source evidence IDs, and verification needs. Definitions are research aids, not live prop-firm rules.',status:jjTerms.length+' categorized definitions · source evidence and qualifications retained',sections:[{title:'How to use the terminology audit',points:['Each definition describes the meaning used in this Academy. Original JJ transcript wording and any contradictory lesson examples are preserved separately.','Use the named account stage, probability horizon and instrument units whenever interpreting a figure. Identical words can mean different things in evaluation, newly-funded, winning-day and payout contexts.','A terminology standard does not resolve missing chart marks, original audio ambiguities or current provider rules. Evidence citations and verification status remain visible.'],src:[['Risk of Ruin Bankroll Management','00:00–05:20','1VOJtRPDpy9LB4UakPYfZChROyAtPLQfv']]}]};
 if(!chapters.some(x=>x.slug===jjTermsSlug)){chapters.push(jjTermsChapter);curriculum.push({slug:jjTermsSlug,title:'00 · Trading Dictionary',status:'review',reason:'Categorized trading definitions with sources and exceptions.'})}
 jjCategoryOverrides[jjTermsSlug]='Math & Research';
 curriculum.sort((a,b)=>jjGroupOrder[jjGroupFor(a)]-jjGroupOrder[jjGroupFor(b)]);
@@ -23,7 +23,7 @@ function jjTermsRenderResults(){
   const sum=jjTermEl('summary');
   const left=jjTermEl('span','jj-term-left');
   left.append(jjTermEl('span','jj-term-id',t.id),jjTermEl('strong','',t.term));
-  const right=jjTermEl('span','jj-term-category',t.subcategory||t.category);sum.append(left,right);item.append(sum);
+  const right=jjTermEl('span','jj-term-category',t.category+' · '+(t.subcategory||t.category));sum.append(left,right);item.append(sum);
   const inner=jjTermEl('div','jj-term-body');
   const add=(label,text,cls)=>{inner.append(jjTermEl('strong','jj-term-field',label));inner.append(jjTermEl('p',cls||'',text))};
   add('Canonical research meaning',t.meaning);
@@ -45,7 +45,7 @@ function jjTermsRenderResults(){
   const actions=jjTermEl('div','jj-term-actions');
   const related=jjTermEl('button','','Open related chapter');related.type='button';related.onclick=()=>pick(t.related);actions.append(related);
   const source=jjTermEl('button','','Open Source Explorer');source.type='button';source.onclick=()=>pick('source-evidence-explorer');actions.append(source);
-  inner.append(actions,jjTermEl('p','jj-term-footer','Verification: '+({conflict:'Conflicting interpretation remains unresolved',video:'Original chart/video review needed',firm:'Current provider rules require independent verification',math:'Conceptual math reviewed; assumptions remain',transcript:'Machine transcript available; audio unverified'}[t.verification]||'Further review needed')));
+  inner.append(actions,jjTermEl('p','jj-term-footer','Verification: '+({conflict:'Conflicting interpretation remains unresolved',video:'Original chart/video review needed',firm:'Current provider rules require independent verification',math:'Conceptual math reviewed; assumptions remain',transcript:'Machine transcript available; audio unverified',general:'General educational definition; not claimed to be a direct JJ quotation'}[t.verification]||'Further review needed')));
   item.append(inner);list.append(item);
  }
 }
@@ -58,7 +58,7 @@ function jjTermsMount(){
  const lab=jjTermEl('label');lab.append(jjTermEl('span','','Search definitions'));
  const search=jjTermEl('input');search.type='search';search.placeholder='Try risk of ruin, fair price, payout, BOS';search.value=jjTermsState.query;search.oninput=()=>{jjTermsState.query=search.value;jjTermsRenderResults()};lab.append(search);filters.append(lab);
  const cat=jjTermEl('label');cat.append(jjTermEl('span','','Category'));
- const select=jjTermEl('select');for(const v of jjTermCategories){const o=jjTermEl('option','',v);o.value=v;select.append(o)}
+ const select=jjTermEl('select');for(const v of jjTermCategories){const n=v==='All categories'?jjTerms.length:jjTerms.filter(t=>t.category===v).length;const o=jjTermEl('option','',v+' ('+n+')');o.value=v;select.append(o)}
  select.value=jjTermsState.category;
  const subcat=jjTermEl('label');subcat.append(jjTermEl('span','','Subcategory'));
  const subselect=jjTermEl('select');
@@ -66,7 +66,7 @@ function jjTermsMount(){
   const available=jjTermSubcategories.filter(x=>x==='All subcategories'||jjTerms.some(t=>(jjTermsState.category==='All categories'||t.category===jjTermsState.category)&&(t.subcategory||t.category)===x));
   const previous=jjTermsState.subcategory;
   subselect.replaceChildren();
-  for(const x of available){const option=jjTermEl('option','',x);option.value=x;subselect.append(option)}
+  for(const x of available){const n=jjTerms.filter(t=>(jjTermsState.category==='All categories'||t.category===jjTermsState.category)&&(x==='All subcategories'||(t.subcategory||t.category)===x)).length;const option=jjTermEl('option','',x+' ('+n+')');option.value=x;subselect.append(option)}
   if(!available.includes(previous))jjTermsState.subcategory='All subcategories';
   subselect.value=jjTermsState.subcategory;
  }
