@@ -23,6 +23,6 @@ GitHub repository: https://github.com/dorjandg/trading-roi-studio
 6. Never claim Cloudflare deployment or a cloud write succeeded without verifying it.
 
 ## Product in brief
-Prop-firm portfolio modeling for FTMO, Hola Prime and Topstep: budgets, challenge purchases, phase progression, permanent account IDs, trade risk R1/R2/R3, reward/risk, payout waits, Monte Carlo outcomes, payouts, net P&L, fee ROI and budget ROI. Portfolio Simulator section 3A reverse-engineers the required investment for a total payout, payout-per-account and profit target, using simulations. Section 8 stores histories locally and attempts cloud sync.
+Prop-firm portfolio modeling for FTMO, Hola Prime and Topstep: budgets, challenge purchases, phase progression, permanent account IDs, trade risk R1/R2/R3, reward/risk, payout waits, Monte Carlo outcomes, payouts, net P&L, fee ROI and budget ROI. Portfolio Simulator section 3A uses Target net P&L (after fees) as its sole cash goal, payout-per-account and a maximum investment; RR/optional ROI filters are inside one collapsed Simulation Assumptions area. It estimates the number of distinct first payouts and tests risk and capital configurations. Section 8 stores histories locally and attempts cloud sync.
 
 This context is **public technical documentation**, not a secret or a live record of the user's latest simulation. Current source code and cloud data take precedence.
