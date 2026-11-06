@@ -132,7 +132,7 @@
       '<div class="featured-grid">'+featured.map(l=>card(l,true)).join("")+'</div></section>'+
       '<section class="section"><div class="section-heading"><div><h2>Work & Development</h2><p class="section-subtitle">Colab, GitHub projects, Cloudflare and Google tools</p></div><button type="button" class="section-action" data-category="worktools">All work tools →</button></div>'+
       '<div class="shortcut-grid">'+work.map(shortcut).join("")+'</div></section>'+
-      '<section class="section"><div class="section-heading"><div><h2>JJ Study & Communities</h2><p class="section-subtitle">JJ dashboard, discussions, memberships and calls</p></div><button type="button" class="section-action" data-category="community">All communities →</button></div>'+
+      '<section class="section"><div class="section-heading"><div><h2>Study & Communities</h2><p class="section-subtitle">Learning platforms, dashboards, memberships and calls</p></div><button type="button" class="section-action" data-category="community">All communities →</button></div>'+
       '<div class="shortcut-grid">'+jj.map(shortcut).join("")+'</div></section>'+
       '<section class="section"><div class="section-heading"><div><h2>Browse collections</h2><p class="section-subtitle">Everything has a place</p></div></div><div class="collection-grid">'+categories.map(catButton).join("")+'</div></section>'+
       (recents.length?'<section class="section"><div class="section-heading"><div><h2>Recently opened</h2></div><button type="button" class="section-action" data-nav="recent">See all →</button></div><div class="shortcut-grid">'+recents.map(shortcut).join("")+'</div></section>':"")+
