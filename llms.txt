@@ -1,0 +1,28 @@
+# 4Ds Trading Studio — AI project context
+
+> This is the canonical website entry point for continuing development with an AI assistant.
+> User can paste only https://trading-roi-studio.pages.dev/ into a new chat.
+> When helping with code, read the GitHub project guide before making changes.
+
+Project: 4Ds Trading Studio
+Website: https://trading-roi-studio.pages.dev/
+Portfolio simulator: https://trading-roi-studio.pages.dev/portfolio-simulator.html
+GitHub repository: https://github.com/dorjandg/trading-roi-studio
+
+## Essential project references
+- [AI collaboration instructions](https://github.com/dorjandg/trading-roi-studio/blob/main/AGENTS.md) — GitHub access, edit/test/commit workflow, user UI preferences and handoff.
+- [Detailed technical guide](https://github.com/dorjandg/trading-roi-studio/blob/main/AI_PROJECT_GUIDE.md) — architecture, modules, Monte Carlo account lifecycle, Challenge/Verification/Funded logic, Calculate Investment, ROI, payout modeling, cloud history and known gaps.
+- [Repository README](https://github.com/dorjandg/trading-roi-studio/blob/main/README.md).
+
+## First actions for a new AI conversation
+1. Identify this as the **existing 4Ds Trading Studio project**; do not recreate it.
+2. Retrieve AGENTS.md and AI_PROJECT_GUIDE.md from the linked repository, then inspect current GitHub files for the requested change.
+3. If user requests a modification, implement it directly in the repository, validate JavaScript and calculations, and provide commit SHA. User shorthand "go" means proceed.
+4. Preserve concise, dense, aligned, responsive UI and existing user profiles and cloud data. Do not add verbose technical documentation to the visible site.
+5. For the latest Run Simulation or Calculate Investment output, inspect the connected Google Drive folder "4Ds Trading Studio Cloud Data", selecting the correct user and run type; browser-only results may not have synced.
+6. Never claim Cloudflare deployment or a cloud write succeeded without verifying it.
+
+## Product in brief
+Prop-firm portfolio modeling for FTMO, Hola Prime and Topstep: budgets, challenge purchases, phase progression, permanent account IDs, trade risk R1/R2/R3, reward/risk, payout waits, Monte Carlo outcomes, payouts, net P&L, fee ROI and budget ROI. Portfolio Simulator section 3A reverse-engineers the required investment for a total payout, payout-per-account and profit target, using simulations. Section 8 stores histories locally and attempts cloud sync.
+
+This context is **public technical documentation**, not a secret or a live record of the user's latest simulation. Current source code and cloud data take precedence.
