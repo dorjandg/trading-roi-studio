@@ -1,0 +1,40 @@
+name: Propose approved JJ answers
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+  pull-requests: write
+concurrency:
+  group: jj-approved-answer-proposals
+  cancel-in-progress: false
+jobs:
+  proposal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check publishing gate
+        id: enabled
+        env:
+          JJ_ENABLE_PUBLIC_PROPOSALS: ${{ vars.JJ_ENABLE_PUBLIC_PROPOSALS }}
+          JJ_QUESTIONS_ENDPOINT: ${{ secrets.JJ_QUESTIONS_ENDPOINT }}
+          JJ_REVIEW_TOKEN: ${{ secrets.JJ_REVIEW_TOKEN }}
+        run: |
+          if [ "$JJ_ENABLE_PUBLIC_PROPOSALS" = "true" ] && [ -n "$JJ_QUESTIONS_ENDPOINT" ] && [ -n "$JJ_REVIEW_TOKEN" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Public proposals disabled until explicit gate and shared review credentials are set."
+          fi
+      - name: Propose approved public answers as a pull request
+        if: steps.enabled.outputs.ready == 'true'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          JJ_QUESTIONS_ENDPOINT: ${{ secrets.JJ_QUESTIONS_ENDPOINT }}
+          JJ_REVIEW_TOKEN: ${{ secrets.JJ_REVIEW_TOKEN }}
+          JJ_ENABLE_PUBLIC_PROPOSALS: ${{ vars.JJ_ENABLE_PUBLIC_PROPOSALS }}
+          JJ_BASE_BRANCH: jj-simon-knowledge-hub
+        run: node jj-simon/automation/propose-approved.mjs
