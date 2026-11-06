@@ -49,11 +49,11 @@ function create({user,element,endpoint}){
  }
  function summarizeOptimizerCandidate(c){
   const r=c.result;
-  return {riskScale:c.scale,initialBudget:c.initialBudget,accountsBudgeted:c.units,
+  return {riskScale:c.scale,rrVariant:c.rrVariant||null,initialBudget:c.initialBudget,accountsBudgeted:c.units,
    score:compact(c.score),
    stages:(r?.plan?.stageList||c.plan?.stageList||[]).map(stage=>{
     const x=(r?.plan?.riskProfiles||c.plan?.riskProfiles||{})[stage]||{};
-    return {stage,name:x.name,r1:x.r1,r2:x.r2,r3:x.r3,rr:x.rr,target:x.target};
+    return {stage,name:x.name,r1:x.r1,r2:x.r2,r3:x.r3,rr:x.rr,rrByTier:x.rrByTier||null,target:x.target};
    }),
    stagePasses:compact(r?.stages||[]),
    expected:compact(r?.avg||{}),
@@ -73,7 +73,7 @@ function create({user,element,endpoint}){
    targets:{totalCash:output.targetCash,perPayout:output.perPayout,
     requiredPayouts:output.requiredPayouts,minRoi:output.minRoi,
     minNetRoi:output.minNetRoi,minNetPnl:output.minNetPnl,
-    maxInvestment:output.maxInvestment,profitPerAccount:output.profitPerAccount},
+    maxInvestment:output.maxInvestment,profitPerAccount:output.profitPerAccount,minRR:output.minRR,maxRR:output.maxRR},
    inputs:compact(inputs),summary:{checked:output.checked,feasible:output.feasible,
     payoutCountFeasible:output.payoutCountFeasible},
    candidates};
