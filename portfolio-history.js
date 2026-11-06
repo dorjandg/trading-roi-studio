@@ -47,18 +47,65 @@ function create({user,element,endpoint}){
     tradeAssignments:compact(result.sample?.tradeAssignments||[])}
   };
  }
+ function summarizeOptimizerCandidate(c){
+  const r=c.result;
+  return {riskScale:c.scale,initialBudget:c.initialBudget,accountsBudgeted:c.units,
+   score:compact(c.score),
+   stages:(r?.plan?.stageList||c.plan?.stageList||[]).map(stage=>{
+    const x=(r?.plan?.riskProfiles||c.plan?.riskProfiles||{})[stage]||{};
+    return {stage,name:x.name,r1:x.r1,r2:x.r2,r3:x.r3,rr:x.rr,target:x.target};
+   }),
+   stagePasses:compact(r?.stages||[]),
+   expected:compact(r?.avg||{}),
+   cashTimeline:compact(r?.cashCurve||[]),
+   conversions:root.StudioPortfolioEngine?.stageFunnel?.(r)||[],
+   payoutGoalProbability:c.score?.hit
+  };
+ }
+ function makeOptimizerRecord({output,inputs,account}){
+  if(!output||!Array.isArray(output.candidates)||!output.candidates.length)
+   throw new Error('No completed optimizer scenarios to save.');
+  const candidates=output.candidates.map(summarizeOptimizerCandidate);
+  return {schema:'4ds-payout-optimizer-v1',kind:'calculate-investment',
+   id:'opt-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,9),
+   timestamp:now(),user,
+   account:compact(account||{firm:output.firm,size:output.size}),
+   targets:{totalCash:output.targetCash,perPayout:output.perPayout,
+    requiredPayouts:output.requiredPayouts,minRoi:output.minRoi,
+    minNetRoi:output.minNetRoi,minNetPnl:output.minNetPnl,
+    maxInvestment:output.maxInvestment,profitPerAccount:output.profitPerAccount},
+   inputs:compact(inputs),summary:{checked:output.checked,feasible:output.feasible,
+    payoutCountFeasible:output.payoutCountFeasible},
+   candidates};
+ }
  function render(){
   const body=element.querySelector('[data-history-body]');if(!body)return;
   body.innerHTML=runs.map((r,i)=>{
-   const net=r.firms.reduce((v,x)=>v+number(x.avg?.net),0),
-    paid=r.firms.reduce((v,x)=>v+number(x.avg?.paid),0);
-   return '<tr><td>'+escapeHtml(new Date(r.timestamp).toLocaleString())+'</td>'+
-    '<td>'+escapeHtml(r.firms.map(x=>x.firm+' '+USD(x.accountSize)).join(', '))+'</td>'+
-    '<td>'+escapeHtml(r.inputs.days)+'d · '+escapeHtml(r.inputs.tradesPerDay)+' trades/day · '+escapeHtml(r.inputs.trials)+' trials</td>'+
+   const isOptimizer=r.kind==='calculate-investment'||r.schema==='4ds-payout-optimizer-v1';
+   if(isOptimizer){
+    const best=r.candidates?.[0],x=best?.score||{};
+    return '<tr><td>'+escapeHtml(new Date(r.timestamp).toLocaleString())+
+     '<small style="display:block">Calculate Investment</small></td>'+
+     '<td>'+escapeHtml(r.account?.firm||'')+' '+USD(r.account?.size||0)+'</td>'+
+     '<td>'+escapeHtml(r.targets?.requiredPayouts||0)+' payouts · '+USD(r.targets?.totalCash||0)+
+     ' target · '+escapeHtml(r.inputs?.days||0)+'d</td>'+
+     '<td class="num">'+USD(x.avgNet)+'</td>'+
+     '<td class="num">'+number(x.avgPaid).toFixed(2)+'</td>'+
+     '<td><button type="button" data-history-export="'+i+'" title="Download full Calculate Investment result">Export</button></td></tr>';
+   }
+   const firms=Array.isArray(r.firms)?r.firms:[];
+   const net=firms.reduce((v,x)=>v+number(x.avg?.net),0),
+    paid=firms.reduce((v,x)=>v+number(x.avg?.paid),0);
+   return '<tr><td>'+escapeHtml(new Date(r.timestamp).toLocaleString())+
+    '<small style="display:block">Run Simulation</small></td>'+
+    '<td>'+escapeHtml(firms.map(x=>x.firm+' '+USD(x.accountSize)).join(', '))+'</td>'+
+    '<td>'+escapeHtml(r.inputs?.days||0)+'d · '+escapeHtml(r.inputs?.tradesPerDay||0)+
+    ' trades/day · '+escapeHtml(r.inputs?.trials||0)+' trials</td>'+
     '<td class="num">'+USD(net)+'</td><td class="num">'+paid.toFixed(2)+'</td>'+
-    '<td><button type="button" data-history-export="'+i+'" title="Download this run as JSON">Export</button></td></tr>';
-  }).join('')||'<tr><td colspan="6">No saved simulations yet. Run Simulation to create the first record.</td></tr>';
-  const count=element.querySelector('[data-history-count]');if(count)count.textContent=runs.length+' saved run(s)';
+    '<td><button type="button" data-history-export="'+i+'" title="Download simulation run">Export</button></td></tr>';
+  }).join('')||'<tr><td colspan="6">No saved runs yet. Run Simulation or Calculate Investment to create the first record.</td></tr>';
+  const count=element.querySelector('[data-history-count]');
+  if(count)count.textContent=runs.length+' saved run(s)';
  }
  function download(payload,name){
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
@@ -133,7 +180,7 @@ function create({user,element,endpoint}){
  element.addEventListener('click',event=>{
   const target=event.target.closest('button');if(!target)return;
   if(target.hasAttribute('data-history-export')){
-   const r=runs[Number(target.dataset.historyExport)];if(r)download(r,'4ds-simulation-'+user+'-'+r.timestamp.replace(/[:.]/g,'-')+'.json');
+   const r=runs[Number(target.dataset.historyExport)];if(r)download(r,'4ds-'+(r.kind==='calculate-investment'?'calculate-investment':'simulation')+'-'+user+'-'+r.timestamp.replace(/[:.]/g,'-')+'.json');
   }else if(target.hasAttribute('data-history-export-all')){
    download({schema:'4ds-portfolio-history-v1',user,exportedAt:now(),runs},'4ds-simulation-history-'+user+'.json');
   }else if(target.hasAttribute('data-history-refresh'))loadCloud();
@@ -146,6 +193,11 @@ function create({user,element,endpoint}){
     id:Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,9),
     timestamp:now(),user,inputs:compact(inputs),
     accounts:compact(rows),firms:results.map(summarize)};
+   if(writeLocal([record,...runs])){render();cloudSync()}
+   return record;
+  },
+  saveOptimizer(data){
+   const record=makeOptimizerRecord(data);
    if(writeLocal([record,...runs])){render();cloudSync()}
    return record;
   },
