@@ -52,7 +52,7 @@ function show(container,comparison){
   tablewrap.append(table);details.append(tablewrap);wrap.append(details);
  }
  const foot=document.createElement('p');foot.className='hint';
- foot.textContent='Important: +$450 is a milestone, not an automatic payout. The +$1,800 version stops after two consecutive wins; the +$7,200 version continues but firm limits can cap the intended $1,800 third trade. The table below contains Monte Carlo portfolio statistics, not these deterministic example paths.';
+ foot.textContent='Important: +$450 is a milestone, not an automatic payout. The +$1,800 version stops after two consecutive wins; the +$7,200 version continues but firm limits can cap the intended $1,800 third trade. To run a FULL simulation of one of these policies, choose its row in the model comparison below and click Analyze. The normal Run Simulation button still uses your saved strategy settings. The original investment option may have a different funded target, so compare the two variants with the same +$1,800 or +$7,200 target for a like-for-like comparison.';
  wrap.append(foot);container.prepend(wrap);
 }
 D.renderFundedPaths=show;
