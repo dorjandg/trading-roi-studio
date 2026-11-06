@@ -247,7 +247,7 @@ async function optimize({plan,perPayout,maxInvestment,minRoi=2,minNetRoi=0,minNe
  for(const candidate of shortlist){
   const confirmed=simulate(candidate.plan,candidate.units,validationTrials,inputs.seed+37013);
   checked++;
-  candidates.push({...candidate,score:assess(confirmed,count,minNetPnl,perPayout),
+  candidates.push({...candidate,r3Feasible:r3Executable(candidate),score:assess(confirmed,count,minNetPnl,perPayout),
    result:confirmed,initialBudget:candidate.units*unit});
   if(checked%3===0)await pause();
  }
@@ -528,7 +528,7 @@ function render(out,sortMode='model',currentPlan=null){
    '<div class="reverse-review-actions"><button type="button" data-reverse-send-firms="'+pathIndex+'">Send this risk setup to Firms</button>'+
    '<span class="hint">Optional · confirmation required · previous Firms settings backed up. The saved account is not changed by simply opening this option.</span></div>'+ 
    '<p class="reverse-review-status" role="status" aria-live="polite"></p>';
-  const goalMet=s.avgNet+1e-8>=out.minNetPnl&&s.avgPaid+1e-8>=out.requiredPayouts&&
+  const goalMet=candidate.r3Feasible!==false&&s.avgNet+1e-8>=out.minNetPnl&&s.avgPaid+1e-8>=out.requiredPayouts&&
    s.roi+1e-8>=out.minRoi&&s.budgetRoi+1e-8>=out.minNetRoi;
   const summaryMetric=(label,value,extra='')=>'<span class="reverse-compact-metric '+extra+'"><small>'+
    label+'</small><strong>'+value+'</strong></span>';
@@ -538,7 +538,7 @@ function render(out,sortMode='model',currentPlan=null){
    ' · '+candidate.scale.toFixed(2)+'× · '+escapeHtml(candidate.rrVariant||'')+
    ' · '+(candidate.riskMode==='target'?'Target':'Saved')+' risk'+(candidate.riskMode==='target'?' · R3 '+escapeHtml(candidate.r3Route||'legacy'):'')+(candidate.riskMode==='target'&&p.stageList.some(stage=>!(p.id==='topstep'&&stage==='p1')&&p.riskProfiles[stage]?.r3Analysis?.feasibleAfterTwoLosses===false)?' · R3 blocked on LL':'')+
    '<span class="reverse-candidate-status '+(goalMet?'reverse-status-met':'')+'">'+
-   (goalMet?'Targets met':'Below target')+'</span></span>'+
+   (candidate.r3Feasible===false?'R3 blocked after LL':goalMet?'Targets met':'Below target')+'</span></span>'+
    '<span class="reverse-summary-kpis">'+
    summaryMetric('Net P&L',money(s.avgNet))+
    summaryMetric('Net ROI',pct(s.budgetRoi))+
