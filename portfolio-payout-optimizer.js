@@ -677,12 +677,48 @@ function render(out,sortMode='model',currentPlan=null){
   '. These results are model assumptions, not permission to exceed a firm loss limit.</p></details>':'')+
   '<details class="reverse-info-section"><summary><strong>How to interpret these estimates</strong> <span>· Monte Carlo methodology and ROI definitions</span></summary><p class="hint">Estimates use 200 independent validation trials per shortlisted scenario after 50-trial searches across risk levels and investment amounts. ROI on incurred fees = expected net cash / expected fees actually incurred. Net ROI on investment = expected net cash / tested starting budget. Both may be negative. Starting budget is cash made available for challenge and activation costs, NOT the total fees actually incurred; any refunded challenge fees are tracked in modeled cash receipts. Payout counts and earnings can differ between trials. Searches are approximate, account purchases are capped at 100 per type, and risk safety depends on modeled firm rules. Scenarios do not change your saved Firms risk settings.</p></details></details>';
 }
-function renderMoreInvestmentModels(search,origin='Selected scenario'){
+function renderMoreInvestmentModels(search,origin='Selected scenario',sortKey='improvement',descending=true){
  const fmt=n=>n==null||!Number.isFinite(Number(n))?'—':Number(n).toFixed(2);
  const rate=n=>n==null?'—':(Number(n)*100).toFixed(1)+'%';
  const usd=n=>n==null||!Number.isFinite(Number(n))?'—':money(Number(n));
  const baseline=search.baseline.holdout;
- const models=[{title:'Selected investment · baseline',plan:search.baseline.plan,holdout:baseline},...search.ideas];
+ const all=[{title:'Selected investment · baseline',plan:search.baseline.plan,holdout:baseline,originalIndex:0},
+  ...search.ideas.map((v,i)=>({...v,originalIndex:i+1}))];
+ const keys={
+  improvement:r=>r.holdout.avg.net-baseline.avg.net,
+  net:r=>r.holdout.avg.net,roi:r=>r.holdout.roi,
+  goal:r=>r.holdout.chanceGoal??-1,
+  payout:r=>r.holdout.chancePayout,
+  p10:r=>r.holdout.p10,
+  blocked:r=>r.holdout.avg.exhausted,
+  paid:r=>r.holdout.avg.paid,
+  funded:r=>r.holdout.avg.funded,
+  bought:r=>r.holdout.avg.bought,
+  spent:r=>r.holdout.avg.spent,
+  pf:r=>r.holdout.tradeKpis?.pf??-Infinity,
+  wr:r=>r.holdout.tradeKpis?.wr??-Infinity,
+  rr:r=>r.holdout.tradeKpis?.rr??-Infinity,
+  ar:r=>r.holdout.tradeKpis?.ar??-Infinity,
+  aw:r=>r.holdout.tradeKpis?.aw??-Infinity,
+  al:r=>r.holdout.tradeKpis?.al??-Infinity,
+  ev:r=>r.holdout.tradeKpis?.ev??-Infinity,
+  trades:r=>r.holdout.avg.trades
+ };
+ const options=[
+ ['improvement','Net improvement'],['net','Expected net'],['roi','Fee ROI'],
+ ['goal','Net target chance'],['payout','First payout chance'],['p10','Downside P10'],
+ ['blocked','Risk blocked'],['paid','Payouts'],['funded','Funded'],
+ ['bought','Challenges bought'],['spent','Fees spent'],
+ ['pf','Profit factor'],['wr','Win rate'],['rr','Planned RR'],
+ ['ar','Realized R'],['aw','Average winner'],['al','Average loser'],['ev','Expectancy'],['trades','Trade count']
+ ];
+ const selected=Object.prototype.hasOwnProperty.call(keys,sortKey)?sortKey:'improvement';
+ const models=[all[0],...all.slice(1).sort((a,b)=>{
+  const av=keys[selected](a),bv=keys[selected](b);
+  const difference=av===bv?0:av===Infinity?1:bv===Infinity?-1:
+   av===-Infinity?-1:bv===-Infinity?1:av-bv;
+  return (descending?-difference:difference)||a.originalIndex-b.originalIndex;
+ })];
  const rows=models.map((m,i)=>{
   const r=m.holdout,k=r.tradeKpis||{};
   const riskDetails=m.plan.stageList.map(stage=>{
@@ -691,26 +727,39 @@ function renderMoreInvestmentModels(search,origin='Selected scenario'){
     ['r1','r2','r3'].map(t=>fmt(p[t]));
    return '<div class="payout-more-phase"><strong>'+escapeHtml(p.name||stage)+'</strong> · '+
     escapeHtml(p.policy?.mode||'saved')+' · '+values.join(' / ')+' USD · '+
-    ['r1','r2','r3'].map(t=>fmt(p.rrByTier?.[t]??p.rr)).join(' / ')+'R</div>';
+    ['r1','r2','r3'].map(t=>fmt(p.rrByTier?.[t]??p.rr)).join(' / ')+'R'+
+    ' · target '+usd(p.target)+' · max wins/day '+Number(p.maxWinsPerDay||1)+'</div>';
   }).join('');
   const delta=r.avg.net-baseline.avg.net;
-  const compare=i===0?'Baseline':(delta>=0?'+':'')+usd(delta);
-  return '<tr><th scope="row">'+escapeHtml(m.title)+
-   '<details><summary>Phase risk rules</summary>'+riskDetails+'</details></th>'+
+  const compare=m.originalIndex===0?'Baseline':(delta>=0?'+':'')+usd(delta);
+  return '<tr><th scope="row"><b>'+escapeHtml(m.title)+'</b>'+
+   '<small class="payout-more-model-reason">'+escapeHtml(m.reason||'Original selected investment strategy')+'</small>'+
+   '<details><summary>R1/R2/R3 · phase settings</summary>'+riskDetails+'</details></th>'+
    '<td>'+usd(r.avg.net)+'</td><td>'+rate(r.roi)+'</td><td>'+rate(r.chanceGoal)+'</td>'+
-   '<td>'+compare+'</td><td>'+fmt(k.pf)+'</td><td>'+rate(k.wr)+'</td><td>'+fmt(k.rr)+'</td>'+
+   '<td>'+compare+'</td><td>'+usd(r.p10)+'</td><td>'+rate(r.chancePayout)+'</td>'+
+   '<td>'+fmt(r.avg.exhausted)+'</td><td>'+fmt(r.avg.paid)+'</td>'+
+   '<td>'+fmt(r.avg.funded)+'</td><td>'+fmt(r.avg.bought)+'</td><td>'+usd(r.avg.spent)+'</td>'+
+   '<td>'+fmt(k.pf)+'</td><td>'+rate(k.wr)+'</td><td>'+fmt(k.rr)+'</td>'+
    '<td>'+fmt(k.ar)+'</td><td>'+usd(k.aw)+'</td><td>'+usd(k.al)+'</td>'+
    '<td>'+usd(k.ev)+'</td><td>'+fmt(r.avg.trades)+'</td>'+
-   '<td><button type="button" data-more-analyze="'+i+'">Analyze</button></td></tr>';
+   '<td><button type="button" data-more-analyze="'+m.originalIndex+'">Analyze</button></td></tr>';
  }).join('');
+ const optionHtml=options.map(([key,title])=>'<option value="'+key+'"'+(selected===key?' selected':'')+'>'+title+'</option>').join('');
  return '<div class="payout-more-title"><strong>More trading models · '+models.length+' compared</strong>'+
   '<small>Based on '+escapeHtml(origin)+' · '+search.evaluated+' risk configurations tested</small>'+
   '<button type="button" data-more-close="1">Close</button></div>'+
+  '<div class="payout-more-sort"><label>Sort by <select data-more-sort="1">'+optionHtml+'</select></label>'+
+  '<button type="button" data-more-direction="1">'+(descending?'↓ High to low':'↑ Low to high')+'</button>'+
+  '<span class="hint">Original investment stays first · sorting does not recalculate</span></div>'+
   '<p class="hint">Separate '+search.trainTrials+'-trial discovery and '+search.testTrials+
-  '-trial validation at this option’s fixed investment budget and trading assumptions. Baseline is the original investment setup; additional models are risk variations, not newly optimized budgets. Select Phase risk rules to inspect R1/R2/R3; Analyze opens Sections 4–7. No Firms settings are changed.</p>'+
+  '-trial validation at the selected investment budget. Baseline is the original setup; the other models vary trading risk, not account fees or purchase budget. Open R1/R2/R3 for phase settings or Analyze for Sections 4–7.</p>'+
   '<div class="tablewrap"><table class="payout-more-table"><thead><tr>'+
-  '<th>Model</th><th>Net</th><th>ROI</th><th>Goal</th><th>Δ Net</th><th>PF</th><th>WR</th><th>RR</th><th>AR</th><th>AW</th><th>AL</th><th>EV</th><th>Trades</th><th>View</th>'+
-  '</tr></thead><tbody>'+rows+'</tbody></table></div>';
+  '<th>Model</th><th>Net</th><th>ROI</th><th>Goal</th><th>Δ Net</th>'+
+  '<th title="10th percentile net cash outcome">P10</th><th title="Chance of at least one first payout">CP</th>'+
+  '<th title="Average risk-blocked accounts, not breached accounts">BA</th><th>Paid</th><th>Funded</th><th>Bought</th><th>Fees</th>'+
+  '<th>PF</th><th>WR</th><th>RR</th><th>AR</th><th>AW</th><th>AL</th><th>EV</th><th>Trades</th><th>View</th>'+
+  '</tr></thead><tbody>'+rows+'</tbody></table></div>'+
+  '<details class="payout-more-help"><summary>KPI key</summary><p class="hint">P10 = 10th percentile modeled net cash · CP = chance of first payout · BA = mean risk-blocked accounts (not breaches) · Paid, Funded and Bought = average distinct account counts · Fees = incurred fees. PF = profit factor; WR = win rate; RR = planned reward/risk; AR = realized R; AW/AL = average win/loss; EV = modeled expectancy per trade. All numbers are simulated, not historical performance.</p></details>';
 }
 
 root.StudioPayoutOptimizer={needed,profitNeeded,planFor,assess,optimize,render,renderAccountPath,sampleAccounts,diagnoseScenario,renderMoreInvestmentModels};
