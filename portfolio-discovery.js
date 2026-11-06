@@ -278,5 +278,50 @@ function search(base,options={}){
   warning:robust.length?'Holdout outperformance is conditional on fixed assumptions; it does not establish a trading edge.':
    'No tested plan outperformed baseline on the chosen holdout objective. Retain baseline unless other tradeoffs matter.'};
 }
-root.StudioModelDiscovery={search,propose,score,clonePlan:copy,riskCeiling};
+// Purpose-built fixed-budget comparison: does reducing R1/R2/R3 preserve more accounts?
+// Same market opportunity sequence and assumptions in every scenario. Original is immutable.
+function compareLowerRisk(base,options={}){
+ const trials=clamp(Math.floor(options.testTrials||150),50,400);
+ const seed=((Math.floor(Number(options.seed)||24717)>>>0)||24717);
+ const common={
+  days:options.days,tradesPerDay:options.tradesPerDay,winRate:options.winRate,
+  signalMode:options.signalMode,purchaseMode:options.purchaseMode==='recycle'?'recycle':'upfront',
+  capacityMode:options.capacityMode==='manual'?'manual':'automatic',
+  maxActive:options.maxActive,maxBuysPerDay:options.maxBuysPerDay,
+  tradeSchedule:options.tradeSchedule||null,reinvestPayouts:options.reinvestPayouts===true,
+  budget:options.budget,netGoal:options.netGoal,
+  pairedSignals:true,seed,trials,maxAccounts:100,trackCharts:true
+ };
+ const variants=[
+  {key:'baseline',title:'Original risk · 100%',reason:'Unchanged baseline',all:1},
+  {key:'all85',title:'All phases · 85% risk',reason:'Reduce R1/R2/R3 or adaptive cap in every phase',all:.85},
+  {key:'all70',title:'All phases · 70% risk',reason:'Reduce every phase risk by 30%',all:.70},
+  {key:'all55',title:'All phases · 55% risk',reason:'Reduce every phase risk by 45%',all:.55},
+  {key:'all40',title:'All phases · 40% risk',reason:'Reduce every phase risk by 60%',all:.40},
+  {key:'funded70',title:'Funded only · 70% risk',reason:'Leave evaluation untouched; reduce funded risk by 30%',stage:'funded',factor:.70},
+  {key:'funded50',title:'Funded only · 50% risk',reason:'Leave evaluation untouched; halve funded risk',stage:'funded',factor:.50},
+  {key:'evaluation70',title:'Evaluation only · 70% risk',reason:'Reduce Challenge and Verification risk by 30%; funded unchanged',stage:'evaluation',factor:.70}
+ ];
+ const results=variants.map(v=>{
+  const plan=copy(base);
+  for(const [stage,p] of Object.entries(plan.riskProfiles)){
+   const factor=v.all??(v.stage==='evaluation'?stage!=='funded'?v.factor:1:stage===v.stage?v.factor:1);
+   if(factor===1)continue;
+   for(const slot of ['r1','r2','r3'])p[slot]=round(p[slot]*factor);
+   if(Number.isFinite(Number(p.dynamicMaxRisk)))p.dynamicMaxRisk=round(p.dynamicMaxRisk*factor);
+  }
+  const holdout=E.simulatePortfolio(plan,common);
+  return {...v,plan,holdout};
+ });
+ const baseline=results[0];
+ const ideas=results.slice(1).map(v=>({
+  ...v,delta:candidateDelta(v.holdout,baseline.holdout),
+  improvement:score(v.holdout,'balanced')-score(baseline.holdout,'balanced')
+ }));
+ return {baseline,ideas,robust:ideas.filter(v=>v.improvement>0),
+  ceiling:riskCeiling(base),evaluated:variants.length,selected:variants.length,
+  objective:'balanced',trainTrials:0,testTrials:trials,trainSeed:seed,testSeed:seed,
+  warning:'Paired-trial scenario sensitivity only. Lower risk can reduce blocks but also delay phase passes and payouts. This is not an independent holdout test or proof of future performance.'};
+}
+root.StudioModelDiscovery={search,propose,score,compareLowerRisk,clonePlan:copy,riskCeiling};
 })(typeof window!=='undefined'?window:globalThis);
