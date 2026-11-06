@@ -22,3 +22,5 @@ const firmChapter=chapters.find(x=>x.slug==='prop-firm-reference');
 if(firmChapter){
  for(const x of jjFirmDetails)firmChapter.sections.push({title:x[0],points:x[1],src:x[2]});
 }
+
+render();
