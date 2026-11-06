@@ -41,7 +41,7 @@ svg{display:block;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:
 .topbar{height:76px;min-height:76px;border-bottom:1px solid var(--border-soft);display:flex;align-items:center;justify-content:space-between;gap:20px;padding:0 clamp(20px,3.6vw,55px);position:sticky;top:0;background:color-mix(in srgb,var(--bg) 94%,transparent);backdrop-filter:blur(18px);z-index:9}
 .topbar-leading,.topbar-actions{display:flex;align-items:center;gap:13px;min-width:0}
 .topbar-actions{margin-left:auto}
-.breadcrumb{font-size:12px;color:var(--subtle);white-space:nowrap}.breadcrumb strong{color:var(--text);font-weight:650}.crumb-arrow{padding:0 12px;color:var(--subtle)}
+.breadcrumb{font-size:12px;color:var(--subtle);white-space:nowrap}.breadcrumb strong{color:var(--text);font-weight:650}.breadcrumb .crumb-root{appearance:none;display:inline-block;background:transparent;border:0;padding:5px 0;margin:0;color:var(--muted);font:inherit;cursor:pointer;transition:color .15s}.breadcrumb .crumb-root:hover,.breadcrumb .crumb-root:focus-visible{color:var(--accent);text-decoration:underline;text-underline-offset:3px}.crumb-arrow{padding:0 12px;color:var(--subtle)}
 .icon-button{flex:none;display:inline-flex;justify-content:center;align-items:center;height:38px;width:38px;color:var(--muted);background:transparent;border:1px solid var(--border);border-radius:10px}
 .icon-button:hover{background:var(--panel-strong);color:var(--text)}
 .icon-button svg{width:19px;height:19px}.menu-button{display:none}
