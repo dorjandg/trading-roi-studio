@@ -195,7 +195,7 @@ function start(){
  $('runPayoutOptimizer').addEventListener('click',async ev=>{
   ev.preventDefault();ev.stopPropagation();
   if(busy)return;
-  syncOptions();
+  storeAssumptions();
   const selected=$('payoutOptAccount').value;
   const row=bridge.getRows().find(r=>r.id+':'+r.size===selected);
   const status=$('payoutOptStatus'),button=$('runPayoutOptimizer');
