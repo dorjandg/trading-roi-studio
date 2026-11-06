@@ -1,8 +1,65 @@
 {
   "schema": "4ds-gpt-research-v1",
-  "updatedAt": "2026-11-07T00:15:00+04:00",
+  "updatedAt": "2026-11-06T20:31:52.485Z",
   "visibility": "public-generic",
   "reviews": [
+    {
+      "id": "review-report-status-display-v1",
+      "date": "2026-11-06",
+      "category": "Section 11 reporting",
+      "status": "updated",
+      "priority": "medium",
+      "title": "Research status labels now match the published report schema",
+      "finding": "The Section 11 renderer recognized only four report statuses while the existing public research feed also uses verified and needs-review. Both were previously displayed through a generic pending-review fallback. This was a display-only classification defect; the underlying reports were not changed.",
+      "suggestion": "After deployment, refresh Section 11 and check that verified, needs-review, investigated and recommended findings display their original status labels on desktop and mobile.",
+      "measurements": [
+        "Unrecognized report statuses before and after the fix",
+        "Matching status text in the JSON feed versus the rendered Section 11 cards",
+        "Deployment asset version and browser refresh behavior"
+      ],
+      "action": "Expanded the client-side status whitelist without changing the research schema or simulation logic; refreshed the simulator script asset version.",
+      "source": "Public GitHub gpt-research-reports.json and gpt-research-reports.js source, plus portfolio-simulator.html asset reference.",
+      "codeCommit": "b8ebedcde59fa5f6b605e10b12bdd85ad3e24287",
+      "verified": "Source readback confirms both missing statuses are recognized. The script reference was updated separately; production-browser rendering and Cloudflare propagation remain unverified."
+    },
+    {
+      "id": "review-optimizer-sanity-checks-v1",
+      "date": "2026-11-06",
+      "category": "Simulation integrity",
+      "status": "investigated",
+      "priority": "medium",
+      "title": "Recent repeated optimizer results passed basic consistency checks",
+      "finding": "The newest retained cloud history remained Calculate Investment summaries rather than account-level Full Simulation traces. Two newer summaries matched previously retained same-input scenario results. Across retained optimizer candidate records, internal net-cash arithmetic, ROI definitions, ordered account funnel counts and bounded goal probabilities passed targeted consistency checks. This does not validate real trading outcomes or the accuracy of model assumptions.",
+      "suggestion": "For an individual blocked or funded account, save a new Full Simulation with sample event traces; then test risk-headroom and closure labels instead of diagnosing from optimizer aggregates. Compare future changes using fixed inputs and paired seeds.",
+      "measurements": [
+        "Number of new distinct scenario fingerprints versus repeated saved calculations",
+        "Checks of net equals receipts minus incurred costs and ROI equals net over spend",
+        "Account-funnel monotonicity and goal probabilities within zero to one",
+        "Number of Full Simulation records containing account-level sample trace events"
+      ],
+      "action": "Research-only analysis. No trading strategies, per-phase risks or engine behavior were changed.",
+      "source": "Connected private cloud history, summarized without financial values or account identifiers; GitHub portfolio-engine.js preflight and history serializer.",
+      "verified": "Aggregate candidate consistency checks passed; repeated history is not by itself a defect. Account-level cause, live performance and a new complete cloud simulation trace remain unverified."
+    },
+    {
+      "id": "review-cloud-review-queue-capacity-v1",
+      "date": "2026-11-06",
+      "category": "Cloud reliability",
+      "status": "recommended",
+      "priority": "high",
+      "title": "Review-request delivery needs a cloud-capacity and readback check",
+      "finding": "The Section 11 review-request client saves an entire profile snapshot and refuses a write above its 850,000-character guard. A connected cloud snapshot was found close to that cap, so adding queue entries or more simulation history may hit the storage guard. No queued manual request was present in the inspected snapshot; this does not establish that the request form has failed, because a successful test submission was not observed.",
+      "suggestion": "Submit one non-sensitive manual Section 11 request and confirm its request ID and nonce in the next cloud readback. Track remaining snapshot capacity and prefer a non-destructive data-retention design before changing cloud storage. Avoid silently discarding older private records to make space.",
+      "measurements": [
+        "Serialized snapshot character count as a share of the 850,000-character client cap",
+        "Queued request ID and nonce confirmed after cloud round-trip",
+        "Explicit cloud-save failure messages and retained-history count",
+        "Full-simulation trace retention when profile data grows"
+      ],
+      "action": "Published a capacity warning only; no cloud records deleted or changed, and no risk settings edited.",
+      "source": "Connected cloud file structure and GitHub gpt-review-request.js and portfolio-history.js capacity handling.",
+      "verified": "Client-side cap and limited remaining headroom verified by read-only inspection. No manual queue write failure, production browser test or cloud-server quota failure was observed."
+    },
     {
       "id": "review-optimizer-policy-coverage-v2",
       "date": "2026-11-07",
