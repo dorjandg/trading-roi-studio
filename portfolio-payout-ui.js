@@ -1369,10 +1369,12 @@ function start(){
   if(event.target.closest?.('[data-more-direction]')){
    moreDescending=!moreDescending;renderUnifiedTable();return;
   }
+  const sendButton=event.target.closest?.('[data-more-send-firms]');
   const ledgerButton=event.target.closest?.('[data-more-ledger]');
-  const button=ledgerButton||event.target.closest?.('[data-more-analyze]');
+  const button=sendButton||ledgerButton||event.target.closest?.('[data-more-analyze]');
   if(!button||!lastOptimizerOutput||button.disabled)return;
-  const match=/^(original|extra):([0-9]+)$/.exec(ledgerButton?button.dataset.moreLedger:button.dataset.moreAnalyze||'');
+  const raw=sendButton?button.dataset.moreSendFirms:ledgerButton?button.dataset.moreLedger:button.dataset.moreAnalyze;
+  const match=/^(original|extra):([0-9]+)$/.exec(raw||'');
   if(!match)return;
   const index=Number(match[2]);
   let model,label;
@@ -1385,6 +1387,20 @@ function start(){
    if(!idea||!lastModelSearch)return;
    model={plan:idea.plan,result:idea.holdout,initialBudget:lastModelSearch.candidate.initialBudget};
    label=idea.title;
+  }
+  if(sendButton){
+   if(typeof bridge.sendOptimizerToFirms!=='function'){
+    $('payoutOptStatus').textContent='Prop Account transfer is unavailable.';return;
+   }
+   const result=model.result||{},k=result.tradeKpis||{};
+   const metrics={net:result.avg?.net,roi:result.roi,p10:result.p10,chancePayout:result.chancePayout,
+    profitFactor:k.pf,winRate:k.wr,rewardRisk:k.rr,realizedR:k.ar,
+    avgWin:k.aw,avgLoss:k.al,expectancy:k.ev,tradesPerTrial:result.avg?.trades,
+    trials:result.config?.trials,budget:model.initialBudget};
+   const ok=bridge.sendOptimizerToFirms(model.plan,label,metrics);
+   $('payoutOptStatus').textContent=ok?'Saved '+label+' as the selected Prop Account default, with a restorable backup. Open Firms to verify.':
+    'Prop Account defaults unchanged; see the Firms transfer status for details.';
+   return;
   }
   button.disabled=true;button.textContent=ledgerButton?'Calculating spending…':'Analyzing…';
   try{
