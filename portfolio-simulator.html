@@ -306,6 +306,13 @@ details p{margin:6px 0}
  .account-grid .remove{top:5px;right:6px}
  .account-risk-details{grid-column:1/-1}}
 /* Compact daily account journey: stage flow and tabular daily status. */
+.numbered-panel{margin-top:9px}
+.numbered-panel>.numbered-content{padding:9px 3px 2px}
+.numbered-panel>.numbered-content>.hint:first-child{margin:0 0 9px}
+.numbered-panel>summary{display:flex;align-items:center;gap:10px}
+.numbered-panel>summary strong{flex:1}
+.numbered-panel>summary .sim-charts-hint{margin-left:auto}
+@media(max-width:600px){.numbered-panel>.numbered-content{padding:7px 0 0}}
 .journey-panel{margin-top:8px}
 .journey-toolbar{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 7px}
 .journey-toolbar label{display:flex;flex-direction:column;gap:3px;flex:1 1 190px;max-width:360px;
@@ -377,8 +384,7 @@ details p{margin:6px 0}
 <h1>Budget → Challenges → Phases → Payout</h1>
 <p class="muted">Uses the saved RR, R1/R2/R3 and risk decisions from your account's phase options. It simulates random trade outcomes rather than choosing future winning paths. No orders are placed.</p>
 <div class="alert"><strong>Model scope:</strong> Risk amounts are used exactly or the trade is blocked. Minimum trading days after reaching a target are represented as <b>administrative qualification assumptions</b> (not invented W/L trades). Payout eligibility, subscriptions, trailing losses, firm allocation and checkout rules need separate verification.</div>
-<section class="panel">
- <h2>1 · Investment & simulation inputs</h2><p class="hint">Same-budget comparison allocates the entire budget separately to each firm. Split-budget mode divides one budget across the selected firms.</p>
+<details class="sim-charts-panel numbered-panel" id="section1Panel" open><summary><strong>1 · Investment & simulation inputs</strong><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><p class="hint">Same-budget comparison allocates the entire budget separately to each firm. Split-budget mode divides one budget across the selected firms.</p>
  <div class="fields">
   <div class="field"><label for="budget">Starting budget (USD)</label><input id="budget" type="number" min="0" step="100" value="5000"></div>
   <div class="field"><label for="netGoal">Target net profit (USD)</label><input id="netGoal" type="number" min="0" step="100" value="20000"></div>
@@ -408,14 +414,13 @@ details p{margin:6px 0}
    <label><input type="radio" name="budgetMode" value="split"> Split one budget by weights</label>
  </div>
  <p class="hint" id="budgetModeNote">In compare mode each firm uses its own hypothetical budget and trade schedule. In split-budget mode the dynamic daily trade opportunities are shared among firms. Do not sum independent comparisons.</p>
-</section>
-<section class="panel"><h2>2 · Prop-firm accounts</h2><p class="hint">Saved profiles and phase-risk options are read from this browser's selected 4Ds user (<b id="userLabel">—</b>). Use Firms on the main site to adjust R1/R2/R3 and RR; the simulator doesn't create a second set of risk settings.</p>
+</div></details>
+<details class="sim-charts-panel numbered-panel" id="section2Panel" open><summary><strong>2 · Prop-firm accounts</strong><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><p class="hint">Saved profiles and phase-risk options are read from this browser's selected 4Ds user (<b id="userLabel">—</b>). Use Firms on the main site to adjust R1/R2/R3 and RR; the simulator doesn't create a second set of risk settings.</p>
  <div id="accounts"></div>
  <div class="actions"><button id="addAccount" type="button">+ Add account to comparison</button><button id="reload" type="button">Reload saved stage settings</button><span id="profileStatus" class="hint"></span></div>
  <div class="actions"><button id="run" type="button" class="primary">Run Simulation</button><span id="status" class="status" role="status">Loading account catalog…</span></div>
-</section>
-<section class="panel" id="discovery">
- <h2>3 · Find Better Models</h2>
+</div></details>
+<details class="sim-charts-panel numbered-panel" id="discovery"><summary><strong>3 · Find Better Models</strong><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content">
  <p class="hint">Automatically compare risk-sized models and trade-order rules using the same account, budget, win rate and RR. Candidates are shortlisted on one simulated random sample and retested using different random outcomes under the same assumptions. This is <b>not historical validation</b> or evidence of a new trading edge.</p>
  <div class="fields">
   <div class="field"><label for="ideaAccount">Prop-firm account to optimize</label><select id="ideaAccount"></select></div>
@@ -434,19 +439,19 @@ details p{margin:6px 0}
   <span id="ideaStatus" class="status" role="status">Run a model search to compare alternatives.</span></div>
  <div id="ideaResults"></div>
  <div id="firmsSendStatus" class="status" style="margin-top:10px" aria-live="polite">Suggested models stay in Portfolio Sim until you explicitly send one to Firms.</div>
-</section>
+</div></details>
 <section id="results" hidden>
-<section class="panel"><h2>4 · Results across prop firms</h2><p id="summaryCaption" class="hint"></p><div id="totals" class="kpis"></div>
+<details class="sim-charts-panel numbered-panel" id="section4Panel" open><summary><strong>4 · Results across prop firms</strong><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><p id="summaryCaption" class="hint"></p><div id="totals" class="kpis"></div>
  <div class="tablewrap"><table><thead><tr><th>Firm / account</th><th>Budget</th><th>Challenges</th><th>Spent avg.</th><th>Phase 1 passes</th><th>Phase 2 passes</th><th>Funded</th><th>Paid</th><th>Payouts avg.</th><th>Net avg.</th><th>ROI</th><th>Chance ≥1 payout</th></tr></thead><tbody id="comparisonRows"></tbody></table></div>
  <p class="hint">Counts and profits are averages over simulated trials, not whole-account predictions. ROI = expected net / expected incurred costs. Starting budget is not account capital.</p>
  <div id="combined" hidden></div>
-</section>
+</div></details>
 <details id="chartsPanel" class="sim-charts-panel"><summary><strong>5 · Charts</strong><span class="sim-charts-summary">Equity · Drawdown · Distributions · Payouts</span><span class="sim-charts-hint">Show / hide</span></summary><div id="chartsContents" class="sim-charts-contents"><p class="hint">Run a simulation to load charts.</p></div></details>
 <details id="journeyPanel" class="sim-charts-panel journey-panel">
  <summary><strong>6 · Account Journey</strong><span class="sim-charts-summary">Day by day · Challenge → Verification → Funded → Target → Payout</span><span class="sim-charts-hint">Show / hide</span></summary>
  <div id="journeyContents" class="sim-charts-contents"><p class="hint">Run a simulation to see account status by trading day.</p></div>
 </details>
-<section class="panel"><h2>7 · Detailed account simulations</h2><p class="hint">Open a firm below to test separate R1, R2 and R3 amounts for Phase 1, Phase 2 and Funded without changing your saved Firms settings. The example trade list has pages and shows only W/L trades by default; switch to All events to include qualification days and stage changes.</p><div id="details"></div></section>
+<details class="sim-charts-panel numbered-panel" id="section7Panel"><summary><strong>7 · Detailed account simulations</strong><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><p class="hint">Open a firm below to test separate R1, R2 and R3 amounts for Phase 1, Phase 2 and Funded without changing your saved Firms settings. The example trade list has pages and shows only W/L trades by default; switch to All events to include qualification days and stage changes.</p><div id="details"></div></div></details>
 </section>
 <section class="panel"><h2>Model assumptions & limits</h2><details><summary>Read before interpreting an ROI estimate</summary><p class="hint">Challenge purchases follow the selected buying mode: upfront on day 0, or dynamic day-by-day purchases and replacements when trading slots and budget permit. Dynamic replacements respond to failed, risk-exhausted, or first-paid accounts; minimum-day and funded eligibility assumptions still apply. Taxes, automatic refund processing delays, and repeated funded payouts are not simulated. Topstep's subscription renewals, variant-specific activation rules, contract limits and full payout eligibility are not enforced. Its modeled initial payout is up to 50% of realized funded profit capped at $5,000; check the exact purchased path. FTMO/Hola pay a modeled split of funded profit after a planning target and waiting period, not a guaranteed withdrawal. Topstep Standard Trading Combine → Express Funded is modeled as exactly two stages; later optional Live Funded promotion is outside this first-payout model. Topstep's MLL is an end-of-day trailing loss floor, updated upward after each session's closing balance and permanently locked at $0 once reached. The floor is monitored against modeled realized trade outcomes; unrealized intratrade breaches and contract-size restrictions are not verified. Other firms' static initial floors are modeled where known. The funded target is a threshold, not a cap on the final trade: a completed trade can finish above it. FTMO/Hola funded accounts stop receiving further strategy trades at that threshold, then wait for the first-funded-trade payout eligibility clock and any modeled processing days. Topstep can require further qualifying winning days. Evaluation minimum-size qualification orders are synthetic placeholders (0.01 lot for CFD programs, 1 micro for Topstep) and have no modeled P/L, trading costs or actual lot eligibility: real minimum-size trades can gain or lose money. Calendar waits are approximated using trading days. Fees, spread/slippage, evaluation activation delays and news restrictions may differ. If multiple accounts share a signal, outcomes may be correlated and diversification overstated. The model's risk-exhausted status does not mean an official failed-account breach.</p></details>
  <p class="footer">Research tool only. Sourced catalog rules are snapshots, not live purchase/eligibility confirmations. The simulator reads profiles locally; budget changes here don't overwrite the main Overview settings. The maximum of 100 modeled challenges per account type is a performance cap, not a prop-firm permission limit.</p>
@@ -547,6 +552,8 @@ function theme(value){document.documentElement.setAttribute('data-theme',value==
 let currentTheme=localStorage.getItem('4ds:theme:v1')||'dark';theme(currentTheme);
 $('theme').addEventListener('click',()=>{currentTheme=currentTheme==='light'?'dark':'light';localStorage.setItem('4ds:theme:v1',currentTheme);theme(currentTheme)});
 $('userLabel').textContent=user.toUpperCase();
+for(const id of ['section1Panel','section2Panel','discovery','section4Panel','section7Panel'])
+ $(id).addEventListener('toggle',()=>saveView());
 function saveView(){
  try{localStorage.setItem(savedViewKey,JSON.stringify({
   budget:$('budget').value,netGoal:$('netGoal').value,winRate:$('winRate').value,
@@ -556,6 +563,7 @@ function saveView(){
   signalMode:$('signalMode').value,seed:$('seed').value,
   budgetMode:document.querySelector('[name="budgetMode"]:checked').value,rows,testRisks,
   chartsOpen:$('chartsPanel').open,chartPrefs:{...chartState},
+  numberedOpen:Object.fromEntries(['section1Panel','section2Panel','discovery','section4Panel','section7Panel'].map(id=>[id,$(id).open])),
   journeyOpen:$('journeyPanel').open,journeyPrefs:{...journeyState},allocationLimits
  }))}catch(e){}
 }
@@ -571,6 +579,10 @@ function loadView(){
  syncPurchaseMode();
  $('chartsPanel').open=prior.chartsOpen===true;
  $('journeyPanel').open=prior.journeyOpen===true;
+ if(prior.numberedOpen&&typeof prior.numberedOpen==='object'){
+  for(const id of ['section1Panel','section2Panel','discovery','section4Panel','section7Panel'])
+   if(typeof prior.numberedOpen[id]==='boolean')$(id).open=prior.numberedOpen[id];
+ }
  if(prior.journeyPrefs&&typeof prior.journeyPrefs==='object'){
   if(typeof prior.journeyPrefs.selection==='string')journeyState.selection=prior.journeyPrefs.selection;
   journeyState.mode='trial'; // daily portfolio routing needs real whole-account assignments
