@@ -150,6 +150,66 @@ function gaps(out,score){
   issues.push('Investment ROI short by '+pct(out.minNetRoi-score.budgetRoi)+' points');
  return issues;
 }
+const escapeHtml=x=>String(x??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+function sampleAccounts(candidate){
+ return candidate?.result?.sample?.accountDetails||[];
+}
+function chooseExampleAccount(accounts){
+ const hasInitialLossAndNextTrade=ac=>{
+  const trades=(ac.trace||[]).filter(e=>e.type==='win'||e.type==='loss');
+  return trades.length>1&&trades[0].type==='loss'&&trades[1].day>trades[0].day;
+ };
+ return accounts.find(hasInitialLossAndNextTrade)||
+  accounts.find(a=>a.status==='paid')||
+  accounts.find(a=>(a.trace||[]).some(t=>t.type==='stage-pass'))||
+  accounts[0]||null;
+}
+function renderAccountPath(candidate,accountId){
+ const accounts=sampleAccounts(candidate);
+ const ac=accounts.find(x=>String(x.id)===String(accountId));
+ if(!ac)return '<p class="hint">No account path recorded for this trial.</p>';
+ const p=candidate.plan;
+ const phase=e=>p.riskProfiles[e.stage]?.name||e.stage||'—';
+ const rr=e=>e.rr==null?'—':Number(e.rr).toFixed(2)+'R';
+ const dollars=x=>x==null?'—':(x<0?'−':'+' )+money(Math.abs(x));
+ const trace=(ac.trace||[]).filter(e=>['win','loss','blocked','failed','stage-pass','stage-start',
+  'admin','waiting','consistency','payout-request','paid','eod-mll','purchase','activation'].includes(e.type));
+ let trades=0;
+ const rows=trace.map(e=>{
+  const trade=e.type==='win'||e.type==='loss';
+  if(trade)trades++;
+  const isEvent=!trade,description=trade?(e.type==='win'?'WIN':'LOSS'):
+   e.type==='stage-pass'?'PHASE PASSED':
+   e.type==='stage-start'?'NEXT PHASE':
+   e.type==='payout-request'?'PAYOUT REQUEST':
+   e.type==='paid'?'PAYOUT PAID':
+   e.type==='blocked'?'RISK BLOCKED':
+   e.type==='failed'?'FAILED':
+   e.type==='admin'?'MIN-DAY PLACEHOLDER':
+   e.type==='waiting'?'WAITING':e.type==='activation'?'FUNDED ACTIVATION':
+   e.type==='purchase'?'CHALLENGE BOUGHT':
+   e.type==='eod-mll'?'EOD LOSS FLOOR':'CONSISTENCY';
+  const hint=e.label&&isEvent?' title="'+escapeHtml(e.label)+'"':'';
+  return '<tr'+(isEvent?' class="reverse-event-row"':'')+'>'+
+   '<td>'+escapeHtml(e.day??'—')+'</td>'+
+   '<td>'+escapeHtml(phase(e))+'</td>'+
+   '<td>'+(trade?'#'+trades:'·')+'</td>'+
+   '<td'+hint+'>'+escapeHtml(description)+'</td>'+
+   '<td>'+escapeHtml(e.slot?e.slot.toUpperCase():'—')+'</td>'+
+   '<td>'+(e.risk==null?'—':money(e.risk))+'</td>'+
+   '<td>'+rr(e)+'</td>'+
+   '<td>'+(trade?dollars(e.delta):e.type==='paid'?money(e.cash):'—')+'</td>'+
+   '<td>'+(trade?dollars(e.pnl):'—')+'</td></tr>';
+ }).join('');
+ const passInfo=(ac.passes||[]).map(x=>(p.riskProfiles[x.stage]?.name||x.stage)+' passed day '+x.day).join(' · ');
+ return '<p class="hint">Trial #1, account #'+escapeHtml(ac.id)+' · '+escapeHtml(ac.status)+
+  ' · '+trades+' trades'+(passInfo?' · '+escapeHtml(passInfo):'')+
+  '. These are actual modeled outcomes from one trial, not the average/guaranteed sequence.</p>'+
+  '<div class="reverse-path-table tablewrap"><table><thead><tr><th>Day</th><th>Phase</th><th>Trade</th><th>Result / event</th>'+
+  '<th>Tier</th><th>Risk</th><th>RR</th><th>Trade P&L</th><th>Phase P&L</th></tr></thead>'+
+  '<tbody>'+rows+'</tbody></table></div>'+
+  '<p class="hint">Next trade risk depends on the active phase risk-sequence policy and remaining drawdown. A win adds risk × phase RR minus modeled trade cost; a loss subtracts risk plus cost. Passing also requires the phase profit target and any minimum trading days.</p>';
+}
 function render(out){
  const cards=out.candidates.map((candidate,index)=>{
   const s=candidate.score,p=candidate.plan;
@@ -172,7 +232,18 @@ function render(out){
    '<div><small>Avg. challenges bought</small><strong>'+s.avgPurchased.toFixed(2)+'</strong></div>'+ 
    '<div><small>Avg. funded reached</small><strong>'+s.avgFunded.toFixed(2)+'</strong></div>'+ 
    '<div><small>Risk-blocked / breached</small><strong>'+s.avgRiskBlocked.toFixed(1)+' / '+s.avgBreached.toFixed(1)+'</strong></div></div>'+
-   '<div class="tablewrap"><table class="journey-table"><thead><tr><th>Phase</th><th>R1</th><th>R2</th><th>R3</th><th>RR</th></tr></thead><tbody>'+risks+'</tbody></table></div></div>';
+   '<div class="tablewrap"><table class="journey-table"><thead><tr><th>Phase</th><th>R1</th><th>R2</th><th>R3</th><th>RR</th></tr></thead><tbody>'+risks+'</tbody></table></div>'+
+   (sampleAccounts(candidate).length?(()=>{
+    const accounts=sampleAccounts(candidate),example=chooseExampleAccount(accounts);
+    const options=accounts.map(ac=>'<option value="'+escapeHtml(ac.id)+'"'+(ac.id===example.id?' selected':'')+'>'+
+     'Account #'+escapeHtml(ac.id)+' · '+escapeHtml(ac.status)+
+     ' · '+(ac.trades||0)+' trades'+(ac.paidDay!=null?' · Paid day '+ac.paidDay:'')+'</option>').join('');
+    return '<details class="reverse-trade-details"><summary>Trade-by-trade example · show / hide <small>(trial #1 · '+accounts.length+' accounts)</small></summary>'+
+     '<div class="reverse-path-controls"><label>Account <select data-reverse-path="'+index+'">'+options+'</select></label>'+
+     '<span class="hint">Select any account to inspect exact trade and phase progression.</span></div>'+
+     '<div data-reverse-path-body="'+index+'">'+renderAccountPath(candidate,example.id)+'</div></details>';
+   })():'<p class="hint">Trade-by-trade account details unavailable for this scenario.</p>')+
+   '</div>';
  }).join('');
  return '<p class="hint">Goal: '+money(out.targetCash)+' received across at least '+out.requiredPayouts+
   ' separate first payouts of '+money(out.perPayout)+' each. Minimum fee-based ROI: '+pct(out.minRoi)+'. Minimum net ROI on starting investment: '+pct(out.minNetRoi)+'. Minimum net P&L: '+money(out.minNetPnl)+'. The account must first reach approximately '+
@@ -183,5 +254,5 @@ function render(out){
    (gaps(out,out.candidates[0].score)[0]||'No expected-value target gap; check payout probability and downside risk')+'</p>':'')+
   cards+'<p class="hint">Estimates use 200 independent validation trials for 12 shortlisted scenarios after 50-trial searches across risk levels and investment amounts. ROI on incurred fees = expected net cash / expected fees actually incurred. Net ROI on investment = expected net cash / tested starting budget. Both may be negative. Starting budget is cash made available for challenge and activation costs, NOT the total fees actually incurred; any refunded challenge fees are tracked in modeled cash receipts. Payout counts and earnings can differ between trials. Searches are approximate, account purchases are capped at 100 per type, and risk safety depends on modeled firm rules. Scenarios do not change your saved Firms risk settings.</p>';
 }
-root.StudioPayoutOptimizer={needed,profitNeeded,planFor,assess,optimize,render};
+root.StudioPayoutOptimizer={needed,profitNeeded,planFor,assess,optimize,render,renderAccountPath,sampleAccounts};
 })(typeof window!=='undefined'?window:globalThis);
