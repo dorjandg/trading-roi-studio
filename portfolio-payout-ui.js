@@ -1323,6 +1323,18 @@ function start(){
   renderUnifiedTable();
  });
  $('payoutOptMoreModels').addEventListener('click',async event=>{
+  const quick=event.target.closest?.('[data-more-test-funded]');
+  if(quick){
+   const target=$('payoutOptResults').querySelector('[data-reverse-funded-450="0"]');
+   const notice=$('payoutOptMoreModels').querySelector('[data-more-funded-status]');
+   if(!target||!lastOptimizerOutput?.candidates?.length){
+    if(notice)notice.textContent='Calculate Investment first to load an investment option.';
+    return;
+   }
+   if(notice)notice.textContent='Running funded scenarios from Investment Option 1. The original strategy remains unchanged.';
+   target.click();
+   return;
+  }
   if(event.target.closest?.('[data-more-direction]')){
    moreDescending=!moreDescending;renderUnifiedTable();return;
   }
