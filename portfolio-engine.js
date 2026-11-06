@@ -538,6 +538,8 @@ function oneTrial(p,config,rng,record=false){
    qualifying:accounts.reduce((sum,a)=>sum+a.totalAdminDays,0),
    accountDetails:record?accounts:[],
    tradeAssignments:tradeAssignments?.sort((a,b)=>a.day-b.day||a.signal-b.signal)||undefined,
+   firstPayoutDay:accounts.filter(a=>a.paidDay!=null).reduce((m,a)=>Math.min(m,a.paidDay),Infinity),
+   goalPayoutDay:dailyCash?.find(d=>d.paid>=(config.requiredPayouts||Infinity)&&d.receipts>=(config.netGoal||Infinity))?.day??Infinity,
    dailyCash:dailyCash||undefined,
    accounts:record?accounts:undefined};
 }
@@ -573,7 +575,8 @@ function simulatePortfolio(p,config={}){
   maxActive:clamp(Math.floor(config.maxActive||1),1,100)|0,
   maxBuysPerDay:clamp(Math.floor(config.maxBuysPerDay||1),1,20)|0,
   maxLifetime:clamp(Math.floor(config.maxAccounts||100),1,100)|0,
-  budget,reinvestPayouts:config.reinvestPayouts===true
+  budget,requiredPayouts:Math.max(0,Math.floor(config.requiredPayouts||0)),netGoal:pos(config.netGoal),
+  reinvestPayouts:config.reinvestPayouts===true
  };
  const results=[],stageTotals=p.stageList.filter(x=>x!=='funded').map(()=>0);
  const total={bought:0,paid:0,funded:0,targetHit:0,payoutRequested:0,failed:0,exhausted:0,pending:0,spent:0,receipts:0,net:0,activations:0,trades:0,qualifying:0,qualificationTrades:0,
@@ -585,10 +588,13 @@ function simulatePortfolio(p,config={}){
    challenge:0,verification:0,fundedActive:0,fundingWait:0,payoutPending:0,targetHit:0,activated:0,passed1:0,passed2:0,
    opportunities:0,tradesToday:0,qualificationToday:0,unusedToday:0})):null;
  let withPayout=0,positiveNet=0,goalMet=0, sample=null;
+ let firstDayTotal=0,firstDayCount=0,goalDayTotal=0,goalDayCount=0;
  const goal=pos(config.netGoal);
  for(let k=0;k<trials;k++){
   const x=oneTrial(p,{...settings,trialIndex:k},rand,k===0);
   if(k===0)sample=x;
+  if(Number.isFinite(x.firstPayoutDay)){firstDayTotal+=x.firstPayoutDay;firstDayCount++}
+  if(Number.isFinite(x.goalPayoutDay)){goalDayTotal+=x.goalPayoutDay;goalDayCount++}
   if(chartTrials)chartTrials.push({
    net:x.net,spent:x.spent,receipts:x.receipts,roi:x.spent?x.net/x.spent:0,
    paid:x.paid,failed:x.failed,exhausted:x.exhausted,funded:x.funded,
@@ -630,6 +636,9 @@ function simulatePortfolio(p,config={}){
   chancePayout:withPayout/trials,chanceProfit:positiveNet/trials,
   chanceGoal:goal?goalMet/trials:null,goal,
   roi:avg.spent>0?avg.net/avg.spent:0,
+  avgFirstPayoutDay:firstDayCount?firstDayTotal/firstDayCount:null,
+  avgGoalPayoutDay:goalDayCount?goalDayTotal/goalDayCount:null,
+  chanceGoalPayoutDay:goalDayCount/trials,
   median:quantile(nets,.5),p10:quantile(nets,.1),p90:quantile(nets,.9),
   sample,nets,chartTrials,
   cashCurve:chartSums?.map(d=>({day:d.day,spent:d.spent/trials,
