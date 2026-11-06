@@ -22,6 +22,57 @@ function riskCeiling(base){
 function propose(base){
  const list=[{key:'baseline',title:'Your current settings',reason:'No parameters changed',modify:()=>{}}];
  function add(key,title,reason,modify){list.push({key,title,reason,modify});}
+ // For adaptive investment models, vary the actual per-trade cap and
+ // policy. Merely changing stored R1/R2/R3 would not affect adaptive sizing.
+ if(Object.values(base.riskProfiles).some(r=>['target-now','repair-r2','buffered-target'].includes(r.policy?.mode))){
+  const max=riskCeiling(base).maxRisk;
+  const setCap=(p,fn)=>{
+   for(const [stage,r] of Object.entries(p.riskProfiles)){
+    if(!['target-now','repair-r2','buffered-target'].includes(r.policy?.mode))continue;
+    const cap=Math.max(.01,Math.min(Number.isFinite(max)?max:Infinity,round(fn(r,stage))));
+    r.dynamicMaxRisk=cap;r.r1=cap;r.r2=cap;r.r3=cap;
+   }
+  };
+  for(const factor of [.5,.65,.8,.9,1.1]){
+   add('dynamicScale'+factor,'Adaptive cap · '+Math.round(factor*100)+'%',
+    'Adjust maximum allowed risk without changing the adaptive daily sizing formula',
+    p=>setCap(p,r=>Number(r.dynamicMaxRisk??r.r1)*factor));
+  }
+  for(const mode of ['target-now','repair-r2','buffered-target']){
+   add('dynamicPolicy'+mode,'Policy · '+mode,
+    'Compare a different state-aware approach with the same safe risk ceiling',
+    p=>{for(const r of Object.values(p.riskProfiles)){
+     if(['target-now','repair-r2','buffered-target'].includes(r.policy?.mode))
+      r.policy={...r.policy,mode,map:{},conflicts:[]};
+    }});
+  }
+  for(const stage of Object.keys(base.riskProfiles)){
+   for(const fraction of [.7,1]){
+    add('dynamicStage'+stage+fraction,'Cap '+stage+' · '+Math.round(fraction*100)+'%',
+     'Change only the selected phase risk ceiling, leaving the other phases unchanged',
+     p=>{const r=p.riskProfiles[stage];if(!r)return;
+      setCap(p,(x,k)=>k===stage?Number(x.dynamicMaxRisk??x.r1)*fraction:Number(x.dynamicMaxRisk??x.r1));
+     });
+   }
+  }
+  for(const limit of [1,2,3]){
+   add('dynamicWins'+limit,limit+' max wins per day',
+    'Adjust same-day winning-trade continuation without increasing risk limits',
+    p=>{for(const r of Object.values(p.riskProfiles))r.maxWinsPerDay=limit});
+  }
+  const seen=new Set(),out=[];
+  for(const option of list){
+   const plan=copy(base);option.modify(plan);
+   const signature=JSON.stringify(Object.values(plan.riskProfiles).map(r=>[
+    r.dynamicMaxRisk??r.r1,r.rr,r.maxWinsPerDay,r.policy?.mode||'saved',r.r1,r.r2,r.r3]));
+   if(seen.has(signature))continue;seen.add(signature);
+   if(Object.values(plan.riskProfiles).some(r=>
+    ['r1','r2','r3'].some(t=>!Number.isFinite(r[t])||r[t]<=0||
+     (Number.isFinite(max)&&r[t]>max+1e-8))))continue;
+   out.push({...option,plan});
+  }
+  return out;
+ }
  for(const factor of [.65,.8,.9,1.1,1.25]){
   add('scale'+factor,factor<1?'Smaller risks · '+Math.round(factor*100)+'%':'Higher risks · '+Math.round(factor*100)+'%',
    'Scale all three risk amounts in every phase, keeping your original tier sequence',
