@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1020">
+  <meta name="description" content="A personal launchpad for projects, learning, dashboards, videos, and bookmarks.">
+  <title>Personal Hub — My digital home</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='17' fill='%236d71f7'/%3E%3Cpath d='M16 18v28m0-14h15m0-14v28m0-14h17' fill='none' stroke='white' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./styles.css">
+  <script defer src="./links.js"></script>
+  <script defer src="./app.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <div class="mobile-scrim" id="mobileScrim" hidden></div>
+    <aside class="sidebar" id="sidebar" aria-label="Site navigation">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+        <div><strong>PERSONAL <span>HUB</span></strong><small>MY DIGITAL HOME</small></div>
+      </div>
+      <div class="sidebar-inner">
+        <div class="side-label">YOUR SPACE</div>
+        <nav id="topNavigation" class="side-navigation" aria-label="Main sections"></nav>
+        <div class="side-divider"></div>
+        <div class="side-label row-between"><span>COLLECTIONS</span><span id="collectionCount" class="label-counter"></span></div>
+        <nav id="categoryNavigation" class="side-navigation" aria-label="Link collections"></nav>
+      </div>
+      <div class="sidebar-footer">
+        <div class="sidebar-tip"><span class="tip-dot"></span><div><b>Always organized</b><small>Send a link to ChatGPT to publish it here.</small></div></div>
+        <div class="sidebar-version">PERSONAL HUB <span>V1.0</span></div>
+      </div>
+    </aside>
+
+    <div class="workspace">
+      <header class="topbar">
+        <div class="topbar-leading">
+          <button id="menuButton" class="icon-button menu-button" title="Open menu" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+          <div class="breadcrumb"><span class="crumb-root">My space</span><span class="crumb-arrow">/</span><strong id="breadcrumbCurrent">Overview</strong></div>
+        </div>
+        <div class="topbar-actions">
+          <div class="search-shell" id="searchShell">
+            <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+            <label class="sr-only" for="globalSearch">Search all saved links</label>
+            <input type="search" id="globalSearch" autocomplete="off" spellcheck="false" placeholder="Search links, tags, topics…">
+            <kbd id="searchHint">⌘ K</kbd>
+            <div id="searchSuggestions" class="search-suggestions" hidden></div>
+          </div>
+          <button id="themeButton" class="icon-button" aria-label="Change theme" title="Toggle light / dark mode"></button>
+          <button class="add-button top-add" data-request>+ <span>Add link</span></button>
+        </div>
+      </header>
+
+      <main class="main-content" id="mainContent" tabindex="-1"></main>
+      <footer class="page-footer"><span>PERSONAL HUB · All your links, one home.</span><span>Organized for everyday use</span></footer>
+    </div>
+  </div>
+
+  <dialog id="requestDialog" class="request-dialog" aria-labelledby="dialogTitle">
+    <form id="requestForm" method="dialog" novalidate>
+      <div class="dialog-top"><div class="dialog-icon">+</div><button type="button" class="icon-button close-dialog" id="closeDialog" aria-label="Close">×</button></div>
+      <h2 id="dialogTitle">Request a link update</h2>
+      <p class="dialog-description">Create a ready-to-send update. Copy it into our ChatGPT conversation, and I can publish the change to GitHub. This form does not publish by itself.</p>
+      <label for="requestName">Link or category name <span>*</span></label>
+      <input id="requestName" name="name" placeholder="e.g. My trading journal" required maxlength="110">
+      <label for="requestUrl">Website URL <span class="optional">(optional for a new category)</span></label>
+      <input id="requestUrl" name="url" type="url" placeholder="https://..." maxlength="1500">
+      <label for="requestCategory">Collection</label>
+      <select id="requestCategory" name="category"></select>
+      <label for="requestDescription">Description or notes</label>
+      <textarea id="requestDescription" name="description" rows="3" placeholder="What is it useful for? Any tags or keywords?"></textarea>
+      <p id="requestError" class="form-error" aria-live="polite"></p>
+      <button type="submit" class="copy-request" id="copyRequestButton">Copy update request</button>
+      <p class="dialog-footnote" id="dialogNote">Your new link will appear after a GitHub update and deployment.</p>
+    </form>
+  </dialog>
+</body>
+</html>
