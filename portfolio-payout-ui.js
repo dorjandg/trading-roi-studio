@@ -106,6 +106,15 @@ function start(){
  .reverse-candidate table{font-size:11px}
  .reverse-candidate th,.reverse-candidate td{padding:5px 7px;line-height:1.2}
  .reverse-candidate th{font-size:10px}
+ .reverse-result-overview{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11px;padding:5px 7px;margin:5px 0;border:1px solid var(--line);border-radius:6px;background:var(--panel2)}
+ .reverse-info-section{border:1px solid var(--line);border-radius:6px;margin:4px 0;padding:0;overflow:hidden}
+ .reverse-info-section>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:6px 8px;font-size:11px;line-height:1.25}
+ .reverse-info-section>summary::-webkit-details-marker{display:none}
+ .reverse-info-section>summary::before{content:'▸';font-size:10px;color:var(--muted)}
+ .reverse-info-section[open]>summary::before{content:'▾'}
+ .reverse-info-section>summary span{font-size:10px;font-weight:400;color:var(--muted)}
+ .reverse-info-section>p{margin:0!important;padding:6px 9px;font-size:11px;line-height:1.4;border-top:1px solid var(--line)}
+ .reverse-info-section>.reverse-speed-summary{margin:3px 7px 7px}
  .reverse-speed-summary{border:1px solid var(--line);border-radius:6px;margin:5px 0;padding:5px 7px;font-size:11px;line-height:1.3}
  .reverse-speed-summary strong{font-size:11px}
  .reverse-speed-summary small{font-size:10px;color:var(--muted)}
