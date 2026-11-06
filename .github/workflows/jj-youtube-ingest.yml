@@ -43,15 +43,18 @@ jobs:
         env:
           JJ_GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.JJ_GOOGLE_SERVICE_ACCOUNT_JSON }}
           JJ_TRANSCRIPTS_DRIVE_FOLDER_ID: ${{ secrets.JJ_TRANSCRIPTS_DRIVE_FOLDER_ID }}
+          JJ_SUPADATA_API_KEY: ${{ secrets.JJ_SUPADATA_API_KEY }}
         run: |
           test -n "$JJ_GOOGLE_SERVICE_ACCOUNT_JSON" || { echo "::error::Missing JJ_GOOGLE_SERVICE_ACCOUNT_JSON secret"; exit 1; }
           if [ "${{ github.event.inputs.dry_run }}" != "true" ]; then
             test -n "$JJ_TRANSCRIPTS_DRIVE_FOLDER_ID" || { echo "::error::Missing private JJ_TRANSCRIPTS_DRIVE_FOLDER_ID secret"; exit 1; }
+            test -n "$JJ_SUPADATA_API_KEY" || { echo "::error::Hosted transcript provider key JJ_SUPADATA_API_KEY is not configured; GitHub yt-dlp fallback intentionally disabled"; exit 1; }
           fi
       - name: Read JJ Sheet and import captions into private Drive
         env:
           JJ_GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.JJ_GOOGLE_SERVICE_ACCOUNT_JSON }}
           JJ_TRANSCRIPTS_DRIVE_FOLDER_ID: ${{ secrets.JJ_TRANSCRIPTS_DRIVE_FOLDER_ID }}
+          JJ_SUPADATA_API_KEY: ${{ secrets.JJ_SUPADATA_API_KEY }}
           JJ_LIMIT: ${{ github.event.inputs.limit || '10' }}
           JJ_VIDEO_ID: ${{ github.event.inputs.video_id || '' }}
           JJ_DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
