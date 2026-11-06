@@ -1,8 +1,45 @@
 {
   "schema": "4ds-gpt-research-v1",
-  "updatedAt": "2026-11-06T20:00:00Z",
+  "updatedAt": "2026-11-07T00:15:00+04:00",
   "visibility": "public-generic",
   "reviews": [
+    {
+      "id": "review-optimizer-policy-coverage-v2",
+      "date": "2026-11-07",
+      "category": "Research readiness",
+      "status": "verified",
+      "priority": "medium",
+      "title": "Newer optimizer history retains scenario risk-policy snapshots",
+      "finding": "A connected cloud history audit found newer Calculate Investment records with candidate-level planSnapshot and phase riskProfiles; earlier retained entries lack those fields. Optimizer entries still have no per-account sample trace, so an individual risk-blocking event or funded-stage closure cannot be reconstructed from those summaries.",
+      "suggestion": "Run Full Simulation for the selected model, then confirm a new cloud history record contains firms' risk, caps and sampled account traces before diagnosing an individual account.",
+      "measurements": [
+        "Share of retained optimizer records containing candidate-level planSnapshot",
+        "Count of new full-simulation cloud records with sampled account traces",
+        "Per-phase risk-policy completeness and trace event counts"
+      ],
+      "action": "Research-only update; preserved existing records and risk settings.",
+      "source": "Connected private cloud record structure (aggregated existence checks only); GitHub portfolio-history.js serializer inspection",
+      "verified": "Cloud record types and field presence verified; full-simulation persistence, account-level cause and production UI remain unverified."
+    },
+    {
+      "id": "review-funded-risk-question-v1",
+      "date": "2026-11-07",
+      "category": "Results Advisor",
+      "status": "needs-review",
+      "priority": "high",
+      "title": "Funded-stage risk concerns need event-level diagnosis",
+      "finding": "The cloud review log retains an unresolved qualitative funded-risk question. An older RR question had been categorized as general risk, but current source code routes explicit RR wording to the dedicated RR topic. No sampled trade trace was present to establish whether funded risk was excessive, correctly policy-blocked, or breached a drawdown limit.",
+      "suggestion": "Use a fresh full-simulation saved trace to examine funded-stage selected tier, effective dynamic risk, residual overall/daily headroom and event closure reasons. Compare risk blocks with actual breaches; request approval before any change to risk sizing.",
+      "measurements": [
+        "Unresolved qualitative advisor questions",
+        "Explicit RR prompts routed to dedicated topic",
+        "Funded trace events: selected risk, allowed headroom, risk block versus failed status",
+        "Same-input baseline versus candidate comparison only after suitable traces exist"
+      ],
+      "action": "Research-only finding; no trading-risk parameters or engine rules changed.",
+      "source": "Connected Results Advisor review status and GitHub portfolio-payout-ui.js topic routing plus portfolio-engine.js risk preflight",
+      "verified": "Current topic-routing source inspection and cloud question status verified; source does not establish earlier routing version, and browser/cloud full-simulation trace is absent."
+    },
     {
       "id": "review-evidence-v1",
       "date": "2026-11-06",
