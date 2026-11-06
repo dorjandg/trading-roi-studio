@@ -1013,6 +1013,16 @@ function start(){
   const summary=original+extra+' models · '+original+' investment options'+
    (extra?' · '+extra+' additional models':'');
   $('payoutOptModelSummary').textContent=lastOptimizerOutput?' · '+summary:' · Results appear after Calculate Investment';
+  const notice=$('payoutOptResults').querySelector('#fundedComparisonNotice');
+  if(notice){
+   if(extra){
+    notice.innerHTML='<strong>'+original+' original scenarios + '+extra+' funded variants = '+summary+
+     '.</strong> <button type="button" data-jump-funded-comparison="1">View all '+(original+extra)+' models in Model comparison</button>'+
+     '<span> · The five cards here are only the original optimizer options.</span>';
+   }else{
+    notice.textContent=original+' original investment cards; additional funded models have not loaded. Check Model comparison or use Test Funded Compounding.';
+   }
+  }
   comparison.hidden=!lastOptimizerOutput;
   box.innerHTML=lastOptimizerOutput?
    solver.renderUnifiedInvestmentModels(lastOptimizerOutput,lastModelSearch,
@@ -1085,6 +1095,10 @@ function start(){
   return {total:lastOptimizerOutput.candidates.length+result.ideas.length,saved};
  }
  $('payoutOptResults').addEventListener('click',async event=>{
+  if(event.target.closest?.('[data-jump-funded-comparison]')){
+   const section=$('payoutOptModelComparison');section.open=true;
+   section.scrollIntoView({behavior:'smooth',block:'start'});return;
+  }
   const openAdvisor=event.target.closest?.('[data-reverse-advisor]');
   if(openAdvisor){
    const index=Number(openAdvisor.dataset.reverseAdvisor);
