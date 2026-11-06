@@ -48,12 +48,24 @@ function planFor(base,scale,perPayout,rrVariant=null,riskMode='saved',r3Route='l
    const cost=val(p.tradeCost),reserve=Math.max(.01,val(p.riskReserve));
    const tier1=Math.min(maxRisk,Math.ceil((stageRisk.target+cost)/rr1*Math.min(1,scale)*100)/100);
    stageRisk.r1=Math.max(.01,tier1);
+   if(r3Route==='ladder'&&!(p.id==='topstep'&&stage==='p1')){
+    // Deliberately design three executable loss tiers rather than sizing
+    // R1 for a single-win target and hoping R3 will still fit.
+    // Reserve the largest permitted R3, then distribute the remaining
+    // losses across R1/R2 so LLW may reach the phase target.
+    const lossRoom=Number.isFinite(p.overallLoss)?
+     p.overallLoss-maxRisk-reserve-2*cost-1:Infinity;
+    const targetRoom=maxRisk*rr3-stageRisk.target-3*cost;
+    const totalEarlyRisk=Math.max(.02,Math.min(lossRoom,targetRoom,2*maxRisk)*Math.min(1,scale));
+    stageRisk.r1=Math.max(.01,Math.floor(totalEarlyRisk*.5*100)/100);
+    stageRisk.r2=Math.max(.01,Math.floor((totalEarlyRisk-stageRisk.r1)*100)/100);
+   }
    const afterLossHeadroom=Math.min(
     Number.isFinite(p.overallLoss)?p.overallLoss-tier1-cost-reserve:Infinity,
     Number.isFinite(p.dailyLoss)?p.dailyLoss-cost-reserve:Infinity,
     maxRisk);
    const recovery=Math.ceil((stageRisk.target+tier1+2*cost)/rr2*100)/100;
-   stageRisk.r2=Math.max(.01,Math.min(recovery,Math.max(.01,afterLossHeadroom)));
+   if(r3Route!=='ladder')stageRisk.r2=Math.max(.01,Math.min(recovery,Math.max(.01,afterLossHeadroom)));
    if(afterLossHeadroom<.01)stageRisk.recoveryInfeasible=true;
    const desiredR3=Math.ceil((stageRisk.target+tier1+stageRisk.r2+3*cost)/rr3*100)/100;
    // Alternate R3 routes reserve actual room after TWO consecutive losses.
@@ -147,7 +159,7 @@ async function optimize({plan,perPayout,maxInvestment,minRoi=2,minNetRoi=0,minNe
  ].filter((v,i,a)=>a.findIndex(z=>z.r1===v.r1&&z.r2===v.r2&&z.r3===v.r3)===i);
  const scaleValues=[.55,.8,1,1.25];
  const riskModes=['target','saved'];
- const r3Routes=['legacy','headroom','balanced','defensive'];
+ const r3Routes=['legacy','headroom','balanced','defensive','ladder'];
  const candidates=[];
  let checked=0;
  const simulate=(p,units,trials,seed)=>E.simulatePortfolio(p,{
@@ -184,12 +196,26 @@ async function optimize({plan,perPayout,maxInvestment,minRoi=2,minNetRoi=0,minNe
   }
  }
  if(!coarse.length)throw Error('No valid risk candidates could be simulated.');
- const reachesPayouts=x=>x.score.avgPaid+1e-8>=count&&x.score.avgNet+1e-8>=minNetPnl;
+ const r3Executable=x=>{
+  const p=x.plan;
+  return p.stageList.every(stage=>{
+   if(p.id==='topstep'&&stage==='p1')return true; // only R1 is used
+   const r=p.riskProfiles[stage],cost=val(p.tradeCost),reserve=Math.max(.01,val(p.riskReserve));
+   if(!r||![r.r1,r.r2,r.r3].every(n=>Number.isFinite(n)&&n>=.01))return false;
+   const losses=r.r1+r.r2+r.r3+3*cost+reserve;
+   const dailyCap=Number.isFinite(p.dailyLoss)?p.dailyLoss:Infinity;
+   return losses<=p.overallLoss+1e-8&&
+     Math.max(r.r1,r.r2,r.r3)+cost+reserve<=dailyCap+1e-8;
+  });
+ };
+  const reachesPayouts=x=>x.score.avgPaid+1e-8>=count&&x.score.avgNet+1e-8>=minNetPnl;
  const meetsAll=x=>reachesPayouts(x)&&x.score.roi+1e-8>=minRoi&&
   x.score.budgetRoi+1e-8>=minNetRoi&&x.score.avgNet+1e-8>=minNetPnl;
  // Shortlist feasible options and closest misses. Independently validate
  // the shortlist with fresh random outcomes to avoid ranking on training noise.
  coarse.sort((a,b)=>{
+  const safeA=r3Executable(a),safeB=r3Executable(b);
+  if(safeA!==safeB)return safeA?-1:1;
   const ap=meetsAll(a),bp=meetsAll(b);
   if(ap!==bp)return ap?-1:1;
   const ac=reachesPayouts(a),bc=reachesPayouts(b);
@@ -226,6 +252,8 @@ async function optimize({plan,perPayout,maxInvestment,minRoi=2,minNetRoi=0,minNe
   if(checked%3===0)await pause();
  }
  candidates.sort((a,b)=>{
+  const safeA=r3Executable(a),safeB=r3Executable(b);
+  if(safeA!==safeB)return safeA?-1:1;
   const ap=meetsAll(a),bp=meetsAll(b);
   if(ap!==bp)return ap?-1:1;
   const ac=reachesPayouts(a),bc=reachesPayouts(b);
@@ -250,16 +278,17 @@ async function optimize({plan,perPayout,maxInvestment,minRoi=2,minNetRoi=0,minNe
   candidates:(()=>{
    const shown=[],used=new Set();
    const addCandidate=x=>{if(x&&!used.has(x)){shown.push(x);used.add(x)}};
-   // The first scenario retains the original optimization ranking.
-   candidates.slice(0,2).forEach(addCandidate);
+   // Show the best executable route first; keep alternatives and the
+   // original route available for transparent comparison.
+   candidates.slice(0,1).forEach(addCandidate);
    // When target-sized routes exist, include at least one independently
    // validated representative of each distinct R3 policy.
-   for(const route of ['headroom','balanced','defensive']){
-    if(shown.length>=5)break;
+   for(const route of ['ladder','headroom','balanced','defensive','legacy']){
+    if(shown.length>=6)break;
     addCandidate(candidates.find(x=>x.r3Route===route));
    }
-   candidates.forEach(x=>{if(shown.length<5)addCandidate(x)});
-   return shown.slice(0,5).sort((a,b)=>candidates.indexOf(a)-candidates.indexOf(b));
+   candidates.forEach(x=>{if(shown.length<6)addCandidate(x)});
+   return shown.slice(0,6).sort((a,b)=>candidates.indexOf(a)-candidates.indexOf(b));
   })(),firm:plan.firm,size:plan.size,
   inputs:{days:inputs.days,tradesPerDay:inputs.tradesPerDay,winRate:inputs.winRate,
    purchaseMode:inputs.purchaseMode,capacityMode:inputs.capacityMode}};
@@ -483,7 +512,7 @@ function render(out,sortMode='model',currentPlan=null){
     '<td>'+money(x.availableR3)+'</td><td>'+escapeHtml(status)+'</td><td>'+
     (x.afterR3Win>=0?'+':'−')+money(Math.abs(x.afterR3Win))+'</td></tr>';
   }).join('');
-  const r3Descriptions={legacy:'Original recovery amount (may be blocked by drawdown)',headroom:'Use the maximum R3 risk that still fits after two modeled losses',balanced:'Reduce R2 to preserve additional room for R3',defensive:'Use half of the remaining safe R3 headroom'};
+  const r3Descriptions={legacy:'Original recovery amount (may be blocked by drawdown)',headroom:'Use the maximum R3 risk that still fits after two modeled losses',balanced:'Reduce R2 to preserve additional room for R3',defensive:'Use half of the remaining safe R3 headroom',ladder:'Size all three risks together so an R3 win after two losses can reach the phase target when mathematically feasible'};
   const r3Markup=r3Paths?'<details class="reverse-review-panel"><summary><strong>R3 alternative route</strong> · '+escapeHtml(candidate.r3Route||'legacy')+' sizing and feasibility</summary>'+
    '<p class="hint">'+escapeHtml(r3Descriptions[candidate.r3Route]||r3Descriptions.legacy)+'</p>'+
    '<div class="tablewrap"><table class="journey-table"><thead><tr><th>Phase</th><th>R1 / R2 / R3</th><th>R3 headroom after LL</th><th>Can R3 trade?</th><th>Stage P&L after LLW</th></tr></thead><tbody>'+r3Paths+'</tbody></table></div>'+
@@ -507,7 +536,7 @@ function render(out,sortMode='model',currentPlan=null){
    '<summary class="reverse-candidate-summary">'+
    '<span class="reverse-candidate-name">'+(index===0?(selectedSort==='model'?'Top by optimizer':'Top by '+payoutSortModes[selectedSort]):'Option '+(index+1))+
    ' · '+candidate.scale.toFixed(2)+'× · '+escapeHtml(candidate.rrVariant||'')+
-   ' · '+(candidate.riskMode==='target'?'Target':'Saved')+' risk'+(candidate.riskMode==='target'?' · R3 '+escapeHtml(candidate.r3Route||'legacy'):'')+
+   ' · '+(candidate.riskMode==='target'?'Target':'Saved')+' risk'+(candidate.riskMode==='target'?' · R3 '+escapeHtml(candidate.r3Route||'legacy'):'')+(candidate.riskMode==='target'&&p.stageList.some(stage=>!(p.id==='topstep'&&stage==='p1')&&p.riskProfiles[stage]?.r3Analysis?.feasibleAfterTwoLosses===false)?' · R3 blocked on LL':'')+
    '<span class="reverse-candidate-status '+(goalMet?'reverse-status-met':'')+'">'+
    (goalMet?'Targets met':'Below target')+'</span></span>'+
    '<span class="reverse-summary-kpis">'+
