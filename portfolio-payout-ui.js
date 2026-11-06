@@ -67,7 +67,10 @@ function start(){
   [['overview','Overview'],['bottleneck','Bottlenecks'],['funnel','Account funnel'],['risk','R1 / R2 / R3'],['payout','Payout timing'],['cost','Costs & ROI'],['compare','Compare models']].map(([id,name])=>
    '<button type="button" data-advisor-topic="'+id+'">'+name+'</button>').join('')+
   '</div><div id="payoutAdvisorSuggestions" class="payout-advisor-suggestions" aria-label="Questions suggested from this model"></div>'+
-  '<div id="payoutAdvisorAnswer" class="payout-advisor-answer" aria-live="polite"></div>'+
+  '<div id="payoutAdvisorAnswer" class="payout-advisor-answer" aria-live="polite"></div>'+ 
+  '<details class="payout-advisor-review"><summary><strong>Question &amp; answer log</strong> · <span id="payoutAdvisorLogCount">0 recorded</span> · Show / hide</summary>'+
+  '<div class="payout-advisor-log-actions"><button type="button" id="payoutAdvisorExport">Export GPT review JSON</button><span class="hint">Questions, answers and compact model metrics are saved per workspace; cloud sync is attempted where enabled.</span></div>'+
+  '<div id="payoutAdvisorLog" class="payout-advisor-log"></div></details>'+
   '<p class="hint">Based only on the selected simulated results. No AI API, subscription or automatic changes. Suggestions are tests, not proof of future trading performance.</p>'+
   '</div></details></div>';
  document.getElementById('results').before(panel);
@@ -519,6 +522,11 @@ function start(){
  #payoutOptimizerPanel .payout-advisor-suggestion-list button{font-size:11px;line-height:1.4;min-height:30px;padding:5px 9px;white-space:normal;text-align:left;max-width:100%}
  @media(max-width:650px){#payoutOptimizerPanel .payout-advisor-suggestion-list button{flex:1 1 100%}}
   #payoutOptimizerPanel .payout-advisor-answer{padding:10px;border:1px solid var(--line);border-radius:6px;font-size:12px;line-height:1.48}
+ #payoutOptimizerPanel .payout-advisor-review{border:1px solid var(--line);border-radius:7px;padding:7px}
+ #payoutOptimizerPanel .payout-advisor-review summary{cursor:pointer;font-size:12px}
+ #payoutOptimizerPanel .payout-advisor-log-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0}
+ #payoutOptimizerPanel .payout-advisor-log-entry{border-top:1px solid var(--line);padding:6px 0;font-size:11px;overflow-wrap:anywhere}
+ #payoutOptimizerPanel .payout-advisor-log-entry strong{display:block;margin-bottom:3px}
  #payoutOptimizerPanel .payout-advisor-answer>strong{display:block;margin-bottom:5px}
  #payoutOptimizerPanel .payout-advisor-answer p{margin:5px 0}
  @media(max-width:650px){#payoutOptimizerPanel .payout-advisor-controls{grid-template-columns:1fr}#payoutOptimizerPanel .payout-advisor-controls input,#payoutOptimizerPanel .payout-advisor-controls select{font-size:16px}}
@@ -653,6 +661,56 @@ function start(){
   panel.scrollIntoView({behavior:'smooth',block:'start'});
  }); 
 
+ const advisorUser=['doen','dori','dona','dion'].includes(root.FOUR_DS_CURRENT_USER)?root.FOUR_DS_CURRENT_USER:'dori';
+ const advisorLogKey='4ds:v1:'+advisorUser+':results-advisor-review:v1';
+ function readAdvisorLog(){
+  try{const x=JSON.parse(localStorage.getItem(advisorLogKey)||'[]');return Array.isArray(x)?x:[];}catch(_){return [];}
+ }
+ function renderAdvisorLog(){
+  const records=readAdvisorLog(),host=$('payoutAdvisorLog');
+  $('payoutAdvisorLogCount').textContent=records.length+' recorded · '+records.filter(x=>x.status==='needs-review').length+' needs GPT review';
+  host.textContent='';
+  for(const item of records.slice(0,15)){
+   const row=document.createElement('div');row.className='payout-advisor-log-entry';
+   const head=document.createElement('strong');head.textContent=(item.status==='needs-review'?'Needs GPT review':'Answered')+' · '+new Date(item.timestamp).toLocaleString()+' · '+item.model;
+   const q=document.createElement('div');q.textContent=item.question;
+   row.append(head,q);host.appendChild(row);
+  }
+ }
+ function recordAdvisorQuestion(question,topic,record,reply){
+  if(!question||!record)return;
+  const avg=record.result?.avg||{},score=record.score||{};
+  const entry={
+   id:'aq-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,9),
+   timestamp:new Date().toISOString(),user:advisorUser,model:record.name,modelKey:record.key,
+   account:{firm:record.plan?.firm||'',size:record.plan?.size||0},
+   question:String(question).slice(0,240),topic,
+   status:topic==='unknown'?'needs-review':'answered',
+   answer:{title:reply.title,lines:reply.lines,tests:reply.tests},
+   metrics:{net:avg.net,spent:avg.spent,bought:avg.bought,failed:avg.failed,
+    exhausted:avg.exhausted,funded:avg.funded,paid:avg.paid,goalChance:score.hit,
+    budget:record.budget,netGoal:lastOptimizerOutput?.minNetPnl},
+   reviewedAt:null,reviewNotes:null
+  };
+  const items=readAdvisorLog();
+  if(items[0]?.question===entry.question&&items[0]?.model===entry.model&&
+   Date.now()-Date.parse(items[0].timestamp)<20000)return;
+  items.unshift(entry);
+  try{
+   localStorage.setItem(advisorLogKey,JSON.stringify(items.slice(0,50)));
+   root.fourDsQueueCloudSave?.();
+  }catch(e){console.warn('Advisor log storage unavailable',e);}
+  renderAdvisorLog();
+ }
+ function exportAdvisorLog(){
+  const payload={schema:'4ds-results-advisor-review-v1',user:advisorUser,
+   exportedAt:new Date().toISOString(),records:readAdvisorLog()};
+  const url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}));
+  const a=document.createElement('a');a.href=url;a.download='trading-studio-advisor-review-'+advisorUser+'.json';
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
+ }
+ $('payoutAdvisorExport').addEventListener('click',exportAdvisorLog);
+ renderAdvisorLog();
  let advisorTopic='overview';
  function advisorRecords(){
   if(!lastOptimizerOutput)return [];
@@ -840,12 +898,13 @@ function start(){
   $('payoutAdvisorSummary').textContent=' · '+records.length+' models · Free, rule-based';
   if(options.answer!==false)askAdvisor(advisorTopic);
  }
- function askAdvisor(topic){
+ function askAdvisor(topic,loggedQuestion=null){
   if(!lastOptimizerOutput)return;
   advisorTopic=topic;
   const records=advisorRecords(),record=records.find(r=>r.key===$('payoutAdvisorModel').value)||records[0];
   if(!record)return;
   const reply=advisorAnswer(topic,record,records),answer=$('payoutAdvisorAnswer');
+  if(loggedQuestion)recordAdvisorQuestion(loggedQuestion,topic,record,reply);
   answer.textContent='';
   const heading=document.createElement('strong');
   heading.textContent=reply.title;answer.appendChild(heading);
@@ -889,7 +948,7 @@ function start(){
   if(suggested){
    $('payoutAdvisorQuestion').value=suggested.textContent;
    $('payoutResultsAdvisor').open=true;
-   askAdvisor(suggested.dataset.advisorSuggest);
+   askAdvisor(suggested.dataset.advisorSuggest,suggested.textContent);
    return;
   }
   const topic=event.target.closest?.('[data-advisor-topic]');
@@ -899,7 +958,7 @@ function start(){
   const question=$('payoutAdvisorQuestion').value.trim();
   if(!question){askAdvisor('overview');return;}
   $('payoutResultsAdvisor').open=true;
-  askAdvisor(advisorTopicForQuestion(question));
+  askAdvisor(advisorTopicForQuestion(question),question);
  }
  $('payoutAdvisorAsk').addEventListener('click',submitAdvisorQuestion);
  $('payoutAdvisorQuestion').addEventListener('keydown',event=>{
