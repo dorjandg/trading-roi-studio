@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """JJ Academy YouTube caption importer.
 
-Reads the JJ Simon tab directly using a Google service account (or a local
-manifest for explicit offline tests), verifies each YouTube ID, and imports
+Reads the JJ Simon tab directly using a Google service account,
+verifies each YouTube ID, and imports
 available captions to a private Google Drive folder. No transcript or
 private sheet data is committed to the public repository.
 """
@@ -25,7 +25,7 @@ STAMP_RE = re.compile(r"^(\d\d:\d\d:\d\d[.,]\d{3})\s*-->")
 TAG_RE = re.compile(r"<[^>]+>")
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets.readonly",
-    "https://www.googleapis.com/auth/drive.file",
+    "https://www.googleapis.com/auth/drive",
 ]
 
 def load_google():
