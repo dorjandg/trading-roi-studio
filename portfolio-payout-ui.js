@@ -73,6 +73,17 @@ function start(){
  .reverse-sort-bar select{min-height:27px;max-width:220px;padding:3px 6px;font-size:11px;border-radius:5px}
  .reverse-sort-bar small{font-size:10px;color:var(--muted);flex:1 1 220px}
  @media(max-width:600px){.reverse-sort-bar select{font-size:16px;min-height:35px}}
+ .reverse-review-panel{border:1px solid var(--line);border-radius:6px;margin:5px 0;padding:3px 7px}
+ .reverse-review-panel>summary{font-size:11px;cursor:pointer;padding:4px 0}
+ .reverse-review-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:6px 0}
+ .reverse-review-grid>div{padding:5px 7px;border:1px solid var(--line);border-radius:5px}
+ .reverse-review-grid small{font-size:10px;color:var(--muted);display:block}
+ .reverse-review-grid strong{font-size:11px;overflow-wrap:anywhere}
+ .reverse-review-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:6px 0}
+ .reverse-review-actions button{font-size:11px;min-height:29px}
+ .reverse-review-actions span{font-size:10px;flex:1 1 250px}
+ .reverse-review-status{font-size:11px;margin:4px 0}
+ @media(max-width:800px){.reverse-review-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
  .reverse-candidate{border:1px solid var(--line);border-radius:7px;padding:0;margin:5px 0;overflow:hidden}
  .reverse-candidate>summary{list-style:none;cursor:pointer}
  .reverse-candidate>summary::-webkit-details-marker{display:none}
@@ -219,12 +230,42 @@ function start(){
  $('payoutOptReset').addEventListener('click',()=>{loadAssumptions(true);storeAssumptions();save()});
  $('payoutOptAccount').addEventListener('change',()=>{loadAssumptions();loadedAssumptionsAccount=acctValue();save()});
  let currentSortMode=['model','net','budgetRoi','feeRoi','chance','payouts','investment','firstDay'].includes(prior.sortMode)?prior.sortMode:'model';
- let lastOptimizerOutput=null;
+ let lastOptimizerOutput=null,lastOptimizerAccountKey=''; 
+ function renderLastOptimizer(){
+  if(!lastOptimizerOutput)return;
+  const row=bridge.getRows().find(r=>r.id+':'+r.size===lastOptimizerAccountKey);
+  const saved=row?bridge.getSavedPlan?.(row):null;
+  $('payoutOptResults').innerHTML=solver.render(lastOptimizerOutput,currentSortMode,saved);
+ }
+ $('payoutOptResults').addEventListener('click',event=>{
+  const button=event.target.closest?.('[data-reverse-send-firms]');
+  if(!button)return;
+  const n=Number(button.dataset.reverseSendFirms);
+  const candidate=lastOptimizerOutput?.candidates?.[n];
+  const row=bridge.getRows().find(r=>r.id+':'+r.size===lastOptimizerAccountKey);
+  const status=button.closest('.reverse-candidate-body')?.querySelector('.reverse-review-status');
+  if(!candidate||!row||candidate.plan.id+':'+candidate.plan.size!==lastOptimizerAccountKey){
+   if(status)status.textContent='This scenario is no longer current. Recalculate before sending.';
+   return;
+  }
+  const phases=candidate.plan.stageList||[];
+  const varying=phases.some(stage=>{
+   const x=candidate.plan.riskProfiles?.[stage];
+   return x&&['r1','r2','r3'].some(t=>Math.abs(Number(x.rrByTier?.[t]??x.rr)-Number(x.rr))>1e-8);
+  });
+  if(varying){if(status)status.textContent='This risk setup has different RR per tier; transfer cannot safely preserve every tier yet. No Firms settings changed.';return;}
+  if(!bridge.getSavedPlan?.(row)){if(status)status.textContent='Open and save this account in Firms before importing this risk setup.';return;}
+  const index=n+1;
+  const metrics={net:candidate.score.avgNet,roi:candidate.score.roi,chancePayout:candidate.score.chanceAnyPayout,budget:candidate.initialBudget};
+  const ok=bridge.sendOptimizerToFirms?.(candidate.plan,'Reverse payout option '+index,metrics);
+  if(status)status.textContent=ok?'Risk settings saved to Firms after confirmation. Open Firms to review or use Restore previous in the Firms transfer notice.':'No changes applied. See the Firms transfer status for details.';
+  if(ok)renderLastOptimizer();
+ });
  $('payoutOptResults').addEventListener('change',event=>{
   if(event.target.id==='payoutResultsSort'){
    currentSortMode=event.target.value;
    save();
-   if(lastOptimizerOutput)$('payoutOptResults').innerHTML=solver.render(lastOptimizerOutput,currentSortMode);
+   if(lastOptimizerOutput)renderLastOptimizer();
    return;
   }
   const select=event.target.closest('select[data-reverse-path]');
@@ -283,7 +324,8 @@ function start(){
    const output=await solver.optimize({plan:selectedPlan,perPayout,
     maxInvestment,minRoi:minRoiPct/100,minNetRoi:minNetRoiPct/100,minNetPnl,minRR,maxRR,inputs,onProgress:text=>status.textContent=text});
    lastOptimizerOutput=output;
-   $('payoutOptResults').innerHTML=solver.render(output,currentSortMode);
+   lastOptimizerAccountKey=selected;
+   renderLastOptimizer();
    let historyResult=' · history not available';
    try{
     const record=bridge.saveOptimizer?.({output,inputs,account:{
