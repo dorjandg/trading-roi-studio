@@ -2,7 +2,7 @@
    Accept only one explicitly selected, existing account profile; preserve backup. */
 (function(root){
 'use strict';
-const modes=new Set(['saved','streak','flat','after-win','protect-after-loss']);
+const modes=new Set(['saved','streak','flat','after-win','protect-after-loss','target-now','repair-r2','buffered-target','eval-recovery-burn','funded-profit-ladder','funded-staged-recovery']);
 const stagesFor=id=>id==='topstep'?['p1','funded']:['ftmo2','holaPrime','holaPro'].includes(id)?['p1','p2','funded']:['funded'];
 const profileKey=(user,key)=>'4ds:v1:'+user+':studio-account-profile-v1:'+key;
 const snapKey=(user,key,stage)=>'4ds:recovery-planner:v2:'+user+':'+key+':'+stage;
@@ -51,11 +51,19 @@ function prepare(storage,user,key,plan){
   const snapshot={...prev,
    levels:{...(prev.levels||{}),r1:Number(c.r1),r2:Number(c.r2),r3:Number(c.r3)},
    winCap:c.maxWinsPerDay,policyMode,
+   rrByTier:c.rrByTier?{...c.rrByTier}:null,
+   dynamicMaxRisk:Number.isFinite(Number(c.dynamicMaxRisk))&&c.dynamicMaxRisk!=null?Number(c.dynamicMaxRisk):null,
+   fundedStarterRisk:Number.isFinite(Number(c.fundedStarterRisk))&&c.fundedStarterRisk!=null?Number(c.fundedStarterRisk):null,
+   fundedRecoveryLevels:Array.isArray(c.fundedRecoveryLevels)?c.fundedRecoveryLevels.map(Number):null,
    optionSequences:policyMode==='saved'?(prev.optionSequences||{}):{},
    open:true};
   changes.push({key:sk,value:JSON.stringify(snapshot)});
  }
  const now=new Date().toISOString();
+ // Funded profit goal is a user planning target and must match the selected
+ // simulated funded policy. Keep official firm loss/rule fields unchanged.
+ const fundedGoal=Number(plan.riskProfiles?.funded?.target);
+ if(Number.isFinite(fundedGoal)&&fundedGoal>0)state.profitTarget=fundedGoal;
  const destProfile={...previous,state,updatedAt:now};
  changes.unshift({key:pk,value:JSON.stringify(destProfile)});
  return {changes,backup:backupKey(user,key),phases,pk,title:plan.programName||plan.id};
