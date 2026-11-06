@@ -95,8 +95,16 @@ function start(){
    const output=await solver.optimize({plan:bridge.getPlan(row),total,perPayout,
     maxInvestment,minRoi:minRoiPct/100,minNetRoi:minNetRoiPct/100,minNetPnl,inputs,onProgress:text=>status.textContent=text});
    $('payoutOptResults').innerHTML=solver.render(output);
+   let historyResult=' · history not available';
+   try{
+    const record=bridge.saveOptimizer?.({output,inputs,account:{
+     id:row.id,size:row.size,firm:output.firm,
+     programName:bridge.label(row)
+    }});
+    if(record?.id)historyResult=' · saved to Section 8 (cloud sync attempted)';
+   }catch(saveError){historyResult=' · history save failed: '+saveError.message}
    status.textContent='Finished · '+output.checked+' scenarios evaluated · '+output.requiredPayouts+
-    ' payouts required. '+(output.feasible?'Expected payout counts, cash and both ROI targets were met in validation.':'No validated scenario reached all payout and ROI targets.');
+    ' payouts required. '+(output.feasible?'Expected payout and ROI targets were met in validation.':'No validated scenario reached all targets.')+historyResult;
   }catch(error){status.textContent='Reverse optimizer: '+error.message}
   finally{busy=false;button.disabled=false;}
  });
