@@ -10,13 +10,13 @@ function start(){
  panel.innerHTML='<summary><strong>3A · Reverse Engineer Payouts</strong>'+
   '<button class="primary section-run-btn" type="button" id="runPayoutOptimizer">Calculate Investment</button>'+
   '<span class="sim-charts-hint">Show / hide</span></summary>'+
-  '<div class="numbered-content"><p class="hint">Choose the cash you want to receive overall and the payout you want from each separate funded account. We will test starting investment and phase risk levels, including Challenge, Verification (if applicable), funded profit split, and payout waiting rules.</p>'+
+  '<div class="numbered-content"><p class="hint">Choose your total payout goal, per-account payout, and ROI target. The optimizer tests starting investment and phase risks; payout-goal probability is reported as an outcome.</p>'+
   '<div class="payout-opt-fields">'+
   '<label>Total payout cash ($)<input id="payoutOptTotal" type="number" min="1" step="500" value="10000"></label>'+
   '<label>Minimum payout per account ($)<input id="payoutOptPer" type="number" min="1" step="100" value="1000"></label>'+
   '<label>Account type<select id="payoutOptAccount"></select></label>'+
   '<label>Maximum starting investment ($)<input id="payoutOptMax" type="number" min="1" step="500" value="10000"></label>'+
-  '<label>Target success probability<select id="payoutOptProbability"><option value=".5">50%</option><option value=".7" selected>70%</option><option value=".9">90%</option></select></label>'+
+  '<label>Minimum target ROI (%)<input id="payoutOptRoi" type="number" min="0" max="10000" step="25" value="200" title="ROI = average net receipts after fees divided by average fees incurred"></label>'+
   '</div><p class="hint" id="payoutOptMath">10 first payouts required.</p>'+
   '<p id="payoutOptStatus" class="status" role="status">Choose targets, then Calculate Investment.</p>'+
   '<div id="payoutOptResults"></div></div>';
@@ -44,7 +44,7 @@ function start(){
  `;document.head.appendChild(style);
  const key='4ds:v1:'+bridge.user+':payout-optimizer:v1';
  let prior={};try{prior=JSON.parse(localStorage.getItem(key)||'{}')}catch(_){}
- for(const [name,id] of [['total','payoutOptTotal'],['per','payoutOptPer'],['max','payoutOptMax'],['probability','payoutOptProbability']])
+ for(const [name,id] of [['total','payoutOptTotal'],['per','payoutOptPer'],['max','payoutOptMax'],['roi','payoutOptRoi']])
   if(prior[name]!=null)$(id).value=String(prior[name]);
  panel.open=prior.open===true;
  function syncOptions(){
@@ -55,7 +55,7 @@ function start(){
  }
  function save(){
   try{localStorage.setItem(key,JSON.stringify({total:$('payoutOptTotal').value,per:$('payoutOptPer').value,
-   max:$('payoutOptMax').value,probability:$('payoutOptProbability').value,
+   max:$('payoutOptMax').value,roi:$('payoutOptRoi').value,
    account:$('payoutOptAccount').value,open:panel.open}))}catch(_){}
  }
  function math(){
@@ -66,7 +66,7 @@ function start(){
    'Enter positive payout amounts.';
  }
  syncOptions();math();
- for(const id of ['payoutOptTotal','payoutOptPer','payoutOptMax','payoutOptProbability','payoutOptAccount']){
+ for(const id of ['payoutOptTotal','payoutOptPer','payoutOptMax','payoutOptRoi','payoutOptAccount']){
   $(id).addEventListener('change',()=>{math();save()});
  }
  panel.addEventListener('toggle',save);
@@ -81,19 +81,19 @@ function start(){
   if(!row){status.textContent='No supported account selected.';return;}
   const inputs=bridge.getInputs(row);
   const total=Number($('payoutOptTotal').value),perPayout=Number($('payoutOptPer').value),
-   maxInvestment=Number($('payoutOptMax').value),probability=Number($('payoutOptProbability').value);
-  if(![total,perPayout,maxInvestment,probability].every(Number.isFinite)||total<=0||
-   perPayout<=0||maxInvestment<=0||probability<=0||probability>1){
-   status.textContent='Enter positive cash amounts, investment ceiling, and probability.';return;
+   maxInvestment=Number($('payoutOptMax').value),minRoiPct=Number($('payoutOptRoi').value);
+  if(![total,perPayout,maxInvestment,minRoiPct].every(Number.isFinite)||total<=0||
+   perPayout<=0||maxInvestment<=0||minRoiPct<0||minRoiPct>10000){
+   status.textContent='Enter positive payout amounts, investment ceiling, and ROI between 0% and 10,000%.';return;
   }
   busy=true;button.disabled=true;status.textContent='Running reverse payout scenarios…';
   $('payoutOptResults').innerHTML='';save();
   try{
    const output=await solver.optimize({plan:bridge.getPlan(row),total,perPayout,
-    maxInvestment,probability,inputs,onProgress:text=>status.textContent=text});
+    maxInvestment,minRoi:minRoiPct/100,inputs,onProgress:text=>status.textContent=text});
    $('payoutOptResults').innerHTML=solver.render(output);
    status.textContent='Finished · '+output.checked+' scenarios evaluated · '+output.requiredPayouts+
-    ' payouts required. '+(output.feasible?'A tested scenario met the selected probability.':'No scenario reached the selected probability.');
+    ' payouts required. '+(output.feasible?'Expected payout counts, cash and ROI targets were met in validation.':'No validated scenario reached all payout and ROI targets.');
   }catch(error){status.textContent='Reverse optimizer: '+error.message}
   finally{busy=false;button.disabled=false;}
  });
