@@ -38,6 +38,12 @@ function planFor(base,scale,perPayout,rrVariant=null,riskMode='saved',r3Route='l
    stageRisk.rrByTier={r1:rrVariant.r1,r2:rrVariant.r2,r3:rrVariant.r3};
   }
   if(stage==='funded')stageRisk.target=payoutTarget;
+  if(riskMode==='adaptive'){
+   stageRisk.dynamicMaxRisk=Math.max(.01,Math.floor(maxRisk*scale*100)/100);
+   for(const tier of ['r1','r2','r3'])stageRisk[tier]=stageRisk.dynamicMaxRisk;
+   if(!(p.id==='topstep'&&stage==='p1'))
+    stageRisk.policy={map:{},conflicts:[],mode:r3Route};
+  }
   if(riskMode==='target'){
    // Size a clean first win near the stage target, without paying for
    // large overshoot. On a loss, the next tier aims to recover the loss
@@ -158,7 +164,7 @@ async function optimize({plan,perPayout,maxInvestment,minRoi=2,minNetRoi=0,minNe
   {name:'Higher R2',r1:mid,r2:maxRR,r3:minRR}
  ].filter((v,i,a)=>a.findIndex(z=>z.r1===v.r1&&z.r2===v.r2&&z.r3===v.r3)===i);
  const scaleValues=[.55,.8,1,1.25];
- const riskModes=['target','saved'];
+ const riskModes=['target','adaptive','saved'];
  const r3Routes=['legacy','headroom','balanced','defensive','ladder'];
  const candidates=[];
  let checked=0;
@@ -181,8 +187,8 @@ async function optimize({plan,perPayout,maxInvestment,minRoi=2,minNetRoi=0,minNe
  const coarse=[];
  const coarseTrials=50,validationTrials=200;
  for(const riskMode of riskModes)for(const rrVariant of rrVariants)
- for(const scale of (riskMode==='target'?[.55,.8,1]:scaleValues))
- for(const r3Route of (riskMode==='target'?r3Routes:['saved'])){
+ for(const scale of (riskMode==='target'?[.55,.8,1]:riskMode==='adaptive'?[.65,1]:scaleValues))
+ for(const r3Route of (riskMode==='target'?r3Routes:riskMode==='adaptive'?['target-now','repair-r2','buffered-target']:['saved'])){
   const p=planFor(plan,scale,perPayout,rrVariant,riskMode,r3Route);
   const v=E.validatePlan(p);
   if(v.errors.length)continue;
@@ -202,6 +208,19 @@ async function optimize({plan,perPayout,maxInvestment,minRoi=2,minNetRoi=0,minNe
    if(p.id==='topstep'&&stage==='p1')return true; // only R1 is used
    const r=p.riskProfiles[stage],cost=val(p.tradeCost),reserve=Math.max(.01,val(p.riskReserve));
    if(!r||![r.r1,r.r2,r.r3].every(n=>Number.isFinite(n)&&n>=.01))return false;
+   if(x.riskMode==='adaptive'){
+    const rr=t=>Number(r.rrByTier?.[t]??r.rr),cap=r.dynamicMaxRisk||r.r1;
+    const daily=Number.isFinite(p.dailyLoss)?p.dailyLoss:Infinity;
+    const overall=Number.isFinite(p.overallLoss)?p.overallLoss:Infinity;
+    const pick=(remaining,needed)=>Math.floor(Math.max(0,Math.min(cap,needed,remaining-cost-reserve,daily-cost-reserve))*100)/100;
+    const first=pick(overall,(r.target+cost)/rr('r1'));
+    if(first<.01)return false;
+    if(r.policy.mode!=='repair-r2')return true;
+    const second=pick(overall-first-cost,(r.target+first+2*cost)/rr('r2'));
+    if(second<.01)return false;
+    const third=pick(overall-first-second-2*cost,(second+cost)/rr('r3'));
+    return third>=.01;
+   }
    const losses=r.r1+r.r2+r.r3+3*cost+reserve;
    const dailyCap=Number.isFinite(p.dailyLoss)?p.dailyLoss:Infinity;
    return losses<=p.overallLoss+1e-8&&
@@ -289,7 +308,7 @@ async function optimize({plan,perPayout,maxInvestment,minRoi=2,minNetRoi=0,minNe
    // Select only executable, unique configurations for normal scenario cards.
    // Place the top ranked valid candidate first and retain diverse R3 routes.
    candidates.slice(0,1).forEach(add);
-   for(const route of ['ladder','headroom','balanced','defensive','saved']){
+   for(const route of ['repair-r2','target-now','buffered-target','ladder','headroom','balanced','defensive','saved']){
     if(shown.length>=5)break;
     add(candidates.find(x=>x.r3Route===route&&r3Executable(x)));
    }
@@ -477,7 +496,7 @@ function render(out,sortMode='model',currentPlan=null){
  const cards=sortedPayoutCandidates(out,selectedSort).map(({candidate,originalIndex},index)=>{
  const pathIndex=originalIndex;
   const s=candidate.score,p=candidate.plan,advice=diagnoseScenario(candidate,out);
-  const policyLabels={saved:'Saved options',streak:'After-loss tiers',flat:'Flat R1', 'after-win':'Increase after win','protect-after-loss':'Protect after loss'};
+  const policyLabels={saved:'Saved options',streak:'After-loss tiers',flat:'Flat R1', 'after-win':'Increase after win','protect-after-loss':'Protect after loss','target-now':'Adaptive target','repair-r2':'Repair R2','buffered-target':'Buffered target'};
   const limitInfo=p.stageList.map(stage=>{
    const x=p.riskProfiles[stage]||{},baseline=currentPlan?.riskProfiles?.[stage]||{};
    const mode=x.policy?.mode||'saved',old=baseline.policy?.mode||'saved';
@@ -532,7 +551,9 @@ function render(out,sortMode='model',currentPlan=null){
    [['Starting budget',money(candidate.initialBudget)],['Challenge fee',money(p.fee)],['Safety reserve',money(p.riskReserve)],['Daily / overall loss',money(p.dailyLoss)+' / '+money(p.overallLoss)],['Trading days',sim.days??'—'],['Signals per day',sim.tradesPerDay??'—'],['Assumed win rate',sim.winRate==null?'—':Number(sim.winRate).toFixed(1)+'%'],['Signal outcomes',sim.signalMode||'—'],['Buying mode',sim.purchaseMode||'—'],['Allocation',sim.capacityMode||'—'],['Payout per account',money(out.perPayout)],['Funded wait / processing',Number(p.payoutWaitCalendarDays||0)+' / '+Number(p.payoutProcessingCalendarDays||0)+' calendar days']].map(([name,value])=>'<div><small>'+escapeHtml(name)+'</small><strong>'+escapeHtml(value)+'</strong></div>').join('')+
    '</div><p class="hint">Search assumptions and investment budget are not Firms account defaults. Firm fees, drawdown limits and mandatory qualification requirements stay protected.</p></details>'+
    compareMarkup+
-   '<div class="reverse-review-actions"><button type="button" data-reverse-send-firms="'+pathIndex+'">Send this risk setup to Firms</button>'+
+   '<div class="reverse-review-actions">'+(candidate.riskMode==='adaptive'?
+   '<span class="hint">Dynamic policies are available in this simulator only. Firms does not yet support state-based automatic sizing, so transfer is disabled.</span>':
+   '<button type="button" data-reverse-send-firms="'+pathIndex+'">Send this risk setup to Firms</button>')+
    '<span class="hint">Optional · confirmation required · previous Firms settings backed up. The saved account is not changed by simply opening this option.</span></div>'+ 
    '<p class="reverse-review-status" role="status" aria-live="polite"></p>';
   const goalMet=candidate.r3Feasible!==false&&s.avgNet+1e-8>=out.minNetPnl&&s.avgPaid+1e-8>=out.requiredPayouts&&
@@ -543,7 +564,7 @@ function render(out,sortMode='model',currentPlan=null){
    '<summary class="reverse-candidate-summary">'+
    '<span class="reverse-candidate-name">'+(index===0?(selectedSort==='model'?'Top by optimizer':'Top by '+payoutSortModes[selectedSort]):'Option '+(index+1))+
    ' · '+candidate.scale.toFixed(2)+'× · '+escapeHtml(candidate.rrVariant||'')+
-   ' · '+(candidate.riskMode==='target'?'Target':'Saved')+' risk'+(candidate.riskMode==='target'?' · R3 '+escapeHtml(candidate.r3Route||'legacy'):'')+(candidate.riskMode==='target'&&p.stageList.some(stage=>!(p.id==='topstep'&&stage==='p1')&&p.riskProfiles[stage]?.r3Analysis?.feasibleAfterTwoLosses===false)?' · R3 blocked on LL':'')+
+   ' · '+(candidate.riskMode==='target'?'Target':candidate.riskMode==='adaptive'?'Adaptive':'Saved')+' risk'+(candidate.riskMode==='target'?' · R3 '+escapeHtml(candidate.r3Route||'legacy'):'')+(candidate.riskMode==='target'&&p.stageList.some(stage=>!(p.id==='topstep'&&stage==='p1')&&p.riskProfiles[stage]?.r3Analysis?.feasibleAfterTwoLosses===false)?' · R3 blocked on LL':'')+
    '<span class="reverse-candidate-status '+(goalMet?'reverse-status-met':'')+'">'+
    (candidate.r3Feasible===false?'R3 blocked after LL':goalMet?'Targets met':'Below target')+'</span></span>'+
    '<span class="reverse-summary-kpis">'+
