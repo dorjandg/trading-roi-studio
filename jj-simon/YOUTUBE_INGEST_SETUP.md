@@ -1,3 +1,20 @@
+# Current implementation — no local scripts, no Drive service-account upload
+
+The active scheduled GitHub workflow reads the JJ Simon source spreadsheet, calls the **Supadata API in native-caption-only mode**, and stores timestamps in the **private, owner-owned Google Sheet**:
+https://docs.google.com/spreadsheets/d/1FFjshwPnQtA2sLe5hoXfQRco6Sif9cJ0eS9yGsxTj-w/edit
+
+The Google service account is already granted Writer access on that private store and Viewer access on the video source. The old Drive folder remains unused because stand-alone service accounts cannot create files in personal My Drive folders due to storage ownership/quota constraints. The older yt-dlp script and its local Windows counterpart are legacy alternatives and should not be run on GitHub.
+
+The only missing credential is the hosted provider API key. The owner should create it at https://dash.supadata.ai/ and save it as the GitHub repository **Actions secret** `JJ_SUPADATA_API_KEY`. Do not share the key in chat. Until the secret is set, scheduled Actions runs safely skip. After configuration, scheduled runs pick up unindexed videos daily without further clicking. This uses one transcript API request per video. Native mode avoids paid AI-generated audio transcriptions, but provider credits and rate limits still apply.
+
+The pipeline stores one Index row per video and timestamped JSON caption chunks in Segments. Videos without accessible native captions are tagged needs_review and not charged repeatedly by this pipeline. On API-key failures or credit exhaustion, it stops without bulk retries. Publishing full raw captions to GitHub is forbidden.
+
+A separate ChatGPT scheduled task **JJ YouTube Academy Research** reviews newly imported private caption chunks, extracts short source-linked findings, and updates the Academy GitHub branch after evidence checks. Existing private course research remains separate.
+
+This design has not yet passed an end-to-end hosted API transcript test because no hosted provider key has been configured.
+
+---
+
 # JJ Academy — YouTube transcript import (opt-in)
 
 ## What is implemented
