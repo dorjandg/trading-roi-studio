@@ -33,6 +33,8 @@ jobs:
     if: ${{ vars.JJ_YOUTUBE_INGEST_ENABLED == 'true' || github.event_name == 'workflow_dispatch' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: jj-simon-knowledge-hub
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
