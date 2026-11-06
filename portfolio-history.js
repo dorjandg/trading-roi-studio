@@ -56,7 +56,7 @@ function create({user,element,endpoint}){
  }
  function summarizeOptimizerCandidate(c){
   const r=c.result;
-  return {riskScale:c.scale,riskMode:c.riskMode||'saved',rrVariant:c.rrVariant||null,initialBudget:c.initialBudget,accountsBudgeted:c.units,
+  return {riskScale:c.scale,riskMode:c.riskMode||'saved',r3Route:c.r3Route||'legacy',rrVariant:c.rrVariant||null,initialBudget:c.initialBudget,accountsBudgeted:c.units,
    score:compact(c.score),
    stages:(r?.plan?.stageList||c.plan?.stageList||[]).map(stage=>{
     const x=(r?.plan?.riskProfiles||c.plan?.riskProfiles||{})[stage]||{};
