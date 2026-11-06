@@ -587,7 +587,7 @@ function render(out,sortMode='model',currentPlan=null){
    '<span class="reverse-summary-toggle">Details</span>'+
    '</summary>'+
    '<div class="reverse-candidate-body">'+
-   '<div class="reverse-option-actions"><button type="button" class="primary" data-reverse-analyze="'+pathIndex+'">Run Full Simulation · Sections 2–7</button>'+
+   '<div class="reverse-option-actions"><button type="button" class="primary" data-reverse-analyze="'+pathIndex+'">Run Full Simulation · Sections 4–7</button>'+
    '<small>Recalculate with Section 2 Monte Carlo trial count and this option’s exact R1/R2/R3 setup, then view results, charts, account journey and trade history below.</small></div>'+
    '<div class="reverse-detail-label">SCENARIO DETAILS</div>'+setupMarkup+r3Markup+
    '<details class="reverse-diagnostic"><summary><strong>4 · Diagnostics &amp; suggestions</strong><small> · Why this scenario struggles</small></summary><div class="reverse-advice"><strong>Why this scenario struggles · what to test</strong>'+
