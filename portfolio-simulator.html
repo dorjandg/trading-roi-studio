@@ -532,6 +532,7 @@ details p{margin:6px 0}
 </section>
 </div>
 <script src="portfolio-engine.js?v=20261105-phase-rates"></script>
+<script src="portfolio-payout-optimizer.js?v=20261106-target-inverse-v1"></script>
 <script src="portfolio-discovery.js?v=20261105-account-rotation"></script>
 <script src="portfolio-to-firms.js"></script>
 <script src="studio-report-source.js?v=20261105-account-rotation"></script>
@@ -753,6 +754,7 @@ function renderRows(){
   '<option value="'+i+'">'+esc(catalog.programs[row.id].firm+' · '+catalog.programs[row.id].name+' · '+usd(row.size))+'</option>').join('');
  if(priorIdea!==''&&rows[Number(priorIdea)])$('ideaAccount').value=priorIdea;
  refreshIdeaCeiling();
+ window.StudioPayoutBridge?.onAccountsChanged?.();
  $('profileStatus').textContent=rows.length+' account type'+(rows.length===1?'':'s')+' selected.';
  $('budgetModeNote').textContent=mode==='compare'?
   'Every firm receives the FULL starting budget in its own alternative scenario. Do not add the row totals.':
@@ -1686,7 +1688,25 @@ async function init(){
   $('status').style.color='var(--green)';
  }catch(e){$('status').textContent=e.message;$('status').style.color='var(--red)';$('run').disabled=true}
 }
+window.StudioPayoutBridge={
+ user,
+ getRows:()=>rows.slice(),
+ getPlan:row=>accountPlan(row),
+ label:row=>catalog?.programs?.[row.id]?catalog.programs[row.id].firm+' · '+catalog.programs[row.id].name+' · '+usd(row.size):row.id+' '+row.size,
+ getInputs:row=>{
+  const p=accountPlan(row),limit=allocationLimits[p.id+':'+p.size]||{};
+  return {days:Number($('days').value),tradesPerDay:Number($('tradesPerDay').value),
+   winRate:Number($('winRate').value),seed:Number($('seed').value)||24717,
+   signalMode:$('signalMode').value,purchaseMode:$('purchaseMode').value,
+   capacityMode:$('capacityMode').value,maxActive:Number($('maxActive').value),
+   maxBuysPerDay:Number($('maxBuysPerDay').value),
+   reinvestPayouts:$('reinvestPayouts').value==='yes',
+   evaluationAllocationCap:limit.evaluation||0,fundedAllocationCap:limit.funded||0};
+ },
+ onAccountsChanged:null
+};
 init();
 })();
 </script>
+<script src="portfolio-payout-ui.js?v=20261106-target-inverse-v1"></script>
 <script src="studio-header.js"></script></body></html>
