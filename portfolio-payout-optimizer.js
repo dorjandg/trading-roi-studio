@@ -566,19 +566,16 @@ function render(out,sortMode='model',currentPlan=null){
   return '<details class="reverse-candidate" data-scenario-route="'+escapeHtml(candidate.r3Route||'saved')+'">'+
    '<summary class="reverse-candidate-summary">'+
    '<span class="reverse-candidate-name">'+(index===0?(selectedSort==='model'?'Top by optimizer':'Top by '+payoutSortModes[selectedSort]):'Option '+(index+1))+
-   ' · '+candidate.scale.toFixed(2)+'× · '+escapeHtml(candidate.rrVariant||'')+
    ' · '+(candidate.riskMode==='target'?'Target':candidate.riskMode==='adaptive'?'Adaptive':'Saved')+' risk'+(candidate.riskMode==='target'?' · R3 '+escapeHtml(candidate.r3Route||'legacy'):candidate.riskMode==='adaptive'?' · '+escapeHtml(candidate.r3Route||'dynamic'):'')+(candidate.riskMode==='target'&&p.stageList.some(stage=>!(p.id==='topstep'&&stage==='p1')&&p.riskProfiles[stage]?.r3Analysis?.feasibleAfterTwoLosses===false)?' · R3 blocked on LL':'')+
    '<span class="reverse-candidate-status '+(goalMet?'reverse-status-met':'')+'">'+
    (candidate.r3Feasible===false?'R3 blocked after LL':goalMet?'Targets met':'Below target')+'</span></span>'+
    '<span class="reverse-summary-kpis">'+
    summaryMetric('Net P&L',money(s.avgNet))+
    summaryMetric('Net ROI',pct(s.budgetRoi))+
-   summaryMetric('Fee ROI',pct(s.roi))+
    summaryMetric('Investment',money(candidate.initialBudget))+
-   summaryMetric('Payouts',s.avgPaid.toFixed(2))+
    summaryMetric('Goal chance',pct(s.hit))+'</span>'+
    '<span class="reverse-summary-toggle">Details</span>'+
-   '<span class="reverse-candidate-advice">Suggestion: '+escapeHtml(advice.headline)+'</span></summary>'+
+   '</summary>'+
    '<div class="reverse-candidate-body">'+
    '<div class="reverse-detail-label">SCENARIO DETAILS</div>'+setupMarkup+r3Markup+
    '<details class="reverse-diagnostic"><summary><strong>4 · Diagnostics &amp; suggestions</strong><small> · Why this scenario struggles</small></summary><div class="reverse-advice"><strong>Why this scenario struggles · what to test</strong>'+
@@ -616,12 +613,11 @@ function render(out,sortMode='model',currentPlan=null){
    })():'<p class="hint">Trade-by-trade account details unavailable for this scenario.</p>')+
    '</div></details>';
  }).join('');
- return '<div class="reverse-section-divider reverse-section-global"><strong>01 · RESULT OVERVIEW</strong><span>Targets, validation and timing</span></div>'+
+ return '<div class="reverse-simple-heading">Simulation result</div>'+
   '<details class="reverse-info-section"><summary><strong>Target &amp; calculation rules</strong> <span>· '+out.requiredPayouts+' minimum payouts · '+money(out.minNetPnl)+' net goal</span></summary><p class="hint">Net P&L target: '+money(out.minNetPnl)+' after incurred fees. Minimum '+out.requiredPayouts+
   ' first payouts at '+money(out.perPayout)+' each before fees; more may be needed to cover purchase costs. Allowed trade RR: '+out.minRR.toFixed(2)+'–'+out.maxRR.toFixed(2)+'R. Minimum fee-based ROI: '+pct(out.minRoi)+'. Minimum net ROI on starting investment: '+pct(out.minNetRoi)+'. Minimum net P&L: '+money(out.minNetPnl)+'. The account must first reach approximately '+
   money(out.profitPerAccount)+' funded trading profit (based on the modeled profit payout split, excluding any refunded challenge fee). Probability is the share of trials reaching the minimum first-payout count AND net P&L target within the trading-day horizon.</p></details>'+
-  '<div class="reverse-result-overview"><strong>Result summary</strong> · '+(out.feasible?'<span class="good">Target met in a validated scenario</span>':'<span class="bad">No scenario met all targets</span>')+'</div>'+ (out.feasible?'<details class="reverse-info-section"><summary>Validation explanation</summary><p class="good"><strong>At least one validated scenario met the payout-count, ROI and USD net P&L targets.</strong></p></details>':
-   '<details class="reverse-info-section"><summary>Validation explanation · why targets failed</summary><p class="bad"><strong>No validated scenario met the payout-count, ROI and net P&L targets within your investment ceiling and time horizon.</strong> Closest tested alternatives are shown. Payout-goal probability remains reported separately; an expected target is not a reliable guarantee.</p></details>')+
+  '<div class="reverse-result-overview"><strong>Result summary</strong> · '+(out.feasible?'<span class="good">Target met in a validated scenario</span>':'<span class="bad">No scenario met all targets</span>')+'</div>'+ 
   (out.candidates[0]?'<p class="reverse-critical-gap"><strong>Most important gap:</strong> '+
    (gaps(out,out.candidates[0].score)[0]||'No expected-value target gap; check payout probability and downside risk')+'</p>':'')+
   '<details class="reverse-info-section"><summary><strong>Fastest payout timing</strong> <span>· '+(out.fastestFirst?'first payout day '+out.fastestFirst.score.firstPayoutDay.toFixed(1):'no qualifying first payout')+'</span></summary><div class="reverse-speed-summary"><strong>Fastest payout KPIs (validated scenarios)</strong> · '+
@@ -631,15 +627,15 @@ function render(out,sortMode='model',currentPlan=null){
   (out.fastestGoal?'Full '+out.requiredPayouts+'-payout goal: day '+out.fastestGoal.score.goalPayoutDay.toFixed(1)+
    ' in successful trials':'Net profit / payout-count goal not reached in validated trials')+
   '<small> · Conditional averages, not guaranteed dates; minimum-day and processing waits included.</small></div></details>'+
-  '<div class="reverse-section-divider reverse-section-scenarios"><strong>02 · SCENARIO OPTIONS</strong><span>'+out.candidates.length+' distinct tested setups</span></div>'+ 
+  '<div class="reverse-simple-heading">Scenarios <small>('+out.candidates.length+')</small></div>'+ 
 '<div class="reverse-sort-bar"><label for="payoutResultsSort"><strong>Sort scenarios by</strong></label><select id="payoutResultsSort" aria-label="Sort validated scenarios">'+
   Object.entries(payoutSortModes).map(([value,label])=>'<option value="'+value+'"'+(selectedSort===value?' selected':'')+'>'+escapeHtml(label)+'</option>').join('')+
-  '</select><small>Only distinct R3-executable risk setups appear as selectable scenarios. Blocked original sizing is separated below. Showing '+out.candidates.length+' unique options from '+out.checked+' tests; sorting does not rerun.</small></div>'+
+  '</select><small>'+out.checked+' tested · changing sort does not rerun.</small></div>'+
   cards+
-  '<div class="reverse-section-divider reverse-section-reference"><strong>03 · REFERENCES</strong><span>Excluded risks and methodology</span></div>'+(out.blockedReference?'<details class="reverse-info-section"><summary><strong>Excluded reference · blocked R3</strong> <span>· previous risk sizing, not recommended as an executable sequence</span></summary><p class="hint">The original R3 amount does not fit after two consecutive losses in at least one stage. It remains in the search results for comparison, but is excluded from the selectable and transferable scenario cards. For comparison, its Phase 1 R1/R2/R3 amounts were '+
+  '<details class="reverse-meta-details"><summary>References &amp; methodology</summary>'+(out.blockedReference?'<details class="reverse-info-section"><summary><strong>Excluded reference · blocked R3</strong> <span>· previous risk sizing, not recommended as an executable sequence</span></summary><p class="hint">The original R3 amount does not fit after two consecutive losses in at least one stage. It remains in the search results for comparison, but is excluded from the selectable and transferable scenario cards. For comparison, its Phase 1 R1/R2/R3 amounts were '+
   (out.blockedReference.plan.riskProfiles.p1?['r1','r2','r3'].map(t=>money(out.blockedReference.plan.riskProfiles.p1[t])).join(' / '):'not applicable')+
   '. These results are model assumptions, not permission to exceed a firm loss limit.</p></details>':'')+
-  '<details class="reverse-info-section"><summary><strong>How to interpret these estimates</strong> <span>· Monte Carlo methodology and ROI definitions</span></summary><p class="hint">Estimates use 200 independent validation trials per shortlisted scenario after 50-trial searches across risk levels and investment amounts. ROI on incurred fees = expected net cash / expected fees actually incurred. Net ROI on investment = expected net cash / tested starting budget. Both may be negative. Starting budget is cash made available for challenge and activation costs, NOT the total fees actually incurred; any refunded challenge fees are tracked in modeled cash receipts. Payout counts and earnings can differ between trials. Searches are approximate, account purchases are capped at 100 per type, and risk safety depends on modeled firm rules. Scenarios do not change your saved Firms risk settings.</p></details>';
+  '<details class="reverse-info-section"><summary><strong>How to interpret these estimates</strong> <span>· Monte Carlo methodology and ROI definitions</span></summary><p class="hint">Estimates use 200 independent validation trials per shortlisted scenario after 50-trial searches across risk levels and investment amounts. ROI on incurred fees = expected net cash / expected fees actually incurred. Net ROI on investment = expected net cash / tested starting budget. Both may be negative. Starting budget is cash made available for challenge and activation costs, NOT the total fees actually incurred; any refunded challenge fees are tracked in modeled cash receipts. Payout counts and earnings can differ between trials. Searches are approximate, account purchases are capped at 100 per type, and risk safety depends on modeled firm rules. Scenarios do not change your saved Firms risk settings.</p></details></details>';
 }
 root.StudioPayoutOptimizer={needed,profitNeeded,planFor,assess,optimize,render,renderAccountPath,sampleAccounts,diagnoseScenario};
 })(typeof window!=='undefined'?window:globalThis);
