@@ -148,7 +148,7 @@ function validatePlan(p){
  return {errors,warnings};
 }
 // Optional state-aware recovery policies. Original saved risk policies stay unchanged.
-const adaptiveModes=new Set(['target-now','repair-r2','buffered-target']);
+const adaptiveModes=new Set(['target-now','repair-r2','buffered-target','eval-recovery-burn','funded-profit-ladder']);
 function chooseTradeRisk(p,ac,stage,c,dayProfit=0){
  const mode=c.policy?.mode||'saved';
  const forceTopstepR3=p.id==='topstep'&&stage==='funded'&&ac.fundedTargetDay!==null&&ac.funded150Days<5;
@@ -157,6 +157,23 @@ function chooseTradeRisk(p,ac,stage,c,dayProfit=0){
  if(mode==='repair-r2'&&!topstepCombine&&!forceTopstepR3)slot=ac.repairSlot||'r1';
  if((mode==='target-now'||mode==='buffered-target')&&!topstepCombine&&!forceTopstepR3)slot='r1';
  const rr=Number(c.rrByTier?.[slot]??c.rr);
+ if(mode==='eval-recovery-burn'&&!topstepCombine&&isEvaluation(stage)){
+  const cost=pos(p.tradeCost),allIn=ac.history.endsWith('LL');
+  const reserve=allIn?0:Math.max(.01,pos(p.riskReserve));
+  const room=Math.max(0,Math.min(ac.stagePnl-floorFor(p,ac),p.dailyLoss-dayProfit)-cost-reserve);
+  const needed=allIn?room:Math.ceil((Math.max(0,c.target-ac.stagePnl)+cost)/rr*100)/100;
+  const risk=Math.max(0,Math.floor(Math.min(room,needed)*100)/100);
+  return {slot:allIn?'r3':ac.history.endsWith('L')?'r2':'r1',risk,rr,allIn};
+ }
+ if(mode==='funded-profit-ladder'&&stage==='funded'&&!forceTopstepR3){
+  const cost=pos(p.tradeCost),reserve=Math.max(.01,pos(p.riskReserve));
+  const room=Math.max(0,Math.min(ac.stagePnl-floorFor(p,ac),p.dailyLoss-dayProfit)-cost-reserve);
+  const starter=pos(c.fundedStarterRisk??c.r1);
+  const targetRisk=ac.stagePnl>0?Math.max(0,ac.stagePnl-cost):
+   ac.stagePnl<0?Math.ceil((-ac.stagePnl+cost)/rr*100)/100:starter;
+  const risk=Math.max(0,Math.floor(Math.min(room,targetRisk)*100)/100);
+  return {slot:ac.stagePnl>0?'r2':ac.stagePnl<0?'r3':'r1',risk,rr};
+ }
  if(!adaptiveModes.has(mode)||topstepCombine||forceTopstepR3)return {slot,risk:pos(c[slot]),rr};
  const cost=pos(p.tradeCost),reserve=Math.max(.01,pos(p.riskReserve));
  const floor=floorFor(p,ac);
@@ -279,7 +296,8 @@ function runAccountDay(p,ac,day,rand,config,record){
   // User-selected risk is always exact; no hidden downsizing.
   const dailyHeadroom=p.dailyLoss-dayProfit;
   const overallHeadroom=ac.stagePnl-floorFor(p,ac);
-  const reserve=Math.max(.01,p.riskReserve);
+  const reserve=stage!=='funded'&&c.policy?.mode==='eval-recovery-burn'&&
+   ac.history.endsWith('LL')?0:Math.max(.01,p.riskReserve);
   // The firm loss buffer includes the whole possible losing trade, including
   // modelled trade cost. A trade that would breach daily/overall room is blocked.
   const potentialLoss=risk+p.tradeCost+reserve;
@@ -321,7 +339,8 @@ function runAccountDay(p,ac,day,rand,config,record){
   }
   ac.peakPnl=Math.max(ac.peakPnl,ac.stagePnl);
   ac.realizedDD=Math.max(ac.realizedDD,ac.peakPnl-ac.stagePnl);
-  if(record)ac.trace.push({day,stage,type:win?'win':'loss',slot,risk,rr:tradeRR,delta,pnl:ac.stagePnl,trade:ac.trades});
+  if(record)ac.trace.push({day,stage,type:win?'win':'loss',slot,risk,rr:tradeRR,delta,pnl:ac.stagePnl,trade:ac.trades,
+   policy:c.policy?.mode||'saved'});
   if(ac.stagePnl<=floorFor(p,ac)+1e-9 ||
      dayProfit<=-p.dailyLoss+1e-9){
    ac.status='failed';ac.closedDay=day;if(record)ac.trace.push({day,stage,type:'failed',label:'Modeled loss floor breached'});
@@ -386,8 +405,8 @@ function nextRiskStatus(p,ac){
  const stage=stageName(p,ac),c=p.riskProfiles[stage];
  const useR3=p.id==='topstep'&&stage==='funded'&&
   ac.fundedTargetDay!==null&&ac.funded150Days<5;
- const {slot,risk}=chooseTradeRisk(p,ac,stage,c,0);
- const required=risk+p.tradeCost+Math.max(.01,p.riskReserve);
+ const {slot,risk,allIn}=chooseTradeRisk(p,ac,stage,c,0);
+ const required=risk+p.tradeCost+(allIn?0:Math.max(.01,p.riskReserve));
  const available=ac.stagePnl-floorFor(p,ac);
  if(risk<.01||required>available+1e-8||required>p.dailyLoss+1e-8)
   return {slot,risk,required,available};
@@ -718,7 +737,8 @@ function previewLossPath(p,stage,steps=3){
   const prior=ac.stagePnl;
   const selected=chooseTradeRisk(p,ac,stage,cfg,0);
   const risk=selected.risk;
-  const cost=pos(p.tradeCost),reserve=Math.max(.01,pos(p.riskReserve));
+  const cost=pos(p.tradeCost),reserve=cfg.policy?.mode==='eval-recovery-burn'&&ac.history.endsWith('LL')?
+   0:Math.max(.01,pos(p.riskReserve));
   const floor=floorFor(p,ac);
   const available=Math.min(ac.stagePnl-floor,p.dailyLoss)-cost-reserve;
   const allowed=risk>=.01&&risk<=available+1e-8;
