@@ -7,10 +7,10 @@ function start(){
  if(!bridge||!solver||!document.getElementById('results'))return;
  const panel=document.createElement('details');
  panel.id='payoutOptimizerPanel';panel.className='sim-charts-panel numbered-panel';
- panel.innerHTML='<summary><strong>3A · Reverse Engineer Payouts</strong>'+
+ panel.innerHTML='<summary><strong>3A · Calculate Investment &amp; Compare Models</strong>'+
   '<button class="primary section-run-btn" type="button" id="runPayoutOptimizer">Calculate Investment</button>'+
   '<span class="sim-charts-hint">Show / hide</span></summary>'+
-  '<div class="numbered-content"><p class="hint">Set target net P&L after fees, payout per account, and the investment limit. Edit RR and optional ROI filters under Simulation Assumptions.</p>'+
+  '<div class="numbered-content"><p class="hint">Search investment and risk combinations for a payout goal. Open any result to compare its R1/R2/R3 and trade KPIs, or search more risk models using Section 3. These are separate from Run Simulation.</p>'+
   '<div class="payout-opt-fields">'+
   '<label><span class="payout-opt-field-title">Target net P&L (USD)</span><input id="payoutOptNetPnl" type="number" min="1" step="500" value="5000" title="Net cash receipts minus incurred costs"></label>'+
 
@@ -310,7 +310,19 @@ function start(){
 
  #payoutOptResults .reverse-risk-tier{display:block;font-size:9px;color:var(--muted);font-weight:500;margin-top:2px}
  #payoutOptResults .reverse-review-panel table td{font-variant-numeric:tabular-nums}
-  `;document.head.appendChild(style);
+ 
+ .reverse-model-comparison{margin:6px 0 9px;border-bottom:1px solid var(--line)}
+ .reverse-model-comparison>summary{cursor:pointer;padding:8px 5px;font-size:11px}
+ .reverse-model-comparison .hint{margin:5px}
+ .reverse-model-table{width:100%;min-width:840px;border-collapse:collapse;font-size:10px}
+ .reverse-model-table th,.reverse-model-table td{padding:6px 7px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap;font-variant-numeric:tabular-nums}
+ .reverse-model-table th:first-child,.reverse-model-table td:first-child{text-align:left}
+ .reverse-model-table thead{background:var(--panel2)}
+ .reverse-model-table details>summary{cursor:pointer;font-size:10px;margin:3px 0}
+ .reverse-model-table details[open]{min-width:180px}
+ .reverse-model-phase{font-size:10px;line-height:1.35;white-space:normal;padding:2px 0}
+ .reverse-option-actions button[data-reverse-more-models]{font-size:11px}
+ `;document.head.appendChild(style);
  const key='4ds:v1:'+bridge.user+':payout-optimizer:v1';
  let prior={};try{prior=JSON.parse(localStorage.getItem(key)||'{}')}catch(_){}
  for(const [name,id] of [['per','payoutOptPer'],['max','payoutOptMax'],['roi','payoutOptRoi'],['netRoi','payoutOptNetRoi'],['netPnl','payoutOptNetPnl'],['minRR','payoutOptMinRR'],['maxRR','payoutOptMaxRR']])
@@ -395,6 +407,30 @@ function start(){
   $('payoutOptResults').innerHTML=solver.render(lastOptimizerOutput,currentSortMode,saved);
  }
  $('payoutOptResults').addEventListener('click',event=>{
+  const more=event.target.closest?.('[data-reverse-more-models]');
+  if(more){
+   const index=Number(more.dataset.reverseMoreModels);
+   const candidate=lastOptimizerOutput?.candidates?.[index];
+   const status=more.closest('.reverse-candidate-body')?.querySelector('.reverse-review-status');
+   if(!candidate||!lastOptimizerInputs||candidate.plan.id+':'+candidate.plan.size!==lastOptimizerAccountKey){
+    if(status)status.textContent='This option has changed. Recalculate Investment before comparing models.';
+    return;
+   }
+   if(more.disabled)return;
+   const name='Investment Option '+(index+1)+' · '+(candidate.r3Route||candidate.riskMode);
+   const oldLabel=more.textContent;
+   more.disabled=true;more.textContent='Comparing risk models…';
+   if(status)status.textContent='Running an independent risk-model search with this investment amount and the same trading assumptions. Firms settings are unchanged.';
+   Promise.resolve().then(()=>bridge.findInvestmentModels?.(
+    candidate,lastOptimizerOutput,lastOptimizerInputs,name
+   )).then(ok=>{
+    if(!ok&&status)status.textContent='Model comparison was not available for this option.';
+    else if(status)status.textContent='Risk-model comparisons are in Section 3. The original option remains unchanged.';
+   }).catch(error=>{
+    if(status)status.textContent='Could not compare models: '+(error?.message||'Unknown error');
+   }).finally(()=>{more.disabled=false;more.textContent=oldLabel;});
+   return;
+  }
   const analyze=event.target.closest?.('[data-reverse-analyze]');
   if(analyze){
    const index=Number(analyze.dataset.reverseAnalyze),candidate=lastOptimizerOutput?.candidates?.[index];
