@@ -663,10 +663,10 @@ function start(){
   return [...base,...extra];
  }
  function advisorMoney(n){
-  return Number.isFinite(Number(n))?String.fromCharCode(36)+Math.round(Number(n)).toLocaleString('en-US'):'—';
+  return n!=null&&Number.isFinite(Number(n))?String.fromCharCode(36)+Math.round(Number(n)).toLocaleString('en-US'):'—';
  }
  function advisorPct(n){
-  return Number.isFinite(Number(n))?(100*Number(n)).toFixed(1)+'%':'—';
+  return n!=null&&Number.isFinite(Number(n))?(100*Number(n)).toFixed(1)+'%':'—';
  }
  function advisorAnswer(topic,record,all){
   const s=record.score||{},r=record.result||{},avg=r.avg||{},plan=record.plan||{};
