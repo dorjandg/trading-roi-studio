@@ -6,7 +6,7 @@ const summary=document.getElementById('gptResearchSummary');
 const status=document.getElementById('gptResearchStatus');
 if(!host||!summary||!status)return;
 const reportName='gpt-research-reports.json';
-const allowedStatuses=new Set(['investigated','recommended','updated','pending-review']);
+const allowedStatuses=new Set(['investigated','recommended','updated','pending-review','verified','needs-review']);
 const reviewMeta=document.getElementById('gptReviewMeta');
 let lastPublishedAt=null;
 function localPendingCount(){
