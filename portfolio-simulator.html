@@ -280,6 +280,21 @@ details p{margin:6px 0}
 .discovery-table-panel>summary span{font-size:11px;color:var(--muted)}
 .discovery-table-panel>.tablewrap{margin:0}
 .discovery-table-panel>summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+/* Account setup: two compact input rows, with phase details on demand. */
+.account-card{position:relative;padding:10px 12px;margin:6px 0}
+.account-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 10px;align-items:end;padding-right:26px}
+.account-grid .field{min-width:0;align-self:end}
+.account-grid .field label{font-size:11px;line-height:1.25;margin:0 0 3px;min-height:0}
+.account-grid .field input,.account-grid .field select{width:100%;min-height:34px;padding:5px 9px}
+.account-grid .remove{position:absolute;top:8px;right:9px;padding:3px 7px;min-width:24px;min-height:25px;font-size:15px}
+.account-risk-details{grid-column:1/-1;margin:0;min-width:0}
+.account-risk-details>summary{cursor:pointer;font-size:11px;color:var(--muted);line-height:1.3;padding:2px 0;list-style:revert}
+.account-risk-details .source{padding:6px 8px;margin-top:4px;border:1px solid var(--line);border-radius:6px;font-size:11px;line-height:1.35}
+@media(max-width:900px){.account-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.account-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding-right:0;padding-top:18px}
+ .account-grid .field label{font-size:10px}
+ .account-grid .remove{top:5px;right:6px}
+ .account-risk-details{grid-column:1/-1}}
 /* Compact daily account journey: stage flow and tabular daily status. */
 .journey-panel{margin-top:8px}
 .journey-toolbar{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 7px}
@@ -624,7 +639,7 @@ function renderRows(){
     '<div class="field"><label>Funded payout profit target ($)</label><input type="number" data-field="fundedTarget" min="0.01" step="100" value="'+accountPlan(r).riskProfiles.funded.target+'"></div>'+
     '<div class="field"><label>Payout wait from first funded trade (calendar days)</label><input type="number" data-field="payoutWait" min="0" max="120" step="1" value="'+accountPlan(r).payoutWaitCalendarDays+'"></div>'+
     '<div class="field"><label>Modeled payout processing (calendar days)</label><input type="number" data-field="payoutProcessing" min="0" max="120" step="1" value="'+accountPlan(r).payoutProcessingCalendarDays+'"></div>'+
-    '<div class="source">'+rowSummary(r)+'</div>'+
+    '<details class="account-risk-details"><summary>Fee &amp; phase risks · show / hide</summary><div class="source">'+rowSummary(r)+'</div></details>'+
    '<button type="button" class="remove" data-remove="'+i+'" title="Remove this comparison row" aria-label="Remove account">×</button>'+
    '</div></article>';
  }).join('');
