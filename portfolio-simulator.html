@@ -1084,14 +1084,14 @@ function portfolioAdviceMarkup(result,inputs){
  return '<div class="portfolio-advice-head" title="'+esc(lead.evidence)+'"><b>Scenario advisor:</b> '+esc(lead.title)+'</div>'+
   '<details class="portfolio-advice-more"><summary>Why this result? · '+issues.length+' diagnostic'+(issues.length===1?'':'s')+'</summary>'+
    issues.map(item=>'<div class="portfolio-advice-item"><b>'+esc(item.title)+'</b><p>'+esc(item.evidence)+'</p><p><b>Test:</b> '+esc(item.test)+'</p></div>').join('')+
-   '<small>Based on this Run Simulation, not Calculate Investment. These are observations and sensitivity tests, not causal proof, verified trading improvements or changes to firm rules. No settings are changed automatically.</small></details>';
+   '<small>Based on the displayed Monte Carlo report. These are sensitivity hypotheses, not causal proof or guaranteed trading improvements. No settings are changed automatically.</small></details>';
 }
 function makeResultCard(result,index,isInvestmentReport=false){
  const p=result.plan,c=result.avg,v=E.validatePlan(p);
  const stageNames=p.stageList.filter(x=>x!=='funded');
  const stageInfo=p.stageList.map(stage=>{
-  const r=p.riskProfiles[stage];
-  return '<span class="risk-chip">'+esc(r.name)+' · <b>'+dec(r.rr)+'R</b> · R1 <b>'+usdExact(r.r1)+'</b>'+(p.id==='topstep'&&stage==='p1'?'':' · R2 <b>'+usdExact(r.r2)+'</b> · R3 <b>'+usdExact(r.r3)+'</b>')+' · max wins/day '+r.maxWinsPerDay+'</span>';
+  const r=p.riskProfiles[stage],dynamic=['target-now','repair-r2','buffered-target'].includes(r.policy?.mode);
+  return '<span class="risk-chip">'+esc(r.name)+' · <b>'+dec(r.rr)+'R</b> · '+(dynamic?'Risk caps ':'')+'R1 <b>'+usdExact(r.r1)+'</b>'+(p.id==='topstep'&&stage==='p1'?'':' · R2 <b>'+usdExact(r.r2)+'</b> · R3 <b>'+usdExact(r.r3)+'</b>')+' · max wins/day '+r.maxWinsPerDay+'</span>';
  }).join('');
  const warns=v.warnings.map(x=>'<p class="hint">• '+esc(x)+'</p>').join('');
  return '<article class="result-card"><header><div><h3>'+esc(p.firm+' · '+p.programName+' · '+usd(p.size))+'</h3>'+
@@ -1118,6 +1118,12 @@ function makeResultCard(result,index,isInvestmentReport=false){
 function renderJourney(){
  if(!journey||!lastResults.length||!lastInputs)return;
  $('journeyContents').innerHTML=journey.render({results:lastResults,inputs:{...lastInputs,allocationLimits},...journeyState});
+ if(reportMode==='investment'){
+  for(const field of $('journeyContents').querySelectorAll('[data-journey-field="evaluationLimit"],[data-journey-field="fundedLimit"]')){
+   field.disabled=true;
+   field.title='Investment analysis is read-only. Change allocations in the optimizer and recalculate.';
+  }
+ }
 }
 $('journeyPanel').addEventListener('toggle',()=>{
  saveView();
@@ -1132,6 +1138,7 @@ $('journeyContents').addEventListener('change',event=>{
  else if(field==='routePage'||field==='summaryPage')journeyState[field]=Math.max(1,Math.floor(Number(event.target.value)||1));
  else if(field==='pageSize'){journeyState.pageSize=[5,10,20,30].includes(Number(event.target.value))?Number(event.target.value):10;journeyState.routePage=1;journeyState.summaryPage=1;}
   else if(field==='evaluationLimit'||field==='fundedLimit'){
+   if(reportMode==='investment'){renderJourney();return;}
    const selected=journeyState.selection!==''?journeyState.selection:(lastInputs?.budgetMode==='split'?'all':'0');
    const account=lastResults[Number(selected)];if(!account||selected==='all')return;
    const key=account.plan.id+':'+account.plan.size;
@@ -1139,7 +1146,7 @@ $('journeyContents').addEventListener('change',event=>{
    allocationLimits[key]={...(allocationLimits[key]||{}),[field==='evaluationLimit'?'evaluation':'funded']:value};
   }
  else return;
- if(field==='evaluationLimit'||field==='fundedLimit'){saveView();renderRows();setStale();run();return;}
+ if(field==='evaluationLimit'||field==='fundedLimit'){if(reportMode==='investment')return;saveView();renderRows();setStale();run();return;}
  renderJourney();saveView();
 });
 $('journeyContents').addEventListener('click',event=>{
@@ -1211,9 +1218,9 @@ function renderResults(list,inputs,source='run'){
  if($('journeyPanel').open)renderJourney();
  if($('section9Panel').open)renderSpendingLedger();
  const mixed=inputs.budgetMode==='split';
- $('summaryCaption').textContent=(mixed?'One budget distributed across accounts':'Independent alternatives, each using the full budget')+
+ $('summaryCaption').textContent=reportMode==='investment'?'Selected Calculate Investment scenario · original validated Monte Carlo results, including exact phase risks and outcome paths. Regular Run Simulation results remain separate.':(mixed?'One budget distributed across accounts':'Independent alternatives, each using the full budget')+
   ' · '+inputs.days+' trading days · '+inputs.trials+' trials · '+dec(inputs.winRate)+'% win rate · '+inputs.signalMode+' outcomes · '+
-  (inputs.purchaseMode==='recycle'?'automatic reuse-first purchasing':'all challenges purchased upfront')+'.';
+  (inputs.purchaseMode==='recycle'?'automatic reuse-first purchasing':'all challenges purchased upfront')+'.');
  const comp=inputs.budgetMode==='compare';
  const grand=(key)=>list.reduce((a,r)=>a+r.avg[key],0);
  let netSeries=[],combinedStats=null,netTotal=0,spentTotal=0,paidTotal=0;
