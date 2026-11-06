@@ -1,0 +1,45 @@
+/* JJ evidence explorer: quoted transcripts and interpretations clearly separated. */
+.jj-evidence-ui{background:var(--panel);border:1px solid var(--stroke);border-radius:10px;margin:8px 0 16px;padding:14px;min-width:0}
+.jj-evidence-ui h3{font-size:15px;line-height:1.3;margin:0 0 5px}
+.jj-ev-intro{font-size:11px;line-height:1.55;color:var(--muted);margin:5px 0 12px}
+.jj-ev-controls{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr);gap:8px}
+.jj-ev-controls label{display:flex;flex-direction:column;gap:5px;color:var(--muted);font-size:11px;font-weight:600;min-width:0}
+.jj-ev-controls input,.jj-ev-controls select{width:100%;min-width:0;min-height:41px;border:1px solid var(--stroke);background:var(--bg);color:var(--text);border-radius:7px;padding:9px;font-size:12px}
+.jj-ev-controls input:focus-visible,.jj-ev-controls select:focus-visible,.jj-ev-actions button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.jj-ev-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}
+.jj-ev-check{display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer}
+.jj-ev-check input{width:16px;height:16px;accent-color:var(--accent)}
+.jj-ev-actions button,.jj-ev-links button,.jj-ev-links a{border:1px solid var(--stroke);border-radius:7px;padding:8px 10px;background:var(--bg);color:var(--accent);font-size:11px;cursor:pointer;text-decoration:none;text-align:left}
+.jj-ev-count{font-size:11px;color:var(--muted);margin-left:auto}
+.jj-ev-results{display:grid;gap:7px}
+.jj-ev-card{border:1px solid var(--stroke);border-radius:8px;background:var(--bg);min-width:0;overflow:hidden}
+.jj-ev-summary{list-style:none;padding:11px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;cursor:pointer}
+.jj-ev-summary::-webkit-details-marker{display:none}
+.jj-ev-summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.jj-ev-card[open]>.jj-ev-summary{border-bottom:1px solid var(--stroke);background:var(--hover)}
+.jj-ev-head{display:flex;gap:8px;align-items:flex-start;min-width:0}
+.jj-ev-head strong{font-size:12px;line-height:1.45;overflow-wrap:anywhere}
+.jj-ev-id{font-size:10px;color:var(--accent);white-space:nowrap;border:1px solid var(--stroke);border-radius:5px;padding:2px 5px}
+.jj-ev-meta{display:flex;flex-direction:column;align-items:flex-end;gap:3px;font-size:10px;color:var(--muted);text-align:right;white-space:nowrap}
+.jj-ev-content{padding:12px}
+.jj-ev-source-name{font-size:10px;color:var(--muted);margin-bottom:11px}
+.jj-ev-field-label{text-transform:uppercase;letter-spacing:.06em;font-size:10px;color:var(--muted);font-weight:700;margin:11px 0 4px}
+.jj-ev-quote{border-left:3px solid var(--accent);background:var(--panel);border-radius:0 6px 6px 0;padding:10px 12px;margin:0;font-size:12px;line-height:1.55;font-style:italic;overflow-wrap:anywhere}
+.jj-ev-content p{font-size:12px;line-height:1.56;margin:4px 0;overflow-wrap:anywhere}
+.jj-ev-content .jj-ev-caveat{color:var(--muted)}
+.jj-ev-warning{color:#c99b57}
+.jj-ev-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}
+.jj-ev-empty{color:var(--muted);font-size:12px;padding:10px}
+@media(max-width:750px){
+ .jj-evidence-ui{padding:10px;margin:7px 0 12px}
+ .jj-evidence-ui h3{font-size:14px}
+ .jj-ev-controls{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ .jj-ev-controls label:first-child{grid-column:1/-1}
+ .jj-ev-controls input,.jj-ev-controls select{font-size:16px;min-height:43px;padding:8px}
+ .jj-ev-summary{flex-wrap:wrap;gap:4px;padding:10px}
+ .jj-ev-head{flex:1 1 100%}
+ .jj-ev-meta{flex-direction:row;align-items:center;gap:9px;padding-left:37px}
+ .jj-ev-content{padding:10px}
+ .jj-ev-actions{gap:8px}
+}
+@media(max-width:340px){.jj-ev-controls{grid-template-columns:1fr}.jj-ev-controls label:first-child{grid-column:auto}}
