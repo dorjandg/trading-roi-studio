@@ -54,7 +54,9 @@ function start(){
   '<label>Goal to improve<select id="payoutMoreObjective"><option value="goal">Chance of net target</option><option value="balanced">Balanced · net + downside</option><option value="net">Highest expected net</option><option value="payout">Chance of first payout</option><option value="downside">Protect downside P10</option></select></label>'+
   '<label>Search depth<select id="payoutMoreEffort"><option value="quick">Quick · 50 + 80 trials</option><option value="normal" selected>Standard · 80 + 150 trials</option><option value="deep">Detailed · 150 + 250 trials</option></select></label>'+
   '</div><p class="hint">Uses the chosen option’s own safety reserve, firm limits and risk policy. New models have the same investment budget.</p></details>'+
-  '<div id="payoutOptMoreModels"></div></div>';
+  '<details id="payoutOptModelComparison" class="payout-model-collapse">'+
+  '<summary><strong>Model comparison</strong><span id="payoutOptModelSummary"> · Results appear after Calculate Investment</span><span class="payout-model-collapse-toggle">Show / hide</span></summary>'+
+  '<div id="payoutOptMoreModels" class="payout-model-collapse-body"></div></details></div>';
  document.getElementById('results').before(panel);
  // Section 4: one tooltip for every results-table header, including tables
  // that are replaced when sorting, changing a model or selecting an account.
@@ -483,7 +485,19 @@ function start(){
  .payout-more-help{margin:5px 0;padding:4px 0;font-size:10px}
  .payout-more-help>summary{cursor:pointer;font-weight:650}
  @media(max-width:650px){.payout-more-settings-fields{grid-template-columns:1fr}.payout-more-settings-fields select,.payout-more-sort select{font-size:16px;min-height:35px}}
-  #payoutOptMoreModels:not(:empty){margin:13px 0;border-top:2px solid var(--line);padding-top:8px}
+  #payoutOptimizerPanel .payout-model-collapse{margin:8px 0;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+ #payoutOptimizerPanel .payout-model-collapse[hidden]{display:none}
+ #payoutOptimizerPanel .payout-model-collapse>summary{display:flex;align-items:center;gap:6px;flex-wrap:wrap;cursor:pointer;background:var(--panel2);padding:9px 10px;list-style:none;font-size:12px}
+ #payoutOptimizerPanel .payout-model-collapse>summary::-webkit-details-marker{display:none}
+ #payoutOptimizerPanel .payout-model-collapse>summary:before{content:'▸';font-size:11px;color:var(--muted)}
+ #payoutOptimizerPanel .payout-model-collapse[open]>summary:before{content:'▾'}
+ #payoutOptimizerPanel .payout-model-collapse>summary strong{font-size:12px}
+ #payoutOptimizerPanel #payoutOptModelSummary{font-size:11px;color:var(--muted);flex:1 1 170px}
+ #payoutOptimizerPanel .payout-model-collapse-toggle{font-size:10px;color:var(--muted)}
+ #payoutOptimizerPanel .payout-model-collapse[open]>summary{border-bottom:1px solid var(--line)}
+ #payoutOptimizerPanel .payout-model-collapse-body{padding:7px 8px;min-width:0}
+ @media(max-width:650px){#payoutOptimizerPanel .payout-model-collapse>summary{padding:8px}#payoutOptimizerPanel .payout-model-collapse-body{padding:5px}}
+ #payoutOptMoreModels:not(:empty){margin:13px 0;border-top:2px solid var(--line);padding-top:8px}
  .payout-more-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
  .payout-more-title strong{font-size:13px}
  .payout-more-title small{font-size:10px;color:var(--muted);flex:1 1 220px}
@@ -602,7 +616,13 @@ function start(){
   panel.scrollIntoView({behavior:'smooth',block:'start'});
  }); 
  function renderUnifiedTable(){
-  const box=$('payoutOptMoreModels');
+  const box=$('payoutOptMoreModels'),comparison=$('payoutOptModelComparison');
+  const original=lastOptimizerOutput?.candidates?.length||0;
+  const extra=lastModelSearch?.result?.ideas?.length||0;
+  const summary=original+extra+' models · '+original+' investment options'+
+   (extra?' · '+extra+' additional models':'');
+  $('payoutOptModelSummary').textContent=lastOptimizerOutput?' · '+summary:' · Results appear after Calculate Investment';
+  comparison.hidden=!lastOptimizerOutput;
   box.innerHTML=lastOptimizerOutput?
    solver.renderUnifiedInvestmentModels(lastOptimizerOutput,lastModelSearch,
     moreSortKey,moreDescending,moreColumnView,moreSourceFilter):'';
@@ -637,8 +657,9 @@ function start(){
     lastModelSearch={candidate,result,origin:'Investment Option '+(index+1)};
     moreSortKey='net';moreDescending=true;moreSourceFilter='all';
     renderUnifiedTable();
+    $('payoutOptModelComparison').open=true;
     if(status)status.textContent=result.ideas.length+' additional risk models added to the single comparison table in Section 4.';
-    $('payoutOptMoreModels').scrollIntoView({behavior:'smooth',block:'start'});
+    $('payoutOptModelComparison').scrollIntoView({behavior:'smooth',block:'start'});
    }catch(error){if(status)status.textContent='Model search failed: '+(error?.message||'Unknown error');}
    finally{more.disabled=false;more.textContent='Find More Risk Models';}
    return;
@@ -823,6 +844,7 @@ function start(){
    lastOptimizerAccountKey=selected;
    lastOptimizerInputs={...inputs};
    renderLastOptimizer();
+   $('payoutOptModelComparison').open=false;
    updateInputSummary();
    $('payoutOptInputsPanel').open=false;
    let historyResult=' · history not available';
