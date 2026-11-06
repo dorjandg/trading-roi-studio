@@ -56,9 +56,126 @@ function start(){
   '</div><p class="hint">Uses the chosen option’s own safety reserve, firm limits and risk policy. New models have the same investment budget.</p></details>'+
   '<div id="payoutOptMoreModels"></div></div>';
  document.getElementById('results').before(panel);
+ // Section 3A: one tooltip for every results-table header, including tables
+ // that are replaced when sorting, changing a model or selecting an account.
+ const tableHeaderHelp={
+  'Model':'Trading strategy and its tested risk setup. Expand phase settings to inspect each phase.',
+  'Net':'Average net portfolio cash P&L after incurred challenge and activation costs.',
+  'ROI':'Expected net P&L divided by average incurred fees (fee ROI), not starting-budget ROI.',
+  'Goal':'Percentage of trials meeting BOTH the required first-payout count and target net P&L.',
+  'Investment':'Starting budget reserved for challenge purchases and any required activation fees; not fees actually spent.',
+  'Δ Net':'Difference in average net P&L versus the stated reference investment option. A positive difference is not proof of a trading edge.',
+  'P10':'10th-percentile modeled net P&L: around 10% of trials had a net result this low or lower.',
+  'CP':'Chance of at least one completed first payout within the simulated trading horizon.',
+  'BA':'Average risk-blocked accounts: unable to place another permissible trade within risk limits. Not the same as breached accounts.',
+  'Paid':'Average number of distinct accounts receiving a first payout per simulation.',
+  'Funded':'Average number of accounts reaching the funded stage, including those not yet paid.',
+  'Bought':'Average number of challenges purchased per simulation, not necessarily all activated at once.',
+  'Fees':'Average incurred challenge and activation fees; different from the reserved starting budget.',
+  'PF':'Profit factor: gross profitable trade P&L divided by absolute gross losing trade P&L.',
+  'WR':'Win rate: winning executed trades divided by all executed trades.',
+  'RR':'Planned risk-weighted reward-to-risk ratio across modeled trades. Actual outcomes may differ.',
+  'AR':'Average realized net R per executed trade, using each trade’s original risk.',
+  'AW':'Average net dollar profit of winning trades.',
+  'AL':'Average absolute net dollar loss of losing trades.',
+  'EV':'Expected modeled dollar profit or loss per executed trade (average trade P&L).',
+  'Trades':'Average executed trades per portfolio simulation trial.',
+  'View':'Open the full selected model analysis in Sections 4–7.',
+  'Day':'Trading day index in the simulated sample; not a calendar-date forecast.',
+  'Phase':'Account stage: evaluation, verification or funded. Available stages depend on the firm.',
+  'Trade':'Trade sequence number inside the selected account or phase.',
+  'Result / event':'Modeled win, loss, stage transition, payout milestone or another recorded event.',
+  'Tier':'Risk tier or state selected for this trade under the current policy (R1, R2 or R3).',
+  'Risk':'Actual dollar risk assigned to that trade, after applicable firm limits and reserve.',
+  'Trade P&L':'Modeled profit or loss on this trade, including modeled transaction costs.',
+  'Phase P&L':'Cumulative P&L within the current evaluation, verification or funded phase.',
+  'Parameter':'The setting being compared between the saved Firms profile and the modeled scenario.',
+  'Current Firms':'Current saved firm-account configuration; not automatically changed by the optimizer.',
+  'Scenario':'Alternative setting proposed by this simulated investment model.',
+  'Risk sequence':'Rules selecting the next risk tier, such as flat, after-loss recovery or adaptive target.',
+  'Target':'Modeled profit target required to complete the phase; not the final cash payout.',
+  'Max wins/day':'Maximum winning trades allowed in a day for this account and phase.',
+  'Min trading days':'Minimum qualifying trading days modeled before passing a phase.',
+  'First trade':'Calculated risk for the first trade in a hypothetical new-phase loss path.',
+  'After 1 loss':'Calculated next-trade risk after one loss, assuming a separate trading day.',
+  'After 2 losses':'Calculated next-trade risk after two consecutive losses, assuming separate trading days.',
+  'R1 / R2 / R3':'Configured risk tier amounts for fixed policies; for adaptive policies these may be caps, while actual sizes are recalculated.',
+  'RR per tier':'Planned reward-to-risk multiplier for risk tier R1, R2 and R3, in that order.',
+  'vs Firms':'Whether modeled risk settings differ from the saved Firms account settings.',
+  'R3 headroom after LL':'Remaining risk allowance after two consecutive losses (L, L), including modeled reserve and costs.',
+  'Can R3 trade?':'Whether the third trade can be legally sized and placed after two modeled losses.',
+  'Stage P&L after LLW':'Phase profit or loss after loss, loss, then one winning recovery trade (L-L-W).'
+ };
+ const headerTooltip=document.createElement('div');
+ headerTooltip.className='payout-header-tooltip';
+ headerTooltip.id='payoutHeaderTooltip';
+ headerTooltip.setAttribute('role','tooltip');
+ headerTooltip.hidden=true;
+ document.body.appendChild(headerTooltip);
+ let activeHeader=null,headerPinned=false;
+ function hideHeaderTooltip(force=false){
+  if(headerPinned&&!force)return;
+  headerTooltip.hidden=true;activeHeader=null;headerPinned=false;
+ }
+ function showHeaderTooltip(th,pin=false){
+  if(!th||!th.dataset.headerHelp)return;
+  activeHeader=th;headerPinned=pin;
+  headerTooltip.textContent=th.dataset.headerHelp;
+  headerTooltip.hidden=false;
+  const rect=th.getBoundingClientRect(),w=headerTooltip.offsetWidth||260;
+  const x=Math.min(window.innerWidth-w-10,Math.max(10,rect.left));
+  const lower=rect.bottom+7,above=rect.top-headerTooltip.offsetHeight-7;
+  headerTooltip.style.left=Math.max(8,x)+'px';
+  headerTooltip.style.top=(lower+headerTooltip.offsetHeight>window.innerHeight-8&&above>=8?above:Math.max(8,lower))+'px';
+ }
+ function annotateHeaders(){
+  for(const th of panel.querySelectorAll('table thead th')){
+   const label=th.textContent.trim().replace(/\\s+/g,' ');
+   if(!Object.prototype.hasOwnProperty.call(tableHeaderHelp,label))continue;
+   th.dataset.headerHelp=tableHeaderHelp[label];
+   th.setAttribute('title',tableHeaderHelp[label]);
+   th.setAttribute('tabindex','0');
+   th.setAttribute('aria-label',label+': '+tableHeaderHelp[label]);
+   th.classList.add('payout-header-has-help');
+  }
+ }
+ const headerObserver=new MutationObserver(annotateHeaders);
+ headerObserver.observe(panel,{childList:true,subtree:true});
+ panel.addEventListener('mouseover',event=>{
+  const th=event.target.closest?.('table thead th[data-header-help]');
+  if(th&&!headerPinned&&th!==activeHeader)showHeaderTooltip(th);
+ });
+ panel.addEventListener('mouseout',event=>{
+  const th=event.target.closest?.('table thead th[data-header-help]');
+  if(th&&!th.contains(event.relatedTarget)&&!headerPinned)hideHeaderTooltip();
+ });
+ panel.addEventListener('click',event=>{
+  const th=event.target.closest?.('table thead th[data-header-help]');
+  if(!th)return;
+  if(activeHeader===th&&headerPinned)hideHeaderTooltip(true);
+  else showHeaderTooltip(th,true);
+ });
+ panel.addEventListener('focusin',event=>{
+  const th=event.target.closest?.('table thead th[data-header-help]');
+  if(th)showHeaderTooltip(th);
+ });
+ panel.addEventListener('focusout',event=>{
+  if(event.target.matches?.('table thead th[data-header-help]'))hideHeaderTooltip(true);
+ });
+ document.addEventListener('click',event=>{
+  if(activeHeader&&!activeHeader.contains(event.target)&&!headerTooltip.contains(event.target))hideHeaderTooltip(true);
+ });
+ document.addEventListener('keydown',event=>{if(event.key==='Escape')hideHeaderTooltip(true);});
+ window.addEventListener('scroll',()=>hideHeaderTooltip(true),true);
+ window.addEventListener('resize',()=>hideHeaderTooltip(true));
+
  const $=id=>document.getElementById(id);
  const style=document.createElement('style');
  style.textContent=`
+ .payout-header-tooltip{position:fixed;z-index:20000;box-sizing:border-box;max-width:min(310px,calc(100vw - 20px));width:max-content;max-width:min(310px,calc(100vw - 20px));padding:9px 11px;border:1px solid var(--line);border-radius:7px;background:var(--panel);color:var(--text);font-size:12px;line-height:1.4;box-shadow:0 5px 20px rgba(0,0,0,.22);pointer-events:none}
+ .payout-header-tooltip[hidden]{display:none}
+ #payoutOptimizerPanel table thead th.payout-header-has-help{cursor:help;text-decoration:underline dotted;text-decoration-color:var(--muted);text-underline-offset:3px}
+ #payoutOptimizerPanel table thead th.payout-header-has-help:focus-visible{outline:2px solid var(--blue);outline-offset:-2px}
  #payoutOptimizerPanel>.numbered-content{padding:8px 5px}
  #payoutOptimizerPanel .payout-opt-inputs{margin:1px 0 7px;border:1px solid var(--line);border-radius:7px;overflow:hidden}
  #payoutOptimizerPanel .payout-opt-inputs>summary{display:flex;align-items:center;flex-wrap:wrap;gap:6px;cursor:pointer;background:var(--panel2);padding:8px 10px;list-style:none;font-size:12px}
