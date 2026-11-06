@@ -256,7 +256,7 @@ async function optimize({plan,perPayout,maxInvestment,minRoi=2,minNetRoi=0,minNe
  coarse.slice(0,8).forEach(add);
  // Include a strong tested instance of each R3 route so the user can inspect
  // alternatives even when the original optimizer ranking prefers one route.
- for(const route of r3Routes){
+ for(const route of [...r3Routes,'repair-r2','target-now','buffered-target']){
   const routeCandidate=coarse.find(x=>x.r3Route===route);
   if(routeCandidate)add(routeCandidate);
  }
