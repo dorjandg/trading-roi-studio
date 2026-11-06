@@ -491,6 +491,7 @@ function start(){
  .payout-more-table details>summary{font-size:10px;cursor:pointer;margin:4px 0}
  .payout-more-phase{white-space:normal;line-height:1.4;font-size:10px;font-weight:400;padding:3px 0}
  .payout-more-table button{font-size:10px;padding:5px 7px;min-height:27px}
+ .payout-model-actions{display:flex;gap:4px;align-items:center;justify-content:flex-end}
  `;document.head.appendChild(style);
  const key='4ds:v1:'+bridge.user+':payout-optimizer:v1';
  let prior={};try{prior=JSON.parse(localStorage.getItem(key)||'{}')}catch(_){}
@@ -719,9 +720,10 @@ function start(){
   if(event.target.closest?.('[data-more-direction]')){
    moreDescending=!moreDescending;renderUnifiedTable();return;
   }
-  const button=event.target.closest?.('[data-more-analyze]');
+  const ledgerButton=event.target.closest?.('[data-more-ledger]');
+  const button=ledgerButton||event.target.closest?.('[data-more-analyze]');
   if(!button||!lastOptimizerOutput||button.disabled)return;
-  const match=/^(original|extra):([0-9]+)$/.exec(button.dataset.moreAnalyze||'');
+  const match=/^(original|extra):([0-9]+)$/.exec(ledgerButton?button.dataset.moreLedger:button.dataset.moreAnalyze||'');
   if(!match)return;
   const index=Number(match[2]);
   let model,label;
@@ -735,12 +737,17 @@ function start(){
    model={plan:idea.plan,result:idea.holdout,initialBudget:lastModelSearch.candidate.initialBudget};
    label=idea.title;
   }
-  button.disabled=true;button.textContent='Analyzing…';
+  button.disabled=true;button.textContent=ledgerButton?'Calculating spending…':'Analyzing…';
   try{
    const ok=await bridge.analyzeOptimizerCandidate?.(model,lastOptimizerOutput,lastOptimizerInputs,label);
    if(!ok)throw Error('Detailed report unavailable');
-  }catch(error){$('payoutOptStatus').textContent='Analyze model: '+(error?.message||'Unknown error');}
-  finally{button.disabled=false;button.textContent='Analyze';}
+   if(ledgerButton){
+    const section=document.getElementById('section9Panel');
+    section.open=true;
+    section.scrollIntoView({behavior:'smooth',block:'start'});
+   }
+  }catch(error){$('payoutOptStatus').textContent=(ledgerButton?'Spending ledger: ':'Analyze model: ')+(error?.message||'Unknown error');}
+  finally{button.disabled=false;button.textContent=ledgerButton?'Ledger':'Analyze';}
  });
  $('payoutOptResults').addEventListener('change',event=>{
   if(event.target.id==='payoutResultsSort'){
