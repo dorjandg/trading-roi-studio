@@ -22,7 +22,21 @@ function jjDisplayChapterTitle(m,position){
  const raw=String(m.title||'').replace(/^\s*(?:(?:\d{1,3})\s*[·.:-]\s*|[★☆]\s*)/u,'').trim();
  return String(position+1).padStart(2,'0')+' · '+raw;
 }
-function jjCurrentOrderedMembers(group){return curriculum.filter(m=>jjGroupFor(m)===group);}
+const jjPreferredChapterOrder={
+ 'Learn Strategies':['master-strategy-encyclopedia','strategy-decision-tree','fair-price','bos-entry','winning-days','trading-rules-playbook'],
+ 'Account Management':['funded-plan','evaluation','account-management','scaling','portfolio-risk','prop-firm-reference'],
+ 'Math & Research':['research-completion-dashboard','source-evidence-explorer','risk-math','kpi-library','kpi-workbench','source-coverage','critical-rules','research-verification-tracker','visual-evidence-worklist','course-conflict-register'],
+ 'Student Q&A':['student-qa-library','examples','live-qa-extract','live-qa-deep-dive','live-claim-verification']
+};
+function jjCurrentOrderedMembers(group){
+ const rank=jjPreferredChapterOrder[group]||[];
+ return curriculum.filter(m=>jjGroupFor(m)===group).sort((a,b)=>{
+  const ia=rank.indexOf(a.slug),ib=rank.indexOf(b.slug);
+  if(ia<0&&ib<0)return 0;
+  if(ia<0)return 1;if(ib<0)return -1;
+  return ia-ib;
+ });
+}
 
 const jjRenderOriginal=render;
 render=function(){
