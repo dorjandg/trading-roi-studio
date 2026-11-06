@@ -56,6 +56,12 @@ function start(){
  .reverse-candidate table{font-size:11px}
  .reverse-candidate th,.reverse-candidate td{padding:5px 7px;line-height:1.2}
  .reverse-candidate th{font-size:10px}
+ .reverse-speed-summary{border:1px solid var(--line);border-radius:6px;margin:5px 0;padding:5px 7px;font-size:11px;line-height:1.3}
+ .reverse-speed-summary strong{font-size:11px}
+ .reverse-speed-summary small{font-size:10px;color:var(--muted)}
+ .reverse-sizing-info{margin:4px 0 2px;border:1px solid var(--line);border-radius:5px;padding:2px 6px}
+ .reverse-sizing-info>summary{cursor:pointer;font-size:10px;font-weight:700}
+ .reverse-sizing-info .hint{margin:3px 0 2px!important}
  .reverse-trade-details{margin-top:5px;padding:3px 6px;border-radius:6px;border:1px solid var(--line)}
  .reverse-trade-details>summary{cursor:pointer;font-size:11px;font-weight:700;padding:3px 1px;line-height:1.25}
  .reverse-trade-details>summary small{font-size:10px;font-weight:400;color:var(--muted)}
