@@ -1561,6 +1561,7 @@ function renderDiscovery(result,row,budget){
     '<td>'+pct(h.chancePayout)+'</td>'+
     '<td>'+dec(h.avg.exhausted)+'</td>'+
     '<td>'+(i<0?(fromInvestment?'Investment baseline':'Current'):fromInvestment?'<span class="hint">Comparison only</span>':'<div class="discovery-row-actions"><button type="button" data-discovery-apply="'+i+'">Test</button>'+
+    '<button type="button" data-discovery-investment="'+i+'" title="Use this simulator-only model as the starting point for Calculate Investment">Calculate Investment</button>'+
     '<button type="button" data-discovery-send="'+i+'" title="Copy this model into the matching Firms account after confirmation">Send to Firms</button></div>')+'</td></tr>';
  };
  const best=result.ideas.filter(c=>c.improvement>0).sort((a,b)=>b.improvement-a.improvement)[0];
@@ -1747,6 +1748,21 @@ $('firmsSendStatus').addEventListener('click',event=>{
  }
 });
 
+function applyDiscoveryRiskModel(selected){
+ if(!selected||!discovered)return false;
+ const id=discovered.row.id+':'+discovered.row.size;
+ if(!rows.some(row=>row.id+':'+row.size===id))return false;
+ const tests={};
+ for(const stage of selected.plan.stageList){
+  const p=selected.plan.riskProfiles[stage];
+  tests[stage]={r1:p.r1,r2:p.r2,r3:p.r3,rr:p.rr,
+   winCap:p.maxWinsPerDay,policyMode:p.policy?.mode||'saved'};
+ }
+ tests.__riskReserve=selected.plan.riskReserve;
+ testRisks[id]=tests;
+ saveView();renderRows();
+ return true;
+}
 $('ideaResults').addEventListener('click',event=>{
  const column=event.target.closest?.('[data-discovery-sort-column]');
  if(column){discoverySortSet(column.dataset.discoverySortColumn,true);return;}
@@ -1758,7 +1774,24 @@ $('ideaResults').addEventListener('click',event=>{
   }
   return;
  }
- const send=event.target.closest?.('[data-discovery-send]');
+ const investment=event.target.closest?.('[data-discovery-investment]');
+ if(investment){
+  if(!discovered||discovered.stale||discovered.source==='investment'){
+   $('ideaStatus').textContent='Run a fresh normal model search before importing an option into Calculate Investment.';
+   return;
+  }
+  const selected=discovered.result.ideas[Number(investment.dataset.discoveryInvestment)];
+  if(!applyDiscoveryRiskModel(selected)){
+   $('ideaStatus').textContent='This firm account changed. Run Find Better Models again.';
+   return;
+  }
+  discovered.stale=true;
+  const key=discovered.row.id+':'+discovered.row.size;
+  document.dispatchEvent(new CustomEvent('portfolio-investment-import',{detail:{accountKey:key,title:selected.title}}));
+  $('ideaStatus').textContent='Selected '+selected.title+' as the simulator-only baseline for Calculate Investment. Check the independent investment assumptions before calculating.';
+  return;
+ }
+  const send=event.target.closest?.('[data-discovery-send]');
  if(send){
   if(!discovered||discovered.stale){$('firmsSendStatus').textContent='Run a fresh model search before sending to Firms.';return;}
   const candidate=discovered.result.ideas[Number(send.dataset.discoverySend)];
@@ -1774,15 +1807,11 @@ $('ideaResults').addEventListener('click',event=>{
  if(!rows.some(row=>row.id+':'+row.size===id)){
   $('ideaStatus').textContent='The account selection changed. Run a new search before applying.';return;
  }
- const tests={};
- for(const stage of selected.plan.stageList){
-  const c=selected.plan.riskProfiles[stage];
-  tests[stage]={r1:c.r1,r2:c.r2,r3:c.r3,rr:c.rr,winCap:c.maxWinsPerDay,policyMode:c.policy?.mode||'saved'};
+ if(!applyDiscoveryRiskModel(selected)){
+  $('ideaStatus').textContent='This firm account changed. Run the search again.';
+  return;
  }
- tests.__riskReserve=selected.plan.riskReserve;
- testRisks[id]=tests;
  discovered.stale=true;
- saveView();renderRows();
  $('ideaStatus').style.color='var(--green)';
  $('ideaStatus').textContent='Applied '+selected.title+' to Portfolio Sim only. Re-run Find Better Models to compare again.';
 
