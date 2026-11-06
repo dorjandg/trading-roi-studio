@@ -72,6 +72,13 @@ Independent 3A assumptions are stored per selected account in the existing per-u
 - Never recommend reducing firm-required minimum trading days or mandated payout waiting periods merely to make simulations pass; review legitimate terms and extend the planning horizon if necessary. Do not claim suggestions are causal improvements or optimize win rate by inflating it; use real trading history to validate assumptions.
 - Keep the suggestions concise and evidence-based. The output is a hypothesis-generating aid, not a backtested or guaranteed trading recommendation.
 
+## Portfolio Sim Run Simulation advisor (Nov 6 update)
+- Section 4 result cards now show a one-line **Scenario advisor** diagnosis with the compact metrics; a separate collapsed **Why this result?** detail lists up to four prioritized evidence-based hypotheses and parameter tests.
+- Uses the *actual Run Simulation Monte Carlo aggregates* and stage funnel: challenge purchases, phase conversions, funded activations, first payout counts, risk-blocked versus failed accounts, incurred costs, net target chance and the average daily unused signal slots.
+- No automatic parameter edits or new simulation assumptions. Avoid interpreting in-progress stage conversion as actual failures. Risk-blocked is distinct from breached accounts, and unused signals are not unsuccessful trades.
+- Suggestions may involve safer tier sizing, checking signal capacity and account availability, reviewing payouts/costs, or testing a longer horizon. Never shorten mandatory firm delays or claim a causal improvement from a single result.
+- This is distinct from the existing Section 3A Calculate Investment diagnostics. It does not change either calculation engine.
+
 ## Compact scenario cards (Nov 6 update)
 - Each Calculate Investment tested scenario is rendered as a nested `<details class="reverse-candidate">` **closed by default**. The summary always shows: average net P&L (USD), net ROI on starting investment, ROI on incurred fees, tested investment, mean first payouts, and probability of meeting the net goal (plus a target-status label).
 - Expanding a scenario reveals its additional KPIs, target checks, phase risk table, and separately collapsed trade-by-trade example and risk explanation.
