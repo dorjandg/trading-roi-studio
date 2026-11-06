@@ -70,6 +70,13 @@ Calculation:
 - Optimizer tries several investment budgets and scaled risk profiles, validates shortlisted options on separate random outcomes and displays the failed target gaps. Search is approximate and currently considers one account type at a time.
 - Do not equate gross withdrawals with net after expenses: requesting both $10,000 cash payouts and $10,000 net after fees may require greater gross cash receipts.
 
+## Standalone Calculate Investment assumptions (Nov 6 update)
+- Section 3A now contains its own compact, **collapsed** Simulation assumptions editor. Each selected prop-firm account type has separately persisted overrides for trading days, signals/day, win rate, buy mode, signal outcomes, reinvestment, allocation/capacity settings, random seed, Phase 1/2 minimum days, funded payout wait calendar days (CFD), and payout processing calendar days.
+- First use for each account copies current Section 1 and saved Firms values into the controls, and a Reset button reloads those defaults. After that, changing Section 1 does not silently overwrite the 3A assumptions. The values are saved under the existing per-user `payout-optimizer:v1` localStorage key in `assumptionsByAccount`.
+- Firm risk limits and reserve remain read-only in this section and are displayed for context. Topstep winning-day eligibility is determined by the actual simulation engine rather than an editable CFD-style wait.
+- These overrides change only the locally cloned plan used in Calculate Investment; Run Simulation, Section 1, and saved Firms data stay unchanged. Per-run optimizer history `inputs` now includes phase day and payout wait parameters to make subsequent analysis reproducible.
+- When editing, keep the section compact/collapsible and prevent clicking Calculate Investment from resetting any input the user has just typed.
+
 ## Fastest-payout and target-based risk optimization (Nov 6 update)
 - Reverse payout optimizer now tries two risk sizing styles: saved-tier scaling and **target-sized** risk. Target sizing computes R1 from the phase profit target / R1 RR, bounded by modeled daily and overall loss headroom. Scale is capped at 1 for the first risk to avoid deliberate first-win overshoot.
 - After an R1 loss, `streak` risk policy selects R2 on a later trading day; its risk target is calculated to cover the first loss and complete the phase profit target on a win, but is capped by remaining overall/daily drawdown. This is a strategy hypothesis, not guaranteed loss recovery. R3 is separate.
