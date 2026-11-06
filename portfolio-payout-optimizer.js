@@ -687,7 +687,8 @@ function render(out,sortMode='model',currentPlan=null){
   (out.fastestGoal?'Full '+out.requiredPayouts+'-payout goal: day '+out.fastestGoal.score.goalPayoutDay.toFixed(1)+
    ' in successful trials':'Net profit / payout-count goal not reached in validated trials')+
   '<small> · Conditional averages, not guaranteed dates; minimum-day and processing waits included.</small></div></details>'+
-  '<div class="reverse-simple-heading">Scenarios <small>('+out.candidates.length+')</small></div>'+
+  '<div class="reverse-simple-heading">Investment scenarios <small>('+out.candidates.length+' optimizer cards)</small></div>'+
+  '<div id="fundedComparisonNotice" class="hint" role="status">These are only the original optimizer cards. Funded-compounding models appear in Model comparison below after calculation.</div>'+
 
 '<div class="reverse-sort-bar"><label for="payoutResultsSort"><strong>Sort scenarios by</strong></label><select id="payoutResultsSort" aria-label="Sort validated scenarios">'+
   Object.entries(payoutSortModes).map(([value,label])=>'<option value="'+value+'"'+(selectedSort===value?' selected':'')+'>'+escapeHtml(label)+'</option>').join('')+
