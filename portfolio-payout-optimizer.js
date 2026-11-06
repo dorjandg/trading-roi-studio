@@ -483,7 +483,9 @@ function render(out,sortMode='model',currentPlan=null){
     '<td>'+money(x.availableR3)+'</td><td>'+escapeHtml(status)+'</td><td>'+
     (x.afterR3Win>=0?'+':'−')+money(Math.abs(x.afterR3Win))+'</td></tr>';
   }).join('');
+  const r3Descriptions={legacy:'Original recovery amount (may be blocked by drawdown)',headroom:'Use the maximum R3 risk that still fits after two modeled losses',balanced:'Reduce R2 to preserve additional room for R3',defensive:'Use half of the remaining safe R3 headroom'};
   const r3Markup=r3Paths?'<details class="reverse-review-panel"><summary><strong>R3 alternative route</strong> · '+escapeHtml(candidate.r3Route||'legacy')+' sizing and feasibility</summary>'+
+   '<p class="hint">'+escapeHtml(r3Descriptions[candidate.r3Route]||r3Descriptions.legacy)+'</p>'+
    '<div class="tablewrap"><table class="journey-table"><thead><tr><th>Phase</th><th>R1 / R2 / R3</th><th>R3 headroom after LL</th><th>Can R3 trade?</th><th>Stage P&L after LLW</th></tr></thead><tbody>'+r3Paths+'</tbody></table></div>'+
    '<p class="hint">LL = R1 loss then R2 loss on later trading days; LLW adds an R3 win. Headroom assumes no earlier gains or losses in that phase, and includes modeled costs/reserve and a $1 buffer. A legal R3 win may still leave the phase below its profit target. The engine checks every actual trade separately. These are alternative hypotheses, not guaranteed recovery.</p></details>':'';
   const setupMarkup='<details class="reverse-review-panel"><summary><strong>Trading rules &amp; risks</strong> · phase-by-phase setup</summary>'+
