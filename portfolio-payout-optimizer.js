@@ -677,5 +677,41 @@ function render(out,sortMode='model',currentPlan=null){
   '. These results are model assumptions, not permission to exceed a firm loss limit.</p></details>':'')+
   '<details class="reverse-info-section"><summary><strong>How to interpret these estimates</strong> <span>· Monte Carlo methodology and ROI definitions</span></summary><p class="hint">Estimates use 200 independent validation trials per shortlisted scenario after 50-trial searches across risk levels and investment amounts. ROI on incurred fees = expected net cash / expected fees actually incurred. Net ROI on investment = expected net cash / tested starting budget. Both may be negative. Starting budget is cash made available for challenge and activation costs, NOT the total fees actually incurred; any refunded challenge fees are tracked in modeled cash receipts. Payout counts and earnings can differ between trials. Searches are approximate, account purchases are capped at 100 per type, and risk safety depends on modeled firm rules. Scenarios do not change your saved Firms risk settings.</p></details></details>';
 }
-root.StudioPayoutOptimizer={needed,profitNeeded,planFor,assess,optimize,render,renderAccountPath,sampleAccounts,diagnoseScenario};
+function renderMoreInvestmentModels(search,origin='Selected scenario'){
+ const fmt=n=>n==null||!Number.isFinite(Number(n))?'—':Number(n).toFixed(2);
+ const rate=n=>n==null?'—':(Number(n)*100).toFixed(1)+'%';
+ const usd=n=>n==null||!Number.isFinite(Number(n))?'—':money(Number(n));
+ const baseline=search.baseline.holdout;
+ const models=[{title:'Selected investment · baseline',plan:search.baseline.plan,holdout:baseline},...search.ideas];
+ const rows=models.map((m,i)=>{
+  const r=m.holdout,k=r.tradeKpis||{};
+  const riskDetails=m.plan.stageList.map(stage=>{
+   const p=m.plan.riskProfiles[stage],adaptive=['target-now','repair-r2','buffered-target'].includes(p.policy?.mode);
+   const values=adaptive&&E.previewLossPath?E.previewLossPath(m.plan,stage,3).map(x=>x.allowed?fmt(x.risk):'Blocked'):
+    ['r1','r2','r3'].map(t=>fmt(p[t]));
+   return '<div class="payout-more-phase"><strong>'+escapeHtml(p.name||stage)+'</strong> · '+
+    escapeHtml(p.policy?.mode||'saved')+' · '+values.join(' / ')+' USD · '+
+    ['r1','r2','r3'].map(t=>fmt(p.rrByTier?.[t]??p.rr)).join(' / ')+'R</div>';
+  }).join('');
+  const delta=r.avg.net-baseline.avg.net;
+  const compare=i===0?'Baseline':(delta>=0?'+':'')+usd(delta);
+  return '<tr><th scope="row">'+escapeHtml(m.title)+
+   '<details><summary>Phase risk rules</summary>'+riskDetails+'</details></th>'+
+   '<td>'+usd(r.avg.net)+'</td><td>'+rate(r.roi)+'</td><td>'+rate(r.chanceGoal)+'</td>'+
+   '<td>'+compare+'</td><td>'+fmt(k.pf)+'</td><td>'+rate(k.wr)+'</td><td>'+fmt(k.rr)+'</td>'+
+   '<td>'+fmt(k.ar)+'</td><td>'+usd(k.aw)+'</td><td>'+usd(k.al)+'</td>'+
+   '<td>'+usd(k.ev)+'</td><td>'+fmt(r.avg.trades)+'</td>'+
+   '<td><button type="button" data-more-analyze="'+i+'">Analyze</button></td></tr>';
+ }).join('');
+ return '<div class="payout-more-title"><strong>More trading models · '+models.length+' compared</strong>'+
+  '<small>Based on '+escapeHtml(origin)+' · '+search.evaluated+' risk configurations tested</small>'+
+  '<button type="button" data-more-close="1">Close</button></div>'+
+  '<p class="hint">Separate '+search.trainTrials+'-trial discovery and '+search.testTrials+
+  '-trial validation at this option’s fixed investment budget and trading assumptions. Baseline is the original investment setup; additional models are risk variations, not newly optimized budgets. Select Phase risk rules to inspect R1/R2/R3; Analyze opens Sections 4–7. No Firms settings are changed.</p>'+
+  '<div class="tablewrap"><table class="payout-more-table"><thead><tr>'+
+  '<th>Model</th><th>Net</th><th>ROI</th><th>Goal</th><th>Δ Net</th><th>PF</th><th>WR</th><th>RR</th><th>AR</th><th>AW</th><th>AL</th><th>EV</th><th>Trades</th><th>View</th>'+
+  '</tr></thead><tbody>'+rows+'</tbody></table></div>';
+}
+
+root.StudioPayoutOptimizer={needed,profitNeeded,planFor,assess,optimize,render,renderAccountPath,sampleAccounts,diagnoseScenario,renderMoreInvestmentModels};
 })(typeof window!=='undefined'?window:globalThis);
