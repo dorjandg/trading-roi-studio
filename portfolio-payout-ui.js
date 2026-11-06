@@ -45,6 +45,17 @@ function start(){
  .reverse-candidate table{font-size:11px}
  .reverse-candidate th,.reverse-candidate td{padding:5px 7px;line-height:1.2}
  .reverse-candidate th{font-size:10px}
+ .reverse-trade-details{margin-top:5px;padding:3px 6px;border-radius:6px;border:1px solid var(--line)}
+ .reverse-trade-details>summary{cursor:pointer;font-size:11px;font-weight:700;padding:3px 1px;line-height:1.25}
+ .reverse-trade-details>summary small{font-size:10px;font-weight:400;color:var(--muted)}
+ .reverse-path-controls{display:flex;align-items:center;gap:8px;margin:5px 0;flex-wrap:wrap}
+ .reverse-path-controls label{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:700}
+ .reverse-path-controls select{min-height:27px;height:27px;max-width:260px;padding:3px 5px;font-size:11px;border-radius:5px}
+ .reverse-path-table{max-height:275px;overflow:auto;overscroll-behavior:contain}
+ .reverse-path-table table{min-width:650px;font-size:10px}
+ .reverse-path-table th,.reverse-path-table td{padding:4px 6px;white-space:nowrap}
+ .reverse-event-row{color:var(--muted);font-style:italic}
+ @media(max-width:600px){.reverse-path-controls select{font-size:16px;height:35px;min-height:35px;max-width:230px}}
  @media(max-width:1000px){.payout-opt-fields{grid-template-columns:repeat(3,minmax(0,1fr))}.reverse-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
  @media(max-width:600px){.payout-opt-fields{grid-template-columns:repeat(2,minmax(0,1fr))}
  .payout-opt-fields input,.payout-opt-fields select{font-size:16px;min-height:35px;height:35px;max-height:35px}
@@ -79,6 +90,14 @@ function start(){
   $(id).addEventListener('change',()=>{math();save()});
  }
  panel.addEventListener('toggle',save);
+ let lastOptimizerOutput=null;
+ $('payoutOptResults').addEventListener('change',event=>{
+  const select=event.target.closest('select[data-reverse-path]');
+  if(!select||!lastOptimizerOutput)return;
+  const index=Number(select.dataset.reversePath),candidate=lastOptimizerOutput.candidates[index];
+  const target=$('payoutOptResults').querySelector('[data-reverse-path-body="'+index+'"]');
+  if(candidate&&target)target.innerHTML=solver.renderAccountPath(candidate,select.value);
+ });
  let busy=false;
  $('runPayoutOptimizer').addEventListener('click',async ev=>{
   ev.preventDefault();ev.stopPropagation();
@@ -97,10 +116,12 @@ function start(){
    status.textContent='Enter valid payout amounts, ROI targets, and nonnegative net P&L in USD.';return;
   }
   busy=true;button.disabled=true;status.textContent='Running reverse payout scenarios…';
+  lastOptimizerOutput=null;
   $('payoutOptResults').innerHTML='';save();
   try{
    const output=await solver.optimize({plan:bridge.getPlan(row),total,perPayout,
     maxInvestment,minRoi:minRoiPct/100,minNetRoi:minNetRoiPct/100,minNetPnl,inputs,onProgress:text=>status.textContent=text});
+   lastOptimizerOutput=output;
    $('payoutOptResults').innerHTML=solver.render(output);
    let historyResult=' · history not available';
    try{
