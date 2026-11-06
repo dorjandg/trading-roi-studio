@@ -443,6 +443,13 @@ details p{margin:6px 0}
 .journey-route-filter select{min-height:30px;max-width:160px;padding:4px 7px;font-size:12px}
 .journey-account-totals{font-size:11px;color:var(--muted);margin:7px 0}
 @media(max-width:650px){.journey-route-filter select{font-size:16px}}
+.portfolio-advice-head{font-size:11px;line-height:1.35;margin:5px 0;padding:5px 7px;border-left:3px solid var(--amber);background:var(--panel2);border-radius:3px}
+.portfolio-advice-more{margin:3px 0 7px;border:1px solid var(--line);border-radius:6px;padding:5px 8px;font-size:11px}
+.portfolio-advice-more>summary{cursor:pointer;font-size:11px;color:var(--muted)}
+.portfolio-advice-item{border-bottom:1px solid var(--line);padding:6px 0}
+.portfolio-advice-item:last-of-type{border-bottom:0}
+.portfolio-advice-item p{margin:3px 0;line-height:1.4}
+.portfolio-advice-more small{display:block;color:var(--muted);line-height:1.4;margin-top:5px}
 </style>
 <link rel="stylesheet" href="studio-nav.css?v=20261105-compact-v2"></head><body><div class="shell">
 <header class="studio-site-header"><a class="studio-site-brand" href="index.html?view=dashboard"><span class="studio-site-mark">F<small>↗</small></span><span class="studio-site-title"><strong>4Ds Trading Studio</strong><small>STRATEGY · PAYOUTS · CAPITAL ALLOCATION</small></span></a><div class="studio-site-tools"><label class="studio-site-user" for="studioUserSelect">User <select id="studioUserSelect" aria-label="Active Studio user"><option value="doen">Doen</option><option value="dori">Dori</option><option value="dona">Dona</option><option value="dion">Dion</option></select></label><button type="button" id="theme" class="studio-site-theme" aria-label="Switch theme" title="Switch theme">◐</button></div></header>
@@ -963,6 +970,64 @@ function stagePassSummary(result){
  funnel.map(x=>'<tr><th>'+esc(x.label)+'</th><td class="num">'+dec(x.count)+'</td><td class="num">'+pct(x.previousRate)+'</td><td class="num">'+pct(x.totalRate)+'</td></tr>').join('')+
  '</tbody></table></div><p class="hint">Rates use aggregate account counts from all simulated trials by the selected horizon. In-progress accounts have not yet passed.</p>';
 }
+function portfolioDiagnostics(result,inputs){
+ const c=result.avg||{},p=result.plan||{},config=result.config||{},cash=result.cashCurve||[];
+ const bought=Number(c.bought)||0,paid=Number(c.paid)||0,funded=Number(c.funded)||0;
+ const days=Math.max(1,Number(inputs.days)||1),signals=Math.max(0,Number(inputs.tradesPerDay)||0);
+ const rates=E.stageFunnel(result),issues=[];
+ const add=(priority,title,evidence,test)=>issues.push({priority,title,evidence,test});
+ const invested=Number(c.spent)||0,net=Number(c.net)||0,goal=Number(inputs.netGoal)||0;
+ const safePct=v=>(v*100).toFixed(1)+'%';
+ const opportunity= cash.reduce((a,d)=>a+(Number(d.opportunities)||0),0);
+ const unused=cash.reduce((a,d)=>a+(Number(d.unusedToday)||0),0);
+ const traded=cash.reduce((a,d)=>a+(Number(d.tradesToday)||0),0);
+ const paidRate=bought?paid/bought:0;
+ if(!bought){
+  add(100,'No accounts purchased','Average purchases: 0. A simulation cannot reach funded payouts without purchased challenges.','Check starting budget against the selected challenge fee, activation reserve and account allocation caps.');
+ }else{
+  if(goal>0&&(result.chanceGoal||0)<0.2){
+   add(32,'Low probability of reaching the net cash target','Only '+safePct(Number(result.chanceGoal)||0)+' of trials ended at or above '+usd(goal)+' net. Average net: '+usd(net)+'.','Compare attainable net goals and longer planning horizons. Do not improve the win-rate assumption without trade evidence.');
+  }
+  if(Number(c.exhausted)>0&&Number(c.exhausted)>=Math.max(.5,Number(c.failed)||0)){
+   add(90,'Account risk settings block further trades','Average risk-blocked: '+dec(c.exhausted)+' versus actual failed: '+dec(c.failed)+'. Risk-blocked is not a prop-firm breach.','Test smaller R1/R2/R3 risk sizes or a different allowed tier sequence against remaining daily and overall drawdown headroom.');
+  }
+  if(Number(c.failed)>bought*.25){
+   add(75,'High challenge failure burden','Average failed: '+dec(c.failed)+' of '+dec(bought)+' purchased accounts ('+safePct(c.failed/bought)+').','Compare risk controls and recovery policies; check whether real win rate and reward/risk support the assumed risks.');
+  }
+  if(funded>0 && paid<funded*.5){
+   add(80,'Funded accounts are not converting to first payouts','Average funded activations: '+dec(funded)+'; first payouts received: '+dec(paid)+'. Some may be active or awaiting eligibility at the horizon.','Review funded profit-target risk, mandatory payout waits and processing delays; extend the horizon as a sensitivity test, never shorten firm-required waits.');
+  }
+  if(rates.length>2){
+   const transitions=rates.slice(1).filter(s=>s.previousRate!=null&&rates.findIndex(r=>r===s)<rates.length-1);
+   const weakest=transitions.slice().sort((a,b)=>a.previousRate-b.previousRate)[0];
+   if(weakest && weakest.previousRate<.45){
+    add(55,'Largest observed stage-conversion drop','At '+weakest.label+', '+safePct(weakest.previousRate)+' of the preceding milestone converted within '+days+' trading days. Late entries may still be progressing.','Inspect the associated stage and its risk settings; compare a longer horizon before interpreting this as a failure rate.');
+   }
+  }
+  if(unused>Math.max(2,opportunity*.15)&&signals>0){
+   add(65,'Trading signals are unused','Average '+dec(unused)+' unused signal slots over '+days+' days, against '+dec(traded)+' assigned trades. Unused signals are not failed trades.','Check eligible-account availability, daily limits, purchase capacity, max active accounts and whether all purchased accounts are risk-blocked.');
+  }
+  if(invested>0&&net<0&&paid>0){
+   add(60,'Payout receipts do not cover incurred costs','Average net is '+usd(net)+' after '+usd(invested)+' actual spending, despite '+dec(paid)+' paid accounts.','Compare challenge fees, funded activation fees and first-payout economics; buying more accounts at unchanged unit economics does not automatically improve ROI.');
+  }
+  if(paid===0&&funded===0&&bought>0){
+   add(70,'No funded accounts by the deadline','Average funded activations: 0 from '+dec(bought)+' purchases in '+days+' trading days.','Compare phase progression and minimum days with available trade opportunities, then test a longer horizon.');
+  }
+  if(!issues.length){
+   add(10,'No dominant bottleneck detected','Average '+dec(bought)+' purchased, '+dec(funded)+' funded, '+dec(paid)+' paid, '+usd(net)+' net. These are Monte Carlo averages, not a forecast.','Stress-test lower realized win rate, delayed payouts and smaller position risk before committing more capital.');
+  }
+ }
+ issues.sort((a,b)=>b.priority-a.priority);
+ return issues.slice(0,4);
+}
+function portfolioAdviceMarkup(result,inputs){
+ const issues=portfolioDiagnostics(result,inputs);
+ const lead=issues[0];
+ return '<div class="portfolio-advice-head" title="'+esc(lead.evidence)+'"><b>Scenario advisor:</b> '+esc(lead.title)+'</div>'+
+  '<details class="portfolio-advice-more"><summary>Why this result? · '+issues.length+' diagnostic'+(issues.length===1?'':'s')+'</summary>'+
+   issues.map(item=>'<div class="portfolio-advice-item"><b>'+esc(item.title)+'</b><p>'+esc(item.evidence)+'</p><p><b>Test:</b> '+esc(item.test)+'</p></div>').join('')+
+   '<small>Based on this Run Simulation, not Calculate Investment. These are observations and sensitivity tests, not causal proof, verified trading improvements or changes to firm rules. No settings are changed automatically.</small></details>';
+}
 function makeResultCard(result,index){
  const p=result.plan,c=result.avg,v=E.validatePlan(p);
  const stageNames=p.stageList.filter(x=>x!=='funded');
@@ -973,7 +1038,7 @@ function makeResultCard(result,index){
  const warns=v.warnings.map(x=>'<p class="hint">• '+esc(x)+'</p>').join('');
  return '<article class="result-card"><header><div><h3>'+esc(p.firm+' · '+p.programName+' · '+usd(p.size))+'</h3>'+
   '<p class="hint">Budget allocation '+usd(result.budget)+' · '+dec(c.bought)+' average purchased challenges'+(result.clipped?' · <b class="bad">account count capped at 100</b>':'')+'</p></div>'+
-  '<strong class="'+(c.net>=0?'good':'bad')+'">'+usd(c.net)+' expected net</strong></header>'+
+  '<strong class="'+(c.net>=0?'good':'bad')+'">'+usd(c.net)+' expected net</strong></header>'+portfolioAdviceMarkup(result,lastInputs||{})+
   '<div class="result-grid">'+
    '<div><small>Phase progression (avg.)</small><strong>'+result.stages.map((x,i)=>esc(stageNames[i])+': '+dec(x)).join(' · ')+'</strong></div>'+
    '<div><small>Funded / first payouts (avg.)</small><strong>'+dec(c.funded)+' / '+dec(c.paid)+'</strong></div>'+
