@@ -12,7 +12,7 @@ function start(){
   '<span class="sim-charts-hint">Show / hide</span></summary>'+
   '<div class="numbered-content"><details id="payoutOptInputsPanel" class="payout-opt-inputs" open>'+
   '<summary><strong>Investment inputs</strong><span id="payoutOptInputsSummary"> · Set target, account, payout and budget</span><span class="payout-opt-inputs-toggle">Show / hide</span></summary>'+
-  '<div class="payout-opt-inputs-body"><p class="hint">Search investment and risk combinations for a payout goal. Open any result to compare its R1/R2/R3 and trade KPIs, or search additional risk models in Section 3A without leaving these results. These are separate from Run Simulation.</p>'+
+  '<div class="payout-opt-inputs-body"><p class="hint">Search investment and risk combinations for a payout goal. Open any result to compare its R1/R2/R3 and trade KPIs, or search additional risk models in Section 4 without leaving these results. These are separate from Run Simulation.</p>'+
   '<div class="payout-opt-fields">'+
   '<label><span class="payout-opt-field-title">Target net P&L (USD)</span><input id="payoutOptNetPnl" type="number" min="1" step="500" value="5000" title="Net cash receipts minus incurred costs"></label>'+
 
@@ -56,7 +56,7 @@ function start(){
   '</div><p class="hint">Uses the chosen option’s own safety reserve, firm limits and risk policy. New models have the same investment budget.</p></details>'+
   '<div id="payoutOptMoreModels"></div></div>';
  document.getElementById('results').before(panel);
- // Section 3A: one tooltip for every results-table header, including tables
+ // Section 4: one tooltip for every results-table header, including tables
  // that are replaced when sorting, changing a model or selecting an account.
  const tableHeaderHelp={
   'Model':'Trading strategy and its tested risk setup. Expand phase settings to inspect each phase.',
@@ -629,7 +629,7 @@ function start(){
     lastModelSearch={candidate,result,origin:'Investment Option '+(index+1)};
     moreSortKey='net';moreDescending=true;moreSourceFilter='all';
     renderUnifiedTable();
-    if(status)status.textContent=result.ideas.length+' additional risk models added to the single comparison table in Section 3A.';
+    if(status)status.textContent=result.ideas.length+' additional risk models added to the single comparison table in Section 4.';
     $('payoutOptMoreModels').scrollIntoView({behavior:'smooth',block:'start'});
    }catch(error){if(status)status.textContent='Model search failed: '+(error?.message||'Unknown error');}
    finally{more.disabled=false;more.textContent='Find More Risk Models';}
@@ -823,7 +823,7 @@ function start(){
      id:row.id,size:row.size,firm:output.firm,
      programName:bridge.label(row)
     }});
-    if(record?.id)historyResult=' · saved to Section 8 (cloud sync attempted)';
+    if(record?.id)historyResult=' · saved to Section 10 (cloud sync attempted)';
    }catch(saveError){historyResult=' · history save failed: '+saveError.message}
    status.textContent='Finished · '+output.checked+' scenarios evaluated · '+output.requiredPayouts+
     ' minimum payouts before fees. '+(output.feasible?'Expected net P&L, payout count and ROI filters were met.':'No validated scenario met all selected targets.')+historyResult;
