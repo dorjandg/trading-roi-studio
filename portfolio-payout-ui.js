@@ -221,6 +221,10 @@ function start(){
    }
    selectedPlan.payoutProcessingCalendarDays=readNum('payoutOptProcessing',0,120);
    selectedPlan.payoutProcessingTradingDays=Math.ceil(selectedPlan.payoutProcessingCalendarDays*5/7);
+   inputs.p1MinDays=selectedPlan.riskProfiles.p1.minDays;
+   inputs.p2MinDays=selectedPlan.riskProfiles.p2?.minDays??null;
+   inputs.payoutWaitCalendarDays=selectedPlan.payoutWaitCalendarDays;
+   inputs.payoutProcessingCalendarDays=selectedPlan.payoutProcessingCalendarDays;
   }catch(e){$('payoutOptStatus').textContent=e.message;return;}
   const total=Number($('payoutOptTotal').value),perPayout=Number($('payoutOptPer').value),
    maxInvestment=Number($('payoutOptMax').value),minRoiPct=Number($('payoutOptRoi').value),
