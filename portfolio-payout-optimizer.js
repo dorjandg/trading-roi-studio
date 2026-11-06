@@ -721,6 +721,7 @@ function renderUnifiedInvestmentModels(out,more=null,sortKey='net',descending=tr
   roi:m=>m.result.roi,investment:m=>m.budget,goal:m=>m.score.hit,
   payout:m=>m.result.chancePayout,p10:m=>m.result.p10,
   blocked:m=>m.result.avg.exhausted,breached:m=>m.result.avg.failed,paid:m=>m.result.avg.paid,
+  firstDay:m=>m.result.avgFirstPayoutDay??Infinity,goalDay:m=>m.result.avgGoalPayoutDay??Infinity,
   funded:m=>m.result.avg.funded,bought:m=>m.result.avg.bought,
   spent:m=>m.result.avg.spent,
   pf:m=>m.result.tradeKpis?.pf??-Infinity,wr:m=>m.result.tradeKpis?.wr??-Infinity,
@@ -734,7 +735,7 @@ function renderUnifiedInvestmentModels(out,more=null,sortKey='net',descending=tr
  const options=[
   ['net','Expected net'],['improvement','Net improvement'],['roi','Fee ROI'],
   ['investment','Starting investment'],['goal','Payout + net goal chance'],
-  ['payout','First payout chance'],['p10','Downside P10'],['blocked','Risk blocked'],['breached','Actual breaches'],
+  ['payout','First payout chance'],['firstDay','First payout day'],['goalDay','Goal payout day'],['p10','Downside P10'],['blocked','Risk blocked'],['breached','Actual breaches'],
   ['paid','Paid accounts'],['funded','Funded'],['bought','Challenges bought'],['spent','Fees'],
   ['pf','Profit factor'],['wr','Win rate'],['rr','Planned RR'],['ar','Realized R'],
   ['aw','Average win'],['al','Average loss'],['ev','Expectancy'],['trades','Trade count'],
@@ -771,7 +772,7 @@ function renderUnifiedInvestmentModels(out,more=null,sortKey='net',descending=tr
    '<td>'+usd(m.budget)+'</td><td>'+delta+'</td>'+
    '<td class="payout-col-accounts">'+usd(r.p10)+'</td><td class="payout-col-accounts">'+rate(r.chancePayout)+'</td>'+
    '<td class="payout-col-accounts">'+fmt(r.avg.exhausted)+'</td><td class="payout-col-accounts">'+fmt(r.avg.failed)+'</td><td class="payout-col-accounts">'+fmt(r.avg.paid)+'</td>'+
-   '<td class="payout-col-accounts">'+fmt(r.avg.funded)+'</td><td class="payout-col-accounts">'+fmt(r.avg.bought)+'</td><td class="payout-col-accounts">'+usd(r.avg.spent)+'</td>'+
+   '<td class="payout-col-accounts">'+fmt(r.avg.funded)+'</td><td class="payout-col-accounts">'+fmt(r.avgFirstPayoutDay)+'</td><td class="payout-col-accounts">'+fmt(r.avgGoalPayoutDay)+'</td><td class="payout-col-accounts">'+fmt(r.avg.bought)+'</td><td class="payout-col-accounts">'+usd(r.avg.spent)+'</td>'+
    '<td class="payout-col-trading">'+fmt(k.pf)+'</td><td class="payout-col-trading">'+rate(k.wr)+'</td>'+
    '<td class="payout-col-trading">'+fmt(k.rr)+'</td><td class="payout-col-trading">'+fmt(k.ar)+'</td>'+
    '<td class="payout-col-trading">'+usd(k.aw)+'</td><td class="payout-col-trading">'+usd(k.al)+'</td>'+
@@ -797,10 +798,10 @@ function renderUnifiedInvestmentModels(out,more=null,sortKey='net',descending=tr
   '<div class="tablewrap"><table class="payout-more-table" data-view="'+(columnView==='accounts'?'accounts':columnView==='all'?'all':'trading')+'"><thead><tr>'+
   '<th>Model</th><th>Net</th><th>ROI</th><th>Goal</th><th>Investment</th><th>Δ Net</th>'+
   '<th class="payout-col-accounts">P10</th><th class="payout-col-accounts">CP</th>'+
-  '<th class="payout-col-accounts">BA</th><th class="payout-col-accounts">Breached</th><th class="payout-col-accounts">Paid</th><th class="payout-col-accounts">Funded</th><th class="payout-col-accounts">Bought</th><th class="payout-col-accounts">Fees</th>'+
+  '<th class="payout-col-accounts">BA</th><th class="payout-col-accounts">Breached</th><th class="payout-col-accounts">Paid</th><th class="payout-col-accounts">Funded</th><th class="payout-col-accounts">First day</th><th class="payout-col-accounts">Goal day</th><th class="payout-col-accounts">Bought</th><th class="payout-col-accounts">Fees</th>'+
   '<th class="payout-col-trading">PF</th><th class="payout-col-trading">WR</th><th class="payout-col-trading">RR</th><th class="payout-col-trading">AR</th><th class="payout-col-trading">AW</th><th class="payout-col-trading">AL</th><th class="payout-col-trading">EV</th><th class="payout-col-trading">Trades</th><th>View</th>'+
   '</tr></thead><tbody>'+rows+'</tbody></table></div>'+
-  '<details class="payout-more-help"><summary>KPI key</summary><p class="hint">Goal = probability of meeting payout count AND net-profit target; P10 = lower 10th percentile of net outcomes; CP = chance of at least one payout; BA = risk-blocked accounts, not breaches; Breached = accounts that actually hit modeled loss limits. PF = profit factor, WR = win rate, RR = planned reward/risk, AR = realized R, AW/AL = average win/loss, EV = expected trade P&L. Simulated outcomes are not guarantees.</p></details>';
+  '<details class="payout-more-help"><summary>KPI key</summary><p class="hint">Goal = probability of meeting payout count AND net-profit target; P10 = lower 10th percentile of net outcomes; CP = chance of at least one payout; BA = risk-blocked accounts, not breaches; Breached = actual modeled loss-limit failures. First day / Goal day = conditional average trading day among trials achieving the milestone, not unconditional time; inspect payout chance too. PF = profit factor, WR = win rate, RR = planned reward/risk, AR = realized R, AW/AL = average win/loss, EV = expected trade P&L. Simulated outcomes are not guarantees.</p></details>';
 }
 
 root.StudioPayoutOptimizer={needed,profitNeeded,planFor,assess,optimize,render,renderAccountPath,sampleAccounts,diagnoseScenario,renderUnifiedInvestmentModels};
