@@ -147,6 +147,19 @@ th,td{padding:7px 8px}
 .result-grid{gap:6px;margin:7px 0}
 .result-grid div{padding:7px;border-radius:7px}
 .result-grid strong{font-size:15px}
+/* Compact per-firm result summary: keep all six metrics with minimal height. */
+.result-card{padding:8px 10px}
+.result-card header{gap:5px;align-items:center}
+.result-card header h3{font-size:14px;line-height:1.25}
+.result-card header .hint{font-size:11px;line-height:1.25;margin:2px 0 0}
+.result-card header>strong{font-size:14px}
+.result-grid{gap:4px;margin:5px 0}
+.result-grid div{padding:5px 7px;border-radius:6px;min-height:0}
+.result-grid small{font-size:10px;line-height:1.2;margin:0 0 1px}
+.result-grid strong{font-size:13px;line-height:1.2;display:block}
+.result-grid strong[style]{font-size:13px!important}
+@media(max-width:620px){.result-grid{gap:4px}.result-grid div{padding:5px}.result-grid strong,.result-grid strong[style]{font-size:12px!important}}
+
 details{padding:7px 9px;margin-top:6px;border-radius:7px}
 details .tablewrap{margin-top:7px}
 details p{margin:6px 0}
