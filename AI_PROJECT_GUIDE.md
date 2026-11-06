@@ -79,6 +79,13 @@ Independent 3A assumptions are stored per selected account in the existing per-u
 - Suggestions may involve safer tier sizing, checking signal capacity and account availability, reviewing payouts/costs, or testing a longer horizon. Never shorten mandatory firm delays or claim a causal improvement from a single result.
 - This is distinct from the existing Section 3A Calculate Investment diagnostics. It does not change either calculation engine.
 
+## R3 recovery-route alternatives (Nov 6 update)
+- The Reverse Engineer Payouts search now tests four R3 policies for target-sized risk: `legacy` (previous sizing), `headroom` (cap configured R3 at static idealized two-loss remaining overall/daily headroom), `balanced` (reduce R2 to 65% of its previous level then cap R3 to remaining headroom), and `defensive` (half of remaining headroom).
+- R3 analysis per phase shows configured R1/R2/R3, idealized available R3 after two consecutive losing trades, whether that proposed R3 fits, and stage P&L following R1-loss/R2-loss/R3-win. Each option remains a Monte Carlo hypothesis, not proof of recovery; minimum-day requirements and the engine's real-time headroom checks still apply.
+- The shortlist includes route representatives alongside the optimizer's highest-ranked candidates, so visible scenarios may not be the literal top five by one scalar metric; preserve optimizer order among the selected display set and allow user sorting of displayed options.
+- Search work increases with added routes. Save `r3Route` in new Calculate Investment history entries, with old records remaining readable. No change to engine drawdown enforcement, saved Firms settings or order execution.
+- If R3 fits after two losses but fails to recover phase profit target, this should be presented as a continuation possibility, never as full loss recovery. If it is blocked after a different actual trade history, the engine still blocks it.
+
 ## Review or adopt a Calculate Investment scenario (Nov 6 update)
 - Each expanded validated scenario now contains independent collapsed **Trading rules & risks** and **Account & simulation assumptions** panels. Phase review shows R1/R2/R3 USD risk, RR per tier, phase profit targets, risk sequence, max winning trades/day and minimum days, with a changed/same comparison against an existing saved Firms account profile. An additional collapsed before/after comparison lists only changed risk settings.
 - The scenario has an explicit **Send this risk setup to Firms** action. It uses the pre-existing confirmed `sendPlanToFirms` + `StudioFirmsTransfer` workflow, including per-user account match verification, local backup and Restore previous support. Opening/reviewing a scenario never changes Firms.
