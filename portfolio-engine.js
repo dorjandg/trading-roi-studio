@@ -539,7 +539,7 @@ function oneTrial(p,config,rng,record=false){
    accountDetails:record?accounts:[],
    tradeAssignments:tradeAssignments?.sort((a,b)=>a.day-b.day||a.signal-b.signal)||undefined,
    firstPayoutDay:accounts.filter(a=>a.paidDay!=null).reduce((m,a)=>Math.min(m,a.paidDay),Infinity),
-   goalPayoutDay:dailyCash?.find(d=>d.paid>=(config.requiredPayouts||Infinity)&&d.receipts>=(config.netGoal||Infinity))?.day??Infinity,
+   goalPayoutDay:dailyCash?.find(d=>d.paid>=(config.requiredPayouts||Infinity)&&d.net>=(config.netGoal||Infinity))?.day??Infinity,
    dailyCash:dailyCash||undefined,
    accounts:record?accounts:undefined};
 }
