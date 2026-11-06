@@ -80,7 +80,7 @@ function start(){
   'AL':'Average absolute net dollar loss of losing trades.',
   'EV':'Expected modeled dollar profit or loss per executed trade (average trade P&L).',
   'Trades':'Average executed trades per portfolio simulation trial.',
-  'View':'Open the full selected model analysis in Sections 5–8.',
+  'View':'Analyze opens full reports in Sections 5–8; Ledger opens the model’s day-by-day spending in Section 9.',
   'Day':'Trading day index in the simulated sample; not a calendar-date forecast.',
   'Phase':'Account stage: evaluation, verification or funded. Available stages depend on the firm.',
   'Trade':'Trade sequence number inside the selected account or phase.',
