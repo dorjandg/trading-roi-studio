@@ -478,6 +478,14 @@ details p{margin:6px 0}
 </details>
 <details class="sim-charts-panel numbered-panel" id="section7Panel"><summary><strong>7 · Detailed account simulations</strong><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><p class="hint">Open a firm below to test separate R1, R2 and R3 amounts for Phase 1, Phase 2 and Funded without changing your saved Firms settings. The example trade list has pages and shows only W/L trades by default; switch to All events to include qualification days and stage changes.</p><div id="details"></div></div></details>
 </section>
+<details class="sim-charts-panel numbered-panel" id="section8Panel"><summary><strong>8 · Simulation History</strong><span class="sim-charts-summary">Saved runs · settings · daily account journeys · exports</span><span class="sim-charts-hint">Show / hide</span></summary>
+ <div class="numbered-content" id="simulationHistory">
+  <p class="hint">Completed simulations are saved under your selected 4Ds user, with recent runs backed up to your shared Google cloud profile when available. This workspace has no login. Export JSON and attach it to ChatGPT for analysis.</p>
+  <div class="actions"><button type="button" data-history-refresh>Load cloud history</button><button type="button" data-history-export-all>Export all saved runs (JSON)</button><strong data-history-count class="hint"></strong></div>
+  <p data-history-status class="hint" role="status">Loading history…</p>
+  <div class="tablewrap"><table class="journey-table"><thead><tr><th>Date / time</th><th>Account types</th><th>Simulation inputs</th><th>Expected net</th><th>Expected paid</th><th>Download</th></tr></thead><tbody data-history-body></tbody></table></div>
+ </div>
+</details>
 <section class="panel"><h2>Model assumptions & limits</h2><details><summary>Read before interpreting an ROI estimate</summary><p class="hint">Challenge purchases follow the selected buying mode: upfront on day 0, or dynamic day-by-day purchases and replacements when trading slots and budget permit. Dynamic replacements respond to failed, risk-exhausted, or first-paid accounts; minimum-day and funded eligibility assumptions still apply. Taxes, automatic refund processing delays, and repeated funded payouts are not simulated. Topstep's subscription renewals, variant-specific activation rules, contract limits and full payout eligibility are not enforced. Its modeled initial payout is up to 50% of realized funded profit capped at $5,000; check the exact purchased path. FTMO/Hola pay a modeled split of funded profit after a planning target and waiting period, not a guaranteed withdrawal. Topstep Standard Trading Combine → Express Funded is modeled as exactly two stages; later optional Live Funded promotion is outside this first-payout model. Topstep's MLL is an end-of-day trailing loss floor, updated upward after each session's closing balance and permanently locked at $0 once reached. The floor is monitored against modeled realized trade outcomes; unrealized intratrade breaches and contract-size restrictions are not verified. Other firms' static initial floors are modeled where known. The funded target is a threshold, not a cap on the final trade: a completed trade can finish above it. FTMO/Hola funded accounts stop receiving further strategy trades at that threshold, then wait for the first-funded-trade payout eligibility clock and any modeled processing days. Topstep can require further qualifying winning days. Evaluation minimum-size qualification orders are synthetic placeholders (0.01 lot for CFD programs, 1 micro for Topstep) and have no modeled P/L, trading costs or actual lot eligibility: real minimum-size trades can gain or lose money. Calendar waits are approximated using trading days. Fees, spread/slippage, evaluation activation delays and news restrictions may differ. If multiple accounts share a signal, outcomes may be correlated and diversification overstated. The model's risk-exhausted status does not mean an official failed-account breach.</p></details>
  <p class="footer">Research tool only. Sourced catalog rules are snapshots, not live purchase/eligibility confirmations. The simulator reads profiles locally; budget changes here don't overwrite the main Overview settings. The maximum of 100 modeled challenges per account type is a performance cap, not a prop-firm permission limit.</p>
 </section>
@@ -488,6 +496,8 @@ details p{margin:6px 0}
 <script src="studio-report-source.js?v=20261105-account-rotation"></script>
 <script src="portfolio-charts.js?v=20261105-hover-details"></script>
 <script src="portfolio-journey.js?v=20261105-phase-rates"></script>
+<script src="cloud-config.js"></script>
+<script src="portfolio-history.js?v=20261106-history-v1"></script>
 <script>
 (function(){
 'use strict';
@@ -504,6 +514,7 @@ const pct=n=>(100*(Number(n)||0)).toFixed(1)+'%';
 const int=n=>Math.max(0,Math.floor(Number(n)||0));
 const user=localStorage.getItem('4ds:active-user:v1')||'dori';
 const rootKey='4ds:v1:'+user+':';
+const simulationHistory=window.StudioPortfolioHistory?.create({user,element:document.getElementById('simulationHistory'),endpoint:window.FOUR_DS_CLOUD_ENDPOINT})||null;
 let catalog=null,audit=null,rows=[],lastResults=[],lastInputs=null;
 let testRisks={}; // simulator-only R1/R2/R3 and RR experiments, never written to Firms
 let discovered=null; // exploration candidates (not saved as Firms profile)
@@ -577,7 +588,7 @@ function theme(value){document.documentElement.setAttribute('data-theme',value==
 let currentTheme=localStorage.getItem('4ds:theme:v1')||'dark';theme(currentTheme);
 $('theme').addEventListener('click',()=>{currentTheme=currentTheme==='light'?'dark':'light';localStorage.setItem('4ds:theme:v1',currentTheme);theme(currentTheme)});
 $('userLabel').textContent=user.toUpperCase();
-for(const id of ['section1Panel','section2Panel','discovery','section4Panel','section7Panel'])
+for(const id of ['section1Panel','section2Panel','discovery','section4Panel','section7Panel','section8Panel'])
  $(id).addEventListener('toggle',()=>saveView());
 function saveView(){
  try{localStorage.setItem(savedViewKey,JSON.stringify({
@@ -588,7 +599,7 @@ function saveView(){
   signalMode:$('signalMode').value,seed:$('seed').value,
   budgetMode:document.querySelector('[name="budgetMode"]:checked').value,rows,testRisks,
   chartsOpen:$('chartsPanel').open,chartPrefs:{...chartState},
-  numberedOpen:Object.fromEntries(['section1Panel','section2Panel','discovery','section4Panel','section7Panel'].map(id=>[id,$(id).open])),
+  numberedOpen:Object.fromEntries(['section1Panel','section2Panel','discovery','section4Panel','section7Panel','section8Panel'].map(id=>[id,$(id).open])),
   journeyOpen:$('journeyPanel').open,journeyPrefs:{...journeyState},allocationLimits
  }))}catch(e){}
 }
@@ -605,7 +616,7 @@ function loadView(){
  $('chartsPanel').open=prior.chartsOpen===true;
  $('journeyPanel').open=prior.journeyOpen===true;
  if(prior.numberedOpen&&typeof prior.numberedOpen==='object'){
-  for(const id of ['section1Panel','section2Panel','discovery','section4Panel','section7Panel'])
+  for(const id of ['section1Panel','section2Panel','discovery','section4Panel','section7Panel','section8Panel'])
    if(typeof prior.numberedOpen[id]==='boolean')$(id).open=prior.numberedOpen[id];
  }
  if(prior.journeyPrefs&&typeof prior.journeyPrefs==='object'){
@@ -1593,6 +1604,7 @@ function run(){
      evaluationAllocationCap:j.allocation.evaluation||0,
      fundedAllocationCap:j.allocation.funded||0}));
    renderResults(results,inputs);
+   simulationHistory?.save({results,inputs,rows});
   }catch(e){
    $('status').textContent='Simulation error: '+e.message;$('status').style.color='var(--red)';
   }finally{$('run').disabled=false}
