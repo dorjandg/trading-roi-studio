@@ -498,7 +498,25 @@ function start(){
  .payout-more-help{margin:5px 0;padding:4px 0;font-size:10px}
  .payout-more-help>summary{cursor:pointer;font-weight:650}
  @media(max-width:650px){.payout-more-settings-fields{grid-template-columns:1fr}.payout-more-settings-fields select,.payout-more-sort select{font-size:16px;min-height:35px}}
-  #payoutOptimizerPanel .payout-model-collapse{margin:8px 0;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+  #payoutOptimizerPanel .payout-advisor{margin:9px 0;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+ #payoutOptimizerPanel .payout-advisor[hidden]{display:none}
+ #payoutOptimizerPanel .payout-advisor>summary{cursor:pointer;padding:9px 10px;background:var(--panel2);font-size:12px}
+ #payoutOptimizerPanel .payout-advisor>summary strong{font-size:12px}
+ #payoutOptimizerPanel .payout-advisor>summary span{font-size:11px;color:var(--muted)}
+ #payoutOptimizerPanel .payout-advisor[open]>summary{border-bottom:1px solid var(--line)}
+ #payoutOptimizerPanel .payout-advisor-body{padding:10px;display:grid;gap:8px}
+ #payoutOptimizerPanel .payout-advisor-controls{display:grid;grid-template-columns:minmax(150px,1fr) minmax(170px,1.5fr) auto;gap:7px;align-items:end}
+ #payoutOptimizerPanel .payout-advisor-controls label{display:grid;gap:3px;font-size:11px;font-weight:600;min-width:0}
+ #payoutOptimizerPanel .payout-advisor-controls select,#payoutOptimizerPanel .payout-advisor-controls input{width:100%;min-width:0;min-height:34px;font-size:12px}
+ #payoutOptimizerPanel .payout-advisor-controls button{min-height:34px;padding:6px 12px}
+ #payoutOptimizerPanel .payout-advisor-topics{display:flex;gap:5px;flex-wrap:wrap}
+ #payoutOptimizerPanel .payout-advisor-topics button{padding:5px 8px;min-height:28px;font-size:11px}
+ #payoutOptimizerPanel .payout-advisor-topics button[aria-pressed="true"]{border-color:var(--blue);font-weight:700}
+ #payoutOptimizerPanel .payout-advisor-answer{padding:10px;border:1px solid var(--line);border-radius:6px;font-size:12px;line-height:1.48}
+ #payoutOptimizerPanel .payout-advisor-answer>strong{display:block;margin-bottom:5px}
+ #payoutOptimizerPanel .payout-advisor-answer p{margin:5px 0}
+ @media(max-width:650px){#payoutOptimizerPanel .payout-advisor-controls{grid-template-columns:1fr}#payoutOptimizerPanel .payout-advisor-controls input,#payoutOptimizerPanel .payout-advisor-controls select{font-size:16px}}
+ #payoutOptimizerPanel .payout-model-collapse{margin:8px 0;border:1px solid var(--line);border-radius:7px;overflow:hidden}
  #payoutOptimizerPanel .payout-model-collapse[hidden]{display:none}
  #payoutOptimizerPanel .payout-model-collapse>summary{display:flex;align-items:center;gap:6px;flex-wrap:wrap;cursor:pointer;background:var(--panel2);padding:9px 10px;list-style:none;font-size:12px}
  #payoutOptimizerPanel .payout-model-collapse>summary::-webkit-details-marker{display:none}
@@ -621,7 +639,7 @@ function start(){
   if(!Array.from(field.options).some(x=>x.value===key))syncOptions();
   field.value=key;
   loadAssumptions();loadedAssumptionsAccount=acctValue();
-  lastOptimizerOutput=null;lastOptimizerInputs=null;lastOptimizerAccountKey='';lastModelSearch=null;$('payoutOptMoreModels').innerHTML='';
+  lastOptimizerOutput=null;lastOptimizerInputs=null;lastOptimizerAccountKey='';lastModelSearch=null;$('payoutOptMoreModels').innerHTML='';refreshAdvisor();
   $('payoutOptResults').innerHTML='';
   $('payoutOptStatus').textContent='Imported simulator-only model: '+(event.detail?.title||'selected risk setup')+
    '. Review the investment budget and assumptions, then Calculate Investment. No Firms rules changed.';
@@ -789,6 +807,7 @@ function start(){
   box.innerHTML=lastOptimizerOutput?
    solver.renderUnifiedInvestmentModels(lastOptimizerOutput,lastModelSearch,
     moreSortKey,moreDescending,moreColumnView,moreSourceFilter):'';
+  refreshAdvisor();
  }
  function renderLastOptimizer(){
   if(!lastOptimizerOutput)return;
@@ -797,7 +816,32 @@ function start(){
   $('payoutOptResults').innerHTML=solver.render(lastOptimizerOutput,currentSortMode,saved);
   renderUnifiedTable();
  }
+ $('payoutAdvisorModel').addEventListener('change',()=>askAdvisor(advisorTopic));
+ $('payoutResultsAdvisor').addEventListener('click',event=>{
+  const topic=event.target.closest?.('[data-advisor-topic]');
+  if(topic){$('payoutResultsAdvisor').open=true;askAdvisor(topic.dataset.advisorTopic);}
+ });
+ function submitAdvisorQuestion(){
+  const question=$('payoutAdvisorQuestion').value.trim();
+  if(!question){askAdvisor('overview');return;}
+  $('payoutResultsAdvisor').open=true;
+  askAdvisor(advisorTopicForQuestion(question));
+ }
+ $('payoutAdvisorAsk').addEventListener('click',submitAdvisorQuestion);
+ $('payoutAdvisorQuestion').addEventListener('keydown',event=>{
+  if(event.key==='Enter'){event.preventDefault();submitAdvisorQuestion();}
+ });
  $('payoutOptResults').addEventListener('click',async event=>{
+  const openAdvisor=event.target.closest?.('[data-reverse-advisor]');
+  if(openAdvisor){
+   const index=Number(openAdvisor.dataset.reverseAdvisor);
+   if(!lastOptimizerOutput?.candidates?.[index])return;
+   $('payoutResultsAdvisor').open=true;
+   $('payoutAdvisorModel').value='original:'+index;
+   askAdvisor('overview');
+   $('payoutResultsAdvisor').scrollIntoView({behavior:'smooth',block:'start'});
+   return;
+  }
   const more=event.target.closest?.('[data-reverse-more-models]');
   if(more){
    const index=Number(more.dataset.reverseMoreModels),candidate=lastOptimizerOutput?.candidates?.[index];
