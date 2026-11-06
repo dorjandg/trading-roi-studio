@@ -109,20 +109,36 @@
     if (!matched.length && !matchedCats.length) html+='<div class="suggest-label">Try trading, study, WHOOP or sheets</div>';
     pane.innerHTML=html;pane.hidden=false;
   }
+  function shortcut(link) {
+    if (!link) return "";
+    return '<a class="shortcut-card accent-'+safeColor(link.accent)+'" href="'+escapeHTML(link.url)+'" target="_blank" rel="noopener noreferrer" data-open-id="'+escapeHTML(link.id)+'" aria-label="Open '+escapeHTML(link.title)+' in a new tab">'+
+      '<span class="shortcut-logo">'+escapeHTML(link.symbol||link.title[0])+'</span>'+
+      '<span class="shortcut-copy"><strong>'+escapeHTML(link.title)+'</strong><small>'+escapeHTML(link.type||categoryName(link.category))+'</small></span>'+
+      '<span class="shortcut-arrow" aria-hidden="true">'+svg("external")+'</span></a>';
+  }
   function renderOverview() {
     const featured=links.filter(l=>l.featured);
-    const quick=links.filter(l=>!l.featured);
+    const workIds=["colab-jj-transcription","github-trading-studio","github-jj-knowledge","github-personal-hub","github-mt5-controller","cloudflare-dashboard","google-drive","google-apps-script"];
+    const jjIds=["jj-dashboard","discord","whop","zoom","skool","circle"];
+    const quickIds=["tradingview","gemini-notebook","google-sheets","whoop","youtube","ftmo"];
+    const work=workIds.map(id=>byId.get(id)).filter(Boolean);
+    const jj=jjIds.map(id=>byId.get(id)).filter(Boolean);
+    const quick=quickIds.map(id=>byId.get(id)).filter(Boolean);
     const recents=state.recents.map(id=>byId.get(id)).filter(Boolean).slice(0,3);
     return '<section class="hero"><div><div class="eyebrow">WELCOME TO YOUR WORKSPACE</div><h1 class="hero-title">Everything in <span>one place.</span></h1>'+
       '<p class="hero-subtitle">Your websites, study material, dashboards and everyday resources — organized, searchable and always easy to reach.</p></div>'+
       '<div class="hero-stats"><div class="stat"><b>'+links.length+'</b><small>Saved links</small></div><div class="stat"><b>'+categories.length+'</b><small>Collections</small></div><div class="stat"><b>'+state.favorites.size+'</b><small>Favorites</small></div></div></section>'+
       '<section class="section"><div class="section-heading"><div><h2>My websites</h2><p class="section-subtitle">Your projects — one click away</p></div><button type="button" class="section-action" data-category="workspaces">View all →</button></div>'+
       '<div class="featured-grid">'+featured.map(l=>card(l,true)).join("")+'</div></section>'+
+      '<section class="section"><div class="section-heading"><div><h2>Work & Development</h2><p class="section-subtitle">Colab, GitHub projects, Cloudflare and Google tools</p></div><button type="button" class="section-action" data-category="worktools">All work tools →</button></div>'+
+      '<div class="shortcut-grid">'+work.map(shortcut).join("")+'</div></section>'+
+      '<section class="section"><div class="section-heading"><div><h2>JJ Study & Communities</h2><p class="section-subtitle">JJ dashboard, discussions, memberships and calls</p></div><button type="button" class="section-action" data-category="community">All communities →</button></div>'+
+      '<div class="shortcut-grid">'+jj.map(shortcut).join("")+'</div></section>'+
       '<section class="section"><div class="section-heading"><div><h2>Browse collections</h2><p class="section-subtitle">Everything has a place</p></div></div><div class="collection-grid">'+categories.map(catButton).join("")+'</div></section>'+
-      (recents.length?'<section class="section"><div class="section-heading"><div><h2>Recently opened</h2></div><button type="button" class="section-action" data-nav="recent">See all →</button></div><div class="link-grid">'+recents.map(l=>card(l)).join("")+'</div></section>':"")+
-      '<section class="section"><div class="section-heading"><div><h2>Quick access</h2><p class="section-subtitle">Useful places beyond your projects</p></div><button type="button" class="section-action" data-nav="all">All links →</button></div>'+
-      '<div class="link-grid">'+quick.map(l=>card(l)).join("")+'</div></section>'+
-      '<div class="notice-card"><span class="notice-symbol">✦</span><div><b>Your library can grow without limits</b><span>Add a website, a Google Sheet, a YouTube video or a new category whenever you need it.</span></div><button type="button" data-request>Add a link →</button></div>';
+      (recents.length?'<section class="section"><div class="section-heading"><div><h2>Recently opened</h2></div><button type="button" class="section-action" data-nav="recent">See all →</button></div><div class="shortcut-grid">'+recents.map(shortcut).join("")+'</div></section>':"")+
+      '<section class="section"><div class="section-heading"><div><h2>Quick access</h2><p class="section-subtitle">Other useful places you regularly use</p></div><button type="button" class="section-action" data-nav="all">All links →</button></div>'+
+      '<div class="shortcut-grid">'+quick.map(shortcut).join("")+'</div></section>'+
+      '<div class="notice-card"><span class="notice-symbol">✦</span><div><b>Your library can grow without limits</b><span>Add a website, Google Sheet, YouTube video or category whenever you need it.</span></div><button type="button" data-request>Add a link →</button></div>';
   }
   function renderListing(title,subtitle,items,emptyHeading,emptyText,showFilters=false) {
     return '<div class="section-top"><div><div class="eyebrow">YOUR LIBRARY</div><h1>'+escapeHTML(title)+'</h1><p>'+escapeHTML(subtitle)+'</p></div>'+
