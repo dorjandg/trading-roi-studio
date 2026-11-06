@@ -54,7 +54,7 @@ function planFor(base,scale,perPayout,rrVariant=null,riskMode='saved',r3Route='l
     // Reserve the largest permitted R3, then distribute the remaining
     // losses across R1/R2 so LLW may reach the phase target.
     const lossRoom=Number.isFinite(p.overallLoss)?
-     p.overallLoss-maxRisk-reserve-2*cost-1:Infinity;
+     p.overallLoss-maxRisk-reserve-3*cost-1:Infinity;
     const targetRoom=maxRisk*rr3-stageRisk.target-3*cost;
     const totalEarlyRisk=Math.max(.02,Math.min(lossRoom,targetRoom,2*maxRisk)*Math.min(1,scale));
     stageRisk.r1=Math.max(.01,Math.floor(totalEarlyRisk*.5*100)/100);
@@ -76,7 +76,7 @@ function planFor(base,scale,perPayout,rrVariant=null,riskMode='saved',r3Route='l
     stageRisk.r2=Math.max(.01,Math.min(stageRisk.r2,Math.floor(stageRisk.r2*.65*100)/100));
    }
    const roomAfterTwo=Math.min(maxRisk,
-    Number.isFinite(p.overallLoss)?p.overallLoss-stageRisk.r1-stageRisk.r2-2*cost-reserve-1:Infinity,
+    Number.isFinite(p.overallLoss)?p.overallLoss-stageRisk.r1-stageRisk.r2-3*cost-reserve-1:Infinity,
     Number.isFinite(p.dailyLoss)?p.dailyLoss-cost-reserve-1:Infinity);
    const feasibleR3=Math.max(.01,Math.floor(roomAfterTwo*100)/100);
    stageRisk.r3=r3Route==='legacy'?Math.max(.01,Math.min(maxRisk,desiredR3)):
