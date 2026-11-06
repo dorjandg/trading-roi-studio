@@ -116,6 +116,18 @@
       '<span class="shortcut-copy"><strong>'+escapeHTML(link.title)+'</strong><small>'+escapeHTML(link.type||categoryName(link.category))+'</small></span>'+
       '<span class="shortcut-arrow" aria-hidden="true">'+svg("external")+'</span></a>';
   }
+  function disclosureSection(id, title, subtitle, count, content, actionText="", actionAttr="") {
+    const countLabel = count === 1 ? "1 link" : count + " " + (id === "collections" ? "collections" : "links");
+    return '<details class="section section-disclosure" data-section="'+escapeHTML(id)+'">'+
+      '<summary class="disclosure-summary">'+
+      '<span class="disclosure-label"><span class="disclosure-title">'+escapeHTML(title)+'</span>'+
+      '<span class="disclosure-subtitle">'+escapeHTML(subtitle)+'</span></span>'+
+      '<span class="disclosure-count">'+escapeHTML(countLabel)+'</span>'+
+      '<span class="disclosure-chevron" aria-hidden="true">'+svg("arrow")+'</span></summary>'+
+      '<div class="disclosure-content">'+
+      (actionText && actionAttr ? '<div class="disclosure-actions"><button type="button" class="section-action" '+actionAttr+'>'+escapeHTML(actionText)+' →</button></div>' : '')+
+      content+'</div></details>';
+  }
   function renderOverview() {
     const featured=links.filter(l=>l.featured);
     const workIds=["colab-jj-transcription","github-trading-studio","github-jj-knowledge","github-personal-hub","github-mt5-controller","cloudflare-dashboard","google-drive","google-apps-script"];
@@ -128,16 +140,24 @@
     return '<section class="hero"><div><div class="eyebrow">WELCOME TO YOUR WORKSPACE</div><h1 class="hero-title">Everything in <span>one place.</span></h1>'+
       '<p class="hero-subtitle">Your websites, study material, dashboards and everyday resources — organized, searchable and always easy to reach.</p></div>'+
       '<div class="hero-stats"><div class="stat"><b>'+links.length+'</b><small>Saved links</small></div><div class="stat"><b>'+categories.length+'</b><small>Collections</small></div><div class="stat"><b>'+state.favorites.size+'</b><small>Favorites</small></div></div></section>'+
-      '<section class="section"><div class="section-heading"><div><h2>My websites</h2><p class="section-subtitle">Your projects — one click away</p></div><button type="button" class="section-action" data-category="workspaces">View all →</button></div>'+
-      '<div class="featured-grid">'+featured.map(l=>card(l,true)).join("")+'</div></section>'+
-      '<section class="section"><div class="section-heading"><div><h2>Work & Development</h2><p class="section-subtitle">Colab, GitHub projects, Cloudflare and Google tools</p></div><button type="button" class="section-action" data-category="worktools">All work tools →</button></div>'+
-      '<div class="shortcut-grid">'+work.map(shortcut).join("")+'</div></section>'+
-      '<section class="section"><div class="section-heading"><div><h2>Study & Communities</h2><p class="section-subtitle">Learning platforms, dashboards, memberships and calls</p></div><button type="button" class="section-action" data-category="community">All communities →</button></div>'+
-      '<div class="shortcut-grid">'+jj.map(shortcut).join("")+'</div></section>'+
-      '<section class="section"><div class="section-heading"><div><h2>Browse collections</h2><p class="section-subtitle">Everything has a place</p></div></div><div class="collection-grid">'+categories.map(catButton).join("")+'</div></section>'+
-      (recents.length?'<section class="section"><div class="section-heading"><div><h2>Recently opened</h2></div><button type="button" class="section-action" data-nav="recent">See all →</button></div><div class="shortcut-grid">'+recents.map(shortcut).join("")+'</div></section>':"")+
-      '<section class="section"><div class="section-heading"><div><h2>Quick access</h2><p class="section-subtitle">Other useful places you regularly use</p></div><button type="button" class="section-action" data-nav="all">All links →</button></div>'+
-      '<div class="shortcut-grid">'+quick.map(shortcut).join("")+'</div></section>'+
+      '<div class="disclosure-toolbar"><span>Collections are collapsed by default</span><div><button type="button" class="toggle-sections" data-sections="expand">Expand all</button><button type="button" class="toggle-sections" data-sections="collapse">Collapse all</button></div></div>'+
+      disclosureSection("websites","My websites","Your projects — one click away",featured.length,
+        '<div class="featured-grid">'+featured.map(l=>card(l,true)).join("")+'</div>',
+        "View all",'data-category="workspaces"')+
+      disclosureSection("work","Work & Development","Colab, GitHub projects, Cloudflare and Google tools",work.length,
+        '<div class="shortcut-grid">'+work.map(shortcut).join("")+'</div>',
+        "All work tools",'data-category="worktools"')+
+      disclosureSection("study","Study & Communities","Learning platforms, dashboards, memberships and calls",jj.length,
+        '<div class="shortcut-grid">'+jj.map(shortcut).join("")+'</div>',
+        "All communities",'data-category="community"')+
+      disclosureSection("collections","Browse collections","Everything has a place",categories.length,
+        '<div class="collection-grid">'+categories.map(catButton).join("")+'</div>')+
+      (recents.length?disclosureSection("recent","Recently opened","Your recently visited links",recents.length,
+        '<div class="shortcut-grid">'+recents.map(shortcut).join("")+'</div>',
+        "See all",'data-nav="recent"'):"")+
+      disclosureSection("quick","Quick access","Other useful places you regularly use",quick.length,
+        '<div class="shortcut-grid">'+quick.map(shortcut).join("")+'</div>',
+        "All links",'data-nav="all"')+
       '<div class="notice-card"><span class="notice-symbol">✦</span><div><b>Your library can grow without limits</b><span>Add a website, Google Sheet, YouTube video or category whenever you need it.</span></div><button type="button" data-request>Add a link →</button></div>';
   }
   function renderListing(title,subtitle,items,emptyHeading,emptyText,showFilters=false) {
@@ -211,6 +231,12 @@
     const open=event.target.closest("[data-open-id]");if(open){trackRecent(open.dataset.openId);return;}
     const fav=event.target.closest("[data-fav]");if(fav){toggleFavorite(fav.dataset.fav);return;}
     const request=event.target.closest("[data-request]");if(request){openDialog();return;}
+    const sectionsToggle=event.target.closest("[data-sections]");
+    if(sectionsToggle){
+      const show=sectionsToggle.dataset.sections==="expand";
+      document.querySelectorAll("#mainContent details.section-disclosure").forEach(section=>{section.open=show;});
+      return;
+    }
     const nav=event.target.closest("[data-nav]");if(nav){navigate(nav.dataset.nav);return;}
     const cat=event.target.closest("[data-category]");if(cat){navigate("category",cat.dataset.category);return;}
     const suggest=event.target.closest("[data-suggest]");
