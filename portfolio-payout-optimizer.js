@@ -566,11 +566,11 @@ function render(out,sortMode='model',currentPlan=null){
    [['Starting budget',money(candidate.initialBudget)],['Challenge fee',money(p.fee)],['Safety reserve',money(p.riskReserve)],['Daily / overall loss',money(p.dailyLoss)+' / '+money(p.overallLoss)],['Trading days',sim.days??'—'],['Signals per day',sim.tradesPerDay??'—'],['Assumed win rate',sim.winRate==null?'—':Number(sim.winRate).toFixed(1)+'%'],['Signal outcomes',sim.signalMode||'—'],['Buying mode',sim.purchaseMode||'—'],['Allocation',sim.capacityMode||'—'],['Payout per account',money(out.perPayout)],['Funded wait / processing',Number(p.payoutWaitCalendarDays||0)+' / '+Number(p.payoutProcessingCalendarDays||0)+' calendar days']].map(([name,value])=>'<div><small>'+escapeHtml(name)+'</small><strong>'+escapeHtml(value)+'</strong></div>').join('')+
    '</div><p class="hint">Search assumptions and investment budget are not Firms account defaults. Firm fees, drawdown limits and mandatory qualification requirements stay protected.</p></details>'+
    compareMarkup+
-   '<div class="reverse-review-actions">'+(candidate.riskMode==='adaptive'?
+   '<details class="reverse-review-panel"><summary><strong>Optional · Send model to Firms</strong> · simulator values are not saved automatically</summary><div class="reverse-review-actions">'+(candidate.riskMode==='adaptive'?
    '<span class="hint">Dynamic policies are available in this simulator only. Firms does not yet support state-based automatic sizing, so transfer is disabled.</span>':
    '<button type="button" data-reverse-send-firms="'+pathIndex+'">Send this risk setup to Firms</button>')+
    '<span class="hint">Optional · confirmation required · previous Firms settings backed up. The saved account is not changed by simply opening this option.</span></div>'+ 
-   '<p class="reverse-review-status" role="status" aria-live="polite"></p>';
+   '<p class="reverse-review-status" role="status" aria-live="polite"></p></details>';
   const goalMet=candidate.r3Feasible!==false&&s.avgNet+1e-8>=out.minNetPnl&&s.avgPaid+1e-8>=out.requiredPayouts&&
    s.roi+1e-8>=out.minRoi&&s.budgetRoi+1e-8>=out.minNetRoi;
   const summaryMetric=(label,value,extra='')=>'<span class="reverse-compact-metric '+extra+'"><small>'+
@@ -737,7 +737,8 @@ function renderUnifiedInvestmentModels(out,more=null,sortKey='net',descending=tr
    '<td class="payout-col-trading">'+fmt(k.rr)+'</td><td class="payout-col-trading">'+fmt(k.ar)+'</td>'+
    '<td class="payout-col-trading">'+usd(k.aw)+'</td><td class="payout-col-trading">'+usd(k.al)+'</td>'+
    '<td class="payout-col-trading">'+usd(k.ev)+'</td><td class="payout-col-trading">'+fmt(r.avg.trades)+'</td>'+
-   '<td><button type="button" data-more-analyze="'+m.key+'">Analyze</button></td></tr>';
+   '<td><div class="payout-model-actions"><button type="button" data-more-analyze="'+m.key+'">Analyze</button>'+
+   '<button type="button" data-more-ledger="'+m.key+'">Ledger</button></div></td></tr>';
  }).join('');
  const sortHtml=options.map(([key,label])=>'<option value="'+key+'"'+(selected===key?' selected':'')+'>'+label+'</option>').join('');
  const choice=(name,value)=>'<option value="'+value+'"'+(filter===value?' selected':'')+'>'+name+'</option>';
