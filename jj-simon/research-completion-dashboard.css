@@ -1,0 +1,46 @@
+/* JJ Research Completion Dashboard — evidence-level reporting, mobile first */
+.jj-progress-dashboard{border:1px solid var(--stroke);border-radius:10px;background:var(--panel);padding:14px;margin:10px 0 18px;min-width:0}
+.jj-progress-dashboard h3{font-size:16px;margin:0 0 5px}
+.jj-progress-dashboard h4{font-size:13px;margin:0 0 5px}
+.jj-progress-muted{font-size:11px;color:var(--muted);line-height:1.55;margin:4px 0 10px}
+.jj-progress-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0 15px}
+.jj-progress-metric{min-width:0;display:flex;flex-direction:column;gap:3px;padding:11px;background:var(--bg);border:1px solid var(--stroke);border-radius:8px}
+.jj-progress-metric>strong{font-size:clamp(18px,2.8vw,26px);line-height:1.15;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.jj-progress-metric>span{font-size:11px;font-weight:700}
+.jj-progress-metric>small{font-size:10px;color:var(--muted);line-height:1.45}
+.jj-progress-section{border-top:1px solid var(--stroke);padding-top:13px;margin-top:14px}
+.jj-progress-module-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0}
+.jj-progress-module{padding:10px;border:1px solid var(--stroke);border-radius:7px;background:var(--bg);min-width:0}
+.jj-progress-module-head{display:flex;gap:8px;justify-content:space-between;align-items:flex-start}
+.jj-progress-module-head strong{font-size:12px}
+.jj-progress-module-head span{font-size:10px;color:var(--muted);text-align:right}
+.jj-progress-module small{display:block;font-size:10px;color:var(--muted)}
+.jj-progress-track{height:5px;margin:9px 0 6px;border-radius:4px;background:var(--stroke);overflow:hidden}
+.jj-progress-fill{height:100%;background:var(--accent)}
+.jj-progress-levels{display:grid;gap:6px;margin-top:9px}
+.jj-progress-level{display:grid;grid-template-columns:minmax(90px,0.8fr) minmax(90px,0.6fr) minmax(0,2fr);gap:9px;align-items:center;background:var(--bg);border:1px solid var(--stroke);border-radius:7px;padding:9px 10px}
+.jj-progress-level-status{font-size:10px;color:var(--accent);font-weight:700}
+.jj-progress-level strong{font-size:12px;overflow-wrap:anywhere}
+.jj-progress-level>span:last-child{font-size:11px;color:var(--muted);line-height:1.4}
+.jj-progress-queue{display:grid;gap:7px;margin-top:10px}
+.jj-progress-queue-row{display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--bg);border:1px solid var(--stroke);border-radius:7px;padding:9px 10px}
+.jj-progress-queue-text{display:flex;flex-direction:column;gap:3px;min-width:0}
+.jj-progress-queue-text strong{font-size:12px;overflow-wrap:anywhere}
+.jj-progress-queue-text span{font-size:10px;color:var(--muted);line-height:1.4}
+.jj-progress-link{background:var(--panel);border:1px solid var(--stroke);border-radius:7px;color:var(--accent);padding:8px 10px;font-size:11px;cursor:pointer;text-align:left;flex-shrink:0}
+.jj-progress-link:hover{background:var(--hover)}
+.jj-progress-link:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(max-width:750px){
+ .jj-progress-dashboard{padding:10px;margin:7px 0 13px}
+ .jj-progress-dashboard h3{font-size:14px}
+ .jj-progress-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .jj-progress-metric{padding:9px;gap:2px}
+ .jj-progress-metric>strong{font-size:19px}
+ .jj-progress-metric>span{font-size:11px}
+ .jj-progress-module-grid{grid-template-columns:minmax(0,1fr);gap:6px}
+ .jj-progress-level{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4px 8px}
+ .jj-progress-level>span:last-child{grid-column:1/-1}
+ .jj-progress-queue-row{gap:7px}
+ .jj-progress-link{min-height:39px}
+}
+@media(max-width:340px){.jj-progress-kpis{grid-template-columns:minmax(0,1fr)}}
