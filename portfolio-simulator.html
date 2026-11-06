@@ -314,10 +314,16 @@ details p{margin:6px 0}
 .numbered-panel>summary .sim-charts-hint{margin-left:auto}
 #section2Panel>summary .section-run-btn{flex:0 0 auto;min-height:30px;padding:5px 12px;font-size:12px;white-space:nowrap}
 #section2Panel>summary .sim-charts-hint{margin-left:0}
+#discovery>summary .section-run-btn{flex:0 0 auto;min-height:30px;padding:5px 12px;font-size:12px;white-space:nowrap}
+#discovery>summary .sim-charts-hint{margin-left:0}
 @media(max-width:480px){#section2Panel>summary{gap:6px;padding:8px}
  #section2Panel>summary strong{font-size:12px}
  #section2Panel>summary .section-run-btn{min-height:28px;padding:4px 8px;font-size:11px}
- #section2Panel>summary .sim-charts-hint{font-size:10px}}
+ #section2Panel>summary .sim-charts-hint{font-size:10px}
+ #discovery>summary{gap:6px;padding:8px}
+ #discovery>summary strong{font-size:12px}
+ #discovery>summary .section-run-btn{min-height:28px;padding:4px 8px;font-size:11px}
+ #discovery>summary .sim-charts-hint{font-size:10px}}
 @media(max-width:600px){.numbered-panel>.numbered-content{padding:7px 0 0}}
 .journey-panel{margin-top:8px}
 .journey-toolbar{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 7px}
@@ -426,7 +432,7 @@ details p{margin:6px 0}
  <div class="actions"><button id="addAccount" type="button">+ Add account to comparison</button><button id="reload" type="button">Reload saved stage settings</button><span id="profileStatus" class="hint"></span></div>
  <div class="actions"><span id="status" class="status" role="status">Loading account catalog…</span></div>
 </div></details>
-<details class="sim-charts-panel numbered-panel" id="discovery"><summary><strong>3 · Find Better Models</strong><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content">
+<details class="sim-charts-panel numbered-panel" id="discovery"><summary><strong>3 · Find Better Models</strong><button type="button" class="primary section-run-btn" id="discover" title="Search for better models using your current settings">Find Better Models</button><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content">
  <p class="hint">Automatically compare risk-sized models and trade-order rules using the same account, budget, win rate and RR. Candidates are shortlisted on one simulated random sample and retested using different random outcomes under the same assumptions. This is <b>not historical validation</b> or evidence of a new trading edge.</p>
  <div class="fields">
   <div class="field"><label for="ideaAccount">Prop-firm account to optimize</label><select id="ideaAccount"></select></div>
@@ -441,8 +447,7 @@ details p{margin:6px 0}
    <input id="ideaReserve" type="number" min="0" step=".01" inputmode="decimal" value="0"></div>
  </div>
  <div id="ideaCeilingInfo" class="status" style="margin:10px 0">Select an account to calculate the maximum modeled starting risk.</div>
- <div class="actions"><button type="button" class="primary" id="discover">Find Better Models</button>
-  <span id="ideaStatus" class="status" role="status">Run a model search to compare alternatives.</span></div>
+ <div class="actions"><span id="ideaStatus" class="status" role="status">Run a model search to compare alternatives.</span></div>
  <div id="ideaResults"></div>
  <div id="firmsSendStatus" class="status" style="margin-top:10px" aria-live="polite">Suggested models stay in Portfolio Sim until you explicitly send one to Firms.</div>
 </div></details>
@@ -1355,7 +1360,8 @@ function currentDiscoveryInputs(row){
   fundedAllocationCap:allocationLimits[row.id+':'+row.size]?.funded||0
  };
 }
-$('discover').addEventListener('click',()=>{
+$('discover').addEventListener('click',event=>{
+ event.preventDefault();event.stopPropagation();
  if(!modelDiscovery){$('ideaStatus').textContent='Model discovery calculation is unavailable';return;}
  const index=Number($('ideaAccount').value),row=rows[index];
  if(!row){$('ideaStatus').textContent='Select a prop-firm account for the search';return;}
