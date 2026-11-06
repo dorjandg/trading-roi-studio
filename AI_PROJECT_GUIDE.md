@@ -65,6 +65,13 @@ Key calculations:
 
 Independent 3A assumptions are stored per selected account in the existing per-user payout optimizer preferences and do not modify Section 1 or saved Firms settings. The compact editor begins with inherited values and offers Reset to Section 1 / Firms. Risk limits and reserves are read-only.
 
+## Scenario diagnosis and improvement ideas (Nov 6 update)
+- After calculating investment, `portfolio-payout-optimizer.js` runs `diagnoseScenario(candidate,out)` against each validated candidate's actual average payouts, phase progress, risk-blocked count, fee drag, ROI filters, time horizon, and main net-P&L target.
+- Each scenario card keeps its compact KPIs visible while closed and adds a single **Suggestion: ...** summary line. Expanded cards show a compact diagnostic table with the observed evidence and a concrete parameter change to **test**, with at most four prioritized issues.
+- Diagnostics distinguish risk-blocked accounts from actual breached accounts, an unrealistic payout horizon from poor funded conversion, and net-dollar profit deficits from optional ROI percentages.
+- Never recommend reducing firm-required minimum trading days or mandated payout waiting periods merely to make simulations pass; review legitimate terms and extend the planning horizon if necessary. Do not claim suggestions are causal improvements or optimize win rate by inflating it; use real trading history to validate assumptions.
+- Keep the suggestions concise and evidence-based. The output is a hypothesis-generating aid, not a backtested or guaranteed trading recommendation.
+
 ## Compact scenario cards (Nov 6 update)
 - Each Calculate Investment tested scenario is rendered as a nested `<details class="reverse-candidate">` **closed by default**. The summary always shows: average net P&L (USD), net ROI on starting investment, ROI on incurred fees, tested investment, mean first payouts, and probability of meeting the net goal (plus a target-status label).
 - Expanding a scenario reveals its additional KPIs, target checks, phase risk table, and separately collapsed trade-by-trade example and risk explanation.
