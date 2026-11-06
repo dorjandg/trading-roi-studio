@@ -567,7 +567,7 @@ function render(out,sortMode='model',currentPlan=null){
    '<summary class="reverse-candidate-summary">'+
    '<span class="reverse-candidate-name">'+(index===0?(selectedSort==='model'?'Top by optimizer':'Top by '+payoutSortModes[selectedSort]):'Option '+(index+1))+
    ' · '+candidate.scale.toFixed(2)+'× · '+escapeHtml(candidate.rrVariant||'')+
-   ' · '+(candidate.riskMode==='target'?'Target':candidate.riskMode==='adaptive'?'Adaptive':'Saved')+' risk'+(candidate.riskMode==='target'?' · R3 '+escapeHtml(candidate.r3Route||'legacy'):'')+(candidate.riskMode==='target'&&p.stageList.some(stage=>!(p.id==='topstep'&&stage==='p1')&&p.riskProfiles[stage]?.r3Analysis?.feasibleAfterTwoLosses===false)?' · R3 blocked on LL':'')+
+   ' · '+(candidate.riskMode==='target'?'Target':candidate.riskMode==='adaptive'?'Adaptive':'Saved')+' risk'+(candidate.riskMode==='target'?' · R3 '+escapeHtml(candidate.r3Route||'legacy'):candidate.riskMode==='adaptive'?' · '+escapeHtml(candidate.r3Route||'dynamic'):'')+(candidate.riskMode==='target'&&p.stageList.some(stage=>!(p.id==='topstep'&&stage==='p1')&&p.riskProfiles[stage]?.r3Analysis?.feasibleAfterTwoLosses===false)?' · R3 blocked on LL':'')+
    '<span class="reverse-candidate-status '+(goalMet?'reverse-status-met':'')+'">'+
    (candidate.r3Feasible===false?'R3 blocked after LL':goalMet?'Targets met':'Below target')+'</span></span>'+
    '<span class="reverse-summary-kpis">'+
