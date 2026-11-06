@@ -409,7 +409,7 @@ function render(out,sortMode='model',currentPlan=null){
    const oldRr=t=>Number(baseline.rrByTier?.[t]??baseline.rr);
    const changed=['r1','r2','r3'].filter(t=>Math.abs(Number(x[t])-Number(baseline[t]))>.005||Math.abs(rr(t)-oldRr(t))>.00001);
    const changedOther=Number(x.maxWinsPerDay)!==Number(baseline.maxWinsPerDay)||mode!==old;
-   const difference=!currentPlan?'—':(changed.length||changedOther?'Changed':'Same');
+   const difference=!currentPlan?'No saved profile':(changed.length||changedOther?'Changed':'Same');
    return '<tr><td>'+escapeHtml(x.name||stage)+'</td>'+
     '<td>'+escapeHtml(policyLabels[mode]||mode)+'</td>'+
     '<td>'+Number(x.maxWinsPerDay||1)+'</td>'+
@@ -419,7 +419,8 @@ function render(out,sortMode='model',currentPlan=null){
     '<td>'+difference+'</td></tr>';
   }).join('');
   const sim=out.inputs||{};
-  const checks=currentPlan?'<p class="hint">Compared with current saved Firms account profile. “Changed” refers to phase risks, tier RR, policy or winning-day cap, not firm-required limits.</p>':'';
+  const checks=currentPlan?'<p class="hint">Compared with the current saved Firms account profile. “Changed” refers to phase risks, tier RR, policy or winning-day cap, not firm-required limits.</p>':
+   '<p class="hint">No saved Firms profile was found for this account. Open the account in Firms and save a profile before transferring.</p>';
   const setupMarkup='<details class="reverse-review-panel"><summary><strong>Trading rules &amp; risks</strong> · phase-by-phase setup</summary>'+
    '<div class="tablewrap"><table class="journey-table"><thead><tr><th>Phase</th><th>Risk sequence</th><th>Max wins/day</th><th>Min trading days</th><th>R1 / R2 / R3</th><th>RR per tier</th><th>vs Firms</th></tr></thead><tbody>'+limitInfo+'</tbody></table></div>'+checks+
    '<p class="hint">Risk amounts are USD per trade; RR is the simulated reward/risk ratio. Actual account margin and trade execution are not verified.</p></details>'+
@@ -428,7 +429,8 @@ function render(out,sortMode='model',currentPlan=null){
    [['Starting budget',money(candidate.initialBudget)],['Challenge fee',money(p.fee)],['Safety reserve',money(p.riskReserve)],['Daily / overall loss',money(p.dailyLoss)+' / '+money(p.overallLoss)],['Trading days',sim.days??'—'],['Signals per day',sim.tradesPerDay??'—'],['Assumed win rate',sim.winRate==null?'—':Number(sim.winRate).toFixed(1)+'%'],['Signal outcomes',sim.signalMode||'—'],['Buying mode',sim.purchaseMode||'—'],['Allocation',sim.capacityMode||'—'],['Payout per account',money(out.perPayout)],['Funded wait / processing',Number(p.payoutWaitCalendarDays||0)+' / '+Number(p.payoutProcessingCalendarDays||0)+' calendar days']].map(([name,value])=>'<div><small>'+escapeHtml(name)+'</small><strong>'+escapeHtml(value)+'</strong></div>').join('')+
    '</div><p class="hint">Search assumptions and investment budget are not Firms account defaults. Firm fees, drawdown limits and mandatory qualification requirements stay protected.</p></details>'+
    '<div class="reverse-review-actions"><button type="button" data-reverse-send-firms="'+pathIndex+'">Send this risk setup to Firms</button>'+
-   '<span class="hint">Optional · confirmation required · previous Firms settings backed up. The saved account is not changed by simply opening this option.</span></div>';
+   '<span class="hint">Optional · confirmation required · previous Firms settings backed up. The saved account is not changed by simply opening this option.</span></div>'+ 
+   '<p class="reverse-review-status" role="status" aria-live="polite"></p>';
   const goalMet=s.avgNet+1e-8>=out.minNetPnl&&s.avgPaid+1e-8>=out.requiredPayouts&&
    s.roi+1e-8>=out.minRoi&&s.budgetRoi+1e-8>=out.minNetRoi;
   const summaryMetric=(label,value,extra='')=>'<span class="reverse-compact-metric '+extra+'"><small>'+
