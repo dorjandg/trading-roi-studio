@@ -16,9 +16,11 @@ function profitNeeded(plan,perPayout){
   if(perPayout>5000)throw Error('Topstep first modeled payout is capped at $5,000; choose a smaller payout per account.');
   return perPayout/.5;
  }
- const refund=val(plan.fee)*val(plan.refund);
+ // The user's per-account withdrawal target means trading-profit payout,
+ // not a refunded challenge fee. Fee refunds are tracked separately in the
+ // existing simulator's cash receipts and must not reduce the trading goal.
  if(!plan.split||plan.split<=0)throw Error('This account has no positive payout split.');
- return Math.max(.01,(perPayout-refund)/plan.split);
+ return Math.max(.01,perPayout/plan.split);
 }
 function planFor(base,scale,perPayout){
  const p={...base,riskProfiles:{}};
