@@ -780,7 +780,8 @@ function renderUnifiedInvestmentModels(out,more=null,sortKey='net',descending=tr
    '<td class="payout-col-trading">'+usd(k.aw)+'</td><td class="payout-col-trading">'+usd(k.al)+'</td>'+
    '<td class="payout-col-trading">'+usd(k.ev)+'</td><td class="payout-col-trading">'+fmt(r.avg.trades)+'</td>'+
    '<td><div class="payout-model-actions"><button type="button" data-more-analyze="'+m.key+'">Analyze</button>'+
-   '<button type="button" data-more-ledger="'+m.key+'">Ledger</button></div></td></tr>';
+   '<button type="button" data-more-ledger="'+m.key+'">Ledger</button>'+
+   '<button type="button" data-more-send-firms="'+m.key+'" title="Save this model as the selected prop account default after confirmation, with a restorable backup">Set Prop Default</button></div></td></tr>';
  }).join('');
  const sortHtml=options.map(([key,label])=>'<option value="'+key+'"'+(selected===key?' selected':'')+'>'+label+'</option>').join('');
  const choice=(name,value)=>'<option value="'+value+'"'+(filter===value?' selected':'')+'>'+name+'</option>';
