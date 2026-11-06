@@ -785,6 +785,10 @@ function renderUnifiedInvestmentModels(out,more=null,sortKey='net',descending=tr
  const choice=(name,value)=>'<option value="'+value+'"'+(filter===value?' selected':'')+'>'+name+'</option>';
  return '<div class="payout-more-title"><strong>Model comparison · '+models.length+' models</strong>'+
   '<small>'+original.length+' investment options'+(additional.length?' · '+additional.length+' additional risk models':'')+'</small></div>'+
+  '<div class="actions"><button type="button" data-more-test-funded="1" title="Run Funded Compounding using Investment Option 1 as the reference">Test Funded Compounding</button>'+
+  '<small class="hint" data-more-funded-status>'+(additional.length?
+   'Additional models are shown below. Run the test again to replace them with the funded strategy.':
+   'Only the original investment options are listed. Click to add the funded strategy models and exact W/L paths.')+'</small></div>'+
   '<div class="payout-more-sort"><label>Sort by <select data-more-sort="1">'+sortHtml+'</select></label>'+
   '<button type="button" data-more-direction="1">'+(descending?'↓ High to low':'↑ Low to high')+'</button>'+
   '<label>Show <select data-more-source="1">'+choice('All models','all')+
