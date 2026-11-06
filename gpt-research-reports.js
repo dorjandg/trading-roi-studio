@@ -22,19 +22,8 @@ function updateReviewMeta(){
  const pending=localPendingCount();
  reviewMeta.textContent='Last published report: '+(lastPublishedAt?new Date(lastPublishedAt).toLocaleString():'not verified')+
   ' · Pending questions (this browser): '+(pending==null?'unavailable':pending)+
-  ' · Actual GPT task run time is not available to the website';
+  ' · GPT task execution time: not available to the website';
 }
-const manualReviewPrompt='Run my existing enabled Trading Studio GPT Review scheduled task now, once, without changing its daily schedule. Inspect the newest Google Drive Trading Studio Cloud Data simulation history and Results Advisor questions, compare with reports already published in dorjandg/trading-roi-studio/gpt-research-reports.json, investigate new issues, run appropriate tests, and publish evidence-based non-personal findings to Section 11. Preserve private data and do not alter risk strategies without my approval. Report what was verified, updated, and still needs review.';
-function requestReviewNow(){
- // Opens a draft in ChatGPT. The user must submit it; this website cannot call the automation API.
- const url='https://chatgpt.com/?prompt='+encodeURIComponent(manualReviewPrompt);
- const a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener noreferrer';
- a.click();
- const guidance=document.getElementById('gptRequestGuidance');
- if(guidance)guidance.textContent=
-  'Requested ChatGPT in a new tab. Review the prepared request and press Send there. If no tab opens, allow pop-ups, or ask ChatGPT: Run my existing Trading Studio GPT Review now.';
-}
-document.getElementById('gptReviewRequestNow')?.addEventListener('click',requestReviewNow);
 updateReviewMeta();
 const label=(txt)=>{const node=document.createElement('span');node.textContent=txt;return node;};
 function paragraph(parent,text){const p=document.createElement('p');p.textContent=text;parent.appendChild(p);}
