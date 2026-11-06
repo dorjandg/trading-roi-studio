@@ -216,13 +216,14 @@ function start(){
  .reverse-review-panel{border:1px solid var(--line);border-radius:6px;margin:5px 0;padding:3px 7px}
  .reverse-review-panel>summary{font-size:11px;cursor:pointer;padding:4px 0}
  .reverse-funnel-grid{display:grid;gap:5px;margin:8px 0}
- .reverse-funnel-row{display:grid;grid-template-columns:minmax(118px,1.35fr) minmax(80px,2fr) 54px 82px;gap:8px;align-items:center;font-size:11px}
+ .reverse-funnel-row{display:grid;grid-template-columns:minmax(118px,1.35fr) minmax(80px,2fr) 54px 75px 65px;gap:8px;align-items:center;font-size:11px}
  .reverse-funnel-label{line-height:1.3}
  .reverse-funnel-rail{display:block;min-width:0;height:12px;border:1px solid var(--line);border-radius:4px;background:var(--panel2);overflow:hidden}
  .reverse-funnel-fill{display:block;height:100%;border-radius:3px;background:var(--blue);min-width:0}
  .reverse-funnel-number{font-size:11px;text-align:right;font-variant-numeric:tabular-nums}
  .reverse-funnel-step{font-size:10px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
- @media(max-width:650px){.reverse-funnel-row{grid-template-columns:minmax(104px,1.5fr) minmax(58px,1fr) 45px;gap:5px;font-size:10px}.reverse-funnel-step{grid-column:1 / -1;text-align:left;margin-top:-3px;padding-left:1px}.reverse-funnel-number{font-size:10px}}
+ .reverse-funnel-total{font-size:10px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text)}
+ @media(max-width:650px){.reverse-funnel-row{grid-template-columns:minmax(95px,1.4fr) minmax(48px,1fr) 44px 57px;gap:4px;font-size:10px}.reverse-funnel-step{grid-column:1 / 3;text-align:left;margin-top:-2px;padding-left:1px}.reverse-funnel-total{grid-column:4;grid-row:1;font-size:10px}.reverse-funnel-number{font-size:10px}}
  .reverse-review-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:6px 0}
  .reverse-review-grid>div{padding:5px 7px;border:1px solid var(--line);border-radius:5px}
  .reverse-review-grid small{font-size:10px;color:var(--muted);display:block}
