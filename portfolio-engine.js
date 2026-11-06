@@ -770,6 +770,40 @@ function previewLossPath(p,stage,steps=3){
  }
  return arr;
 }
+// Deterministic, single-funded-account WHAT-IF, using actual runAccountDay
+// and the identical risk/loss/payout rules as Monte Carlo. A letter is a
+// requested forced signal outcome, not a guaranteed executed trade.
+function previewFundedPath(p,outcomes){
+ const ac=makeAccount(1);
+ ac.stageIndex=p.stageList.indexOf('funded');
+ if(ac.stageIndex<0)throw Error('Funded stage is unavailable');
+ ac.fundedActivatedDay=1;
+ const rows=[];
+ for(let i=0;i<outcomes.length;i++){
+  const outcome=String(outcomes[i]).toUpperCase();
+  if(outcome!=='W'&&outcome!=='L')continue;
+  const before=ac.stagePnl,priorTradeCount=ac.trades,day=i+1;
+  const phase=p.riskProfiles.funded;
+  const planned=chooseTradeRisk(p,ac,'funded',phase,0);
+  runAccountDay(p,ac,day,()=>outcome==='W'?0:1,
+   {tradesPerDay:1,winRate:.5,tradeSlots:[0]},true);
+  const event=ac.trace.filter(e=>(e.type==='win'||e.type==='loss')&&e.day===day).at(-1);
+  const blocked=ac.trace.filter(e=>e.type==='blocked'&&e.day===day).at(-1);
+  rows.push({
+   day,outcome,executed:ac.trades>priorTradeCount,
+   risk:event?event.risk:planned.risk,
+   rr:event?event.rr:planned.rr,before,after:ac.stagePnl,
+   status:ac.status,blocked:!!blocked,
+   note:event?(event.type==='win'?'Win':'Loss'):
+    blocked?blocked.label:
+    ac.stagePnl>=phase.target-.005?'Funded target reached; trading held':
+    ac.status==='payout-pending'||ac.status==='paid'?'Payout processing':'No trade',
+   milestone:ac.stagePnl>=450-.005?(ac.stagePnl>=7200-.005?'$7200':ac.stagePnl>=1800-.005?'$1800':'$450'):''
+  });
+  if(ac.status==='failed'||ac.status==='exhausted'||ac.status==='invalid')break;
+ }
+ return rows;
+}
 root.StudioPortfolioEngine={buildPlan,validatePlan,resolvePolicy,plannedSlot,
-  runAccountDay,simulatePortfolio,rngFactory,phasesFor,supported,oneTrial,stageFunnel,previewLossPath};
+  runAccountDay,simulatePortfolio,rngFactory,phasesFor,supported,oneTrial,stageFunnel,previewLossPath,previewFundedPath};
 })(typeof window!=='undefined'?window:globalThis);
