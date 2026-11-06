@@ -1062,6 +1062,41 @@ function start(){
    $('payoutResultsAdvisor').scrollIntoView({behavior:'smooth',block:'start'});
    return;
   }
+  const lower=event.target.closest?.('[data-reverse-lower-risk]');
+  if(lower){
+   const index=Number(lower.dataset.reverseLowerRisk),candidate=lastOptimizerOutput?.candidates?.[index];
+   const status=lower.closest('.reverse-candidate-body')?.querySelector('.reverse-review-status');
+   if(!candidate||!lastOptimizerInputs||candidate.plan.id+':'+candidate.plan.size!==lastOptimizerAccountKey){
+    if(status)status.textContent='Model changed. Calculate Investment again before comparing risk.';return;
+   }
+   if(!root.StudioModelDiscovery?.compareLowerRisk){if(status)status.textContent='Lower-risk comparison module unavailable.';return;}
+   if(lower.disabled)return;
+   const originalLabel=lower.textContent;
+   lower.disabled=true;lower.textContent='Comparing risk…';
+   if(status)status.textContent='Running paired scenarios with identical win rate, signal sequence and starting budget…';
+   try{
+    await new Promise(resolve=>requestAnimationFrame(resolve));
+    const effort=$('payoutMoreEffort').value;
+    const trials=effort==='deep'?250:effort==='quick'?80:150;
+    const opts={...lastOptimizerInputs,budget:candidate.initialBudget,
+     netGoal:lastOptimizerOutput.minNetPnl,testTrials:trials};
+    const result=root.StudioModelDiscovery.compareLowerRisk(
+     root.StudioModelDiscovery.clonePlan(candidate.plan),opts);
+    lastModelSearch={candidate,result,origin:'Investment Option '+(index+1)+' · Lower risk'};
+    moreSortKey='blocked';moreDescending=false;moreSourceFilter='all';
+    renderUnifiedTable();
+    const baseline=result.baseline.holdout.avg;
+    const fewer=result.ideas.filter(x=>x.holdout.avg.exhausted<baseline.exhausted-0.01);
+    if(status)status.textContent=result.ideas.length+' lower-risk variants compared. '+
+     fewer.length+' reduce the average blocked-account count; see trade-offs in the table. '+
+     'No Firms settings were changed.';
+    $('payoutOptModelComparison').open=true;
+    $('payoutOptModelComparison').scrollIntoView({behavior:'smooth',block:'start'});
+   }catch(error){
+    if(status)status.textContent='Lower-risk comparison failed: '+(error?.message||'Unknown error');
+   }finally{lower.disabled=false;lower.textContent=originalLabel;}
+   return;
+  }
   const more=event.target.closest?.('[data-reverse-more-models]');
   if(more){
    const index=Number(more.dataset.reverseMoreModels),candidate=lastOptimizerOutput?.candidates?.[index];
