@@ -10,7 +10,7 @@ function start(){
  panel.innerHTML='<summary><strong>3A · Calculate Investment &amp; Compare Models</strong>'+
   '<button class="primary section-run-btn" type="button" id="runPayoutOptimizer">Calculate Investment</button>'+
   '<span class="sim-charts-hint">Show / hide</span></summary>'+
-  '<div class="numbered-content"><p class="hint">Search investment and risk combinations for a payout goal. Open any result to compare its R1/R2/R3 and trade KPIs, or search more risk models using Section 3. These are separate from Run Simulation.</p>'+
+  '<div class="numbered-content"><p class="hint">Search investment and risk combinations for a payout goal. Open any result to compare its R1/R2/R3 and trade KPIs, or search additional risk models in Section 3A without leaving these results. These are separate from Run Simulation.</p>'+
   '<div class="payout-opt-fields">'+
   '<label><span class="payout-opt-field-title">Target net P&L (USD)</span><input id="payoutOptNetPnl" type="number" min="1" step="500" value="5000" title="Net cash receipts minus incurred costs"></label>'+
 
@@ -46,7 +46,7 @@ function start(){
   '<p class="hint">These values apply only to Calculate Investment. The main simulator and saved Firms settings are not changed.</p>'+
   '</details><p class="hint" id="payoutOptMath">10 first payouts required.</p>'+
   '<p id="payoutOptStatus" class="status" role="status">Choose targets, then Calculate Investment.</p>'+
-  '<div id="payoutOptResults"></div></div>';
+  '<div id="payoutOptResults"></div><div id="payoutOptMoreModels"></div></div>';
  document.getElementById('results').before(panel);
  const $=id=>document.getElementById(id);
  const style=document.createElement('style');
@@ -322,6 +322,19 @@ function start(){
  .reverse-model-table details[open]{min-width:180px}
  .reverse-model-phase{font-size:10px;line-height:1.35;white-space:normal;padding:2px 0}
  .reverse-option-actions button[data-reverse-more-models]{font-size:11px}
+
+ #payoutOptMoreModels:not(:empty){margin:13px 0;border-top:2px solid var(--line);padding-top:8px}
+ .payout-more-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+ .payout-more-title strong{font-size:13px}
+ .payout-more-title small{font-size:10px;color:var(--muted);flex:1 1 220px}
+ .payout-more-title button{font-size:11px;min-height:28px;padding:5px 9px}
+ .payout-more-table{width:100%;min-width:1040px;border-collapse:collapse;font-size:10px}
+ .payout-more-table th,.payout-more-table td{padding:6px 7px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap;font-variant-numeric:tabular-nums}
+ .payout-more-table th:first-child{text-align:left;min-width:180px}
+ .payout-more-table thead{background:var(--panel2)}
+ .payout-more-table details>summary{font-size:10px;cursor:pointer;margin:4px 0}
+ .payout-more-phase{white-space:normal;line-height:1.4;font-size:10px;font-weight:400;padding:3px 0}
+ .payout-more-table button{font-size:10px;padding:5px 7px;min-height:27px}
  `;document.head.appendChild(style);
  const key='4ds:v1:'+bridge.user+':payout-optimizer:v1';
  let prior={};try{prior=JSON.parse(localStorage.getItem(key)||'{}')}catch(_){}
@@ -399,7 +412,7 @@ function start(){
  $('payoutOptReset').addEventListener('click',()=>{loadAssumptions(true);storeAssumptions();save()});
  $('payoutOptAccount').addEventListener('change',()=>{loadAssumptions();loadedAssumptionsAccount=acctValue();save()});
  let currentSortMode=['model','net','budgetRoi','feeRoi','chance','payouts','investment','firstDay'].includes(prior.sortMode)?prior.sortMode:'model';
- let lastOptimizerOutput=null,lastOptimizerAccountKey='',lastOptimizerInputs=null;
+ let lastOptimizerOutput=null,lastOptimizerAccountKey='',lastOptimizerInputs=null,lastModelSearch=null;
  document.addEventListener('portfolio-investment-import',event=>{
   const key=event.detail?.accountKey||'';
   if(!key||!bridge.getRows().some(r=>r.id+':'+r.size===key))return;
@@ -407,7 +420,7 @@ function start(){
   if(!Array.from(field.options).some(x=>x.value===key))syncOptions();
   field.value=key;
   loadAssumptions();loadedAssumptionsAccount=acctValue();
-  lastOptimizerOutput=null;lastOptimizerInputs=null;lastOptimizerAccountKey='';
+  lastOptimizerOutput=null;lastOptimizerInputs=null;lastOptimizerAccountKey='';lastModelSearch=null;$('payoutOptMoreModels').innerHTML='';
   $('payoutOptResults').innerHTML='';
   $('payoutOptStatus').textContent='Imported simulator-only model: '+(event.detail?.title||'selected risk setup')+
    '. Review the investment budget and assumptions, then Calculate Investment. No Firms rules changed.';
@@ -420,29 +433,30 @@ function start(){
   const saved=row?bridge.getSavedPlan?.(row):null;
   $('payoutOptResults').innerHTML=solver.render(lastOptimizerOutput,currentSortMode,saved);
  }
- $('payoutOptResults').addEventListener('click',event=>{
+ $('payoutOptResults').addEventListener('click',async event=>{
   const more=event.target.closest?.('[data-reverse-more-models]');
   if(more){
-   const index=Number(more.dataset.reverseMoreModels);
-   const candidate=lastOptimizerOutput?.candidates?.[index];
+   const index=Number(more.dataset.reverseMoreModels),candidate=lastOptimizerOutput?.candidates?.[index];
    const status=more.closest('.reverse-candidate-body')?.querySelector('.reverse-review-status');
    if(!candidate||!lastOptimizerInputs||candidate.plan.id+':'+candidate.plan.size!==lastOptimizerAccountKey){
-    if(status)status.textContent='This option has changed. Recalculate Investment before comparing models.';
-    return;
+    if(status)status.textContent='Scenario has changed. Calculate Investment again before searching.';return;
    }
+   if(!root.StudioModelDiscovery){if(status)status.textContent='Model discovery is unavailable.';return;}
    if(more.disabled)return;
-   const name='Investment Option '+(index+1)+' · '+(candidate.r3Route||candidate.riskMode);
-   const oldLabel=more.textContent;
-   more.disabled=true;more.textContent='Comparing risk models…';
-   if(status)status.textContent='Running an independent risk-model search with this investment amount and the same trading assumptions. Firms settings are unchanged.';
-   Promise.resolve().then(()=>bridge.findInvestmentModels?.(
-    candidate,lastOptimizerOutput,lastOptimizerInputs,name
-   )).then(ok=>{
-    if(!ok&&status)status.textContent='Model comparison was not available for this option.';
-    else if(status)status.textContent='Risk-model comparisons are in Section 3. The original option remains unchanged.';
-   }).catch(error=>{
-    if(status)status.textContent='Could not compare models: '+(error?.message||'Unknown error');
-   }).finally(()=>{more.disabled=false;more.textContent=oldLabel;});
+   more.disabled=true;more.textContent='Searching models…';
+   if(status)status.textContent='Testing new risk models using this investment amount and its trading assumptions.';
+   try{
+    await new Promise(resolve=>requestAnimationFrame(resolve));
+    const opts={...lastOptimizerInputs,budget:candidate.initialBudget,
+     netGoal:lastOptimizerOutput.minNetPnl,objective:'goal',
+     trainTrials:80,testTrials:150,shortlist:10};
+    const result=root.StudioModelDiscovery.search(root.StudioModelDiscovery.clonePlan(candidate.plan),opts);
+    lastModelSearch={candidate,result,origin:'Investment Option '+(index+1)};
+    $('payoutOptMoreModels').innerHTML=solver.renderMoreInvestmentModels(result,lastModelSearch.origin);
+    if(status)status.textContent=result.ideas.length+' additional models compared below in Section 3A.';
+    $('payoutOptMoreModels').scrollIntoView({behavior:'smooth',block:'start'});
+   }catch(error){if(status)status.textContent='Model search failed: '+(error?.message||'Unknown error');}
+   finally{more.disabled=false;more.textContent='Find More Risk Models';}
    return;
   }
   const analyze=event.target.closest?.('[data-reverse-analyze]');
@@ -494,6 +508,23 @@ function start(){
   const ok=bridge.sendOptimizerToFirms?.(candidate.plan,'Reverse payout option '+index,metrics);
   if(status)status.textContent=ok?'Risk settings saved to Firms after confirmation. Open Firms to review or use Restore previous in the Firms transfer notice.':'No changes applied. See the Firms transfer status for details.';
   // Preserve the confirmation message in the expanded option; the saved Firms comparison refreshes on the next render.
+ });
+ $('payoutOptMoreModels').addEventListener('click',async event=>{
+  if(event.target.closest?.('[data-more-close]')){
+   lastModelSearch=null;$('payoutOptMoreModels').innerHTML='';return;
+  }
+  const button=event.target.closest?.('[data-more-analyze]');
+  if(!button||!lastModelSearch)return;
+  const index=Number(button.dataset.moreAnalyze),{result,candidate}=lastModelSearch;
+  const record=index===0?{title:'Original investment baseline',plan:result.baseline.plan,holdout:result.baseline.holdout}:result.ideas[index-1];
+  if(!record||button.disabled)return;
+  button.disabled=true;button.textContent='Analyzing…';
+  try{
+   const model={plan:record.plan,result:record.holdout,initialBudget:candidate.initialBudget};
+   const ok=await bridge.analyzeOptimizerCandidate?.(model,lastOptimizerOutput,lastOptimizerInputs,record.title);
+   if(!ok)throw Error('Detailed report was unavailable');
+  }catch(error){$('payoutOptStatus').textContent='Analyze model: '+(error?.message||'Unknown error');}
+  finally{button.disabled=false;button.textContent='Analyze'}
  });
  $('payoutOptResults').addEventListener('change',event=>{
   if(event.target.id==='payoutResultsSort'){
@@ -552,8 +583,8 @@ function start(){
    status.textContent='Enter valid payout amounts, ROI targets, and nonnegative net P&L in USD.';return;
   }
   busy=true;button.disabled=true;status.textContent='Running reverse payout scenarios…';
-  lastOptimizerOutput=null;lastOptimizerInputs=null;
-  $('payoutOptResults').innerHTML='';save();
+  lastOptimizerOutput=null;lastOptimizerInputs=null;lastModelSearch=null;
+  $('payoutOptResults').innerHTML='';$('payoutOptMoreModels').innerHTML='';save();
   try{
    const output=await solver.optimize({plan:selectedPlan,perPayout,
     maxInvestment,minRoi:minRoiPct/100,minNetRoi:minNetRoiPct/100,minNetPnl,minRR,maxRR,inputs,onProgress:text=>status.textContent=text});
