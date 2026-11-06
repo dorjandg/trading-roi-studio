@@ -61,13 +61,13 @@ function planFor(base,scale,perPayout,rrVariant=null,riskMode='saved',r3Route='l
     stageRisk.r2=Math.max(.01,Math.floor((totalEarlyRisk-stageRisk.r1)*100)/100);
    }
    const afterLossHeadroom=Math.min(
-    Number.isFinite(p.overallLoss)?p.overallLoss-tier1-cost-reserve:Infinity,
+    Number.isFinite(p.overallLoss)?p.overallLoss-stageRisk.r1-cost-reserve:Infinity,
     Number.isFinite(p.dailyLoss)?p.dailyLoss-cost-reserve:Infinity,
     maxRisk);
-   const recovery=Math.ceil((stageRisk.target+tier1+2*cost)/rr2*100)/100;
+   const recovery=Math.ceil((stageRisk.target+stageRisk.r1+2*cost)/rr2*100)/100;
    if(r3Route!=='ladder')stageRisk.r2=Math.max(.01,Math.min(recovery,Math.max(.01,afterLossHeadroom)));
    if(afterLossHeadroom<.01)stageRisk.recoveryInfeasible=true;
-   const desiredR3=Math.ceil((stageRisk.target+tier1+stageRisk.r2+3*cost)/rr3*100)/100;
+   const desiredR3=Math.ceil((stageRisk.target+stageRisk.r1+stageRisk.r2+3*cost)/rr3*100)/100;
    // Alternate R3 routes reserve actual room after TWO consecutive losses.
    // All configured tier sizes remain static; the engine independently blocks
    // every trade if another path leaves less room than this idealized LL path.
@@ -93,7 +93,7 @@ function planFor(base,scale,perPayout,rrVariant=null,riskMode='saved',r3Route='l
    };
    // The intended R2 is selected after a loss; no automatic R2 on a win.
    if(stage!=='p1'||p.id!=='topstep')stageRisk.policy={map:{},conflicts:[],mode:'streak'};
-   stageRisk.targetSizing={cleanWin:tier1*rr1-cost,
+   stageRisk.targetSizing={cleanWin:stageRisk.r1*rr1-cost,
     recoveryWin:stageRisk.r2*rr2-cost,
     recoveryPossible:afterLossHeadroom>=.01&&recovery<=afterLossHeadroom+1e-8};
   }
