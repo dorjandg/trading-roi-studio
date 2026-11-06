@@ -33,6 +33,10 @@ function start(){
   '<label>Purchase mode<select id="payoutOptPurchase"><option value="recycle">Dynamic · as needed</option><option value="upfront">Buy upfront</option></select></label>'+
   '<label>Signal outcomes<select id="payoutOptSignalMode"><option value="independent">Independent</option><option value="shared">Shared daily signal</option></select></label>'+
   '<label>Reinvest payouts<select id="payoutOptReinvest"><option value="no">No</option><option value="yes">Yes</option></select></label>'+
+  '<label>Account allocation<select id="payoutOptCapacity"><option value="automatic">Automatic · reuse owned</option><option value="manual">Manual active limit</option></select></label>'+
+  '<label>Max active accounts<input id="payoutOptMaxActive" type="number" min="1" max="100" step="1" title="Applies only in manual account allocation mode"></label>'+
+  '<label>Max new accounts/day<input id="payoutOptBuys" type="number" min="1" max="20" step="1" title="Applies only in manual account allocation mode"></label>'+
+  '<label>Random seed<input id="payoutOptSeed" type="number" min="1" step="1" title="Repeat the same simulation outcomes when unchanged"></label>'+
   '<label>Phase 1 min days<input id="payoutOptP1Days" type="number" min="0" max="60" step="1"></label>'+
   '<label>Phase 2 min days<input id="payoutOptP2Days" type="number" min="0" max="60" step="1"></label>'+
   '<label>Funded wait (calendar days)<input id="payoutOptWait" type="number" min="0" max="120" step="1"></label>'+
@@ -113,6 +117,7 @@ function start(){
  $('payoutOptSignals').innerHTML=Array.from({length:20},(_,i)=>'<option>'+String(i+1)+'</option>').join('');
  const assumptionIds={days:'payoutOptDays',tradesPerDay:'payoutOptSignals',winRate:'payoutOptWinRate',
   purchaseMode:'payoutOptPurchase',signalMode:'payoutOptSignalMode',reinvestPayouts:'payoutOptReinvest',
+  capacityMode:'payoutOptCapacity',maxActive:'payoutOptMaxActive',maxBuysPerDay:'payoutOptBuys',seed:'payoutOptSeed',
   p1MinDays:'payoutOptP1Days',p2MinDays:'payoutOptP2Days',wait:'payoutOptWait',processing:'payoutOptProcessing'};
  const accountAssumptions=prior.assumptionsByAccount||{};
  function loadAssumptions(reset=false){
@@ -121,6 +126,7 @@ function start(){
   const base=bridge.getInputs(row),p=bridge.getPlan(row);
   const inherited={days:base.days,tradesPerDay:base.tradesPerDay,winRate:base.winRate,
    purchaseMode:base.purchaseMode,signalMode:base.signalMode,reinvestPayouts:base.reinvestPayouts?'yes':'no',
+   capacityMode:base.capacityMode,maxActive:base.maxActive,maxBuysPerDay:base.maxBuysPerDay,seed:base.seed,
    p1MinDays:p.riskProfiles.p1?.minDays??0,p2MinDays:p.riskProfiles.p2?.minDays??0,
    wait:p.payoutWaitCalendarDays??0,processing:p.payoutProcessingCalendarDays??0};
   if(reset)accountAssumptions[key]=inherited;
@@ -203,6 +209,10 @@ function start(){
    inputs.purchaseMode=$('payoutOptPurchase').value;
    inputs.signalMode=$('payoutOptSignalMode').value;
    inputs.reinvestPayouts=$('payoutOptReinvest').value==='yes';
+   inputs.capacityMode=$('payoutOptCapacity').value;
+   inputs.maxActive=readNum('payoutOptMaxActive',1,100);
+   inputs.maxBuysPerDay=readNum('payoutOptBuys',1,20);
+   inputs.seed=readNum('payoutOptSeed',1,2147483647);
    selectedPlan.riskProfiles.p1.minDays=readNum('payoutOptP1Days',0,60);
    if(selectedPlan.riskProfiles.p2)selectedPlan.riskProfiles.p2.minDays=readNum('payoutOptP2Days',0,60);
    if(selectedPlan.id!=='topstep'){
