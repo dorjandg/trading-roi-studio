@@ -79,6 +79,12 @@ Independent 3A assumptions are stored per selected account in the existing per-u
 - Suggestions may involve safer tier sizing, checking signal capacity and account availability, reviewing payouts/costs, or testing a longer horizon. Never shorten mandatory firm delays or claim a causal improvement from a single result.
 - This is distinct from the existing Section 3A Calculate Investment diagnostics. It does not change either calculation engine.
 
+## Simplified Calculate Investment results appearance (Nov 6)
+- The previous heavily shaded 01/02/03 section bars, repeated result-validation explanation, redundant scenario suggestion lines, six closed-card KPI chips and dense borders made the desktop results confusing.
+- The new renderer shows a simple **Simulation result** heading, single result status and main gap, collapsed target/timing explanations; then **Scenarios (N)** with a compact sorter and four headline KPIs (net P&L, budget ROI, investment, goal chance). Extra KPIs, diagnostics, risks, trade paths and fee ROI remain available inside each expanded scenario.
+- Excluded risks/methodology are grouped under a collapsed **References & methodology** details section. Visual CSS scoped to `#payoutOptResults` removes noisy dark header fills and excessive borders while keeping subtle open-state highlighting and light/dark compatibility.
+- No mathematical changes to Monte Carlo, sorting, account allocation, Firms settings or saved history. Basic JS syntax and generated markup details-balance checked; live browser not verified.
+
 ## Mobile Portfolio Sim accordion reset and compact headers (Nov 6)
 - On viewport width <=650px, all **top-level Portfolio Sim sections** (1/2/3/3A/4/5/6/7/8/9) begin collapsed on each page load, even if desktop-local saved `numberedOpen`, `chartsOpen`, `journeyOpen`, or payout optimizer `prior.open` were true. User taps still open/close normally. Existing non-mobile saved state and simulation input settings remain intact.
 - The earlier always-visible `Model assumptions & limits` section is a top-level collapsed details panel now; its original explanatory detail and footer remain inside it.
