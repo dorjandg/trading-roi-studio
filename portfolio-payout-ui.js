@@ -143,13 +143,17 @@ function start(){
    ' signals/day · '+v.winRate+'% WR';
  }
 
+ let loadedAssumptionsAccount='';
  function syncOptions(){
   const list=bridge.getRows(),select=$('payoutOptAccount'),existing=select.value||prior.account||'';
   select.innerHTML=[...new Map(list.map(r=>[r.id+':'+r.size,r])).entries()]
    .map(([id,r])=>'<option value="'+escape(id)+'">'+escape(bridge.label(r))+'</option>').join('');
   if([...select.options].some(o=>o.value===existing))select.value=existing;
-  loadAssumptions();
+  if(loadedAssumptionsAccount!==select.value){
+   loadAssumptions();loadedAssumptionsAccount=select.value;
+  }
  }
+ const acctValue=()=>$('payoutOptAccount').value;
  function save(){
   try{localStorage.setItem(key,JSON.stringify({total:$('payoutOptTotal').value,per:$('payoutOptPer').value,
    max:$('payoutOptMax').value,roi:$('payoutOptRoi').value,netRoi:$('payoutOptNetRoi').value,netPnl:$('payoutOptNetPnl').value,minRR:$('payoutOptMinRR').value,maxRR:$('payoutOptMaxRR').value,
@@ -172,7 +176,7 @@ function start(){
  $('payoutOptAssumptions').addEventListener('toggle',save);
  for(const id of Object.values(assumptionIds))$(id).addEventListener('change',()=>{storeAssumptions();save()});
  $('payoutOptReset').addEventListener('click',()=>{loadAssumptions(true);storeAssumptions();save()});
- $('payoutOptAccount').addEventListener('change',()=>{loadAssumptions();save()});
+ $('payoutOptAccount').addEventListener('change',()=>{loadAssumptions();loadedAssumptionsAccount=acctValue();save()});
  let lastOptimizerOutput=null;
  $('payoutOptResults').addEventListener('change',event=>{
   const select=event.target.closest('select[data-reverse-path]');
