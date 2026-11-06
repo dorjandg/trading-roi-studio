@@ -52,3 +52,7 @@
 .jj-queue-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:8px}
 .jj-question-queue button:focus-visible,.jj-helper-feedback button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 @media(max-width:750px){.jj-queue-actions button,.jj-helper-feedback button{min-height:39px}.jj-queue-list{max-height:360px}}
+
+.jj-helper-share{display:flex;align-items:flex-start;gap:9px;cursor:pointer;font-size:11px;line-height:1.5;color:var(--muted);margin:9px 0 12px}
+.jj-helper-share input{width:17px;height:17px;min-width:17px;accent-color:var(--accent);margin-top:1px}
+.jj-helper-share input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
