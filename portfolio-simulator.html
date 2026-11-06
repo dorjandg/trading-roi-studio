@@ -637,9 +637,9 @@ details p{margin:6px 0}
   <div class="gpt-review-request">
    <label for="gptReviewNote"><strong>Send GPT review request</strong><span class="hint"> · Optional instruction for the next scheduled review</span></label>
    <textarea id="gptReviewNote" rows="2" maxlength="600" placeholder="Check the latest simulations, account risk blocks and unanswered questions…"></textarea>
-   <div class="actions"><button type="button" class="primary" id="gptReviewRequestNow">Send GPT Review Request</button><button type="button" id="gptResearchRefresh">Refresh GPT reports &amp; evidence</button></div>
+   <div class="actions"><button type="button" class="primary" id="gptReviewRequestNow" title="Queue a review request in cloud for the scheduled GPT review">Queue GPT Review</button><button type="button" id="gptReviewLive" title="Open ChatGPT with an immediate review request; press Send there">Live GPT Review</button><button type="button" id="gptResearchRefresh">Refresh GPT reports &amp; evidence</button></div>
    <p class="hint" id="gptReviewRequestStatus" role="status">No request sent in this session.</p>
-   <p class="hint" id="gptRequestGuidance">Saves a review request in your selected workspace cloud profile. The next scheduled GPT review can read it; this does not immediately execute ChatGPT.</p>
+   <p class="hint" id="gptRequestGuidance"><strong>Queue:</strong> stay here and save to cloud for the next scheduled review. <strong>Live:</strong> open ChatGPT with the same instruction; press Send in ChatGPT to request an immediate review. No private simulation records are placed in the ChatGPT URL.</p>
   </div>
   <p class="hint" id="gptReviewMeta">Last published report: checking… · Pending questions: checking…</p>
   <small id="gptResearchStatus" class="hint" role="status">Loading published reports…</small>
