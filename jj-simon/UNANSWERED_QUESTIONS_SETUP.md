@@ -1,3 +1,5 @@
+> **LEGACY / SUPERSEDED — November 2026:** The Academy has moved to the Trading Studio-style **Google Apps Script + private Google Sheet + existing ChatGPT automation** review workflow. Use [GOOGLE_QUESTION_SYNC_SETUP.md](./GOOGLE_QUESTION_SYNC_SETUP.md). The Cloudflare D1/OpenAI API/GitHub scheduled reviewer described below is inactive, and its Actions schedules have been removed.
+
 # JJ Academy unanswered-question review system
 
 This feature has two levels, with different deployment requirements.
