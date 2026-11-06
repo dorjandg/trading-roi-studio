@@ -667,7 +667,7 @@ function render(out,sortMode='model',currentPlan=null){
    ' in successful trials':'Net profit / payout-count goal not reached in validated trials')+
   '<small> · Conditional averages, not guaranteed dates; minimum-day and processing waits included.</small></div></details>'+
   '<div class="reverse-simple-heading">Scenarios <small>('+out.candidates.length+')</small></div>'+
-  portfolioModelComparison(out,selectedSort)+ 
+
 '<div class="reverse-sort-bar"><label for="payoutResultsSort"><strong>Sort scenarios by</strong></label><select id="payoutResultsSort" aria-label="Sort validated scenarios">'+
   Object.entries(payoutSortModes).map(([value,label])=>'<option value="'+value+'"'+(selectedSort===value?' selected':'')+'>'+escapeHtml(label)+'</option>').join('')+
   '</select><small>'+out.checked+' tested · changing sort does not rerun.</small></div>'+
@@ -677,97 +677,110 @@ function render(out,sortMode='model',currentPlan=null){
   '. These results are model assumptions, not permission to exceed a firm loss limit.</p></details>':'')+
   '<details class="reverse-info-section"><summary><strong>How to interpret these estimates</strong> <span>· Monte Carlo methodology and ROI definitions</span></summary><p class="hint">Estimates use 200 independent validation trials per shortlisted scenario after 50-trial searches across risk levels and investment amounts. ROI on incurred fees = expected net cash / expected fees actually incurred. Net ROI on investment = expected net cash / tested starting budget. Both may be negative. Starting budget is cash made available for challenge and activation costs, NOT the total fees actually incurred; any refunded challenge fees are tracked in modeled cash receipts. Payout counts and earnings can differ between trials. Searches are approximate, account purchases are capped at 100 per type, and risk safety depends on modeled firm rules. Scenarios do not change your saved Firms risk settings.</p></details></details>';
 }
-function renderMoreInvestmentModels(search,origin='Selected scenario',sortKey='improvement',descending=true,columnView='trading'){
+function renderUnifiedInvestmentModels(out,more=null,sortKey='net',descending=true,columnView='trading',sourceFilter='all'){
  const fmt=n=>n==null||!Number.isFinite(Number(n))?'—':Number(n).toFixed(2);
- const rate=n=>n==null?'—':(Number(n)*100).toFixed(1)+'%';
+ const rate=n=>n==null||!Number.isFinite(Number(n))?'—':(Number(n)*100).toFixed(1)+'%';
  const usd=n=>n==null||!Number.isFinite(Number(n))?'—':money(Number(n));
- const baseline=search.baseline.holdout;
- const all=[{title:'Selected investment · baseline',plan:search.baseline.plan,holdout:baseline,originalIndex:0},
-  ...search.ideas.map((v,i)=>({...v,originalIndex:i+1}))];
+ const original=(out?.candidates||[]).map((c,i)=>({
+  key:'original:'+i,source:'original',title:'Investment Option '+(i+1)+' · '+(c.r3Route||c.riskMode),
+  reason:'Optimizer-validated investment scenario',plan:c.plan,result:c.result,score:c.score,
+  budget:c.initialBudget,order:i
+ }));
+ const additional=more?.result?.ideas?.map((idea,i)=>({
+  key:'extra:'+i,source:'extra',title:idea.title,
+  reason:idea.reason||'Risk-model variation',plan:idea.plan,result:idea.holdout,
+  score:assess(idea.holdout,out.requiredPayouts,out.minNetPnl,out.perPayout),
+  budget:more.candidate.initialBudget,order:i
+ }))||[];
+ const baselineKey=more?'original:'+out.candidates.indexOf(more.candidate):'original:0';
+ const baseline=original.find(x=>x.key===baselineKey)||original[0];
+ const baselineNet=baseline?.result?.avg?.net??0;
+ const all=[...original,...additional];
  const keys={
-  improvement:r=>r.holdout.avg.net-baseline.avg.net,
-  net:r=>r.holdout.avg.net,roi:r=>r.holdout.roi,
-  goal:r=>r.holdout.chanceGoal??-1,
-  payout:r=>r.holdout.chancePayout,
-  p10:r=>r.holdout.p10,
-  blocked:r=>r.holdout.avg.exhausted,
-  paid:r=>r.holdout.avg.paid,
-  funded:r=>r.holdout.avg.funded,
-  bought:r=>r.holdout.avg.bought,
-  spent:r=>r.holdout.avg.spent,
-  pf:r=>r.holdout.tradeKpis?.pf??-Infinity,
-  wr:r=>r.holdout.tradeKpis?.wr??-Infinity,
-  rr:r=>r.holdout.tradeKpis?.rr??-Infinity,
-  ar:r=>r.holdout.tradeKpis?.ar??-Infinity,
-  aw:r=>r.holdout.tradeKpis?.aw??-Infinity,
-  al:r=>r.holdout.tradeKpis?.al??-Infinity,
-  ev:r=>r.holdout.tradeKpis?.ev??-Infinity,
-  trades:r=>r.holdout.avg.trades,
-  p1r1:r=>Number(r.plan.riskProfiles.p1?.r1)||0,
-  p1r2:r=>Number(r.plan.riskProfiles.p1?.r2)||0,
-  p1r3:r=>Number(r.plan.riskProfiles.p1?.r3)||0
+  net:m=>m.result.avg.net,improvement:m=>m.result.avg.net-baselineNet,
+  roi:m=>m.result.roi,investment:m=>m.budget,goal:m=>m.score.hit,
+  payout:m=>m.result.chancePayout,p10:m=>m.result.p10,
+  blocked:m=>m.result.avg.exhausted,paid:m=>m.result.avg.paid,
+  funded:m=>m.result.avg.funded,bought:m=>m.result.avg.bought,
+  spent:m=>m.result.avg.spent,
+  pf:m=>m.result.tradeKpis?.pf??-Infinity,wr:m=>m.result.tradeKpis?.wr??-Infinity,
+  rr:m=>m.result.tradeKpis?.rr??-Infinity,ar:m=>m.result.tradeKpis?.ar??-Infinity,
+  aw:m=>m.result.tradeKpis?.aw??-Infinity,al:m=>m.result.tradeKpis?.al??-Infinity,
+  ev:m=>m.result.tradeKpis?.ev??-Infinity,trades:m=>m.result.avg.trades,
+  p1r1:m=>Number(m.plan.riskProfiles.p1?.dynamicMaxRisk??m.plan.riskProfiles.p1?.r1)||0,
+  p1r2:m=>Number(m.plan.riskProfiles.p1?.dynamicMaxRisk??m.plan.riskProfiles.p1?.r2)||0,
+  p1r3:m=>Number(m.plan.riskProfiles.p1?.dynamicMaxRisk??m.plan.riskProfiles.p1?.r3)||0
  };
  const options=[
- ['improvement','Net improvement'],['net','Expected net'],['roi','Fee ROI'],
- ['goal','Net target chance'],['payout','First payout chance'],['p10','Downside P10'],
- ['blocked','Risk blocked'],['paid','Payouts'],['funded','Funded'],
- ['bought','Challenges bought'],['spent','Fees spent'],
- ['pf','Profit factor'],['wr','Win rate'],['rr','Planned RR'],
- ['ar','Realized R'],['aw','Average winner'],['al','Average loser'],['ev','Expectancy'],['trades','Trade count'],
-  ['p1r1','Phase 1 · R1 cap / amount'],['p1r2','Phase 1 · R2 cap / amount'],['p1r3','Phase 1 · R3 cap / amount']
+  ['net','Expected net'],['improvement','Net improvement'],['roi','Fee ROI'],
+  ['investment','Starting investment'],['goal','Payout + net goal chance'],
+  ['payout','First payout chance'],['p10','Downside P10'],['blocked','Risk blocked'],
+  ['paid','Paid accounts'],['funded','Funded'],['bought','Challenges bought'],['spent','Fees'],
+  ['pf','Profit factor'],['wr','Win rate'],['rr','Planned RR'],['ar','Realized R'],
+  ['aw','Average win'],['al','Average loss'],['ev','Expectancy'],['trades','Trade count'],
+  ['p1r1','Phase 1 R1'],['p1r2','Phase 1 R2'],['p1r3','Phase 1 R3']
  ];
- const selected=Object.prototype.hasOwnProperty.call(keys,sortKey)?sortKey:'improvement';
- const models=[all[0],...all.slice(1).sort((a,b)=>{
+ const selected=Object.prototype.hasOwnProperty.call(keys,sortKey)?sortKey:'net';
+ const filter=['all','original','extra'].includes(sourceFilter)?sourceFilter:'all';
+ const matched=all.filter(m=>filter==='all'||m.source===filter);
+ const models=matched.sort((a,b)=>{
   const av=keys[selected](a),bv=keys[selected](b);
-  const difference=av===bv?0:av===Infinity?1:bv===Infinity?-1:
+  const delta=av===bv?0:av===Infinity?1:bv===Infinity?-1:
    av===-Infinity?-1:bv===-Infinity?1:av-bv;
-  return (descending?-difference:difference)||a.originalIndex-b.originalIndex;
- })];
- const rows=models.map((m,i)=>{
-  const r=m.holdout,k=r.tradeKpis||{};
-  const riskDetails=m.plan.stageList.map(stage=>{
+  return (descending?-delta:delta)||a.key.localeCompare(b.key);
+ });
+ const rows=models.map(m=>{
+  const r=m.result,k=r.tradeKpis||{},s=m.score;
+  const risks=m.plan.stageList.map(stage=>{
    const p=m.plan.riskProfiles[stage],adaptive=['target-now','repair-r2','buffered-target'].includes(p.policy?.mode);
-   const values=adaptive&&E.previewLossPath?E.previewLossPath(m.plan,stage,3).map(x=>x.allowed?fmt(x.risk):'Blocked'):
+   const preview=adaptive&&E.previewLossPath?E.previewLossPath(m.plan,stage,3):[];
+   const risks=adaptive?preview.map(v=>v.allowed?fmt(v.risk)+' ('+v.slot.toUpperCase()+')':'Blocked'):
     ['r1','r2','r3'].map(t=>fmt(p[t]));
    return '<div class="payout-more-phase"><strong>'+escapeHtml(p.name||stage)+'</strong> · '+
-    escapeHtml(p.policy?.mode||'saved')+' · '+values.join(' / ')+' USD · '+
-    ['r1','r2','r3'].map(t=>fmt(p.rrByTier?.[t]??p.rr)).join(' / ')+'R'+
-    ' · target '+usd(p.target)+' · max wins/day '+Number(p.maxWinsPerDay||1)+'</div>';
+    escapeHtml(p.policy?.mode||'saved')+' · '+risks.join(' / ')+' USD · '+
+    ['r1','r2','r3'].map(t=>fmt(p.rrByTier?.[t]??p.rr)).join(' / ')+'R · target '+
+    usd(p.target)+' · max wins/day '+Number(p.maxWinsPerDay||1)+'</div>';
   }).join('');
-  const delta=r.avg.net-baseline.avg.net;
-  const compare=m.originalIndex===0?'Baseline':(delta>=0?'+':'')+usd(delta);
+  const change=r.avg.net-baselineNet;
+  const delta=m.key===baseline?.key?'Reference':(change>=0?'+':'')+usd(change);
+  const sourceName=m.source==='original'?'Investment':'More models';
   return '<tr><th scope="row"><b>'+escapeHtml(m.title)+'</b>'+
-   '<small class="payout-more-model-reason">'+escapeHtml(m.reason||'Original selected investment strategy')+'</small>'+
-   '<details><summary>R1/R2/R3 · phase settings</summary>'+riskDetails+'</details></th>'+
-   '<td>'+usd(r.avg.net)+'</td><td>'+rate(r.roi)+'</td><td>'+rate(r.chanceGoal)+'</td>'+
-   '<td>'+compare+'</td><td class="payout-col-accounts">'+usd(r.p10)+'</td><td class="payout-col-accounts">'+rate(r.chancePayout)+'</td>'+
+   '<small class="payout-more-model-reason">'+sourceName+' · '+escapeHtml(m.reason)+'</small>'+
+   '<details><summary>R1/R2/R3 · phase settings</summary>'+risks+'</details></th>'+
+   '<td>'+usd(r.avg.net)+'</td><td>'+rate(r.roi)+'</td><td>'+rate(s.hit)+'</td>'+
+   '<td>'+usd(m.budget)+'</td><td>'+delta+'</td>'+
+   '<td class="payout-col-accounts">'+usd(r.p10)+'</td><td class="payout-col-accounts">'+rate(r.chancePayout)+'</td>'+
    '<td class="payout-col-accounts">'+fmt(r.avg.exhausted)+'</td><td class="payout-col-accounts">'+fmt(r.avg.paid)+'</td>'+
    '<td class="payout-col-accounts">'+fmt(r.avg.funded)+'</td><td class="payout-col-accounts">'+fmt(r.avg.bought)+'</td><td class="payout-col-accounts">'+usd(r.avg.spent)+'</td>'+
-   '<td class="payout-col-trading">'+fmt(k.pf)+'</td><td class="payout-col-trading">'+rate(k.wr)+'</td><td class="payout-col-trading">'+fmt(k.rr)+'</td>'+
-   '<td class="payout-col-trading">'+fmt(k.ar)+'</td><td class="payout-col-trading">'+usd(k.aw)+'</td><td class="payout-col-trading">'+usd(k.al)+'</td>'+
+   '<td class="payout-col-trading">'+fmt(k.pf)+'</td><td class="payout-col-trading">'+rate(k.wr)+'</td>'+
+   '<td class="payout-col-trading">'+fmt(k.rr)+'</td><td class="payout-col-trading">'+fmt(k.ar)+'</td>'+
+   '<td class="payout-col-trading">'+usd(k.aw)+'</td><td class="payout-col-trading">'+usd(k.al)+'</td>'+
    '<td class="payout-col-trading">'+usd(k.ev)+'</td><td class="payout-col-trading">'+fmt(r.avg.trades)+'</td>'+
-   '<td><button type="button" data-more-analyze="'+m.originalIndex+'">Analyze</button></td></tr>';
+   '<td><button type="button" data-more-analyze="'+m.key+'">Analyze</button></td></tr>';
  }).join('');
- const optionHtml=options.map(([key,title])=>'<option value="'+key+'"'+(selected===key?' selected':'')+'>'+title+'</option>').join('');
- return '<div class="payout-more-title"><strong>More trading models · '+models.length+' compared</strong>'+
-  '<small>Based on '+escapeHtml(origin)+' · '+search.evaluated+' risk configurations tested</small>'+
-  '<button type="button" data-more-close="1">Close</button></div>'+
-  '<div class="payout-more-sort"><label>Sort by <select data-more-sort="1">'+optionHtml+'</select></label>'+
+ const sortHtml=options.map(([key,label])=>'<option value="'+key+'"'+(selected===key?' selected':'')+'>'+label+'</option>').join('');
+ const choice=(name,value)=>'<option value="'+value+'"'+(filter===value?' selected':'')+'>'+name+'</option>';
+ return '<div class="payout-more-title"><strong>Model comparison · '+models.length+' models</strong>'+
+  '<small>'+original.length+' investment options'+(additional.length?' · '+additional.length+' additional risk models':'')+'</small></div>'+
+  '<div class="payout-more-sort"><label>Sort by <select data-more-sort="1">'+sortHtml+'</select></label>'+
   '<button type="button" data-more-direction="1">'+(descending?'↓ High to low':'↑ Low to high')+'</button>'+
+  '<label>Show <select data-more-source="1">'+choice('All models','all')+
+   choice('Investment options','original')+choice('Additional models','extra')+'</select></label>'+
   '<label>Columns <select data-more-columns="1">'+
-  [['trading','Trading KPIs'],['accounts','Accounts & downside'],['all','All metrics']].map(([key,label])=>
-   '<option value="'+key+'"'+(columnView===key?' selected':'')+'>'+label+'</option>').join('')+'</select></label>'+
-  '<span class="hint">Original investment stays first · sorting does not recalculate</span></div>'+
-  '<p class="hint">Separate '+search.trainTrials+'-trial discovery and '+search.testTrials+
-  '-trial validation at the selected investment budget. Baseline is the original setup; the other models vary trading risk, not account fees or purchase budget. Open R1/R2/R3 for phase settings or Analyze for Sections 4–7.</p>'+
+  [['trading','Trading KPIs'],['accounts','Accounts & downside'],['all','All metrics']].map(([k,label])=>
+   '<option value="'+k+'"'+(columnView===k?' selected':'')+'>'+label+'</option>').join('')+'</select></label></div>'+
+  (additional.length?'<p class="hint">Investment options use the optimizer validation; additional risk models use '+
+   more.result.testTrials+' separate validation trials at the chosen option’s fixed budget. Comparisons across these runs are approximate, not paired trials. Δ Net uses '+escapeHtml(baseline?.title||'the first option')+
+   ' as reference; goals require BOTH first-payout count and net P&L. Sorting does not rerun simulations.</p>':
+   '<p class="hint">These are the validated Calculate Investment options. Expand an option and select Find More Risk Models to add alternatives to this same table.</p>')+
   '<div class="tablewrap"><table class="payout-more-table" data-view="'+(columnView==='accounts'?'accounts':columnView==='all'?'all':'trading')+'"><thead><tr>'+
-  '<th>Model</th><th>Net</th><th>ROI</th><th>Goal</th><th>Δ Net</th>'+
-  '<th class="payout-col-accounts" title="10th percentile net cash outcome">P10</th><th class="payout-col-accounts" title="Chance of at least one first payout">CP</th>'+
-  '<th class="payout-col-accounts" title="Average risk-blocked accounts, not breached accounts">BA</th><th class="payout-col-accounts">Paid</th><th class="payout-col-accounts">Funded</th><th class="payout-col-accounts">Bought</th><th class="payout-col-accounts">Fees</th>'+
+  '<th>Model</th><th>Net</th><th>ROI</th><th>Goal</th><th>Investment</th><th>Δ Net</th>'+
+  '<th class="payout-col-accounts">P10</th><th class="payout-col-accounts">CP</th>'+
+  '<th class="payout-col-accounts">BA</th><th class="payout-col-accounts">Paid</th><th class="payout-col-accounts">Funded</th><th class="payout-col-accounts">Bought</th><th class="payout-col-accounts">Fees</th>'+
   '<th class="payout-col-trading">PF</th><th class="payout-col-trading">WR</th><th class="payout-col-trading">RR</th><th class="payout-col-trading">AR</th><th class="payout-col-trading">AW</th><th class="payout-col-trading">AL</th><th class="payout-col-trading">EV</th><th class="payout-col-trading">Trades</th><th>View</th>'+
   '</tr></thead><tbody>'+rows+'</tbody></table></div>'+
-  '<details class="payout-more-help"><summary>KPI key</summary><p class="hint">P10 = 10th percentile modeled net cash · CP = chance of first payout · BA = mean risk-blocked accounts (not breaches) · Paid, Funded and Bought = average distinct account counts · Fees = incurred fees. PF = profit factor; WR = win rate; RR = planned reward/risk; AR = realized R; AW/AL = average win/loss; EV = modeled expectancy per trade. All numbers are simulated, not historical performance.</p></details>';
+  '<details class="payout-more-help"><summary>KPI key</summary><p class="hint">Goal = probability of meeting payout count AND net-profit target; P10 = lower 10th percentile of net outcomes; CP = chance of at least one payout; BA = risk-blocked accounts, not breaches. PF = profit factor, WR = win rate, RR = planned reward/risk, AR = realized R, AW/AL = average win/loss, EV = expected trade P&L. Simulated outcomes are not guarantees.</p></details>';
 }
 
-root.StudioPayoutOptimizer={needed,profitNeeded,planFor,assess,optimize,render,renderAccountPath,sampleAccounts,diagnoseScenario,renderMoreInvestmentModels};
+root.StudioPayoutOptimizer={needed,profitNeeded,planFor,assess,optimize,render,renderAccountPath,sampleAccounts,diagnoseScenario,renderUnifiedInvestmentModels};
 })(typeof window!=='undefined'?window:globalThis);
