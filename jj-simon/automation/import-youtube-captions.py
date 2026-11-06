@@ -103,7 +103,7 @@ def extract_captions(video, tmpdir):
         "--sub-langs", "en,en-US,en-GB,en.*",
         "--sub-format", "vtt", "--convert-subs", "vtt",
         "--output", template, "--retries", "2", "--socket-timeout", "15",
-        "--print", "%(id)s\t%(title)s",
+        "--no-simulate", "--print", "%(id)s\t%(title)s",
         "https://www.youtube.com/watch?v=" + vid,
     ]
     try:
