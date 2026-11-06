@@ -392,7 +392,7 @@ function sortedPayoutCandidates(out,sortMode='model'){
   return delta||a.originalIndex-b.originalIndex;
  });
 }
-function render(out,sortMode='model'){
+function render(out,sortMode='model',currentPlan=null){
  const selectedSort=Object.prototype.hasOwnProperty.call(payoutSortModes,sortMode)?sortMode:'model';
  const cards=sortedPayoutCandidates(out,selectedSort).map(({candidate,originalIndex},index)=>{
  const pathIndex=originalIndex;
@@ -401,6 +401,34 @@ function render(out,sortMode='model'){
    const c=p.riskProfiles[stage];
    return '<tr><td>'+c.name+'</td><td>'+money(c.target)+'</td><td>'+money(c.r1)+'</td><td>'+money(c.r2)+'</td><td>'+money(c.r3)+'</td><td>'+['r1','r2','r3'].map(t=>Number(c.rrByTier?.[t]??c.rr).toFixed(2)+'R').join(' / ')+'</td></tr>';
   }).join('');
+  const policyLabels={saved:'Saved options',streak:'After-loss tiers',flat:'Flat R1', 'after-win':'Increase after win','protect-after-loss':'Protect after loss'};
+  const limitInfo=p.stageList.map(stage=>{
+   const x=p.riskProfiles[stage]||{},baseline=currentPlan?.riskProfiles?.[stage]||{};
+   const mode=x.policy?.mode||'saved',old=baseline.policy?.mode||'saved';
+   const rr=t=>Number(x.rrByTier?.[t]??x.rr);
+   const oldRr=t=>Number(baseline.rrByTier?.[t]??baseline.rr);
+   const changed=['r1','r2','r3'].filter(t=>Math.abs(Number(x[t])-Number(baseline[t]))>.005||Math.abs(rr(t)-oldRr(t))>.00001);
+   const changedOther=Number(x.maxWinsPerDay)!==Number(baseline.maxWinsPerDay)||mode!==old;
+   const difference=!currentPlan?'—':(changed.length||changedOther?'Changed':'Same');
+   return '<tr><td>'+escapeHtml(x.name||stage)+'</td>'+
+    '<td>'+escapeHtml(policyLabels[mode]||mode)+'</td>'+
+    '<td>'+Number(x.maxWinsPerDay||1)+'</td>'+
+    '<td>'+Number(x.minDays||0)+'</td>'+
+    '<td>'+money(x.r1)+' / '+money(x.r2)+' / '+money(x.r3)+'</td>'+
+    '<td>'+['r1','r2','r3'].map(t=>rr(t).toFixed(2)+'R').join(' / ')+'</td>'+
+    '<td>'+difference+'</td></tr>';
+  }).join('');
+  const sim=out.inputs||{};
+  const checks=currentPlan?'<p class="hint">Compared with current saved Firms account profile. “Changed” refers to phase risks, tier RR, policy or winning-day cap, not firm-required limits.</p>':'';
+  const setupMarkup='<details class="reverse-review-panel"><summary><strong>Trading rules &amp; risks</strong> · phase-by-phase setup</summary>'+
+   '<div class="tablewrap"><table class="journey-table"><thead><tr><th>Phase</th><th>Risk sequence</th><th>Max wins/day</th><th>Min trading days</th><th>R1 / R2 / R3</th><th>RR per tier</th><th>vs Firms</th></tr></thead><tbody>'+limitInfo+'</tbody></table></div>'+checks+
+   '<p class="hint">Risk amounts are USD per trade; RR is the simulated reward/risk ratio. Actual account margin and trade execution are not verified.</p></details>'+
+   '<details class="reverse-review-panel"><summary><strong>Account &amp; simulation assumptions</strong> · budget, frequency and payout rules</summary>'+
+   '<div class="reverse-review-grid">'+
+   [['Starting budget',money(candidate.initialBudget)],['Challenge fee',money(p.fee)],['Safety reserve',money(p.riskReserve)],['Daily / overall loss',money(p.dailyLoss)+' / '+money(p.overallLoss)],['Trading days',sim.days??'—'],['Signals per day',sim.tradesPerDay??'—'],['Assumed win rate',sim.winRate==null?'—':Number(sim.winRate).toFixed(1)+'%'],['Signal outcomes',sim.signalMode||'—'],['Buying mode',sim.purchaseMode||'—'],['Allocation',sim.capacityMode||'—'],['Payout per account',money(out.perPayout)],['Funded wait / processing',Number(p.payoutWaitCalendarDays||0)+' / '+Number(p.payoutProcessingCalendarDays||0)+' calendar days']].map(([name,value])=>'<div><small>'+escapeHtml(name)+'</small><strong>'+escapeHtml(value)+'</strong></div>').join('')+
+   '</div><p class="hint">Search assumptions and investment budget are not Firms account defaults. Firm fees, drawdown limits and mandatory qualification requirements stay protected.</p></details>'+
+   '<div class="reverse-review-actions"><button type="button" data-reverse-send-firms="'+pathIndex+'">Send this risk setup to Firms</button>'+
+   '<span class="hint">Optional · confirmation required · previous Firms settings backed up. The saved account is not changed by simply opening this option.</span></div>';
   const goalMet=s.avgNet+1e-8>=out.minNetPnl&&s.avgPaid+1e-8>=out.requiredPayouts&&
    s.roi+1e-8>=out.minRoi&&s.budgetRoi+1e-8>=out.minNetRoi;
   const summaryMetric=(label,value,extra='')=>'<span class="reverse-compact-metric '+extra+'"><small>'+
@@ -422,6 +450,7 @@ function render(out,sortMode='model'){
    '<span class="reverse-summary-toggle">Details</span>'+
    '<span class="reverse-candidate-advice">Suggestion: '+escapeHtml(advice.headline)+'</span></summary>'+
    '<div class="reverse-candidate-body">'+
+   setupMarkup+
    '<div class="reverse-advice"><strong>Why this scenario struggles · what to test</strong>'+
    advice.items.map(d=>'<div class="reverse-advice-item"><strong>'+escapeHtml(d.name)+'</strong>'+
     '<span>'+escapeHtml(d.evidence)+'</span><em>'+escapeHtml(d.test)+'</em></div>').join('')+
