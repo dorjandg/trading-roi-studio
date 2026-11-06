@@ -10,23 +10,20 @@ function start(){
  panel.innerHTML='<summary><strong>3A · Reverse Engineer Payouts</strong>'+
   '<button class="primary section-run-btn" type="button" id="runPayoutOptimizer">Calculate Investment</button>'+
   '<span class="sim-charts-hint">Show / hide</span></summary>'+
-  '<div class="numbered-content"><p class="hint">Choose your total payout goal, per-account payout, fee-based ROI, net ROI on starting investment, and optional net P&L in USD. The optimizer tests starting investment and phase risks; payout-goal probability is reported as an outcome.</p>'+
+  '<div class="numbered-content"><p class="hint">Enter your net profit target after fees, payout per account, and maximum investment. ROI filters are optional.</p>'+
   '<div class="payout-opt-fields">'+
-  '<label><span class="payout-opt-field-title">Total payout cash ($)</span><input id="payoutOptTotal" type="number" min="1" step="500" value="10000"></label>'+
+
   '<label><span class="payout-opt-field-title">Minimum payout per account ($)</span><input id="payoutOptPer" type="number" min="1" step="100" value="1000"></label>'+
   '<label><span class="payout-opt-field-title">Account type</span><select id="payoutOptAccount"></select></label>'+
   '<label><span class="payout-opt-field-title">Maximum starting investment ($)</span><input id="payoutOptMax" type="number" min="1" step="500" value="10000"></label>'+
   '<label><span class="payout-opt-field-title">Minimum ROI on fees (%)</span><input id="payoutOptRoi" type="number" min="0" max="10000" step="25" value="200" title="Expected net cash divided by fees incurred"></label>'+ 
   '<label><span class="payout-opt-field-title">Minimum net ROI (%)</span><input id="payoutOptNetRoi" type="number" min="0" max="10000" step="25" value="100" title="Expected net cash after fees divided by starting investment"></label>'+ 
-  '<label><span class="payout-opt-field-title">Target net P&L (USD)</span><input id="payoutOptNetPnl" type="number" min="0" step="500" value="0" title="Minimum expected total payout receipts minus incurred challenge and activation costs. Zero disables this additional constraint."></label>'+
-  '</div><details class="payout-rr-filters"><summary>RR guidance · min / max <span class="hint">(applies to R1, R2 and R3)</span></summary>'+
-  '<div class="payout-rr-controls">'+
-  '<label>Min RR <input id="payoutOptMinRR" type="number" min="0.1" max="20" step="0.25" value="1.5"></label>'+
-  '<label>Max RR <input id="payoutOptMaxRR" type="number" min="0.1" max="20" step="0.25" value="3"></label>'+
-  '<span class="hint">Example: R1 at 1.5R, R2 after a loss at 3R. No optimized trade exceeds your max RR.</span>'+
-  '</div></details>'+
+  '<label><span class="payout-opt-field-title">Target net P&L (USD)</span><input id="payoutOptNetPnl" type="number" min="1" step="500" value="5000" title="Net cash receipts minus incurred costs"></label>'+
+  '</div>'+ 
   '<details class="payout-assumptions" id="payoutOptAssumptions"><summary>Simulation assumptions <span class="hint" id="payoutOptAssumptionsSummary">· click to edit</span></summary>'+
   '<div class="payout-assumptions-grid">'+
+  '<label>Min RR<input id="payoutOptMinRR" type="number" min="0.1" max="20" step="0.25" value="1.5"></label>'+
+  '<label>Max RR<input id="payoutOptMaxRR" type="number" min="0.1" max="20" step="0.25" value="3"></label>'+
   '<label>Trading days<select id="payoutOptDays"><option>10</option><option>20</option><option>30</option><option>40</option><option>60</option><option>90</option><option>120</option></select></label>'+
   '<label>Signals / day<select id="payoutOptSignals"></select></label>'+
   '<label>Win rate (%)<input id="payoutOptWinRate" type="number" min="0" max="100" step="0.5"></label>'+
@@ -54,17 +51,11 @@ function start(){
  #payoutOptimizerPanel>.numbered-content{padding:8px 5px}
  #payoutOptimizerPanel>summary .section-run-btn{height:34px;min-height:34px;flex:0 0 170px;width:170px;padding:5px 8px;font-size:12px}
  #payoutOptimizerPanel>summary .sim-charts-hint{margin-left:0}
- .payout-opt-fields{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));align-items:end;gap:5px;margin:5px 0}
+ .payout-opt-fields{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));align-items:end;gap:5px;margin:5px 0}
  .payout-opt-fields label{display:flex;flex-direction:column;gap:3px;min-width:0;margin:0;font-size:10px;line-height:1.15;font-weight:700;color:var(--muted)}
  .payout-opt-field-title{display:flex;align-items:end;height:26px;min-height:26px;max-height:26px;overflow:hidden}
  .payout-opt-fields input,.payout-opt-fields select{box-sizing:border-box;display:block;margin:0;width:100%;height:31px;min-height:31px;max-height:31px;padding:4px 7px;border-radius:7px;font-size:12px;line-height:1.2}
  .payout-opt-fields select{padding-right:19px;text-overflow:ellipsis;white-space:nowrap}
- .payout-rr-filters{margin:5px 0;border:1px solid var(--line);border-radius:6px;padding:3px 7px}
- .payout-rr-filters>summary{cursor:pointer;font-weight:700;font-size:11px}
- .payout-rr-controls{display:flex;align-items:end;gap:8px;flex-wrap:wrap;margin:4px 0}
- .payout-rr-controls label{display:flex;flex-direction:column;gap:2px;font-size:10px}
- .payout-rr-controls input{width:85px;height:29px;min-height:29px;padding:3px 6px;font-size:12px}
- .payout-rr-controls .hint{flex:1;min-width:160px}
  .payout-assumptions{margin:5px 0;border:1px solid var(--line);border-radius:6px;padding:3px 7px}
  .payout-assumptions>summary{cursor:pointer;font-weight:700;font-size:11px}
  .payout-assumptions>summary .hint{font-weight:400;font-size:10px}
@@ -110,7 +101,7 @@ function start(){
  `;document.head.appendChild(style);
  const key='4ds:v1:'+bridge.user+':payout-optimizer:v1';
  let prior={};try{prior=JSON.parse(localStorage.getItem(key)||'{}')}catch(_){}
- for(const [name,id] of [['total','payoutOptTotal'],['per','payoutOptPer'],['max','payoutOptMax'],['roi','payoutOptRoi'],['netRoi','payoutOptNetRoi'],['netPnl','payoutOptNetPnl'],['minRR','payoutOptMinRR'],['maxRR','payoutOptMaxRR']])
+ for(const [name,id] of [['per','payoutOptPer'],['max','payoutOptMax'],['roi','payoutOptRoi'],['netRoi','payoutOptNetRoi'],['netPnl','payoutOptNetPnl'],['minRR','payoutOptMinRR'],['maxRR','payoutOptMaxRR']])
   if(prior[name]!=null)$(id).value=String(prior[name]);
  panel.open=prior.open===true;
 
@@ -161,21 +152,20 @@ function start(){
  }
  const acctValue=()=>$('payoutOptAccount').value;
  function save(){
-  try{localStorage.setItem(key,JSON.stringify({total:$('payoutOptTotal').value,per:$('payoutOptPer').value,
+  try{localStorage.setItem(key,JSON.stringify({per:$('payoutOptPer').value,
    max:$('payoutOptMax').value,roi:$('payoutOptRoi').value,netRoi:$('payoutOptNetRoi').value,netPnl:$('payoutOptNetPnl').value,minRR:$('payoutOptMinRR').value,maxRR:$('payoutOptMaxRR').value,
    assumptionsByAccount:accountAssumptions,assumptionsOpen:$('payoutOptAssumptions').open,
    account:$('payoutOptAccount').value,open:panel.open}))}catch(_){}
  }
  function math(){
-  const a=Number($('payoutOptTotal').value),b=Number($('payoutOptPer').value);
+  const a=Number($('payoutOptNetPnl').value),b=Number($('payoutOptPer').value);
   $('payoutOptMath').textContent=a>0&&b>0?
-   '$'+a.toLocaleString('en-US')+' ÷ $'+b.toLocaleString('en-US')+' = '+Math.ceil(a/b)+
-   ' separate first payouts required. The account funded profit target is adjusted for the firm payout split.':
+   'At least '+Math.ceil(a/b)+' payouts at $'+b.toLocaleString('en-US')+' each before fees. Additional payouts may be required to net $'+a.toLocaleString('en-US')+'.':
    'Enter positive payout amounts.';
  }
  $('payoutOptAssumptions').open=prior.assumptionsOpen===true;
  syncOptions();math();
- for(const id of ['payoutOptTotal','payoutOptPer','payoutOptMax','payoutOptRoi','payoutOptNetRoi','payoutOptNetPnl','payoutOptMinRR','payoutOptMaxRR','payoutOptAccount']){
+ for(const id of ['payoutOptPer','payoutOptMax','payoutOptRoi','payoutOptNetRoi','payoutOptNetPnl','payoutOptMinRR','payoutOptMaxRR','payoutOptAccount']){
   $(id).addEventListener('change',()=>{math();save()});
  }
  panel.addEventListener('toggle',save);
@@ -226,19 +216,19 @@ function start(){
    inputs.payoutWaitCalendarDays=selectedPlan.payoutWaitCalendarDays;
    inputs.payoutProcessingCalendarDays=selectedPlan.payoutProcessingCalendarDays;
   }catch(e){$('payoutOptStatus').textContent=e.message;return;}
-  const total=Number($('payoutOptTotal').value),perPayout=Number($('payoutOptPer').value),
+  const perPayout=Number($('payoutOptPer').value),
    maxInvestment=Number($('payoutOptMax').value),minRoiPct=Number($('payoutOptRoi').value),
    minNetRoiPct=Number($('payoutOptNetRoi').value),minNetPnl=Number($('payoutOptNetPnl').value),
    minRR=Number($('payoutOptMinRR').value),maxRR=Number($('payoutOptMaxRR').value);
-  if(![total,perPayout,maxInvestment,minRoiPct,minNetRoiPct,minNetPnl,minRR,maxRR].every(Number.isFinite)||total<=0||
-   perPayout<=0||maxInvestment<=0||minRoiPct<0||minRoiPct>10000||minNetRoiPct<0||minNetRoiPct>10000||minNetPnl<0||minRR<.1||maxRR>20||minRR>maxRR){
+  if(![perPayout,maxInvestment,minRoiPct,minNetRoiPct,minNetPnl,minRR,maxRR].every(Number.isFinite)||
+   perPayout<=0||maxInvestment<=0||minNetPnl<=0||minRoiPct<0||minRoiPct>10000||minNetRoiPct<0||minNetRoiPct>10000||minNetPnl<0||minRR<.1||maxRR>20||minRR>maxRR){
    status.textContent='Enter valid payout amounts, ROI targets, and nonnegative net P&L in USD.';return;
   }
   busy=true;button.disabled=true;status.textContent='Running reverse payout scenarios…';
   lastOptimizerOutput=null;
   $('payoutOptResults').innerHTML='';save();
   try{
-   const output=await solver.optimize({plan:selectedPlan,total,perPayout,
+   const output=await solver.optimize({plan:selectedPlan,perPayout,
     maxInvestment,minRoi:minRoiPct/100,minNetRoi:minNetRoiPct/100,minNetPnl,minRR,maxRR,inputs,onProgress:text=>status.textContent=text});
    lastOptimizerOutput=output;
    $('payoutOptResults').innerHTML=solver.render(output);
