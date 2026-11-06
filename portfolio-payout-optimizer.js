@@ -589,9 +589,10 @@ function render(out,sortMode='model',currentPlan=null){
    '<span class="reverse-summary-toggle">Details</span>'+
    '</summary>'+
    '<div class="reverse-candidate-body">'+
-   '<div class="reverse-option-actions"><button type="button" class="primary" data-reverse-analyze="'+pathIndex+'">Run Full Simulation · Sections 4–7</button>'+
+   '<div class="reverse-option-actions"><button type="button" class="primary" data-reverse-analyze="'+pathIndex+'">Run Full Simulation · Sections 5–8</button>'+
    '<button type="button" data-reverse-more-models="'+pathIndex+'">Find More Risk Models</button>'+
-   '<small>Recalculate with Section 2 Monte Carlo trial count and this option’s exact R1/R2/R3 setup, then view results, charts, account journey and trade history below.</small></div>'+
+   '<button type="button" data-reverse-ledger="'+pathIndex+'">View Daily Spending Ledger · Section 9</button>'+
+   '<small>Use this option’s exact R1/R2/R3 policy to simulate detailed results and daily spending. Both reports keep Firms defaults unchanged.</small></div>'+
    '<div class="reverse-detail-label">SCENARIO DETAILS · EXPAND A TOPIC</div>'+setupMarkup+r3Markup+
    '<details class="reverse-diagnostic"><summary><strong>5 · Diagnostics &amp; suggestions</strong><small> · Why this scenario struggles</small></summary><div class="reverse-advice"><strong>Why this scenario struggles · what to test</strong>'+
    advice.items.map(d=>'<div class="reverse-advice-item"><strong>'+escapeHtml(d.name)+'</strong>'+
