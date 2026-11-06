@@ -505,6 +505,10 @@ details p{margin:6px 0}
 .simulation-history-pages .history-page-range{margin-right:auto;font-variant-numeric:tabular-nums}
 @media(max-width:600px){.simulation-history-pages{gap:5px;justify-content:flex-start}.simulation-history-pages select{min-height:34px;font-size:16px}.simulation-history-pages button{min-height:34px}.simulation-history-pages .history-page-range{margin-right:0;width:100%}}
 
+.sim-workflow-links{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:8px 0;padding:5px 0;border-bottom:1px solid var(--line)}
+.sim-workflow-links span{font-size:11px;font-weight:700;color:var(--muted);margin-right:4px}
+.sim-workflow-links button{font-size:11px;min-height:28px;padding:4px 9px;border-radius:5px}
+@media(max-width:650px){.sim-workflow-links button{flex:1 1 145px}.sim-workflow-links span{flex:1 1 100%}}
 /* Section 6: independent collapsible table headers. */
 #journeyContents .journey-data-panel{margin:7px 0;border:1px solid var(--line);border-radius:7px;overflow:hidden}
 #journeyContents .journey-data-panel>summary{display:flex;align-items:center;gap:7px;flex-wrap:wrap;cursor:pointer;padding:9px 11px;font-size:12px;line-height:1.35;background:var(--panel2)}
@@ -561,7 +565,13 @@ details p{margin:6px 0}
  <div class="actions"><button id="addAccount" type="button">+ Add account to comparison</button><button id="reload" type="button">Reload saved stage settings</button><span id="profileStatus" class="hint"></span></div>
  <div class="actions"><span id="status" class="status" role="status">Loading account catalog…</span></div>
 </div></details>
-<details class="sim-charts-panel numbered-panel" id="discovery"><summary><strong>3 · Find Better Models</strong><button type="button" class="primary section-run-btn" id="discover" title="Search for better models using your current settings">Find Better Models</button><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content">
+<div id="simWorkflow" class="sim-workflow-links">
+ <span>Choose a workflow</span>
+ <button type="button" data-workflow-go="section2Panel">Run Simulation</button>
+ <button type="button" data-workflow-go="discovery">Find Better Models</button>
+ <button type="button" data-workflow-go="payoutOptimizerPanel">Calculate Investment &amp; compare models</button>
+</div>
+<details class="sim-charts-panel numbered-panel" id="discovery"><summary><strong>3 · Find Better Models · Run Simulation</strong><button type="button" class="primary section-run-btn" id="discover" title="Search for better models using your current settings">Find Better Models</button><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content">
  <p class="hint">Automatically compare risk-sized models and trade-order rules using the same account, budget, win rate and RR. Candidates are shortlisted on one simulated random sample and retested using different random outcomes under the same assumptions. This is <b>not historical validation</b> or evidence of a new trading edge.</p>
  <div class="fields">
   <div class="field"><label for="ideaAccount">Prop-firm account to optimize</label><select id="ideaAccount"></select></div>
@@ -1529,6 +1539,7 @@ function discoveryKpis(h){
   '<span class="discovery-kpi" title="'+esc(label+' '+value+' · '+help)+'"><b>'+label+'</b><span>'+esc(value)+'</span></span>').join('')+'</div>';
 }
 function renderDiscovery(result,row,budget){
+ const fromInvestment=discovered?.source==='investment';
  const baseline=result.baseline.holdout,objectiveLabel={
   balanced:'Balanced net and downside',net:'Expected net profit',
   payout:'Chance of first payout',downside:'Downside P10',goal:'Chance of net target'
@@ -1549,7 +1560,7 @@ function renderDiscovery(result,row,budget){
     '<td>'+usd(h.p10)+'</td>'+
     '<td>'+pct(h.chancePayout)+'</td>'+
     '<td>'+dec(h.avg.exhausted)+'</td>'+
-    '<td>'+(i<0?'Current':'<div class="discovery-row-actions"><button type="button" data-discovery-apply="'+i+'">Test</button>'+
+    '<td>'+(i<0?'Current':fromInvestment?'<span class="hint">Comparison only</span>':'<div class="discovery-row-actions"><button type="button" data-discovery-apply="'+i+'">Test</button>'+
     '<button type="button" data-discovery-send="'+i+'" title="Copy this model into the matching Firms account after confirmation">Send to Firms</button></div>')+'</td></tr>';
  };
  const best=result.ideas.filter(c=>c.improvement>0).sort((a,b)=>b.improvement-a.improvement)[0];
@@ -1579,7 +1590,9 @@ function renderDiscovery(result,row,budget){
   ' compared with your starting plan. Downside P10 moved '+showDifference(best.delta.p10)+'.':
   'No candidate in the shortlisted group beat your current plan on the selected validation score. Keeping the original settings is reasonable.';
  $('ideaResults').innerHTML=
-  '<div class="discovery-card"><h3>Model search · '+esc(catalog.programs[row.id].firm+' · '+catalog.programs[row.id].name)+' '+usd(row.size)+'</h3>'+
+  '<div class="discovery-card"><h3>'+(fromInvestment?'Investment model improvements':'Model search')+' · '+esc(catalog.programs[row.id].firm+' · '+catalog.programs[row.id].name)+' '+usd(row.size)+'</h3>'+
+  (fromInvestment?'<p class="hint"><strong>Source:</strong> '+esc(discovered.originLabel||'Calculate Investment option')+
+  '. Independent risk-only comparison at the selected budget and assumptions. Regular simulation settings and Firms are unchanged.</p>':'')+
   '<p class="discovery-summary">Budget '+usd(budget)+' · '+result.evaluated+' different candidate plans · ranked on '+
   result.trainTrials+' discovery trials · verified on '+result.testTrials+
   ' separate simulated trials · objective: '+esc(objectiveLabel)+'.</p>'+
@@ -1597,7 +1610,7 @@ function renderDiscovery(result,row,budget){
   '<thead><tr><th>'+sorter('name','MOD')+'</th><th>'+sorter('net','NET')+'</th><th>'+sorter('roi','ROI')+'</th><th>'+sorter('delta','DLT')+'</th><th>'+sorter('p10','P10')+'</th>'+
   '<th>'+sorter('payout','CP')+'</th><th>'+sorter('blocked','BA')+'</th><th>GO</th></tr></thead><tbody>'+
   entry(result.baseline,-1)+sorted.map(x=>entry(x.idea,x.index)).join('')+'</tbody></table></div></details>'+
-  '<p class="discovery-note">Test changes only Portfolio Sim. Send to Firms explicitly replaces R1/R2/R3, RR, sequence, win caps and reserve for this account (after confirmation), with a backup for restoration. Candidates are synthetic simulations, not evidence of a trading edge or verified firm eligibility.</p>'+
+  '<p class="discovery-note">'+(fromInvestment?'Investment model comparisons are read-only. Return to Calculate Investment to run a full scenario. No Firms settings changed.':'Test changes only Portfolio Sim. Send to Firms requires confirmation and preserves a backup.')+' Candidates are simulated, not evidence of a trading edge or verified firm eligibility.</p>'+
   '</div>';
 }
 function currentDiscoveryInputs(row){
@@ -1845,6 +1858,11 @@ function run(){
   }finally{$('run').disabled=false}
  });
 }
+$('simWorkflow').addEventListener('click',event=>{
+ const btn=event.target.closest?.('[data-workflow-go]');if(!btn)return;
+ const panel=$(btn.dataset.workflowGo);
+ if(panel){panel.open=true;panel.scrollIntoView({behavior:'smooth',block:'start'});}
+});
 $('reportSourceBar').addEventListener('click',event=>{
  const jump=event.target.closest?.('[data-report-jump]');
  if(jump){
@@ -1878,6 +1896,32 @@ async function init(){
 }
 window.StudioPayoutBridge={
  user,
+ findInvestmentModels:async(candidate,optimizer,sourceInputs,label)=>{
+  if(!modelDiscovery||!candidate?.plan||!sourceInputs)return false;
+  const plan=modelDiscovery.clonePlan(candidate.plan);
+  const rowIndex=rows.findIndex(r=>r.id===plan.id&&Number(r.size)===Number(plan.size));
+  if(rowIndex<0)throw Error('Selected firm account no longer appears in Section 2.');
+  const v=E.validatePlan(plan);
+  if(v.errors.length)throw Error(v.errors.join(' · '));
+  const budget=Number(candidate.initialBudget);
+  if(!(budget>0))throw Error('The selected option has no valid starting budget.');
+  const inputs={...sourceInputs,budget,netGoal:Number(optimizer?.minNetPnl)||0,
+   objective:'goal',trainTrials:50,testTrials:80,shortlist:6};
+  $('discovery').open=true;
+  $('ideaStatus').textContent='Comparing risk models for '+(label||'selected investment')+'…';
+  $('ideaStatus').style.color='var(--muted)';
+  await new Promise(resolve=>requestAnimationFrame(resolve));
+  const outcome=modelDiscovery.search(plan,inputs);
+  const row=rows[rowIndex];
+  discovered={result:outcome,row:{...row},rowIndex,budget,sortKey:'delta',
+   sortDirection:'desc',source:'investment',originLabel:label||'Investment option'};
+  renderDiscovery(outcome,row,budget);
+  $('ideaStatus').textContent='Compared '+outcome.evaluated+' risk models · '+outcome.ideas.length+' independently validated alternatives';
+  $('ideaStatus').style.color='var(--green)';
+  $('discovery').scrollIntoView({behavior:'smooth',block:'start'});
+  return true;
+ },
+
  analyzeOptimizerCandidate:async(candidate,optimizer,sourceInputs,label)=>{
   // Re-run the selected *optimized plan* with the same full phase/account
   // simulation engine and Monte Carlo depth as Section 2. Do not replace
