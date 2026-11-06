@@ -596,7 +596,7 @@ details p{margin:6px 0}
 </div></details>
 </div>
 <script src="portfolio-engine.js?v=20261106-dynamic-risk-v2"></script>
-<script src="portfolio-payout-optimizer.js?v=20261106-clean-results-v11"></script>
+<script src="portfolio-payout-optimizer.js?v=20261106-scenario-analysis-v12"></script>
 <script src="portfolio-discovery.js?v=20261105-account-rotation"></script>
 <script src="portfolio-to-firms.js"></script>
 <script src="studio-report-source.js?v=20261105-account-rotation"></script>
@@ -1117,7 +1117,11 @@ function makeResultCard(result,index,isInvestmentReport=false){
 
 function renderJourney(){
  if(!journey||!lastResults.length||!lastInputs)return;
- $('journeyContents').innerHTML=journey.render({results:lastResults,inputs:{...lastInputs,allocationLimits},...journeyState});
+ const reportLimits=reportMode==='investment'&&lastResults[0]?
+  {[lastResults[0].plan.id+':'+lastResults[0].plan.size]:{
+   evaluation:lastResults[0].config?.evaluationAllocationCap||0,
+   funded:lastResults[0].config?.fundedAllocationCap||0}}:allocationLimits;
+ $('journeyContents').innerHTML=journey.render({results:lastResults,inputs:{...lastInputs,allocationLimits:reportLimits},...journeyState});
  if(reportMode==='investment'){
   for(const field of $('journeyContents').querySelectorAll('[data-journey-field="evaluationLimit"],[data-journey-field="fundedLimit"]')){
    field.disabled=true;
@@ -1902,5 +1906,5 @@ window.StudioPayoutBridge={
 init();
 })();
 </script>
-<script src="portfolio-payout-ui.js?v=20261106-clean-results-v11"></script>
+<script src="portfolio-payout-ui.js?v=20261106-scenario-analysis-v12"></script>
 <script src="studio-header.js"></script></body></html>
