@@ -148,7 +148,7 @@ function validatePlan(p){
  return {errors,warnings};
 }
 // Optional state-aware recovery policies. Original saved risk policies stay unchanged.
-const adaptiveModes=new Set(['target-now','repair-r2','buffered-target','eval-recovery-burn','funded-profit-ladder']);
+const adaptiveModes=new Set(['target-now','repair-r2','buffered-target','eval-recovery-burn','funded-profit-ladder','funded-staged-recovery']);
 function chooseTradeRisk(p,ac,stage,c,dayProfit=0){
  const mode=c.policy?.mode||'saved';
  const forceTopstepR3=p.id==='topstep'&&stage==='funded'&&ac.fundedTargetDay!==null&&ac.funded150Days<5;
@@ -173,6 +173,19 @@ function chooseTradeRisk(p,ac,stage,c,dayProfit=0){
    ac.stagePnl< -0.05?Math.ceil((-ac.stagePnl+cost)/rr*100)/100:starter;
   const risk=Math.max(0,Math.floor(Math.min(room,targetRisk)*100)/100);
   return {slot:ac.stagePnl>0?'r2':ac.stagePnl<0?'r3':'r1',risk,rr};
+ }
+ if(mode==='funded-staged-recovery'&&stage==='funded'&&!forceTopstepR3){
+  const cost=pos(p.tradeCost),reserve=Math.max(.01,pos(p.riskReserve));
+  const room=Math.max(0,Math.min(ac.stagePnl-floorFor(p,ac),p.dailyLoss-dayProfit)-cost-reserve);
+  const match=ac.history.match(/L+$/),streak=match?match[0].length:0;
+  const levels=c.fundedRecoveryLevels||[150,200,250,200];
+  // Fixed third risk is a deliberate cap, not an exact target-recovery size.
+  // After a win below target, size the next risk for the remaining gap.
+  const desired=streak?levels[Math.min(streak,levels.length-1)]:
+   ac.stagePnl< c.target-.005&&ac.history.includes('W')?
+   Math.ceil((c.target-ac.stagePnl+cost)/rr*100)/100:levels[0];
+  const risk=Math.max(0,Math.floor(Math.min(room,Math.max(0,desired))*100)/100);
+  return {slot:streak===0?'r1':streak===1?'r2':'r3',risk,rr};
  }
  if(!adaptiveModes.has(mode)||topstepCombine||forceTopstepR3)return {slot,risk:pos(c[slot]),rr};
  const cost=pos(p.tradeCost),reserve=Math.max(.01,pos(p.riskReserve));
