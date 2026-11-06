@@ -10,18 +10,21 @@ function start(){
  panel.innerHTML='<summary><strong>3A · Reverse Engineer Payouts</strong>'+
   '<button class="primary section-run-btn" type="button" id="runPayoutOptimizer">Calculate Investment</button>'+
   '<span class="sim-charts-hint">Show / hide</span></summary>'+
-  '<div class="numbered-content"><p class="hint">Enter your net profit target after fees, payout per account, and maximum investment. ROI filters are optional.</p>'+
+  '<div class="numbered-content"><p class="hint">Set target net P&L after fees, payout per account, and the investment limit. Edit RR and optional ROI filters under Simulation Assumptions.</p>'+
   '<div class="payout-opt-fields">'+
+  '<label><span class="payout-opt-field-title">Target net P&L (USD)</span><input id="payoutOptNetPnl" type="number" min="1" step="500" value="5000" title="Net cash receipts minus incurred costs"></label>'+
 
   '<label><span class="payout-opt-field-title">Minimum payout per account ($)</span><input id="payoutOptPer" type="number" min="1" step="100" value="1000"></label>'+
   '<label><span class="payout-opt-field-title">Account type</span><select id="payoutOptAccount"></select></label>'+
   '<label><span class="payout-opt-field-title">Maximum starting investment ($)</span><input id="payoutOptMax" type="number" min="1" step="500" value="10000"></label>'+
-  '<label><span class="payout-opt-field-title">Minimum ROI on fees (%)</span><input id="payoutOptRoi" type="number" min="0" max="10000" step="25" value="200" title="Expected net cash divided by fees incurred"></label>'+ 
-  '<label><span class="payout-opt-field-title">Minimum net ROI (%)</span><input id="payoutOptNetRoi" type="number" min="0" max="10000" step="25" value="100" title="Expected net cash after fees divided by starting investment"></label>'+ 
-  '<label><span class="payout-opt-field-title">Target net P&L (USD)</span><input id="payoutOptNetPnl" type="number" min="1" step="500" value="5000" title="Net cash receipts minus incurred costs"></label>'+
+
+
+
   '</div>'+ 
   '<details class="payout-assumptions" id="payoutOptAssumptions"><summary>Simulation assumptions <span class="hint" id="payoutOptAssumptionsSummary">· click to edit</span></summary>'+
   '<div class="payout-assumptions-grid">'+
+  '<label>Min fee ROI (%)<input id="payoutOptRoi" type="number" min="0" max="10000" step="25" value="0"></label>'+
+  '<label>Min budget ROI (%)<input id="payoutOptNetRoi" type="number" min="0" max="10000" step="25" value="0"></label>'+
   '<label>Min RR<input id="payoutOptMinRR" type="number" min="0.1" max="20" step="0.25" value="1.5"></label>'+
   '<label>Max RR<input id="payoutOptMaxRR" type="number" min="0.1" max="20" step="0.25" value="3"></label>'+
   '<label>Trading days<select id="payoutOptDays"><option>10</option><option>20</option><option>30</option><option>40</option><option>60</option><option>90</option><option>120</option></select></label>'+
@@ -51,7 +54,7 @@ function start(){
  #payoutOptimizerPanel>.numbered-content{padding:8px 5px}
  #payoutOptimizerPanel>summary .section-run-btn{height:34px;min-height:34px;flex:0 0 170px;width:170px;padding:5px 8px;font-size:12px}
  #payoutOptimizerPanel>summary .sim-charts-hint{margin-left:0}
- .payout-opt-fields{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));align-items:end;gap:5px;margin:5px 0}
+ .payout-opt-fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:end;gap:5px;margin:5px 0}
  .payout-opt-fields label{display:flex;flex-direction:column;gap:3px;min-width:0;margin:0;font-size:10px;line-height:1.15;font-weight:700;color:var(--muted)}
  .payout-opt-field-title{display:flex;align-items:end;height:26px;min-height:26px;max-height:26px;overflow:hidden}
  .payout-opt-fields input,.payout-opt-fields select{box-sizing:border-box;display:block;margin:0;width:100%;height:31px;min-height:31px;max-height:31px;padding:4px 7px;border-radius:7px;font-size:12px;line-height:1.2}
