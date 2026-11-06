@@ -216,7 +216,9 @@ async function optimize({plan,perPayout,maxInvestment,minRoi=2,minNetRoi=0,minNe
   fastestGoal:candidates.filter(c=>c.score.goalPayoutDay!=null).slice().sort((a,b)=>
    a.score.goalPayoutDay-b.score.goalPayoutDay||
    b.score.hit-a.score.hit)[0]||null,
-  candidates:candidates.slice(0,5),firm:plan.firm,size:plan.size};
+  candidates:candidates.slice(0,5),firm:plan.firm,size:plan.size,
+  inputs:{days:inputs.days,tradesPerDay:inputs.tradesPerDay,winRate:inputs.winRate,
+   purchaseMode:inputs.purchaseMode,capacityMode:inputs.capacityMode}};
 }
 function gaps(out,score){
  const issues=[];
@@ -290,9 +292,79 @@ function renderAccountPath(candidate,accountId){
   '<tbody>'+rows+'</tbody></table></div>'+
   '<p class="hint">Next trade risk depends on the active phase risk-sequence policy and remaining drawdown. A win adds risk × selected tier RR minus modeled trade cost; a loss subtracts risk plus cost. Passing also requires the phase profit target and any minimum trading days.</p>';
 }
+function diagnoseScenario(candidate,out){
+ const s=candidate.score,p=candidate.plan,settings=out.inputs||{};
+ const n=out.requiredPayouts,details=[],horizon=Number(settings.days)||0;
+ const add=(name,evidence,test)=>details.push({name,evidence,test});
+ const timeline=earliestPayoutTimeline(p);
+ if(horizon&&timeline.earliestDay>horizon){
+  add('Trading period cannot contain a first payout',
+   'Earliest theoretical payout day '+timeline.earliestDay+'; selected horizon '+horizon+' trading days, including modeled phase minimums and payout waits.',
+   'Test a longer trading horizon. Firm minimum days and eligibility waits are constraints, not values to shorten just to improve a result.');
+ }else if(s.avgPaid<.01&&s.avgFundedTargets>=.1){
+  add('Funded targets are reached but payments are not arriving',
+   s.avgFundedTargets.toFixed(2)+' average funded targets; '+s.avgRequests.toFixed(2)+' payout requests; '+s.avgPaid.toFixed(2)+' paid withdrawals.',
+   'Compare a longer horizon and inspect funded waiting/processing rules. Do not change actual firm eligibility requirements.');
+ }else if(s.avgPaid<.01&&s.avgFunded>=.1){
+  add('Accounts reach funded but do not complete a payout',
+   s.avgFunded.toFixed(2)+' average funded accounts; '+s.avgFundedTargets.toFixed(2)+' funded targets reached.',
+   'Inspect the funded payout profit target, available signals and time remaining. Test more trading days using the same realistic win rate.');
+ }else if(s.avgPaid<.01){
+  add('No first payouts completed in the validation trials',
+   s.avgPurchased.toFixed(2)+' accounts bought; '+s.avgFunded.toFixed(2)+' reached funded.',
+   'Check whether the horizon allows enough phase progress and payment time before optimizing ROI.');
+ }
+ if(s.avgRiskBlocked>=.5&&s.avgPurchased>0&&s.avgRiskBlocked/s.avgPurchased>=.15){
+  add('Risk tiers block a material share of purchased accounts',
+   s.avgRiskBlocked.toFixed(2)+' risk-blocked of '+s.avgPurchased.toFixed(2)+' purchased on average; '+s.avgBreached.toFixed(2)+' actually breached.',
+   'Compare lower R1/R2/R3 sizing or a different risk-tier sequence. Do not treat risk-blocked accounts as rule breaches.');
+ }
+ if(s.avgPaid+.01<n&&s.avgFunded>=n&&s.avgFundedTargets<s.avgFunded*.75){
+  add('Funded conversion is slower than funding new accounts',
+   s.avgFunded.toFixed(2)+' funded, '+s.avgFundedTargets.toFixed(2)+' hit their funded target, '+s.avgPaid.toFixed(2)+' were paid, averaged across trials.',
+   'Test enough funded-stage opportunities and review realistic payout profit targets; buying extra accounts alone will not solve the conversion delay.');
+ }
+ if(s.avgPaid+.01<n&&Number(settings.tradesPerDay)<=2&&horizon>0){
+  add('Limited portfolio trade signals',
+   settings.tradesPerDay+' signal(s) per day shared by the entire portfolio; at least '+n+' distinct first payouts are needed before fees.',
+   'Compare 3 or 5 signals/day only if your real strategy actually produces that many valid entries.');
+ }
+ if(s.avgPaid>0&&s.avgNet+1e-8<out.minNetPnl){
+  add('Net profit remains below the requested target',
+   'Expected net '+money(s.avgNet)+' versus '+money(out.minNetPnl)+
+   '; expected payout receipts '+money(s.avgReceipts)+' minus costs '+money(s.avgSpent)+'.',
+   'Compare budget and risk candidates by net profit and payout success, not by ROI percentage alone. Keep costs and payout waiting realistic.');
+ }
+ if(s.avgPaid+.01<n&&s.avgNet>=out.minNetPnl){
+  add('Net profit passes but the minimum payout count does not',
+   'Average '+s.avgPaid.toFixed(2)+' first payouts versus minimum '+n+'.',
+   'Inspect the per-account payout target and the number of distinct successful accounts; the simulator models only one first payout per account.');
+ }
+ if(s.avgPaid+.01<n&&s.avgPurchased<n){
+  add('Too few accounts purchased for the payout count',
+   s.avgPurchased.toFixed(2)+' purchased on average, fewer than the minimum '+n+' distinct first payouts.',
+   'Review the available budget, purchase mode, account capacity, and daily signals. More purchases help only if those accounts can reach payouts.');
+ }
+ if(s.roi+1e-8<out.minRoi||s.budgetRoi+1e-8<out.minNetRoi){
+  add('Optional ROI filter is not met',
+   'Fee ROI '+pct(s.roi)+' (minimum '+pct(out.minRoi)+'); budget ROI '+pct(s.budgetRoi)+' (minimum '+pct(out.minNetRoi)+').',
+   'Compare actual net dollars and payout probability first. Adjust an ROI constraint only if it is truly optional for your plan.');
+ }
+ if(s.hit===0&&s.avgPaid>0){
+  add('No validation trial achieved the complete goal',
+   '0 of 200 validation trials met both the payout-count and net-profit goals. Average first payouts: '+s.avgPaid.toFixed(2)+'.',
+   'Try a more realistic time horizon or review the required profit relative to available capital. Do not interpret 0% as mathematical impossibility.');
+ }
+ if(!details.length){
+  add('Review variability before choosing this result',
+   'Modeled payout-goal chance '+pct(s.hit)+', mean net '+money(s.avgNet)+', and average '+s.avgPaid.toFixed(2)+' first payouts.',
+   'Compare different seeds and the other validated scenarios. Validate assumed win rate and RR using your own trading history.');
+ }
+ return {headline:details[0].name,items:details.slice(0,4)};
+}
 function render(out){
  const cards=out.candidates.map((candidate,index)=>{
-  const s=candidate.score,p=candidate.plan;
+  const s=candidate.score,p=candidate.plan,advice=diagnoseScenario(candidate,out);
   const risks=p.stageList.map(stage=>{
    const c=p.riskProfiles[stage];
    return '<tr><td>'+c.name+'</td><td>'+money(c.target)+'</td><td>'+money(c.r1)+'</td><td>'+money(c.r2)+'</td><td>'+money(c.r3)+'</td><td>'+['r1','r2','r3'].map(t=>Number(c.rrByTier?.[t]??c.rr).toFixed(2)+'R').join(' / ')+'</td></tr>';
@@ -315,8 +387,13 @@ function render(out){
    summaryMetric('Investment',money(candidate.initialBudget))+
    summaryMetric('Payouts',s.avgPaid.toFixed(2))+
    summaryMetric('Goal chance',pct(s.hit))+'</span>'+
-   '<span class="reverse-summary-toggle">Details</span></summary>'+
+   '<span class="reverse-summary-toggle">Details</span>'+
+   '<span class="reverse-candidate-advice">Suggestion: '+escapeHtml(advice.headline)+'</span></summary>'+
    '<div class="reverse-candidate-body">'+
+   '<div class="reverse-advice"><strong>Why this scenario struggles · what to test</strong>'+
+   advice.items.map(d=>'<div class="reverse-advice-item"><strong>'+escapeHtml(d.name)+'</strong>'+
+    '<span>'+escapeHtml(d.evidence)+'</span><em>'+escapeHtml(d.test)+'</em></div>').join('')+
+   '<small>Suggestions are diagnostic hypotheses based on this simulated result, not proof that changing a setting will improve real trading. Recalculate after each change.</small></div>'+ 
    '<p class="hint" style="margin:4px 0 6px"><strong>Target checks:</strong> '+
    (gaps(out,s).length?gaps(out,s).join(' · '):'All expected targets met')+'</p>'+
    '<div class="reverse-kpis"><div><small>First payout day (paid trials)</small><strong>'+ (s.firstPayoutDay==null?'Not reached':'Day '+s.firstPayoutDay.toFixed(1))+'</strong></div>'+
@@ -364,5 +441,5 @@ function render(out){
   '<small> · Conditional averages, not guaranteed dates; minimum-day and processing waits included.</small></div>'+
   cards+'<p class="hint">Estimates use 200 independent validation trials per shortlisted scenario after 50-trial searches across risk levels and investment amounts. ROI on incurred fees = expected net cash / expected fees actually incurred. Net ROI on investment = expected net cash / tested starting budget. Both may be negative. Starting budget is cash made available for challenge and activation costs, NOT the total fees actually incurred; any refunded challenge fees are tracked in modeled cash receipts. Payout counts and earnings can differ between trials. Searches are approximate, account purchases are capped at 100 per type, and risk safety depends on modeled firm rules. Scenarios do not change your saved Firms risk settings.</p>';
 }
-root.StudioPayoutOptimizer={needed,profitNeeded,planFor,assess,optimize,render,renderAccountPath,sampleAccounts};
+root.StudioPayoutOptimizer={needed,profitNeeded,planFor,assess,optimize,render,renderAccountPath,sampleAccounts,diagnoseScenario};
 })(typeof window!=='undefined'?window:globalThis);
