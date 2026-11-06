@@ -169,8 +169,8 @@ function chooseTradeRisk(p,ac,stage,c,dayProfit=0){
   const cost=pos(p.tradeCost),reserve=Math.max(.01,pos(p.riskReserve));
   const room=Math.max(0,Math.min(ac.stagePnl-floorFor(p,ac),p.dailyLoss-dayProfit)-cost-reserve);
   const starter=pos(c.fundedStarterRisk??c.r1);
-  const targetRisk=ac.stagePnl>0?Math.max(0,ac.stagePnl-cost):
-   ac.stagePnl<0?Math.ceil((-ac.stagePnl+cost)/rr*100)/100:starter;
+  const targetRisk=ac.stagePnl>0.05?Math.max(0,ac.stagePnl-cost):
+   ac.stagePnl< -0.05?Math.ceil((-ac.stagePnl+cost)/rr*100)/100:starter;
   const risk=Math.max(0,Math.floor(Math.min(room,targetRisk)*100)/100);
   return {slot:ac.stagePnl>0?'r2':ac.stagePnl<0?'r3':'r1',risk,rr};
  }
