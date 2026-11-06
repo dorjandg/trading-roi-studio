@@ -35,3 +35,20 @@ export JJ_TRANSCRIPTS_DRIVE_FOLDER_ID='...'
 python jj-simon/automation/import-youtube-captions.py --dry-run
 python jj-simon/automation/import-youtube-captions.py --video-id UVKVSWKFlvo --limit 1
 ```
+
+
+## 2026-11-07 — Fully automatic hosted transcript option (preferred)
+The GitHub runner and the owner's Windows connection both returned YouTube sign-in/rate-limit failures with yt-dlp. Do not retry large yt-dlp batches on GitHub. The GitHub Actions workflow now requires a hosted-caption provider key for any non-dry-run import.
+
+Provider: [Supadata](https://supadata.ai/youtube-transcript-api).
+- Sign up for a provider account and create an API key.
+- In GitHub Actions repository secrets, set `JJ_SUPADATA_API_KEY` to that API key **without sharing it in chat or committing it to Git**.
+- No further download, browser-cookie, Python, or manual copying is required on the user's computer.
+- The workflow checks the *live JJ Simon Google Sheet*, reads up to 10 new videos per run, requests native caption transcripts from the provider, saves timestamped cues to the private Drive folder, and skips duplicates.
+- Provider is configured using `mode=native` to avoid the higher-cost AI transcription fallback. If no native captions are available via provider, the item remains unprocessed and requires alternative access or an explicitly approved paid transcription mode.
+- Provider API success is not guaranteed; first run one video and verify file saved privately.
+- The daily schedule remains off until GitHub Actions variable `JJ_YOUTUBE_INGEST_ENABLED=true` is set.
+- The schedule file lives on `main`, while its checkout ref is the maintained `jj-simon-knowledge-hub` branch. Preserve this arrangement until the Academy is merged.
+- Research/publishing is a **separate step**: saved private captions are not automatically promoted to the public Academy or represented as verified trading rules. A research connector must read the Drive files and produce reviewed citations.
+
+Data-protection note: a hosted provider processes the public YouTube video URLs and transcriptions; it is not used for private course files. Check provider privacy and current costs before activating.
