@@ -147,6 +147,30 @@ function validatePlan(p){
  }
  return {errors,warnings};
 }
+// Optional state-aware recovery policies. Original saved risk policies stay unchanged.
+const adaptiveModes=new Set(['target-now','repair-r2','buffered-target']);
+function chooseTradeRisk(p,ac,stage,c,dayProfit=0){
+ const mode=c.policy?.mode||'saved';
+ const forceTopstepR3=p.id==='topstep'&&stage==='funded'&&ac.fundedTargetDay!==null&&ac.funded150Days<5;
+ const topstepCombine=p.id==='topstep'&&stage==='p1';
+ let slot=topstepCombine?'r1':forceTopstepR3?'r3':plannedSlot(ac.history,c.policy);
+ if(mode==='repair-r2'&&!topstepCombine&&!forceTopstepR3)slot=ac.repairSlot||'r1';
+ if((mode==='target-now'||mode==='buffered-target')&&!topstepCombine&&!forceTopstepR3)slot='r1';
+ const rr=Number(c.rrByTier?.[slot]??c.rr);
+ if(!adaptiveModes.has(mode)||topstepCombine||forceTopstepR3)return {slot,risk:pos(c[slot]),rr};
+ const cost=pos(p.tradeCost),reserve=Math.max(.01,pos(p.riskReserve));
+ const floor=floorFor(p,ac);
+ const available=Math.max(0,Math.min(
+  ac.stagePnl-floor-cost-reserve,
+  p.dailyLoss-dayProfit-cost-reserve));
+ let desired=Math.max(0,c.target-ac.stagePnl);
+ if(mode==='repair-r2'&&slot==='r3')desired=Math.max(0,(ac.repairAnchor??ac.stagePnl)-ac.stagePnl);
+ const needed=Math.ceil((desired+cost)/rr*100)/100;
+ const fraction=mode==='buffered-target'?.7:1;
+ const cap=pos(c.dynamicMaxRisk??c[slot]);
+ const risk=Math.max(0,Math.floor(Math.min(needed,cap,available*fraction)*100)/100);
+ return {slot,risk,rr};
+}
 function makeAccount(i){return {
  id:i,stageIndex:0,stageDay:0,activeDays:0,adminDays:0,totalAdminDays:0,
  stagePnl:0,history:'',dailyProfit:0,dayProfits:[],peakEod:0,bestDay:0,
@@ -154,10 +178,11 @@ function makeAccount(i){return {
  purchaseDay:0,fundedActivatedDay:null,fundedFirstTradeDay:null,fundedTargetDay:null,payoutRequestedDay:null,paidDay:null,closedDay:null,
  grossProfit:0,grossLoss:0,winPnl:0,lossPnl:0,riskTotal:0,plannedReward:0,tradePnl:0,
  passes:[],totalR:0,realizedDD:0,peakPnl:0,blocked:0,
+ repairSlot:'r1',repairAnchor:0,
  fundedDays:0,fundedPositiveDays:0,funded150Days:0,trace:[]
 };}
 function newStage(ac){ac.stageDay=0;ac.activeDays=0;ac.adminDays=0;ac.stagePnl=0;ac.history='';
- ac.dayProfits=[];ac.peakEod=0;ac.bestDay=0;ac.peakPnl=0;ac.realizedDD=0;}
+ ac.dayProfits=[];ac.peakEod=0;ac.bestDay=0;ac.peakPnl=0;ac.realizedDD=0;ac.repairSlot='r1';ac.repairAnchor=0;}
 function stageName(p,ac){return p.stageList[ac.stageIndex]||'paid'}
 function isEvaluation(stage){return stage==='p1'||stage==='p2'}
 function floorFor(p,ac){
@@ -250,10 +275,7 @@ function runAccountDay(p,ac,day,rand,config,record){
    ac.fundedTargetDay!==null&&ac.funded150Days<5;
   // Combine uses the one Challenge R1. XFA uses R3 once the target is
   // reached, while further eligible $150 winning days are required.
-  const slot=p.id==='topstep'&&stage==='p1'?'r1':
-   qualificationTopstep?'r3':plannedSlot(ac.history,c.policy);
-  const risk=pos(c[slot]);
-  const tradeRR=Number(c.rrByTier?.[slot]??c.rr);
+  const {slot,risk,rr:tradeRR}=chooseTradeRisk(p,ac,stage,c,dayProfit);
   // User-selected risk is always exact; no hidden downsizing.
   const dailyHeadroom=p.dailyLoss-dayProfit;
   const overallHeadroom=ac.stagePnl-floorFor(p,ac);
@@ -289,6 +311,14 @@ function runAccountDay(p,ac,day,rand,config,record){
   else{ac.losses++;ac.lossPnl+=delta;}
   // Preserve only recent outcome prefix for deterministic risk policy.
   ac.history=(ac.history+(win?'W':'L')).slice(-8);
+  // R3 repairs the R2 loss, then returns to R2 (not an automatic R1 reset).
+  if(c.policy?.mode==='repair-r2'&&!qualificationTopstep&&!(p.id==='topstep'&&stage==='p1')){
+   if(slot==='r1')ac.repairSlot=win?'r1':'r2';
+   else if(slot==='r2'){
+    if(!win){ac.repairAnchor=prior;ac.repairSlot='r3'}
+    else ac.repairSlot=ac.stagePnl>=c.target-.005?'r1':'r2';
+   }else if(slot==='r3')ac.repairSlot=win&&ac.stagePnl>=ac.repairAnchor-.005?'r2':'r3';
+  }
   ac.peakPnl=Math.max(ac.peakPnl,ac.stagePnl);
   ac.realizedDD=Math.max(ac.realizedDD,ac.peakPnl-ac.stagePnl);
   if(record)ac.trace.push({day,stage,type:win?'win':'loss',slot,risk,rr:tradeRR,delta,pnl:ac.stagePnl,trade:ac.trades});
@@ -356,8 +386,7 @@ function nextRiskStatus(p,ac){
  const stage=stageName(p,ac),c=p.riskProfiles[stage];
  const useR3=p.id==='topstep'&&stage==='funded'&&
   ac.fundedTargetDay!==null&&ac.funded150Days<5;
- const slot=p.id==='topstep'&&stage==='p1'?'r1':useR3?'r3':plannedSlot(ac.history,c.policy);
- const risk=pos(c[slot]);
+ const {slot,risk}=chooseTradeRisk(p,ac,stage,c,0);
  const required=risk+p.tradeCost+Math.max(.01,p.riskReserve);
  const available=ac.stagePnl-floorFor(p,ac);
  if(risk<.01||required>available+1e-8||required>p.dailyLoss+1e-8)
