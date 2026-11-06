@@ -69,7 +69,7 @@ function start(){
   '</div><div id="payoutAdvisorSuggestions" class="payout-advisor-suggestions" aria-label="Questions suggested from this model"></div>'+
   '<div id="payoutAdvisorAnswer" class="payout-advisor-answer" aria-live="polite"></div>'+ 
   '<details class="payout-advisor-review"><summary><strong>Question &amp; answer log</strong> · <span id="payoutAdvisorLogCount">0 recorded</span> · Show / hide</summary>'+
-  '<div class="payout-advisor-log-actions"><button type="button" id="payoutAdvisorExport">Export GPT review JSON</button><span class="hint">Questions, answers and compact model metrics are saved per workspace; cloud sync is attempted where enabled.</span></div>'+
+  '<div class="payout-advisor-log-actions"><button type="button" id="payoutAdvisorExport">Export GPT review JSON</button><button type="button" id="payoutAdvisorSync">Sync questions</button><span class="hint" id="payoutAdvisorCloudStatus">Checking cloud review log…</span></div>'+
   '<div id="payoutAdvisorLog" class="payout-advisor-log"></div></details>'+
   '<p class="hint">Based only on the selected simulated results. No AI API, subscription or automatic changes. Suggestions are tests, not proof of future trading performance.</p>'+
   '</div></details></div>';
@@ -661,10 +661,77 @@ function start(){
   panel.scrollIntoView({behavior:'smooth',block:'start'});
  }); 
 
- const advisorUser=['doen','dori','dona','dion'].includes(root.FOUR_DS_CURRENT_USER)?root.FOUR_DS_CURRENT_USER:'dori';
+ const advisorSelectedUser=localStorage.getItem('4ds:active-user:v1');
+ const advisorUser=['doen','dori','dona','dion'].includes(advisorSelectedUser)?advisorSelectedUser:'dori';
  const advisorLogKey='4ds:v1:'+advisorUser+':results-advisor-review:v1';
  function readAdvisorLog(){
   try{const x=JSON.parse(localStorage.getItem(advisorLogKey)||'[]');return Array.isArray(x)?x:[];}catch(_){return [];}
+ }
+ const advisorEndpoint=String(root.FOUR_DS_CLOUD_ENDPOINT||'').trim();
+ const advisorCloudValid=/^https:\/\/script\.google\.com\/macros\/s\/[^/?]+\/exec(?:\?.*)?$/.test(advisorEndpoint);
+ let advisorSyncTimer=null,advisorSyncBusy=false,advisorSyncAgain=false;
+ function advisorCloudStatus(message){$('payoutAdvisorCloudStatus').textContent=message;}
+ function mergeAdvisorLogs(a,b){
+  const ids=new Set();
+  return [...a,...b].filter(x=>{
+   if(!x||!x.id||!x.timestamp||ids.has(x.id))return false;
+   ids.add(x.id);return true;
+  }).sort((x,y)=>String(y.timestamp).localeCompare(String(x.timestamp))).slice(0,50);
+ }
+ function readAdvisorCloud(){
+  return new Promise((resolve,reject)=>{
+   if(!advisorCloudValid){reject(new Error('Cloud endpoint is not configured'));return;}
+   const cb='fourDsAdvisor_'+Math.random().toString(36).slice(2),el=document.createElement('script');
+   const timer=setTimeout(()=>{cleanup();reject(new Error('Cloud read timeout'));},14000);
+   function cleanup(){clearTimeout(timer);try{delete root[cb];}catch(_){}el.remove();}
+   root[cb]=data=>{cleanup();data?.ok===true?resolve(data):reject(new Error(data?.error||'Cloud rejected read'));};
+   el.onerror=()=>{cleanup();reject(new Error('Cloud read failed'));};
+   el.src=advisorEndpoint+(advisorEndpoint.includes('?')?'&':'?')+new URLSearchParams({user:advisorUser,callback:cb,t:Date.now()});
+   document.head.appendChild(el);
+  });
+ }
+ async function syncAdvisorLog(){
+  if(advisorSyncBusy){advisorSyncAgain=true;return;}
+  if(!advisorCloudValid){advisorCloudStatus('Saved in browser · Cloud endpoint unavailable');return;}
+  advisorSyncBusy=true;
+  let ok=false;
+  try{
+   for(let attempt=0;attempt<3;attempt++){
+    advisorCloudStatus('Syncing Q&A to cloud…');
+    const remote=await readAdvisorCloud(),old=remote.snapshot;
+    if(old&&(old.schema!=='4ds-profile-export-v1'||old.user!==advisorUser||
+       !old.entries||typeof old.entries!=='object'))throw new Error('Unexpected cloud profile format');
+    let cloudRecords=[];
+    try{const x=JSON.parse(old?.entries?.[advisorLogKey]||'[]');if(Array.isArray(x))cloudRecords=x;}catch(_){}
+    const combined=mergeAdvisorLogs(readAdvisorLog(),cloudRecords);
+    const entries={...(old?.entries||{}),[advisorLogKey]:JSON.stringify(combined)};
+    const nonce=Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
+    const snapshot={schema:'4ds-profile-export-v1',user:advisorUser,nonce,entries};
+    const serialized=JSON.stringify(snapshot);
+    if(serialized.length>850000)throw new Error('Cloud profile storage limit reached');
+    const request=new URLSearchParams({user:advisorUser,expectedRevision:remote.revision||'',
+      force:'no',snapshot:serialized});
+    const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);
+    try{await fetch(advisorEndpoint,{method:'POST',mode:'no-cors',body:request,cache:'no-store',signal:controller.signal});}
+    finally{clearTimeout(timeout);}
+    const verified=await readAdvisorCloud();
+    if(verified.snapshot?.nonce===nonce){
+     localStorage.setItem(advisorLogKey,JSON.stringify(combined));
+     localStorage.setItem('4ds:cloud:last-revision:'+advisorUser,verified.revision||'');
+     renderAdvisorLog();advisorCloudStatus('Cloud verified · '+new Date().toLocaleTimeString());
+     ok=true;break;
+    }
+   }
+   if(!ok)throw new Error('Cloud update conflict; retry manually');
+  }catch(error){advisorCloudStatus('Browser saved · Cloud not verified: '+error.message);}
+  finally{
+   advisorSyncBusy=false;
+   if(advisorSyncAgain){advisorSyncAgain=false;queueAdvisorSync();}
+  }
+ }
+ function queueAdvisorSync(){
+  clearTimeout(advisorSyncTimer);
+  advisorSyncTimer=setTimeout(syncAdvisorLog,1800);
  }
  function renderAdvisorLog(){
   const records=readAdvisorLog(),host=$('payoutAdvisorLog');
@@ -698,7 +765,7 @@ function start(){
   items.unshift(entry);
   try{
    localStorage.setItem(advisorLogKey,JSON.stringify(items.slice(0,50)));
-   root.fourDsQueueCloudSave?.();
+   queueAdvisorSync();
   }catch(e){console.warn('Advisor log storage unavailable',e);}
   renderAdvisorLog();
  }
@@ -710,7 +777,10 @@ function start(){
   document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
  }
  $('payoutAdvisorExport').addEventListener('click',exportAdvisorLog);
+ $('payoutAdvisorSync').addEventListener('click',syncAdvisorLog);
  renderAdvisorLog();
+ if(advisorCloudValid)syncAdvisorLog();
+ else advisorCloudStatus('Browser only · Cloud endpoint unavailable');
  let advisorTopic='overview';
  function advisorRecords(){
   if(!lastOptimizerOutput)return [];
