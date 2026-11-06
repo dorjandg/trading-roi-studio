@@ -100,6 +100,12 @@ Independent 3A assumptions are stored per selected account in the existing per-u
 - Optimizer's phase table now includes the profit target, R1/R2/R3, and tier RR. First payout speed does not override firm drawdown/risk-blocking rules. Results are still finite-grid Monte Carlo estimates, not a guarantee or global optimum.
 - History stores the selected sizing mode and payout timing.
 
+## Simulation History pagination (Nov 6 update)
+- Section 8 now paginates local/merged cloud history in newest-first order, with 5/10/15 rows per page, current range and page selector, Previous/Next buttons. Default page size 5 is stored per user in localStorage under the history key with suffix `:view`.
+- Both **Run Simulation** and **Calculate Investment** share this view. New saves return to page 1, and cloud merges clamp the current page to valid bounds.
+- Row Export buttons continue to use absolute indices in the full sorted run array, not page-local indices; **Export all** still exports the complete locally retained history.
+- Existing storage cap remains 15 local runs / up to 8 cloud runs. Pagination changes presentation only, not data retention or cloud sync semantics.
+
 ## History / latest-run retrieval
 - Per-user local history key: 4ds:v1:<user>:portfolio-simulation-history:v1.
 - Run Simulation records have schema 4ds-portfolio-simulation-v1.
