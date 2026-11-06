@@ -77,6 +77,7 @@ function assess(r,count,total){
   avgBreached:val(r.avg.failed),avgRiskBlocked:val(r.avg.exhausted),roi:val(r.roi),
   budgetRoi:r.budget>0?val(r.avg.net)/r.budget:0,
   avgPayout:r.avg.paid?val(r.avg.receipts)/r.avg.paid:0,
+  chanceAnyPayout:val(r.chancePayout),
   firstPayoutDay:Number.isFinite(r.avgFirstPayoutDay)?r.avgFirstPayoutDay:null,
   goalPayoutDay:Number.isFinite(r.avgGoalPayoutDay)?r.avgGoalPayoutDay:null,
   chanceGoalPayoutDay:val(r.chanceGoalPayoutDay)};
@@ -130,7 +131,8 @@ async function optimize({plan,total,perPayout,maxInvestment,minRoi=2,minNetRoi=0
  const unitCounts=[...countGrid].filter(x=>x>0&&x<=maxUnits).sort((a,b)=>a-b);
  const coarse=[];
  const coarseTrials=50,validationTrials=200;
- for(const riskMode of riskModes)for(const rrVariant of rrVariants)for(const scale of scaleValues){
+ for(const riskMode of riskModes)for(const rrVariant of rrVariants)
+ for(const scale of (riskMode==='target'?[.55,.8,1]:scaleValues)){
   const p=planFor(plan,scale,perPayout,rrVariant,riskMode);
   const v=E.validatePlan(p);
   if(v.errors.length)continue;
@@ -195,7 +197,7 @@ async function optimize({plan,total,perPayout,maxInvestment,minRoi=2,minNetRoi=0
  return {requiredPayouts:count,profitPerAccount:profitNeeded(plan,perPayout),
   targetCash:total,perPayout,maxInvestment,minRoi,minNetRoi,minNetPnl,minRR,maxRR,checked,
   feasible:candidates.some(meetsAll),payoutCountFeasible:candidates.some(reachesPayouts),
-  fastestFirst:candidates.filter(c=>c.score.firstPayoutDay!=null).slice().sort((a,b)=>
+  fastestFirst:candidates.filter(c=>c.score.firstPayoutDay!=null&&c.score.chanceAnyPayout>=.5).slice().sort((a,b)=>
    a.score.firstPayoutDay-b.score.firstPayoutDay||
    b.score.hit-a.score.hit)[0]||null,
   fastestGoal:candidates.filter(c=>c.score.goalPayoutDay!=null).slice().sort((a,b)=>
@@ -326,7 +328,8 @@ function render(out){
    (gaps(out,out.candidates[0].score)[0]||'No expected-value target gap; check payout probability and downside risk')+'</p>':'')+
   '<div class="reverse-speed-summary"><strong>Fastest payout KPIs (validated scenarios)</strong> · '+
   (out.fastestFirst?'First paid withdrawal: day '+out.fastestFirst.score.firstPayoutDay.toFixed(1)+
-   ' ('+escapeHtml(out.fastestFirst.riskMode)+'-sized risk)':'No first payout modeled')+' · '+
+   ' ('+escapeHtml(out.fastestFirst.riskMode)+'-sized risk, '+money(out.fastestFirst.initialBudget)+
+   ' starting budget, '+pct(out.fastestFirst.score.chanceAnyPayout)+' chance of any payout)':'No scenario had both a first payout and ≥50% payout likelihood')+' · '+
   (out.fastestGoal?'Full '+out.requiredPayouts+'-payout goal: day '+out.fastestGoal.score.goalPayoutDay.toFixed(1)+
    ' in successful trials':'Full payout-count/cash goal not reached in validated trials')+
   '<small> · Conditional averages, not guaranteed dates; minimum-day and processing waits included.</small></div>'+
