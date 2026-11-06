@@ -1225,7 +1225,7 @@ function renderResults(list,inputs,source='run'){
  if($('journeyPanel').open)renderJourney();
  if($('section9Panel').open)renderSpendingLedger();
  const mixed=inputs.budgetMode==='split';
- $('summaryCaption').textContent=reportMode==='investment'?'Selected Calculate Investment scenario · original validated Monte Carlo results, including exact phase risks and outcome paths. Regular Run Simulation results remain separate.':(mixed?'One budget distributed across accounts':'Independent alternatives, each using the full budget')+
+ $('summaryCaption').textContent=reportMode==='investment'?'Full Section 2 simulation of the selected Investment option · '+inputs.trials+' fresh Monte Carlo trials · selected stage R1/R2/R3 and account paths preserved. Regular Run Simulation results remain separate.':(mixed?'One budget distributed across accounts':'Independent alternatives, each using the full budget')+
   ' · '+inputs.days+' trading days · '+inputs.trials+' trials · '+dec(inputs.winRate)+'% win rate · '+inputs.signalMode+' outcomes · '+
   (inputs.purchaseMode==='recycle'?'automatic reuse-first purchasing':'all challenges purchased upfront')+'.';
  const comp=inputs.budgetMode==='compare';
