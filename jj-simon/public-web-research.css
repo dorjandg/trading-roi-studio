@@ -1,0 +1,6 @@
+.jj-public-sources{padding:12px 14px;border-top:1px solid var(--stroke);margin-top:10px}
+.jj-public-status{font-size:11px;line-height:1.5;color:var(--muted);font-weight:600;margin:0 0 8px}
+.jj-public-links{display:flex;flex-wrap:wrap;gap:7px}
+.jj-public-links a{color:var(--accent);border:1px solid var(--stroke);background:var(--bg);border-radius:6px;padding:8px 10px;font-size:11px;text-decoration:none;overflow-wrap:anywhere}
+.jj-public-links a:hover{text-decoration:underline}
+@media(max-width:750px){.jj-public-sources{padding:11px 10px}.jj-public-links{flex-direction:column}.jj-public-links a{width:100%}}
