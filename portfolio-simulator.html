@@ -450,6 +450,15 @@ details p{margin:6px 0}
 .portfolio-advice-item:last-of-type{border-bottom:0}
 .portfolio-advice-item p{margin:3px 0;line-height:1.4}
 .portfolio-advice-more small{display:block;color:var(--muted);line-height:1.4;margin-top:5px}
+
+/* Compact independent pagination for saved Simulation History. */
+.simulation-history-pages{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap;margin:6px 0 2px;font-size:11px;color:var(--muted)}
+.simulation-history-pages label{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.simulation-history-pages select{width:auto;min-width:52px;min-height:28px;padding:3px 6px;border:1px solid var(--line);border-radius:5px;background:var(--panel2);color:var(--text);font-size:11px}
+.simulation-history-pages button{min-height:28px;padding:4px 9px;font-size:11px}
+.simulation-history-pages button:disabled{opacity:.42;cursor:default}
+.simulation-history-pages .history-page-range{margin-right:auto;font-variant-numeric:tabular-nums}
+@media(max-width:600px){.simulation-history-pages{gap:5px;justify-content:flex-start}.simulation-history-pages select{min-height:34px;font-size:16px}.simulation-history-pages button{min-height:34px}.simulation-history-pages .history-page-range{margin-right:0;width:100%}}
 </style>
 <link rel="stylesheet" href="studio-nav.css?v=20261105-compact-v2"></head><body><div class="shell">
 <header class="studio-site-header"><a class="studio-site-brand" href="index.html?view=dashboard"><span class="studio-site-mark">F<small>↗</small></span><span class="studio-site-title"><strong>4Ds Trading Studio</strong><small>STRATEGY · PAYOUTS · CAPITAL ALLOCATION</small></span></a><div class="studio-site-tools"><label class="studio-site-user" for="studioUserSelect">User <select id="studioUserSelect" aria-label="Active Studio user"><option value="doen">Doen</option><option value="dori">Dori</option><option value="dona">Dona</option><option value="dion">Dion</option></select></label><button type="button" id="theme" class="studio-site-theme" aria-label="Switch theme" title="Switch theme">◐</button></div></header>
@@ -533,6 +542,7 @@ details p{margin:6px 0}
   <div class="actions"><button type="button" data-history-refresh>Load cloud history</button><button type="button" data-history-sync>Retry cloud save</button><button type="button" data-history-export-all>Export all saved runs (JSON)</button><strong data-history-count class="hint"></strong></div>
   <p data-history-status class="hint" role="status">Loading history…</p>
   <div class="tablewrap"><table class="journey-table"><thead><tr><th>Date / time</th><th>Account types</th><th>Simulation inputs</th><th>Expected net</th><th>Expected paid</th><th>Download</th></tr></thead><tbody data-history-body></tbody></table></div>
+   <div class="simulation-history-pages" data-history-pages aria-label="Simulation history pagination"></div>
  </div>
 </details>
 <details class="sim-charts-panel numbered-panel" id="section9Panel"><summary><strong>9 · Daily Spending Ledger</strong><span class="sim-charts-summary">Daily purchases · fees · payouts · net cash</span><span class="sim-charts-hint">Show / hide</span></summary>
@@ -550,7 +560,7 @@ details p{margin:6px 0}
 <script src="portfolio-charts.js?v=20261106-ledger-section"></script>
 <script src="portfolio-journey.js?v=20261106-hide-explanations"></script>
 <script src="cloud-config.js"></script>
-<script src="portfolio-history.js?v=20261106-net-profit-only-v1"></script>
+<script src="portfolio-history.js?v=20261106-pagination-v2"></script>
 <script>
 (function(){
 'use strict';
