@@ -167,7 +167,7 @@ def main():
     drive.files().get(fileId=folder, fields="id,name,mimeType", supportsAllDrives=True).execute()
     imported = skipped = failed = 0
     for video in videos:
-        if imported + skipped + failed >= args.limit:
+        if imported + failed >= args.limit:
             break
         vid = video["id"]
         try:
