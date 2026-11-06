@@ -66,7 +66,8 @@ function start(){
   '<div class="payout-advisor-topics" role="group" aria-label="Common questions">'+
   [['overview','Overview'],['bottleneck','Bottlenecks'],['funnel','Account funnel'],['risk','R1 / R2 / R3'],['payout','Payout timing'],['cost','Costs & ROI'],['compare','Compare models']].map(([id,name])=>
    '<button type="button" data-advisor-topic="'+id+'">'+name+'</button>').join('')+
-  '</div><div id="payoutAdvisorAnswer" class="payout-advisor-answer" aria-live="polite"></div>'+
+  '</div><div id="payoutAdvisorSuggestions" class="payout-advisor-suggestions" aria-label="Questions suggested from this model"></div>'+
+  '<div id="payoutAdvisorAnswer" class="payout-advisor-answer" aria-live="polite"></div>'+
   '<p class="hint">Based only on the selected simulated results. No AI API, subscription or automatic changes. Suggestions are tests, not proof of future trading performance.</p>'+
   '</div></details></div>';
  document.getElementById('results').before(panel);
@@ -512,7 +513,12 @@ function start(){
  #payoutOptimizerPanel .payout-advisor-topics{display:flex;gap:5px;flex-wrap:wrap}
  #payoutOptimizerPanel .payout-advisor-topics button{padding:5px 8px;min-height:28px;font-size:11px}
  #payoutOptimizerPanel .payout-advisor-topics button[aria-pressed="true"]{border-color:var(--blue);font-weight:700}
- #payoutOptimizerPanel .payout-advisor-answer{padding:10px;border:1px solid var(--line);border-radius:6px;font-size:12px;line-height:1.48}
+ #payoutOptimizerPanel .payout-advisor-suggestions{display:grid;gap:6px}
+ #payoutOptimizerPanel .payout-advisor-suggestions>strong{font-size:11px}
+ #payoutOptimizerPanel .payout-advisor-suggestion-list{display:flex;gap:5px;flex-wrap:wrap}
+ #payoutOptimizerPanel .payout-advisor-suggestion-list button{font-size:11px;line-height:1.4;min-height:30px;padding:5px 9px;white-space:normal;text-align:left;max-width:100%}
+ @media(max-width:650px){#payoutOptimizerPanel .payout-advisor-suggestion-list button{flex:1 1 100%}}
+  #payoutOptimizerPanel .payout-advisor-answer{padding:10px;border:1px solid var(--line);border-radius:6px;font-size:12px;line-height:1.48}
  #payoutOptimizerPanel .payout-advisor-answer>strong{display:block;margin-bottom:5px}
  #payoutOptimizerPanel .payout-advisor-answer p{margin:5px 0}
  @media(max-width:650px){#payoutOptimizerPanel .payout-advisor-controls{grid-template-columns:1fr}#payoutOptimizerPanel .payout-advisor-controls input,#payoutOptimizerPanel .payout-advisor-controls select{font-size:16px}}
@@ -766,14 +772,71 @@ function start(){
   if(/overview|summary|result|performance/.test(q))return 'overview';
   return 'unknown';
  }
- function refreshAdvisor(options={}){
+ function suggestedAdvisorQuestions(record,all){
+  const avg=record.result?.avg||{},score=record.score||{},s=lastOptimizerOutput||{};
+  const bought=Number(avg.bought)||0,funded=Number(avg.funded)||0,paid=Number(avg.paid)||0;
+  const blocked=Number(avg.exhausted)||0,failed=Number(avg.failed)||0,spent=Number(avg.spent)||0;
+  const net=Number(avg.net)||0,goal=Number(s.minNetPnl)||0;
+  const stages=root.StudioPortfolioEngine?.stageFunnel?.(record.result)||[];
+  const visible=stages.filter(x=>!/Funded activated|Express Funded activated/.test(x.label));
+  const transitions=visible.slice(1).map((x,i)=>({
+   label:x.label,rate:visible[i].count>0?x.count/visible[i].count:null
+  })).filter(x=>x.rate!=null);
+  const worst=transitions.sort((a,b)=>a.rate-b.rate)[0];
+  const suggestions=[];
+  function add(priority,topic,question){suggestions.push({priority,topic,question});}
+  if(goal>0&&Number(score.hit)<.5)
+   add(100,'bottleneck','Why is my full payout and net-profit goal chance only '+advisorPct(score.hit)+'?');
+  if(blocked>=Math.max(.3,bought*.08))
+   add(96,'risk','Why are '+blocked.toFixed(2)+' accounts risk-blocked? Which risk tiers should I test?');
+  if(funded>0&&paid<funded*.65)
+   add(92,'payout','Why do only '+paid.toFixed(2)+' of '+funded.toFixed(2)+' funded accounts receive payouts?');
+  if(worst&&worst.rate<.65)
+   add(89,'funnel','Why does conversion to '+worst.label+' fall to '+advisorPct(worst.rate)+'?');
+  if(goal>0&&net<goal)
+   add(86,'cost','What is keeping net P&L '+advisorMoney(goal-net)+' below my target?');
+  if(spent>0&&net<=0)
+   add(83,'cost','Why are my '+advisorMoney(spent)+' in incurred fees not covered by payouts?');
+  if(bought>0&&failed/bought>.2)
+   add(79,'risk','Are account failures too high compared with purchased challenges?');
+  if(all.length>1)
+   add(76,'compare','Which available model has higher expected net P&L and what is the trade-off?');
+  if(paid>0)
+   add(72,'payout','How long until the first payout and what could delay it?');
+  if(!suggestions.length)
+   add(60,'overview','What is the most important result of this simulation?');
+  add(55,'funnel','Which phase loses the most accounts?');
+  add(50,'risk','What do my R1, R2 and R3 risk settings actually do?');
+  const seen=new Set();
+  return suggestions.sort((a,b)=>b.priority-a.priority).filter(x=>{
+   if(seen.has(x.topic))return false;
+   seen.add(x.topic);return true;
+  }).slice(0,5);
+ }
+ function renderAdvisorSuggestions(record,all){
+  const host=$('payoutAdvisorSuggestions');
+  host.textContent='';
+  if(!record)return;
+  const heading=document.createElement('strong');heading.textContent='Suggested questions based on this model';
+  host.appendChild(heading);
+  const choices=document.createElement('div');choices.className='payout-advisor-suggestion-list';
+  for(const item of suggestedAdvisorQuestions(record,all)){
+   const button=document.createElement('button');
+   button.type='button';button.dataset.advisorSuggest=item.topic;
+   button.textContent=item.question;
+   choices.appendChild(button);
+  }
+  host.appendChild(choices);
+ }
+  function refreshAdvisor(options={}){
   const box=$('payoutResultsAdvisor'),select=$('payoutAdvisorModel');
   const records=advisorRecords();
   box.hidden=!records.length;
-  if(!records.length){$('payoutAdvisorAnswer').textContent='';return;}
+  if(!records.length){$('payoutAdvisorAnswer').textContent='';$('payoutAdvisorSuggestions').textContent='';return;}
   const old=select.value;
   select.innerHTML=records.map(r=>'<option value="'+escape(r.key)+'">'+escape(r.name)+'</option>').join('');
   select.value=records.some(r=>r.key===old)?old:records[0].key;
+  renderAdvisorSuggestions(records.find(r=>r.key===select.value)||records[0],records);
   $('payoutAdvisorSummary').textContent=' · '+records.length+' models · Free, rule-based';
   if(options.answer!==false)askAdvisor(advisorTopic);
  }
@@ -816,8 +879,19 @@ function start(){
   $('payoutOptResults').innerHTML=solver.render(lastOptimizerOutput,currentSortMode,saved);
   renderUnifiedTable();
  }
- $('payoutAdvisorModel').addEventListener('change',()=>askAdvisor(advisorTopic));
+ $('payoutAdvisorModel').addEventListener('change',()=>{
+  const all=advisorRecords(),record=all.find(r=>r.key===$('payoutAdvisorModel').value);
+  renderAdvisorSuggestions(record,all);
+  askAdvisor(advisorTopic);
+ });
  $('payoutResultsAdvisor').addEventListener('click',event=>{
+  const suggested=event.target.closest?.('[data-advisor-suggest]');
+  if(suggested){
+   $('payoutAdvisorQuestion').value=suggested.textContent;
+   $('payoutResultsAdvisor').open=true;
+   askAdvisor(suggested.dataset.advisorSuggest);
+   return;
+  }
   const topic=event.target.closest?.('[data-advisor-topic]');
   if(topic){$('payoutResultsAdvisor').open=true;askAdvisor(topic.dataset.advisorTopic);}
  });
