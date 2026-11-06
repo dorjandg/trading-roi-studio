@@ -81,25 +81,47 @@ function jjHelperDocuments(){
  }
  return corpus;
 }
+function jjHelperStem(token){
+ const t=String(token).toLowerCase();
+ if(t==='copied'||t==='copying')return 'copy';
+ if(t==='accounts')return 'account';
+ if(t==='trades'||t==='trading')return 'trade';
+ if(t==='points')return 'point';
+ if(t==='fundeds')return 'funded';
+ if(t==='profits')return 'profit';
+ if(t==='payouts')return 'payout';
+ if(t==='evaluations')return 'evaluation';
+ if(t==='stops')return 'stop';
+ return t;
+}
 function jjHelperSearch(question){
- const query=String(question||'').trim();const tokens=jjHelperTokens(query);
- if(!query||!tokens.length)return [];
- const plain=query.toLowerCase();
+ const query=String(question||'').trim();
+ const core=[...new Set((query.toLowerCase().replace(/[^a-z0-9]+/g,' ').split(/\s+/)).filter(t=>t&&!jjHelperStop.has(t)).map(jjHelperStem))];
+ if(!core.length)return [];
+ const expanded=[...new Set(core.flatMap(x=>jjHelperSynonyms[x]||[]))].filter(t=>!core.includes(t));
  return jjHelperDocuments().map(doc=>{
   const title=doc.title.toLowerCase(),content=doc.searchText.toLowerCase();
   let score=0,match=0;
-  for(const t of tokens){
-   if(title.includes(t)){score+=6;match++}
-   else if(content.includes(t)){score+=2;match++}
+  const normalTitle=title.replace(/[^a-z0-9]+/g,' ').split(/\s+/).map(jjHelperStem);
+  const normalContent=content.replace(/[^a-z0-9]+/g,' ').split(/\s+/).map(jjHelperStem);
+  for(const t of core){
+   if(normalTitle.includes(t)){score+=16;match++}
+   else if(normalContent.includes(t)){score+=5;match++}
   }
-  const original=jjHelperTokens(query).filter(t=>!Object.values(jjHelperSynonyms).some(s=>s.includes(t)&&!plain.includes(t)));
-  if(original.length&&original.every(t=>content.includes(t)))score+=4;
-  if(content.includes(plain))score+=8;
-  if(doc.type==='Transcript evidence')score+=score?2:0;
-  if(doc.type==='Trading Dictionary'&&query.toLowerCase().includes(title))score+=7;
-  if(doc.type==='Student Q&A'&&score)score+=1;
+  if(!match)return null;
+  const required=core.length>=3?Math.ceil(core.length*0.6):core.length;
+  if(match<required)return null;
+  for(const t of expanded){
+   if(normalTitle.includes(t))score+=2;
+   else if(normalContent.includes(t))score+=0.5;
+  }
+  score+=match/core.length*12;
+  if(normalContent.join(' ').includes(core.join(' ')))score+=14;
+  if(doc.type==='Transcript evidence')score+=2;
+  if(doc.type==='Trading Dictionary'&&core.every(t=>normalTitle.includes(t)))score+=7;
+  if(doc.type==='Student Q&A')score+=1;
   return {...doc,score,match};
- }).filter(d=>d.score>=4&&d.match>=1).sort((a,b)=>b.score-a.score||a.title.localeCompare(b.title)).slice(0,8);
+ }).filter(Boolean).sort((a,b)=>b.score-a.score||a.title.localeCompare(b.title)).slice(0,8);
 }
 function jjHelperNode(tag,css,text){const el=document.createElement(tag);if(css)el.className=css;if(text!==undefined)el.textContent=text;return el}
 let jjHelperQuestion='';
