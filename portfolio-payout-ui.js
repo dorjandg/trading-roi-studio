@@ -109,15 +109,51 @@ function start(){
  for(const [name,id] of [['total','payoutOptTotal'],['per','payoutOptPer'],['max','payoutOptMax'],['roi','payoutOptRoi'],['netRoi','payoutOptNetRoi'],['netPnl','payoutOptNetPnl'],['minRR','payoutOptMinRR'],['maxRR','payoutOptMaxRR']])
   if(prior[name]!=null)$(id).value=String(prior[name]);
  panel.open=prior.open===true;
+
+ $('payoutOptSignals').innerHTML=Array.from({length:20},(_,i)=>'<option>'+String(i+1)+'</option>').join('');
+ const assumptionIds={days:'payoutOptDays',tradesPerDay:'payoutOptSignals',winRate:'payoutOptWinRate',
+  purchaseMode:'payoutOptPurchase',signalMode:'payoutOptSignalMode',reinvestPayouts:'payoutOptReinvest',
+  p1MinDays:'payoutOptP1Days',p2MinDays:'payoutOptP2Days',wait:'payoutOptWait',processing:'payoutOptProcessing'};
+ const accountAssumptions=prior.assumptionsByAccount||{};
+ function loadAssumptions(reset=false){
+  const key=$('payoutOptAccount').value,row=bridge.getRows().find(r=>r.id+':'+r.size===key);
+  if(!row)return;
+  const base=bridge.getInputs(row),p=bridge.getPlan(row);
+  const inherited={days:base.days,tradesPerDay:base.tradesPerDay,winRate:base.winRate,
+   purchaseMode:base.purchaseMode,signalMode:base.signalMode,reinvestPayouts:base.reinvestPayouts?'yes':'no',
+   p1MinDays:p.riskProfiles.p1?.minDays??0,p2MinDays:p.riskProfiles.p2?.minDays??0,
+   wait:p.payoutWaitCalendarDays??0,processing:p.payoutProcessingCalendarDays??0};
+  if(reset)accountAssumptions[key]=inherited;
+  const vals={...inherited,...(accountAssumptions[key]||{})};
+  for(const [name,id] of Object.entries(assumptionIds))$(id).value=String(vals[name]);
+  $('payoutOptP2Days').disabled=!p.riskProfiles.p2;
+  $('payoutOptWait').disabled=p.id==='topstep';
+  const usd=n=>Number.isFinite(n)?'$'+n.toLocaleString():'not set';
+  $('payoutOptLimits').textContent='Firm rules (read-only): daily '+usd(p.dailyLoss)+
+   ' · overall '+usd(p.overallLoss)+' · reserve '+usd(p.riskReserve)+
+   (p.id==='topstep'?' · funded winning-day eligibility applies':'');
+  $('payoutOptAssumptionsSummary').textContent='· '+vals.days+'d · '+vals.tradesPerDay+
+   ' signals/day · '+vals.winRate+'% WR';
+ }
+ function storeAssumptions(){
+  const key=$('payoutOptAccount').value;if(!key)return;
+  const v={};for(const [name,id] of Object.entries(assumptionIds))v[name]=$(id).value;
+  accountAssumptions[key]=v;
+  $('payoutOptAssumptionsSummary').textContent='· '+v.days+'d · '+v.tradesPerDay+
+   ' signals/day · '+v.winRate+'% WR';
+ }
+
  function syncOptions(){
   const list=bridge.getRows(),select=$('payoutOptAccount'),existing=select.value||prior.account||'';
   select.innerHTML=[...new Map(list.map(r=>[r.id+':'+r.size,r])).entries()]
    .map(([id,r])=>'<option value="'+escape(id)+'">'+escape(bridge.label(r))+'</option>').join('');
   if([...select.options].some(o=>o.value===existing))select.value=existing;
+  loadAssumptions();
  }
  function save(){
   try{localStorage.setItem(key,JSON.stringify({total:$('payoutOptTotal').value,per:$('payoutOptPer').value,
    max:$('payoutOptMax').value,roi:$('payoutOptRoi').value,netRoi:$('payoutOptNetRoi').value,netPnl:$('payoutOptNetPnl').value,minRR:$('payoutOptMinRR').value,maxRR:$('payoutOptMaxRR').value,
+   assumptionsByAccount:accountAssumptions,assumptionsOpen:$('payoutOptAssumptions').open,
    account:$('payoutOptAccount').value,open:panel.open}))}catch(_){}
  }
  function math(){
@@ -127,11 +163,16 @@ function start(){
    ' separate first payouts required. The account funded profit target is adjusted for the firm payout split.':
    'Enter positive payout amounts.';
  }
+ $('payoutOptAssumptions').open=prior.assumptionsOpen===true;
  syncOptions();math();
  for(const id of ['payoutOptTotal','payoutOptPer','payoutOptMax','payoutOptRoi','payoutOptNetRoi','payoutOptNetPnl','payoutOptMinRR','payoutOptMaxRR','payoutOptAccount']){
   $(id).addEventListener('change',()=>{math();save()});
  }
  panel.addEventListener('toggle',save);
+ $('payoutOptAssumptions').addEventListener('toggle',save);
+ for(const id of Object.values(assumptionIds))$(id).addEventListener('change',()=>{storeAssumptions();save()});
+ $('payoutOptReset').addEventListener('click',()=>{loadAssumptions(true);storeAssumptions();save()});
+ $('payoutOptAccount').addEventListener('change',()=>{loadAssumptions();save()});
  let lastOptimizerOutput=null;
  $('payoutOptResults').addEventListener('change',event=>{
   const select=event.target.closest('select[data-reverse-path]');
@@ -149,7 +190,24 @@ function start(){
   const row=bridge.getRows().find(r=>r.id+':'+r.size===selected);
   const status=$('payoutOptStatus'),button=$('runPayoutOptimizer');
   if(!row){status.textContent='No supported account selected.';return;}
-  const inputs=bridge.getInputs(row);
+  const inputs=bridge.getInputs(row),selectedPlan=bridge.getPlan(row);
+  const readNum=(id,min,max)=>{const n=Number($(id).value);if(!Number.isFinite(n)||n<min||n>max)throw Error('Invalid assumption: '+id);return n};
+  try{
+   inputs.days=readNum('payoutOptDays',1,120);
+   inputs.tradesPerDay=readNum('payoutOptSignals',1,20);
+   inputs.winRate=readNum('payoutOptWinRate',0,100);
+   inputs.purchaseMode=$('payoutOptPurchase').value;
+   inputs.signalMode=$('payoutOptSignalMode').value;
+   inputs.reinvestPayouts=$('payoutOptReinvest').value==='yes';
+   selectedPlan.riskProfiles.p1.minDays=readNum('payoutOptP1Days',0,60);
+   if(selectedPlan.riskProfiles.p2)selectedPlan.riskProfiles.p2.minDays=readNum('payoutOptP2Days',0,60);
+   if(selectedPlan.id!=='topstep'){
+    selectedPlan.payoutWaitCalendarDays=readNum('payoutOptWait',0,120);
+    selectedPlan.fundedWaitDays=Math.ceil(selectedPlan.payoutWaitCalendarDays*5/7);
+   }
+   selectedPlan.payoutProcessingCalendarDays=readNum('payoutOptProcessing',0,120);
+   selectedPlan.payoutProcessingTradingDays=Math.ceil(selectedPlan.payoutProcessingCalendarDays*5/7);
+  }catch(e){$('payoutOptStatus').textContent=e.message;return;}
   const total=Number($('payoutOptTotal').value),perPayout=Number($('payoutOptPer').value),
    maxInvestment=Number($('payoutOptMax').value),minRoiPct=Number($('payoutOptRoi').value),
    minNetRoiPct=Number($('payoutOptNetRoi').value),minNetPnl=Number($('payoutOptNetPnl').value),
@@ -162,7 +220,7 @@ function start(){
   lastOptimizerOutput=null;
   $('payoutOptResults').innerHTML='';save();
   try{
-   const output=await solver.optimize({plan:bridge.getPlan(row),total,perPayout,
+   const output=await solver.optimize({plan:selectedPlan,total,perPayout,
     maxInvestment,minRoi:minRoiPct/100,minNetRoi:minNetRoiPct/100,minNetPnl,minRR,maxRR,inputs,onProgress:text=>status.textContent=text});
    lastOptimizerOutput=output;
    $('payoutOptResults').innerHTML=solver.render(output);
