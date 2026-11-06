@@ -22,7 +22,7 @@ function profitNeeded(plan,perPayout){
  if(!plan.split||plan.split<=0)throw Error('This account has no positive payout split.');
  return Math.max(.01,perPayout/plan.split);
 }
-function planFor(base,scale,perPayout,rrVariant=null,riskMode='saved'){
+function planFor(base,scale,perPayout,rrVariant=null,riskMode='saved',r3Route='legacy'){
  const p={...base,riskProfiles:{}};
  const payoutTarget=profitNeeded(base,perPayout);
  const maxRisk=Math.min(Number.isFinite(base.dailyLoss)?base.dailyLoss:Infinity,
@@ -55,7 +55,30 @@ function planFor(base,scale,perPayout,rrVariant=null,riskMode='saved'){
    const recovery=Math.ceil((stageRisk.target+tier1+2*cost)/rr2*100)/100;
    stageRisk.r2=Math.max(.01,Math.min(recovery,Math.max(.01,afterLossHeadroom)));
    if(afterLossHeadroom<.01)stageRisk.recoveryInfeasible=true;
-   stageRisk.r3=Math.max(.01,Math.min(maxRisk,Math.ceil((stageRisk.target+tier1+stageRisk.r2+3*cost)/rr3*100)/100));
+   const desiredR3=Math.ceil((stageRisk.target+tier1+stageRisk.r2+3*cost)/rr3*100)/100;
+   // Alternate R3 routes reserve actual room after TWO consecutive losses.
+   // All configured tier sizes remain static; the engine independently blocks
+   // every trade if another path leaves less room than this idealized LL path.
+   if(r3Route==='balanced'){
+    // Trade some single-loss recovery potential for more R3 headroom.
+    stageRisk.r2=Math.max(.01,Math.min(stageRisk.r2,Math.floor(stageRisk.r2*.65*100)/100));
+   }
+   const roomAfterTwo=Math.min(maxRisk,
+    Number.isFinite(p.overallLoss)?p.overallLoss-stageRisk.r1-stageRisk.r2-2*cost-reserve-1:Infinity,
+    Number.isFinite(p.dailyLoss)?p.dailyLoss-cost-reserve-1:Infinity);
+   const feasibleR3=Math.max(.01,Math.floor(roomAfterTwo*100)/100);
+   stageRisk.r3=r3Route==='legacy'?Math.max(.01,Math.min(maxRisk,desiredR3)):
+    r3Route==='defensive'?Math.max(.01,Math.min(desiredR3,Math.floor(feasibleR3*.5*100)/100)):
+    Math.max(.01,Math.min(desiredR3,feasibleR3));
+   stageRisk.r3Route=r3Route;
+   stageRisk.r3Analysis={
+    afterTwoLosses:-Math.round((stageRisk.r1+stageRisk.r2+2*cost)*100)/100,
+    availableR3:Math.max(0,roomAfterTwo),
+    intendedR3:desiredR3,
+    modeledR3:stageRisk.r3,
+    feasibleAfterTwoLosses:roomAfterTwo>=stageRisk.r3-.00001&&roomAfterTwo>=.01,
+    afterR3Win:Math.round((-stageRisk.r1-stageRisk.r2-2*cost+stageRisk.r3*rr3-cost)*100)/100
+   };
    // The intended R2 is selected after a loss; no automatic R2 on a win.
    if(stage!=='p1'||p.id!=='topstep')stageRisk.policy={map:{},conflicts:[],mode:'streak'};
    stageRisk.targetSizing={cleanWin:tier1*rr1-cost,
@@ -124,6 +147,7 @@ async function optimize({plan,perPayout,maxInvestment,minRoi=2,minNetRoi=0,minNe
  ].filter((v,i,a)=>a.findIndex(z=>z.r1===v.r1&&z.r2===v.r2&&z.r3===v.r3)===i);
  const scaleValues=[.55,.8,1,1.25];
  const riskModes=['target','saved'];
+ const r3Routes=['legacy','headroom','balanced','defensive'];
  const candidates=[];
  let checked=0;
  const simulate=(p,units,trials,seed)=>E.simulatePortfolio(p,{
@@ -145,15 +169,16 @@ async function optimize({plan,perPayout,maxInvestment,minRoi=2,minNetRoi=0,minNe
  const coarse=[];
  const coarseTrials=50,validationTrials=200;
  for(const riskMode of riskModes)for(const rrVariant of rrVariants)
- for(const scale of (riskMode==='target'?[.55,.8,1]:scaleValues)){
-  const p=planFor(plan,scale,perPayout,rrVariant,riskMode);
+ for(const scale of (riskMode==='target'?[.55,.8,1]:scaleValues))
+ for(const r3Route of (riskMode==='target'?r3Routes:['saved'])){
+  const p=planFor(plan,scale,perPayout,rrVariant,riskMode,r3Route);
   const v=E.validatePlan(p);
   if(v.errors.length)continue;
   for(const units of unitCounts){
    const r=simulate(p,units,coarseTrials,inputs.seed+7771);
    const score=assess(r,count,minNetPnl,perPayout);
    checked++;
-   coarse.push({scale,units,riskMode,rrVariant:rrVariant.name,plan:p,score});
+   coarse.push({scale,units,riskMode,r3Route,rrVariant:rrVariant.name,plan:p,score});
    onProgress?.('Testing '+riskMode+' sizing · '+rrVariant.name+' · '+checked+' scenarios checked');
    if(checked%4===0)await pause();
   }
@@ -181,9 +206,15 @@ async function optimize({plan,perPayout,maxInvestment,minRoi=2,minNetRoi=0,minNe
  // Keep both the strongest payout strategies and fast first-withdrawal
  // candidates; maximizing payout count alone can discard quicker setups.
  const shortlist=[],keys=new Set();
- const add=x=>{const key=x.riskMode+':'+x.rrVariant+':'+x.scale+':'+x.units;
+ const add=x=>{const key=x.riskMode+':'+x.r3Route+':'+x.rrVariant+':'+x.scale+':'+x.units;
   if(!keys.has(key)){keys.add(key);shortlist.push(x)}};
  coarse.slice(0,8).forEach(add);
+ // Include a strong tested instance of each R3 route so the user can inspect
+ // alternatives even when the original optimizer ranking prefers one route.
+ for(const route of r3Routes){
+  const routeCandidate=coarse.find(x=>x.r3Route===route);
+  if(routeCandidate)add(routeCandidate);
+ }
  coarse.filter(x=>x.score.firstPayoutDay!=null).sort((a,b)=>
   (a.score.firstPayoutDay??Infinity)-(b.score.firstPayoutDay??Infinity)||
   b.score.hit-a.score.hit).slice(0,4).forEach(add);
@@ -431,6 +462,17 @@ function render(out,sortMode='model',currentPlan=null){
     return rows.filter(([name,oldValue,newValue])=>String(oldValue)!==String(newValue)).map(([name,oldValue,newValue])=>
      '<tr><td>'+escapeHtml(a.name||stage)+'</td><td>'+escapeHtml(name)+'</td><td>'+escapeHtml(oldValue)+'</td><td><b>'+escapeHtml(newValue)+'</b></td></tr>');
    }).join('')+'</tbody></table></div><p class="hint">Only differences are shown. Account targets, fees and firm limits remain unchanged by transfer.</p></details>':'';
+  const r3Paths=p.stageList.map(stage=>{
+   const r=p.riskProfiles[stage],x=r.r3Analysis;
+   if(!x)return '';
+   const status=x.feasibleAfterTwoLosses?'Sized to fit idealized loss path':'Blocked after two losses';
+   return '<tr><th>'+escapeHtml(r.name||stage)+'</th><td>'+money(r.r1)+' / '+money(r.r2)+' / '+money(r.r3)+'</td>'+
+    '<td>'+money(x.availableR3)+'</td><td>'+escapeHtml(status)+'</td><td>'+
+    (x.afterR3Win>=0?'+':'−')+money(Math.abs(x.afterR3Win))+'</td></tr>';
+  }).join('');
+  const r3Markup=r3Paths?'<details class="reverse-review-panel"><summary><strong>R3 alternative route</strong> · '+escapeHtml(candidate.r3Route||'legacy')+' sizing and feasibility</summary>'+
+   '<div class="tablewrap"><table class="journey-table"><thead><tr><th>Phase</th><th>R1 / R2 / R3</th><th>R3 headroom after LL</th><th>Can R3 trade?</th><th>Stage P&L after LLW</th></tr></thead><tbody>'+r3Paths+'</tbody></table></div>'+
+   '<p class="hint">LL = R1 loss then R2 loss on later trading days; LLW adds an R3 win. Headroom assumes no earlier gains or losses in that phase, and includes modeled costs/reserve and a $1 buffer. A legal R3 win may still leave the phase below its profit target. The engine checks every actual trade separately. These are alternative hypotheses, not guaranteed recovery.</p></details>':'';
   const setupMarkup='<details class="reverse-review-panel"><summary><strong>Trading rules &amp; risks</strong> · phase-by-phase setup</summary>'+
    '<div class="tablewrap"><table class="journey-table"><thead><tr><th>Phase</th><th>Risk sequence</th><th>Target</th><th>Max wins/day</th><th>Min trading days</th><th>R1 / R2 / R3</th><th>RR per tier</th><th>vs Firms</th></tr></thead><tbody>'+limitInfo+'</tbody></table></div>'+checks+
    '<p class="hint">Risk amounts are USD per trade; RR is the simulated reward/risk ratio. Actual account margin and trade execution are not verified.</p></details>'+
@@ -450,7 +492,7 @@ function render(out,sortMode='model',currentPlan=null){
    '<summary class="reverse-candidate-summary">'+
    '<span class="reverse-candidate-name">'+(index===0?(selectedSort==='model'?'Top by optimizer':'Top by '+payoutSortModes[selectedSort]):'Option '+(index+1))+
    ' · '+candidate.scale.toFixed(2)+'× · '+escapeHtml(candidate.rrVariant||'')+
-   ' · '+(candidate.riskMode==='target'?'Target':'Saved')+' risk'+
+   ' · '+(candidate.riskMode==='target'?'Target':'Saved')+' risk'+(candidate.riskMode==='target'?' · R3 '+escapeHtml(candidate.r3Route||'legacy'):'')+
    '<span class="reverse-candidate-status '+(goalMet?'reverse-status-met':'')+'">'+
    (goalMet?'Targets met':'Below target')+'</span></span>'+
    '<span class="reverse-summary-kpis">'+
@@ -463,7 +505,7 @@ function render(out,sortMode='model',currentPlan=null){
    '<span class="reverse-summary-toggle">Details</span>'+
    '<span class="reverse-candidate-advice">Suggestion: '+escapeHtml(advice.headline)+'</span></summary>'+
    '<div class="reverse-candidate-body">'+
-   setupMarkup+
+   setupMarkup+r3Markup+
    '<div class="reverse-advice"><strong>Why this scenario struggles · what to test</strong>'+
    advice.items.map(d=>'<div class="reverse-advice-item"><strong>'+escapeHtml(d.name)+'</strong>'+
     '<span>'+escapeHtml(d.evidence)+'</span><em>'+escapeHtml(d.test)+'</em></div>').join('')+
