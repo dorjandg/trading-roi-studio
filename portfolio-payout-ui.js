@@ -7,7 +7,7 @@ function start(){
  if(!bridge||!solver||!document.getElementById('results'))return;
  const panel=document.createElement('details');
  panel.id='payoutOptimizerPanel';panel.className='sim-charts-panel numbered-panel';
- panel.innerHTML='<summary><strong>3A · Calculate Investment &amp; Compare Models</strong>'+
+ panel.innerHTML='<summary><strong>4 · Calculate Investment &amp; Compare Models</strong>'+
   '<button class="primary section-run-btn" type="button" id="runPayoutOptimizer">Calculate Investment</button>'+
   '<span class="sim-charts-hint">Show / hide</span></summary>'+
   '<div class="numbered-content"><details id="payoutOptInputsPanel" class="payout-opt-inputs" open>'+
@@ -80,7 +80,7 @@ function start(){
   'AL':'Average absolute net dollar loss of losing trades.',
   'EV':'Expected modeled dollar profit or loss per executed trade (average trade P&L).',
   'Trades':'Average executed trades per portfolio simulation trial.',
-  'View':'Open the full selected model analysis in Sections 4–7.',
+  'View':'Open the full selected model analysis in Sections 5–8.',
   'Day':'Trading day index in the simulated sample; not a calendar-date forecast.',
   'Phase':'Account stage: evaluation, verification or funded. Available stages depend on the firm.',
   'Trade':'Trade sequence number inside the selected account or phase.',
@@ -177,6 +177,8 @@ function start(){
  #payoutOptimizerPanel table thead th.payout-header-has-help{cursor:help;text-decoration:underline dotted;text-decoration-color:var(--muted);text-underline-offset:3px}
  #payoutOptimizerPanel table thead th.payout-header-has-help:focus-visible{outline:2px solid var(--blue);outline-offset:-2px}
  #payoutOptimizerPanel>.numbered-content{padding:8px 5px}
+ #payoutOptimizerPanel .reverse-option-actions button[data-reverse-ledger]{font-size:11px;min-height:32px;white-space:normal}
+
  #payoutOptimizerPanel .payout-opt-inputs{margin:1px 0 7px;border:1px solid var(--line);border-radius:7px;overflow:hidden}
  #payoutOptimizerPanel .payout-opt-inputs>summary{display:flex;align-items:center;flex-wrap:wrap;gap:6px;cursor:pointer;background:var(--panel2);padding:8px 10px;list-style:none;font-size:12px}
  #payoutOptimizerPanel .payout-opt-inputs>summary::-webkit-details-marker{display:none}
@@ -632,6 +634,28 @@ function start(){
    finally{more.disabled=false;more.textContent='Find More Risk Models';}
    return;
   }
+  const ledger=event.target.closest?.('[data-reverse-ledger]');
+  if(ledger){
+   const index=Number(ledger.dataset.reverseLedger),candidate=lastOptimizerOutput?.candidates?.[index];
+   const status=ledger.closest('.reverse-candidate-body')?.querySelector('.reverse-review-status');
+   if(!candidate||!lastOptimizerInputs||candidate.plan.id+':'+candidate.plan.size!==lastOptimizerAccountKey){
+    if(status)status.textContent='Scenario changed. Calculate Investment again before viewing the ledger.';
+    return;
+   }
+   if(ledger.disabled)return;
+   ledger.disabled=true;ledger.textContent='Calculating spending…';
+   try{
+    const ok=await bridge.analyzeOptimizerCandidate?.(candidate,lastOptimizerOutput,lastOptimizerInputs,
+     'Investment Option '+(index+1));
+    if(!ok)throw Error('Full simulation unavailable');
+    const section=document.getElementById('section9Panel');
+    section.open=true;
+    section.scrollIntoView({behavior:'smooth',block:'start'});
+    if(status)status.textContent='Daily Spending Ledger opened in Section 9 using this investment option.';
+   }catch(error){if(status)status.textContent='Spending ledger: '+(error?.message||'Unknown error');}
+   finally{ledger.disabled=false;ledger.textContent='View Daily Spending Ledger · Section 9';}
+   return;
+  }
   const analyze=event.target.closest?.('[data-reverse-analyze]');
   if(analyze){
    const index=Number(analyze.dataset.reverseAnalyze),candidate=lastOptimizerOutput?.candidates?.[index];
@@ -650,7 +674,7 @@ function start(){
     candidate,lastOptimizerOutput,lastOptimizerInputs,'Investment Option '+name
    )).then(ok=>{
     if(!ok&&status)status.textContent='Could not run this scenario. Recalculate Investment and try again.';
-    else if(status)status.textContent='Full simulation completed. See Sections 4–7 for the updated paths and results.';
+    else if(status)status.textContent='Full simulation completed. See Sections 5–8 for the updated paths and results.';
    }).catch(error=>{
     if(status)status.textContent='Simulation failed: '+(error?.message||'Unknown error');
    }).finally(()=>{
