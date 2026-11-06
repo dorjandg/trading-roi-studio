@@ -290,6 +290,21 @@ details p{margin:6px 0}
 @media(max-width:550px){#results #totals.kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
  #results #totals .kpi{min-height:56px;padding:6px 8px}
  #results #totals .kpi strong{font-size:17px}}
+/* Section 1: dense, full-width controls without stranded last-row fields. */
+#section1Panel>.numbered-content{padding:6px 3px 3px}
+#section1Panel>.numbered-content>.hint:first-child{font-size:11px;margin:0 0 6px;line-height:1.3}
+#section1Panel>.numbered-content>.fields{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px 9px}
+#section1Panel .field label{font-size:10.5px;line-height:1.18;margin-bottom:2px}
+#section1Panel .field input,#section1Panel .field select{min-height:30px;padding:4px 8px;font-size:12px}
+#section1Panel .dynamic-purchase-settings{padding:6px 8px;margin:6px 0 4px}
+#section1Panel .dynamic-purchase-settings>.fields{gap:6px}
+#section1Panel .dynamic-purchase-settings .hint{font-size:10.5px;line-height:1.3;margin:4px 0 0}
+#section1Panel .mode-group{margin-top:5px;gap:6px 13px}
+#section1Panel #budgetModeNote{font-size:10.5px;line-height:1.3;margin:4px 0}
+@media(max-width:1100px){#section1Panel>.numbered-content>.fields{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:650px){#section1Panel>.numbered-content>.fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ #section1Panel .field input,#section1Panel .field select{min-height:34px;font-size:16px}
+ #section1Panel>.numbered-content{padding:6px 0 2px}}
 /* Account setup: two compact input rows, with phase details on demand. */
 .account-card{position:relative;padding:10px 12px;margin:6px 0}
 .account-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 10px;align-items:end;padding-right:26px}
