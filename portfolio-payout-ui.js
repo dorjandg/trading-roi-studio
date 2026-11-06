@@ -399,7 +399,21 @@ function start(){
  $('payoutOptReset').addEventListener('click',()=>{loadAssumptions(true);storeAssumptions();save()});
  $('payoutOptAccount').addEventListener('change',()=>{loadAssumptions();loadedAssumptionsAccount=acctValue();save()});
  let currentSortMode=['model','net','budgetRoi','feeRoi','chance','payouts','investment','firstDay'].includes(prior.sortMode)?prior.sortMode:'model';
- let lastOptimizerOutput=null,lastOptimizerAccountKey='',lastOptimizerInputs=null; 
+ let lastOptimizerOutput=null,lastOptimizerAccountKey='',lastOptimizerInputs=null;
+ document.addEventListener('portfolio-investment-import',event=>{
+  const key=event.detail?.accountKey||'';
+  if(!key||!bridge.getRows().some(r=>r.id+':'+r.size===key))return;
+  const field=$('payoutOptAccount');
+  if(!Array.from(field.options).some(x=>x.value===key))syncOptions();
+  field.value=key;
+  loadAssumptions();loadedAssumptionsAccount=acctValue();
+  lastOptimizerOutput=null;lastOptimizerInputs=null;lastOptimizerAccountKey='';
+  $('payoutOptResults').innerHTML='';
+  $('payoutOptStatus').textContent='Imported simulator-only model: '+(event.detail?.title||'selected risk setup')+
+   '. Review the investment budget and assumptions, then Calculate Investment. No Firms rules changed.';
+  math();save();panel.open=true;
+  panel.scrollIntoView({behavior:'smooth',block:'start'});
+ }); 
  function renderLastOptimizer(){
   if(!lastOptimizerOutput)return;
   const row=bridge.getRows().find(r=>r.id+':'+r.size===lastOptimizerAccountKey);
