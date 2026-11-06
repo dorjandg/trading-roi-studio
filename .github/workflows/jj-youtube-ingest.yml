@@ -4,17 +4,16 @@ on:
   workflow_dispatch:
     inputs:
       limit:
-        description: "Maximum new caption fetch attempts (1–67)"
+        description: "Maximum new transcript attempts (1-67)"
         required: false
         default: "10"
       video_id:
-        description: "Optional 11-character YouTube ID from the JJ Simon tab"
+        description: "Optional exact YouTube ID from JJ Simon sheet"
         required: false
         default: ""
       dry_run:
-        description: "Validate live sheet only; no caption download"
+        description: "Validate both Google Sheets only, no transcript API requests"
         type: boolean
-        required: false
         default: false
   schedule:
     - cron: "41 3 * * *"
@@ -28,34 +27,39 @@ concurrency:
 
 jobs:
   import:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
-    if: ${{ vars.JJ_YOUTUBE_INGEST_ENABLED == 'true' || github.event_name == 'workflow_dispatch' }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: jj-simon-knowledge-hub
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Install bounded dependencies
-        run: |
-          python -m pip install --disable-pip-version-check 'yt-dlp>=2026.9.1' 'google-api-python-client>=2.0,<3' 'google-auth>=2.0,<3'
-      - name: Validate configuration
+      - name: Skip scheduled request until hosted API key exists
+        id: gate
         env:
-          JJ_GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.JJ_GOOGLE_SERVICE_ACCOUNT_JSON }}
-          JJ_TRANSCRIPTS_DRIVE_FOLDER_ID: ${{ secrets.JJ_TRANSCRIPTS_DRIVE_FOLDER_ID }}
           JJ_SUPADATA_API_KEY: ${{ secrets.JJ_SUPADATA_API_KEY }}
         run: |
-          test -n "$JJ_GOOGLE_SERVICE_ACCOUNT_JSON" || { echo "::error::Missing JJ_GOOGLE_SERVICE_ACCOUNT_JSON secret"; exit 1; }
-          if [ "${{ github.event.inputs.dry_run }}" != "true" ]; then
-            test -n "$JJ_TRANSCRIPTS_DRIVE_FOLDER_ID" || { echo "::error::Missing private JJ_TRANSCRIPTS_DRIVE_FOLDER_ID secret"; exit 1; }
-            test -n "$JJ_SUPADATA_API_KEY" || { echo "::error::Hosted transcript provider key JJ_SUPADATA_API_KEY is not configured; GitHub yt-dlp fallback intentionally disabled"; exit 1; }
+          if [ "${{ github.event_name }}" = "schedule" ] && [ -z "$JJ_SUPADATA_API_KEY" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "Hosted caption API not configured; safe skip."
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
           fi
-      - name: Read JJ Sheet and import captions into private Drive
+
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.enabled == 'true'
+        with:
+          ref: jj-simon-knowledge-hub
+
+      - uses: actions/setup-python@v5
+        if: steps.gate.outputs.enabled == 'true'
+        with:
+          python-version: "3.12"
+
+      - name: Install Google Sheets client
+        if: steps.gate.outputs.enabled == 'true'
+        run: python -m pip install --disable-pip-version-check 'google-api-python-client>=2.0,<3' 'google-auth>=2.0,<3'
+
+      - name: Import available native captions into private owner-owned Google Sheet
+        if: steps.gate.outputs.enabled == 'true'
         env:
           JJ_GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.JJ_GOOGLE_SERVICE_ACCOUNT_JSON }}
-          JJ_TRANSCRIPTS_DRIVE_FOLDER_ID: ${{ secrets.JJ_TRANSCRIPTS_DRIVE_FOLDER_ID }}
           JJ_SUPADATA_API_KEY: ${{ secrets.JJ_SUPADATA_API_KEY }}
           JJ_LIMIT: ${{ github.event.inputs.limit || '10' }}
           JJ_VIDEO_ID: ${{ github.event.inputs.video_id || '' }}
@@ -64,4 +68,4 @@ jobs:
           args=(--limit "$JJ_LIMIT")
           if [ -n "$JJ_VIDEO_ID" ]; then args+=(--video-id "$JJ_VIDEO_ID"); fi
           if [ "$JJ_DRY_RUN" = "true" ]; then args+=(--dry-run); fi
-          python jj-simon/automation/import-youtube-captions.py "${args[@]}"
+          python jj-simon/automation/import-supadata-to-sheets.py "${args[@]}"
