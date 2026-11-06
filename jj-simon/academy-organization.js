@@ -27,7 +27,17 @@ function jjCurrentOrderedMembers(group){return curriculum.filter(m=>jjGroupFor(m
 const jjRenderOriginal=render;
 render=function(){
  jjRenderOriginal();
- if(active!=='dashboard')return;
+ if(active!=='dashboard'){
+  const m=curriculum.find(item=>item.slug===active);
+  if(m){
+   const members=jjCurrentOrderedMembers(jjGroupFor(m));
+   const title=jjDisplayChapterTitle(m,members.findIndex(item=>item.slug===m.slug));
+   const heading=document.querySelector('.chapter#'+CSS.escape(active)+' > h2');
+   if(heading)heading.textContent=title;
+   const crumb=$('chapter-crumb');if(crumb)crumb.textContent='Dashboard / '+jjGroupFor(m)+' / '+title;
+  }
+  return;
+ }
  const root=document.querySelector('#chapters .dash-overview');
  if(!root)return;
  const cards=[...root.querySelectorAll(':scope > .dash-module')];
