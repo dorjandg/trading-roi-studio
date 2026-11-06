@@ -577,6 +577,8 @@ function render(out,sortMode='model',currentPlan=null){
    '<span class="reverse-summary-toggle">Details</span>'+
    '</summary>'+
    '<div class="reverse-candidate-body">'+
+   '<div class="reverse-option-actions"><button type="button" class="primary" data-reverse-analyze="'+pathIndex+'">Analyze This Scenario · Sections 4–7</button>'+
+   '<small>View results, charts, day-by-day account journey and trade history below · no new calculation needed</small></div>'+
    '<div class="reverse-detail-label">SCENARIO DETAILS</div>'+setupMarkup+r3Markup+
    '<details class="reverse-diagnostic"><summary><strong>4 · Diagnostics &amp; suggestions</strong><small> · Why this scenario struggles</small></summary><div class="reverse-advice"><strong>Why this scenario struggles · what to test</strong>'+
    advice.items.map(d=>'<div class="reverse-advice-item"><strong>'+escapeHtml(d.name)+'</strong>'+
