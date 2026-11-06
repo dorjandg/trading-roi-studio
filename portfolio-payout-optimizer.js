@@ -78,9 +78,9 @@ function earliestPayoutTimeline(p){
  return {phases,fundedStart,waiting,processing,
   earliestDay:fundedStart+waiting+processing};
 }
-function assess(r,count,total){
+function assess(r,count,netTarget,perPayout){
  const trials=r.chartTrials||[];
- const successes=trials.filter(t=>val(t.paid)>=count&&val(t.receipts)+1e-8>=total).length;
+ const successes=trials.filter(t=>val(t.paid)>=count&&val(t.net)+1e-8>=netTarget).length;
  return {hit:trials.length?successes/trials.length:0,
   avgPaid:val(r.avg.paid),avgReceipts:val(r.avg.receipts),
   avgNet:val(r.avg.net),avgSpent:val(r.avg.spent),p10:val(r.p10),
@@ -89,20 +89,21 @@ function assess(r,count,total){
   avgFundedTargets:val(r.avg.targetHit),avgRequests:val(r.avg.payoutRequested),roi:val(r.roi),
   budgetRoi:r.budget>0?val(r.avg.net)/r.budget:0,
   avgPayout:r.avg.paid?val(r.avg.receipts)/r.avg.paid:0,
+  indicativePayouts:Math.ceil((netTarget+val(r.avg.spent))/perPayout),
   chanceAnyPayout:val(r.chancePayout),
   firstPayoutDay:Number.isFinite(r.avgFirstPayoutDay)?r.avgFirstPayoutDay:null,
   goalPayoutDay:Number.isFinite(r.avgGoalPayoutDay)?r.avgGoalPayoutDay:null,
   chanceGoalPayoutDay:val(r.chanceGoalPayoutDay)};
 }
-async function optimize({plan,total,perPayout,maxInvestment,minRoi=2,minNetRoi=0,minNetPnl=0,minRR=1.5,maxRR=3,inputs,onProgress}){
- const count=needed(total,perPayout);
+async function optimize({plan,perPayout,maxInvestment,minRoi=2,minNetRoi=0,minNetPnl=0,minRR=1.5,maxRR=3,inputs,onProgress}){
+ const count=needed(minNetPnl,perPayout);
  if(!E)throw Error('Simulator engine is unavailable.');
  if(!plan)throw Error('Select a prop-firm account.');
  if(!Number.isFinite(minRoi)||minRoi<0||minRoi>100)
   throw Error('Enter an ROI on incurred fees between 0% and 10,000%.');
  if(!Number.isFinite(minNetRoi)||minNetRoi<0||minNetRoi>100)
   throw Error('Enter a net ROI on starting investment between 0% and 10,000%.');
- if(!Number.isFinite(minNetPnl)||minNetPnl<0)
+ if(!Number.isFinite(minNetPnl)||minNetPnl<=0)
   throw Error('Enter a valid nonnegative net P&L target in USD.');
  if(!Number.isFinite(minRR)||!Number.isFinite(maxRR)||minRR<0.1||maxRR>20||minRR>maxRR)
   throw Error('Choose RR bounds with minimum >= 0.1R, maximum <= 20R and minimum <= maximum.');
@@ -127,7 +128,7 @@ async function optimize({plan,total,perPayout,maxInvestment,minRoi=2,minNetRoi=0
  let checked=0;
  const simulate=(p,units,trials,seed)=>E.simulatePortfolio(p,{
   days:inputs.days,tradesPerDay:inputs.tradesPerDay,winRate:inputs.winRate,
-  signalMode:inputs.signalMode,seed,trials,netGoal:total,
+  signalMode:inputs.signalMode,seed,trials,netGoal:minNetPnl,
   budget:Math.round(units*unit*100)/100,
   purchaseMode:inputs.purchaseMode,capacityMode:inputs.capacityMode,
   maxActive:inputs.maxActive,maxBuysPerDay:inputs.maxBuysPerDay,
@@ -150,7 +151,7 @@ async function optimize({plan,total,perPayout,maxInvestment,minRoi=2,minNetRoi=0
   if(v.errors.length)continue;
   for(const units of unitCounts){
    const r=simulate(p,units,coarseTrials,inputs.seed+7771);
-   const score=assess(r,count,total);
+   const score=assess(r,count,minNetPnl,perPayout);
    checked++;
    coarse.push({scale,units,riskMode,rrVariant:rrVariant.name,plan:p,score});
    onProgress?.('Testing '+riskMode+' sizing · '+rrVariant.name+' · '+checked+' scenarios checked');
@@ -158,7 +159,7 @@ async function optimize({plan,total,perPayout,maxInvestment,minRoi=2,minNetRoi=0
   }
  }
  if(!coarse.length)throw Error('No valid risk candidates could be simulated.');
- const reachesPayouts=x=>x.score.avgPaid+1e-8>=count&&x.score.avgReceipts+1e-8>=total;
+ const reachesPayouts=x=>x.score.avgPaid+1e-8>=count&&x.score.avgNet+1e-8>=minNetPnl;
  const meetsAll=x=>reachesPayouts(x)&&x.score.roi+1e-8>=minRoi&&
   x.score.budgetRoi+1e-8>=minNetRoi&&x.score.avgNet+1e-8>=minNetPnl;
  // Shortlist feasible options and closest misses. Independently validate
@@ -174,7 +175,7 @@ async function optimize({plan,total,perPayout,maxInvestment,minRoi=2,minNetRoi=0
   (a.score.goalPayoutDay??Infinity)-(b.score.goalPayoutDay??Infinity)||
   (a.score.firstPayoutDay??Infinity)-(b.score.firstPayoutDay??Infinity)||b.score.roi-a.score.roi||a.units-b.units;
   return Math.min(count,b.score.avgPaid)-Math.min(count,a.score.avgPaid)||
-   Math.min(total,b.score.avgReceipts)-Math.min(total,a.score.avgReceipts)||
+   Math.min(minNetPnl,b.score.avgNet)-Math.min(minNetPnl,a.score.avgNet)||
    b.score.hit-a.score.hit;
  });
  // Keep both the strongest payout strategies and fast first-withdrawal
@@ -189,7 +190,7 @@ async function optimize({plan,total,perPayout,maxInvestment,minRoi=2,minNetRoi=0
  for(const candidate of shortlist){
   const confirmed=simulate(candidate.plan,candidate.units,validationTrials,inputs.seed+37013);
   checked++;
-  candidates.push({...candidate,score:assess(confirmed,count,total),
+  candidates.push({...candidate,score:assess(confirmed,count,minNetPnl,perPayout),
    result:confirmed,initialBudget:candidate.units*unit});
   if(checked%3===0)await pause();
  }
@@ -204,10 +205,10 @@ async function optimize({plan,total,perPayout,maxInvestment,minRoi=2,minNetRoi=0
   (a.score.goalPayoutDay??Infinity)-(b.score.goalPayoutDay??Infinity)||
   (a.score.firstPayoutDay??Infinity)-(b.score.firstPayoutDay??Infinity)||b.score.roi-a.score.roi||a.initialBudget-b.initialBudget;
   return b.score.avgPaid-a.score.avgPaid||
-   b.score.avgReceipts-a.score.avgReceipts||b.score.roi-a.score.roi;
+   b.score.avgNet-a.score.avgNet||b.score.roi-a.score.roi;
  });
  return {requiredPayouts:count,profitPerAccount:profitNeeded(plan,perPayout),
-  targetCash:total,perPayout,maxInvestment,minRoi,minNetRoi,minNetPnl,minRR,maxRR,checked,
+  targetCash:null,perPayout,maxInvestment,minRoi,minNetRoi,minNetPnl,minRR,maxRR,checked,
   feasible:candidates.some(meetsAll),payoutCountFeasible:candidates.some(reachesPayouts),
   fastestFirst:candidates.filter(c=>c.score.firstPayoutDay!=null&&c.score.chanceAnyPayout>=.5).slice().sort((a,b)=>
    a.score.firstPayoutDay-b.score.firstPayoutDay||
@@ -221,8 +222,6 @@ function gaps(out,score){
  const issues=[];
  if(score.avgPaid+1e-8<out.requiredPayouts)
   issues.push('First payouts short by '+(out.requiredPayouts-score.avgPaid).toFixed(2)+' on average');
- if(score.avgReceipts+1e-8<out.targetCash)
-  issues.push('Cash receipts short by '+money(out.targetCash-score.avgReceipts));
  if(score.avgNet+1e-8<out.minNetPnl)
   issues.push('Net P&L short by '+money(out.minNetPnl-score.avgNet));
  if(score.roi+1e-8<out.minRoi)
@@ -310,6 +309,7 @@ function render(out){
    '<div><small>Net ROI on investment</small><strong>'+pct(s.budgetRoi)+'</strong></div>'+ 
    '<div><small>Chance of payout goal</small><strong>'+pct(s.hit)+'</strong></div>'+
    '<div><small>Avg. first payouts</small><strong>'+s.avgPaid.toFixed(2)+'</strong></div>'+
+   '<div><small>Est. payouts incl. fees</small><strong>'+s.indicativePayouts+'</strong></div>'+
    '<div><small>Avg. cash received</small><strong>'+money(s.avgReceipts)+'</strong></div>'+
    '<div><small>Avg. incurred fees</small><strong>'+money(s.avgSpent)+'</strong></div>'+
    '<div><small>Avg. net after fees</small><strong>'+money(s.avgNet)+'</strong></div>'+ 
@@ -331,11 +331,11 @@ function render(out){
    })():'<p class="hint">Trade-by-trade account details unavailable for this scenario.</p>')+
    '</div>';
  }).join('');
- return '<p class="hint">Goal: '+money(out.targetCash)+' received across at least '+out.requiredPayouts+
-  ' separate first payouts of '+money(out.perPayout)+' each. Allowed trade RR: '+out.minRR.toFixed(2)+'–'+out.maxRR.toFixed(2)+'R. Minimum fee-based ROI: '+pct(out.minRoi)+'. Minimum net ROI on starting investment: '+pct(out.minNetRoi)+'. Minimum net P&L: '+money(out.minNetPnl)+'. The account must first reach approximately '+
-  money(out.profitPerAccount)+' funded trading profit (based on the modeled profit payout split, excluding any refunded challenge fee). Probability is the share of trials meeting BOTH payout count and cash received before the chosen trading-day horizon.</p>'+
-  (out.feasible?'<p class="good"><strong>At least one validated scenario met the expected payout-count, payout-cash, ROI and USD net P&L targets.</strong></p>':
-   '<p class="bad"><strong>No validated scenario met all payout-count, cash, ROI and net P&L targets within your investment ceiling and time horizon.</strong> Closest tested alternatives are shown. Payout-goal probability remains reported separately; an expected target is not a reliable guarantee.</p>')+
+ return '<p class="hint">Net P&L target: '+money(out.minNetPnl)+' after incurred fees. Minimum '+out.requiredPayouts+
+  ' first payouts at '+money(out.perPayout)+' each before fees; more may be needed to cover purchase costs. Allowed trade RR: '+out.minRR.toFixed(2)+'–'+out.maxRR.toFixed(2)+'R. Minimum fee-based ROI: '+pct(out.minRoi)+'. Minimum net ROI on starting investment: '+pct(out.minNetRoi)+'. Minimum net P&L: '+money(out.minNetPnl)+'. The account must first reach approximately '+
+  money(out.profitPerAccount)+' funded trading profit (based on the modeled profit payout split, excluding any refunded challenge fee). Probability is the share of trials reaching the minimum first-payout count AND net P&L target within the trading-day horizon.</p>'+
+  (out.feasible?'<p class="good"><strong>At least one validated scenario met the payout-count, ROI and USD net P&L targets.</strong></p>':
+   '<p class="bad"><strong>No validated scenario met the payout-count, ROI and net P&L targets within your investment ceiling and time horizon.</strong> Closest tested alternatives are shown. Payout-goal probability remains reported separately; an expected target is not a reliable guarantee.</p>')+
   (out.candidates[0]?'<p class="hint"><strong>Most important gap:</strong> '+
    (gaps(out,out.candidates[0].score)[0]||'No expected-value target gap; check payout probability and downside risk')+'</p>':'')+
   '<div class="reverse-speed-summary"><strong>Fastest payout KPIs (validated scenarios)</strong> · '+
@@ -343,7 +343,7 @@ function render(out){
    ' ('+escapeHtml(out.fastestFirst.riskMode)+'-sized risk, '+money(out.fastestFirst.initialBudget)+
    ' starting budget, '+pct(out.fastestFirst.score.chanceAnyPayout)+' chance of any payout)':'No scenario had both a first payout and ≥50% payout likelihood')+' · '+
   (out.fastestGoal?'Full '+out.requiredPayouts+'-payout goal: day '+out.fastestGoal.score.goalPayoutDay.toFixed(1)+
-   ' in successful trials':'Full payout-count/cash goal not reached in validated trials')+
+   ' in successful trials':'Net profit / payout-count goal not reached in validated trials')+
   '<small> · Conditional averages, not guaranteed dates; minimum-day and processing waits included.</small></div>'+
   cards+'<p class="hint">Estimates use 200 independent validation trials per shortlisted scenario after 50-trial searches across risk levels and investment amounts. ROI on incurred fees = expected net cash / expected fees actually incurred. Net ROI on investment = expected net cash / tested starting budget. Both may be negative. Starting budget is cash made available for challenge and activation costs, NOT the total fees actually incurred; any refunded challenge fees are tracked in modeled cash receipts. Payout counts and earnings can differ between trials. Searches are approximate, account purchases are capped at 100 per type, and risk safety depends on modeled firm rules. Scenarios do not change your saved Firms risk settings.</p>';
 }
