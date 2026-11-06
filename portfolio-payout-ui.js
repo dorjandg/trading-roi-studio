@@ -24,7 +24,23 @@ function start(){
   '<label>Min RR <input id="payoutOptMinRR" type="number" min="0.1" max="20" step="0.25" value="1.5"></label>'+
   '<label>Max RR <input id="payoutOptMaxRR" type="number" min="0.1" max="20" step="0.25" value="3"></label>'+
   '<span class="hint">Example: R1 at 1.5R, R2 after a loss at 3R. No optimized trade exceeds your max RR.</span>'+
-  '</div></details><p class="hint" id="payoutOptMath">10 first payouts required.</p>'+
+  '</div></details>'+
+  '<details class="payout-assumptions" id="payoutOptAssumptions"><summary>Simulation assumptions <span class="hint" id="payoutOptAssumptionsSummary">· click to edit</span></summary>'+
+  '<div class="payout-assumptions-grid">'+
+  '<label>Trading days<select id="payoutOptDays"><option>10</option><option>20</option><option>30</option><option>40</option><option>60</option><option>90</option><option>120</option></select></label>'+
+  '<label>Signals / day<select id="payoutOptSignals"></select></label>'+
+  '<label>Win rate (%)<input id="payoutOptWinRate" type="number" min="0" max="100" step="0.5"></label>'+
+  '<label>Purchase mode<select id="payoutOptPurchase"><option value="recycle">Dynamic · as needed</option><option value="upfront">Buy upfront</option></select></label>'+
+  '<label>Signal outcomes<select id="payoutOptSignalMode"><option value="independent">Independent</option><option value="shared">Shared daily signal</option></select></label>'+
+  '<label>Reinvest payouts<select id="payoutOptReinvest"><option value="no">No</option><option value="yes">Yes</option></select></label>'+
+  '<label>Phase 1 min days<input id="payoutOptP1Days" type="number" min="0" max="60" step="1"></label>'+
+  '<label>Phase 2 min days<input id="payoutOptP2Days" type="number" min="0" max="60" step="1"></label>'+
+  '<label>Funded wait (calendar days)<input id="payoutOptWait" type="number" min="0" max="120" step="1"></label>'+
+  '<label>Payout processing (calendar days)<input id="payoutOptProcessing" type="number" min="0" max="120" step="1"></label>'+
+  '</div><p class="hint" id="payoutOptLimits"></p>'+
+  '<button type="button" class="payout-assumptions-reset" id="payoutOptReset">Reset assumptions from Section 1 / Firms</button>'+
+  '<p class="hint">These values apply only to Calculate Investment. The main simulator and saved Firms settings are not changed.</p>'+
+  '</details><p class="hint" id="payoutOptMath">10 first payouts required.</p>'+
   '<p id="payoutOptStatus" class="status" role="status">Choose targets, then Calculate Investment.</p>'+
   '<div id="payoutOptResults"></div></div>';
  document.getElementById('results').before(panel);
@@ -45,6 +61,15 @@ function start(){
  .payout-rr-controls label{display:flex;flex-direction:column;gap:2px;font-size:10px}
  .payout-rr-controls input{width:85px;height:29px;min-height:29px;padding:3px 6px;font-size:12px}
  .payout-rr-controls .hint{flex:1;min-width:160px}
+ .payout-assumptions{margin:5px 0;border:1px solid var(--line);border-radius:6px;padding:3px 7px}
+ .payout-assumptions>summary{cursor:pointer;font-weight:700;font-size:11px}
+ .payout-assumptions>summary .hint{font-weight:400;font-size:10px}
+ .payout-assumptions-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;margin:6px 0}
+ .payout-assumptions-grid label{display:flex;flex-direction:column;gap:2px;font-weight:600;font-size:10px;min-width:0}
+ .payout-assumptions-grid input,.payout-assumptions-grid select{width:100%;box-sizing:border-box;min-width:0;height:29px;min-height:29px;font-size:12px;padding:3px 6px;border-radius:5px}
+ .payout-assumptions-reset{font-size:10px;padding:4px 7px;min-height:25px}
+ @media(max-width:900px){.payout-assumptions-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+ @media(max-width:600px){.payout-assumptions-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.payout-assumptions-grid input,.payout-assumptions-grid select{font-size:16px;height:35px;min-height:35px}}
  .reverse-candidate{border:1px solid var(--line);border-radius:7px;padding:6px 7px;margin:5px 0}
  .reverse-candidate h4{font-size:13px;line-height:1.18;margin:0 0 3px}
  .reverse-candidate .hint{font-size:10px;line-height:1.25;margin:2px 0 4px!important}
