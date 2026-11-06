@@ -31,6 +31,13 @@ Updated: 2026-11-06. Read this together with AGENTS.md. Repository code is autho
 - Styles are scoped to `#journeyContents`, responsive in light and dark themes. Refreshed the journey script asset query parameter for browser caching. No engine, history, risk, calculations or other sections changed.
 - JavaScript syntax and representative rendering smoke test passed: five tables, five uniquely identified collapsible panels, all closed by default, all opened when state requests it. Live Cloudflare/browser rendering remains unverified.
 
+## Compact Section 3A investment input collapse (Nov 6)
+- A screenshot showed the large Section 3A introductory explanation, target P&L, minimum payout, account selector, max investment, Simulation Assumptions and payout math occupying too much space once results exist.
+- Grouped only those input fields inside nested `#payoutOptInputsPanel` details, **open initially**, and **automatically close after successful Calculate Investment**. On validation errors or failed optimizer, they remain open for correction.
+- The closed header `#payoutOptInputsSummary` always shows account name, target net P&L, minimum payout and investment limit. Clicking the header toggles to edit; all input elements retain IDs, values, event handlers, simulations, account and per-user saved state. Running again is still possible using the main Section 3A button.
+- Calculation status, original result options, one unified model-comparison table, More Model Search Settings and additional-model results remain **outside** the collapsed inputs and visible while editing.
+- Applied styles within `#payoutOptimizerPanel` with mobile spacing. Refreshed browser query on `portfolio-payout-ui.js`. JS syntax checked; live Cloudflare browser not verified.
+
 ## Single unified Section 3A model table (Nov 6)
 - User pointed out the duplicate Section 3A model tables and asked for **one table with all filters/parameters**. Removed obsolete `portfolioModelComparison` and its rendering. `renderUnifiedInvestmentModels` is the one comparison table, displayed after Calculate Investment runs (not only after searching for extra models).
 - The unified table displays the original validated investment options and, when **Find More Risk Models** is clicked on one option, appends that option's independently validated risk alternatives to the *same table*. It does not create a second table. Source filter supports **All models / Investment options / Additional models**. Starting a fresh investment calculation clears prior extra alternatives.
