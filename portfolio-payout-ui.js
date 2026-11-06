@@ -481,7 +481,7 @@ function start(){
     const effort=$('payoutMoreEffort').value;
     const trials=effort==='deep'?[150,250]:effort==='quick'?[50,80]:[80,150];
     const opts={...lastOptimizerInputs,budget:candidate.initialBudget,
-     netGoal:lastOptimizerOutput.minNetPnl,objective:$('payoutMoreObjective').value,
+     netGoal:lastOptimizerOutput.minNetPnl,objective:$('payoutMoreObjective').value,trackCharts:true,
      trainTrials:trials[0],testTrials:trials[1],shortlist:10};
     const result=root.StudioModelDiscovery.search(root.StudioModelDiscovery.clonePlan(candidate.plan),opts);
     lastModelSearch={candidate,result,origin:'Investment Option '+(index+1)};
@@ -558,7 +558,7 @@ function start(){
   }
   const button=event.target.closest?.('[data-more-analyze]');
   if(!button||!lastOptimizerOutput||button.disabled)return;
-  const match=/^(original|extra):(\\d+)$/.exec(button.dataset.moreAnalyze||'');
+  const match=/^(original|extra):([0-9]+)$/.exec(button.dataset.moreAnalyze||'');
   if(!match)return;
   const index=Number(match[2]);
   let model,label;
