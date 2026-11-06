@@ -223,6 +223,85 @@ function start(){
   }
   #payoutOptimizerPanel>.numbered-content{padding:7px 6px}
  }
+
+/* Clean-results pass: less chrome, one simple heading per group. */
+#payoutOptResults .reverse-simple-heading{
+ font-size:13px;font-weight:750;line-height:1.35;color:var(--text);
+ padding:7px 1px 5px;margin:12px 0 5px;border-bottom:1px solid var(--line);
+}
+#payoutOptResults .reverse-simple-heading small{font-size:11px;font-weight:500;color:var(--muted)}
+#payoutOptResults .reverse-result-overview{
+ border:0;border-radius:5px;border-left:3px solid var(--blue);
+ box-shadow:none;background:transparent;padding:6px 8px;margin:4px 0;
+ font-size:12px;
+}
+#payoutOptResults .reverse-critical-gap{
+ margin:3px 0 9px;padding:4px 8px;
+ border:0;border-left:3px solid #ae8240;border-radius:3px;background:transparent;
+ font-size:11px;
+}
+#payoutOptResults .reverse-info-section{
+ margin:2px 0;border:0;border-bottom:1px solid var(--line);
+ border-radius:0;background:transparent;
+}
+#payoutOptResults .reverse-info-section>summary{
+ background:transparent;border:0;padding:7px 5px;
+ font-size:11px;font-weight:600;
+}
+#payoutOptResults .reverse-info-section[open]>summary{border-bottom:0}
+#payoutOptResults .reverse-info-section>p{padding:7px 10px;border-top:1px solid var(--line)}
+#payoutOptResults .reverse-sort-bar{
+ padding:4px 0 8px;margin:1px 0 4px;border:0;border-radius:0;background:transparent;
+}
+#payoutOptResults .reverse-sort-bar select{max-width:210px}
+#payoutOptResults .reverse-sort-bar small{flex:1 1 200px;font-size:10px;opacity:.75}
+#payoutOptResults .reverse-candidate{
+ margin:5px 0;border:1px solid var(--line);border-radius:7px;
+ box-shadow:none;background:var(--panel);
+}
+#payoutOptResults .reverse-candidate>summary{
+ padding:8px 9px;background:transparent;
+}
+#payoutOptResults .reverse-candidate[open]{
+ border:1px solid var(--blue);box-shadow:none;
+}
+#payoutOptResults .reverse-candidate[open]>summary{
+ background:var(--panel2);border-bottom:1px solid var(--line);
+}
+#payoutOptResults .reverse-candidate-name{
+ font-size:11px;line-height:1.35;flex:1 1 280px;
+}
+#payoutOptResults .reverse-candidate-status{font-size:10px}
+#payoutOptResults .reverse-summary-kpis{gap:5px}
+#payoutOptResults .reverse-compact-metric{
+ background:transparent;border:0;border-radius:0;padding:1px 5px;
+ border-left:1px solid var(--line);
+}
+#payoutOptResults .reverse-compact-metric:first-child{border-left:0}
+#payoutOptResults .reverse-compact-metric strong{font-size:11px}
+#payoutOptResults .reverse-candidate-body{background:var(--panel);padding:8px 10px}
+#payoutOptResults .reverse-detail-label{border:0;margin:5px 0;padding:2px 0;font-size:10px}
+#payoutOptResults .reverse-review-panel,#payoutOptResults .reverse-diagnostic,#payoutOptResults .reverse-trade-details{
+ margin:4px 0;border:0;border-bottom:1px solid var(--line);border-radius:0;
+}
+#payoutOptResults .reverse-review-panel>summary,#payoutOptResults .reverse-diagnostic>summary,#payoutOptResults .reverse-trade-details>summary{
+ background:transparent;padding:8px 2px;font-size:11px;
+}
+#payoutOptResults .reverse-review-panel[open],#payoutOptResults .reverse-diagnostic[open],#payoutOptResults .reverse-trade-details[open]{
+ border-left:0;
+}
+#payoutOptResults .reverse-review-panel[open]>summary,#payoutOptResults .reverse-diagnostic[open]>summary,#payoutOptResults .reverse-trade-details[open]>summary{
+ border-bottom:1px solid var(--line);
+}
+#payoutOptResults .reverse-meta-details{margin-top:11px;border-top:1px solid var(--line);padding:5px 0}
+#payoutOptResults .reverse-meta-details>summary{cursor:pointer;font-size:11px;font-weight:600;color:var(--muted);padding:5px 2px}
+#payoutOptResults .reverse-kpis>div{background:transparent}
+@media(max-width:650px){
+ #payoutOptResults .reverse-candidate-name{flex-basis:100%}
+ #payoutOptResults .reverse-summary-kpis{justify-content:flex-start}
+ #payoutOptResults .reverse-compact-metric{padding:2px 5px}
+ #payoutOptResults .reverse-sort-bar small{display:none}
+}
  `;document.head.appendChild(style);
  const key='4ds:v1:'+bridge.user+':payout-optimizer:v1';
  let prior={};try{prior=JSON.parse(localStorage.getItem(key)||'{}')}catch(_){}
