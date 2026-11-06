@@ -153,6 +153,55 @@ function start(){
  .payout-opt-fields input,.payout-opt-fields select{font-size:16px;min-height:35px;height:35px;max-height:35px}
  #payoutOptimizerPanel>summary .section-run-btn{width:144px;flex-basis:144px;min-height:30px;height:30px;padding:4px;font-size:11px}
  .reverse-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+ /* Reverse payout hierarchy: three levels, visible scenario ownership, minimal color. */
+ #payoutOptResults{--reverse-accent:#3277a5;--reverse-border:color-mix(in srgb,var(--line) 60%,var(--text) 40%);display:flow-root}
+ #payoutOptResults .reverse-section-divider{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:15px 0 7px;padding:8px 10px;border-bottom:2px solid var(--reverse-border);background:color-mix(in srgb,var(--panel2) 88%,var(--text) 12%);border-radius:5px 5px 0 0}
+ #payoutOptResults .reverse-section-divider strong{font-size:11px;letter-spacing:.065em;line-height:1.25}
+ #payoutOptResults .reverse-section-divider span{font-size:10px;color:var(--muted)}
+ #payoutOptResults .reverse-section-global{margin-top:5px}
+ #payoutOptResults .reverse-section-scenarios{border-bottom-color:var(--reverse-accent);margin-top:16px}
+ #payoutOptResults .reverse-section-reference{margin-top:17px}
+ #payoutOptResults .reverse-sort-bar{border-color:var(--reverse-border);background:var(--panel2);margin:7px 0 9px}
+ #payoutOptResults .reverse-result-overview{min-height:34px;border-color:var(--reverse-border);border-left:3px solid var(--reverse-accent);padding:7px 10px;margin:7px 0;font-size:12px}
+ #payoutOptResults .reverse-info-section{margin:6px 0;border-color:var(--reverse-border)}
+ #payoutOptResults .reverse-info-section>summary{padding:8px 10px;background:color-mix(in srgb,var(--panel2) 93%,var(--text) 7%);font-weight:650}
+ #payoutOptResults .reverse-info-section[open]>summary{border-bottom:1px solid var(--line)}
+ #payoutOptResults .reverse-critical-gap{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 11px;margin:8px 0;border:1px solid var(--reverse-border);border-left:3px solid #b38b48;border-radius:6px;font-size:11px;line-height:1.35}
+ #payoutOptResults .reverse-critical-gap strong{white-space:nowrap;font-size:11px}
+ #payoutOptResults .reverse-critical-gap span{min-width:0}
+ #payoutOptResults .reverse-candidate{margin:10px 0 12px;border:1px solid var(--reverse-border);border-radius:9px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+ #payoutOptResults .reverse-candidate>summary{background:color-mix(in srgb,var(--panel2) 83%,var(--text) 17%);padding:8px 10px}
+ #payoutOptResults .reverse-candidate[open]{border:2px solid var(--reverse-accent);box-shadow:0 2px 10px rgba(0,0,0,.10)}
+ #payoutOptResults .reverse-candidate[open]>summary{border-bottom:1px solid var(--reverse-border);background:color-mix(in srgb,var(--panel2) 78%,var(--text) 22%)}
+ #payoutOptResults .reverse-candidate-name{font-size:12px;white-space:normal;flex:1 1 390px}
+ #payoutOptResults .reverse-candidate-summary{gap:7px}
+ #payoutOptResults .reverse-summary-toggle{font-size:11px;font-weight:700}
+ #payoutOptResults .reverse-candidate-advice{padding-left:18px;margin-top:3px}
+ #payoutOptResults .reverse-candidate-body{padding:10px 12px 12px;background:var(--panel)}
+ #payoutOptResults .reverse-detail-label{font-size:10px;font-weight:800;letter-spacing:.045em;color:var(--muted);padding:4px 2px 7px;border-bottom:1px solid var(--line);margin-bottom:9px}
+ #payoutOptResults .reverse-review-panel,#payoutOptResults .reverse-diagnostic,#payoutOptResults .reverse-trade-details{margin:8px 0;border:1px solid var(--reverse-border);border-radius:7px;overflow:hidden;padding:0}
+ #payoutOptResults .reverse-review-panel>summary,#payoutOptResults .reverse-diagnostic>summary,#payoutOptResults .reverse-trade-details>summary{display:block;padding:9px 11px;font-size:11px;font-weight:650;line-height:1.35;background:var(--panel2);cursor:pointer}
+ #payoutOptResults .reverse-review-panel[open],#payoutOptResults .reverse-diagnostic[open],#payoutOptResults .reverse-trade-details[open]{border-left:3px solid var(--reverse-accent)}
+ #payoutOptResults .reverse-review-panel[open]>summary,#payoutOptResults .reverse-diagnostic[open]>summary,#payoutOptResults .reverse-trade-details[open]>summary{border-bottom:1px solid var(--line)}
+ #payoutOptResults .reverse-review-panel>.tablewrap,#payoutOptResults .reverse-review-panel>.reverse-review-grid,#payoutOptResults .reverse-trade-details>.reverse-path-controls{margin:8px}
+ #payoutOptResults .reverse-review-panel>.hint{margin:7px 10px!important}
+ #payoutOptResults .reverse-diagnostic small{font-size:10px;font-weight:400;color:var(--muted)}
+ #payoutOptResults .reverse-diagnostic .reverse-advice{margin:8px;border:0;padding:5px}
+ #payoutOptResults .reverse-advice-item{padding:7px 2px;margin-top:7px;line-height:1.4}
+ #payoutOptResults .reverse-advice-item>strong{font-size:11px}
+ #payoutOptResults .reverse-review-actions{padding:8px 2px;border-top:1px solid var(--line);margin-top:10px}
+ #payoutOptResults .reverse-kpis{margin:9px 0 12px}
+ #payoutOptResults .reverse-kpis>div{background:var(--panel2);padding:7px 8px}
+ #payoutOptResults .reverse-compact-metric{background:var(--panel);border-color:var(--reverse-border)}
+ @media(max-width:600px){
+  #payoutOptResults .reverse-section-divider{padding:7px 8px;margin-top:12px}
+  #payoutOptResults .reverse-candidate{margin:8px 0 10px}
+  #payoutOptResults .reverse-candidate>summary{padding:7px 8px}
+  #payoutOptResults .reverse-candidate-body{padding:7px}
+  #payoutOptResults .reverse-candidate-name{flex-basis:100%}
+  #payoutOptResults .reverse-candidate-advice{padding-left:0}
+ }
  `;document.head.appendChild(style);
  const key='4ds:v1:'+bridge.user+':payout-optimizer:v1';
  let prior={};try{prior=JSON.parse(localStorage.getItem(key)||'{}')}catch(_){}
