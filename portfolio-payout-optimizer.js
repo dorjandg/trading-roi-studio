@@ -702,7 +702,10 @@ function renderMoreInvestmentModels(search,origin='Selected scenario',sortKey='i
   aw:r=>r.holdout.tradeKpis?.aw??-Infinity,
   al:r=>r.holdout.tradeKpis?.al??-Infinity,
   ev:r=>r.holdout.tradeKpis?.ev??-Infinity,
-  trades:r=>r.holdout.avg.trades
+  trades:r=>r.holdout.avg.trades,
+  p1r1:r=>Number(r.plan.riskProfiles.p1?.r1)||0,
+  p1r2:r=>Number(r.plan.riskProfiles.p1?.r2)||0,
+  p1r3:r=>Number(r.plan.riskProfiles.p1?.r3)||0
  };
  const options=[
  ['improvement','Net improvement'],['net','Expected net'],['roi','Fee ROI'],
@@ -710,7 +713,8 @@ function renderMoreInvestmentModels(search,origin='Selected scenario',sortKey='i
  ['blocked','Risk blocked'],['paid','Payouts'],['funded','Funded'],
  ['bought','Challenges bought'],['spent','Fees spent'],
  ['pf','Profit factor'],['wr','Win rate'],['rr','Planned RR'],
- ['ar','Realized R'],['aw','Average winner'],['al','Average loser'],['ev','Expectancy'],['trades','Trade count']
+ ['ar','Realized R'],['aw','Average winner'],['al','Average loser'],['ev','Expectancy'],['trades','Trade count'],
+  ['p1r1','Phase 1 · R1 cap / amount'],['p1r2','Phase 1 · R2 cap / amount'],['p1r3','Phase 1 · R3 cap / amount']
  ];
  const selected=Object.prototype.hasOwnProperty.call(keys,sortKey)?sortKey:'improvement';
  const models=[all[0],...all.slice(1).sort((a,b)=>{
