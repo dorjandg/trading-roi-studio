@@ -12,13 +12,13 @@ function start(){
   '<span class="sim-charts-hint">Show / hide</span></summary>'+
   '<div class="numbered-content"><p class="hint">Choose your total payout goal, per-account payout, fee-based ROI, net ROI on starting investment, and optional net P&L in USD. The optimizer tests starting investment and phase risks; payout-goal probability is reported as an outcome.</p>'+
   '<div class="payout-opt-fields">'+
-  '<label>Total payout cash ($)<input id="payoutOptTotal" type="number" min="1" step="500" value="10000"></label>'+
-  '<label>Minimum payout per account ($)<input id="payoutOptPer" type="number" min="1" step="100" value="1000"></label>'+
-  '<label>Account type<select id="payoutOptAccount"></select></label>'+
-  '<label>Maximum starting investment ($)<input id="payoutOptMax" type="number" min="1" step="500" value="10000"></label>'+
-  '<label>Minimum ROI on fees (%)<input id="payoutOptRoi" type="number" min="0" max="10000" step="25" value="200" title="Expected net cash divided by fees incurred"></label>'+ 
-  '<label>Minimum net ROI (%)<input id="payoutOptNetRoi" type="number" min="0" max="10000" step="25" value="100" title="Expected net cash after fees divided by starting investment"></label>'+ 
-  '<label>Target net P&L (USD)<input id="payoutOptNetPnl" type="number" min="0" step="500" value="0" title="Minimum expected total payout receipts minus incurred challenge and activation costs. Zero disables this additional constraint."></label>'+
+  '<label><span class="payout-opt-field-title">Total payout cash ($)</span><input id="payoutOptTotal" type="number" min="1" step="500" value="10000"></label>'+
+  '<label><span class="payout-opt-field-title">Minimum payout per account ($)</span><input id="payoutOptPer" type="number" min="1" step="100" value="1000"></label>'+
+  '<label><span class="payout-opt-field-title">Account type</span><select id="payoutOptAccount"></select></label>'+
+  '<label><span class="payout-opt-field-title">Maximum starting investment ($)</span><input id="payoutOptMax" type="number" min="1" step="500" value="10000"></label>'+
+  '<label><span class="payout-opt-field-title">Minimum ROI on fees (%)</span><input id="payoutOptRoi" type="number" min="0" max="10000" step="25" value="200" title="Expected net cash divided by fees incurred"></label>'+ 
+  '<label><span class="payout-opt-field-title">Minimum net ROI (%)</span><input id="payoutOptNetRoi" type="number" min="0" max="10000" step="25" value="100" title="Expected net cash after fees divided by starting investment"></label>'+ 
+  '<label><span class="payout-opt-field-title">Target net P&L (USD)</span><input id="payoutOptNetPnl" type="number" min="0" step="500" value="0" title="Minimum expected total payout receipts minus incurred challenge and activation costs. Zero disables this additional constraint."></label>'+
   '</div><p class="hint" id="payoutOptMath">10 first payouts required.</p>'+
   '<p id="payoutOptStatus" class="status" role="status">Choose targets, then Calculate Investment.</p>'+
   '<div id="payoutOptResults"></div></div>';
@@ -29,9 +29,11 @@ function start(){
  #payoutOptimizerPanel>.numbered-content{padding:8px 5px}
  #payoutOptimizerPanel>summary .section-run-btn{height:34px;min-height:34px;flex:0 0 170px;width:170px;padding:5px 8px;font-size:12px}
  #payoutOptimizerPanel>summary .sim-charts-hint{margin-left:0}
- .payout-opt-fields{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin:7px 0}
- .payout-opt-fields label{font-size:11px;font-weight:700;color:var(--muted);min-width:0}
- .payout-opt-fields input,.payout-opt-fields select{margin-top:3px;width:100%;min-height:35px;padding:5px 7px;font-size:12px}
+ .payout-opt-fields{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));align-items:end;gap:5px;margin:5px 0}
+ .payout-opt-fields label{display:flex;flex-direction:column;gap:3px;min-width:0;margin:0;font-size:10px;line-height:1.15;font-weight:700;color:var(--muted)}
+ .payout-opt-field-title{display:flex;align-items:end;height:26px;min-height:26px;max-height:26px;overflow:hidden}
+ .payout-opt-fields input,.payout-opt-fields select{box-sizing:border-box;display:block;margin:0;width:100%;height:31px;min-height:31px;max-height:31px;padding:4px 7px;border-radius:7px;font-size:12px;line-height:1.2}
+ .payout-opt-fields select{padding-right:19px;text-overflow:ellipsis;white-space:nowrap}
  .reverse-candidate{border:1px solid var(--line);border-radius:8px;padding:8px;margin:8px 0}
  .reverse-candidate h4{margin:0 0 5px}
  .reverse-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;margin:7px 0}
@@ -40,7 +42,7 @@ function start(){
  .reverse-kpis strong{display:block;font-size:15px}
  @media(max-width:1000px){.payout-opt-fields{grid-template-columns:repeat(3,minmax(0,1fr))}.reverse-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
  @media(max-width:600px){.payout-opt-fields{grid-template-columns:repeat(2,minmax(0,1fr))}
- .payout-opt-fields input,.payout-opt-fields select{font-size:16px}
+ .payout-opt-fields input,.payout-opt-fields select{font-size:16px;min-height:35px;height:35px;max-height:35px}
  #payoutOptimizerPanel>summary .section-run-btn{width:144px;flex-basis:144px;min-height:30px;height:30px;padding:4px;font-size:11px}
  .reverse-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
  `;document.head.appendChild(style);
