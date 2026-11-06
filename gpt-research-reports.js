@@ -7,11 +7,42 @@ const status=document.getElementById('gptResearchStatus');
 if(!host||!summary||!status)return;
 const reportName='gpt-research-reports.json';
 const allowedStatuses=new Set(['investigated','recommended','updated','pending-review']);
+const reviewMeta=document.getElementById('gptReviewMeta');
+let lastPublishedAt=null;
+function localPendingCount(){
+ try{
+  const selected=localStorage.getItem('4ds:active-user:v1');
+  const user=['doen','dori','dona','dion'].includes(selected)?selected:'dori';
+  const log=JSON.parse(localStorage.getItem('4ds:v1:'+user+':results-advisor-review:v1')||'[]');
+  return Array.isArray(log)?log.filter(x=>x?.status==='needs-review').length:null;
+ }catch(_){return null;}
+}
+function updateReviewMeta(){
+ if(!reviewMeta)return;
+ const pending=localPendingCount();
+ reviewMeta.textContent='Last published report: '+(lastPublishedAt?new Date(lastPublishedAt).toLocaleString():'not verified')+
+  ' · Pending questions (this browser): '+(pending==null?'unavailable':pending)+
+  ' · Actual GPT task run time is not available to the website';
+}
+const manualReviewPrompt='Run my existing enabled Trading Studio GPT Review scheduled task now, once, without changing its daily schedule. Inspect the newest Google Drive Trading Studio Cloud Data simulation history and Results Advisor questions, compare with reports already published in dorjandg/trading-roi-studio/gpt-research-reports.json, investigate new issues, run appropriate tests, and publish evidence-based non-personal findings to Section 11. Preserve private data and do not alter risk strategies without my approval. Report what was verified, updated, and still needs review.';
+function requestReviewNow(){
+ // Opens a draft in ChatGPT. The user must submit it; this website cannot call the automation API.
+ const url='https://chatgpt.com/?prompt='+encodeURIComponent(manualReviewPrompt);
+ const win=window.open(url,'_blank','noopener,noreferrer');
+ const guidance=document.getElementById('gptRequestGuidance');
+ if(guidance)guidance.textContent=win?
+  'ChatGPT opened with a prepared request. Press Send there to request your existing GPT review. If the text is not prefilled, copy this request manually from this page.' :
+  'Your browser may have blocked the new tab. Allow pop-ups for Trading Studio or open ChatGPT and ask: Run my existing Trading Studio GPT Review now.';
+}
+document.getElementById('gptReviewRequestNow')?.addEventListener('click',requestReviewNow);
+updateReviewMeta();
 const label=(txt)=>{const node=document.createElement('span');node.textContent=txt;return node;};
 function paragraph(parent,text){const p=document.createElement('p');p.textContent=text;parent.appendChild(p);}
 function draw(data){
  const items=Array.isArray(data?.reviews)?data.reviews:[];
  host.replaceChildren();
+ lastPublishedAt=data?.updatedAt||null;
+ updateReviewMeta();
  summary.textContent=' · '+items.length+' reports · latest '+(data?.updatedAt?new Date(data.updatedAt).toLocaleDateString():'—');
  if(!items.length){status.textContent='No published GPT findings yet';return;}
  for(const report of items.slice(0,30)){
@@ -74,6 +105,7 @@ function evidenceReadiness(){
 }
 async function refresh(){
  evidenceReadiness();
+ updateReviewMeta();
  status.textContent='Loading latest research reports…';
  try{
   const response=await fetch(reportName+'?t='+Date.now(),{cache:'no-store'});
