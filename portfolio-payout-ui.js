@@ -34,12 +34,17 @@ function start(){
  .payout-opt-field-title{display:flex;align-items:end;height:26px;min-height:26px;max-height:26px;overflow:hidden}
  .payout-opt-fields input,.payout-opt-fields select{box-sizing:border-box;display:block;margin:0;width:100%;height:31px;min-height:31px;max-height:31px;padding:4px 7px;border-radius:7px;font-size:12px;line-height:1.2}
  .payout-opt-fields select{padding-right:19px;text-overflow:ellipsis;white-space:nowrap}
- .reverse-candidate{border:1px solid var(--line);border-radius:8px;padding:8px;margin:8px 0}
- .reverse-candidate h4{margin:0 0 5px}
- .reverse-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;margin:7px 0}
- .reverse-kpis>div{border:1px solid var(--line);padding:6px;border-radius:6px;min-width:0}
- .reverse-kpis small{display:block;color:var(--muted);font-size:10px}
- .reverse-kpis strong{display:block;font-size:15px}
+ .reverse-candidate{border:1px solid var(--line);border-radius:7px;padding:6px 7px;margin:5px 0}
+ .reverse-candidate h4{font-size:13px;line-height:1.18;margin:0 0 3px}
+ .reverse-candidate .hint{font-size:10px;line-height:1.25;margin:2px 0 4px!important}
+ .reverse-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;margin:5px 0}
+ .reverse-kpis>div{border:1px solid var(--line);padding:4px 6px;border-radius:5px;min-width:0}
+ .reverse-kpis small{display:block;color:var(--muted);font-size:10px;line-height:1.12;margin:0 0 2px}
+ .reverse-kpis strong{display:block;font-size:12px;line-height:1.2}
+ .reverse-candidate .tablewrap{margin-top:4px;border-radius:6px}
+ .reverse-candidate table{font-size:11px}
+ .reverse-candidate th,.reverse-candidate td{padding:5px 7px;line-height:1.2}
+ .reverse-candidate th{font-size:10px}
  @media(max-width:1000px){.payout-opt-fields{grid-template-columns:repeat(3,minmax(0,1fr))}.reverse-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
  @media(max-width:600px){.payout-opt-fields{grid-template-columns:repeat(2,minmax(0,1fr))}
  .payout-opt-fields input,.payout-opt-fields select{font-size:16px;min-height:35px;height:35px;max-height:35px}
