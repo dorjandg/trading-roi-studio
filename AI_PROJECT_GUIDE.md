@@ -31,6 +31,13 @@ Updated: 2026-11-06. Read this together with AGENTS.md. Repository code is autho
 - Styles are scoped to `#journeyContents`, responsive in light and dark themes. Refreshed the journey script asset query parameter for browser caching. No engine, history, risk, calculations or other sections changed.
 - JavaScript syntax and representative rendering smoke test passed: five tables, five uniquely identified collapsible panels, all closed by default, all opened when state requests it. Live Cloudflare/browser rendering remains unverified.
 
+## Section 3A table header explanations (Nov 6)
+- Added a concise explanation for every recognized table header in Section 3A, covering the unified investment/risk-model comparison, option-level phase and recovery tests, comparison with Firms, and trade-by-trade examples. Currently 46 unique literal headers are covered in `tableHeaderHelp`; dynamic column headings like phase names remain self-describing.
+- Hover over any table header on desktop to read its explanation in a fixed-position tooltip (not clipped by horizontal table scrolling); keyboard focus also opens it. Tap/click a header on mobile to pin the explanation; tap it again, tap elsewhere, press Escape, or scroll to dismiss. Headers have accessible labels and focusability, while the renderer's risk/model data and sorting/filter behavior remain unchanged.
+- Explanations distinguish **fee ROI from starting-investment ROI, goal chance from first-payout chance, risk-blocked from breached, planned RR from realized AR, and risk caps from actual adaptive trade risk**.
+- The page dynamically re-annotates headers after sorting, model changes, and trade-history selection via a scoped child-list observer, avoiding duplicate controls or additional columns. No impact on trading engine or saved simulation history.
+- Script syntax checks passed for payout UI, payout optimizer and simulator inline JS; 46 of 46 static header labels are covered in the help map. Live Cloudflare/browser tooltip behavior remains unverified.
+
 ## Compact Section 3A investment input collapse (Nov 6)
 - A screenshot showed the large Section 3A introductory explanation, target P&L, minimum payout, account selector, max investment, Simulation Assumptions and payout math occupying too much space once results exist.
 - Grouped only those input fields inside nested `#payoutOptInputsPanel` details, **open initially**, and **automatically close after successful Calculate Investment**. On validation errors or failed optimizer, they remain open for correction.
