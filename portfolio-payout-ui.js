@@ -1446,6 +1446,19 @@ function start(){
    }catch(saveError){historyResult=' · history save failed: '+saveError.message}
    status.textContent='Finished · '+output.checked+' scenarios evaluated · '+output.requiredPayouts+
     ' minimum payouts before fees. '+(output.feasible?'Expected net P&L, payout count and ROI filters were met.':'No validated scenario met all selected targets.')+historyResult;
+   // Two-step CFD research uses the user's opt-in funded compounding scenario
+   // as the default additional comparison, rather than hiding it behind
+   // Investment Option 1. Persisted risk profiles remain untouched.
+   if(selectedPlan.stageList?.includes('p2')&&selectedPlan.id!=='topstep'){
+    const action=$('payoutOptResults').querySelector('[data-reverse-funded-450="0"]');
+    if(action&&root.StudioModelDiscovery?.compareFundedRecovery450){
+     status.textContent+=' · Adding funded compounding variants to Model comparison…';
+     $('payoutOptModelComparison').open=true;
+     action.click();
+    }else{
+     status.textContent+=' · Funded compounding module unavailable; 5 baseline models only.';
+    }
+   }
   }catch(error){status.textContent='Reverse optimizer: '+error.message}
   finally{busy=false;button.disabled=false;}
  });
