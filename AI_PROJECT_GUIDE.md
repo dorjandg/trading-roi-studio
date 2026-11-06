@@ -79,6 +79,13 @@ Independent 3A assumptions are stored per selected account in the existing per-u
 - Suggestions may involve safer tier sizing, checking signal capacity and account availability, reviewing payouts/costs, or testing a longer horizon. Never shorten mandatory firm delays or claim a causal improvement from a single result.
 - This is distinct from the existing Section 3A Calculate Investment diagnostics. It does not change either calculation engine.
 
+## Review or adopt a Calculate Investment scenario (Nov 6 update)
+- Each expanded validated scenario now contains independent collapsed **Trading rules & risks** and **Account & simulation assumptions** panels. Phase review shows R1/R2/R3 USD risk, RR per tier, risk sequence, max winning trades/day and minimum days, with a changed/same comparison against an existing saved Firms account profile.
+- The scenario has an explicit **Send this risk setup to Firms** action. It uses the pre-existing confirmed `sendPlanToFirms` + `StudioFirmsTransfer` workflow, including per-user account match verification, local backup and Restore previous support. Opening/reviewing a scenario never changes Firms.
+- Prevent transfer where per-tier RR differs from the RR value that the existing Firms transfer can preserve; otherwise an import would silently change the tested risk configuration. Missing saved Firms profiles must first be created in Firms.
+- A transfer copies trade risk sizing/sequence/win caps/reserve only. Account fees, loss limits, mandatory minimum days, payout terms, search budget, horizon, target net P&L and assumptions are not default Firms configuration and are deliberately not imported.
+- No extra simulation run is required to inspect the scenario: shortlisted models have already undergone separate validation trials. Recalculate only after changing assumptions. Tested performance remains hypothetical.
+
 ## Sortable validated payout scenarios (Nov 6 update)
 - Reverse Engineer Payouts has a **Sort scenarios by** selector above the collapsed scenario cards, defaulting to **Optimizer ranking**. User's selection is saved with per-user payout optimizer preferences.
 - Available display sorting: highest average net P&L, investment ROI, fee ROI, goal probability, average first payouts; lowest starting investment; earliest conditional first payout day. Null first-payout days sort last. Ties preserve optimizer order.
