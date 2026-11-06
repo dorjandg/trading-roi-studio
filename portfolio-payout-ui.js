@@ -307,7 +307,10 @@ function start(){
  .reverse-option-actions button{min-height:32px;padding:6px 11px;font-size:11px;white-space:normal;text-align:center}
  .reverse-option-actions small{font-size:10px;color:var(--muted);flex:1 1 240px}
  @media(max-width:650px){.reverse-option-actions button{flex:1 1 100%}}
- `;document.head.appendChild(style);
+
+ #payoutOptResults .reverse-risk-tier{display:block;font-size:9px;color:var(--muted);font-weight:500;margin-top:2px}
+ #payoutOptResults .reverse-review-panel table td{font-variant-numeric:tabular-nums}
+  `;document.head.appendChild(style);
  const key='4ds:v1:'+bridge.user+':payout-optimizer:v1';
  let prior={};try{prior=JSON.parse(localStorage.getItem(key)||'{}')}catch(_){}
  for(const [name,id] of [['per','payoutOptPer'],['max','payoutOptMax'],['roi','payoutOptRoi'],['netRoi','payoutOptNetRoi'],['netPnl','payoutOptNetPnl'],['minRR','payoutOptMinRR'],['maxRR','payoutOptMaxRR']])
