@@ -4,12 +4,13 @@ const jjTermsChapter={slug:jjTermsSlug,group:'Research',title:'Trading Dictionar
 if(!chapters.some(x=>x.slug===jjTermsSlug)){chapters.push(jjTermsChapter);curriculum.push({slug:jjTermsSlug,title:'00 · Trading Dictionary',status:'review',reason:'Categorized trading definitions with sources and exceptions.'})}
 jjCategoryOverrides[jjTermsSlug]='Math & Research';
 curriculum.sort((a,b)=>jjGroupOrder[jjGroupFor(a)]-jjGroupOrder[jjGroupFor(b)]);
-const jjTermsState={query:'',category:'All categories',onlyUnresolved:false};
+const jjTermsState={query:'',category:'All categories',subcategory:'All subcategories',onlyUnresolved:false};
 const jjTermCategories=['All categories',...new Set(jjTerms.map(x=>x.category))].sort((a,b)=>a==='All categories'?-1:b==='All categories'?1:a.localeCompare(b));
+const jjTermSubcategories=['All subcategories',...new Set(jjTerms.map(x=>x.subcategory||x.category))].sort((a,b)=>a==='All subcategories'?-1:b==='All subcategories'?1:a.localeCompare(b));
 function jjTermEl(tag,cls,content){const e=document.createElement(tag);if(cls)e.className=cls;if(content!==undefined)e.textContent=content;return e}
 function jjTermFilter(){
  const q=jjTermsState.query.toLocaleLowerCase().trim();
- return jjTerms.filter(t=>(jjTermsState.category==='All categories'||jjTermsState.category===t.category)&&(!jjTermsState.onlyUnresolved||['conflict','video','firm'].includes(t.verification))&&(!q||[t.term,t.category,t.meaning,t.not,t.exception].join(' ').toLocaleLowerCase().includes(q)));
+ return jjTerms.filter(t=>(jjTermsState.category==='All categories'||jjTermsState.category===t.category)&&(jjTermsState.subcategory==='All subcategories'||jjTermsState.subcategory===(t.subcategory||t.category))&&(!jjTermsState.onlyUnresolved||['conflict','video','firm'].includes(t.verification))&&(!q||[t.term,t.category,t.meaning,t.not,t.exception].join(' ').toLocaleLowerCase().includes(q)));
 }
 function jjTermsRenderResults(){
  const root=document.getElementById('jj-terms-app');if(!root)return;
@@ -22,7 +23,7 @@ function jjTermsRenderResults(){
   const sum=jjTermEl('summary');
   const left=jjTermEl('span','jj-term-left');
   left.append(jjTermEl('span','jj-term-id',t.id),jjTermEl('strong','',t.term));
-  const right=jjTermEl('span','jj-term-category',t.category);sum.append(left,right);item.append(sum);
+  const right=jjTermEl('span','jj-term-category',t.subcategory||t.category);sum.append(left,right);item.append(sum);
   const inner=jjTermEl('div','jj-term-body');
   const add=(label,text,cls)=>{inner.append(jjTermEl('strong','jj-term-field',label));inner.append(jjTermEl('p',cls||'',text))};
   add('Canonical research meaning',t.meaning);
@@ -58,10 +59,24 @@ function jjTermsMount(){
  const search=jjTermEl('input');search.type='search';search.placeholder='Try risk of ruin, fair price, payout, BOS';search.value=jjTermsState.query;search.oninput=()=>{jjTermsState.query=search.value;jjTermsRenderResults()};lab.append(search);filters.append(lab);
  const cat=jjTermEl('label');cat.append(jjTermEl('span','','Category'));
  const select=jjTermEl('select');for(const v of jjTermCategories){const o=jjTermEl('option','',v);o.value=v;select.append(o)}
- select.value=jjTermsState.category;select.onchange=()=>{jjTermsState.category=select.value;jjTermsRenderResults()};cat.append(select);filters.append(cat);root.append(filters);
+ select.value=jjTermsState.category;
+ const subcat=jjTermEl('label');subcat.append(jjTermEl('span','','Subcategory'));
+ const subselect=jjTermEl('select');
+ function refreshSubcategories(){
+  const available=jjTermSubcategories.filter(x=>x==='All subcategories'||jjTerms.some(t=>(jjTermsState.category==='All categories'||t.category===jjTermsState.category)&&(t.subcategory||t.category)===x));
+  const previous=jjTermsState.subcategory;
+  subselect.replaceChildren();
+  for(const x of available){const option=jjTermEl('option','',x);option.value=x;subselect.append(option)}
+  if(!available.includes(previous))jjTermsState.subcategory='All subcategories';
+  subselect.value=jjTermsState.subcategory;
+ }
+ select.onchange=()=>{jjTermsState.category=select.value;refreshSubcategories();jjTermsRenderResults()};
+ refreshSubcategories();
+ subselect.onchange=()=>{jjTermsState.subcategory=subselect.value;jjTermsRenderResults()};
+ cat.append(select);filters.append(cat);subcat.append(subselect);filters.append(subcat);root.append(filters);
  const row=jjTermEl('div','jj-terms-bar');
  const checklabel=jjTermEl('label','jj-terms-check');const check=jjTermEl('input');check.type='checkbox';check.checked=jjTermsState.onlyUnresolved;check.onchange=()=>{jjTermsState.onlyUnresolved=check.checked;jjTermsRenderResults()};checklabel.append(check,jjTermEl('span','','Needs external verification / conflict'));row.append(checklabel);
- const reset=jjTermEl('button','','Clear filters');reset.type='button';reset.onclick=()=>{jjTermsState.query='';jjTermsState.category='All categories';jjTermsState.onlyUnresolved=false;search.value='';select.value='All categories';check.checked=false;jjTermsRenderResults()};row.append(reset);
+ const reset=jjTermEl('button','','Clear filters');reset.type='button';reset.onclick=()=>{jjTermsState.query='';jjTermsState.category='All categories';jjTermsState.subcategory='All subcategories';jjTermsState.onlyUnresolved=false;search.value='';select.value='All categories';refreshSubcategories();check.checked=false;jjTermsRenderResults()};row.append(reset);
  const count=jjTermEl('span','jj-terms-count');count.id='jj-terms-count';row.append(count);root.append(row);
  const results=jjTermEl('div','jj-terms-results');results.id='jj-terms-results';root.append(results);
  root.append(jjTermEl('p','jj-terms-intro','The evidence quotations are from unverified machine transcripts; no firm rules or original chart locations have been certified.'));
