@@ -4,20 +4,29 @@ const jjMasterEvidenceBySection=[
  ['EV05','EV08','EV09'],
  ['EV07','EV08','EV12'],
  ['EV01','EV02','EV03','EV12'],
- ['EV04','EV05'],
+ ['EV04','EV05','EV22'],
  ['EV10','EV11'],
  ['EV15'],
- ['EV13','EV14']
+ ['EV13','EV14','EV26','EV29','EV30']
 ];
 function jjMasterEvidenceElement(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e}
+const jjAdditionalChapterEvidence={
+ 'risk-math':[['EV16','EV17','EV18','EV19','EV20','EV24']],
+ 'portfolio-risk':[['EV17','EV18','EV26','EV30']],
+ 'account-management':[['EV26','EV29','EV30']],
+ 'scaling':[['EV25','EV27','EV28']],
+ 'evaluation':[['EV16','EV22']],
+ 'kpi-library':[['EV19','EV20','EV21','EV24']]
+};
 function jjMasterEvidenceMount(){
- if(active!=='master-strategy-encyclopedia')return;
- const chapter=document.getElementById('master-strategy-encyclopedia');if(!chapter)return;
+ const mapping=active==='master-strategy-encyclopedia'?jjMasterEvidenceBySection:jjAdditionalChapterEvidence[active];
+ if(!mapping)return;
+ const chapter=document.getElementById(active);if(!chapter)return;
  const sections=[...chapter.querySelectorAll(':scope > details.section')];
- for(let i=0;i<Math.min(sections.length,jjMasterEvidenceBySection.length);i++){
+ for(let i=0;i<Math.min(sections.length,mapping.length);i++){
   const content=sections[i].querySelector('.content');
   if(!content||content.querySelector('.jj-inline-evidence'))continue;
-  const refs=jjMasterEvidenceBySection[i].map(id=>jjEvidenceRecords.find(x=>x.id===id)).filter(Boolean);
+  const refs=mapping[i].map(id=>jjEvidenceRecords.find(x=>x.id===id)).filter(Boolean);
   if(!refs.length)continue;
   const box=jjMasterEvidenceElement('details','jj-inline-evidence');
   const summary=jjMasterEvidenceElement('summary','', 'Primary transcript evidence · '+refs.length+' passages');
