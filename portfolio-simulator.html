@@ -320,6 +320,13 @@ details p{margin:6px 0}
  .account-grid .field label{font-size:10px}
  .account-grid .remove{top:5px;right:6px}
  .account-risk-details{grid-column:1/-1}}
+/* Long explanations are hidden by default; data tables stay visible. */
+.journey-help-details{margin:3px 0 7px;padding:0;border:0;background:transparent;border-radius:0}
+.journey-help-details>summary{display:inline-flex;align-items:center;gap:5px;width:auto;cursor:pointer;color:var(--muted);font-size:11px;font-weight:650;padding:2px 4px;line-height:1.4;list-style:revert}
+.journey-help-details[open]>summary{color:var(--blue)}
+.journey-help-details .journey-explainer{margin:5px 3px 7px;font-size:11px;line-height:1.45}
+.journey-funnel h4{margin:8px 0 3px!important}
+.journey-status-line+.journey-help-details{margin-top:2px}
 /* Compact daily account journey: stage flow and tabular daily status. */
 .numbered-panel{margin-top:9px}
 .numbered-panel>.numbered-content{padding:9px 3px 2px}
@@ -498,7 +505,7 @@ details p{margin:6px 0}
 <script src="portfolio-to-firms.js"></script>
 <script src="studio-report-source.js?v=20261105-account-rotation"></script>
 <script src="portfolio-charts.js?v=20261106-ledger-section"></script>
-<script src="portfolio-journey.js?v=20261105-phase-rates"></script>
+<script src="portfolio-journey.js?v=20261106-hide-explanations"></script>
 <script src="cloud-config.js"></script>
 <script src="portfolio-history.js?v=20261106-history-v1"></script>
 <script>
