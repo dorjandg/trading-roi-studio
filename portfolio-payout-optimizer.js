@@ -509,13 +509,13 @@ function portfolioModelComparison(out,order){
    '<details><summary>R1 / R2 / R3 by phase</summary>'+details+'</details></th>'+
    '<td>'+money(s.avgNet)+'</td><td>'+pct(s.budgetRoi)+'</td><td>'+pct(s.hit)+'</td>'+
    '<td>'+number(k.pf)+'</td><td>'+(k.wr==null?'—':pct(k.wr))+'</td><td>'+number(k.rr)+'</td>'+
-   '<td>'+number(k.ar)+'</td><td>'+money(k.ev)+'</td>'+
+   '<td>'+number(k.ar)+'</td><td>'+(k.aw==null?'—':money(k.aw))+'</td><td>'+(k.al==null?'—':money(k.al))+'</td><td>'+(k.ev==null?'—':money(k.ev))+'</td>'+
    '<td>'+number(candidate.result?.avg?.trades)+'</td></tr>';
  }).join('');
  return '<details class="reverse-model-comparison"><summary><strong>Compare trading models &amp; R1/R2/R3</strong> · same KPI format as Section 3</summary>'+
   '<p class="hint">These are the validated investment scenarios, not another model search. Adaptive values represent the calculated consecutive-loss path, not fixed trade risks.</p>'+
-  '<div class="tablewrap"><table class="reverse-model-table"><thead><tr><th>Model</th><th>Net</th><th>ROI</th><th>Goal</th><th>PF</th><th>WR</th><th>RR</th><th>AR</th><th>EV</th><th>Trades</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
-  '<p class="hint">PF = profit factor · WR = win rate · RR = planned reward/risk · AR = realized R · EV = average trade P&L. Open a phase to inspect its risk sequence.</p></details>';
+  '<div class="tablewrap"><table class="reverse-model-table"><thead><tr><th>Model</th><th>Net</th><th>ROI</th><th>Goal</th><th>PF</th><th>WR</th><th>RR</th><th>AR</th><th>AW</th><th>AL</th><th>EV</th><th>Trades</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+  '<p class="hint">PF = profit factor · WR = win rate · RR = planned reward/risk · AR = realized R · AW / AL = average winning / losing trade · EV = average trade P&L. Open a phase to inspect its risk sequence.</p></details>';
 }
 function render(out,sortMode='model',currentPlan=null){
  const selectedSort=Object.prototype.hasOwnProperty.call(payoutSortModes,sortMode)?sortMode:'model';
