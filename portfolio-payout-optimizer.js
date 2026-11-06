@@ -64,7 +64,7 @@ async function optimize({plan,total,perPayout,maxInvestment,minRoi=2,minNetRoi=0
  const maxUnits=Math.min(100,Math.floor(maxInvestment/unit));
  if(maxUnits<1)throw Error('Investment ceiling cannot cover one account purchase and activation reserve.');
  // Each distinct account produces at most one modeled first payout.
- const scaleValues=[.55,.8,1,1.2];
+ const scaleValues=[.45,.6,.75,.9,1,1.15,1.3,1.5];
  const candidates=[];
  let checked=0;
  const simulate=(p,units,trials,seed)=>E.simulatePortfolio(p,{
@@ -80,15 +80,16 @@ async function optimize({plan,total,perPayout,maxInvestment,minRoi=2,minNetRoi=0
  // Unlike payout probability, ROI is not monotone in investment. A binary
  // budget search would skip valid ROI peaks. Sample a spread of budgets.
  const countGrid=new Set([1,maxUnits,Math.min(maxUnits,count),Math.min(maxUnits,count*2)]);
- for(let i=1;i<=10;i++)countGrid.add(Math.max(1,Math.round(i*maxUnits/10)));
+ for(let i=1;i<=14;i++)countGrid.add(Math.max(1,Math.round(i*maxUnits/14)));
  const unitCounts=[...countGrid].filter(x=>x>0&&x<=maxUnits).sort((a,b)=>a-b);
  const coarse=[];
+ const coarseTrials=50,validationTrials=200;
  for(const scale of scaleValues){
   const p=planFor(plan,scale,perPayout);
   const v=E.validatePlan(p);
   if(v.errors.length)continue;
   for(const units of unitCounts){
-   const r=simulate(p,units,50,inputs.seed+7771);
+   const r=simulate(p,units,coarseTrials,inputs.seed+7771);
    const score=assess(r,count,total);
    checked++;
    coarse.push({scale,units,plan:p,score});
@@ -113,8 +114,8 @@ async function optimize({plan,total,perPayout,maxInvestment,minRoi=2,minNetRoi=0
    Math.min(total,b.score.avgReceipts)-Math.min(total,a.score.avgReceipts)||
    b.score.hit-a.score.hit;
  });
- for(const candidate of coarse.slice(0,8)){
-  const confirmed=simulate(candidate.plan,candidate.units,150,inputs.seed+37013);
+ for(const candidate of coarse.slice(0,12)){
+  const confirmed=simulate(candidate.plan,candidate.units,validationTrials,inputs.seed+37013);
   checked++;
   candidates.push({...candidate,score:assess(confirmed,count,total),
    result:confirmed,initialBudget:candidate.units*unit});
@@ -135,6 +136,20 @@ async function optimize({plan,total,perPayout,maxInvestment,minRoi=2,minNetRoi=0
   feasible:candidates.some(meetsAll),payoutCountFeasible:candidates.some(reachesPayouts),
   candidates:candidates.slice(0,5),firm:plan.firm,size:plan.size};
 }
+function gaps(out,score){
+ const issues=[];
+ if(score.avgPaid+1e-8<out.requiredPayouts)
+  issues.push('First payouts short by '+(out.requiredPayouts-score.avgPaid).toFixed(2)+' on average');
+ if(score.avgReceipts+1e-8<out.targetCash)
+  issues.push('Cash receipts short by '+money(out.targetCash-score.avgReceipts));
+ if(score.avgNet+1e-8<out.minNetPnl)
+  issues.push('Net P&L short by '+money(out.minNetPnl-score.avgNet));
+ if(score.roi+1e-8<out.minRoi)
+  issues.push('Fee-based ROI short by '+pct(out.minRoi-score.roi)+' points');
+ if(score.budgetRoi+1e-8<out.minNetRoi)
+  issues.push('Investment ROI short by '+pct(out.minNetRoi-score.budgetRoi)+' points');
+ return issues;
+}
 function render(out){
  const cards=out.candidates.map((candidate,index)=>{
   const s=candidate.score,p=candidate.plan;
@@ -144,6 +159,8 @@ function render(out){
   }).join('');
   return '<div class="reverse-candidate">'+
    '<h4>'+(index===0?'Best tested scenario':'Alternative '+(index+1))+' · '+candidate.scale.toFixed(2)+'× saved risk</h4>'+
+   '<p class="hint" style="margin:4px 0 6px"><strong>Target checks:</strong> '+
+   (gaps(out,s).length?gaps(out,s).join(' · '):'All expected targets met')+'</p>'+
    '<div class="reverse-kpis"><div><small>Tested starting budget</small><strong>'+money(candidate.initialBudget)+'</strong></div>'+
    '<div><small>ROI on incurred fees</small><strong>'+pct(s.roi)+'</strong></div>'+ 
    '<div><small>Net ROI on investment</small><strong>'+pct(s.budgetRoi)+'</strong></div>'+ 
@@ -162,7 +179,9 @@ function render(out){
   money(out.profitPerAccount)+' funded trading profit (based on the modeled profit payout split, excluding any refunded challenge fee). Probability is the share of trials meeting BOTH payout count and cash received before the chosen trading-day horizon.</p>'+
   (out.feasible?'<p class="good"><strong>At least one validated scenario met the expected payout-count, payout-cash, ROI and USD net P&L targets.</strong></p>':
    '<p class="bad"><strong>No validated scenario met all payout-count, cash, ROI and net P&L targets within your investment ceiling and time horizon.</strong> Closest tested alternatives are shown. Payout-goal probability remains reported separately; an expected target is not a reliable guarantee.</p>')+
-  cards+'<p class="hint">Estimates use 150 independent validation trials for shortlisted scenarios after 50-trial searches across risk levels and investment amounts. ROI on incurred fees = expected net cash / expected fees actually incurred. Net ROI on investment = expected net cash / tested starting budget. Both may be negative. Starting budget is cash made available for challenge and activation costs, NOT the total fees actually incurred; any refunded challenge fees are tracked in modeled cash receipts. Payout counts and earnings can differ between trials. Searches are approximate, account purchases are capped at 100 per type, and risk safety depends on modeled firm rules. Scenarios do not change your saved Firms risk settings.</p>';
+  (out.candidates[0]?'<p class="hint"><strong>Most important gap:</strong> '+
+   (gaps(out,out.candidates[0].score)[0]||'No expected-value target gap; check payout probability and downside risk')+'</p>':'')+
+  cards+'<p class="hint">Estimates use 200 independent validation trials for 12 shortlisted scenarios after 50-trial searches across risk levels and investment amounts. ROI on incurred fees = expected net cash / expected fees actually incurred. Net ROI on investment = expected net cash / tested starting budget. Both may be negative. Starting budget is cash made available for challenge and activation costs, NOT the total fees actually incurred; any refunded challenge fees are tracked in modeled cash receipts. Payout counts and earnings can differ between trials. Searches are approximate, account purchases are capped at 100 per type, and risk safety depends on modeled firm rules. Scenarios do not change your saved Firms risk settings.</p>';
 }
 root.StudioPayoutOptimizer={needed,profitNeeded,planFor,assess,optimize,render};
 })(typeof window!=='undefined'?window:globalThis);
