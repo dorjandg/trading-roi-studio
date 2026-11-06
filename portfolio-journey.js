@@ -93,11 +93,18 @@ function sampleMilestones(r,signalDay='1',tableOpen={}){
   if(name==='Failed'||name==='Risk blocked')counts.closed++;
   const p1=ac.passes?.find(x=>x.stage==='p1')?.day;
   const p2=ac.passes?.find(x=>x.stage==='p2')?.day;
+  const exit=[...(ac.trace||[])].reverse().find(x=>x.type==='failed'||x.type==='blocked');
+  const phase=exit?.stage==='p1'?'CH':exit?.stage==='p2'?'VR':exit?.stage==='funded'?'FD':'';
+  const closeReason=ac.status==='failed'?'Loss limit breached'+(phase?' · '+phase:''):
+   ac.status==='exhausted'?'Trade risk too large'+(phase?' · '+phase:'')+
+    (Number.isFinite(Number(exit?.risk))?' · risk '+usd(Number(exit.risk)):'')+
+    (exit?.headroom!=null&&Number.isFinite(Number(exit.headroom))?' / room '+usd(Number(exit.headroom)):''):
+    '—';
   return '<tr><th scope="row">#'+ac.id+'</th><td>'+day(ac.purchaseDay)+'</td>'+
    '<td>'+ac.trades+'</td><td>'+ac.wins+'</td><td>'+ac.losses+'</td>'+
    '<td>'+esc(name)+'</td><td>'+day(p1)+'</td><td>'+day(p2)+'</td>'+
    '<td>'+day(ac.fundedActivatedDay)+'</td><td>'+day(ac.fundedTargetDay)+'</td>'+
-   '<td>'+day(ac.payoutRequestedDay)+'</td><td>'+day(ac.paidDay)+'</td><td>'+day(ac.closedDay)+'</td></tr>';
+   '<td>'+day(ac.payoutRequestedDay)+'</td><td>'+day(ac.paidDay)+'</td><td>'+day(ac.closedDay)+'</td><td>'+esc(closeReason)+'</td></tr>';
  }).join('');
  const ledger=tablePanel('accounts','Purchased account milestones',
   '<div class="journey-account-heading">'+acs.length+' purchased accounts · stage progress and exit dates</div>'+
@@ -106,7 +113,7 @@ function sampleMilestones(r,signalDay='1',tableOpen={}){
   ' · Closed (breach + risk block) '+counts.closed+'</div>'+
   '<div class="tablewrap journey-ledger-table"><table><thead><tr>'+
   ['Account','Bought','Tr','W','L','Status','P1 pass','P2 pass',
-   'Funded','Target','Requested','Paid','Closed day'].map(k=>'<th>'+k+'</th>').join('')+
+   'Funded','Target','Requested','Paid','Closed day','Closure reason'].map(k=>'<th>'+k+'</th>').join('')+
   '</tr></thead><tbody>'+rows+'</tbody></table></div>'+
   '<p class="hint">Closed = actual loss-limit breach (Failed) OR configured-risk block (Risk blocked). A risk-blocked account is not a firm-rule breach, but this simulation does not automatically resize its next trade. The Closed day column records the closure day, not a breach for every account. All purchased accounts are retained.</p>',tableOpen.accounts===true);
  const assignments=r?.sample?.tradeAssignments||[];
