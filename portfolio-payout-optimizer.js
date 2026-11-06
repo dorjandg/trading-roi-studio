@@ -46,7 +46,7 @@ function planFor(base,scale,perPayout,rrVariant=null,riskMode='saved'){
    const rr2=stageRisk.rrByTier?.r2??stageRisk.rr;
    const rr3=stageRisk.rrByTier?.r3??stageRisk.rr;
    const cost=val(p.tradeCost),reserve=Math.max(.01,val(p.riskReserve));
-   const tier1=Math.min(maxRisk,Math.ceil((stageRisk.target+cost)/rr1*scale*100)/100);
+   const tier1=Math.min(maxRisk,Math.ceil((stageRisk.target+cost)/rr1*Math.min(1,scale)*100)/100);
    stageRisk.r1=Math.max(.01,tier1);
    const afterLossHeadroom=Math.min(
     Number.isFinite(p.overallLoss)?p.overallLoss-tier1-cost-reserve:Infinity,
@@ -282,7 +282,7 @@ function render(out){
   const s=candidate.score,p=candidate.plan;
   const risks=p.stageList.map(stage=>{
    const c=p.riskProfiles[stage];
-   return '<tr><td>'+c.name+'</td><td>'+money(c.r1)+'</td><td>'+money(c.r2)+'</td><td>'+money(c.r3)+'</td><td>'+['r1','r2','r3'].map(t=>Number(c.rrByTier?.[t]??c.rr).toFixed(2)+'R').join(' / ')+'</td></tr>';
+   return '<tr><td>'+c.name+'</td><td>'+money(c.target)+'</td><td>'+money(c.r1)+'</td><td>'+money(c.r2)+'</td><td>'+money(c.r3)+'</td><td>'+['r1','r2','r3'].map(t=>Number(c.rrByTier?.[t]??c.rr).toFixed(2)+'R').join(' / ')+'</td></tr>';
   }).join('');
   return '<div class="reverse-candidate">'+
    '<h4>'+(index===0?'Best tested scenario':'Alternative '+(index+1))+' · '+candidate.scale.toFixed(2)+'× risk · '+escapeHtml(candidate.rrVariant||'')+
@@ -302,7 +302,9 @@ function render(out){
    '<div><small>Avg. challenges bought</small><strong>'+s.avgPurchased.toFixed(2)+'</strong></div>'+ 
    '<div><small>Avg. funded reached</small><strong>'+s.avgFunded.toFixed(2)+'</strong></div>'+ 
    '<div><small>Risk-blocked / breached</small><strong>'+s.avgRiskBlocked.toFixed(1)+' / '+s.avgBreached.toFixed(1)+'</strong></div></div>'+
-   '<div class="tablewrap"><table class="journey-table"><thead><tr><th>Phase</th><th>R1</th><th>R2</th><th>R3</th><th>RR (R1 / R2 / R3)</th></tr></thead><tbody>'+risks+'</tbody></table></div>'+
+   (candidate.riskMode==='target'?'<details class="reverse-sizing-info"><summary>How the risks are calculated</summary><p class="hint">'+
+   'R1 aims at the stage profit target with a single win at its R1 RR. Following one loss, the streak policy selects R2; recovery sizing includes the previous loss and trade costs, but is capped by remaining drawdown headroom. Stage minimum trading days and payout waiting still apply. If recovery cannot fit within the loss limit, no risk value can guarantee an immediate recovery.</p></details>':'')+
+   '<div class="tablewrap"><table class="journey-table"><thead><tr><th>Phase</th><th>Profit target</th><th>R1</th><th>R2</th><th>R3</th><th>RR (R1 / R2 / R3)</th></tr></thead><tbody>'+risks+'</tbody></table></div>'+
    (sampleAccounts(candidate).length?(()=>{
     const accounts=sampleAccounts(candidate),example=chooseExampleAccount(accounts);
     const options=accounts.map(ac=>'<option value="'+escapeHtml(ac.id)+'"'+(ac.id===example.id?' selected':'')+'>'+
