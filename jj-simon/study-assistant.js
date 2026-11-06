@@ -160,16 +160,55 @@ function jjQueueAdd(question,reason,matchCount){
  if(saved&&jjQuestionShareEnabled())jjQueueTrySync(q,reason,matchCount).catch(()=>{});
  return {ok:saved,alreadyKnown:!!found};
 }
+const jjQaSyncBusy=new Set();
+function jjCloudEndpoint(){
+ const endpoint=String(window.JJ_ACADEMY_QUESTIONS_ENDPOINT||'').trim();
+ return /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec(?:\?.*)?$/.test(endpoint)?endpoint:'';
+}
+function jjRandomReceipt(){
+ if(!window.crypto?.getRandomValues)throw Error('Secure random generator unavailable');
+ const bytes=window.crypto.getRandomValues(new Uint8Array(32));
+ return [...bytes].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+function jjVerifyReceipt(endpoint,receipt){
+ return new Promise((resolve,reject)=>{
+  const id='jjReceipt'+Math.random().toString(36).slice(2);
+  const script=document.createElement('script');let timer;
+  const clear=()=>{clearTimeout(timer);script.remove();try{delete window[id]}catch(_){}};
+  window[id]=data=>{clear();data?.ok===true?resolve(data):reject(Error(data?.error||'Cloud readback unverified'))};
+  script.onerror=()=>{clear();reject(Error('Cloud readback unavailable'))};
+  timer=setTimeout(()=>{clear();reject(Error('Cloud readback timeout'))},14000);
+  script.src=endpoint+(endpoint.includes('?')?'&':'?')+new URLSearchParams({action:'verify',receipt,callback:id,t:Date.now()});
+  document.head.appendChild(script);
+ });
+}
 async function jjQueueTrySync(question,reason,matchCount){
- /* Shared queue endpoint is optional. Never claim cloud submission if not configured. */
- const response=await fetch('./api/questions',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question,reason,matchCount})});
- if(!response.ok)throw Error('Shared queue unavailable');
- const result=await response.json();
- if(result.ok){
-  const key=jjQuestionId(question);const rows=jjQueueRead();
-  for(const row of rows)if(row.key===key){row.synced=true;row.serverId=result.id}
-  jjQueueWrite(rows);jjQueueRender();
- }
+ const key=jjQuestionId(question),endpoint=jjCloudEndpoint();
+ if(!jjQuestionShareEnabled()||!endpoint||jjQaSyncBusy.has(key))return false;
+ const rows=jjQueueRead(),entry=rows.find(r=>r.key===key&&r.status!=='resolved');
+ if(!entry||entry.synced)return !!entry?.synced;
+ jjQaSyncBusy.add(key);
+ const receipt=jjRandomReceipt();
+ try{
+  const body=new URLSearchParams({action:'submit',question,reason,matchCount:String(Math.max(0,Math.min(Number(matchCount)||0,1000))),receipt});
+  // Like Trading Studio: Apps Script POST has opaque response; trust only verified GET readback.
+  await fetch(endpoint,{method:'POST',mode:'no-cors',body,cache:'no-store',signal:AbortSignal.timeout(16000)});
+  const verified=await jjVerifyReceipt(endpoint,receipt);
+  if(!verified.id||!verified.id.startsWith('uq_'))throw Error('Invalid verified question receipt');
+  const fresh=jjQueueRead();
+  for(const row of fresh)if(row.key===key){row.synced=true;row.serverId=verified.id;row.syncedAt=new Date().toISOString();delete row.syncError}
+  jjQueueWrite(fresh);jjQueueRender();return true;
+ }catch(error){
+  const fresh=jjQueueRead();
+  for(const row of fresh)if(row.key===key){row.synced=false;row.syncError='Not verified · retry sync'}
+  jjQueueWrite(fresh);jjQueueRender();return false;
+ }finally{jjQaSyncBusy.delete(key)}
+}
+async function jjQueueSyncPending(){
+ if(!jjQuestionShareEnabled()||!jjCloudEndpoint())return false;
+ const rows=jjQueueRead().filter(r=>r.status!=='resolved'&&!r.synced).slice(0,15);
+ for(const row of rows)await jjQueueTrySync(row.question,row.reason||'Question not answered',row.matchCount||0);
+ return true;
 }
 function jjQueueRender(){
  const root=document.getElementById('jj-helper-app');if(!root)return;
@@ -188,7 +227,7 @@ function jjQueueRender(){
   item.append(jjHelperNode('strong','',row.question));
   const sub=jjHelperNode('small','',row.reasons?.join(' · ')||row.reason);
   item.append(sub);
-  const meta=jjHelperNode('small','',row.synced?'Shared queue submitted':'Saved locally · shared submission unconfirmed');
+  const meta=jjHelperNode('small','',row.synced?'Google Drive verified':'Saved locally · Google sync not verified');
   item.append(meta);
   const actions=jjHelperNode('div','jj-queue-actions');
   const retry=jjHelperNode('button','','Search again');retry.type='button';retry.onclick=()=>{
@@ -212,7 +251,15 @@ function jjQueueRender(){
   const blob=new Blob([JSON.stringify(open,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='jj-unanswered-questions.json';a.click();URL.revokeObjectURL(url);
  };
- options.append(copy,exportButton);container.append(options);
+ options.append(copy,exportButton);
+ const sync=jjHelperNode('button','','Sync unanswered questions');sync.type='button';
+ const endpoint=jjCloudEndpoint();
+ sync.disabled=!endpoint||!jjQuestionShareEnabled();
+ sync.title=!endpoint?'Google Apps Script endpoint needs activation':!jjQuestionShareEnabled()?'Enable private queue sharing first':'Send unsynced questions to Google Drive and verify receipts';
+ sync.onclick=async()=>{sync.disabled=true;sync.textContent='Syncing…';await jjQueueSyncPending();sync.textContent='Sync unanswered questions';sync.disabled=!jjCloudEndpoint()||!jjQuestionShareEnabled();jjQueueRender()};
+ options.append(sync);
+ container.append(options);
+ if(!endpoint)container.append(jjHelperNode('p','jj-helper-hint','Google Apps Script review queue not connected yet; all questions remain saved in this browser.'));
 }
 function jjQueueFeedback(question,hits){
  const root=document.getElementById('jj-helper-app');if(!root)return;
@@ -274,7 +321,7 @@ function jjHelperMount(){
  root.append(jjHelperNode('p','jj-helper-hint','Searches use Academy material in this browser. Unanswered questions remain local unless you opt into private research submissions. Do not enter passwords or sensitive personal information. A GPT review backend is not yet active.'));
  const shareLabel=jjHelperNode('label','jj-helper-share');
  const share=jjHelperNode('input');share.type='checkbox';share.checked=jjQuestionShareEnabled();
- share.addEventListener('change',()=>{try{localStorage.setItem(jjQuestionShareKey,share.checked?'yes':'no')}catch(_){};jjQueueRender()});
+ share.addEventListener('change',()=>{try{localStorage.setItem(jjQuestionShareKey,share.checked?'yes':'no')}catch(_){};jjQueueRender();if(share.checked)jjQueueSyncPending().catch(()=>{})});
  shareLabel.append(share,jjHelperNode('span','','Allow unanswered questions to be sent to the private review queue when connected'));root.append(shareLabel);
  const form=jjHelperNode('form','jj-helper-form');
  const input=jjHelperNode('textarea');input.rows=2;input.placeholder='Example: When does JJ use BOS instead of displacement on funded accounts?';input.value=jjHelperQuestion;input.setAttribute('aria-label','Question about JJ Academy');
