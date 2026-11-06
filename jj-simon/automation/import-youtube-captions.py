@@ -34,8 +34,30 @@ def load_google():
     raw = os.environ.get("JJ_GOOGLE_SERVICE_ACCOUNT_JSON", "").strip()
     if not raw:
         raise RuntimeError("JJ_GOOGLE_SERVICE_ACCOUNT_JSON must be configured; private Sheet cannot be read anonymously")
-    obj = json.loads(raw)
-    cred = service_account.Credentials.from_service_account_info(obj, scopes=SCOPES)
+    try:
+        obj = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            "JJ_GOOGLE_SERVICE_ACCOUNT_JSON is not valid JSON. "
+            "In GitHub Actions secrets, paste the complete contents of the downloaded "
+            "Google service-account .json file, not its filename or path. "
+            "Never post credentials in logs or chat."
+        ) from None
+    if not isinstance(obj, dict) or obj.get("type") != "service_account" or not all(
+        isinstance(obj.get(k), str) and obj[k] for k in
+        ("project_id", "client_email", "private_key", "token_uri")
+    ):
+        raise RuntimeError(
+            "JJ_GOOGLE_SERVICE_ACCOUNT_JSON is missing required service-account fields. "
+            "Use the complete JSON key file, not an OAuth client configuration."
+        )
+    try:
+        cred = service_account.Credentials.from_service_account_info(obj, scopes=SCOPES)
+    except (ValueError, KeyError, TypeError) as exc:
+        raise RuntimeError(
+            "JJ_GOOGLE_SERVICE_ACCOUNT_JSON contains unusable service-account credentials. "
+            "Re-copy the full JSON file into the GitHub secret."
+        ) from None
     return build("sheets", "v4", credentials=cred, cache_discovery=False), build(
         "drive", "v3", credentials=cred, cache_discovery=False
     )
