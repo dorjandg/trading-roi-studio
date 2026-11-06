@@ -491,6 +491,29 @@ function sortedPayoutCandidates(out,sortMode='model'){
   return delta||a.originalIndex-b.originalIndex;
  });
 }
+function renderScenarioAccountFunnel(result){
+ const steps=E.stageFunnel?.(result)||[];
+ if(!steps.length)return '<p class="hint">Account-stage progression is unavailable for this scenario.</p>';
+ const fmt=v=>Number(v).toFixed(2);
+ const percent=v=>v==null||!Number.isFinite(v)?'—':(100*v).toFixed(1)+'%';
+ const purchased=steps[0].count;
+ const rows=steps.map((step,i)=>{
+  const width=purchased>0?Math.max(0,Math.min(100,100*step.count/purchased)):0;
+  return '<div class="reverse-funnel-row">'+
+   '<span class="reverse-funnel-label">'+escapeHtml(step.label)+'</span>'+
+   '<span class="reverse-funnel-rail" role="img" aria-label="'+escapeHtml(step.label)+
+   ': '+fmt(step.count)+' average accounts, '+percent(step.totalRate)+' of purchased">'+
+   '<span class="reverse-funnel-fill" style="width:'+width.toFixed(2)+'%"></span></span>'+
+   '<strong class="reverse-funnel-number">'+fmt(step.count)+'</strong>'+
+   '<span class="reverse-funnel-step" title="Share of accounts reaching the previous milestone">'+
+   (i===0?'Starting pool':percent(step.previousRate)+' from prior')+'</span>'+
+   '</div>';
+ }).join('');
+ return '<p class="hint">Mean accounts per Monte Carlo trial, tracked through the selected trading-day horizon. Each bar is scaled to purchased challenges; these are stage milestones, not account balances or guaranteed lifetime pass rates.</p>'+
+  '<div class="reverse-funnel-grid">'+rows+'</div>'+
+  '<p class="hint">From prior = accounts reaching this milestone ÷ accounts reaching the preceding milestone. The final payout conversion from purchased is '+
+  percent(steps[steps.length-1].totalRate)+'. Accounts still progressing may pass or pay after the modeled horizon.</p>';
+}
 function render(out,sortMode='model',currentPlan=null){
  const selectedSort=Object.prototype.hasOwnProperty.call(payoutSortModes,sortMode)?sortMode:'model';
  const cards=sortedPayoutCandidates(out,selectedSort).map(({candidate,originalIndex},index)=>{
@@ -602,7 +625,10 @@ function render(out,sortMode='model',currentPlan=null){
    '<details class="reverse-review-panel"><summary><strong>6 · Target checks</strong> · '+
    (gaps(out,s).length?gaps(out,s).length+' gaps to review':'All expected targets met')+
    '</summary><p class="hint">'+escapeHtml(gaps(out,s).length?gaps(out,s).join(' · '):'All expected targets met')+'</p></details>'+
-   '<details class="reverse-review-panel"><summary><strong>7 · Detailed performance</strong> · Net '+
+   '<details class="reverse-review-panel"><summary><strong>7 · Account progression funnel</strong> · Purchased '+
+   s.avgPurchased.toFixed(2)+' → Funded '+s.avgFunded.toFixed(2)+' → Paid '+s.avgPaid.toFixed(2)+
+   '</summary>'+renderScenarioAccountFunnel(candidate.result)+'</details>'+
+   '<details class="reverse-review-panel"><summary><strong>8 · Detailed performance</strong> · Net '+
    money(s.avgNet)+' · ROI '+pct(s.budgetRoi)+' · Paid '+s.avgPaid.toFixed(2)+'</summary><div class="reverse-kpis"><div><small>First payout day (paid trials)</small><strong>'+ (s.firstPayoutDay==null?'Not reached':'Day '+s.firstPayoutDay.toFixed(1))+'</strong></div>'+
    '<div><small>Full payout goal day</small><strong>'+(s.goalPayoutDay==null?'Not reached':'Day '+s.goalPayoutDay.toFixed(1))+'</strong></div>'+
    '<div><small>Tested starting budget</small><strong>'+money(candidate.initialBudget)+'</strong></div>'+
@@ -621,7 +647,7 @@ function render(out,sortMode='model',currentPlan=null){
    'R1 aims at the stage profit target with a single win at its R1 RR. Following one loss, the streak policy selects R2; recovery sizing includes the previous loss and trade costs, but is capped by remaining drawdown headroom. Stage minimum trading days and payout waiting still apply. If recovery cannot fit within the loss limit, no risk value can guarantee an immediate recovery.</p></details>':'')+
 
    '</details>'+
-   '<details class="reverse-review-panel"><summary><strong>8 · Trade-by-trade example</strong> · sample account history</summary>'+
+   '<details class="reverse-review-panel"><summary><strong>9 · Trade-by-trade example</strong> · sample account history</summary>'+
    (sampleAccounts(candidate).length?(()=>{
     const accounts=sampleAccounts(candidate),example=chooseExampleAccount(accounts);
     const options=accounts.map(ac=>'<option value="'+escapeHtml(ac.id)+'"'+(ac.id===example.id?' selected':'')+'>'+
