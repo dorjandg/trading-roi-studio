@@ -46,7 +46,8 @@ render=function(){
   if(m){
    const members=jjCurrentOrderedMembers(jjGroupFor(m));
    const title=jjDisplayChapterTitle(m,members.findIndex(item=>item.slug===m.slug));
-   const heading=document.querySelector('.chapter#'+CSS.escape(active)+' > h2');
+   const article=document.getElementById(active);
+   const heading=article?article.querySelector(':scope > h2'):null;
    if(heading)heading.textContent=title;
    const crumb=$('chapter-crumb');if(crumb)crumb.textContent='Dashboard / '+jjGroupFor(m)+' / '+title;
   }
