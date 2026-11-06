@@ -497,25 +497,35 @@ function render(out,sortMode='model',currentPlan=null){
  const pathIndex=originalIndex;
   const s=candidate.score,p=candidate.plan,advice=diagnoseScenario(candidate,out);
   const policyLabels={saved:'Saved options',streak:'After-loss tiers',flat:'Flat R1', 'after-win':'Increase after win','protect-after-loss':'Protect after loss','target-now':'Adaptive target','repair-r2':'Repair R2','buffered-target':'Buffered target'};
+  const dynamicOption=candidate.riskMode==='adaptive';
+  const dollars2=n=>'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
   const limitInfo=p.stageList.map(stage=>{
    const x=p.riskProfiles[stage]||{},baseline=currentPlan?.riskProfiles?.[stage]||{};
-   const mode=x.policy?.mode||'saved',old=baseline.policy?.mode||'saved';
+   const mode=x.policy?.mode||'saved';
    const rr=t=>Number(x.rrByTier?.[t]??x.rr);
    const oldRr=t=>Number(baseline.rrByTier?.[t]??baseline.rr);
    const changed=['r1','r2','r3'].filter(t=>Math.abs(Number(x[t])-Number(baseline[t]))>.005||Math.abs(rr(t)-oldRr(t))>.00001);
-   const changedOther=Number(x.maxWinsPerDay)!==Number(baseline.maxWinsPerDay)||mode!==old;
+   const changedOther=Number(x.maxWinsPerDay)!==Number(baseline.maxWinsPerDay)||mode!==(baseline.policy?.mode||'saved');
    const difference=!currentPlan?'No saved profile':(changed.length||changedOther?'Changed':'Same');
+   const riskDisplay=dynamicOption?(()=>{
+    const path=E.previewLossPath(p,stage,3);
+    return [0,1,2].map(i=>{
+     const v=path[i];
+     if(!v)return '<td>—</td>';
+     return '<td>'+(v.allowed?'<b>'+dollars2(v.risk)+'</b>':'<span class="bad">Blocked</span>')+
+      '<small class="reverse-risk-tier">'+escapeHtml(v.slot.toUpperCase())+'</small></td>';
+    }).join('');
+   })():'<td>'+['r1','r2','r3'].map(t=>dollars2(x[t])).join(' / ')+'</td>';
    return '<tr><td>'+escapeHtml(x.name||stage)+'</td>'+
     '<td>'+escapeHtml(policyLabels[mode]||mode)+'</td>'+
-    '<td>'+money(x.target)+'</td>'+ 
+    '<td>'+dollars2(x.target)+'</td>'+
     '<td>'+Number(x.maxWinsPerDay||1)+'</td>'+
     '<td>'+Number(x.minDays||0)+'</td>'+
-    '<td>'+money(x.r1)+' / '+money(x.r2)+' / '+money(x.r3)+'</td>'+
+    riskDisplay+
     '<td>'+['r1','r2','r3'].map(t=>rr(t).toFixed(2)+'R').join(' / ')+'</td>'+
     '<td>'+difference+'</td></tr>';
   }).join('');
   const sim=out.inputs||{};
-  const dynamicOption=candidate.riskMode==='adaptive';
   const checks=currentPlan?'<p class="hint">Compared with the current saved Firms account profile. “Changed” refers to phase risks, tier RR, policy or winning-day cap, not firm-required limits.</p>':
    '<p class="hint">No saved Firms profile was found for this account. Open the account in Firms and save a profile before transferring.</p>';
   const compareMarkup=currentPlan?'<details class="reverse-review-panel"><summary><strong>3 · Compare risk with current Firms defaults</strong> · before / proposed</summary>'+
@@ -545,9 +555,9 @@ function render(out,sortMode='model',currentPlan=null){
    '<div class="tablewrap"><table class="journey-table"><thead><tr><th>Phase</th><th>R1 / R2 / R3</th><th>R3 headroom after LL</th><th>Can R3 trade?</th><th>Stage P&L after LLW</th></tr></thead><tbody>'+r3Paths+'</tbody></table></div>'+
    '<p class="hint">LL = R1 loss then R2 loss on later trading days; LLW adds an R3 win. Headroom assumes no earlier gains or losses in that phase, and includes modeled costs/reserve and a $1 buffer. A legal R3 win may still leave the phase below its profit target. The engine checks every actual trade separately. These are alternative hypotheses, not guaranteed recovery.</p></details>':'';
   const setupMarkup='<details class="reverse-review-panel"><summary><strong>1 · Trading rules &amp; risks</strong> · phase-by-phase setup</summary>'+
-   '<div class="tablewrap"><table class="journey-table"><thead><tr><th>Phase</th><th>Risk sequence</th><th>Target</th><th>Max wins/day</th><th>Min trading days</th><th>'+(dynamicOption?'Risk caps R1 / R2 / R3':'R1 / R2 / R3')+'</th><th>RR per tier</th><th>vs Firms</th></tr></thead><tbody>'+limitInfo+'</tbody></table></div>'+checks+
+   '<div class="tablewrap"><table class="journey-table"><thead><tr><th>Phase</th><th>Risk sequence</th><th>Target</th><th>Max wins/day</th><th>Min trading days</th>'+(dynamicOption?'<th>First trade</th><th>After 1 loss</th><th>After 2 losses</th>':'<th>R1 / R2 / R3</th>')+'<th>RR per tier</th><th>vs Firms</th></tr></thead><tbody>'+limitInfo+'</tbody></table></div>'+checks+
    '<p class="hint">'+(dynamicOption?
-   'The amounts above are PER-TRADE RISK CAPS, not actual executed risk values. Each trading day the simulator calculates the risk from remaining target, current stage P&L, daily loss limit, remaining overall drawdown and buffer. Repair R2 tracks the R3 repair state. Open the trade-by-trade example to see exact selected risks.':
+   'These are calculated risks for a hypothetical loss → loss → loss path on separate trading days, using the same sizing logic as the simulator. The small R1/R2/R3 tags identify the tier selected. Adaptive Target normally selects R1 every day; it does not have three distinct fixed tiers. Actual risk depends on the account history and available drawdown. Open an example account trade path for realized modeled trades.':
    'The configured risk amounts are USD per trade and RR is the simulated reward/risk ratio. Actual lot-size margin and trade execution are not verified.')+'</p></details>'+
    '<details class="reverse-review-panel"><summary><strong>2 · Account &amp; simulation assumptions</strong> · budget, frequency and payout rules</summary>'+
    '<div class="reverse-review-grid">'+
