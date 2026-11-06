@@ -397,10 +397,6 @@ function render(out,sortMode='model',currentPlan=null){
  const cards=sortedPayoutCandidates(out,selectedSort).map(({candidate,originalIndex},index)=>{
  const pathIndex=originalIndex;
   const s=candidate.score,p=candidate.plan,advice=diagnoseScenario(candidate,out);
-  const risks=p.stageList.map(stage=>{
-   const c=p.riskProfiles[stage];
-   return '<tr><td>'+c.name+'</td><td>'+money(c.target)+'</td><td>'+money(c.r1)+'</td><td>'+money(c.r2)+'</td><td>'+money(c.r3)+'</td><td>'+['r1','r2','r3'].map(t=>Number(c.rrByTier?.[t]??c.rr).toFixed(2)+'R').join(' / ')+'</td></tr>';
-  }).join('');
   const policyLabels={saved:'Saved options',streak:'After-loss tiers',flat:'Flat R1', 'after-win':'Increase after win','protect-after-loss':'Protect after loss'};
   const limitInfo=p.stageList.map(stage=>{
    const x=p.riskProfiles[stage]||{},baseline=currentPlan?.riskProfiles?.[stage]||{};
@@ -475,7 +471,7 @@ function render(out,sortMode='model',currentPlan=null){
    '<div><small>Risk-blocked / breached</small><strong>'+s.avgRiskBlocked.toFixed(1)+' / '+s.avgBreached.toFixed(1)+'</strong></div></div>'+
    (candidate.riskMode==='target'?'<details class="reverse-sizing-info"><summary>How the risks are calculated</summary><p class="hint">'+
    'R1 aims at the stage profit target with a single win at its R1 RR. Following one loss, the streak policy selects R2; recovery sizing includes the previous loss and trade costs, but is capped by remaining drawdown headroom. Stage minimum trading days and payout waiting still apply. If recovery cannot fit within the loss limit, no risk value can guarantee an immediate recovery.</p></details>':'')+
-   '<div class="tablewrap"><table class="journey-table"><thead><tr><th>Phase</th><th>Profit target</th><th>R1</th><th>R2</th><th>R3</th><th>RR (R1 / R2 / R3)</th></tr></thead><tbody>'+risks+'</tbody></table></div>'+
+
    (sampleAccounts(candidate).length?(()=>{
     const accounts=sampleAccounts(candidate),example=chooseExampleAccount(accounts);
     const options=accounts.map(ac=>'<option value="'+escapeHtml(ac.id)+'"'+(ac.id===example.id?' selected':'')+'>'+
