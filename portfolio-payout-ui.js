@@ -19,7 +19,12 @@ function start(){
   '<label><span class="payout-opt-field-title">Minimum ROI on fees (%)</span><input id="payoutOptRoi" type="number" min="0" max="10000" step="25" value="200" title="Expected net cash divided by fees incurred"></label>'+ 
   '<label><span class="payout-opt-field-title">Minimum net ROI (%)</span><input id="payoutOptNetRoi" type="number" min="0" max="10000" step="25" value="100" title="Expected net cash after fees divided by starting investment"></label>'+ 
   '<label><span class="payout-opt-field-title">Target net P&L (USD)</span><input id="payoutOptNetPnl" type="number" min="0" step="500" value="0" title="Minimum expected total payout receipts minus incurred challenge and activation costs. Zero disables this additional constraint."></label>'+
-  '</div><p class="hint" id="payoutOptMath">10 first payouts required.</p>'+
+  '</div><details class="payout-rr-filters"><summary>RR guidance · min / max <span class="hint">(applies to R1, R2 and R3)</span></summary>'+
+  '<div class="payout-rr-controls">'+
+  '<label>Min RR <input id="payoutOptMinRR" type="number" min="0.1" max="20" step="0.25" value="1.5"></label>'+
+  '<label>Max RR <input id="payoutOptMaxRR" type="number" min="0.1" max="20" step="0.25" value="3"></label>'+
+  '<span class="hint">Example: R1 at 1.5R, R2 after a loss at 3R. No optimized trade exceeds your max RR.</span>'+
+  '</div></details><p class="hint" id="payoutOptMath">10 first payouts required.</p>'+
   '<p id="payoutOptStatus" class="status" role="status">Choose targets, then Calculate Investment.</p>'+
   '<div id="payoutOptResults"></div></div>';
  document.getElementById('results').before(panel);
@@ -34,6 +39,12 @@ function start(){
  .payout-opt-field-title{display:flex;align-items:end;height:26px;min-height:26px;max-height:26px;overflow:hidden}
  .payout-opt-fields input,.payout-opt-fields select{box-sizing:border-box;display:block;margin:0;width:100%;height:31px;min-height:31px;max-height:31px;padding:4px 7px;border-radius:7px;font-size:12px;line-height:1.2}
  .payout-opt-fields select{padding-right:19px;text-overflow:ellipsis;white-space:nowrap}
+ .payout-rr-filters{margin:5px 0;border:1px solid var(--line);border-radius:6px;padding:3px 7px}
+ .payout-rr-filters>summary{cursor:pointer;font-weight:700;font-size:11px}
+ .payout-rr-controls{display:flex;align-items:end;gap:8px;flex-wrap:wrap;margin:4px 0}
+ .payout-rr-controls label{display:flex;flex-direction:column;gap:2px;font-size:10px}
+ .payout-rr-controls input{width:85px;height:29px;min-height:29px;padding:3px 6px;font-size:12px}
+ .payout-rr-controls .hint{flex:1;min-width:160px}
  .reverse-candidate{border:1px solid var(--line);border-radius:7px;padding:6px 7px;margin:5px 0}
  .reverse-candidate h4{font-size:13px;line-height:1.18;margin:0 0 3px}
  .reverse-candidate .hint{font-size:10px;line-height:1.25;margin:2px 0 4px!important}
@@ -64,7 +75,7 @@ function start(){
  `;document.head.appendChild(style);
  const key='4ds:v1:'+bridge.user+':payout-optimizer:v1';
  let prior={};try{prior=JSON.parse(localStorage.getItem(key)||'{}')}catch(_){}
- for(const [name,id] of [['total','payoutOptTotal'],['per','payoutOptPer'],['max','payoutOptMax'],['roi','payoutOptRoi'],['netRoi','payoutOptNetRoi'],['netPnl','payoutOptNetPnl']])
+ for(const [name,id] of [['total','payoutOptTotal'],['per','payoutOptPer'],['max','payoutOptMax'],['roi','payoutOptRoi'],['netRoi','payoutOptNetRoi'],['netPnl','payoutOptNetPnl'],['minRR','payoutOptMinRR'],['maxRR','payoutOptMaxRR']])
   if(prior[name]!=null)$(id).value=String(prior[name]);
  panel.open=prior.open===true;
  function syncOptions(){
@@ -75,7 +86,7 @@ function start(){
  }
  function save(){
   try{localStorage.setItem(key,JSON.stringify({total:$('payoutOptTotal').value,per:$('payoutOptPer').value,
-   max:$('payoutOptMax').value,roi:$('payoutOptRoi').value,netRoi:$('payoutOptNetRoi').value,netPnl:$('payoutOptNetPnl').value,
+   max:$('payoutOptMax').value,roi:$('payoutOptRoi').value,netRoi:$('payoutOptNetRoi').value,netPnl:$('payoutOptNetPnl').value,minRR:$('payoutOptMinRR').value,maxRR:$('payoutOptMaxRR').value,
    account:$('payoutOptAccount').value,open:panel.open}))}catch(_){}
  }
  function math(){
@@ -86,7 +97,7 @@ function start(){
    'Enter positive payout amounts.';
  }
  syncOptions();math();
- for(const id of ['payoutOptTotal','payoutOptPer','payoutOptMax','payoutOptRoi','payoutOptNetRoi','payoutOptNetPnl','payoutOptAccount']){
+ for(const id of ['payoutOptTotal','payoutOptPer','payoutOptMax','payoutOptRoi','payoutOptNetRoi','payoutOptNetPnl','payoutOptMinRR','payoutOptMaxRR','payoutOptAccount']){
   $(id).addEventListener('change',()=>{math();save()});
  }
  panel.addEventListener('toggle',save);
@@ -110,9 +121,10 @@ function start(){
   const inputs=bridge.getInputs(row);
   const total=Number($('payoutOptTotal').value),perPayout=Number($('payoutOptPer').value),
    maxInvestment=Number($('payoutOptMax').value),minRoiPct=Number($('payoutOptRoi').value),
-   minNetRoiPct=Number($('payoutOptNetRoi').value),minNetPnl=Number($('payoutOptNetPnl').value);
-  if(![total,perPayout,maxInvestment,minRoiPct,minNetRoiPct,minNetPnl].every(Number.isFinite)||total<=0||
-   perPayout<=0||maxInvestment<=0||minRoiPct<0||minRoiPct>10000||minNetRoiPct<0||minNetRoiPct>10000||minNetPnl<0){
+   minNetRoiPct=Number($('payoutOptNetRoi').value),minNetPnl=Number($('payoutOptNetPnl').value),
+   minRR=Number($('payoutOptMinRR').value),maxRR=Number($('payoutOptMaxRR').value);
+  if(![total,perPayout,maxInvestment,minRoiPct,minNetRoiPct,minNetPnl,minRR,maxRR].every(Number.isFinite)||total<=0||
+   perPayout<=0||maxInvestment<=0||minRoiPct<0||minRoiPct>10000||minNetRoiPct<0||minNetRoiPct>10000||minNetPnl<0||minRR<.1||maxRR>20||minRR>maxRR){
    status.textContent='Enter valid payout amounts, ROI targets, and nonnegative net P&L in USD.';return;
   }
   busy=true;button.disabled=true;status.textContent='Running reverse payout scenarios…';
@@ -120,7 +132,7 @@ function start(){
   $('payoutOptResults').innerHTML='';save();
   try{
    const output=await solver.optimize({plan:bridge.getPlan(row),total,perPayout,
-    maxInvestment,minRoi:minRoiPct/100,minNetRoi:minNetRoiPct/100,minNetPnl,inputs,onProgress:text=>status.textContent=text});
+    maxInvestment,minRoi:minRoiPct/100,minNetRoi:minNetRoiPct/100,minNetPnl,minRR,maxRR,inputs,onProgress:text=>status.textContent=text});
    lastOptimizerOutput=output;
    $('payoutOptResults').innerHTML=solver.render(output);
    let historyResult=' · history not available';
