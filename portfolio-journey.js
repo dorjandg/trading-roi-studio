@@ -66,7 +66,12 @@ function combined(list,inputs){
 function options(list,chosen){
  return list.map(([value,label])=>'<option value="'+esc(value)+'"'+(value===chosen?' selected':'')+'>'+esc(label)+'</option>').join('');
 }
-function sampleMilestones(r,signalDay='1'){
+function tablePanel(id,title,content,open=false,subtitle=''){
+ return '<details class="journey-data-panel" data-journey-table="'+esc(id)+'"'+(open?' open':'')+'>'+
+  '<summary><strong>'+esc(title)+'</strong>'+(subtitle?'<small>'+esc(subtitle)+'</small>':'')+'</summary>'+
+  '<div class="journey-data-body">'+content+'</div></details>';
+}
+function sampleMilestones(r,signalDay='1',tableOpen={}){
  const acs=r?.sample?.accountDetails||[];
  if(!acs.length)return '<p class="sim-empty">No accounts were purchased in this sampled trial.</p>';
  const day=x=>x==null?'—':'D'+x;
@@ -94,8 +99,8 @@ function sampleMilestones(r,signalDay='1'){
    '<td>'+day(ac.fundedActivatedDay)+'</td><td>'+day(ac.fundedTargetDay)+'</td>'+
    '<td>'+day(ac.payoutRequestedDay)+'</td><td>'+day(ac.paidDay)+'</td><td>'+day(ac.closedDay)+'</td></tr>';
  }).join('');
- const ledger='<details class="journey-milestone-panel"><summary>All '+acs.length+
-  ' purchased accounts · trade totals, stage progress and exit dates</summary>'+
+ const ledger=tablePanel('accounts','Purchased account milestones',
+  '<div class="journey-account-heading">'+acs.length+' purchased accounts · stage progress and exit dates</div>'+
   '<div class="journey-account-totals">Now: CH '+counts.challenge+
   ' · VR '+counts.verification+' · FD '+counts.funded+
   ' · Burned '+counts.closed+'</div>'+
@@ -103,7 +108,7 @@ function sampleMilestones(r,signalDay='1'){
   ['Account','Bought','Tr','W','L','Status','P1 pass','P2 pass',
    'Funded','Target','Requested','Paid','Burned'].map(k=>'<th>'+k+'</th>').join('')+
   '</tr></thead><tbody>'+rows+'</tbody></table></div>'+
-  '<p class="hint">All purchased accounts are retained. “Status” is the final status of this illustrative trial, while the day columns show when milestones occurred.</p></details>';
+  '<p class="hint">All purchased accounts are retained. “Status” is the final status of this illustrative trial, while the day columns show when milestones occurred.</p>',tableOpen.accounts===true);
  const assignments=r?.sample?.tradeAssignments||[];
  const dates=[...new Set(assignments.map(a=>a.day))].sort((x,y)=>x-y);
  const chosen=signalDay==='all'||dates.includes(Number(signalDay))?signalDay:String(dates[0]||1);
@@ -115,13 +120,12 @@ function sampleMilestones(r,signalDay='1'){
   '<td>'+(a.account==null?'—':'Account #'+a.account)+'</td>'+
   '<td>'+esc(a.stage?.toUpperCase()||'—')+'</td><td>'+esc(a.outcome)+'</td>'+
   '<td>'+esc(a.status||'')+'</td></tr>').join('');
- const route='<details class="journey-milestone-panel"'+(signalDay!=='1'?' open':'')+'>'+
-  '<summary>Daily signal routing · Trade 1 → Account 1, Trade 2 → Account 2, etc.</summary>'+
+ const route=tablePanel('signal-routing','Signal routing by account',
   '<label class="journey-route-filter">Trading day <select data-journey-field="signalDay">'+routeOptions+'</select></label>'+
   '<div class="tablewrap journey-ledger-table"><table><thead><tr>'+
   '<th>Day</th><th>Signal</th><th>Assigned to</th><th>Stage</th><th>Outcome</th><th>Account status</th>'+
   '</tr></thead><tbody>'+routeRows+'</tbody></table></div>'+
-  '<p class="hint">Each signal is assigned to a different eligible account. “Unused” means no eligible account could take that signal. Previously purchased accounts return to the selection pool on future days unless they have closed or are waiting for a stage/payout milestone.</p></details>';
+  '<p class="hint">Each signal is assigned to a different eligible account. “Unused” means no eligible account could take that signal. Previously purchased accounts return to the selection pool on future days unless they have closed or are waiting for a stage/payout milestone.</p>',tableOpen['signal-routing']===true,'Trade 1 → A1, Trade 2 → A2');
  const firstDay=assignments.filter(x=>x.day===1);
  const preview=firstDay.length?'<p class="journey-routing-preview"><strong>Day 1 routing:</strong> '+
   firstDay.map(a=>'Trade '+a.signal+' → '+(a.account==null?'unused':'A'+a.account)).join(' · ')+
@@ -166,7 +170,7 @@ const routeTh=(label,key)=>'<th class="journey-help-head" tabindex="0" title="'+
 function helpNotes(id,content){
  return '<details class="journey-help-details" data-journey-info="'+id+'"><summary>Info / definitions</summary>'+content+'</details>';
 }
-function dailyTradeRouting(results,selected,inputs,routePage=1,pageSize=10){
+function dailyTradeRouting(results,selected,inputs,routePage=1,pageSize=10,tableOpen={}){
  const sources=selected==='all'?results:[results[Number(selected)]].filter(Boolean);
  const entries=[];
  const payoutsByDay=new Map(),targetsByDay=new Map(),requestsByDay=new Map(),qualificationByDay=new Map();
@@ -274,15 +278,15 @@ function dailyTradeRouting(results,selected,inputs,routePage=1,pageSize=10){
  const heading='<div class="journey-status-line"><strong>Daily trades → prop-firm accounts</strong> · '+days.length+
   ' trading days · '+entries.filter(e=>e.account!=null).length+' assigned signal slots</div>';
  const explain='<p class="journey-explainer">Breached means a genuine loss-limit failure; Risk blocked means the selected risk is too large, not a rule breach. Payouts may happen without a trade that day. Min = modeled minimum-size qualification orders; their market P/L is not simulated. Pending = payout requests processing. Paid today is daily; Paid total is cumulative. A1, A2, etc. are permanent, unique account IDs across this displayed portfolio. New challenges always receive new numbers. CH → VR → FD → Payout/closed is forward-only: an account that passed CH can never be displayed in CH again. CH = Challenge, VR = Verification, FD = Funded; W/L = the modeled result of that assigned trade. '+(selected==='all'?'In split mode, the same trade number may appear for separate firms because signals are allocated by firm.':'')+'</p>';
- return heading+warning+helpNotes('trades',explain)+'<div class="tablewrap journey-ledger-table" style="max-height:650px"><table class="journey-table" style="min-width:970px"><thead><tr>'+routeTh('Day','day')+
+ return tablePanel('daily-routing','Daily trades by account',heading+warning+helpNotes('trades',explain)+'<div class="tablewrap journey-ledger-table" style="max-height:650px"><table class="journey-table" style="min-width:970px"><thead><tr>'+routeTh('Day','day')+
   Array.from({length:maxCells},(_,i)=>routeTh('Trade '+(i+1),'trade')).join('')+
   [['Executed','executed'],['Min','min'],['Bought','bought'],['CH','ch'],['VR','vr'],['FD','fd'],
    ['Pending','pending'],['Breached','breached'],['Risk blocked','blocked'],
    ['Paid today','paidToday'],['Paid total','paidTotal'],['Account events','events']]
    .map(([label,key])=>routeTh(label,key)).join('')+
-  '</tr></thead><tbody>'+rows+'</tbody></table></div>'+pageNav(routePagination,'routePage');
+  '</tr></thead><tbody>'+rows+'</tbody></table></div>'+pageNav(routePagination,'routePage'),tableOpen['daily-routing']===true,days.length+' trading days');
 }
-function passRateFunnel(result){
+function passRateFunnel(result,tableOpen={},index=0){
  const rows=root.StudioPortfolioEngine?.stageFunnel?.(result)||[];
  if(!rows.length)return '';
  const percentage=v=>v==null?'—':(v*100).toFixed(1)+'%';
@@ -291,15 +295,15 @@ function passRateFunnel(result){
   '<td class="num">'+n(r.count).toFixed(2)+'</td>'+
   '<td class="num" title="Count at this milestone divided by the previous milestone count">'+percentage(r.previousRate)+'</td>'+
   '<td class="num" title="Count at this milestone divided by total accounts purchased">'+percentage(r.totalRate)+'</td></tr>').join('');
- return '<div class="journey-funnel"><h4 style="margin:12px 0 5px">Pass rate · '+title+'</h4>'+
+ return tablePanel('funnel-'+index,'Stage pass rates · '+result.plan.firm,
   helpNotes('pass-rate','<p class="journey-explainer">Monte Carlo expected account counts and cumulative conversions through the selected trading-day horizon. Step pass rate = reached this milestone ÷ reached prior milestone. Total = reached milestone ÷ all accounts purchased. Accounts still progressing count as not completed, so these are horizon conversion rates, not lifetime pass probabilities.</p>')+
   '<div class="tablewrap"><table class="journey-table"><thead><tr>'+
   '<th>Stage / milestone</th><th title="Mean account count across all trials">Average accounts</th>'+
   '<th title="Of accounts that reached the prior milestone, the proportion that reached this one by the simulated horizon">From previous</th>'+
   '<th title="Of all accounts purchased, the proportion reaching this milestone by the simulated horizon">From purchased</th>'+
-  '</tr></thead><tbody>'+body+'</tbody></table></div></div>';
+  '</tr></thead><tbody>'+body+'</tbody></table></div>',tableOpen['funnel-'+index]===true,title);
 }
-function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true,signalDay='1',routePage=1,summaryPage=1,pageSize=10}={}){
+function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true,signalDay='1',routePage=1,summaryPage=1,pageSize=10,tableOpen={}}={}){
  if(!results.length)return '<p class="hint">Run a Portfolio Sim calculation to see account journeys.</p>';
  const split=inputs.budgetMode==='split';
  const choices=results.map((r,i)=>[String(i),r.plan.firm+' · '+r.plan.programName+' · '+usd(r.plan.size)]);
@@ -394,7 +398,11 @@ function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true
   ' paid accounts. '+(samplePaid===0&&expectedPaid>0?'Zero payouts in this sample does not mean all simulations had zero payouts. ':'')+
   'Funded targets may also be reached before the payout waiting period ends.</p>';
  const capInfo=selected==='all'?'Combined nominal allocation across different firms; firm limits are separate.':'Planning limits: Evaluation '+(n(cap.evaluation)>0?usd(cap.evaluation):'not set')+' · Funded '+(n(cap.funded)>0?usd(cap.funded):'not set')+'. These caps are enforced in new simulation runs: evaluation purchases stop at the cap, and funded activations wait for a free slot. A cap below one account size permits zero accounts. Caps are per selected account type, not pooled across different account sizes of the same firm.';
- return header+(selected==='all'?results.map(passRateFunnel).join(''):passRateFunnel(results[Number(selected)]))+dailyTradeRouting(results,selected,inputs,routePage,pageSize)+total+helpNotes('payout',estimateNote+'<p class="journey-explainer">'+capInfo+'</p>')+table+graphs+(!average&&selected!=='all'?sampleMilestones(r,signalDay):'')+helpNotes('summary',note);
+ return header+(selected==='all'?results.map((item,i)=>passRateFunnel(item,tableOpen,i)).join(''):passRateFunnel(results[Number(selected)],tableOpen,Number(selected)))+
+  dailyTradeRouting(results,selected,inputs,routePage,pageSize,tableOpen)+total+
+  helpNotes('payout',estimateNote+'<p class="journey-explainer">'+capInfo+'</p>')+
+  tablePanel('daily-summary','Day-by-day account summary',table,tableOpen['daily-summary']===true,summaryPagination.total+' days · '+(average?'trial averages':'sample trial'))+
+  graphs+(!average&&selected!=='all'?sampleMilestones(r,signalDay,tableOpen):'')+helpNotes('summary',note);
 }
 root.StudioPortfolioJourney={render,daily,combined,sampleMilestones};
 })(typeof window!=='undefined'?window:globalThis);
