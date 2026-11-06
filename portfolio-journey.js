@@ -103,12 +103,12 @@ function sampleMilestones(r,signalDay='1',tableOpen={}){
   '<div class="journey-account-heading">'+acs.length+' purchased accounts · stage progress and exit dates</div>'+
   '<div class="journey-account-totals">Now: CH '+counts.challenge+
   ' · VR '+counts.verification+' · FD '+counts.funded+
-  ' · Burned '+counts.closed+'</div>'+
+  ' · Closed (breach + risk block) '+counts.closed+'</div>'+
   '<div class="tablewrap journey-ledger-table"><table><thead><tr>'+
   ['Account','Bought','Tr','W','L','Status','P1 pass','P2 pass',
-   'Funded','Target','Requested','Paid','Burned'].map(k=>'<th>'+k+'</th>').join('')+
+   'Funded','Target','Requested','Paid','Closed day'].map(k=>'<th>'+k+'</th>').join('')+
   '</tr></thead><tbody>'+rows+'</tbody></table></div>'+
-  '<p class="hint">All purchased accounts are retained. “Status” is the final status of this illustrative trial, while the day columns show when milestones occurred.</p>',tableOpen.accounts===true);
+  '<p class="hint">Closed = actual loss-limit breach (Failed) OR configured-risk block (Risk blocked). A risk-blocked account is not a firm-rule breach, but this simulation does not automatically resize its next trade. The Closed day column records the closure day, not a breach for every account. All purchased accounts are retained.</p>',tableOpen.accounts===true);
  const assignments=r?.sample?.tradeAssignments||[];
  const dates=[...new Set(assignments.map(a=>a.day))].sort((x,y)=>x-y);
  const chosen=signalDay==='all'||dates.includes(Number(signalDay))?signalDay:String(dates[0]||1);
