@@ -1,0 +1,131 @@
+/* Payout-to-investment reverse planner. Estimates are Monte Carlo scenarios,
+   never a guarantee or a verified prop-firm rule. */
+(function(root){
+'use strict';
+const E=root.StudioPortfolioEngine;
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const val=x=>Number.isFinite(+x)?+x:0;
+const money=x=>'$'+Math.round(val(x)).toLocaleString('en-US');
+const pct=x=>(100*val(x)).toFixed(1)+'%';
+function needed(total,perPayout){
+ if(!(total>0&&perPayout>0))throw Error('Enter positive targets.');
+ return Math.ceil(total/perPayout);
+}
+function profitNeeded(plan,perPayout){
+ if(plan.id==='topstep'){
+  if(perPayout>5000)throw Error('Topstep first modeled payout is capped at $5,000; choose a smaller payout per account.');
+  return perPayout/.5;
+ }
+ const refund=val(plan.fee)*val(plan.refund);
+ if(!plan.split||plan.split<=0)throw Error('This account has no positive payout split.');
+ return Math.max(.01,(perPayout-refund)/plan.split);
+}
+function planFor(base,scale,perPayout){
+ const p={...base,riskProfiles:{}};
+ const maxRisk=Math.min(Number.isFinite(base.dailyLoss)?base.dailyLoss:Infinity,
+  Number.isFinite(base.overallLoss)?base.overallLoss:Infinity)-val(base.riskReserve)-val(base.tradeCost)-1;
+ if(maxRisk<=0)throw Error('Loss allowance is too small for a trade with the configured reserve.');
+ for(const [stage,c] of Object.entries(base.riskProfiles)){
+  const stageRisk={...c,policy:{...c.policy,map:{...(c.policy?.map||{})}}};
+  for(const field of ['r1','r2','r3']){
+   stageRisk[field]=Math.max(.01,Math.min(maxRisk,Math.round(val(c[field])*scale*100)/100));
+  }
+  p.riskProfiles[stage]=stageRisk;
+ }
+ const target=profitNeeded(p,perPayout);
+ p.fundedTarget=target;p.riskProfiles.funded.target=target;
+ return p;
+}
+function assess(r,count,total){
+ const trials=r.chartTrials||[];
+ const successes=trials.filter(t=>val(t.paid)>=count&&val(t.receipts)+1e-8>=total).length;
+ return {hit:trials.length?successes/trials.length:0,
+  avgPaid:val(r.avg.paid),avgReceipts:val(r.avg.receipts),
+  avgNet:val(r.avg.net),avgSpent:val(r.avg.spent),p10:val(r.p10),
+  avgPurchased:val(r.avg.bought),roi:val(r.roi),
+  avgPayout:r.avg.paid?val(r.avg.receipts)/r.avg.paid:0};
+}
+async function optimize({plan,total,perPayout,maxInvestment,probability,inputs,onProgress}){
+ const count=needed(total,perPayout);
+ if(!E)throw Error('Simulator engine is unavailable.');
+ if(!plan)throw Error('Select a prop-firm account.');
+ const unit=plan.fee+(plan.id==='topstep'?plan.activationFee:0);
+ if(unit<=0)throw Error('Purchase and activation fees are unavailable.');
+ const maxUnits=Math.min(100,Math.floor(maxInvestment/unit));
+ if(maxUnits<1)throw Error('Investment ceiling cannot cover one account purchase and required activation reserve.');
+ // Minimum 1 payout per account is modeled: the simulator stops after its
+ // first payout, and the model's profit target is calibrated above.
+ const scaleValues=[.55,.8,1,1.2];
+ const candidates=[];
+ let checked=0;
+ const simulate=(p,units,trials,seed)=>E.simulatePortfolio(p,{
+  days:inputs.days,tradesPerDay:inputs.tradesPerDay,winRate:inputs.winRate,
+  signalMode:inputs.signalMode,seed,trials,netGoal:total,
+  budget:Math.round(units*unit*100)/100,
+  purchaseMode:inputs.purchaseMode,capacityMode:inputs.capacityMode,
+  maxActive:inputs.maxActive,maxBuysPerDay:inputs.maxBuysPerDay,
+  reinvestPayouts:inputs.reinvestPayouts,maxAccounts:100,trackCharts:true,
+  evaluationAllocationCap:inputs.evaluationAllocationCap||0,
+  fundedAllocationCap:inputs.fundedAllocationCap||0});
+ const pause=()=>new Promise(resolve=>requestAnimationFrame(resolve));
+ for(const scale of scaleValues){
+  const p=planFor(plan,scale,perPayout);
+  const v=E.validatePlan(p);
+  if(v.errors.length)continue;
+  let low=1,high=maxUnits,firstPassing=null,prior=null;
+  while(low<=high){
+   const units=Math.floor((low+high)/2);
+   const r=simulate(p,units,50,inputs.seed+7771);
+   const score=assess(r,count,total);
+   checked++;
+   if(score.hit>=probability){firstPassing={scale,units,plan:p,score};high=units-1}
+   else{if(!prior||score.hit>prior.score.hit)prior={scale,units,plan:p,score};low=units+1}
+   onProgress?.('Testing '+scale.toFixed(2)+'× risk · '+checked+' scenarios checked');
+   if(checked%3===0)await pause();
+  }
+  const candidate=firstPassing||prior;
+  if(candidate){
+   const confirmed=simulate(p,candidate.units,150,inputs.seed+37013);
+   checked++;
+   candidates.push({...candidate,score:assess(confirmed,count,total),result:confirmed,initialBudget:candidate.units*unit});
+  }
+  await pause();
+ }
+ if(!candidates.length)throw Error('No valid risk candidates could be simulated.');
+ candidates.sort((a,b)=>{
+  const ap=a.score.hit>=probability,bp=b.score.hit>=probability;
+  if(ap!==bp)return ap?-1:1;
+  if(ap&&bp)return a.initialBudget-b.initialBudget||b.score.hit-a.score.hit;
+  return b.score.hit-a.score.hit||a.initialBudget-b.initialBudget;
+ });
+ return {requiredPayouts:count,profitPerAccount:profitNeeded(plan,perPayout),
+  targetCash:total,perPayout,maxInvestment,probability,checked,
+  feasible:candidates.some(x=>x.score.hit>=probability),
+  candidates,firm:plan.firm,size:plan.size};
+}
+function render(out){
+ const cards=out.candidates.map((candidate,index)=>{
+  const s=candidate.score,p=candidate.plan;
+  const risks=p.stageList.map(stage=>{
+   const c=p.riskProfiles[stage];
+   return '<tr><td>'+c.name+'</td><td>'+money(c.r1)+'</td><td>'+money(c.r2)+'</td><td>'+money(c.r3)+'</td><td>'+c.rr.toFixed(2)+'R</td></tr>';
+  }).join('');
+  return '<div class="reverse-candidate">'+
+   '<h4>'+(index===0?'Best tested scenario':'Alternative '+(index+1))+' · '+candidate.scale.toFixed(2)+'× saved risk</h4>'+
+   '<div class="reverse-kpis"><div><small>Required initial budget (tested)</small><strong>'+money(candidate.initialBudget)+'</strong></div>'+
+   '<div><small>Chance of payout goal</small><strong>'+pct(s.hit)+'</strong></div>'+
+   '<div><small>Avg. payouts</small><strong>'+s.avgPaid.toFixed(2)+'</strong></div>'+
+   '<div><small>Avg. cash received</small><strong>'+money(s.avgReceipts)+'</strong></div>'+
+   '<div><small>Avg. incurred fees</small><strong>'+money(s.avgSpent)+'</strong></div>'+
+   '<div><small>Avg. net after fees</small><strong>'+money(s.avgNet)+'</strong></div></div>'+
+   '<div class="tablewrap"><table class="journey-table"><thead><tr><th>Phase</th><th>R1</th><th>R2</th><th>R3</th><th>RR</th></tr></thead><tbody>'+risks+'</tbody></table></div></div>';
+ }).join('');
+ return '<p class="hint">Goal: '+money(out.targetCash)+' received across at least '+out.requiredPayouts+
+  ' separate first payouts of '+money(out.perPayout)+' each. The account must first reach approximately '+
+  money(out.profitPerAccount)+' funded trading profit (based on modeled payout split/refund). Probability is the share of trials meeting BOTH payout count and cash received before the chosen trading-day horizon.</p>'+
+  (out.feasible?'<p class="good"><strong>At least one tested candidate met the selected probability threshold.</strong></p>':
+   '<p class="bad"><strong>No tested candidate met the selected probability threshold within this investment ceiling and horizon.</strong> Best tested alternatives are shown; do not treat them as a guaranteed solution.</p>')+
+  cards+'<p class="hint">Estimates use 150 validation Monte Carlo trials per shortlisted risk scale after 50-trial searches. Initial budget is available funding, NOT expected fees incurred; earnings and payout counts can differ between trials. Searches are approximate, account purchases are capped at 100 per type, and risk safety depends on modeled firm rules. Scenarios do not change your saved Firms risk settings.</p>';
+}
+root.StudioPayoutOptimizer={needed,profitNeeded,planFor,assess,optimize,render};
+})(typeof window!=='undefined'?window:globalThis);
