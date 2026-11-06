@@ -570,7 +570,7 @@ function render(out,sortMode='model',currentPlan=null){
    '<span class="hint">Dynamic policies are available in this simulator only. Firms does not yet support state-based automatic sizing, so transfer is disabled.</span>':
    '<button type="button" data-reverse-send-firms="'+pathIndex+'">Send this risk setup to Firms</button>')+
    '<span class="hint">Optional · confirmation required · previous Firms settings backed up. The saved account is not changed by simply opening this option.</span></div>'+ 
-   '<p class="reverse-review-status" role="status" aria-live="polite"></p></details>';
+   '</details>';
   const goalMet=candidate.r3Feasible!==false&&s.avgNet+1e-8>=out.minNetPnl&&s.avgPaid+1e-8>=out.requiredPayouts&&
    s.roi+1e-8>=out.minRoi&&s.budgetRoi+1e-8>=out.minNetRoi;
   const summaryMetric=(label,value,extra='')=>'<span class="reverse-compact-metric '+extra+'"><small>'+
@@ -593,6 +593,7 @@ function render(out,sortMode='model',currentPlan=null){
    '<button type="button" data-reverse-more-models="'+pathIndex+'">Find More Risk Models</button>'+
    '<button type="button" data-reverse-ledger="'+pathIndex+'">View Daily Spending Ledger · Section 9</button>'+
    '<small>Use this option’s exact R1/R2/R3 policy to simulate detailed results and daily spending. Both reports keep Firms defaults unchanged.</small></div>'+
+   '<p class="reverse-review-status" role="status" aria-live="polite"></p>'+
    '<div class="reverse-detail-label">SCENARIO DETAILS · EXPAND A TOPIC</div>'+setupMarkup+r3Markup+
    '<details class="reverse-diagnostic"><summary><strong>5 · Diagnostics &amp; suggestions</strong><small> · Why this scenario struggles</small></summary><div class="reverse-advice"><strong>Why this scenario struggles · what to test</strong>'+
    advice.items.map(d=>'<div class="reverse-advice-item"><strong>'+escapeHtml(d.name)+'</strong>'+
