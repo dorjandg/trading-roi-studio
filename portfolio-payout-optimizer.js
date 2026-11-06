@@ -565,8 +565,8 @@ function render(out,sortMode='model',currentPlan=null){
    '<div class="reverse-review-grid">'+
    [['Starting budget',money(candidate.initialBudget)],['Challenge fee',money(p.fee)],['Safety reserve',money(p.riskReserve)],['Daily / overall loss',money(p.dailyLoss)+' / '+money(p.overallLoss)],['Trading days',sim.days??'—'],['Signals per day',sim.tradesPerDay??'—'],['Assumed win rate',sim.winRate==null?'—':Number(sim.winRate).toFixed(1)+'%'],['Signal outcomes',sim.signalMode||'—'],['Buying mode',sim.purchaseMode||'—'],['Allocation',sim.capacityMode||'—'],['Payout per account',money(out.perPayout)],['Funded wait / processing',Number(p.payoutWaitCalendarDays||0)+' / '+Number(p.payoutProcessingCalendarDays||0)+' calendar days']].map(([name,value])=>'<div><small>'+escapeHtml(name)+'</small><strong>'+escapeHtml(value)+'</strong></div>').join('')+
    '</div><p class="hint">Search assumptions and investment budget are not Firms account defaults. Firm fees, drawdown limits and mandatory qualification requirements stay protected.</p></details>'+
-   compareMarkup+
-   '<details class="reverse-review-panel"><summary><strong>Optional · Send model to Firms</strong> · simulator values are not saved automatically</summary><div class="reverse-review-actions">'+(candidate.riskMode==='adaptive'?
+   compareMarkup;
+  const transferMarkup='<details class="reverse-review-panel"><summary><strong>Optional · Send model to Firms</strong> · simulator values are not saved automatically</summary><div class="reverse-review-actions">'+(candidate.riskMode==='adaptive'?
    '<span class="hint">Dynamic policies are available in this simulator only. Firms does not yet support state-based automatic sizing, so transfer is disabled.</span>':
    '<button type="button" data-reverse-send-firms="'+pathIndex+'">Send this risk setup to Firms</button>')+
    '<span class="hint">Optional · confirmation required · previous Firms settings backed up. The saved account is not changed by simply opening this option.</span></div>'+ 
@@ -631,7 +631,7 @@ function render(out,sortMode='model',currentPlan=null){
      '<span class="hint">Select any account to inspect exact trade and phase progression.</span></div>'+
      '<div data-reverse-path-body="'+pathIndex+'">'+renderAccountPath(candidate,example.id)+'</div></details>';
    })():'<p class="hint">Trade-by-trade account details unavailable for this scenario.</p>')+
-   '</details></div></details>';
+   '</details>'+transferMarkup+'</div></details>';
  }).join('');
  return '<div class="reverse-simple-heading">Simulation result</div>'+
   '<details class="reverse-info-section"><summary><strong>Target &amp; calculation rules</strong> <span>· '+out.requiredPayouts+' minimum payouts · '+money(out.minNetPnl)+' net goal</span></summary><p class="hint">Net P&L target: '+money(out.minNetPnl)+' after incurred fees. Minimum '+out.requiredPayouts+
