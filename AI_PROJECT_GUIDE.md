@@ -24,6 +24,13 @@ Updated: 2026-11-06. Read this together with AGENTS.md. Repository code is autho
 - cloud-sync.js, cloud-bootstrap.js, cloud-config.js: per-user cloud profile settings.
 - studio-header.js, studio-nav.css: shared navigation and header.
 
+## Section 6 independent table show/hide (Nov 6)
+- Updated the current `portfolio-journey.js` (preserving updates from other chats) so each of its five data tables is independently collapsed by default: stage pass rates, daily trades by account, day-by-day account summary, purchased-account milestones, and signal routing by account. In split mode, each firm's stage pass rates has an independent panel.
+- Header summaries show a concise title plus existing contextual counts where useful. The tables and their controls/pagination/filters remain inside their corresponding panels; charts, status totals and small information definitions remain in their current positions.
+- `portfolio-simulator.html` stores `journeyState.tableOpen` keyed by table identity through a captured `toggle` listener. When the journey rerenders after filters, switching result sources or pagination, opened tables stay open; each table starts closed in a fresh page session.
+- Styles are scoped to `#journeyContents`, responsive in light and dark themes. Refreshed the journey script asset query parameter for browser caching. No engine, history, risk, calculations or other sections changed.
+- JavaScript syntax and representative rendering smoke test passed: five tables, five uniquely identified collapsible panels, all closed by default, all opened when state requests it. Live Cloudflare/browser rendering remains unverified.
+
 ## Simulator sections
 1. Investment and simulation inputs.
 2. Prop-firm accounts and saved phase settings.
