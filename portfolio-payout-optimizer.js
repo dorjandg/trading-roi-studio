@@ -46,20 +46,21 @@ function planFor(base,scale,perPayout,rrVariant=null,riskMode='saved'){
    const rr2=stageRisk.rrByTier?.r2??stageRisk.rr;
    const rr3=stageRisk.rrByTier?.r3??stageRisk.rr;
    const cost=val(p.tradeCost),reserve=Math.max(.01,val(p.riskReserve));
-   const tier1=Math.min(maxRisk,Math.ceil((stageRisk.target+cost)/rr1*100)/100);
+   const tier1=Math.min(maxRisk,Math.ceil((stageRisk.target+cost)/rr1*scale*100)/100);
    stageRisk.r1=Math.max(.01,tier1);
    const afterLossHeadroom=Math.min(
     Number.isFinite(p.overallLoss)?p.overallLoss-tier1-cost-reserve:Infinity,
     Number.isFinite(p.dailyLoss)?p.dailyLoss-cost-reserve:Infinity,
     maxRisk);
    const recovery=Math.ceil((stageRisk.target+tier1+2*cost)/rr2*100)/100;
-   stageRisk.r2=Math.max(.01,Math.min(recovery,afterLossHeadroom));
+   stageRisk.r2=Math.max(.01,Math.min(recovery,Math.max(.01,afterLossHeadroom)));
+   if(afterLossHeadroom<.01)stageRisk.recoveryInfeasible=true;
    stageRisk.r3=Math.max(.01,Math.min(maxRisk,Math.ceil((stageRisk.target+tier1+stageRisk.r2+3*cost)/rr3*100)/100));
    // The intended R2 is selected after a loss; no automatic R2 on a win.
    if(stage!=='p1'||p.id!=='topstep')stageRisk.policy={map:{},conflicts:[],mode:'streak'};
    stageRisk.targetSizing={cleanWin:tier1*rr1-cost,
     recoveryWin:stageRisk.r2*rr2-cost,
-    recoveryPossible:recovery<=afterLossHeadroom+1e-8};
+    recoveryPossible:afterLossHeadroom>=.01&&recovery<=afterLossHeadroom+1e-8};
   }
   p.riskProfiles[stage]=stageRisk;
  }
@@ -162,7 +163,16 @@ async function optimize({plan,total,perPayout,maxInvestment,minRoi=2,minNetRoi=0
    Math.min(total,b.score.avgReceipts)-Math.min(total,a.score.avgReceipts)||
    b.score.hit-a.score.hit;
  });
- for(const candidate of coarse.slice(0,12)){
+ // Keep both the strongest payout strategies and fast first-withdrawal
+ // candidates; maximizing payout count alone can discard quicker setups.
+ const shortlist=[],keys=new Set();
+ const add=x=>{const key=x.riskMode+':'+x.rrVariant+':'+x.scale+':'+x.units;
+  if(!keys.has(key)){keys.add(key);shortlist.push(x)}};
+ coarse.slice(0,8).forEach(add);
+ coarse.filter(x=>x.score.firstPayoutDay!=null).sort((a,b)=>
+  (a.score.firstPayoutDay??Infinity)-(b.score.firstPayoutDay??Infinity)||
+  b.score.hit-a.score.hit).slice(0,4).forEach(add);
+ for(const candidate of shortlist){
   const confirmed=simulate(candidate.plan,candidate.units,validationTrials,inputs.seed+37013);
   checked++;
   candidates.push({...candidate,score:assess(confirmed,count,total),
@@ -185,9 +195,12 @@ async function optimize({plan,total,perPayout,maxInvestment,minRoi=2,minNetRoi=0
  return {requiredPayouts:count,profitPerAccount:profitNeeded(plan,perPayout),
   targetCash:total,perPayout,maxInvestment,minRoi,minNetRoi,minNetPnl,minRR,maxRR,checked,
   feasible:candidates.some(meetsAll),payoutCountFeasible:candidates.some(reachesPayouts),
-  fastest:candidates.filter(c=>c.score.firstPayoutDay!=null).slice().sort((a,b)=>
-   (a.score.goalPayoutDay??Infinity)-(b.score.goalPayoutDay??Infinity)||
-   a.score.firstPayoutDay-b.score.firstPayoutDay)[0]||null,
+  fastestFirst:candidates.filter(c=>c.score.firstPayoutDay!=null).slice().sort((a,b)=>
+   a.score.firstPayoutDay-b.score.firstPayoutDay||
+   b.score.hit-a.score.hit)[0]||null,
+  fastestGoal:candidates.filter(c=>c.score.goalPayoutDay!=null).slice().sort((a,b)=>
+   a.score.goalPayoutDay-b.score.goalPayoutDay||
+   b.score.hit-a.score.hit)[0]||null,
   candidates:candidates.slice(0,5),firm:plan.firm,size:plan.size};
 }
 function gaps(out,score){
@@ -309,10 +322,13 @@ function render(out){
    '<p class="bad"><strong>No validated scenario met all payout-count, cash, ROI and net P&L targets within your investment ceiling and time horizon.</strong> Closest tested alternatives are shown. Payout-goal probability remains reported separately; an expected target is not a reliable guarantee.</p>')+
   (out.candidates[0]?'<p class="hint"><strong>Most important gap:</strong> '+
    (gaps(out,out.candidates[0].score)[0]||'No expected-value target gap; check payout probability and downside risk')+'</p>':'')+
-  (out.fastest?'<p class="hint"><strong>Fastest first payout among shortlisted scenarios:</strong> '+
-   'Day '+out.fastest.score.firstPayoutDay?.toFixed(1)+' on average in trials that received a payout; ' +
-   'risk mode '+escapeHtml(out.fastest.riskMode)+'. This is not a guaranteed payout date.</p>':'')+
-  cards+'<p class="hint">Estimates use 200 independent validation trials for 12 shortlisted scenarios after 50-trial searches across risk levels and investment amounts. ROI on incurred fees = expected net cash / expected fees actually incurred. Net ROI on investment = expected net cash / tested starting budget. Both may be negative. Starting budget is cash made available for challenge and activation costs, NOT the total fees actually incurred; any refunded challenge fees are tracked in modeled cash receipts. Payout counts and earnings can differ between trials. Searches are approximate, account purchases are capped at 100 per type, and risk safety depends on modeled firm rules. Scenarios do not change your saved Firms risk settings.</p>';
+  '<div class="reverse-speed-summary"><strong>Fastest payout KPIs (validated scenarios)</strong> · '+
+  (out.fastestFirst?'First paid withdrawal: day '+out.fastestFirst.score.firstPayoutDay.toFixed(1)+
+   ' ('+escapeHtml(out.fastestFirst.riskMode)+'-sized risk)':'No first payout modeled')+' · '+
+  (out.fastestGoal?'Full '+out.requiredPayouts+'-payout goal: day '+out.fastestGoal.score.goalPayoutDay.toFixed(1)+
+   ' in successful trials':'Full payout-count/cash goal not reached in validated trials')+
+  '<small> · Conditional averages, not guaranteed dates; minimum-day and processing waits included.</small></div>'+
+  cards+'<p class="hint">Estimates use 200 independent validation trials per shortlisted scenario after 50-trial searches across risk levels and investment amounts. ROI on incurred fees = expected net cash / expected fees actually incurred. Net ROI on investment = expected net cash / tested starting budget. Both may be negative. Starting budget is cash made available for challenge and activation costs, NOT the total fees actually incurred; any refunded challenge fees are tracked in modeled cash receipts. Payout counts and earnings can differ between trials. Searches are approximate, account purchases are capped at 100 per type, and risk safety depends on modeled firm rules. Scenarios do not change your saved Firms risk settings.</p>';
 }
 root.StudioPayoutOptimizer={needed,profitNeeded,planFor,assess,optimize,render,renderAccountPath,sampleAccounts};
 })(typeof window!=='undefined'?window:globalThis);
