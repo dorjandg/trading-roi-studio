@@ -1,5 +1,10 @@
 /* Academy navigation and dashboard organization — preserve original slugs/study state. */
 const jjGroups=['Learn Strategies','Account Management','Math & Research','Student Q&A'];
+const jjGeneralChapters=['terminology-consistency-audit','academy-study-assistant'];
+function jjIsGeneral(slug){return jjGeneralChapters.includes(slug)}
+function jjGeneralTitle(slug){return slug==='terminology-consistency-audit'?'Trading Dictionary':'Study Assistant'}
+function jjGeneralButton(slug){const m=curriculum.find(x=>x.slug===slug);if(!m)return null;const b=document.createElement('button');b.type='button';b.className='jj-general-button'+(active===slug?' active':'');b.textContent=(slug==='terminology-consistency-audit'?'▤ ':'✧ ')+jjGeneralTitle(slug);b.onclick=()=>pick(slug);return b;}
+
 const jjCategoryOverrides={
 'master-strategy-encyclopedia':'Learn Strategies','fair-price':'Learn Strategies','bos-entry':'Learn Strategies','winning-days':'Learn Strategies','trading-rules-playbook':'Learn Strategies',
 'funded-plan':'Account Management','account-management':'Account Management','evaluation':'Account Management','scaling':'Account Management','portfolio-risk':'Account Management','prop-firm-reference':'Account Management',
@@ -42,6 +47,13 @@ const jjRenderOriginal=render;
 render=function(){
  jjRenderOriginal();
  if(active!=='dashboard'){
+  if(jjIsGeneral(active)){
+   const article=document.getElementById(active);
+   const heading=article?article.querySelector(':scope > h2'):null;
+   if(heading)heading.textContent=jjGeneralTitle(active);
+   const crumb=$('chapter-crumb');if(crumb)crumb.textContent='Dashboard / '+jjGeneralTitle(active);
+   return;
+  }
   const m=curriculum.find(item=>item.slug===active);
   if(m){
    const members=jjCurrentOrderedMembers(jjGroupFor(m));
@@ -58,8 +70,17 @@ render=function(){
  const cards=[...root.querySelectorAll(':scope > .dash-module')];
  const byId=new Map(cards.map(node=>[node.dataset.go,node]));
  root.textContent='';
+ const general=document.createElement('section');general.className='jj-general-dashboard';
+ for(const slug of jjGeneralChapters){
+  const m=curriculum.find(x=>x.slug===slug);
+  if(!m)continue;
+  const tile=byId.get(slug);
+  if(tile){tile.classList.add('jj-general-tile');const name=tile.querySelector('.dash-module-left > span:not(.statusdot)');if(name)name.textContent=jjGeneralTitle(slug);general.appendChild(tile)}
+  else {const button=jjGeneralButton(slug);if(button)general.appendChild(button)}
+ }
+ if(general.children.length)root.appendChild(general);
  for(const group of jjGroups){
-  const members=jjCurrentOrderedMembers(group).filter(m=>byId.has(m.slug));
+  const members=jjCurrentOrderedMembers(group).filter(m=>!jjIsGeneral(m.slug)&&byId.has(m.slug));
   if(!members.length)continue;
   const section=document.createElement('details');section.className='jj-dashboard-group';
   section.open=jjDashboardOpenGroups[group]===true;
@@ -83,8 +104,9 @@ renderNav=function(){
  const nav=$('nav');nav.textContent='';
  const dash=document.createElement('button');dash.type='button';dash.textContent='◫ Dashboard';
  dash.className=active==='dashboard'?'active':'';dash.onclick=()=>pick('dashboard');nav.appendChild(dash);
+ for(const slug of jjGeneralChapters){const b=jjGeneralButton(slug);if(b)nav.appendChild(b)}
  for(const group of jjGroups){
-  const members=jjCurrentOrderedMembers(group);
+  const members=jjCurrentOrderedMembers(group).filter(m=>!jjIsGeneral(m.slug));
   if(!members.length)continue;
   const section=document.createElement('details');section.className='jj-nav-group';
   section.open=jjOpenGroups[group]===true || members.some(m=>m.slug===active);
@@ -106,9 +128,10 @@ renderNav=function(){
 function jjRebuildMobileSelector(){
  const select=$('mobile');select.textContent='';
  const home=document.createElement('option');home.value='dashboard';home.textContent='◫ Dashboard';select.appendChild(home);
+ for(const slug of jjGeneralChapters){if(!curriculum.some(m=>m.slug===slug))continue;const option=document.createElement('option');option.value=slug;option.textContent=jjGeneralTitle(slug);select.appendChild(option)}
  for(const group of jjGroups){
   const optgroup=document.createElement('optgroup');optgroup.label=group;
-  jjCurrentOrderedMembers(group).forEach((m,i)=>{
+  jjCurrentOrderedMembers(group).filter(m=>!jjIsGeneral(m.slug)).forEach((m,i)=>{
    const option=document.createElement('option');option.value=m.slug;option.textContent=jjDisplayChapterTitle(m,i);optgroup.appendChild(option);
   });
   select.appendChild(optgroup);
