@@ -504,6 +504,18 @@ details p{margin:6px 0}
 .simulation-history-pages button:disabled{opacity:.42;cursor:default}
 .simulation-history-pages .history-page-range{margin-right:auto;font-variant-numeric:tabular-nums}
 @media(max-width:600px){.simulation-history-pages{gap:5px;justify-content:flex-start}.simulation-history-pages select{min-height:34px;font-size:16px}.simulation-history-pages button{min-height:34px}.simulation-history-pages .history-page-range{margin-right:0;width:100%}}
+
+/* Section 6: independent collapsible table headers. */
+#journeyContents .journey-data-panel{margin:7px 0;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+#journeyContents .journey-data-panel>summary{display:flex;align-items:center;gap:7px;flex-wrap:wrap;cursor:pointer;padding:9px 11px;font-size:12px;line-height:1.35;background:var(--panel2)}
+#journeyContents .journey-data-panel>summary strong{font-size:12px;font-weight:700}
+#journeyContents .journey-data-panel>summary small{font-size:10px;color:var(--muted);font-weight:400}
+#journeyContents .journey-data-panel[open]>summary{border-bottom:1px solid var(--line)}
+#journeyContents .journey-data-body{padding:8px;min-width:0}
+#journeyContents .journey-data-body .tablewrap{max-width:100%}
+#journeyContents .journey-account-heading{font-size:11px;color:var(--muted);margin-bottom:7px}
+@media(max-width:650px){#journeyContents .journey-data-panel{margin:5px 0}#journeyContents .journey-data-panel>summary{padding:8px 9px}#journeyContents .journey-data-body{padding:5px}}
+
 </style>
 <link rel="stylesheet" href="studio-nav.css?v=20261105-compact-v2"></head><body><div class="shell">
 <header class="studio-site-header"><a class="studio-site-brand" href="index.html?view=dashboard"><span class="studio-site-mark">F<small>↗</small></span><span class="studio-site-title"><strong>4Ds Trading Studio</strong><small>STRATEGY · PAYOUTS · CAPITAL ALLOCATION</small></span></a><div class="studio-site-tools"><label class="studio-site-user" for="studioUserSelect">User <select id="studioUserSelect" aria-label="Active Studio user"><option value="doen">Doen</option><option value="dori">Dori</option><option value="dona">Dona</option><option value="dion">Dion</option></select></label><button type="button" id="theme" class="studio-site-theme" aria-label="Switch theme" title="Switch theme">◐</button></div></header>
@@ -604,7 +616,7 @@ details p{margin:6px 0}
 <script src="portfolio-to-firms.js"></script>
 <script src="studio-report-source.js?v=20261105-account-rotation"></script>
 <script src="portfolio-charts.js?v=20261106-ledger-section"></script>
-<script src="portfolio-journey.js?v=20261106-hide-explanations"></script>
+<script src="portfolio-journey.js?v=20261106-section6-collapsible-tables"></script>
 <script src="cloud-config.js"></script>
 <script src="portfolio-history.js?v=20261106-pagination-v2"></script>
 <script>
@@ -635,7 +647,7 @@ const historyState={}; // per-result paging/filter, independent from Monte Carlo
 const chartDefaults={selection:'',account:'auto',group:'overview',daysRange:'all',stage:'all',cashView:'both',outcome:'all',filtersOpen:false};
 const chartState={...chartDefaults};
 const spendingLedgerState={selection:'',daysRange:'all'};
-const journeyState={selection:'',mode:'trial',onlyChanges:false,signalDay:'all',routePage:1,summaryPage:1,pageSize:10};
+const journeyState={selection:'',mode:'trial',onlyChanges:false,signalDay:'all',routePage:1,summaryPage:1,pageSize:10,tableOpen:{}};
 let allocationLimits={};
 const openResultDetails=new Set();
 const savedViewKey=rootKey+'portfolio-simulator:v1';
@@ -1132,6 +1144,12 @@ function renderJourney(){
   }
  }
 }
+$('journeyContents').addEventListener('toggle',event=>{
+ const panel=event.target;
+ if(!panel.matches?.('details[data-journey-table]'))return;
+ if(!journeyState.tableOpen)journeyState.tableOpen={};
+ journeyState.tableOpen[panel.dataset.journeyTable]=panel.open;
+},true);
 $('journeyPanel').addEventListener('toggle',()=>{
  saveView();
  if($('journeyPanel').open)renderJourney();
