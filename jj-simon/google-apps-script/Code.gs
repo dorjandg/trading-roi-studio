@@ -47,10 +47,10 @@ function doPost(e){
  try{
   if(p.action!=='submit')return jjError_('Unknown action');
   var question=String(p.question||'').trim();
-  var reason=String(p.reason||'No matching course source').slice(0,150);
+  var reason=String(p.reason||'No matching course source').slice(0,150).replace(/^[=+@-]/,'_');
   var token=String(p.receipt||'');
   var n=Number(p.matchCount);
-  if(question.length<8||question.length>1000||!/^[a-zA-Z0-9_-]{32,90}$/.test(token))return jjError_('Invalid question or receipt');
+  if(question.length<8||question.length>1000||/^[=+@-]/.test(question)||!/^[a-zA-Z0-9_-]{32,90}$/.test(token))return jjError_('Invalid question or receipt');
   if(!isFinite(n)||n<0||n>1000)return jjError_('Invalid source count');
   // Reject obvious secret strings; users must not submit personal data.
   if(/(?:password|private.?key|api.?key)\s*[:=]/i.test(question))return jjError_('Sensitive content not accepted');
@@ -84,6 +84,15 @@ function doPost(e){
    CacheService.getScriptCache().put('jjreceipt:'+receiptHash,id,21600);
    // Durable receipt with 48 h TTL via Script Properties, pruned opportunistically.
    props.setProperty('jjreceipt:'+receiptHash,id+'|'+(Date.now()+48*3600000));
+   // Prevent unbounded Script Properties growth from short-lived receipt entries.
+   if(perDay%30===0){
+    var allProps=props.getProperties(),currentMs=Date.now();
+    Object.keys(allProps).forEach(function(k){
+     if(k.indexOf('jjreceipt:')===0){var parts=String(allProps[k]).split('|');if(Number(parts[1]||0)<currentMs)props.deleteProperty(k)}
+     else if(k.indexOf('jjd:')===0&&k.slice(4)<day)props.deleteProperty(k);
+     else if(k.indexOf('jjm:')===0&&k.slice(4)<minute.slice(0,8))props.deleteProperty(k);
+    });
+   }
    props.setProperty(perMinuteKey,String(perMinute+1));props.setProperty(perDayKey,String(perDay+1));
    return ContentService.createTextOutput(JSON.stringify({ok:true,id:id})).setMimeType(ContentService.MimeType.JSON);
   }finally{lock.releaseLock();}
