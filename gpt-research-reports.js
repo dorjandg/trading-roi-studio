@@ -28,11 +28,11 @@ const manualReviewPrompt='Run my existing enabled Trading Studio GPT Review sche
 function requestReviewNow(){
  // Opens a draft in ChatGPT. The user must submit it; this website cannot call the automation API.
  const url='https://chatgpt.com/?prompt='+encodeURIComponent(manualReviewPrompt);
- const win=window.open(url,'_blank','noopener,noreferrer');
+ const a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener noreferrer';
+ a.click();
  const guidance=document.getElementById('gptRequestGuidance');
- if(guidance)guidance.textContent=win?
-  'ChatGPT opened with a prepared request. Press Send there to request your existing GPT review. If the text is not prefilled, copy this request manually from this page.' :
-  'Your browser may have blocked the new tab. Allow pop-ups for Trading Studio or open ChatGPT and ask: Run my existing Trading Studio GPT Review now.';
+ if(guidance)guidance.textContent=
+  'Requested ChatGPT in a new tab. Review the prepared request and press Send there. If no tab opens, allow pop-ups, or ask ChatGPT: Run my existing Trading Studio GPT Review now.';
 }
 document.getElementById('gptReviewRequestNow')?.addEventListener('click',requestReviewNow);
 updateReviewMeta();
