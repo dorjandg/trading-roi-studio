@@ -163,6 +163,9 @@ const routeHeaderHelp={
 };
 const routeTh=(label,key)=>'<th class="journey-help-head" tabindex="0" title="'+esc(routeHeaderHelp[key])+
  '" data-tooltip="'+esc(routeHeaderHelp[key])+'">'+label+'</th>';
+function helpNotes(id,content){
+ return '<details class="journey-help-details" data-journey-info="'+id+'"><summary>Info / definitions</summary>'+content+'</details>';
+}
 function dailyTradeRouting(results,selected,inputs,routePage=1,pageSize=10){
  const sources=selected==='all'?results:[results[Number(selected)]].filter(Boolean);
  const entries=[];
@@ -271,7 +274,7 @@ function dailyTradeRouting(results,selected,inputs,routePage=1,pageSize=10){
  const heading='<div class="journey-status-line"><strong>Daily trades → prop-firm accounts</strong> · '+days.length+
   ' trading days · '+entries.filter(e=>e.account!=null).length+' assigned signal slots</div>';
  const explain='<p class="journey-explainer">Breached means a genuine loss-limit failure; Risk blocked means the selected risk is too large, not a rule breach. Payouts may happen without a trade that day. Min = modeled minimum-size qualification orders; their market P/L is not simulated. Pending = payout requests processing. Paid today is daily; Paid total is cumulative. A1, A2, etc. are permanent, unique account IDs across this displayed portfolio. New challenges always receive new numbers. CH → VR → FD → Payout/closed is forward-only: an account that passed CH can never be displayed in CH again. CH = Challenge, VR = Verification, FD = Funded; W/L = the modeled result of that assigned trade. '+(selected==='all'?'In split mode, the same trade number may appear for separate firms because signals are allocated by firm.':'')+'</p>';
- return heading+warning+explain+'<div class="tablewrap journey-ledger-table" style="max-height:650px"><table class="journey-table" style="min-width:970px"><thead><tr>'+routeTh('Day','day')+
+ return heading+warning+helpNotes('trades',explain)+'<div class="tablewrap journey-ledger-table" style="max-height:650px"><table class="journey-table" style="min-width:970px"><thead><tr>'+routeTh('Day','day')+
   Array.from({length:maxCells},(_,i)=>routeTh('Trade '+(i+1),'trade')).join('')+
   [['Executed','executed'],['Min','min'],['Bought','bought'],['CH','ch'],['VR','vr'],['FD','fd'],
    ['Pending','pending'],['Breached','breached'],['Risk blocked','blocked'],
@@ -289,7 +292,7 @@ function passRateFunnel(result){
   '<td class="num" title="Count at this milestone divided by the previous milestone count">'+percentage(r.previousRate)+'</td>'+
   '<td class="num" title="Count at this milestone divided by total accounts purchased">'+percentage(r.totalRate)+'</td></tr>').join('');
  return '<div class="journey-funnel"><h4 style="margin:12px 0 5px">Pass rate · '+title+'</h4>'+
-  '<p class="journey-explainer">Monte Carlo expected account counts and cumulative conversions through the selected trading-day horizon. Step pass rate = reached this milestone ÷ reached prior milestone. Total = reached milestone ÷ all accounts purchased. Accounts still progressing count as not completed, so these are horizon conversion rates, not lifetime pass probabilities.</p>'+
+  helpNotes('pass-rate','<p class="journey-explainer">Monte Carlo expected account counts and cumulative conversions through the selected trading-day horizon. Step pass rate = reached this milestone ÷ reached prior milestone. Total = reached milestone ÷ all accounts purchased. Accounts still progressing count as not completed, so these are horizon conversion rates, not lifetime pass probabilities.</p>')+
   '<div class="tablewrap"><table class="journey-table"><thead><tr>'+
   '<th>Stage / milestone</th><th title="Mean account count across all trials">Average accounts</th>'+
   '<th title="Of accounts that reached the prior milestone, the proportion that reached this one by the simulated horizon">From previous</th>'+
@@ -391,7 +394,7 @@ function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true
   ' paid accounts. '+(samplePaid===0&&expectedPaid>0?'Zero payouts in this sample does not mean all simulations had zero payouts. ':'')+
   'Funded targets may also be reached before the payout waiting period ends.</p>';
  const capInfo=selected==='all'?'Combined nominal allocation across different firms; firm limits are separate.':'Planning limits: Evaluation '+(n(cap.evaluation)>0?usd(cap.evaluation):'not set')+' · Funded '+(n(cap.funded)>0?usd(cap.funded):'not set')+'. These caps are enforced in new simulation runs: evaluation purchases stop at the cap, and funded activations wait for a free slot. A cap below one account size permits zero accounts. Caps are per selected account type, not pooled across different account sizes of the same firm.';
- return header+(selected==='all'?results.map(passRateFunnel).join(''):passRateFunnel(results[Number(selected)]))+dailyTradeRouting(results,selected,inputs,routePage,pageSize)+total+estimateNote+'<p class="journey-explainer">'+capInfo+'</p>'+table+graphs+(!average&&selected!=='all'?sampleMilestones(r,signalDay):'')+note;
+ return header+(selected==='all'?results.map(passRateFunnel).join(''):passRateFunnel(results[Number(selected)]))+dailyTradeRouting(results,selected,inputs,routePage,pageSize)+total+helpNotes('payout',estimateNote+'<p class="journey-explainer">'+capInfo+'</p>')+table+graphs+(!average&&selected!=='all'?sampleMilestones(r,signalDay):'')+helpNotes('summary',note);
 }
 root.StudioPortfolioJourney={render,daily,combined,sampleMilestones};
 })(typeof window!=='undefined'?window:globalThis);
