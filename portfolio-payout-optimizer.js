@@ -24,6 +24,7 @@ function profitNeeded(plan,perPayout){
 }
 function planFor(base,scale,perPayout,rrVariant=null,riskMode='saved'){
  const p={...base,riskProfiles:{}};
+ const payoutTarget=profitNeeded(base,perPayout);
  const maxRisk=Math.min(Number.isFinite(base.dailyLoss)?base.dailyLoss:Infinity,
   Number.isFinite(base.overallLoss)?base.overallLoss:Infinity)-val(base.riskReserve)-val(base.tradeCost)-1;
  if(maxRisk<=0)throw Error('Loss allowance is too small for a trade with the configured reserve.');
@@ -36,6 +37,7 @@ function planFor(base,scale,perPayout,rrVariant=null,riskMode='saved'){
    stageRisk.rr=rrVariant.r1;
    stageRisk.rrByTier={r1:rrVariant.r1,r2:rrVariant.r2,r3:rrVariant.r3};
   }
+  if(stage==='funded')stageRisk.target=payoutTarget;
   if(riskMode==='target'){
    // Size a clean first win near the stage target, without paying for
    // large overshoot. On a loss, the next tier aims to recover the loss
@@ -61,8 +63,7 @@ function planFor(base,scale,perPayout,rrVariant=null,riskMode='saved'){
   }
   p.riskProfiles[stage]=stageRisk;
  }
- const target=profitNeeded(p,perPayout);
- p.fundedTarget=target;p.riskProfiles.funded.target=target;
+ p.fundedTarget=payoutTarget;p.riskProfiles.funded.target=payoutTarget;
  return p;
 }
 function assess(r,count,total){
