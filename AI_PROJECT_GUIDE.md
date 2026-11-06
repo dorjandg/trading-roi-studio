@@ -47,35 +47,23 @@ Updated: 2026-11-06. Read this together with AGENTS.md. Repository code is autho
 - Payout waits are approximated in trading days. Spread, fees, margin, unofficial rules and actual trading outcomes may vary.
 - Monte Carlo output is a model of random outcomes, not an investment forecast or a guarantee. Sample whole-account timelines differ from cross-trial averages; keep that distinction clear.
 
-## Reverse Engineer Payouts
-Seven editable fields:
-1. Total payout cash ($).
-2. Minimum payout per distinct account ($).
-3. Selected account type.
-4. Maximum starting investment ($).
-5. Minimum ROI on fees (%).
-6. Minimum net ROI on investment (%).
-7. Target net P&L (USD); zero disables this additional constraint.
+## Reverse Engineer Payouts (net P&L-only, Nov 6 update)
 
-Collapsed **RR guidance** filters (added Nov 6): Min RR and Max RR (default 1.5R–3R). Investment optimization varies R1/R2/R3 tier-specific RR values within these bounds, for example R1 1.5R then R2 3R after a loss **if the current risk policy selects R2**. This is optional in the engine via `riskProfiles[phase].rrByTier={r1,r2,r3}`; older saved Firms risk profiles without this field continue using the phase-wide `rr`. Optimizer records persist the range, variant and tier values; the collapsed account trade walk-through shows each trade's selected tier and actual RR. Default funded 5R is no longer forced into optimized runs when max RR is 3R. Do not mistake bound values for actual live fills or a guaranteed trade outcome.
+Main visible inputs: **Target net P&L (USD)** (required, positive); minimum first payout per account (USD); account type; maximum starting investment (USD). The old **Total payout cash** input was removed because a separate gross cash goal conflicted with the desired net profit goal.
 
-Calculation:
-- Required distinct first payouts = ceil(total cash / payout per account). $10,000 / $1,000 -> 10 first payouts.
-- For a CFD account with 80% modeled payout split, $1,000 withdrawal requires $1,250 funded trading profit, excluding any fee refund.
-- Both average payout count and average total cash received must meet their targets; fee ROI, investment ROI and average net P&L must also meet specified minimums.
-- Fee ROI = expected net cash / expected fees actually incurred.
-- Investment ROI = expected net cash / tested initial budget.
-- Net P&L = modeled cash receipts minus incurred expenses.
-- Payout goal probability is calculated separately per trial. A strategy can have attractive average ROI but low chance of the required number of distinct payouts.
-- Optimizer tries several investment budgets and scaled risk profiles, validates shortlisted options on separate random outcomes and displays the failed target gaps. Search is approximate and currently considers one account type at a time.
-- Do not equate gross withdrawals with net after expenses: requesting both $10,000 cash payouts and $10,000 net after fees may require greater gross cash receipts.
+One collapsed **Simulation Assumptions** area now contains both **Min RR / Max RR** and optional **Min fee ROI / Min investment ROI** (0% disables these additional constraints), alongside trading days, signals/day, win rate, account allocation, phase minimum days, payout waits and other isolated controls. There is no separate RR accordion.
 
-## Standalone Calculate Investment assumptions (Nov 6 update)
-- Section 3A now contains its own compact, **collapsed** Simulation assumptions editor. Each selected prop-firm account type has separately persisted overrides for trading days, signals/day, win rate, buy mode, signal outcomes, reinvestment, allocation/capacity settings, random seed, Phase 1/2 minimum days, funded payout wait calendar days (CFD), and payout processing calendar days.
-- First use for each account copies current Section 1 and saved Firms values into the controls, and a Reset button reloads those defaults. After that, changing Section 1 does not silently overwrite the 3A assumptions. The values are saved under the existing per-user `payout-optimizer:v1` localStorage key in `assumptionsByAccount`.
-- Firm risk limits and reserve remain read-only in this section and are displayed for context. Topstep winning-day eligibility is determined by the actual simulation engine rather than an editable CFD-style wait.
-- These overrides change only the locally cloned plan used in Calculate Investment; Run Simulation, Section 1, and saved Firms data stay unchanged. Per-run optimizer history `inputs` now includes phase day and payout wait parameters to make subsequent analysis reproducible.
-- When editing, keep the section compact/collapsible and prevent clicking Calculate Investment from resetting any input the user has just typed.
+Key calculations:
+- Minimum distinct first payouts before expenses = `ceil(targetNetPnL/perAccountPayout)`; e.g. $5,000 net target / $1,000 per payout = **minimum 5 first payouts**. Incurred fees can require more.
+- Each scenario displays **estimated payouts including fees** = `ceil((targetNetPnL + scenarioExpectedFees)/perAccountPayout)`. This is an indicative planning count, not a guaranteed exact number because realized per-account payouts may overshoot the minimum or include challenge fee refunds.
+- A Monte Carlo trial achieves the main goal only if its **net cash after fees >= targetNetPnL** and its first-payout count meets the minimum baseline. Gross cash receipts are *outputs*, not a separate entered target.
+- The funded profit target per account is computed using the modeled profit split: $1,000 / 0.8 = $1,250 for an 80% split, excluding refunded fees.
+- Fee ROI = mean net / mean actual incurred fees; investment ROI = mean net / tested starting budget. Both are optional filters, not the primary goal.
+- Time to complete payout goal is measured against *net cash* and payout count, not gross receipts. Target labels and new history entries use `targetBasis:'net-pnl'` and `targets.totalCash:null`. Old gross-cash history records remain readable with their old meaning.
+- Per-tier R1/R2/R3 reward/risk is bounded by Min RR and Max RR. The engine supports optional `riskProfiles[phase].rrByTier`; ordinary saved Firms profiles remain unchanged.
+- Search is approximate, one selected account type at a time, validating a shortlist on separate Monte Carlo trials. Never treat a 0% goal probability as a good recommendation or present model frequency as a real-world certainty.
+
+Independent 3A assumptions are stored per selected account in the existing per-user payout optimizer preferences and do not modify Section 1 or saved Firms settings. The compact editor begins with inherited values and offers Reset to Section 1 / Firms. Risk limits and reserves are read-only.
 
 ## Fastest-payout and target-based risk optimization (Nov 6 update)
 - Reverse payout optimizer now tries two risk sizing styles: saved-tier scaling and **target-sized** risk. Target sizing computes R1 from the phase profit target / R1 RR, bounded by modeled daily and overall loss headroom. Scale is capped at 1 for the first risk to avoid deliberate first-win overshoot.
