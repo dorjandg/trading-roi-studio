@@ -404,8 +404,22 @@ function start(){
     return;
    }
    const name=(index+1)+' · '+(candidate.riskMode==='adaptive'?candidate.r3Route:candidate.riskMode+' / '+candidate.r3Route);
-   const ok=bridge.analyzeOptimizerCandidate?.(candidate,lastOptimizerOutput,lastOptimizerInputs,'Investment Option '+name);
-   if(!ok&&status)status.textContent='Could not open the detailed analysis for this scenario.';
+   if(analyze.disabled)return;
+   const originalLabel=analyze.textContent;
+   analyze.disabled=true;
+   analyze.textContent='Running full simulation…';
+   if(status)status.textContent='Using Section 2 simulation engine and selected trial count; optimizer risk tiers preserved.';
+   Promise.resolve().then(()=>bridge.analyzeOptimizerCandidate?.(
+    candidate,lastOptimizerOutput,lastOptimizerInputs,'Investment Option '+name
+   )).then(ok=>{
+    if(!ok&&status)status.textContent='Could not run this scenario. Recalculate Investment and try again.';
+    else if(status)status.textContent='Full simulation completed. See Sections 4–7 for the updated paths and results.';
+   }).catch(error=>{
+    if(status)status.textContent='Simulation failed: '+(error?.message||'Unknown error');
+   }).finally(()=>{
+    analyze.disabled=false;
+    analyze.textContent=originalLabel;
+   });
    return;
   }
   const button=event.target.closest?.('[data-reverse-send-firms]');
