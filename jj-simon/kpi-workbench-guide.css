@@ -40,3 +40,16 @@
 .jj-acq-howto .jj-calc-load-example{border:1px solid var(--accent);color:var(--accent);background:var(--panel);padding:8px 11px;border-radius:6px;cursor:pointer;font:inherit;font-size:11px;font-weight:700}
 .jj-acq-howto .jj-calc-load-example:hover{background:var(--hover)}
 .jj-acq-howto .jj-kpi-guide-section-content a{overflow-wrap:anywhere}
+
+/* Audit disclosure for evaluation funding and payout pathway */
+.jj-acq-audit{margin:10px 0 11px}
+.jj-audit-formulas{display:grid;grid-template-columns:1fr;gap:0;border:1px solid var(--stroke);border-radius:6px;overflow:hidden}
+.jj-audit-formula-row{display:grid;grid-template-columns:minmax(165px,.42fr) minmax(0,1fr);gap:8px;align-items:start;padding:8px 10px;border-bottom:1px solid var(--stroke);font-size:11px;line-height:1.4}
+.jj-audit-formula-row:last-child{border-bottom:0}
+.jj-audit-formula-row:nth-child(even){background:var(--hover)}
+.jj-audit-formula-row span{color:var(--muted)}
+.jj-audit-formula-row strong{font-weight:650;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+@media(max-width:650px){
+ .jj-audit-formula-row{grid-template-columns:1fr;gap:2px}
+ .jj-audit-formula-row strong{font-size:12px}
+}
