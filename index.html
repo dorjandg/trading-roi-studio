@@ -1907,7 +1907,7 @@ const riskRouteRunning=Object.create(null), riskRouteResults=Object.create(null)
 function routeScanConfig(stage){
  const setup=stageRecoverySetup(stage), snap=recoverySnapshot(stage);
  const audit=firmHealthAudit?.programs?.[String(activeProgramKey||'').split(':')[0]];
- return {rr:setup.rr,goal:setup.goal,minDays:setup.minDays,initialPnl:Number(snap.pnl)||0,
+ return {programKey:String(activeProgramKey||''),rr:setup.rr,goal:setup.goal,minDays:setup.minDays,initialPnl:Number(snap.pnl)||0,
   completedDays:Math.max(0,Math.floor(Number(snap.days)||0)),
   daily:positive(state.dailyLoss),overall:positive(state.overallLoss),buffer:positive(state.buffer),
   staticFloor:audit?.riskStructure?.drawdownKind==='static',
@@ -1916,7 +1916,7 @@ function routeScanConfig(stage){
 }
 function routeScanUI(stage){
  const config=routeScanConfig(stage),sig=JSON.stringify(config),snap=recoverySnapshot(stage);
- const old=riskRouteResults[stage],result=old?.sig===sig?old.result:null;
+ const old=riskRouteResults[stage],result=old?.sig===sig&&!old.result?.error?old.result:null;
  const filter=['target','active','blocked','failed'].includes(snap.routeFilter)?snap.routeFilter:'target';
  const samples=result?.lists?.[filter]||[],page=Math.max(1,Math.min(Math.ceil(samples.length/15)||1,Math.floor(Number(snap.routePage)||1)));
  const pages=Math.ceil(samples.length/15)||1;
@@ -1944,7 +1944,7 @@ function routeScanUI(stage){
   '<div class="tablewrap"><table class="recovery-table"><thead><tr><th>W/L</th><th>Risk route</th><th>Trades</th>'+
   '<th>Days</th><th>Max DD</th><th>Ending P/L</th><th>Result</th></tr></thead><tbody>'+
   (rows||'<tr><td colspan="7">No routes in this category.</td></tr>')+'</tbody></table></div></details>':
-  old?.result?.error?'<p class="caption">'+String(old.result.error).slice(0,150)+'</p>':'')+'</div>';
+  old?.sig===sig&&old?.result?.error?'<p class="caption">Scan unavailable: check the target and RR values, or refresh this page.</p>':'')+'</div>';
 }
 async function runStageRiskRoutes(stage){
  if(riskRouteRunning[stage]||!selectedAccountSupportsSimulation)return;
