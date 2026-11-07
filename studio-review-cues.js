@@ -32,7 +32,7 @@ function readRemote(user){
 let busy=false;
 async function queue({kind='manual',label='',note='',automatic=false,fingerprint='' }={}){
  const user=selected(),existing=read(),idKey=String(fingerprint||kind+':'+clean(label).toLowerCase()).slice(0,170);
- const prior=existing.find(x=>x.fingerprint===idKey&&['verified','sending','queued'].includes(x.status));
+ const prior=existing.find(x=>x.fingerprint===idKey&&(!automatic||x.day===day())&&['verified','sending','queued'].includes(x.status));
  if(prior)return {ok:prior.status==='verified',status:prior.status,duplicate:true};
  if(busy)return {ok:false,status:'busy'};
  const today=existing.filter(x=>x.day===day()&&x.automatic&&['verified','sending'].includes(x.status)).length;
