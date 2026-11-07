@@ -15,3 +15,16 @@
 @keyframes jj-voice-pulse{50%{opacity:.55;transform:scale(1.07)}}
 @media(prefers-reduced-motion:reduce){.jj-voice-button[data-listening="true"] svg{animation:none}}
 @media(max-width:750px){.jj-voice-search-button{width:30px;height:30px;right:5px}.jj-voice-button{min-height:32px;padding:6px 9px}.jj-voice-form-status{font-size:10px}}
+
+/* Question dictation: mic is visible within the question textarea. */
+.jj-voice-question-wrap{position:relative;width:100%}
+.jj-helper-form .jj-voice-question-wrap textarea{display:block;width:100%;padding-right:89px;min-height:74px}
+.jj-voice-question-button{position:absolute;right:8px;top:8px;z-index:1;min-height:33px;padding:6px 9px}
+.jj-voice-question-button span{font-size:11px;font-weight:650}
+.jj-voice-question-wrap + .jj-voice-form-status{display:block;margin-top:4px}
+.jj-voice-form-status:empty{display:none}
+@media(max-width:480px){
+ .jj-helper-form .jj-voice-question-wrap textarea{padding-right:43px}
+ .jj-voice-question-button{right:6px;top:6px;width:33px;height:33px;padding:6px}
+ .jj-voice-question-button span{display:none}
+}
