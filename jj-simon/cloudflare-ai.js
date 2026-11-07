@@ -69,12 +69,11 @@
   const thread=el('div','jj-ai-thread');
   const history=el('details','jj-ai-history');const historyTitle=el('summary','','Earlier conversation');history.append(historyTitle,thread);
   const library=el('details','jj-ai-chat-library');const libraryTitle=el('summary','','Saved chats');const chatList=el('div','jj-ai-chat-list');library.append(libraryTitle,chatList);
-  panel.append(library,el('strong','','Cloudflare AI · latest answer'),status,answer,sources,history);
+  panel.append(library,el('strong','','JJ Academy AI · conversation'),status,thread,answer,sources,history);
   const showLatest=()=>{
    answer.replaceChildren();sources.replaceChildren();drawThread();
-   panel.hidden=!conversation.length;
    const latest=conversation[conversation.length-1];
-   if(latest?.role==='assistant'){renderAnswer(answer,latest.content,latest.sources||[]);status.textContent='Saved conversation · Ask a follow-up below.'}
+   if(latest?.role==='assistant'){status.textContent='Saved conversation · Ask a follow-up below.'}
    else status.textContent='Select a saved conversation or ask a question below.';
   };
   const drawChats=()=>{
@@ -91,13 +90,33 @@
   drawChats();
   const drawThread=()=>{
    thread.replaceChildren();
-   const earlier=conversation.slice(0,-2);
-   history.hidden=!earlier.length;
-   historyTitle.textContent='Earlier conversation · '+Math.floor(earlier.length/2)+' exchanges';
-   for(const turn of earlier){const item=el('div','jj-ai-turn jj-ai-'+turn.role);item.append(el('strong','',turn.role==='user'?'You':'AI'));if(turn.role==='assistant')renderAnswer(item,turn.content,turn.sources||[]);else item.append(el('p','',turn.content));thread.append(item)}
+   history.hidden=true;
+   for(const turn of conversation){
+    const item=el('article','jj-ai-turn jj-ai-'+turn.role);
+    item.append(el('strong','',turn.role==='user'?'You':'JJ Academy AI'));
+    if(turn.role==='assistant'){
+     const body=el('div','jj-ai-answer');renderAnswer(body,turn.content,turn.sources||[]);item.append(body);
+     if(turn.sources?.length){
+      const details=el('details','jj-ai-message-sources');
+      details.append(el('summary','','Sources · '+turn.sources.length));
+      for(let i=0;i<turn.sources.length;i++){
+       const source=turn.sources[i],line=el('div','');
+       const link=el('a','', '['+(i+1)+'] '+(source.title||'Academy source'));
+       if(source.url){link.href=source.url;link.target='_blank';link.rel='noopener noreferrer'}
+       else if(source.chapter)link.href='?topic='+encodeURIComponent(source.chapter);
+       else{line.textContent=link.textContent;details.append(line);continue}
+       line.append(link);details.append(line);
+      }
+      item.append(details);
+     }
+    }else item.append(el('p','',turn.content));
+    thread.append(item);
+   }
+   panel.hidden=false;
+   status.textContent=conversation.length?'Conversation saved locally · Ask a follow-up below.':'Ask a question to start a conversation.';
   };
   drawThread();
-  if(conversation.length){panel.hidden=false;status.textContent='Latest response · Ask a follow-up below.';const latest=conversation[conversation.length-1];if(latest?.role==='assistant'){renderAnswer(answer,latest.content,latest.sources||[]);if(!latest.sources?.length)status.textContent='Saved earlier answer · Source links require a newly generated answer. Ask a follow-up below.'}}
+  if(conversation.length){panel.hidden=false;drawThread()}
   reset.addEventListener('click',()=>{if(busy)return;save();const chat=makeChat();chats.unshift(chat);currentId=chat.id;conversation=chat.messages;save();drawChats();showLatest();const input=form.querySelector('textarea');input.value='';input.placeholder='Ask a question about JJ’s trading course…';input.focus()});
   const result=root.querySelector('#jj-helper-results');
   if(result)result.before(panel);else root.append(panel);
@@ -107,7 +126,6 @@
    const question=form.querySelector('textarea')?.value.trim()||'';
    if(!question){panel.hidden=false;status.textContent='Please enter a question first.';return}
    jjHelperQuestion=question;
-   jjHelperAnswer(true);
    const previousQuestion=[...conversation].reverse().find(m=>m.role==='user');
    const contextQuery=previousQuestion?previousQuestion.content+' '+question:question;
    const primaryHits=selectHits(question);
@@ -117,7 +135,7 @@
    panel.hidden=false;sources.replaceChildren();
    if(!hits.length){status.textContent='No new source matches found. Rephrase with a course topic to retrieve evidence before asking AI.';return}
    busy=true;button.disabled=true;reset.disabled=true;button.textContent='Asking AI…';
-   status.textContent='Sending your question and '+Math.min(hits.length,5)+' selected Academy summaries to Cloudflare AI. No full private transcripts are sent.';
+   status.textContent='Thinking… · '+Math.min(hits.length,5)+' Academy sources';
    try{
     const payload={
      question:question.slice(0,750),history:conversation.slice(-6),
@@ -139,25 +157,17 @@
     status.textContent='AI synthesis of indexed Academy research. Verify original lesson evidence; assumptions are not actual JJ performance.';
     const citedSources=hits.slice(0,5).map(hit=>({title:hit.title,url:hit.sourceUrl||'',chapter:hit.chapter||''}));
     conversation.push({role:'user',content:question.slice(0,750)},{role:'assistant',content:String(data.answer||'').slice(0,6500),sources:citedSources});save();drawThread();drawChats();
-    renderAnswer(answer,data.answer||'No answer returned',citedSources);
+    answer.replaceChildren();sources.replaceChildren();
     const questionBox=form.querySelector('textarea');if(questionBox){questionBox.value='';questionBox.placeholder='Ask a follow-up about this conversation…'}
-    const label=el('strong','','Source passages used:');sources.append(label);
-    hits.slice(0,5).forEach((hit,i)=>{
-     const item=el('div','jj-ai-source');
-     item.append(el('span','', '['+(i+1)+'] '+hit.title+' · '));
-     if(hit.sourceUrl){const a=el('a','','Open original');a.href=hit.sourceUrl;a.target='_blank';a.rel='noopener noreferrer';item.append(a)}
-     else if(hit.chapter&&typeof pick==='function'){
-      const b=el('button','','Open chapter');b.type='button';b.onclick=()=>pick(hit.chapter);item.append(b);
-     }else item.append(el('span','','Academy reference'));
-     sources.append(item);
-    });
+
    }catch(error){
     const message=String(error?.message||'AI unavailable');
     status.textContent=/abort/i.test(message)?'AI request timed out.':message;
-    answer.textContent='Your Cloudflare AI binding is connected, but the model call did not complete. The local source results below are still available. If the error persists, check Cloudflare Pages Functions logs.';
+    const code=/FREE_TIER_LIMIT|quota|neurons|429/i.test(message);status.textContent=code?'Daily free AI allowance reached. Try again after 00:00 UTC. Academy course search remains available.':status.textContent;const notice=el('div','jj-ai-error',code?'Daily free AI allowance reached. Your chats remain saved; try again after the daily reset.':'AI could not answer this time. '+message);thread.append(notice);
    }finally{busy=false;button.disabled=false;reset.disabled=false;button.textContent='Ask Cloudflare AI'}
   });
-  form.addEventListener('submit',()=>{if(!conversation.length)panel.hidden=true});
+  form.addEventListener('submit',()=>{panel.hidden=false});
+  const input=form.querySelector('textarea');if(input)input.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();button.click()}});
  }
  const previous=render;
  render=function(){previous();if(active===jjHelperSlug)init()};
