@@ -53,6 +53,14 @@ function analyze(){
    issues.push(issue('risk','Accounts blocked by modeled risk rules',firm+': '+fixed(blocked)+' average risk-exhausted accounts in latest run.','Test lower stage risk in a separate scenario. Compare expected first payouts, ROI and drawdown; do not edit the saved strategy automatically.',85,firm,label));
   if(stopped!==null&&stopped>0)
    issues.push(issue('stopped','Strategy-stopped accounts',firm+': '+fixed(stopped)+' accounts stopped by strategy rules on average; this is not necessarily an official failed account.','Inspect the stopped-account status and stage-specific policy before changing limits or risk.',70,firm,label));
+  const sampleAccounts=Array.isArray(r.sample?.accounts)?r.sample.accounts:[];
+  if(sampleAccounts.length){
+   const failedSample=sampleAccounts.filter(a=>/failed|breach|exhausted/i.test(String(a.status||''))).length;
+   const blockedAttempts=sampleAccounts.reduce((sum,a)=>sum+(num(a.riskBlockedAttempts)||0),0);
+   const events=sampleAccounts.reduce((sum,a)=>sum+(Array.isArray(a.trace)?a.trace.length:0),0);
+   if(failedSample||blockedAttempts)
+    issues.push(issue('sample','Illustrative account trace has failures or blocked attempts',firm+': the one saved sample path contains '+sampleAccounts.length+' accounts, '+failedSample+' failed/exhausted statuses, '+blockedAttempts+' blocked attempts and '+events+' retained trace events. This sample is NOT the Monte Carlo mean.','Open Section 8 for the individual trace and compare the summary risk-blocked average before deciding whether to test a lower-risk policy.',65,firm,label+' · sample trace only'));
+  }
   const days=num(r.input.days),dCash=r.sample?.dailyCash||[];
   if(days&&paid===0&&funded>0)
    issues.push(issue('time','Funded activity without a first payout in modeled horizon',firm+': '+days+' modeled trading days and '+fixed(funded)+' average funded, but no first-paid accounts.','Test an extended horizon with the same seed, budget and risk policies to separate timing from failure.',80,firm,label));
