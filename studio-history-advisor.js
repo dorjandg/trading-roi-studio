@@ -80,14 +80,56 @@ function answer(question){
  body+='\nThese are descriptive diagnostics, not proof that a parameter causes a result. No scenarios were rerun by this analysis and no settings were changed.';
  return [body,'Saved model history · High for values, Medium for proposed tests',false];
 }
+
+function sensitivity(){
+ const engine=root.StudioPortfolioEngine,api=root.StudioAdvisorReadOnly;
+ const current=api?.getCurrent?.();
+ if(!current?.visible||!current?.inputs||!engine?.simulatePortfolio)
+  return {error:'Run or restore a full simulation first. Tests require an active report and its exact current plan.'};
+ const cases=api.getTestCases?.()||[];
+ if(!cases.length)return {error:'No active account plan available.'};
+ const output=[];
+ for(const item of cases){
+  const p=item.plan,c=item.config;
+  if(!p||!engine.validatePlan?.(p)||engine.validatePlan(p).errors?.length){continue}
+  const days=Number(c.days),active=Number(c.maxActive),budget=Number(c.budget);
+  if(!Number.isFinite(days)||!Number.isFinite(active)||!(budget>0))continue;
+  const base={...c,trials:50,seed:24717,trackCharts:false,maxAccounts:100};
+  const baseline=engine.simulatePortfolio(p,base);
+  const variants=[];
+  if(days<120){
+   const nextDays=Math.min(120,days+Math.max(5,Math.round(days/2)));
+   const schedule=Array.isArray(c.tradeSchedule)&&c.tradeSchedule.length?Array.from({length:nextDays},(_,i)=>c.tradeSchedule[i%c.tradeSchedule.length]):null;
+   variants.push({name:'Longer horizon',parameter:'days',before:days,after:nextDays,config:{...base,days:nextDays,tradeSchedule:schedule}});
+  }
+  if(active<100)
+   variants.push({name:'More concurrent accounts',parameter:'maxActive',before:active,after:Math.min(100,active+1),config:{...base,maxActive:active+1}});
+  for(const v of variants){
+   const test=engine.simulatePortfolio(p,v.config);
+   output.push({firm:p.firm+' '+p.size,test:v.name,parameter:v.parameter,from:v.before,to:v.after,
+    baseNet:num(baseline.avg.net),net:num(test.avg.net),basePaid:num(baseline.avg.paid),paid:num(test.avg.paid),
+    baseSpent:num(baseline.avg.spent),spent:num(test.avg.spent),baseBlocked:num(baseline.avg.exhausted),blocked:num(test.avg.exhausted),
+    trials:50});
+  }
+ }
+ return {output};
+}
 function mount(){
  const parent=document.querySelector('#gptResearchPanel .numbered-content');
  if(!parent||$('studioHistoryAdvisor'))return;
  const section=document.createElement('details');section.id='studioHistoryAdvisor';
  section.className='gpt-research-item';section.innerHTML='<summary><strong>Simulation History Advisor</strong><span class="sim-charts-summary"> · Read saved runs · Suggest tests · Show / hide</span></summary><div class="gpt-research-content"><p class="hint">Free, read-only checks of the selected user’s saved full simulations. Does not change any stage policy or automatically run new Monte Carlo scenarios.</p><button type="button" data-advisor-run>Analyze saved simulations</button><p data-advisor-status class="hint">Click Analyze to inspect loaded history.</p><div data-advisor-output></div></div>';
- parent.insertBefore(section,parent.firstChild);
+ const testing=document.createElement('div');testing.innerHTML='<button type="button" data-advisor-test>Run 50-trial sensitivity tests</button><div data-advisor-tests class="hint"></div>';section.querySelector('.gpt-research-content').append(testing);parent.insertBefore(section,parent.firstChild);
  const out=section.querySelector('[data-advisor-output]'),status=section.querySelector('[data-advisor-status]');
  section.addEventListener('click',e=>{
+  if(e.target.closest('[data-advisor-test]')){
+   const x=sensitivity();const t=section.querySelector('[data-advisor-tests]');t.replaceChildren();
+   if(x.error){t.textContent=x.error;return;}
+   if(!x.output.length){t.textContent='No eligible test cases found in the current report.';return;}
+   const heading=document.createElement('p');heading.className='hint';heading.textContent='Controlled tests: 50 trials per scenario; same seed, saved strategy, model and starting budget. Figures are simulated, not guaranteed or statistically conclusive.';t.append(heading);
+   x.output.forEach(v=>{const p=document.createElement('p');p.textContent=v.firm+' · '+v.test+' ('+v.from+' → '+v.to+'): net '+usd(v.baseNet)+' → '+usd(v.net)+'; first-paid '+fixed(v.basePaid)+' → '+fixed(v.paid)+'; spend '+usd(v.baseSpent)+' → '+usd(v.spent)+'; risk-blocked '+fixed(v.baseBlocked)+' → '+fixed(v.blocked)+'.';t.append(p)});
+   return;
+  }
   if(!e.target.closest('[data-advisor-run]'))return;
   const a=analyze();status.textContent=a.saved+' simulation run(s), '+a.optimizer+' investment calculation(s) · '+a.groups+' account type(s) · latest '+(a.latest?fmtDate(a.latest):'none')+'.';
   out.replaceChildren();
@@ -102,6 +144,6 @@ function mount(){
   if(a.saved) {const foot=document.createElement('p');foot.className='hint';foot.textContent='Findings use latest saved average figures per program. Each suggested parameter change must be tested independently with comparable assumptions and enough Monte Carlo trials. No firm rule has been changed.';out.append(foot)}
  });
 }
-root.StudioHistoryAdvisor={analyze,answer,mount};
+root.StudioHistoryAdvisor={analyze,answer,sensitivity,mount};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
 })(window);
