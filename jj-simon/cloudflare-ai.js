@@ -5,10 +5,17 @@
  const API='/api/ask';
  const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n};
  let busy=false;
- const historyKey='jj-ai-conversation-v2';
- let conversation=[];
- try{const saved=JSON.parse(sessionStorage.getItem(historyKey)||'[]');if(Array.isArray(saved))conversation=saved.slice(-12)}catch(_){}
- const save=()=>{try{sessionStorage.setItem(historyKey,JSON.stringify(conversation.slice(-12)))}catch(_){}};
+ const storeKey='jj-ai-saved-chats-v1';
+ const oldKey='jj-ai-conversation-v2';
+ const makeChat=(messages=[])=>({id:String(Date.now())+'-'+Math.random().toString(36).slice(2,8),title:messages.find(x=>x.role==='user')?.content?.slice(0,65)||'New chat',messages,updated:Date.now()});
+ let chats=[],currentId='',conversation=[];
+ try{const data=JSON.parse(localStorage.getItem(storeKey)||'{}');if(Array.isArray(data.chats)){chats=data.chats.filter(x=>Array.isArray(x.messages)).slice(0,40);currentId=data.currentId||''}}catch(_){}
+ if(!chats.length){let previous=[];try{previous=JSON.parse(sessionStorage.getItem(oldKey)||'[]')}catch(_){};const first=makeChat(Array.isArray(previous)?previous:[]);chats=[first];currentId=first.id}
+ const current=()=>chats.find(x=>x.id===currentId);
+ if(!current())currentId=chats[0].id;
+ conversation=current().messages;
+ const save=()=>{const chat=current();if(chat){chat.messages=conversation;chat.updated=Date.now();if(chat.title==='New chat'&&conversation.length)chat.title=conversation.find(x=>x.role==='user')?.content?.slice(0,65)||chat.title}try{localStorage.setItem(storeKey,JSON.stringify({chats:chats.slice(0,40),currentId}))}catch(_){}};
+ save();
  function renderAnswer(target,value,sourceList=[]){
   target.replaceChildren();
   let text=String(value||'').replace(/\r/g,'').replace(/\*\*([^*\n]+)\*\*/g,'\n$1\n');
@@ -53,7 +60,7 @@
   const button=el('button','jj-ai-button','Ask Cloudflare AI');button.type='button';button.disabled=false;
   button.title='Optional AI synthesis from the top indexed Academy summaries. No full private transcripts are sent.';
   actions.insertBefore(button,actions.firstChild);
-  const reset=el('button','jj-ai-reset','New conversation');reset.type='button';reset.title='Clear the AI conversation context for this tab';actions.append(reset);
+  const reset=el('button','jj-ai-reset','New chat');reset.type='button';reset.title='Create a new chat without deleting previous conversations';actions.append(reset);
   const panel=el('section','jj-ai-panel');panel.id='jj-cloudflare-ai';
   panel.hidden=true;
   const status=el('p','jj-ai-status','');
@@ -61,17 +68,37 @@
   const sources=el('div','jj-ai-sources');
   const thread=el('div','jj-ai-thread');
   const history=el('details','jj-ai-history');const historyTitle=el('summary','','Earlier conversation');history.append(historyTitle,thread);
-  panel.append(el('strong','','Cloudflare AI · latest answer'),status,answer,sources,history);
+  const library=el('details','jj-ai-chat-library');const libraryTitle=el('summary','','Saved chats');const chatList=el('div','jj-ai-chat-list');library.append(libraryTitle,chatList);
+  panel.append(library,el('strong','','Cloudflare AI · latest answer'),status,answer,sources,history);
+  const showLatest=()=>{
+   answer.replaceChildren();sources.replaceChildren();drawThread();
+   panel.hidden=!conversation.length;
+   const latest=conversation[conversation.length-1];
+   if(latest?.role==='assistant'){renderAnswer(answer,latest.content,latest.sources||[]);status.textContent='Saved conversation · Ask a follow-up below.'}
+   else status.textContent='Select a saved conversation or ask a question below.';
+  };
+  const drawChats=()=>{
+   chatList.replaceChildren();libraryTitle.textContent='Saved chats · '+chats.length;
+   for(const chat of [...chats].sort((a,b)=>b.updated-a.updated)){
+    const item=el('div','jj-ai-chat-item');
+    const open=el('button','jj-ai-chat-open',chat.title||'New chat');open.type='button';if(chat.id===currentId)open.classList.add('active');
+    open.onclick=()=>{if(busy)return;save();currentId=chat.id;conversation=chat.messages;save();drawChats();showLatest();library.open=false};
+    const rename=el('button','jj-ai-chat-action','Rename');rename.type='button';rename.onclick=()=>{if(busy)return;const title=prompt('Chat title',chat.title);if(title?.trim()){chat.title=title.trim().slice(0,90);save();drawChats()}};
+    const remove=el('button','jj-ai-chat-action','Delete');remove.type='button';remove.onclick=()=>{if(busy||!confirm('Delete this saved chat?'))return;chats=chats.filter(x=>x.id!==chat.id);if(!chats.length)chats=[makeChat()];if(currentId===chat.id){currentId=chats[0].id;conversation=chats[0].messages;showLatest()}save();drawChats()};
+    item.append(open,rename,remove);chatList.append(item);
+   }
+  };
+  drawChats();
   const drawThread=()=>{
    thread.replaceChildren();
-   const earlier=conversation.slice(0,-2).slice(-8);
+   const earlier=conversation.slice(0,-2);
    history.hidden=!earlier.length;
    historyTitle.textContent='Earlier conversation · '+Math.floor(earlier.length/2)+' exchanges';
    for(const turn of earlier){const item=el('div','jj-ai-turn jj-ai-'+turn.role);item.append(el('strong','',turn.role==='user'?'You':'AI'));if(turn.role==='assistant')renderAnswer(item,turn.content,turn.sources||[]);else item.append(el('p','',turn.content));thread.append(item)}
   };
   drawThread();
   if(conversation.length){panel.hidden=false;status.textContent='Latest response · Ask a follow-up below.';const latest=conversation[conversation.length-1];if(latest?.role==='assistant'){renderAnswer(answer,latest.content,latest.sources||[]);if(!latest.sources?.length)status.textContent='Saved earlier answer · Source links require a newly generated answer. Ask a follow-up below.'}}
-  reset.addEventListener('click',()=>{if(busy)return;conversation=[];save();thread.replaceChildren();answer.replaceChildren();sources.replaceChildren();panel.hidden=true;const input=form.querySelector('textarea');input.value='';input.placeholder='Ask a question about JJ’s trading course…';input.focus()});
+  reset.addEventListener('click',()=>{if(busy)return;save();const chat=makeChat();chats.unshift(chat);currentId=chat.id;conversation=chat.messages;save();drawChats();showLatest();const input=form.querySelector('textarea');input.value='';input.placeholder='Ask a question about JJ’s trading course…';input.focus()});
   const result=root.querySelector('#jj-helper-results');
   if(result)result.before(panel);else root.append(panel);
   panel.after(form);
@@ -111,7 +138,7 @@
     if(!response.ok)throw Error([data.message||data.error||'AI endpoint unavailable',data.code?'Code: '+data.code:'',data.detail||''].filter(Boolean).join(' · '));
     status.textContent='AI synthesis of indexed Academy research. Verify original lesson evidence; assumptions are not actual JJ performance.';
     const citedSources=hits.slice(0,5).map(hit=>({title:hit.title,url:hit.sourceUrl||'',chapter:hit.chapter||''}));
-    conversation.push({role:'user',content:question.slice(0,750)},{role:'assistant',content:String(data.answer||'').slice(0,6500),sources:citedSources});conversation=conversation.slice(-12);save();drawThread();
+    conversation.push({role:'user',content:question.slice(0,750)},{role:'assistant',content:String(data.answer||'').slice(0,6500),sources:citedSources});save();drawThread();drawChats();
     renderAnswer(answer,data.answer||'No answer returned',citedSources);
     const questionBox=form.querySelector('textarea');if(questionBox){questionBox.value='';questionBox.placeholder='Ask a follow-up about this conversation…'}
     const label=el('strong','','Source passages used:');sources.append(label);
