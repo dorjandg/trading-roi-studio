@@ -288,6 +288,17 @@ html[data-theme="light"] .recovery-direct{background:#f0faf6;border-color:#8bcdb
 @media(max-width:600px){#page-firms .firms-global-tools,#page-firms .firms-sizing-note{padding:5px 7px;margin:4px 0}
 #page-firms .firms-global-tools>summary,#page-firms .firms-sizing-note>summary{font-size:10px}
 #page-firms .firms-global-tools .actionrow{gap:4px}}
+
+/* Simulator shortcuts stay visible before the large embedded firm selector. */
+#page-firms .firms-quick-nav{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:5px 0 9px}
+#page-firms .firms-quick-nav .btn{padding:7px 11px;font-size:11px;min-height:32px;border-radius:8px;white-space:nowrap}
+#page-firms .firms-quick-nav .btn.primary{font-size:12px}
+@media(max-width:650px){
+ #page-firms .firms-quick-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin:2px 0 7px}
+ #page-firms .firms-quick-nav .btn{white-space:normal;line-height:1.2;padding:7px 6px;font-size:10px;min-height:35px;text-align:center}
+ #page-firms .firms-quick-nav .btn.primary{font-size:11px}
+ #page-firms .firms-quick-nav .btn:last-child:nth-child(odd){grid-column:span 2}
+}
 .scenario-advisor{margin-top:10px;padding:10px;border:1px solid var(--border,#526071);border-radius:9px;display:grid;gap:8px}.scenario-advisor-item{padding:7px 9px;border-left:3px solid #7790a5;background:rgba(127,127,127,.06);border-radius:4px}.scenario-advisor-critical{border-left-color:#cc6161}.scenario-advisor-warning{border-left-color:#d2a64b}.scenario-advisor-good{border-left-color:#4aaf83}.scenario-advisor-item p{margin:3px 0;font-size:12px;line-height:1.4}.scenario-advisor small{opacity:.75;font-size:11px}
 </style>
 <script>window.FOUR_DS_CLOUD_ENDPOINT = "https://script.google.com/macros/s/AKfycbyZW792ZLBPxusQwthCJr0bVdZwCjXyeNaklq4Dk-BuSQ8P9gdg2zdTiWFKEmYuy5sY9Q/exec";</script>
@@ -594,7 +605,12 @@ html[data-theme="light"] .recovery-details .caption{color:#53677c}
   </div>
   <div class="panel"><h2>4Ds cloud synchronization</h2><p class="subtle">One shared website, with separate profiles for Doen, Dori, Dona and Dion. No logins: anyone with access can select any name and change that profile.</p><div class="notice" id="cloudSyncStatus" role="status">Checking cloud connection…</div><div class="actionrow" style="margin-top:12px"><button type="button" class="btn" id="cloudUpload">Overwrite cloud with this device</button><button type="button" class="btn" id="cloudDownload">Load cloud onto this device</button></div><p class="caption">Settings are saved on this device first. When connected, cloud synchronization transfers them between devices. Keep a JSON backup for important configurations.</p></div>
 </section>
-<section id="page-firms" class="page"><div class="panel" style="padding:0;overflow:hidden"><iframe id="firmsFrame" title="Prop firm account selector and rules" src="about:blank" data-src="rules.html?embedded=1&v=fit-symbols-20261104" loading="eager" style="display:block;width:100%;height:1px;min-height:0;border:0;background:#080d16;overflow:hidden"></iframe></div><div class="notice" id="firmStrategyStatus" style="margin:16px 0">Select a firm, program and account size above to load this account's saved trading parameters.</div>
+<section id="page-firms" class="page">
+<div class="firms-quick-nav" role="group" aria-label="Simulation and trading tools">
+ <a class="btn primary" href="portfolio-simulator.html" title="Open the separate portfolio trade and account simulator">Portfolio Simulator</a>
+ <button type="button" class="btn small" id="openFirmsStrategySimulator" title="Open the older two-risk strategy simulation inside Firms">2-Risk Simulator</button>
+ <button type="button" class="btn small" id="openFirmsSmartPlanner" title="Open the R1–R4 Smart Setup Optimizer for Phase 1">Smart R1–R4 Planner</button>
+</div><div class="panel" style="padding:0;overflow:hidden"><iframe id="firmsFrame" title="Prop firm account selector and rules" src="about:blank" data-src="rules.html?embedded=1&v=fit-symbols-20261104" loading="eager" style="display:block;width:100%;height:1px;min-height:0;border:0;background:#080d16;overflow:hidden"></iframe></div><div class="notice" id="firmStrategyStatus" style="margin:16px 0">Select a firm, program and account size above to load this account's saved trading parameters.</div>
 <div id="firmTradingWorkspace">
 <div class="firms-fold-toolbar" role="group" aria-label="Firms section visibility">
  <span>Sections</span>
@@ -2815,6 +2831,33 @@ window.addEventListener('message',event=>{
  if(msg.type==='studio-user-profile-changed'){window.fourDsQueueCloudSave?.();return;}
  if(msg.type==='studio-program-select'){useSelectedAccount(msg.payload,true);$('firmTradingWorkspace').scrollIntoView({behavior:'smooth',block:'start'});}
 });
+
+function openFirmsFold(node){
+ if(node?.classList.contains('is-collapsed'))node.querySelector('.firms-fold-toggle')?.click();
+}
+document.getElementById('openFirmsStrategySimulator')?.addEventListener('click',()=>{
+ openFirmsFold(document.getElementById('symbolPanel'));
+ const details=document.querySelector('#page-firms .legacy-estimator-details');
+ if(!details)return;
+ details.open=true;
+ requestAnimationFrame(()=>{
+  details.scrollIntoView({behavior:'smooth',block:'start'});
+  if(!selectedAccountSupportsSimulation)notify('This selected account is not supported by the older two-risk simulator. Use Portfolio Simulator for supported account models.');
+ });
+});
+document.getElementById('openFirmsSmartPlanner')?.addEventListener('click',()=>{
+ openFirmsFold(document.getElementById('symbolPanel'));
+ const phase=document.querySelector('#page-firms .risk-phase-group');
+ openFirmsFold(phase);
+ const snap=recoverySnapshot('p1');
+ snap.open=true;snap.smartOpen=true;
+ persistRecoverySnapshot('p1');
+ renderRecoveryPlanners();
+ requestAnimationFrame(()=>{const target=document.querySelector('[data-recovery-stage="p1"] .smart-setup');
+  if(target){target.open=true;target.scrollIntoView({behavior:'smooth',block:'start'})}
+ });
+});
+
 function goPage(name){if(name==='firms')overviewRequestedKey=null;document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id==='page-'+name));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===name));if(name==='firms'){
  const [programId,size]=String(activeProgramKey||'').split(':');
  if(programId&&Number(size)>0)$('firmsFrame')?.contentWindow?.postMessage({type:'studio-select-account',programId,size:Number(size)},window.location.origin);
