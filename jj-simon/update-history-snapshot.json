@@ -1,0 +1,918 @@
+{
+  "schema": 1,
+  "description": "Public, non-sensitive fallback snapshot of verified Academy commit history and selected import milestones. Real-time changes use GitHub API when available.",
+  "source": "https://github.com/dorjandg/trading-roi-studio/tree/jj-simon-knowledge-hub/jj-simon",
+  "timeZone": "Europe/Tirane",
+  "capturedAt": "2026-11-07T00:00:00Z",
+  "entries": [
+    {
+      "id": "verified:youtube-first-captions",
+      "at": "2026-11-06T21:26:00.305231+00:00",
+      "category": "transcript",
+      "summary": "First public JJ YouTube transcript imported successfully",
+      "detail": "330 timestamped English caption entries verified in the private research store. No transcript text is publicly exposed.",
+      "status": "Verified",
+      "url": ""
+    },
+    {
+      "id": "commit:c0f4020cd827a87d7760882eee4f38a45a129444",
+      "at": "2026-11-06T21:28:52Z",
+      "category": "academy",
+      "summary": "JJ Academy: track native-caption review state for duplicate prevention",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/c0f4020cd827a87d7760882eee4f38a45a129444"
+    },
+    {
+      "id": "commit:e517d00458b53764d9cb947e652c41053823ff42",
+      "at": "2026-11-06T21:28:39Z",
+      "category": "academy",
+      "summary": "JJ Academy: ground NY opening lessons in privately imported native captions",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/e517d00458b53764d9cb947e652c41053823ff42"
+    },
+    {
+      "id": "commit:38a76f9dff9ca0256f5dee854bb149a95d4a3959",
+      "at": "2026-11-06T21:20:12Z",
+      "category": "academy",
+      "summary": "JJ Academy: document active hosted caption-to-private-Sheet pipeline and research automation",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/38a76f9dff9ca0256f5dee854bb149a95d4a3959"
+    },
+    {
+      "id": "commit:08c8d3aab77501a4b0deebd6a04ed612134f9362",
+      "at": "2026-11-06T21:17:29Z",
+      "category": "academy",
+      "summary": "JJ Academy: direct hosted transcript import into private owner-owned Google Sheet",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/08c8d3aab77501a4b0deebd6a04ed612134f9362"
+    },
+    {
+      "id": "commit:8c3d10f4b6f83b2f411d617481906fd5e95add3f",
+      "at": "2026-11-06T21:13:11Z",
+      "category": "academy",
+      "summary": "JJ Academy: document hosted fully automatic transcript ingestion and guarded costs",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/8c3d10f4b6f83b2f411d617481906fd5e95add3f"
+    },
+    {
+      "id": "commit:39cacbed10a7380f019ea45535b14ac64bcc964d",
+      "at": "2026-11-06T21:12:14Z",
+      "category": "academy",
+      "summary": "JJ Academy: support hosted native-caption API without browser cookies or speech billing",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/39cacbed10a7380f019ea45535b14ac64bcc964d"
+    },
+    {
+      "id": "commit:fcdf46e098441c9ecdab1e0848ac6dd2ee18bee1",
+      "at": "2026-11-06T21:02:10Z",
+      "category": "academy",
+      "summary": "JJ Academy: add Windows-compatible local YouTube caption fallback without cloud cookies",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/fcdf46e098441c9ecdab1e0848ac6dd2ee18bee1"
+    },
+    {
+      "id": "commit:b4b26c10b8c77bc8b3c4ee1fa6de9d97f36db234",
+      "at": "2026-11-06T21:01:42Z",
+      "category": "academy",
+      "summary": "JJ Academy: stop caption batch after YouTube authentication or rate limit",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/b4b26c10b8c77bc8b3c4ee1fa6de9d97f36db234"
+    },
+    {
+      "id": "commit:be08bb60cc0b0b35453bc819192e18e37017b90e",
+      "at": "2026-11-06T20:59:44Z",
+      "category": "academy",
+      "summary": "JJ Academy: classify YouTube caption failures without exposing command output",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/be08bb60cc0b0b35453bc819192e18e37017b90e"
+    },
+    {
+      "id": "commit:509b6fa8fe958891b24f599d3dab0162193508eb",
+      "at": "2026-11-06T20:56:58Z",
+      "category": "academy",
+      "summary": "Fix Google Drive API pageSize parameter in JJ caption import",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/509b6fa8fe958891b24f599d3dab0162193508eb"
+    },
+    {
+      "id": "commit:7c0e194e435dc400f06bee360e582602eb930db5",
+      "at": "2026-11-06T20:47:02Z",
+      "category": "academy",
+      "summary": "JJ Academy: explain invalid Google credential secret without logging key material",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/7c0e194e435dc400f06bee360e582602eb930db5"
+    },
+    {
+      "id": "commit:c80ba49dc718844b272fcf55426ca0337895b287",
+      "at": "2026-11-06T20:18:43Z",
+      "category": "academy",
+      "summary": "JJ Academy: grant dedicated account scoped Drive folder visibility and correct importer docs",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/c80ba49dc718844b272fcf55426ca0337895b287"
+    },
+    {
+      "id": "commit:9a9c538c03f770fa1fdf7b0759d0b401ab6d2122",
+      "at": "2026-11-06T20:18:23Z",
+      "category": "academy",
+      "summary": "JJ Academy: link YouTube Research Library from Academy header",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/9a9c538c03f770fa1fdf7b0759d0b401ab6d2122"
+    },
+    {
+      "id": "commit:cec6b35e47870a23788e71baec22570ee9b64ce9",
+      "at": "2026-11-06T20:18:13Z",
+      "category": "academy",
+      "summary": "JJ Academy: document private caption pipeline and activation safeguards",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/cec6b35e47870a23788e71baec22570ee9b64ce9"
+    },
+    {
+      "id": "commit:ce54fa44704bac4fbadbfd518290e9afa0cfeef1",
+      "at": "2026-11-06T20:17:27Z",
+      "category": "academy",
+      "summary": "JJ Academy: disable yt-dlp implicit simulation for caption fetch",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/ce54fa44704bac4fbadbfd518290e9afa0cfeef1"
+    },
+    {
+      "id": "commit:69996c7be4759c4562f461d5f6d95c6a62f2b82c",
+      "at": "2026-11-06T20:17:17Z",
+      "category": "academy",
+      "summary": "JJ Academy: ensure yt-dlp downloads captions and skips do not exhaust batch",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/69996c7be4759c4562f461d5f6d95c6a62f2b82c"
+    },
+    {
+      "id": "commit:6f63a8a3025b9dcc7a6f2520ae544dbdaef2629c",
+      "at": "2026-11-06T20:16:57Z",
+      "category": "academy",
+      "summary": "JJ Academy: add private Drive YouTube caption ingestion with sheet validation",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/6f63a8a3025b9dcc7a6f2520ae544dbdaef2629c"
+    },
+    {
+      "id": "commit:007d09f89006e559627533a1051cd95f9354eb0d",
+      "at": "2026-11-06T20:15:59Z",
+      "category": "academy",
+      "summary": "JJ Academy: add searchable YouTube research inventory page",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/007d09f89006e559627533a1051cd95f9354eb0d"
+    },
+    {
+      "id": "commit:182b3e6021ad1a1383b8e96399af641a5db0bcb6",
+      "at": "2026-11-06T20:15:24Z",
+      "category": "academy",
+      "summary": "JJ Academy: add validated 67-video source inventory",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/182b3e6021ad1a1383b8e96399af641a5db0bcb6"
+    },
+    {
+      "id": "commit:b9eba5213723f9960f6d82edaf0d9838e834bfda",
+      "at": "2026-11-06T20:02:31Z",
+      "category": "academy",
+      "summary": "Publish timestamp-linked JJ Simon YouTube transcript research in Academy",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/b9eba5213723f9960f6d82edaf0d9838e834bfda"
+    },
+    {
+      "id": "commit:1721a4bbc290dcd2c018afe1c8cc198616163598",
+      "at": "2026-11-06T20:02:19Z",
+      "category": "academy",
+      "summary": "Add YouTube caption research chapter to Academy Math & Research navigation",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/1721a4bbc290dcd2c018afe1c8cc198616163598"
+    },
+    {
+      "id": "commit:a49bf729f7f1367fe0e9f84f262aa03ef75f2e18",
+      "at": "2026-11-06T20:02:05Z",
+      "category": "academy",
+      "summary": "Create seven timecoded JJ YouTube transcript research sections with direct video and transcript sources",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/a49bf729f7f1367fe0e9f84f262aa03ef75f2e18"
+    },
+    {
+      "id": "commit:208f2b6dbd9bc92cf967e95ae6911a4fdefdd9f9",
+      "at": "2026-11-06T19:46:13Z",
+      "category": "academy",
+      "summary": "Label externally sourced JJ definitions distinctly from transcript-verified dictionary entries",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/208f2b6dbd9bc92cf967e95ae6911a4fdefdd9f9"
+    },
+    {
+      "id": "commit:b8b0584d4015d4221996e2ed1b57962f7c448b7e",
+      "at": "2026-11-06T19:45:57Z",
+      "category": "academy",
+      "summary": "Load four externally sourced glossary terms in JJ Academy dictionary",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/b8b0584d4015d4221996e2ed1b57962f7c448b7e"
+    },
+    {
+      "id": "commit:944658ce38b93f77950d6f80de6789b4adadfbfb",
+      "at": "2026-11-06T19:45:41Z",
+      "category": "academy",
+      "summary": "Add four public-source trading terms with explicit unverified status and related research links",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/944658ce38b93f77950d6f80de6789b4adadfbfb"
+    },
+    {
+      "id": "commit:9ad1f9e655b3d1613ad84c89bbc029270b06bf65",
+      "at": "2026-11-06T19:44:17Z",
+      "category": "academy",
+      "summary": "Publish external JJ Simon strategy research chapter and direct source links in Academy",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/9ad1f9e655b3d1613ad84c89bbc029270b06bf65"
+    },
+    {
+      "id": "commit:aff7da9e85b581de91d7eb4058635081b6feb287",
+      "at": "2026-11-06T19:44:02Z",
+      "category": "academy",
+      "summary": "Style externally linked public research references in compact Academy chapters",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/aff7da9e85b581de91d7eb4058635081b6feb287"
+    },
+    {
+      "id": "commit:b9361fb0eb25a7c7c43e627a34472d593d83fe60",
+      "at": "2026-11-06T19:43:51Z",
+      "category": "academy",
+      "summary": "Add public strategy research to Math & Research navigation with stable chapter numbering",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/b9361fb0eb25a7c7c43e627a34472d593d83fe60"
+    },
+    {
+      "id": "commit:46ecfea67741a4eb278b5c8f2c94c3cd9d60153d",
+      "at": "2026-11-06T19:43:33Z",
+      "category": "academy",
+      "summary": "Add six source-linked public JJ strategy cross-checks with conflicts, ATR tiers and external-study caveats",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/46ecfea67741a4eb278b5c8f2c94c3cd9d60153d"
+    },
+    {
+      "id": "commit:7d427079e0b5792e3df0681898709419f325ff46",
+      "at": "2026-11-06T19:29:24Z",
+      "category": "academy",
+      "summary": "Bust stale browser cache for JJ Google question sync and trigger Academy redeployment",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/7d427079e0b5792e3df0681898709419f325ff46"
+    },
+    {
+      "id": "commit:3c1b8936d2221ab8a4f937ccc26ea4927f29c213",
+      "at": "2026-11-06T19:29:03Z",
+      "category": "academy",
+      "summary": "Retry pending Academy questions after loading updated Google cloud configuration",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/3c1b8936d2221ab8a4f937ccc26ea4927f29c213"
+    },
+    {
+      "id": "commit:f2a49993973f355a18b70dc09edad84300fefc86",
+      "at": "2026-11-06T19:22:52Z",
+      "category": "academy",
+      "summary": "Connect JJ Academy question sync to its dedicated Google Apps Script deployment",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/f2a49993973f355a18b70dc09edad84300fefc86"
+    },
+    {
+      "id": "commit:4dd379ad8b529e182201cad291067c383460a1fa",
+      "at": "2026-11-06T19:15:37Z",
+      "category": "academy",
+      "summary": "Mark old D1 reviewer instructions as superseded by Google Apps Script setup",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/4dd379ad8b529e182201cad291067c383460a1fa"
+    },
+    {
+      "id": "commit:edd5b9ee9f4420456c7dc05cf7fd704b14888897",
+      "at": "2026-11-06T19:15:20Z",
+      "category": "academy",
+      "summary": "Document Google Apps Script question queue deployment and reuse of hourly JJ research automation",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/edd5b9ee9f4420456c7dc05cf7fd704b14888897"
+    },
+    {
+      "id": "commit:21c9e2dc23368e9615266a6fc7bfe959702527de",
+      "at": "2026-11-06T19:12:04Z",
+      "category": "academy",
+      "summary": "Load dedicated Google Apps Script cloud configuration before Academy question assistant",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/21c9e2dc23368e9615266a6fc7bfe959702527de"
+    },
+    {
+      "id": "commit:0d9ac4c0aec74f0ff72ec9d6ee141c94efc7c3b0",
+      "at": "2026-11-06T19:11:42Z",
+      "category": "academy",
+      "summary": "Harden Academy Apps Script against formula injection and unbounded receipt storage",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/0d9ac4c0aec74f0ff72ec9d6ee141c94efc7c3b0"
+    },
+    {
+      "id": "commit:c754f13185fcf441eb553510fdc08d11f80a0681",
+      "at": "2026-11-06T19:11:20Z",
+      "category": "academy",
+      "summary": "Provide independent Google Apps Script endpoint configuration for Academy questions",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/c754f13185fcf441eb553510fdc08d11f80a0681"
+    },
+    {
+      "id": "commit:7468e98e52e7d276be2d8ffb8e905c351ebde262",
+      "at": "2026-11-06T19:10:41Z",
+      "category": "academy",
+      "summary": "Switch JJ Academy private question queue to Google Apps Script sync with verified receipts",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/7468e98e52e7d276be2d8ffb8e905c351ebde262"
+    },
+    {
+      "id": "commit:15bb6f2b93fdee8691f314d49facab77e5503426",
+      "at": "2026-11-06T19:09:43Z",
+      "category": "academy",
+      "summary": "Add isolated Google Apps Script question intake with private Sheet, rate caps and verified receipts",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/15bb6f2b93fdee8691f314d49facab77e5503426"
+    },
+    {
+      "id": "commit:259d0245aacd0536f8b04c21b997d8bd15be5b37",
+      "at": "2026-11-06T18:32:45Z",
+      "category": "academy",
+      "summary": "Document safe GPT question-review activation, default-branch workflows and explicitly approved PR publishing",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/259d0245aacd0536f8b04c21b997d8bd15be5b37"
+    },
+    {
+      "id": "commit:36e1b89535f9a9db57e7d7c9a0e69c4da6ec5ad2",
+      "at": "2026-11-06T18:30:56Z",
+      "category": "academy",
+      "summary": "Style explicit student consent for private question review submissions",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/36e1b89535f9a9db57e7d7c9a0e69c4da6ec5ad2"
+    },
+    {
+      "id": "commit:1b26d6f644b181de3a73962e884b2c92063a37ff",
+      "at": "2026-11-06T18:30:45Z",
+      "category": "academy",
+      "summary": "Add opt-in consent before sending unresolved student questions to private GPT review backend",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/1b26d6f644b181de3a73962e884b2c92063a37ff"
+    },
+    {
+      "id": "commit:c0224a42f98d9d37b6b5ef04091fdfd00a34ac9f",
+      "at": "2026-11-06T18:29:34Z",
+      "category": "academy",
+      "summary": "Test private question reviewer, evidence ranking and safe public-answer approval gate",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/c0224a42f98d9d37b6b5ef04091fdfd00a34ac9f"
+    },
+    {
+      "id": "commit:c1c221cdea08a17754d5987580d038a55f99d7fb",
+      "at": "2026-11-06T18:28:27Z",
+      "category": "academy",
+      "summary": "Generate gated pull requests from explicitly approved public JJ answers without leaking private student questions",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/c1c221cdea08a17754d5987580d038a55f99d7fb"
+    },
+    {
+      "id": "commit:d54395d15602fcbebec3b1c325fac1253e0e89f0",
+      "at": "2026-11-06T18:27:46Z",
+      "category": "academy",
+      "summary": "Load reviewed answers before the study assistant",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/d54395d15602fcbebec3b1c325fac1253e0e89f0"
+    },
+    {
+      "id": "commit:aa903ff6ef47ae32e67f4d2482c2e06a755d862b",
+      "at": "2026-11-06T18:27:23Z",
+      "category": "academy",
+      "summary": "Teach Study Assistant to prioritize source-linked answers after human approval and PR merge",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/aa903ff6ef47ae32e67f4d2482c2e06a755d862b"
+    },
+    {
+      "id": "commit:c0ee0933037d2651239aae25c04b9bdc68823c72",
+      "at": "2026-11-06T18:27:08Z",
+      "category": "academy",
+      "summary": "Create empty source-linked approved-answer catalog for future reviewed responses",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/c0ee0933037d2651239aae25c04b9bdc68823c72"
+    },
+    {
+      "id": "commit:73fd1b3a0e6ed112e71678b8fb3e57aaaa643640",
+      "at": "2026-11-06T18:26:47Z",
+      "category": "academy",
+      "summary": "Require explicit reviewed public answer and evidence IDs for approve-to-publish workflow",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/73fd1b3a0e6ed112e71678b8fb3e57aaaa643640"
+    },
+    {
+      "id": "commit:c4bddf281d625926e3bc9b219b199235f51741d3",
+      "at": "2026-11-06T18:26:31Z",
+      "category": "academy",
+      "summary": "Require separately curated public title and answer before approved questions may enter repository",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/c4bddf281d625926e3bc9b219b199235f51741d3"
+    },
+    {
+      "id": "commit:db7fc7181a81d9c1b7081daead2e4232b11b266c",
+      "at": "2026-11-06T18:25:33Z",
+      "category": "academy",
+      "summary": "Add scheduled GPT evidence reviewer that stores source-linked drafts privately without publishing user questions",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/db7fc7181a81d9c1b7081daead2e4232b11b266c"
+    },
+    {
+      "id": "commit:8ca5aad77866fb29d5d64f4cdf68f75a979cb192",
+      "at": "2026-11-06T18:16:00Z",
+      "category": "academy",
+      "summary": "Document local question register, secure D1 setup and gated GPT research/PR automation workflow",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/8ca5aad77866fb29d5d64f4cdf68f75a979cb192"
+    },
+    {
+      "id": "commit:15f8817014df011d75a1a443fc8b687df1feb568",
+      "at": "2026-11-06T18:15:23Z",
+      "category": "academy",
+      "summary": "Style unanswered-question review queue and weak-answer feedback on mobile",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/15f8817014df011d75a1a443fc8b687df1feb568"
+    },
+    {
+      "id": "commit:ed8169616427a7ca7817a1160ad67d38d33aa2bf",
+      "at": "2026-11-06T18:14:55Z",
+      "category": "academy",
+      "summary": "Add D1 backed Cloudflare private question queue with rate limiting and authenticated review endpoints",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/ed8169616427a7ca7817a1160ad67d38d33aa2bf"
+    },
+    {
+      "id": "commit:051b460565658e6a4db4136503ee43eaf211c77c",
+      "at": "2026-11-06T18:14:26Z",
+      "category": "academy",
+      "summary": "Create private D1 question-review queue schema with lifecycle and submission limits",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/051b460565658e6a4db4136503ee43eaf211c77c"
+    },
+    {
+      "id": "commit:652f3cf2ddb3ddadc854b04700344a8eab98245c",
+      "at": "2026-11-06T18:13:57Z",
+      "category": "academy",
+      "summary": "Register unanswered Academy questions locally with duplicate detection, retry, and research exports",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/652f3cf2ddb3ddadc854b04700344a8eab98245c"
+    },
+    {
+      "id": "commit:fba2c27281b00e4ed84f81c9c373003310eb7be2",
+      "at": "2026-11-06T18:06:05Z",
+      "category": "academy",
+      "summary": "Include four new bankroll and cash-conversion glossary terms",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/fba2c27281b00e4ed84f81c9c373003310eb7be2"
+    },
+    {
+      "id": "commit:d3ebf0e9af1fc0a34622484e88c3d3ac5308fd2d",
+      "at": "2026-11-06T18:05:51Z",
+      "category": "academy",
+      "summary": "Define conditional stopping, acquisition cost, payout conversion, and house-money terminology",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/d3ebf0e9af1fc0a34622484e88c3d3ac5308fd2d"
+    },
+    {
+      "id": "commit:e098a4504d7f1ed1eede39a1ac7d6c7de26b7b56",
+      "at": "2026-11-06T18:05:37Z",
+      "category": "academy",
+      "summary": "Publish deep roadmap, prop-firm probability, and portfolio-stage research",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/e098a4504d7f1ed1eede39a1ac7d6c7de26b7b56"
+    },
+    {
+      "id": "commit:19def8583915230a91701de8f03dccfaf8ae21a7",
+      "at": "2026-11-06T18:05:19Z",
+      "category": "academy",
+      "summary": "Add seven sourced roadmap and account-survival audits with conditional EV corrections",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/19def8583915230a91701de8f03dccfaf8ae21a7"
+    },
+    {
+      "id": "commit:091a2e1639a47f20283379e380518615e72ab4f0",
+      "at": "2026-11-06T18:02:13Z",
+      "category": "academy",
+      "summary": "Publish 86-entry expanded JJ Trading Dictionary with category and subcategory filters",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/091a2e1639a47f20283379e380518615e72ab4f0"
+    },
+    {
+      "id": "commit:53d1c77172f804817d7d2a5b946207f063092602",
+      "at": "2026-11-06T18:02:01Z",
+      "category": "academy",
+      "summary": "Show dictionary category counts and distinguish educational definitions from sourced JJ quotations",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/53d1c77172f804817d7d2a5b946207f063092602"
+    },
+    {
+      "id": "commit:dc8eff99f12e6bcbc0feb42abec18caf05c47de9",
+      "at": "2026-11-06T18:01:47Z",
+      "category": "academy",
+      "summary": "Organize expanded trading dictionary into eight parent categories and subcategory filters",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/dc8eff99f12e6bcbc0feb42abec18caf05c47de9"
+    },
+    {
+      "id": "commit:44dc027bef57560bb38ca223d4746bfb6dc9a551",
+      "at": "2026-11-06T18:01:36Z",
+      "category": "academy",
+      "summary": "Give expanded trading dictionary entries precise subcategory names",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/44dc027bef57560bb38ca223d4746bfb6dc9a551"
+    },
+    {
+      "id": "commit:3d92ab8e1cd2287e3800e40adc05d5cb8e962f50",
+      "at": "2026-11-06T18:01:21Z",
+      "category": "academy",
+      "summary": "Add 40 categorized trading, market structure, risk, execution and research dictionary definitions",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/3d92ab8e1cd2287e3800e40adc05d5cb8e962f50"
+    },
+    {
+      "id": "commit:92b2c7048e4143ac26ed35c19f54951eba3d558d",
+      "at": "2026-11-06T17:56:32Z",
+      "category": "academy",
+      "summary": "Improve JJ study assistant search accuracy with normalized core terms and relevance thresholds",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/92b2c7048e4143ac26ed35c19f54951eba3d558d"
+    },
+    {
+      "id": "commit:86338c46c5634593017a23f83325e05cd54a224f",
+      "at": "2026-11-06T17:55:33Z",
+      "category": "academy",
+      "summary": "Publish general Trading Dictionary and source-grounded Study Assistant",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/86338c46c5634593017a23f83325e05cd54a224f"
+    },
+    {
+      "id": "commit:6535d42424c0b865079f0e0f6c3b3153826a453e",
+      "at": "2026-11-06T17:55:24Z",
+      "category": "academy",
+      "summary": "Style standalone Academy dictionary and source-based study assistant for mobile",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/6535d42424c0b865079f0e0f6c3b3153826a453e"
+    },
+    {
+      "id": "commit:625dc03953811c1b989dd6abe0c8c177cbe182e7",
+      "at": "2026-11-06T17:55:05Z",
+      "category": "academy",
+      "summary": "Add top-level local study question assistant with source-ranked evidence and no exposed API credentials",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/625dc03953811c1b989dd6abe0c8c177cbe182e7"
+    },
+    {
+      "id": "commit:d4bd3bfcf748cffb9bd2799b0ed05f56bfed1f1a",
+      "at": "2026-11-06T17:54:03Z",
+      "category": "academy",
+      "summary": "Pin Trading Dictionary and Study Assistant outside Academy chapter groups",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/d4bd3bfcf748cffb9bd2799b0ed05f56bfed1f1a"
+    },
+    {
+      "id": "commit:356312c1ac260b4fb6d1fc0ea17e7ec29e6556e8",
+      "at": "2026-11-06T17:49:13Z",
+      "category": "academy",
+      "summary": "Publish deep-dive course extraction for funded trading and scaling with source timestamps",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/356312c1ac260b4fb6d1fc0ea17e7ec29e6556e8"
+    },
+    {
+      "id": "commit:de1a348dd107d6051db32c167889fa6de34953f7",
+      "at": "2026-11-06T17:49:02Z",
+      "category": "academy",
+      "summary": "Expand JJ funded, account-frequency, scaling, and student-case chapters with nine sourced deep studies",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/de1a348dd107d6051db32c167889fa6de34953f7"
+    },
+    {
+      "id": "commit:1194ed27e9d0a582bda894ff48e610ab77d2711b",
+      "at": "2026-11-06T17:34:08Z",
+      "category": "academy",
+      "summary": "Publish detailed JJ EV risk of ruin and portfolio-survival study sections",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/1194ed27e9d0a582bda894ff48e610ab77d2711b"
+    },
+    {
+      "id": "commit:baa52c2ee329248088ac9c02af816bcef52ff600",
+      "at": "2026-11-06T17:33:59Z",
+      "category": "academy",
+      "summary": "Expand JJ EV bankroll ruin and portfolio survival chapters with six sourced deep-study topics",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/baa52c2ee329248088ac9c02af816bcef52ff600"
+    },
+    {
+      "id": "commit:e7ba2e29c285cf34ee6fc950a2ca3f5c3af0c1b0",
+      "at": "2026-11-06T17:32:34Z",
+      "category": "academy",
+      "summary": "Load six-category Trading Dictionary with subcategory filters",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/e7ba2e29c285cf34ee6fc950a2ca3f5c3af0c1b0"
+    },
+    {
+      "id": "commit:7e0c3c14aac92a653cc721c02722155e5c198b52",
+      "at": "2026-11-06T17:32:16Z",
+      "category": "academy",
+      "summary": "Support 3-column desktop search, category and subcategory filters",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/7e0c3c14aac92a653cc721c02722155e5c198b52"
+    },
+    {
+      "id": "commit:927e943a4eab025db98bdc97dde936fae03ad769",
+      "at": "2026-11-06T17:32:06Z",
+      "category": "academy",
+      "summary": "Add nested category and subcategory dictionary filtering",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/927e943a4eab025db98bdc97dde936fae03ad769"
+    },
+    {
+      "id": "commit:7aac6f335524a62612d5cb1c724e9287573056d0",
+      "at": "2026-11-06T17:31:45Z",
+      "category": "academy",
+      "summary": "Organize 46 dictionary definitions into six categories and original subcategories",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/7aac6f335524a62612d5cb1c724e9287573056d0"
+    },
+    {
+      "id": "commit:bb9e16470f83d5edece1cd971097b98aec7b3c3e",
+      "at": "2026-11-06T17:31:09Z",
+      "category": "academy",
+      "summary": "Publish expanded Trading Dictionary and in-chapter topic filters across JJ Academy",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/bb9e16470f83d5edece1cd971097b98aec7b3c3e"
+    },
+    {
+      "id": "commit:4a5e67ddf9bec5be3b79ce0139420b5df9b8343f",
+      "at": "2026-11-06T17:30:59Z",
+      "category": "academy",
+      "summary": "Style responsive chapter topic filters and dictionary shortcut",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/4a5e67ddf9bec5be3b79ce0139420b5df9b8343f"
+    },
+    {
+      "id": "commit:830a760785c078dc3ded3da00b7b56504a099cbc",
+      "at": "2026-11-06T17:30:47Z",
+      "category": "academy",
+      "summary": "Add chapter topic category filters and quick dictionary access without changing study progress",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/830a760785c078dc3ded3da00b7b56504a099cbc"
+    },
+    {
+      "id": "commit:9cb73247f1e536117ffdb5c58855328b1fe401a3",
+      "at": "2026-11-06T17:30:26Z",
+      "category": "academy",
+      "summary": "Rename terminology audit as full Trading Dictionary with expanded categorized content",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/9cb73247f1e536117ffdb5c58855328b1fe401a3"
+    },
+    {
+      "id": "commit:0b3c6a979c33fd5363377d622c233a6eacda3649",
+      "at": "2026-11-06T17:30:11Z",
+      "category": "academy",
+      "summary": "Extend JJ trading dictionary with 31 market structure risk account and statistics terms",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/0b3c6a979c33fd5363377d622c233a6eacda3649"
+    },
+    {
+      "id": "commit:e6d158b0b0dc7f8679eca0b5ff41d042f3937cf4",
+      "at": "2026-11-06T17:21:05Z",
+      "category": "academy",
+      "summary": "Publish evidence-backed JJ terminology consistency audit in Academy",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/e6d158b0b0dc7f8679eca0b5ff41d042f3937cf4"
+    },
+    {
+      "id": "commit:1b5ad2c196081156b8ed690857f4ef3b26f19395",
+      "at": "2026-11-06T17:20:46Z",
+      "category": "academy",
+      "summary": "Add compact mobile-friendly Academy terminology and consistency audit styling",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/1b5ad2c196081156b8ed690857f4ef3b26f19395"
+    },
+    {
+      "id": "commit:64a96b0651520e4f92d207c66132cdc7236e5e89",
+      "at": "2026-11-06T17:20:22Z",
+      "category": "academy",
+      "summary": "Build filterable JJ terminology audit with evidence, exceptions and related chapter links",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/64a96b0651520e4f92d207c66132cdc7236e5e89"
+    },
+    {
+      "id": "commit:9f9ac7fe2ec7c7d54d3903bf7f20543cc9fb2cb9",
+      "at": "2026-11-06T17:19:43Z",
+      "category": "academy",
+      "summary": "Define 14 consistent JJ terms with contextual exceptions and supporting evidence IDs",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/9f9ac7fe2ec7c7d54d3903bf7f20543cc9fb2cb9"
+    },
+    {
+      "id": "commit:4f0d508b096bac29dd33b3a37a6989c918a98f23",
+      "at": "2026-11-06T17:08:17Z",
+      "category": "academy",
+      "summary": "Calculate Source Evidence Explorer coverage dynamically from indexed transcript records",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/4f0d508b096bac29dd33b3a37a6989c918a98f23"
+    },
+    {
+      "id": "commit:29c859a69a275910f8a8032736bc5e1692237228",
+      "at": "2026-11-06T17:08:00Z",
+      "category": "academy",
+      "summary": "Link added EV risk and scaling source excerpts inside related JJ Academy chapters",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/29c859a69a275910f8a8032736bc5e1692237228"
+    },
+    {
+      "id": "commit:2e6e50d7f0c882b56a985625e25fdcafbbd515f5",
+      "at": "2026-11-06T17:07:30Z",
+      "category": "academy",
+      "summary": "Complete 30-passages JJ research evidence expansion",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/2e6e50d7f0c882b56a985625e25fdcafbbd515f5"
+    },
+    {
+      "id": "commit:53bdff676be602c048a110dea9c1e0e14ef3f73b",
+      "at": "2026-11-06T17:07:13Z",
+      "category": "academy",
+      "summary": "Add account EV and staggered scaling source excerpts",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/53bdff676be602c048a110dea9c1e0e14ef3f73b"
+    },
+    {
+      "id": "commit:7f71e921525a19c9956b1b142aeea24cfff72f7f",
+      "at": "2026-11-06T17:06:32Z",
+      "category": "academy",
+      "summary": "Add five source-linked EV, variance and backtest evidence passages",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/7f71e921525a19c9956b1b142aeea24cfff72f7f"
+    },
+    {
+      "id": "commit:0b7e4fc9ebd23d24f746ccef22ae3386143bf070",
+      "at": "2026-11-06T17:06:10Z",
+      "category": "academy",
+      "summary": "Add three JJ risk and evaluation probability transcript excerpts",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/0b7e4fc9ebd23d24f746ccef22ae3386143bf070"
+    },
+    {
+      "id": "commit:cef47db8eb3f51946b0e7b90fc8c515dd3abc8d8",
+      "at": "2026-11-06T17:05:51Z",
+      "category": "academy",
+      "summary": "Mark source review progress",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/cef47db8eb3f51946b0e7b90fc8c515dd3abc8d8"
+    },
+    {
+      "id": "commit:018623e436330082fc6c8b3d1277501e4d66f1bd",
+      "at": "2026-11-06T16:57:39Z",
+      "category": "academy",
+      "summary": "Use direct chapter element lookup for cross-browser mobile heading updates",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/018623e436330082fc6c8b3d1277501e4d66f1bd"
+    },
+    {
+      "id": "commit:798a9625abc423f8e38c7785161017c6c00437a9",
+      "at": "2026-11-06T16:57:15Z",
+      "category": "academy",
+      "summary": "Publish collapsed numbered Academy sections and in-context master strategy evidence panels",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/798a9625abc423f8e38c7785161017c6c00437a9"
+    },
+    {
+      "id": "commit:e3f1c54243cd242c7efda260fdb16b0141f979ba",
+      "at": "2026-11-06T16:56:49Z",
+      "category": "academy",
+      "summary": "Prioritize main study chapters before audits and renumber consistently across Academy categories",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/e3f1c54243cd242c7efda260fdb16b0141f979ba"
+    },
+    {
+      "id": "commit:ba7f22da800f6e325d0b0315300a30d64d13cd34",
+      "at": "2026-11-06T16:56:34Z",
+      "category": "academy",
+      "summary": "Add compact mobile-responsive source evidence cards inside JJ master strategies",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/ba7f22da800f6e325d0b0315300a30d64d13cd34"
+    },
+    {
+      "id": "commit:a576f3cf01385eb85ca940e03bae516b27109471",
+      "at": "2026-11-06T16:56:03Z",
+      "category": "academy",
+      "summary": "Embed source-linked transcript excerpts and contradictions directly inside eight master strategies",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/a576f3cf01385eb85ca940e03bae516b27109471"
+    },
+    {
+      "id": "commit:70f98e2584a1bcfe573e1189e83c3e7f4b1ee7e6",
+      "at": "2026-11-06T16:55:32Z",
+      "category": "academy",
+      "summary": "Improve collapsed dashboard category headers with clear open-close affordances",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/70f98e2584a1bcfe573e1189e83c3e7f4b1ee7e6"
+    },
+    {
+      "id": "commit:88f6c523153aa4375a4f632b4b0931df4a1d7534",
+      "at": "2026-11-06T16:55:13Z",
+      "category": "academy",
+      "summary": "Keep Academy in-chapter headings and breadcrumbs consistent with category chapter numbering",
+      "detail": "Committed to JJ Academy GitHub branch",
+      "status": "Committed",
+      "url": "https://github.com/dorjandg/trading-roi-studio/commit/88f6c523153aa4375a4f632b4b0931df4a1d7534"
+    }
+  ]
+}
