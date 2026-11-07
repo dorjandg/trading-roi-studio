@@ -5,6 +5,25 @@
  const API='/api/ask';
  const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n};
  let busy=false;
+ function renderAnswer(target,value){
+  target.replaceChildren();
+  const raw=String(value||'').replace(/\r/g,'').replace(/\*\*([^*\n]+)\*\*/g,'\n$1\n');
+  const parts=raw.split(/\n{2,}/).map(x=>x.trim()).filter(Boolean);
+  for(const part of parts){
+   const lines=part.split('\n').map(x=>x.trim()).filter(Boolean);
+   for(const line of lines){
+    const isHeading=line.length<90&&(/:$/.test(line)||/^(Risk and|Trade sequence|Loss management|First trade|Second trade|Limitations)/i.test(line));
+    target.append(el(isHeading?'h4':'p','',line));
+   }
+  }
+ }
+ function selectHits(question){
+  const hits=jjHelperSearch(question);
+  if(!/funded|first two trades|second trade|after a loss|50.point/i.test(question))return hits.slice(0,5);
+  const filtered=hits.filter(hit=>!/opening candle|opening range|continuation window/i.test(hit.title+' '+hit.text));
+  return (filtered.length?filtered:hits).slice(0,5);
+ }
+
  function init(){
   const root=document.getElementById('jj-helper-app');
   if(!root||root.querySelector('#jj-cloudflare-ai'))return;
@@ -52,7 +71,7 @@
     try{data=await response.json()}catch(_){}
     if(!response.ok)throw Error([data.message||data.error||'AI endpoint unavailable',data.code?'Code: '+data.code:'',data.detail||''].filter(Boolean).join(' · '));
     status.textContent='AI synthesis of indexed Academy research. Verify original lesson evidence; assumptions are not actual JJ performance.';
-    answer.textContent=String(data.answer||'No answer returned');
+    renderAnswer(answer,data.answer||'No answer returned');
     const label=el('strong','','Source passages used:');sources.append(label);
     hits.slice(0,5).forEach((hit,i)=>{
      const item=el('div','jj-ai-source');
