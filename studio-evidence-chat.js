@@ -32,7 +32,7 @@ function displayedResults(){
  const root=document.getElementById('results'),table=document.getElementById('comparisonRows');
  if(!root||root.hidden||!table)return [];
  return Array.from(table.querySelectorAll('tr')).map(tr=>{
-  const c=Array.from(tr.querySelectorAll('td')).map(td=>td.textContent.trim().replace(/\\s+/g,' '));
+  const c=Array.from(tr.querySelectorAll('td')).map(td=>td.textContent.trim().replace(/\s+/g,' '));
   if(c.length<12)return null;
   return {firm:c[0],budget:c[1],bought:c[2],spent:c[3],phase1:c[4],phase2:c[5],funded:c[6],paid:c[7],receipts:c[8],net:c[9],roi:c[10],chance:c[11]};
  }).filter(Boolean);
