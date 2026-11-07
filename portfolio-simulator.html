@@ -547,7 +547,7 @@ details p{margin:6px 0}
 <nav class="studio-labs-nav" aria-label="Lab tabs"><a href="monitor.html">Monitor</a><a href="index.html?view=investments">Budget</a><a class="active" aria-current="page" href="portfolio-simulator.html">Portfolio Sim</a><a href="investment-lab.html">Invest Lab</a><a href="comparison-lab.html">Compare Lab</a><a href="trade-lab.html">Trade Lab</a></nav>
 <div class="eyebrow">Options-based Monte Carlo · cash risk · first payout</div>
 <h1>Budget → Challenges → Phases → Payout</h1>
-<p class="muted">Uses the selected account’s saved RR, R1–R4 and applied conditional WIN/LOSS strategy from Firms, including its stage targets and loss buffers. Trade outcomes are simulated, never predicted; no orders are placed.</p>
+<p class="muted">Uses each account’s saved risk policy from Firms: fixed R1–R4, or FTMO’s optional dynamic Funded Buffer Builder. Targets and loss limits remain specific to each firm and phase. Trade outcomes are simulated, never predicted; no orders are placed.</p>
 <div class="alert"><strong>Model scope:</strong> Risk amounts are used exactly or the trade is blocked. Minimum trading days after reaching a target are represented as <b>administrative qualification assumptions</b> (not invented W/L trades). Payout eligibility, subscriptions, trailing losses, firm allocation and checkout rules need separate verification.</div>
 <details class="sim-charts-panel numbered-panel" id="section1Panel" open><summary><strong>1 · Investment & simulation inputs</strong><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><p class="hint">Same-budget comparison allocates the entire budget separately to each firm. Split-budget mode divides one budget across the selected firms.</p>
  <div class="fields">
@@ -580,7 +580,7 @@ details p{margin:6px 0}
  </div>
  <p class="hint" id="budgetModeNote">In compare mode each firm uses its own hypothetical budget and trade schedule. In split-budget mode the dynamic daily trade opportunities are shared among firms. Do not sum independent comparisons.</p>
 </div></details>
-<details class="sim-charts-panel numbered-panel" id="section2Panel" open><summary><strong>2 · Prop-firm accounts</strong><button id="run" type="button" class="primary section-run-btn" title="Run simulation with current account and strategy settings">Run Simulation</button><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><p class="hint">Saved profiles and phase-risk options are read from this browser's selected 4Ds user (<b id="userLabel">—</b>). Press Apply on a Smart Setup in Firms to use its R1–R4 decision tree and phase targets here. Click Reload saved stage settings if Firms changed in another tab. Global win rate, signal count and trial assumptions remain editable here.</p>
+<details class="sim-charts-panel numbered-panel" id="section2Panel" open><summary><strong>2 · Prop-firm accounts</strong><button id="run" type="button" class="primary section-run-btn" title="Run simulation with current account and strategy settings">Run Simulation</button><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><p class="hint">Saved profiles and phase-risk options are read from this browser's selected 4Ds user (<b id="userLabel">—</b>). Press Apply on a Smart Setup or FTMO Funded Buffer Builder in Firms to use that account’s strategy and phase targets here. Click Reload saved stage settings if Firms changed in another tab. Global win rate, signal count and trial assumptions remain editable here.</p>
  <div id="accounts"></div>
  <div class="actions"><button id="addAccount" type="button">+ Add account to comparison</button><button id="reload" type="button">Reload saved stage settings</button><span id="profileStatus" class="hint"></span></div>
  <div class="actions"><span id="status" class="status" role="status">Loading account catalog…</span></div>
@@ -657,7 +657,8 @@ details p{margin:6px 0}
  <p class="footer">Research tool only. Sourced catalog rules are snapshots, not live purchase/eligibility confirmations. The simulator reads profiles locally; budget changes here don't overwrite the main Overview settings. The maximum of 100 modeled challenges per account type is a performance cap, not a prop-firm permission limit.</p>
 </div></details>
 </div>
-<script src="portfolio-engine.js?v=20261107-applied-smart-r1-r4-v2"></script>
+<script src="ftmo-funded-buffer.js?v=20261107-ftmo-funded-buffer-v1"></script>
+<script src="portfolio-engine.js?v=20261107-ftmo-buffer-engine-v1"></script>
 <script src="portfolio-payout-optimizer.js?v=20261107-funded-450-cap-3150-v1"></script>
 <script src="portfolio-discovery.js?v=20261107-target-exact-v1"></script>
 <script src="portfolio-recovery-ladder.js?v=20261107-recovery-ladder-v1"></script>
@@ -866,6 +867,14 @@ function rowSummary(row){
   p.sourceSaved?'<strong class="good">Saved phase settings</strong>':'<strong style="color:var(--amber)">Illustrative defaults · not saved</strong>';
  const risks=p.stageList.map(stage=>{
   const c=p.riskProfiles[stage],smart=c.policy?.mode==='smart-sequence';
+  const fundedBuffer=c.policy?.mode==='ftmo-funded-buffer';
+  if(fundedBuffer){
+   const q=c.ftmoBuffer||{};
+   return esc(c.name)+' · <strong class="good">FTMO Funded Buffer Builder applied</strong> · Target '+usdExact(c.target)+
+    ' · starter '+usdExact(q.starterRisk)+' · buffer '+usdExact(q.bufferTarget)+
+    ' · growth cap '+usdExact(q.growthCap)+' · recovery cap '+usdExact(q.recoveryCap)+
+    ' · '+dec(c.rr)+'R (conditional per trade)';
+  }
   return esc(c.name)+' · '+(smart?'<strong class="good">'+esc(c.appliedSmartLabel||'Applied Smart R1→R2→R3')+'</strong> · ':'')+
    'Target '+usdExact(c.target)+' · R1 '+usdExact(c.r1)+' / R2 '+usdExact(c.r2)+
    ' / R3 '+usdExact(c.r3)+(smart?' / R4 '+(c.r4>0?usdExact(c.r4):'Off'):'')+
@@ -1171,6 +1180,13 @@ function makeResultCard(result,index,isInvestmentReport=false){
  const stageInfo=p.stageList.map(stage=>{
   const r=p.riskProfiles[stage],dynamic=['target-now','repair-r2','buffered-target'].includes(r.policy?.mode);
   const smart=r.policy?.mode==='smart-sequence';
+  if(r.policy?.mode==='ftmo-funded-buffer'){
+   const q=r.ftmoBuffer||{};
+   return '<span class="risk-chip">'+esc(r.name)+' · <b class="good">FTMO Funded Buffer Builder</b> · Target <b>'+
+    usdExact(r.target)+'</b> · Starter <b>'+usdExact(q.starterRisk)+'</b> · Buffer <b>'+
+    usdExact(q.bufferTarget)+'</b> · Growth cap <b>'+usdExact(q.growthCap)+'</b> · Recovery cap <b>'+
+    usdExact(q.recoveryCap)+'</b> · <b>'+dec(r.rr)+'R</b> · WIN/LOSS risk recalculated by current P/L</span>';
+  }
   return '<span class="risk-chip">'+esc(r.name)+(smart?' · <b class="good">'+esc(r.appliedSmartLabel||'Applied Smart R1→R2→R3')+'</b>':'')+
    ' · Target <b>'+usdExact(r.target)+'</b> · <b>'+dec(r.rr)+'R</b> · '+
    (dynamic?'Risk caps ':'')+'R1 <b>'+usdExact(r.r1)+'</b>'+
