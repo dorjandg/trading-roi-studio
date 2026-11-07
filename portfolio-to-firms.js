@@ -2,7 +2,7 @@
    Accept only one explicitly selected, existing account profile; preserve backup. */
 (function(root){
 'use strict';
-const modes=new Set(['smart-sequence','saved','streak','flat','after-win','protect-after-loss','target-now','repair-r2','buffered-target','eval-recovery-burn','funded-profit-ladder','funded-staged-recovery']);
+const modes=new Set(['ftmo-funded-buffer','smart-sequence','saved','streak','flat','after-win','protect-after-loss','target-now','repair-r2','buffered-target','eval-recovery-burn','funded-profit-ladder','funded-staged-recovery']);
 const stagesFor=id=>id==='topstep'?['p1','funded']:['ftmo2','holaPrime','holaPro'].includes(id)?['p1','p2','funded']:['funded'];
 const profileKey=(user,key)=>'4ds:v1:'+user+':studio-account-profile-v1:'+key;
 const snapKey=(user,key,stage)=>'4ds:recovery-planner:v2:'+user+':'+key+':'+stage;
@@ -27,6 +27,13 @@ function validate(user,key,plan){
   if(!Number.isInteger(c.maxWinsPerDay)||c.maxWinsPerDay<1||c.maxWinsPerDay>6)
    throw Error(stage+' winning-day cap invalid');
   if(!modes.has(c.policy?.mode||'saved'))throw Error(stage+' policy is unknown');
+  if(c.policy?.mode==='ftmo-funded-buffer'){
+   if(plan.id!=='ftmo2'||stage!=='funded')throw Error('FTMO buffer strategy only valid on FTMO 2-Step Funded');
+   const data=c.ftmoBuffer||{};
+   if(!['starterRisk','bufferTarget','growthCap','recoveryCap'].every(x=>
+    Number.isFinite(Number(data[x]))&&Number(data[x])>=.01&&Number(data[x])<=10000000))
+    throw Error('Invalid FTMO-funded buffer parameters');
+  }
   if(c.policy?.mode==='smart-sequence'&&
    (!Number.isFinite(Number(c.r4||0))||Number(c.r4||0)<0))
    throw Error(stage+' optional R4 risk is invalid');
@@ -56,7 +63,13 @@ function prepare(storage,user,key,plan){
    winCap:c.maxWinsPerDay,policyMode,
    sweepRemainder:policyMode==='smart-sequence'?c.sweepRemainder===true:prev.sweepRemainder,
    sweepThreshold:policyMode==='smart-sequence'?Number(c.sweepThreshold??100):prev.sweepThreshold,
-   targetOverride:policyMode==='smart-sequence'?Number(c.target):prev.targetOverride,
+   targetOverride:['smart-sequence','ftmo-funded-buffer'].includes(policyMode)?Number(c.target):prev.targetOverride,
+   ftmoBuffer:policyMode==='ftmo-funded-buffer'?{...c.ftmoBuffer}:prev.ftmoBuffer,
+   appliedFtmoBuffer:policyMode==='ftmo-funded-buffer'?{
+    label:String(c.ftmoBufferLabel||'FTMO Funded Buffer Builder').slice(0,100),
+    source:'Portfolio Simulator',appliedAt:new Date().toISOString(),profitTarget:Number(c.target),
+    simulationPolicy:'ftmo-funded-buffer',config:{...c.ftmoBuffer}
+   }:prev.appliedFtmoBuffer,
    appliedSmartSetup:policyMode==='smart-sequence'?{
     label:String(c.appliedSmartLabel||'Portfolio Sim smart strategy').slice(0,100),
     source:'Portfolio Simulator',appliedAt:new Date().toISOString(),
