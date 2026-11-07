@@ -1,3 +1,9 @@
+## Studio AI scope clarification (Nov 7, 2026)
+
+- Studio AI is **exclusive to the Trading Studio website**. It does not access JJ Academy or any other site's course content.
+- The Section 11 evidence assistant now reads the currently rendered Section 5 account comparison rows (firm/account, budget, purchases, spending, phase passes, funded, paid, receipts, net, ROI and chance of payout) and can explain these figures and descriptive conversion ratios, in addition to existing local-input formula guidance. It does not read hidden cloud history or infer unpublished simulations; if no report is displayed, it reverts to explicit model/input-only explanations.
+- This remains a rule-based explanatory UI, not a hosted LLM. Its reported Section 5 numeric values are drawn from the rendered Monte Carlo results; interpretation is labeled as non-causal. No strategy or calculation rules changed. Source JS syntax check passed. Cloudflare live deployment remains unverified.
+
 ## Portfolio Simulator hover/tap explanations across all parameter boxes and results (Nov 7, 2026)
 
 - User screenshot requested concise information on hovering all boxes within Portfolio Simulator. Added `portfolio-help.js` and page-only `#portfolio-parameter-help-v1` CSS to `portfolio-simulator.html`. The read-only helper describes every primary Section 1 input (budget, net P/L goal, WR, days, schedule, trials, signals/correlation, purchase mode, caps and reinvestment), Section 2 dynamic account inputs (firm/size, eval/funded allocation caps, funded target, payout wait/processing), Section 3 discovery controls, Section 4 investment/optimizer inputs and filter controls, detailed trade-risk test inputs, and report results.
