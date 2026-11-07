@@ -1,7 +1,10 @@
 /*
  * JJ Academy — standalone unanswered-question intake for Google Apps Script.
- * Copy to a NEW Google Apps Script project, then Deploy > Web app.
- * Run setupJjAcademy() ONCE from Apps Script editor to create PRIVATE spreadsheet.
+ * First-time setup only: create a JJ-specific Apps Script project, run
+ * setupJjAcademy() once to create the PRIVATE spreadsheet, then deploy.
+ * EXISTING JJ Academy deployment: replace Code.gs, save, and choose
+ * Deploy > Manage deployments > Edit > New version > Deploy.
+ * Do NOT create a second project, run setup again, or use Trading Studio.
  * Deploy execute as: Me; Access: Anyone. Never publish the spreadsheet.
  *
  * No public question listing. Public GET only verifies possession of random receipt.
