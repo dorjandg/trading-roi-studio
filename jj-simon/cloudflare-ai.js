@@ -382,7 +382,6 @@
  const floatMode=jjRoute.get('jj_ai_float')==='1';
  const mobileChatMode=jjRoute.get('jj_ai_mobile')==='1';
  const compactMode=floatMode||mobileChatMode;
- const mobileDevice=()=>window.matchMedia('(max-width:600px) and (pointer:coarse)').matches;
  if(compactMode){
   const compact=el('style');compact.textContent=`
    html,body{height:100%;overflow:hidden!important;background:var(--bg)!important}
@@ -487,15 +486,21 @@
    if(value){
     const chapter=typeof active==='string'&&active!==jjHelperSlug?active:'';
     const wanted='?topic='+encodeURIComponent(jjHelperSlug)+'&jj_ai_float=1'+(chapter?'&jj_context='+encodeURIComponent(chapter):'');
-    if(mobileDevice()){
-     const url='?topic='+encodeURIComponent(jjHelperSlug)+'&jj_ai_mobile=1'+(chapter?'&jj_context='+encodeURIComponent(chapter):'');
-     location.assign(url);
-     return;
-    }
     if(frame.getAttribute('src')!==wanted)frame.src=wanted;
     close.focus();
    }else open.focus();
   };
+  // The chat stays embedded on every device. On phone keyboards, position
+  // the panel within the actual visible viewport rather than navigating away.
+  const updateFloatViewport=()=>{
+   const vp=window.visualViewport;
+   document.documentElement.style.setProperty('--jj-parent-vv-height',Math.round(vp?.height||window.innerHeight)+'px');
+   document.documentElement.style.setProperty('--jj-parent-vv-top',Math.round(vp?.offsetTop||0)+'px');
+  };
+  updateFloatViewport();
+  window.visualViewport?.addEventListener('resize',updateFloatViewport);
+  window.visualViewport?.addEventListener('scroll',updateFloatViewport);
+  window.addEventListener('resize',updateFloatViewport);
   open.onclick=()=>show(shell.hidden);
   close.onclick=()=>show(false);
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!shell.hidden)show(false)});
@@ -508,7 +513,7 @@
    .jj-ai-float-bar button{background:transparent!important;border:1px solid var(--stroke)!important;color:var(--text)!important;border-radius:6px!important;padding:6px 8px!important;font-size:11px!important;cursor:pointer!important}
    .jj-ai-float-frame{border:0!important;width:100%!important;flex:1 1 auto!important;min-height:0!important;background:var(--bg)!important}
    @media(min-width:601px) and (max-width:1180px){.jj-ai-float-shell{width:min(500px,calc(100vw - 24px))!important;height:min(720px,calc(100dvh - 90px))!important}}
-   @media(max-width:600px){.jj-ai-float-launch{bottom:calc(10px + env(safe-area-inset-bottom))!important;right:10px!important;padding:9px 12px!important;font-size:11px!important}.jj-ai-float-shell{right:5px!important;bottom:calc(52px + env(safe-area-inset-bottom))!important;width:calc(100vw - 10px)!important;height:min(650px,calc(100dvh - 68px - env(safe-area-inset-bottom)))!important;border-radius:10px!important}}
+   @media(max-width:600px){.jj-ai-float-launch{bottom:calc(10px + env(safe-area-inset-bottom))!important;right:10px!important;padding:9px 12px!important;font-size:11px!important}.jj-ai-float-shell{right:5px!important;bottom:auto!important;top:calc(var(--jj-parent-vv-top,0px) + 8px)!important;width:calc(100vw - 10px)!important;height:min(650px,calc(var(--jj-parent-vv-height,100dvh) - 64px))!important;max-height:calc(var(--jj-parent-vv-height,100dvh) - 16px)!important;border-radius:10px!important}}
    @media(prefers-reduced-motion:reduce){.jj-ai-float-shell,.jj-ai-float-launch{transition:none!important}}
   `;document.head.append(css);
  }
