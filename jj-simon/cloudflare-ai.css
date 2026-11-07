@@ -47,3 +47,8 @@
 .jj-ai-citation{display:inline-block;color:var(--accent);font-weight:700;text-decoration:underline;text-underline-offset:2px;padding:0 2px;border-radius:3px}
 .jj-ai-citation:hover,.jj-ai-citation:focus-visible{background:var(--panel);outline:1px solid var(--accent)}
 @media(max-width:600px){.jj-ai-answer h4{margin-top:10px}.jj-ai-answer p{font-size:12px;line-height:1.5;margin-bottom:6px}}
+
+/* Stronger visual hierarchy for title-case AI sections. */
+#jj-cloudflare-ai .jj-ai-answer h4{font-size:13px!important;font-weight:800!important;color:#5ee3bc!important;margin:15px 0 5px!important;line-height:1.4!important}
+#jj-cloudflare-ai .jj-ai-answer p{font-size:12px;line-height:1.55;margin:0 0 8px}
+#jj-cloudflare-ai .jj-ai-citation{color:#5ee3bc;font-weight:800;text-decoration:underline}
