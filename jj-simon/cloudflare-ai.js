@@ -11,14 +11,12 @@
  const save=()=>{try{sessionStorage.setItem(historyKey,JSON.stringify(conversation.slice(-12)))}catch(_){}};
  function renderAnswer(target,value){
   target.replaceChildren();
-  const raw=String(value||'').replace(/\r/g,'').replace(/\*\*([^*\n]+)\*\*/g,'\n$1\n');
-  const parts=raw.split(/\n{2,}/).map(x=>x.trim()).filter(Boolean);
-  for(const part of parts){
-   const lines=part.split('\n').map(x=>x.trim()).filter(Boolean);
-   for(const line of lines){
-    const isHeading=line.length<90&&(/:$/.test(line)||/^(Risk and|Trade sequence|Loss management|First trade|Second trade|Limitations)/i.test(line));
-    target.append(el(isHeading?'h4':'p','',line));
-   }
+  const raw=String(value||'').replace(/\\r/g,'').replace(/\\*\\*([^*\\n]+)\\*\\*/g,'\\n\\n$1\\n').replace(/\\s+([•])\\s+/g,'\\n$1 ');
+  const chunks=raw.split(/\\n+/).map(x=>x.trim()).filter(Boolean);
+  for(const chunk of chunks){
+   const heading=/^(?:[A-Z][A-Z0-9 /&–—:-]{7,}|(?:First trade|Second trade|Risk|Profit|Loss|Summary|Important|Account management)[^.!?]{0,65}:?)$/.test(chunk);
+   const node=el(heading?'h4':'p','',chunk.replace(/^[-*]\\s+/,'• '));
+   target.append(node);
   }
  }
  function selectHits(question){
@@ -44,13 +42,21 @@
   const answer=el('div','jj-ai-answer');answer.setAttribute('aria-live','polite');
   const sources=el('div','jj-ai-sources');
   const thread=el('div','jj-ai-thread');
-  panel.append(el('strong','','Cloudflare AI · conversation'),status,thread,answer,sources);
-  const drawThread=()=>{thread.replaceChildren();for(const turn of conversation.slice(-8)){const item=el('div','jj-ai-turn jj-ai-'+turn.role);item.append(el('strong','',turn.role==='user'?'You':'AI'),el('p','',turn.content));thread.append(item)}};
+  const history=el('details','jj-ai-history');const historyTitle=el('summary','','Earlier conversation');history.append(historyTitle,thread);
+  panel.append(el('strong','','Cloudflare AI · latest answer'),status,answer,sources,history);
+  const drawThread=()=>{
+   thread.replaceChildren();
+   const earlier=conversation.slice(0,-2).slice(-8);
+   history.hidden=!earlier.length;
+   historyTitle.textContent='Earlier conversation · '+Math.floor(earlier.length/2)+' exchanges';
+   for(const turn of earlier){const item=el('div','jj-ai-turn jj-ai-'+turn.role);item.append(el('strong','',turn.role==='user'?'You':'AI'));if(turn.role==='assistant')renderAnswer(item,turn.content);else item.append(el('p','',turn.content));thread.append(item)}
+  };
   drawThread();
-  if(conversation.length){panel.hidden=false;status.textContent='Conversation restored in this browser tab. Ask a follow-up question.'}
+  if(conversation.length){panel.hidden=false;status.textContent='Latest response · Ask a follow-up below.';const latest=conversation[conversation.length-1];if(latest?.role==='assistant')renderAnswer(answer,latest.content)}
   reset.addEventListener('click',()=>{if(busy)return;conversation=[];save();thread.replaceChildren();answer.replaceChildren();sources.replaceChildren();panel.hidden=true;const input=form.querySelector('textarea');input.value='';input.placeholder='Ask a question about JJ’s trading course…';input.focus()});
   const result=root.querySelector('#jj-helper-results');
   if(result)result.before(panel);else root.append(panel);
+  panel.after(form);
   button.addEventListener('click',async()=>{
    if(busy)return;
    const question=form.querySelector('textarea')?.value.trim()||'';
@@ -63,7 +69,7 @@
    const contextHits=previousQuestion?selectHits(contextQuery):[];
    const previousHits=previousQuestion?selectHits(previousQuestion.content):[];
    const hits=[...primaryHits,...contextHits,...previousHits].filter((hit,index,all)=>all.findIndex(x=>x.id===hit.id)===index).slice(0,5);
-   panel.hidden=false;answer.replaceChildren();sources.replaceChildren();
+   panel.hidden=false;sources.replaceChildren();
    if(!hits.length){status.textContent='No new source matches found. Rephrase with a course topic to retrieve evidence before asking AI.';return}
    busy=true;button.disabled=true;reset.disabled=true;button.textContent='Asking AI…';
    status.textContent='Sending your question and '+Math.min(hits.length,5)+' selected Academy summaries to Cloudflare AI. No full private transcripts are sent.';
@@ -86,9 +92,9 @@
     try{data=await response.json()}catch(_){}
     if(!response.ok)throw Error([data.message||data.error||'AI endpoint unavailable',data.code?'Code: '+data.code:'',data.detail||''].filter(Boolean).join(' · '));
     status.textContent='AI synthesis of indexed Academy research. Verify original lesson evidence; assumptions are not actual JJ performance.';
-    conversation.push({role:'user',content:question.slice(0,750)},{role:'assistant',content:String(data.answer||'').slice(0,1400)});conversation=conversation.slice(-12);save();drawThread();
-    answer.replaceChildren();
-    const questionBox=form.querySelector('textarea');if(questionBox){questionBox.value='';questionBox.placeholder='Ask a follow-up about this conversation…';questionBox.focus()}
+    conversation.push({role:'user',content:question.slice(0,750)},{role:'assistant',content:String(data.answer||'').slice(0,3500)});conversation=conversation.slice(-12);save();drawThread();
+    renderAnswer(answer,data.answer||'No answer returned');
+    const questionBox=form.querySelector('textarea');if(questionBox){questionBox.value='';questionBox.placeholder='Ask a follow-up about this conversation…'}
     const label=el('strong','','Source passages used:');sources.append(label);
     hits.slice(0,5).forEach((hit,i)=>{
      const item=el('div','jj-ai-source');
