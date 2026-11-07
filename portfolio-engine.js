@@ -180,8 +180,9 @@ function validatePlan(p){
     errors.push(stage+': Smart Setup requires R1, R2, R3 > 0 and R4 >= 0.');
    if(c.sweepRemainder&&p.drawdownKind!=='static')
     warnings.push(stage+': terminal R3 overall-buffer sweep cannot be verified for a non-static/trailing floor and will not be used.');
-  }else if(c.rr<=0||c.r1<=0||((p.id!=='topstep'||stage!=='p1')&&(c.r2<=0||c.r3<=0)))
-   errors.push(stage+': set positive RR and required risk amounts.');
+  }else if(c.rr<=0||c.r1<=0||![c.rr,c.r1,c.r2,c.r3,c.r4].every(Number.isFinite)||
+   [c.r2,c.r3,c.r4].some(n=>n<0))
+   errors.push(stage+': positive RR and R1 required; optional R2–R4 can be 0 (disabled).');
    if(c.rrByTier&&['r1','r2','r3'].some(t=>!Number.isFinite(c.rrByTier[t])||c.rrByTier[t]<=0))
     errors.push(stage+': every tier reward/risk must be positive.');
   if(c.policy.conflicts.length)warnings.push(stage+': conflicting saved option risk choices at '+c.policy.conflicts.length+' history prefixes; default risk rules apply there.');
@@ -389,9 +390,16 @@ function runAccountDay(p,ac,day,rand,config,record){
   // Terminal R3 can waive ONLY overall reserve, never the daily allowance.
   const dailyPotential=risk+p.tradeCost+Math.max(.01,p.riskReserve);
   const overallPotential=risk+p.tradeCost+(allIn?0:reserve);
-  if(risk<.01||dailyPotential>dailyHeadroom+1e-8||overallPotential>overallHeadroom+1e-8){
+  // Firms permits R2–R4 = 0 to disable that path, not breach a loss limit.
+  if(risk<.01){
+   ac.status='strategy-stopped';ac.closedDay=day;
+   if(record)ac.trace.push({day,stage,type:'strategy-stop',slot,
+    label:'Risk tier '+String(slot).toUpperCase()+' is off (0); route stopped, not a drawdown breach'});
+   break;
+  }
+  if(dailyPotential>dailyHeadroom+1e-8||overallPotential>overallHeadroom+1e-8){
    ac.blocked++;
-   const overallBlocked=risk<.01||overallPotential>overallHeadroom+1e-8;
+   const overallBlocked=overallPotential>overallHeadroom+1e-8;
    const impossibleDaily=Number.isFinite(p.dailyLoss)&&dailyPotential>p.dailyLoss+1e-8;
    // A tier that cannot fit even on a fresh trading day, or cannot fit the
    // overall headroom, is untradeable without changing the configured policy.
