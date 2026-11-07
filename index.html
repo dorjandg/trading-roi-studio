@@ -2611,7 +2611,7 @@ document.addEventListener('click',async event=>{
 });
 
 function ftmoFundedBufferUI(stage,setup,snap){
- if(stage!=='funded'||!/^ftmo2:[1-9]\\d{3,6}$/.test(String(activeProgramKey||'')))return '';
+ if(stage!=='funded'||!/^ftmo2:[1-9]\d{3,6}$/.test(String(activeProgramKey||'')))return '';
  const helper=window.StudioFtmoFundedBuffer;
  if(!helper)return '<p class="caption">FTMO Buffer Builder library unavailable; no policy changes have been made.</p>';
  const draft=helper.normalize(snap.ftmoBufferDraft||snap.ftmoBuffer||helper.defaults);
@@ -2682,7 +2682,7 @@ document.addEventListener('click',event=>{
  const button=event.target.closest?.('[data-ftmo-buffer-apply],[data-ftmo-buffer-undo]');
  if(!button)return;
  const host=button.closest?.('[data-recovery-stage]');
- if(!host||host.dataset.recoveryStage!=='funded'||!/^ftmo2:[1-9]\\d{3,6}$/.test(String(activeProgramKey||'')))return;
+ if(!host||host.dataset.recoveryStage!=='funded'||!/^ftmo2:[1-9]\d{3,6}$/.test(String(activeProgramKey||'')))return;
  const snap=recoverySnapshot('funded'),F=window.StudioFtmoFundedBuffer;
  if(!F){alert('FTMO Buffer Builder module is unavailable; no strategy changed.');return}
  if(button.hasAttribute('data-ftmo-buffer-undo')){
