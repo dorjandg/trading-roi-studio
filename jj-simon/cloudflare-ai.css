@@ -1,0 +1,12 @@
+/* Optional Cloudflare AI, compact and consistent with the Study Assistant. */
+.jj-ai-button{border:1px solid var(--accent)!important;color:var(--accent)!important;background:var(--bg)!important;font-weight:650}
+.jj-ai-button:disabled{opacity:.55;cursor:wait}
+.jj-ai-panel{margin:9px 0;padding:10px 12px;border:1px solid var(--stroke);border-radius:8px;background:var(--bg);font-size:12px}
+.jj-ai-panel[hidden]{display:none!important}
+.jj-ai-panel>strong{font-size:12px}
+.jj-ai-status{font-size:10px;color:var(--muted);line-height:1.4;margin:6px 0}
+.jj-ai-answer{white-space:pre-wrap;line-height:1.55;overflow-wrap:anywhere}
+.jj-ai-sources{border-top:1px solid var(--stroke);margin-top:8px;padding-top:6px;font-size:10px;display:grid;gap:4px}
+.jj-ai-source{color:var(--muted);line-height:1.45}
+.jj-ai-source a,.jj-ai-source button{color:var(--accent);font-size:10px}
+@media(max-width:600px){.jj-ai-panel{padding:8px}.jj-ai-button{font-size:11px!important}}
