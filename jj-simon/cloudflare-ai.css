@@ -224,3 +224,19 @@
   opacity:.75;
  }
 }
+
+/* Mobile-first compact composer and transcript. Preserve 16px input text to avoid iOS zoom. */
+@media(max-width:650px){
+ #jj-helper-app>.jj-helper-form{padding:6px!important;gap:5px!important}
+ #jj-helper-app>.jj-helper-form textarea{min-height:54px!important;max-height:130px!important;padding:8px 9px!important;border-radius:8px!important}
+ #jj-helper-app>.jj-helper-form textarea::placeholder{font-size:10px!important;line-height:1.25!important;opacity:.65!important}
+ #jj-helper-app>.jj-helper-form .jj-helper-form-actions{gap:5px!important}
+ #jj-helper-app>.jj-helper-form .jj-helper-form-actions>button{min-height:36px!important;padding:6px 4px!important;font-size:10px!important;border-radius:7px!important}
+ #jj-cloudflare-ai>.jj-ai-thread{height:min(36dvh,310px)!important;min-height:195px!important;max-height:310px!important}
+ #jj-cloudflare-ai>.jj-ai-thread>.jj-ai-turn{font-size:11px!important;line-height:1.45!important}
+ #jj-cloudflare-ai .jj-ai-answer p{font-size:11px!important;line-height:1.45!important}
+ #jj-cloudflare-ai .jj-ai-answer h3,#jj-cloudflare-ai .jj-ai-answer h4{font-size:12px!important;line-height:1.35!important}
+ #jj-cloudflare-ai .jj-ai-followups button,#jj-cloudflare-ai .jj-ai-message-actions button{font-size:10px!important;padding:4px 6px!important;min-height:28px!important}
+ #jj-cloudflare-ai .jj-ai-followups{margin:2px 0 4px!important}
+ #jj-cloudflare-ai>.jj-ai-unified-tools>summary{padding:7px 8px!important}
+}
