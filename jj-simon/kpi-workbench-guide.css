@@ -1,0 +1,35 @@
+/* Compact explainers and sourced learning notes for KPI & Survival Workbench */
+.jj-kpi-start{font-size:11px;line-height:1.5;color:var(--muted);padding:6px 0 7px}
+.jj-kpi-field-help{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;vertical-align:baseline;margin-left:5px;border:1px solid var(--stroke);border-radius:50%;color:var(--accent);font-size:10px;line-height:1;cursor:help}
+.jj-kpi-guides{margin-top:10px;border:1px solid var(--stroke);border-radius:8px;overflow:hidden}
+.jj-kpi-guides summary{cursor:pointer}
+.jj-kpi-guides>summary{display:flex;align-items:center;gap:8px;justify-content:space-between;padding:10px 12px;font-size:12px;font-weight:700;list-style:none}
+.jj-kpi-guides>summary::-webkit-details-marker{display:none}
+.jj-kpi-guides>summary:after{content:"+";color:var(--accent);font-size:17px;font-weight:400}
+.jj-kpi-guides[open]>summary:after{content:"−"}
+.jj-kpi-guides summary:hover{background:var(--hover)}
+.jj-kpi-guides .jj-kpi-summary-note{font-size:10px;color:var(--muted);font-weight:400;text-align:right}
+.jj-kpi-guide-body{border-top:1px solid var(--stroke);padding:9px 11px}
+.jj-kpi-guide-body>p{font-size:11px;color:var(--muted);margin:2px 0 10px}
+.jj-kpi-guide-section{border:1px solid var(--stroke);border-radius:7px;margin:7px 0;overflow:hidden}
+.jj-kpi-guide-section>summary{padding:9px 10px;font-size:12px;font-weight:650}
+.jj-kpi-guide-section[open]>summary{border-bottom:1px solid var(--stroke)}
+.jj-kpi-guide-section-content{padding:10px 12px;font-size:12px;line-height:1.55}
+.jj-kpi-guide-section-content p{margin:4px 0 9px}
+.jj-kpi-guide-section-content ol,.jj-kpi-guide-section-content ul{padding-left:18px;margin:4px 0}
+.jj-kpi-guide-section-content li{margin:5px 0}
+.jj-kpi-guide-section-content a{color:var(--accent)}
+.jj-kpi-guide-section-content small{font-size:10px;color:var(--muted)}
+.jj-kpi-glossary{display:grid;grid-template-columns:minmax(125px, .42fr) 1fr;gap:0;border:1px solid var(--stroke);border-radius:6px;overflow:hidden}
+.jj-kpi-glossary dt,.jj-kpi-glossary dd{font-size:11px;padding:7px 9px;margin:0;border-bottom:1px solid var(--stroke)}
+.jj-kpi-glossary dt{font-weight:700;background:var(--hover)}
+.jj-kpi-glossary dd{color:var(--muted)}
+.jj-kpi-glossary dt:nth-last-of-type(1),.jj-kpi-glossary dd:nth-last-of-type(1){border-bottom:0}
+.jj-kpi-formula{border-left:2px solid var(--accent);padding:5px 10px;margin:8px 0;background:var(--hover);font-size:11px;overflow-wrap:anywhere}
+.jj-kpi-alert{font-size:11px;border-top:1px solid var(--stroke);padding-top:7px;color:var(--muted)}
+.jj-kpi-scenario{font-size:11px}
+.jj-kpi-scenario p{margin:0 0 9px}
+.jj-kpi-scenario strong{color:var(--text)}
+.jj-kpi-scenario ul{padding-left:18px}
+.jj-kpi-scenario li{margin:7px 0}
+@media(max-width:680px){.jj-kpi-guides>summary{flex-wrap:wrap}.jj-kpi-guides .jj-kpi-summary-note{text-align:left}.jj-kpi-glossary{grid-template-columns:minmax(100px, .38fr) 1fr}.jj-kpi-guide-section-content{padding:8px}}
