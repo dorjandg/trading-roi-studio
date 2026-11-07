@@ -11,14 +11,15 @@
  const save=()=>{try{sessionStorage.setItem(historyKey,JSON.stringify(conversation.slice(-12)))}catch(_){}};
  function renderAnswer(target,value){
   target.replaceChildren();
-  const raw=String(value||'')
-    .replace(/\r/g,'')
-    .replace(/\*\*([^*\n]+)\*\*/g,'\n\n$1\n')
-    .replace(/([.!?])\s+(?=(?:ACCOUNT MANAGEMENT|TRADE CAPACITY|STRATEGY FOR|RISK MANAGEMENT|FIRST TRADE|SECOND TRADE)\b)/g,'$1\n\n');
-  const chunks=raw.split(/\n+/).map(x=>x.trim()).filter(Boolean);
-  for(const chunk of chunks){
-   const heading=/^(?:[A-Z][A-Z0-9 /&–—:-]{7,}|(?:First trade|Second trade|Risk|Profit|Loss|Summary|Important|Account management)[^.!?]{0,65}:?)$/.test(chunk);
-   target.append(el(heading?'h4':'p','',chunk.replace(/^[-*]\s+/,'• ')));
+  let text=String(value||'').replace(/\r/g,'').replace(/\*\*([^*\n]+)\*\*/g,'\n$1\n');
+  const headings=['STRATEGY FOR NEW FUNDED ACCOUNTS','ACCOUNT MANAGEMENT AND CORRELATION','TRADE CAPACITY AND ASSIGNMENT','RISK MANAGEMENT','FIRST TRADE','SECOND TRADE','SUMMARY','LIMITATIONS'];
+  for(const title of headings){
+   text=text.split(title).join('\n'+title+'\n');
+  }
+  const lines=text.split(/\n+/).map(x=>x.trim()).filter(Boolean);
+  for(const line of lines){
+   const isHeading=headings.includes(line.toUpperCase())||(/^[A-Z][A-Z0-9 /&–—:-]{7,}$/.test(line)&&line.length<90);
+   target.append(el(isHeading?'h4':'p','',line.replace(/^[-*]\s+/,'• ')));
   }
  }
  function selectHits(question){
