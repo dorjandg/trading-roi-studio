@@ -2119,7 +2119,11 @@ function mirrorRecoveryRisk(stage,source){
  if(!/^(ftmo2|holaPrime|holaPro|topstep|instant):[1-9]\d{3,6}$/.test(String(activeProgramKey||'')))return;
  const key=recoveryCloudKey(stage),value=JSON.stringify({v:1,risk:exportRecoveryRisk(source)});
  if(localStorage.getItem(key)===value)return;
- localStorage.setItem(key,value);window.fourDsQueueCloudSave?.();
+ localStorage.setItem(key,value);
+ // The Firms app runs before the cloud-sync script loads. Mark its initial
+ // migration dirty so cloud-sync uploads it instead of treating it as synced.
+ if(typeof window.fourDsQueueCloudSave==='function')window.fourDsQueueCloudSave();
+ else localStorage.setItem('4ds:cloud:unsynced:'+activeUser,'1');
 }
 function recoverySnapshot(stage){
  const owner=typeof activeUser==='string'?activeUser:'local';
