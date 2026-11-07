@@ -2483,6 +2483,13 @@ document.addEventListener('click',async event=>{
    button.textContent=button.classList.contains('smart-tree-close')?'Hide routes':open?'Hide routes':'Show routes';
   });
   persistRecoverySnapshot(stage);
+  if(open){
+   // The Apply / Show buttons sit at the right of the wide comparison table.
+   // Return the table to its left edge so the separate full-width W/L tree is visible.
+   const outer=detail.closest('.tablewrap');
+   if(outer)outer.scrollLeft=0;
+   requestAnimationFrame(()=>detail.scrollIntoView({block:'nearest',behavior:'smooth'}));
+  }
   return;
  }
  const run=event.target.closest?.('[data-smart-run]');
