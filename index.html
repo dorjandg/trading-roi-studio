@@ -321,6 +321,43 @@ html[data-theme="light"] .recovery-direct{background:#f0faf6;border-color:#8bcdb
 .smart-tree-table th,.smart-tree-table td{padding:4px 6px}
 .smart-manual-alert{border:1px solid var(--border);border-radius:7px;padding:7px 8px;margin:6px 0}
 @media(max-width:600px){.smart-table{min-width:985px}.smart-route-examples[open]{min-width:600px}.smart-manual-alert{font-size:10px}}
+
+/* Expanded Smart Setup W/L route table lives on its OWN row below the setup. */
+.smart-table .smart-model-actions{white-space:nowrap;text-align:left}
+.smart-model-actions .smart-tree-toggle,.smart-tree-close{display:inline-block;cursor:pointer;
+ background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;
+ font-size:10px;font-weight:650;padding:4px 6px;line-height:1.15;margin-left:4px}
+.smart-model-actions .smart-tree-toggle:hover,.smart-tree-close:hover{color:var(--text);border-color:var(--blue)}
+.smart-table .smart-tree-detail[hidden]{display:none!important}
+.smart-table .smart-tree-detail>td{padding:0 5px 8px!important;text-align:left!important;
+ max-width:0;white-space:normal!important;border-top:0}
+.smart-tree-wrap{background:var(--panel2);border:1px solid var(--border);
+ border-left:3px solid var(--blue);border-radius:7px;padding:7px 10px;
+ margin:2px 1px 4px;min-width:0}
+.smart-tree-head{display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+ font-size:10px;line-height:1.25;margin-bottom:4px}
+.smart-tree-head strong{font-size:10px}
+.smart-tree-head span{font-size:9px;color:var(--muted)}
+.smart-tree-head .smart-tree-close{margin-left:auto;font-size:9px;padding:3px 6px}
+.smart-tree-wrap>.caption{font-size:9px!important;margin:3px 0 6px!important;line-height:1.3}
+.smart-tree-scroll{overflow-x:auto;max-width:100%;border-radius:5px}
+.smart-table .smart-tree-table{font-size:9px!important;min-width:600px;width:100%;
+ border-collapse:collapse;line-height:1.2}
+.smart-table .smart-tree-table th,.smart-table .smart-tree-table td{font-size:9px!important;
+ padding:4px 6px!important;line-height:1.25;white-space:nowrap;
+ text-align:right!important;font-variant-numeric:tabular-nums}
+.smart-table .smart-tree-table th:first-child,.smart-table .smart-tree-table td:first-child,
+.smart-table .smart-tree-table th:nth-child(2),.smart-table .smart-tree-table td:nth-child(2){
+ text-align:left!important}
+.smart-table .smart-tree-table th:last-child,.smart-table .smart-tree-table td:last-child{
+ text-align:center!important}
+.smart-table .smart-tree-table tbody tr:nth-child(even){background:rgba(127,148,170,.055)}
+@media(max-width:650px){
+ .smart-tree-wrap{padding:5px 6px;margin:1px 0 4px}
+ .smart-tree-head strong{font-size:9px}
+ .smart-table .smart-tree-table th,.smart-table .smart-tree-table td{font-size:9px!important;
+ padding:3px 5px!important}
+}
 .scenario-advisor{margin-top:10px;padding:10px;border:1px solid var(--border,#526071);border-radius:9px;display:grid;gap:8px}.scenario-advisor-item{padding:7px 9px;border-left:3px solid #7790a5;background:rgba(127,127,127,.06);border-radius:4px}.scenario-advisor-critical{border-left-color:#cc6161}.scenario-advisor-warning{border-left-color:#d2a64b}.scenario-advisor-good{border-left-color:#4aaf83}.scenario-advisor-item p{margin:3px 0;font-size:12px;line-height:1.4}.scenario-advisor small{opacity:.75;font-size:11px}
 </style>
 <script>window.FOUR_DS_CLOUD_ENDPOINT = "https://script.google.com/macros/s/AKfycbyZW792ZLBPxusQwthCJr0bVdZwCjXyeNaklq4Dk-BuSQ8P9gdg2zdTiWFKEmYuy5sY9Q/exec";</script>
@@ -2287,18 +2324,27 @@ function smartSetupUI(stage){
   if(x==='failed')return 'Modeled loss floor breached';
   return 'Target hit (minimum days may remain)';
  };
- const fullTree=m=>'<details class="smart-route-examples"><summary>Full W/L tree · '+m.treeBranches+
-  ' endings · '+m.hitProbability.toFixed(1)+'% modeled target</summary>'+
-  '<p class="caption">Every branch uses the same R1-first policy. Losses end their day. Active means unresolved within the search horizon. Percentages assume independent '+
-   data.winRate+'% wins per trade; they are NOT observed prop-firm pass rates.</p>'+
-  '<div class="tablewrap"><table class="recovery-table smart-tree-table"><thead><tr>'+
+ // Each decision tree is a separate full-width row directly BELOW its setup.
+ // Keep that row inside the same comparison table so horizontal scrolling aligns.
+ const fullTree=m=>{
+  const open=!!snap.smartTreeOpen?.[m.kind];
+  return '<tr class="smart-tree-detail" data-smart-tree-detail="'+m.kind+'" id="smartTree-'+stage+'-'+m.kind+'"'+
+   (open?'':' hidden')+'><td colspan="14"><div class="smart-tree-wrap">'+
+   '<div class="smart-tree-head"><strong>'+m.label+' · Full W/L decision tree</strong>'+
+   '<span>'+m.treeBranches+' endings · '+m.hitProbability.toFixed(1)+'% modeled target</span>'+
+   '<button type="button" class="smart-tree-close" data-smart-tree-toggle="'+m.kind+
+    '" aria-controls="smartTree-'+stage+'-'+m.kind+'" aria-expanded="'+String(open)+'">Hide routes</button></div>'+
+   '<p class="caption">Every branch follows R1 first. Losses end their day. Active = unresolved within the horizon. '+
+    'Probabilities assume independent '+data.winRate+'% wins per trade; not verified pass rates.</p>'+
+   '<div class="tablewrap smart-tree-scroll"><table class="recovery-table smart-tree-table"><thead><tr>'+
    '<th>W/L</th><th>R sequence</th><th>Trades</th><th>Days</th><th>Final P/L</th><th>Max DD</th><th>Chance</th><th>Result</th>'+
-  '</tr></thead><tbody>'+m.leaves.map(x=>'<tr><td>'+x.wl+'</td><td>'+
-   [...x.tiers].map(n=>'R'+n).join('→')+'</td><td class="num">'+x.trades+'</td>'+
-   '<td class="num">'+x.days+'</td><td class="num">'+money2(x.pnl)+'</td>'+
-   '<td class="num">'+money2(x.dd)+'</td><td class="num">'+x.probability.toFixed(2)+'%</td>'+
-   '<td title="'+explain(x.status)+'">'+routeLabel(x)+'</td></tr>').join('')+
-  '</tbody></table></div></details>';
+   '</tr></thead><tbody>'+m.leaves.map(x=>'<tr><td>'+x.wl+'</td><td>'+
+    [...x.tiers].map(n=>'R'+n).join('→')+'</td><td class="num">'+x.trades+'</td>'+
+    '<td class="num">'+x.days+'</td><td class="num">'+money2(x.pnl)+'</td>'+
+    '<td class="num">'+money2(x.dd)+'</td><td class="num">'+x.probability.toFixed(2)+'%</td>'+
+    '<td title="'+explain(x.status)+'">'+routeLabel(x)+'</td></tr>').join('')+
+   '</tbody></table></div></div></td></tr>';
+ };
  const row=m=>{
   const riskCells=RECOVERY_LEVELS.map(tier=>'<td class="num'+(m.risks[tier]<.01?' smart-off':'')+'">'+
    (m.risks[tier]<.01?'Off':money2(m.risks[tier]))+'</td>').join('');
@@ -2310,10 +2356,13 @@ function smartSetupUI(stage){
    '<td class="num">'+stat(m.blockedProbability)+'</td><td class="num">'+stat(m.activeProbability)+'</td>'+
    '<td class="num">'+(m.expectedHitTrades===null?'—':m.expectedHitTrades.toFixed(2))+'</td>'+
    '<td class="num">'+money2(m.maxRisk)+'</td><td class="num">'+money2(m.maxDD)+'</td>'+
-   '<td><button class="btn small" type="button" data-smart-apply="'+m.kind+'"'+
+   '<td class="smart-model-actions"><button class="btn small" type="button" data-smart-apply="'+m.kind+'"'+
    (snap.smartUndo&&saved?.appliedKind===m.kind?' disabled title="This setup is applied"':'')+'>'+
    (snap.smartUndo&&saved?.appliedKind===m.kind?'Applied':'Apply')+'</button>'+
-   fullTree(m)+'</td></tr>';
+   '<button type="button" class="smart-tree-toggle" data-smart-tree-toggle="'+m.kind+
+   '" aria-controls="smartTree-'+stage+'-'+m.kind+'" aria-expanded="'+
+   String(!!snap.smartTreeOpen?.[m.kind])+'">'+(snap.smartTreeOpen?.[m.kind]?'Hide routes':'Show routes')+
+   '</button></td></tr>'+fullTree(m);
  };
  const status=busy?'Evaluating complete W/L trees…':data?.error?'No complete setup: '+data.error:
   models.length?data.tested.toLocaleString()+' candidate risk sets · '+data.viable.toLocaleString()+
@@ -2418,6 +2467,24 @@ function undoSmartSetup(stage){
  render();
 }
 document.addEventListener('click',async event=>{
+ const treeToggle=event.target.closest?.('[data-smart-tree-toggle]');
+ if(treeToggle){
+  const host=treeToggle.closest('[data-recovery-stage]'),kind=treeToggle.dataset.smartTreeToggle;
+  if(!host||!['fast','low','balanced','recovery','overall'].includes(kind))return;
+  const stage=host.dataset.recoveryStage,detail=host.querySelector('[data-smart-tree-detail="'+kind+'"]');
+  if(!detail)return;
+  const open=detail.hidden;
+  detail.hidden=!open;
+  const snap=recoverySnapshot(stage);
+  snap.smartTreeOpen=snap.smartTreeOpen||{};
+  snap.smartTreeOpen[kind]=open;
+  host.querySelectorAll('[data-smart-tree-toggle="'+kind+'"]').forEach(button=>{
+   button.setAttribute('aria-expanded',String(open));
+   button.textContent=button.classList.contains('smart-tree-close')?'Hide routes':open?'Hide routes':'Show routes';
+  });
+  persistRecoverySnapshot(stage);
+  return;
+ }
  const run=event.target.closest?.('[data-smart-run]');
  if(run){await runSmartSetup(run.dataset.smartRun);return}
  const apply=event.target.closest?.('[data-smart-apply]');
