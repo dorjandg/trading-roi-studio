@@ -1,3 +1,8 @@
+## Portfolio Simulator section numbering consistency (Nov 7, 2026)
+
+- Corrected the duplicate displayed Section 5 in portfolio-simulator.html: Charts now displays **6 · Charts**, matching the existing Detailed reports navigation. Sections 5–11 now have unique, sequential visible labels: 5 Results, 6 Charts, 7 Account Journey, 8 Trade Risks, 9 Daily Spending, 10 Simulation History, 11 GPT Research. Also corrected a stale CSS comment naming Account Journey Section 6 rather than 7.
+- Kept IDs, cross-section anchor targets, original Show/Hide default and persisted states, simulation JS, stage calculations, Monte Carlo policies, history/cloud keys, and all user-saved profiles unchanged. Source checks verified every report quick-link number matches its section summary and all 5–11 headings are sequential; inline script syntax passes. This verifies the GitHub source, not the Cloudflare live deploy.
+
 ## JJ × FTMO automatic saved-strategy Monte Carlo connection (Nov 7, 2026)
 
 - Following user approval to improve #1 automatic pass-rate estimation and #2 integration with Portfolio Simulator, jj-ftmo-kpis.html now provides a compact FTMO-only "Run Auto FTMO" mode alongside the unchanged manual-assumptions mode. It reuses the exact shipped pure portfolio-engine.js, portfolio-weekly.js and ftmo-funded-buffer.js dependencies, plus two new read-only modules jj-ftmo-auto.js (saved-plan builder and cohort KPI bridge) and jj-ftmo-controller.js (UI mode switching).
