@@ -45,7 +45,7 @@
   const sources=el('div','jj-ai-sources');
   const thread=el('div','jj-ai-thread');
   panel.append(el('strong','','Cloudflare AI · conversation'),status,thread,answer,sources);
-  const drawThread=()=>{thread.replaceChildren();for(const turn of conversation.slice(-8)){const item=el('div','jj-ai-turn jj-ai-'+turn.role);item.append(el('strong','',turn.role==='user'?'You':'AI'),el('p','',turn.content));thread.append(item)}};
+  const drawThread=()=>{thread.replaceChildren();for(const turn of conversation.slice(0,-1).slice(-8)){const item=el('div','jj-ai-turn jj-ai-'+turn.role);item.append(el('strong','',turn.role==='user'?'You':'AI'),el('p','',turn.content));thread.append(item)}};
   drawThread();
   if(conversation.length){panel.hidden=false;status.textContent='Conversation restored in this browser tab. Ask a follow-up question.'}
   reset.addEventListener('click',()=>{conversation=[];save();thread.replaceChildren();answer.replaceChildren();sources.replaceChildren();panel.hidden=true;form.querySelector('textarea').value='';form.querySelector('textarea').focus()});
@@ -57,8 +57,10 @@
    if(!question){panel.hidden=false;status.textContent='Please enter a question first.';return}
    jjHelperQuestion=question;
    jjHelperAnswer(true);
-   let hits=selectHits(question);
-   if(!hits.length&&conversation.length){const previousQuestion=[...conversation].reverse().find(m=>m.role==='user');if(previousQuestion)hits=selectHits(previousQuestion.content)}
+   const previousQuestion=[...conversation].reverse().find(m=>m.role==='user');
+   const contextQuery=previousQuestion?previousQuestion.content+' '+question:question;
+   let hits=selectHits(contextQuery);
+   if(!hits.length)hits=selectHits(question);
    panel.hidden=false;answer.replaceChildren();sources.replaceChildren();
    if(!hits.length){status.textContent='No new source matches found. Rephrase with a course topic to retrieve evidence before asking AI.';return}
    busy=true;button.disabled=true;button.textContent='Asking AI…';
@@ -84,6 +86,7 @@
     status.textContent='AI synthesis of indexed Academy research. Verify original lesson evidence; assumptions are not actual JJ performance.';
     conversation.push({role:'user',content:question.slice(0,750)},{role:'assistant',content:String(data.answer||'').slice(0,1400)});conversation=conversation.slice(-12);save();drawThread();
     renderAnswer(answer,data.answer||'No answer returned');
+    const questionBox=form.querySelector('textarea');if(questionBox){questionBox.value='';questionBox.placeholder='Ask a follow-up about this conversation…';}
     const label=el('strong','','Source passages used:');sources.append(label);
     hits.slice(0,5).forEach((hit,i)=>{
      const item=el('div','jj-ai-source');
