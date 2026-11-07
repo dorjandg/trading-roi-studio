@@ -23,3 +23,18 @@
 .jj-ai-turn strong{font-size:10px;color:var(--accent)}
 .jj-ai-turn p{margin:3px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;max-height:125px;overflow:hidden}
 .jj-ai-thread:not(:empty)+.jj-ai-answer{border-top:1px solid var(--stroke);padding-top:8px}
+
+/* Reading-first layout: latest answer, optional earlier chat, then follow-up composer. */
+.jj-ai-panel{padding:13px 15px}
+.jj-ai-answer{display:block;white-space:normal;line-height:1.6}
+.jj-ai-answer p{margin:0 0 11px;font-size:13px;line-height:1.65}
+.jj-ai-answer h4{font-size:12px;letter-spacing:.025em;margin:15px 0 6px;color:var(--accent)}
+.jj-ai-answer p:last-child{margin-bottom:0}
+.jj-ai-history{border-top:1px solid var(--stroke);margin-top:10px;padding-top:8px}
+.jj-ai-history[hidden]{display:none}
+.jj-ai-history>summary{cursor:pointer;color:var(--muted);font-size:11px;font-weight:600}
+.jj-ai-thread{margin-top:9px;max-height:320px}
+.jj-ai-turn p{max-height:none;overflow:visible;font-size:11px;line-height:1.5}
+.jj-ai-turn h4{font-size:11px;margin:7px 0 3px}
+#jj-helper-app>.jj-helper-form{margin-top:10px}
+@media(max-width:600px){.jj-ai-panel{padding:10px}.jj-ai-answer p{font-size:12px}}
