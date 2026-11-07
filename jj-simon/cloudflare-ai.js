@@ -67,7 +67,7 @@
   const answer=el('div','jj-ai-answer');answer.setAttribute('aria-live','polite');
   const sources=el('div','jj-ai-sources');
   const thread=el('div','jj-ai-thread');
-  const history=el('details','jj-ai-history');const historyTitle=el('summary','','Earlier conversation');history.append(historyTitle,thread);
+  const history=el('details','jj-ai-history');const historyTitle=el('summary','','Earlier conversation');history.append(historyTitle);
   const library=el('details','jj-ai-chat-library');const libraryTitle=el('summary','','Saved chats');const chatList=el('div','jj-ai-chat-list');library.append(libraryTitle,chatList);
   panel.append(library,el('strong','','JJ Academy AI · conversation'),status,thread,answer,sources,history);
   const showLatest=()=>{
@@ -135,10 +135,11 @@
    panel.hidden=false;sources.replaceChildren();
    if(!hits.length){status.textContent='No new source matches found. Rephrase with a course topic to retrieve evidence before asking AI.';return}
    busy=true;button.disabled=true;reset.disabled=true;button.textContent='Asking AI…';
+   conversation.push({role:'user',content:question.slice(0,750)});save();drawThread();drawChats();
    status.textContent='Thinking… · '+Math.min(hits.length,5)+' Academy sources';
    try{
     const payload={
-     question:question.slice(0,750),history:conversation.slice(-6),
+     question:question.slice(0,750),history:conversation.slice(0,-1).slice(-6),
      sources:hits.slice(0,5).map(hit=>({
       title:hit.title,type:hit.type,summary:hit.text,
       limitation:hit.footnote||''
@@ -156,7 +157,7 @@
     if(!response.ok)throw Error([data.message||data.error||'AI endpoint unavailable',data.code?'Code: '+data.code:'',data.detail||''].filter(Boolean).join(' · '));
     status.textContent='AI synthesis of indexed Academy research. Verify original lesson evidence; assumptions are not actual JJ performance.';
     const citedSources=hits.slice(0,5).map(hit=>({title:hit.title,url:hit.sourceUrl||'',chapter:hit.chapter||''}));
-    conversation.push({role:'user',content:question.slice(0,750)},{role:'assistant',content:String(data.answer||'').slice(0,6500),sources:citedSources});save();drawThread();drawChats();
+    conversation.push({role:'assistant',content:String(data.answer||'').slice(0,6500),sources:citedSources});save();drawThread();drawChats();
     answer.replaceChildren();sources.replaceChildren();
     const questionBox=form.querySelector('textarea');if(questionBox){questionBox.value='';questionBox.placeholder='Ask a follow-up about this conversation…'}
 
