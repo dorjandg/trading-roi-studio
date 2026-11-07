@@ -82,12 +82,13 @@ function formulaFindings(){
 }
 function inspect(){
  const findings=formulaFindings();
+ let pending=Promise.resolve();
  for(const finding of findings){
   // Deterministic formula identities ONLY: do not auto-escalate poor performance or historical assumptions.
   const existing=read().find(x=>x.fingerprint==='formula:'+finding.key&&x.day===day());
   if(existing)continue;
-  queue({kind:'formula-audit',automatic:true,fingerprint:'formula:'+finding.key,label:finding.title,
-    note:'Reproduce and inspect deterministic Studio formula audit: '+finding.metric+' for program '+finding.program+'. Reference '+finding.source+'. No private simulation records attached; inspect permitted cloud run history and source code. Do not change strategies.'});
+  pending=pending.then(()=>queue({kind:'formula-audit',automatic:true,fingerprint:'formula:'+finding.key,label:finding.title,
+    note:'Reproduce and inspect deterministic Studio formula audit: '+finding.metric+' for program '+finding.program+'. Reference '+finding.source+'. No private simulation records attached; inspect permitted cloud run history and source code. Do not change strategies.'}));
  }
  return findings;
 }
