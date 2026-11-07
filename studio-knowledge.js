@@ -38,12 +38,41 @@ function sectionMatch(q){
  if(!scored.length)return null;const s=scored[0].s;const element=document.getElementById(s.id);
  return [s.title+'\n'+s.info+(element?'\nLocation: available in this Portfolio Simulator page.':'\nLocation: this section may be hidden or unavailable in the current page.')+'\nSource: website section documentation.','Website guide · High',false];
 }
+
+function currentContext(){
+ const selected=document.querySelector('main .page.active')||document.querySelector('.page.active');
+ const scope=selected||document.querySelector('main')||document.body;
+ const page=selected?.id?.replace(/^page-/,'')||document.title||'Trading Studio';
+ const visible=el=>{if(el.closest('#studioFloatingAI'))return false;if(el.type==='password'||el.type==='hidden'||el.disabled)return false;
+   const st=typeof getComputedStyle==='function'?getComputedStyle(el):null;
+   return (!st||st.display!=='none'&&st.visibility!=='hidden')&&!!(el.getClientRects?.().length||el.offsetParent)};
+ const items=Array.from(scope.querySelectorAll('input,select')).filter(visible).slice(0,120).map(el=>{
+  const name=(el.labels?.[0]?.textContent||document.querySelector('label[for="'+el.id+'"]')?.textContent||el.getAttribute('aria-label')||'').trim().replace(/\s+/g,' ').slice(0,75);
+  if(!name||/password|api key|secret|token|email|credential/i.test(name))return null;
+  const value=el.type==='checkbox'?String(el.checked):el.tagName==='SELECT'?(el.selectedOptions?.[0]?.textContent||el.value):el.value;
+  if(!value||String(value).length>90)return null;
+  return {name,value:String(value).slice(0,90)};
+ }).filter(Boolean).slice(0,35);
+ const heads=Array.from(scope.querySelectorAll('h1,h2,h3')).filter(visible).slice(0,8).map(el=>el.textContent.trim().slice(0,90));
+ return {page,items,heads};
+}
+function pageAnswer(q){
+ const text=norm(q),context=currentContext();
+ if(!/(this page|this tab|current page|current tab|visible|on this page|what are the parameters|which parameters|what settings|my settings|current settings|what value|which value)/.test(text)&&!/(overview|firm|labs|preset|profile)/.test(text))return null;
+ let matched=context.items.filter(i=>text.includes(norm(i.name))||norm(i.name).split(' ').some(w=>w.length>=5&&text.includes(w)));
+ if(!matched.length)matched=context.items.slice(0,10);
+ const shown=matched.slice(0,12).map(i=>i.name+': '+i.value);
+ const head='Current view: '+context.page+'.'+(context.heads.length?'\nVisible sections: '+context.heads.slice(0,4).join(' · ')+'.':'');
+ return [head+(shown.length?'\nVisible inputs: '+shown.join(' · '):'\nThere are no readable visible input values in this view.')+
+ '\nThese are browser-visible values only; not saved cloud results, and no setting was changed.','Current website UI · High',false];
+}
 function answer(q){
+ const onPage=pageAnswer(q);if(onPage)return onPage;
  const nq=norm(q);
  if(/what (is|does|means)|explain|define|how (does|do)|where|which section|show me|parameter|setting|input/.test(nq)){
    return fieldMatch(q)||sectionMatch(q);
  }
  return null;
 }
-root.StudioKnowledge={answer,fieldMatch,sectionMatch,sections:sections.map(s=>({id:s.id,title:s.title}))};
+root.StudioKnowledge={answer,fieldMatch,sectionMatch,currentContext,sections:sections.map(s=>({id:s.id,title:s.title}))};
 })(window);
