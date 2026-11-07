@@ -764,6 +764,9 @@ function renderUnifiedInvestmentModels(out,more=null,sortKey='net',descending=tr
  const matched=all.filter(m=>filter==='all'||m.source===filter);
  const models=matched.sort((a,b)=>{
   const av=keys[selected](a),bv=keys[selected](b);
+  // Undefined cost (no simulated successes) always sorts last, regardless of direction.
+  if(selected==='costGoal'&&!Number.isFinite(av))return Number.isFinite(bv)?1:a.key.localeCompare(b.key);
+  if(selected==='costGoal'&&!Number.isFinite(bv))return -1;
   const delta=av===bv?0:av===Infinity?1:bv===Infinity?-1:
    av===-Infinity?-1:bv===-Infinity?1:av-bv;
   return (descending?-delta:delta)||a.key.localeCompare(b.key);
