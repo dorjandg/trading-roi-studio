@@ -2813,7 +2813,7 @@ function renderRecoveryPlanners(){
  for(const link of document.querySelectorAll('.firms-to-sim-link')){
   const selected=String(activeProgramKey||'');
   link.href=/^(ftmo2|holaPrime|holaPro|topstep):[1-9]\d{3,6}$/.test(selected)?
-   'portfolio-simulator.html?account='+encodeURIComponent(selected):'portfolio-simulator.html';
+   'portfolio-simulator.html?account='+encodeURIComponent(selected)+'&single=1':'portfolio-simulator.html';
  }
  const imported=$('firmsImportedModel');
  if(imported){
