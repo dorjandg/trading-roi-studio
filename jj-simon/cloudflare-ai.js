@@ -18,7 +18,9 @@
   }
   const lines=text.split(/\n+/).map(x=>x.trim()).filter(Boolean);
   for(const line of lines){
-   const isHeading=headings.includes(line.toUpperCase())||(/^[A-Z][A-Z0-9 /&–—:-]{7,}$/.test(line)&&line.length<90);
+   const isHeading=headings.includes(line.toUpperCase())||
+    (/^[A-Z][A-Za-z0-9 /&–—:'-]{5,75}$/.test(line)&&line.length<76&&
+     !/[.!?;]$/.test(line)&&line.split(/\\s+/).length<=9);
    const node=el(isHeading?'h4':'p','');
    const parts=line.replace(/^[-*]\s+/,'• ').split(/(\[\d+\])/g);
    for(const part of parts){
@@ -68,7 +70,7 @@
    for(const turn of earlier){const item=el('div','jj-ai-turn jj-ai-'+turn.role);item.append(el('strong','',turn.role==='user'?'You':'AI'));if(turn.role==='assistant')renderAnswer(item,turn.content,turn.sources||[]);else item.append(el('p','',turn.content));thread.append(item)}
   };
   drawThread();
-  if(conversation.length){panel.hidden=false;status.textContent='Latest response · Ask a follow-up below.';const latest=conversation[conversation.length-1];if(latest?.role==='assistant')renderAnswer(answer,latest.content,latest.sources||[])}
+  if(conversation.length){panel.hidden=false;status.textContent='Latest response · Ask a follow-up below.';const latest=conversation[conversation.length-1];if(latest?.role==='assistant'){renderAnswer(answer,latest.content,latest.sources||[]);if(!latest.sources?.length)status.textContent='Saved earlier answer · Source links require a newly generated answer. Ask a follow-up below.'}}
   reset.addEventListener('click',()=>{if(busy)return;conversation=[];save();thread.replaceChildren();answer.replaceChildren();sources.replaceChildren();panel.hidden=true;const input=form.querySelector('textarea');input.value='';input.placeholder='Ask a question about JJ’s trading course…';input.focus()});
   const result=root.querySelector('#jj-helper-results');
   if(result)result.before(panel);else root.append(panel);
