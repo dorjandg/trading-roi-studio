@@ -212,7 +212,11 @@
     thread.append(follow);
    }
    panel.hidden=false;
-   requestAnimationFrame(()=>{thread.scrollTop=thread.scrollHeight});
+   // Only the conversation pane scrolls; do not move the whole website.
+   const toLatest=()=>{thread.scrollTop=thread.scrollHeight};
+   toLatest();
+   requestAnimationFrame(()=>{toLatest();requestAnimationFrame(toLatest)});
+
    status.textContent=conversation.length?'Conversation saved locally · Ask a follow-up below.':'Ask a question to start a conversation.';
   };
   drawThread();
