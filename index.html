@@ -699,6 +699,7 @@ html[data-theme="light"] .recovery-details .caption{color:#53677c}
  </select>
  <button type="button" class="btn primary" id="openFirmsFindRoutes" title="Open the selected stage and calculate all risk routes using its current R1–R4 values">Find Target Routes</button>
  <button type="button" class="btn small" id="openFirmsSmartPlanner" title="Find faster and lower-risk R1–R4 setups for the selected phase">Optimize R1–R4</button>
+ <button type="button" class="btn small" id="openFtmoBufferBuilder" title="Open the FTMO 2-Step funded-only Buffer Builder" hidden>FTMO Funded Buffer</button>
  <a class="btn small" id="firmPortfolioQuickLink" href="portfolio-simulator.html" title="Open Portfolio Simulator with the selected Firms account included">Portfolio Simulator</a>
  <button type="button" class="btn small quiet" id="openFirmsStrategySimulator" title="Open the older two-risk strategy simulator inside Firms">2-Risk Simulator</button>
 </div><div class="panel" style="padding:0;overflow:hidden"><iframe id="firmsFrame" title="Prop firm account selector and rules" src="about:blank" data-src="rules.html?embedded=1&v=compact-account-simulator-20261107" loading="eager" style="display:block;width:100%;height:1px;min-height:0;border:0;background:#080d16;overflow:hidden"></iframe></div><div class="notice" id="firmStrategyStatus" style="margin:16px 0">Select a firm, program and account size above to load this account's saved trading parameters.</div>
@@ -922,6 +923,8 @@ function phaseModel(id=String(activeProgramKey||'').split(':')[0]){
 }
 function phase2Rate(){return phaseModel().phase2?prob(state.p2):1;}
 function applyPhaseVisibility(){
+ const ftmoShortcut=document.getElementById('openFtmoBufferBuilder');
+ if(ftmoShortcut)ftmoShortcut.hidden=!/^ftmo2:[1-9]\d{3,6}$/.test(String(activeProgramKey||''));
  const m=phaseModel(),groups=[...document.querySelectorAll('.risk-phase-group')];
  const picker=document.getElementById('firmRoutePhase');
  if(picker){
@@ -3261,6 +3264,20 @@ document.getElementById('openFirmsStrategySimulator')?.addEventListener('click',
  requestAnimationFrame(()=>{
   details.scrollIntoView({behavior:'smooth',block:'start'});
   if(!selectedAccountSupportsSimulation)notify('This selected account is not supported by the older two-risk simulator. Use Portfolio Simulator for supported account models.');
+ });
+});
+document.getElementById('openFtmoBufferBuilder')?.addEventListener('click',()=>{
+ if(!/^ftmo2:[1-9]\d{3,6}$/.test(String(activeProgramKey||'')))return;
+ openFirmsFold(document.getElementById('symbolPanel'));
+ const holder=document.querySelector('[data-recovery-stage="funded"]');
+ openFirmsFold(holder?.closest('.risk-phase-group'));
+ const snap=recoverySnapshot('funded');
+ snap.open=true;snap.ftmoBufferOpen=true;
+ persistRecoverySnapshot('funded');
+ renderRecoveryPlanners();
+ requestAnimationFrame(()=>{
+  const panel=document.querySelector('[data-recovery-stage="funded"] .ftmo-buffer-panel');
+  if(panel){panel.open=true;panel.scrollIntoView({behavior:'smooth',block:'start'})}
  });
 });
 document.getElementById('openFirmsSmartPlanner')?.addEventListener('click',()=>{
