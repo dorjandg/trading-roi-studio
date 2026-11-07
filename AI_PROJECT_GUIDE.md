@@ -1,3 +1,10 @@
+## JJ × FTMO dashboard-first collapsible layout (Nov 7, 2026)
+
+- Per user request, jj-ftmo-kpis.html now places the always-visible results dashboard at the top, before all detail tables. Its live KPI cards include JJ/FTMO paired cost per funded, net ROI, evaluation funded conversion, purchase-to-first-cash-payout probability, net expected cash per evaluation purchase and total net cash for the selected cohort.
+- The detailed cross-model cash KPI table is nested in a closed-by-default details panel ("1A · Full KPI comparison"); the strategy reference table is closed by default ("2 · Strategy reference"). Source evidence and editable JJ/FTMO assumption sections remain collapsed. All section numbers remain sequential.
+- The underlying probability/ROI mathematics, chosen inputs, saved user profiles, Monte Carlo engine, account strategy, refund handling and research source classification are unchanged. Inputs still recalculate the visible dashboard instantly.
+- Verified the page script parses, collapsed-table placement, baseline 33.3% JJ/49% FTMO evaluation funded conversion, 12% JJ/18.6% FTMO modeled first cash payout chances, baseline ROI, and edit to FTMO Phase 1 80% -> 56% two-phase conversion and $179 rounded acquisition cost. These are UI-fixture arithmetic tests, not live Cloudflare/browser verification.
+
 ## JJ × FTMO source-labeled KPI benchmark (Nov 7, 2026)
 
 - Added read-only research/cohort comparison page jj-ftmo-kpis.html, linked from index.html and portfolio-simulator.html. This is NOT a second simulator, does not read/write private 4Ds state, and cannot change saved Firms policies or Monte Carlo trade rules. It requires manual model assumptions; results must not be misrepresented as outputs of the existing Full Simulation.
