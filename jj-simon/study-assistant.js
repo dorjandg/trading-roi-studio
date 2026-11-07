@@ -182,11 +182,11 @@ function jjVerifyReceipt(endpoint,receipt){
   document.head.appendChild(script);
  });
 }
-async function jjQueueTrySync(question,reason,matchCount){
+async function jjQueueTrySync(question,reason,matchCount,force=false){
  const key=jjQuestionId(question),endpoint=jjCloudEndpoint();
  if(!jjQuestionShareEnabled()||!endpoint||jjQaSyncBusy.has(key))return false;
  const rows=jjQueueRead(),entry=rows.find(r=>r.key===key&&r.status!=='resolved');
- if(!entry||(entry.synced&&entry.accessReceipt))return !!entry?.synced;
+ if(!entry||(entry.synced&&entry.accessReceipt&&!force))return !!entry?.synced;
  jjQaSyncBusy.add(key);
  const receipt=jjRandomReceipt();
  try{
