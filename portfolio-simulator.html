@@ -659,7 +659,7 @@ details p{margin:6px 0}
 </div>
 <script src="ftmo-funded-buffer.js?v=20261107-ftmo-funded-buffer-v1"></script>
 <script src="portfolio-engine.js?v=20261107-weekly-timing-v2"></script><script src="portfolio-weekly.js?v=20261107-weekly-cashflow-v2"></script>
-<script src="portfolio-payout-optimizer.js?v=20261107-weekly-optimizer-v1"></script>
+<script src="portfolio-payout-optimizer.js?v=20261107-weekly-optimizer-v2"></script>
 <script src="portfolio-discovery.js?v=20261107-target-exact-v1"></script>
 <script src="portfolio-recovery-ladder.js?v=20261107-recovery-ladder-v1"></script>
 <script src="portfolio-funded-recovery.js?v=20261107-funded-450-cap-3150-v1"></script>
@@ -828,7 +828,7 @@ function loadView(){
   }
  }
  testRisks=prior.testRisks&&typeof prior.testRisks==='object'&&!Array.isArray(prior.testRisks)?prior.testRisks:{};
- const defaults={budget:main.budget||5000,netGoal:20000,winRate:main.winRate??40,days:20,
+ const defaults={budget:main.budget||5000,netGoal:20000,winRate:main.winRate??35,days:20,
   tradesPerDay:4,signalPace:'weekly20',trials:300,signalMode:'independent',seed:main.randomSeed||24717,budgetMode:'compare'};
  for(const id of Object.keys(defaults)){
   const val=prior[id]??defaults[id];
@@ -2177,5 +2177,5 @@ init();
 </script>
 <script src="gpt-review-request.js?v=20261107-queue-live-v2"></script>
 <script src="gpt-research-reports.js?v=20261107-status-values-v5"></script>
-<script src="portfolio-payout-ui.js?v=20261107-weekly-pacing-v1"></script>
+<script src="portfolio-payout-ui.js?v=20261107-weekly-pacing-v2"></script>
 <script src="studio-header.js"></script></body></html>
