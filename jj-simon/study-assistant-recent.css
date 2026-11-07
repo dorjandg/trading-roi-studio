@@ -1,0 +1,29 @@
+/* Study Assistant — compact local question history */
+.jj-recent-questions{border:1px solid var(--stroke);background:var(--bg);border-radius:8px;margin:12px 0;overflow:hidden}
+.jj-recent-questions>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 11px;cursor:pointer;font-size:12px;font-weight:700}
+.jj-recent-questions>summary::-webkit-details-marker{display:none}
+.jj-recent-questions>summary::after{content:'+';font-size:16px;color:var(--accent);font-weight:400}
+.jj-recent-questions[open]>summary::after{content:'−'}
+.jj-recent-questions>summary:hover{background:var(--hover)}
+.jj-recent-count{font-size:10px;font-weight:400;color:var(--muted);margin-left:auto}
+.jj-recent-content{border-top:1px solid var(--stroke);padding:9px}
+.jj-recent-tools{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:7px}
+.jj-recent-tools input,.jj-recent-tools select{background:var(--panel);color:var(--text);border:1px solid var(--stroke);border-radius:6px;font:inherit;font-size:11px;min-height:29px;padding:4px 7px}
+.jj-recent-tools input{flex:1;min-width:125px}
+.jj-recent-tools select{max-width:115px}
+.jj-recent-scroll{overflow-x:auto;max-width:100%;border:1px solid var(--stroke);border-radius:6px}
+.jj-recent-table{border-collapse:collapse;width:100%;font-size:11px;min-width:430px}
+.jj-recent-table th{color:var(--muted);background:var(--panel);font-weight:650;font-size:10px;padding:7px 8px;text-align:left;white-space:nowrap}
+.jj-recent-table th:first-child,.jj-recent-table td:first-child{text-align:right;width:30px}
+.jj-recent-table td{border-top:1px solid var(--stroke);padding:7px 8px;vertical-align:middle}
+.jj-recent-table tbody tr:nth-child(even){background:var(--panel)}
+.jj-recent-question{font-weight:550;overflow-wrap:anywhere;max-width:500px}
+.jj-recent-meta{font-size:10px;color:var(--muted)}
+.jj-recent-open,.jj-recent-pagination button{font:inherit;font-size:11px;min-height:28px;padding:4px 8px;color:var(--accent);border:1px solid var(--stroke);border-radius:5px;background:var(--bg);cursor:pointer}
+.jj-recent-open:hover,.jj-recent-pagination button:hover:not(:disabled){background:var(--hover)}
+.jj-recent-pagination button:disabled{opacity:.4;cursor:default}
+.jj-recent-pagination button[aria-current="page"]{border-color:var(--accent);font-weight:750}
+.jj-recent-footer{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:7px;margin-top:7px;font-size:10px;color:var(--muted)}
+.jj-recent-pagination{display:flex;align-items:center;gap:4px}
+.jj-recent-note{font-size:10px;color:var(--muted);margin:7px 0 0}
+@media(max-width:750px){.jj-recent-content{padding:7px}.jj-recent-table{min-width:365px;font-size:10px}.jj-recent-table td,.jj-recent-table th{padding:6px}.jj-recent-open{min-height:30px}.jj-recent-tools input{width:100%;flex-basis:100%}}
