@@ -56,6 +56,34 @@
   }
  }
  const privateExcerpts=[];
+ // IndexedDB retains imported transcript excerpts on this device without publishing
+ // course text to GitHub or making it publicly accessible through Cloudflare Pages.
+ const transcriptDB='jj-academy-private-transcripts-v1';
+ function transcriptStore(mode,fn){
+  return new Promise((resolve,reject)=>{
+   if(!('indexedDB' in window)){reject(Error('IndexedDB unavailable'));return}
+   const request=indexedDB.open(transcriptDB,1);
+   request.onupgradeneeded=()=>{if(!request.result.objectStoreNames.contains('excerpts'))request.result.createObjectStore('excerpts',{keyPath:'id'})};
+   request.onerror=()=>reject(request.error);
+   request.onsuccess=()=>{
+    const db=request.result,tx=db.transaction('excerpts',mode),store=tx.objectStore('excerpts');
+    let result;
+    try{result=fn(store)}catch(e){db.close();reject(e);return}
+    tx.oncomplete=()=>{db.close();resolve(result)};
+    tx.onerror=()=>{db.close();reject(tx.error)};
+   };
+  });
+ }
+ async function loadPrivateExcerpts(){
+  const entries=[];
+  await transcriptStore('readonly',store=>{const cursor=store.openCursor();cursor.onsuccess=()=>{const c=cursor.result;if(c){entries.push(c.value);c.continue()}}});
+  privateExcerpts.splice(0,privateExcerpts.length,...entries);
+  return entries.length;
+ }
+ async function persistPrivateExcerpts(entries){
+  await transcriptStore('readwrite',store=>{for(const entry of entries)store.put(entry)});
+ }
+
  function archiveHits(question,limit=12){
   const base=jjHelperSearch(question);
   const extra=typeof jjHelperDocuments==='function'?jjHelperDocuments():[];
@@ -145,11 +173,11 @@
     archiveResults.append(item);
    }
   };
-  const importLabel=el('label','jj-ai-import-label','Import private .txt/.vtt/.srt transcript (this session only)');
+  const importLabel=el('label','jj-ai-import-label','Import private .txt/.vtt/.srt transcript (saved on this device)');
   const importInput=el('input','jj-ai-import-input');importInput.type='file';importInput.accept='.txt,.vtt,.srt,text/plain';importInput.multiple=true;
-  const importStatus=el('small','','Imported transcripts stay in this browser tab. AI questions may send selected matching excerpts to Cloudflare; use Archive Search for local-only lookup.');
+  const importStatus=el('small','','Private transcripts are stored in this browser, not GitHub. Archive search stays local; asking AI may send selected excerpts to Cloudflare.');
   importInput.onchange=async()=>{
-   let added=0;
+   let added=0;const newEntries=[];
    for(const file of [...importInput.files].slice(0,20)){
     if(file.size>3000000){importStatus.textContent='Skipped '+file.name+': file exceeds 3 MB';continue}
     const raw=await file.text();
@@ -157,13 +185,14 @@
     for(let offset=0;offset<clean.length;offset+=1800){
      const chunk=clean.slice(offset,offset+2100).trim();
      if(chunk.length<35)continue;
-     privateExcerpts.push({id:'local:'+file.name+':'+offset,type:'Private transcript · session only',title:file.name+' · excerpt '+(Math.floor(offset/1800)+1),text:chunk,quoted:chunk,searchText:chunk,sourceUrl:'',footnote:'Local import; source timestamp not verified'});
+     newEntries.push({id:'local:'+file.name+':'+offset,type:'Private transcript · browser private',title:file.name+' · excerpt '+(Math.floor(offset/1800)+1),text:chunk,quoted:chunk,searchText:chunk,sourceUrl:'',footnote:'Local import; source timestamp not verified'});
      added++;
     }
    }
-   importStatus.textContent=added+' transcript excerpts indexed in this tab. Not uploaded or stored on GitHub. AI answers may transmit selected excerpts to Cloudflare.';
+   try{await persistPrivateExcerpts(newEntries);await loadPrivateExcerpts();importStatus.textContent=added+' excerpts indexed and saved privately on this device. AI may transmit matching excerpts to Cloudflare when asked.'}catch(e){privateExcerpts.push(...newEntries);importStatus.textContent=added+' excerpts indexed for this tab only; private storage failed: '+e.message}
    importInput.value='';
   };
+  loadPrivateExcerpts().then(n=>{importStatus.textContent=n+' private excerpts available on this device. Search locally, or ask AI (selected excerpts may be sent to Cloudflare).'}).catch(()=>{importStatus.textContent='Private browser storage unavailable; imports last for this tab only.'});
   importLabel.append(importInput);
   archive.append(archiveTitle,archiveSearch,importLabel,importStatus,archiveResults);
   // One compact collapsible tools drawer, with the conversation always visible.
