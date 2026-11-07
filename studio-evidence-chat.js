@@ -1,0 +1,71 @@
+/* 4Ds Studio Evidence Chat — local, explainable, no third-party AI requests or credential exposure. */
+(()=>{'use strict';
+const host=document.querySelector('#gptResearchPanel .numbered-content');if(!host)return;
+const style=document.createElement('style');style.textContent=`
+.studio-ai{border:1px solid #34485c;border-radius:12px;background:#101b2a;margin:10px 0 14px;padding:11px;font-size:12px}
+.studio-ai *{box-sizing:border-box}.studio-ai-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.studio-ai-head strong{font-size:13px}.studio-ai-note{color:#99adc3;font-size:11px;margin:5px 0 8px}
+.studio-ai-log{height:220px;max-height:40vh;overflow-y:auto;overscroll-behavior:contain;border:1px solid #293b50;border-radius:9px;background:#0b1421;padding:8px;display:flex;flex-direction:column;gap:8px}
+.studio-ai-msg{max-width:92%;padding:8px 10px;border-radius:10px;background:#1b2b41;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}
+.studio-ai-msg.user{align-self:flex-end;background:#17463d}.studio-ai-msg.assistant{align-self:flex-start}
+.studio-ai-meta{display:block;color:#abc0d2;font-size:10px;margin-top:5px}.studio-ai-actions{display:flex;gap:5px;margin-top:5px;flex-wrap:wrap}
+.studio-ai button{min-height:27px;border:1px solid #3b536c;border-radius:7px;background:#1a2a40;color:#e9f1f8;padding:4px 8px;font-size:11px;cursor:pointer}
+.studio-ai button:hover{border-color:#7ea4c5}.studio-ai .studio-ai-send{background:#276f59}
+.studio-ai-suggestions{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0}
+.studio-ai-input{display:flex;gap:6px;margin-top:8px}.studio-ai-input textarea{flex:1;min-width:0;resize:vertical;min-height:42px;max-height:100px;background:#0d1827;border:1px solid #3b536c;border-radius:8px;padding:8px;color:#edf5fc;font:inherit}
+.studio-ai-saved{margin-top:8px}.studio-ai-saved summary{cursor:pointer}.studio-ai-saved p{margin:4px 0;color:#afc2d2}
+@media(max-width:600px){.studio-ai{padding:7px}.studio-ai-log{height:180px}.studio-ai-msg{max-width:98%;font-size:11px}.studio-ai button{font-size:10px;padding:4px 6px}.studio-ai-input textarea{font-size:12px}}
+`;document.head.appendChild(style);
+const panel=document.createElement('section');panel.className='studio-ai';panel.setAttribute('aria-label','Trading Studio evidence assistant');
+panel.innerHTML='<div class="studio-ai-head"><strong>Studio AI · Ask about your results</strong><button type="button" data-act="clear">Clear chat</button></div><p class="studio-ai-note">Local evidence assistant · No API fees · Answers use the visible settings and documented model rules. Not a generative AI service. Does not place trades or change settings.</p><div class="studio-ai-log" role="log" aria-live="polite"></div><div class="studio-ai-suggestions"></div><div class="studio-ai-input"><textarea maxlength="900" aria-label="Question about trading simulation" placeholder="Why is ROI low? What does win rate change?"></textarea><button class="studio-ai-send" type="button" data-act="ask">Ask</button></div><details class="studio-ai-saved"><summary>Saved answers &amp; unanswered questions</summary><div data-saved></div><div data-unanswered></div></details>';
+host.insertBefore(panel,host.firstChild);
+const el=s=>panel.querySelector(s), storage=()=>{let u='dori';try{u=localStorage.getItem('4ds:active-user:v1')||'dori'}catch{}return '4ds:v1:'+u+':studio-evidence-chat:v1'};
+const initial=()=>({messages:[],saved:[],unanswered:[]});
+let data=initial(),key='';
+function load(){key=storage();try{let v=JSON.parse(localStorage.getItem(key)||'null');data=v&&Array.isArray(v.messages)&&Array.isArray(v.saved)&&Array.isArray(v.unanswered)?v:initial()}catch{data=initial()}render()}
+function persist(){try{localStorage.setItem(key,JSON.stringify(data))}catch{}}
+function n(id){let x=Number(document.getElementById(id)?.value);return Number.isFinite(x)?x:null}
+function money(v){return '$'+Math.round(v).toLocaleString('en-US')}
+function source(){let label=document.querySelector('#reportSourceLabel')?.textContent?.trim()||'';return !document.getElementById('results')?.hidden&&label?label:'Current form inputs (no displayed run verified)'}
+const suggestions=['Why is my ROI low?','Explain win rate and risk','Check my target and budget','Why are funded accounts few?','Compare evaluation and funded','What information is missing?'];
+function reply(question){
+ const q=question.toLowerCase(),wr=n('winRate'),budget=n('budget'),goal=n('netGoal'),days=n('days'),trials=n('trials');
+ const s='Source: '+source()+'. Inputs are assumptions, not realized outcomes.';
+ const context='Current inputs: '+(wr===null?'unknown':wr+'%')+' trade win rate, '+(days??'?')+' trading days, '+(trials??'?')+' trials, '+(budget===null?'unknown':money(budget))+' budget, '+(goal===null?'unknown':money(goal))+' net goal.';
+ if(/^(?:hi|hello|hey)\b/.test(q))return ['Ask me about ROI, probabilities, funded-account funnel, cash costs or risk. I can explain the model and check arithmetic.','Model explanation · High',false];
+ if(/(target|budget|math|check|roi formula|calculate)/.test(q)){
+  if(budget===null||budget<=0||goal===null)return ['Enter a positive starting budget and net-profit target to calculate the required return. '+context,'Live-input arithmetic · High',false];
+  const pct=goal/budget*100;return ['Net target / starting budget = '+money(goal)+' / '+money(budget)+' = '+pct.toFixed(1)+'% required gain on starting capital. This is NOT modeled ROI (which uses total expenses and receipts). '+s,'Live-input arithmetic · High',false];
+ }
+ if(/(win rate|winrate|probability|expectancy|\brr\b|risk reward)/.test(q)){
+  return ['A trade win rate is the probability assigned to each trade signal; it is not the probability of passing a phase. With R:R = r, trade expectancy in R is (winRate × r) − (1 − winRate), before fees and slippage. At '+(wr??'?')+'% WR and 3R, illustrative expectancy is '+(wr===null?'unknown':((wr/100)*3-(1-wr/100)).toFixed(2)+'R')+'. 3R is an EXAMPLE, not a readout of your saved stage strategy. Shared signals may make account results correlated. '+s,'Formula + live WR · High',false];
+ }
+ if(/(roi|profit|return|bad result|los|negative|improv)/.test(q)){
+  return ['ROI depends on expected payouts received minus all modeled costs, divided by modeled costs. A lower win rate, fees for failed evaluations, delayed funded payouts, daily loss limits and too-short trading horizon can reduce modeled return. '+context+' Check the Section 5 account-level cost and first-payout funnel before changing risk. This diagnosis is a hypothesis, not a finding about your latest run.','Model rules · Medium',false];
+ }
+ if(/(funded|funnel|phase|evaluation|pass|account)/.test(q)){
+  return ['Accounts move through purchased evaluation → Phase 1 → Phase 2 when applicable → funded → funded target → eligible first payout. Different firms have different paths. More trade signals do not automatically mean more accounts are bought: the selected capacity, budget, allocation and replacement rules constrain purchases. Inspect Section 7 Account Journey and Section 5 funnel to locate the bottleneck. '+s,'Model structure · High',false];
+ }
+ if(/(compare|difference|jj|topstep|ftmo|hola)/.test(q)){
+  return ['Compare firms using the same horizon and trade-win-rate assumption, then inspect stage count, loss policy, acquisition/activation fees, funded payout rules and eligibility delay separately. An FTMO two-step path and a Topstep evaluation-to-funded path do not have identical transition rules. Do not treat JJ illustrative course success figures as measured win rates.','Documented model differences · High',false];
+ }
+ if(/(missing|source|evidence|confidence|data|save)/.test(q)){
+  return ['This chat reads current visible form inputs and documented simulation mechanics. It cannot independently inspect your private cloud runs, infer the latest simulated outcome from a hidden dashboard, verify live prop-firm rules, or prove causal effects. Section 10 stores history and Section 11 publishes reviewed research. Saved answers and unanswered questions in this chat remain in this browser workspace.','Capability disclosure · High',false];
+ }
+ return ['I cannot verify an answer to that question from the available model rules and visible inputs. I saved it to the unanswered tracker. Use “Queue GPT Review” below for research or “Live GPT Review” to continue in ChatGPT without sending private data in a URL.','Unanswered · Low',true];
+}
+function render(){
+ const log=el('.studio-ai-log');log.replaceChildren();
+ if(!data.messages.length){const p=document.createElement('p');p.className='studio-ai-note';p.textContent='Ask a question or tap a suggestion. Answers state their evidence and confidence.';log.append(p)}
+ data.messages.forEach((m,i)=>{const d=document.createElement('div');d.className='studio-ai-msg '+(m.role==='user'?'user':'assistant');d.append(document.createTextNode(m.text));if(m.role==='assistant'){let meta=document.createElement('span');meta.className='studio-ai-meta';meta.textContent=m.meta;d.append(meta);let actions=document.createElement('div');actions.className='studio-ai-actions';const b=document.createElement('button');b.textContent='Save answer';b.dataset.save=i;actions.append(b);d.append(actions)}log.append(d)});log.scrollTop=log.scrollHeight;
+ const sug=el('.studio-ai-suggestions');sug.replaceChildren();suggestions.forEach(t=>{let b=document.createElement('button');b.textContent=t;b.dataset.question=t;sug.append(b)});
+ const saved=el('[data-saved]'),un=el('[data-unanswered]');saved.replaceChildren();un.replaceChildren();
+ let h=document.createElement('p');h.textContent='Saved answers: '+data.saved.length;saved.append(h);data.saved.slice(-15).reverse().forEach(x=>{const p=document.createElement('p');p.textContent=x;saved.append(p)});
+ h=document.createElement('p');h.textContent='Unanswered: '+data.unanswered.length;un.append(h);data.unanswered.slice(-15).reverse().forEach(x=>{const p=document.createElement('p');p.textContent=x;un.append(p)});
+}
+function ask(t){let question=String(t||'').trim().slice(0,900);if(!question)return;if(key!==storage())load();const [answer,meta,missing]=reply(question);data.messages.push({role:'user',text:question},{role:'assistant',text:answer,meta});if(missing&&!data.unanswered.includes(question))data.unanswered.push(question);data.messages=data.messages.slice(-100);persist();render();el('textarea').value=''}
+panel.addEventListener('click',e=>{let b=e.target.closest('button');if(!b)return;if(b.dataset.question)ask(b.dataset.question);else if(b.dataset.act==='ask')ask(el('textarea').value);else if(b.dataset.act==='clear'){data.messages=[];persist();render()}else if(b.dataset.save!==undefined){let i=Number(b.dataset.save),m=data.messages[i];if(m?.role==='assistant'){let q=data.messages[i-1]?.text||'Question';let v=q+' — '+m.text;if(!data.saved.includes(v))data.saved.push(v);data.saved=data.saved.slice(-50);persist();render()}}});
+el('textarea').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();ask(el('textarea').value)}});
+window.addEventListener('storage',e=>{if(e.key==='4ds:active-user:v1'||e.key===key)load()});window.addEventListener('focus',()=>{if(key!==storage())load()});
+load();
+})();
