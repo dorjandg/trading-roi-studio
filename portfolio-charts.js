@@ -165,11 +165,11 @@ function combinedResult(list,inputs){
  // never by sorted net ranks (which falsely correlates winning outcomes).
  const nets=Array.from({length:list[0]?.chartTrials?.length||0},(_,i)=>
   list.reduce((total,r)=>total+N(r.chartTrials?.[i]?.net),0)).sort((a,b)=>a-b);
- const avg={spent:0,receipts:0,net:0,funded:0,paid:0,failed:0,exhausted:0,bought:0,activations:0};
+ const avg={spent:0,receipts:0,net:0,funded:0,paid:0,failed:0,exhausted:0,strategyStopped:0,bought:0,activations:0};
  for(const r of list)for(const k of Object.keys(avg))avg[k]+=N(r.avg[k]);
  const quantile=q=>nets.length?nets[Math.min(nets.length-1,Math.floor((nets.length-1)*q))]:0;
  const chartTrials=Array.from({length:list[0]?.chartTrials?.length||0},(_,i)=>{
-  const totals={net:0,spent:0,receipts:0,paid:0,failed:0,exhausted:0,funded:0,wins:0,losses:0,trades:0};
+  const totals={net:0,spent:0,receipts:0,paid:0,failed:0,exhausted:0,strategyStopped:0,funded:0,wins:0,losses:0,trades:0};
   for(const r of list){
    const trial=r.chartTrials?.[i]||{};
    for(const key of Object.keys(totals))totals[key]+=N(trial[key]);
@@ -258,7 +258,7 @@ function render({results=[],inputs={},selection='',account='auto',group='overvie
    {label:'Funded',value:r.avg.funded},{label:'Paid',value:r.avg.paid}]:
   [{label:'Bought',value:r.avg.bought},{label:'Funded',value:r.avg.funded},{label:'Paid',value:r.avg.paid}];
  const riskOutcomes=[{label:'Paid',value:r.avg.paid},{label:'Failed',value:r.avg.failed},
-  {label:'Blocked',value:r.avg.exhausted}];
+  {label:'Blocked',value:r.avg.exhausted},{label:'Strategy stopped',value:r.avg.strategyStopped||0}];
  const streakChart=[{label:'W1',value:stats.runs.W1||0},{label:'W2',value:stats.runs.W2||0},
   {label:'W3+',value:(stats.runs.W3||0)+(stats.runs.W4||0)+(stats.runs.W5||0)},
   {label:'L1',value:stats.runs.L1||0},{label:'L2',value:stats.runs.L2||0},
@@ -290,7 +290,7 @@ function render({results=[],inputs={},selection='',account='auto',group='overvie
     {name:'Activation fees',values:spendingDays.map(d=>({x:d.day,y:d.activation}))}]),
    'Total challenge purchases: '+usd(r.cashCurve?.[r.cashCurve.length-1]?.challengeSpent||0))},
   {id:'new-vs-burned',groups:['cash'],html:chartCard('New vs burned accounts · daily',
-   'Average challenges bought per day and accounts failed or risk-exhausted that day.',
+   'Average challenges bought per day and accounts that failed, were risk-blocked or had their strategy stopped.',
    svgLine([{name:'New accounts',values:spendingDays.map(d=>({x:d.day,y:d.purchased}))},
     {name:'Burned',values:spendingDays.map(d=>({x:d.day,y:d.burned}))}],'Day','count'))},
   {id:'active-accounts',groups:['cash'],html:chartCard('Open accounts · by day',
