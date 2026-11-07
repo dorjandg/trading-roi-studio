@@ -81,6 +81,9 @@ function doPost(e){
    // Receipt tokens never go in public sheets or public URLs; verify via hash key.
    var receiptHash=jjHash_(token);
    var id='uq_'+fingerprint.slice(0,22);
+   // Persistent per-browser capability. Store only the hash; never the token.
+   // New browser submissions of the same question receive their own capability.
+   jjGrantAnswerAccess_(receiptHash,id);
    CacheService.getScriptCache().put('jjreceipt:'+receiptHash,id,21600);
    // Durable receipt with 48 h TTL via Script Properties, pruned opportunistically.
    props.setProperty('jjreceipt:'+receiptHash,id+'|'+(Date.now()+48*3600000));
@@ -98,9 +101,61 @@ function doPost(e){
   }finally{lock.releaseLock();}
  }catch(error){return jjError_('Question storage unavailable')}
 }
+/* Private, question-specific answer lookups.
+   The secret token is stored only in the visitor's browser; the private
+   Google Sheet contains only its SHA-256 hash. Never return a full question
+   list to the public website. Do not submit sensitive personal questions. */
+function jjGrantAnswerAccess_(hash,id){
+ var tab=jjSheet_().getParent().getSheetByName('Question Access');
+ if(!tab)throw new Error('Question Access tab is missing');
+ tab.appendRow([hash,id,new Date().toISOString()]);
+}
+function jjQuestionForReceipt_(receipt){
+ if(!/^[a-zA-Z0-9_-]{32,90}$/.test(String(receipt||'')))return null;
+ var hash=jjHash_(receipt);
+ var book=jjSheet_().getParent(),tab=book.getSheetByName('Question Access');
+ if(!tab)return null;
+ var found=tab.getRange('A:A').createTextFinder(hash).matchEntireCell(true).findNext();
+ return found?String(tab.getRange(found.getRow(),2).getValue()):null;
+}
+function jjPublicAnswerStatus_(p){
+ var id=jjQuestionForReceipt_(p.receipt);
+ if(!id)return {ok:false,error:'Question access unavailable. Reconnect this question from its original browser.'};
+ var tab=jjSheet_();
+ var match=tab.getRange('A:A').createTextFinder(id).matchEntireCell(true).findNext();
+ if(!match)return {ok:false,error:'Question no longer found'};
+ var row=tab.getRange(match.getRow(),1,1,14).getValues()[0];
+ var historyTab=tab.getParent().getSheetByName('Answer History');
+ var changes=[];
+ if(historyTab&&historyTab.getLastRow()>1){
+  var end=historyTab.getLastRow(),start=Math.max(2,end-1499);
+  var records=historyTab.getRange(start,1,end-start+1,7).getValues();
+  for(var i=records.length-1;i>=0&&changes.length<12;i--){
+   if(String(records[i][0])!==id)continue;
+   changes.push({
+    at:String(records[i][1]||''),status:String(records[i][2]||''),
+    answer:String(records[i][3]||'').slice(0,4000),
+    evidence:String(records[i][4]||'').slice(0,1000),
+    note:String(records[i][5]||'').slice(0,400)
+   });
+  }
+ }
+ // Only the answer to the requesting browser's question is returned.
+ // Draft answers are clearly marked, not represented as published rules.
+ return {ok:true,id:id,status:String(row[6]||'new'),
+   answer:String(row[10]||'').slice(0,4000),
+   evidence:String(row[11]||'').slice(0,1000),
+   updatedAt:String(row[12]||row[8]||row[1]||''),
+   publishedCommit:String(row[13]||'').slice(0,100),
+   history:changes};
+}
 function doGet(e){
  var p=(e&&e.parameter)||{};
- if(p.action!=='verify')return jjJsonp_(p.callback,{ok:false,error:'Only receipt verification is public'});
+ if(p.action==='status'){
+  try{return jjJsonp_(p.callback,jjPublicAnswerStatus_(p))}
+  catch(_){return jjJsonp_(p.callback,{ok:false,error:'Answer status temporarily unavailable'})}
+ }
+ if(p.action!=='verify')return jjJsonp_(p.callback,{ok:false,error:'Only receipt verification and per-question status are supported'});
  var token=String(p.receipt||'');
  if(!/^[a-zA-Z0-9_-]{32,90}$/.test(token))return jjJsonp_(p.callback,{ok:false,error:'Invalid receipt'});
  var hash=jjHash_(token),cache=CacheService.getScriptCache().get('jjreceipt:'+hash);
