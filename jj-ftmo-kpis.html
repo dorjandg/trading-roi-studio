@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101a2b">
+<title>JJ × FTMO KPIs · 4Ds Trading Studio</title>
+<meta name="description" content="Research benchmark and transparent cohort cash-flow KPI calculator comparing JJ's Topstep-style method with an illustrative FTMO 10K two-step model.">
+<style>
+:root{color-scheme:dark;--bg:#080f1a;--panel:#111c2d;--panel2:#17263a;--line:#2b4059;--text:#edf4fd;--muted:#a4b4c8;--accent:#51e1b2;--blue:#91b4ff;--warn:#efc68e}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 Inter,system-ui,-apple-system,"Segoe UI",sans-serif}a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}.shell{max-width:1190px;margin:auto;padding:16px 16px 70px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-bottom:13px;border-bottom:1px solid var(--line)}.brand{font-size:17px;font-weight:800}.nav{display:flex;gap:15px;flex-wrap:wrap;font-size:12px}.label{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px}h1{font-size:clamp(24px,4vw,33px);letter-spacing:-.7px;margin:17px 0 4px}h2{font-size:17px;margin:0 0 8px}h3{font-size:14px;margin:12px 0 8px}p{margin:7px 0 13px}.muted{color:var(--muted)}.panel{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:16px;margin:13px 0}.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}.kpi{background:var(--panel2);border:1px solid var(--line);padding:12px;border-radius:11px;min-width:0}.kpi strong{font-size:21px;display:block;margin-top:4px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.kpi small{color:var(--muted);font-size:11px}.good{color:var(--accent)}.warn{color:var(--warn)}.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}table{width:100%;border-collapse:collapse;min-width:680px}th,td{padding:9px 11px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;font-size:12px}th{color:var(--muted);background:var(--panel2);font-weight:750}td:first-child,th:first-child{text-align:left}tbody tr:last-child td{border-bottom:0}tbody tr:nth-child(even){background:rgba(255,255,255,.015)}.notes{font-size:11px;color:var(--muted);line-height:1.6}.formgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.field label{display:block;color:var(--muted);font-size:11px;margin-bottom:4px}.field input{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:7px 9px;min-height:36px;font:inherit;font-variant-numeric:tabular-nums}.field input:focus-visible,.nav a:focus-visible,button:focus-visible{outline:2px solid var(--blue)}.small{font-size:12px}.controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}button{border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:8px;padding:8px 12px;cursor:pointer;font:inherit;font-weight:650;font-size:12px}button:hover{border-color:var(--blue)}details{margin:11px 0;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:11px 13px}details summary{cursor:pointer;font-weight:700}details .content{padding-top:13px}.source{font-size:12px;color:var(--muted)}.tag{background:var(--panel2);color:var(--muted);padding:3px 7px;border-radius:7px;font-size:10px}.legend{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}.formula{font-size:12px;color:var(--muted);padding:8px 10px;border-left:2px solid var(--accent);margin:7px 0}.footer{color:var(--muted);font-size:11px;margin-top:18px}.status{color:var(--warn);font-size:12px}
+@media(max-width:800px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.formgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.panel{padding:12px}.shell{padding:12px 10px 50px}th,td{padding:8px 9px;font-size:11px}}
+</style>
+</head>
+<body><main class="shell">
+<header class="top"><div class="brand">4Ds Trading Studio <span class="muted">/ JJ × FTMO</span></div><nav class="nav" aria-label="Navigation"><a href="index.html?view=dashboard">Overview</a><a href="portfolio-simulator.html">Portfolio Sim</a><a href="comparison-lab.html">Compare Lab</a><a href="https://jj-simon-knowledge.pages.dev/" target="_blank" rel="noopener noreferrer">JJ Academy</a></nav></header>
+<h1>JJ × FTMO · Same KPIs</h1>
+<p class="muted">A transparent <strong>research comparison</strong>, not a prediction or a substitute for Run Simulation. Each side uses the same cash-flow definitions; changing inputs does not update saved Firms settings.</p>
+<div class="legend"><span class="tag">JJ: course examples & self-report</span><span class="tag">FTMO: illustrative assumptions</span><span class="tag">No historical win-rate claims</span></div>
+<section class="panel"><h2>1 · Strategy reference</h2>
+<div class="tablewrap"><table><thead><tr><th>Metric</th><th>JJ · Topstep 50K</th><th>FTMO · 10K two-step</th></tr></thead><tbody>
+<tr><td>Evaluation stages</td><td>1</td><td>2</td></tr>
+<tr><td>Evaluation targets</td><td>$3,000; consistency applies</td><td>$1,000 / $500</td></tr>
+<tr><td>Evaluation RR</td><td>1.5R course example</td><td>3R planned</td></tr>
+<tr><td>Evaluation trade risk</td><td>$1,000 example</td><td>Use saved Firms strategy</td></tr>
+<tr><td>Evaluation pass rate</td><td>40–45% self-reported; 25–33% examples</td><td>Calculate P1 × conditional P2</td></tr>
+<tr><td>Funded RR</td><td>4R course example</td><td>4R comparison preset</td></tr>
+<tr><td>Funded target</td><td>+$4,000 initial milestone</td><td>+$2,000 per payout cycle</td></tr>
+<tr><td>Funded payout handling</td><td>Qualifying days; staged withdrawals</td><td>80% split; wait; payout period reset</td></tr>
+<tr><td>Real trade win rates</td><td>Not independently measured</td><td>35% hypothetical assumption</td></tr>
+</tbody></table></div>
+<p class="notes">Firm rules, purchase fees and splits are time-dependent. JJ's course illustrations reflect specific program versions; the FTMO figures are the selected planning example, not live account settings.</p></section>
+<section class="panel"><h2>2 · Cash-flow comparison</h2>
+<div class="kpis" aria-live="polite"><div class="kpi"><small>JJ · cost / funded</small><strong id="jjCost">—</strong></div><div class="kpi"><small>FTMO · cost / funded</small><strong id="ftmoCost">—</strong></div><div class="kpi"><small>JJ · net ROI</small><strong id="jjROI">—</strong></div><div class="kpi"><small>FTMO · net ROI</small><strong id="ftmoROI">—</strong></div></div>
+<p class="notes">The numbers below are <strong>model outputs from editable illustrative assumptions</strong>, not measured JJ trade outcomes or verified FTMO success rates. A funded milestone and a completed eligible payout are different events.</p>
+<div class="tablewrap"><table><thead><tr><th title="Definitions match across the columns">Same KPI</th><th>JJ benchmark scenario</th><th>FTMO planning scenario</th></tr></thead><tbody id="comparisonRows"><tr><td>Loading…</td><td>—</td><td>—</td></tr></tbody></table></div>
+<p class="notes" id="cohortDescription"></p>
+</section>
+<details><summary>3 · Edit JJ benchmark assumptions <span class="tag">Show / hide</span></summary><div class="content">
+<div class="controls"><button type="button" id="jjPlanning">JJ planning example · 33.3%</button><button type="button" id="jjReported">JJ self-reported pass rate · 42.5%</button></div>
+<p class="notes">The reported 40–45% evaluation pass rate and the $300–$400 cost examples come from different lessons. The 90% post-milestone cash conversion below is an <strong>unsourced sensitivity assumption</strong>—not JJ's measured conversion rate.</p>
+<div class="formgrid">
+<div class="field"><label for="jjFee">Evaluation purchase · USD</label><input id="jjFee" type="number" min="0.01" step="1" value="100"></div>
+<div class="field"><label for="jjP1">Evaluation pass rate · %</label><input id="jjP1" type="number" min="0" max="100" step=".1" value="33.3"></div>
+<div class="field"><label for="jjFunded">Reach funded milestone · %</label><input id="jjFunded" type="number" min="0" max="100" step=".1" value="40"></div>
+<div class="field"><label for="jjRealize">Get eligible payout after milestone · %</label><input id="jjRealize" type="number" min="0" max="100" step="1" value="90"></div>
+<div class="field"><label for="jjPayout">Gross payout across completed cycle · USD</label><input id="jjPayout" type="number" min="0" step="100" value="3000"></div>
+<div class="field"><label for="jjSplit">Cash profit split · %</label><input id="jjSplit" type="number" min="0" max="100" step="1" value="90"></div>
+<div class="field"><label for="jjActivation">Activation & other cost per funded · USD</label><input id="jjActivation" type="number" min="0" step="1" value="0"></div>
+<div class="field"><label for="jjTradeWR">Evaluation trade WR · % (unknown)</label><input id="jjTradeWR" type="number" min="0" max="100" step=".1" placeholder="Not measured"></div>
+<div class="field"><label for="jjFundedWR">Funded trade WR · % (unknown)</label><input id="jjFundedWR" type="number" min="0" max="100" step=".1" placeholder="Not measured"></div>
+</div></div></details>
+<details><summary>4 · Edit FTMO 10K assumptions <span class="tag">Show / hide</span></summary><div class="content"><p class="notes">P1 70%, P2 70%, milestone 40% and post-milestone conversion 95% are <strong>example inputs only</strong>. Replace them with results from Full Simulation or trade records. This editor does not read or overwrite your saved FTMO stage presets.</p>
+<div class="formgrid">
+<div class="field"><label for="ftFee">Challenge purchase · USD</label><input id="ftFee" type="number" min="0.01" step="1" value="100"></div>
+<div class="field"><label for="ftP1">Phase 1 pass · %</label><input id="ftP1" type="number" min="0" max="100" step=".1" value="70"></div>
+<div class="field"><label for="ftP2">Phase 2 pass if reached · %</label><input id="ftP2" type="number" min="0" max="100" step=".1" value="70"></div>
+<div class="field"><label for="ftFunded">Funded target hit · %</label><input id="ftFunded" type="number" min="0" max="100" step=".1" value="40"></div>
+<div class="field"><label for="ftRealize">Get eligible payout after target · %</label><input id="ftRealize" type="number" min="0" max="100" step="1" value="95"></div>
+<div class="field"><label for="ftPayout">Funded gross payout-cycle target · USD</label><input id="ftPayout" type="number" min="0" step="100" value="2000"></div>
+<div class="field"><label for="ftSplit">Reward split · %</label><input id="ftSplit" type="number" min="0" max="100" step="1" value="80"></div>
+<div class="field"><label for="ftRefund">First successful payout fee refund · USD</label><input id="ftRefund" type="number" min="0" step="10" value="100"></div>
+<div class="field"><label for="ftActivation">Other cost per funded · USD</label><input id="ftActivation" type="number" min="0" step="1" value="0"></div>
+<div class="field"><label for="ftEvalWR">Evaluation trade WR · % (assumed)</label><input id="ftEvalWR" type="number" min="0" max="100" step=".1" value="35"></div>
+<div class="field"><label for="ftFundedWR">Funded trade WR · % (assumed)</label><input id="ftFundedWR" type="number" min="0" max="100" step=".1" value="35"></div>
+<div class="field"><label for="ftFundedRR">Funded RR (preset)</label><input id="ftFundedRR" type="number" min=".01" step=".5" value="4"></div>
+</div></div></details>
+<details><summary>5 · Portfolio size, timing & formulas <span class="tag">Show / hide</span></summary><div class="content">
+<div class="formgrid"><div class="field"><label for="count">Number of purchased evaluations</label><input id="count" type="number" min="1" max="100000" step="1" value="100"></div><div class="field"><label for="weeks">Calendar weeks for this cohort (optional)</label><input id="weeks" type="number" min=".1" step="1" placeholder="Unknown: weekly metric hidden"></div></div>
+<div class="formula"><strong>P(funded)</strong> = P(P1) × P(P2 conditional). <strong>P(receive payout)</strong> = P(funded) × P(funded target) × P(realize cash after milestone).</div>
+<div class="formula"><strong>Net cash</strong> = expected cash payouts + first-payout refunds − purchase fees − funded activation costs. <strong>ROI</strong> = net cash ÷ total costs. <strong>Gross multiple</strong> = total cash receipts ÷ total costs.</div>
+<div class="formula"><strong>Cost / funded</strong> = purchase fee ÷ funded conversion + extra cost on funded. <strong>Cost / first payout</strong> = total costs ÷ expected first-payout events. <strong>Trade EV (R)</strong> = win rate × RR − (1 − win rate).</div>
+<p class="notes">Calculated averages for a cohort of purchases, not promises that fractional accounts or payouts will occur. Refunds are counted only on first successful FTMO payouts. Subsequent payouts, recurring funded lifetime, unfinished attempts, renewal fees, slippage, taxes and discounting are not included. Weekly results appear only when you supply a calendar horizon; simply dividing by weeks does not simulate a trading schedule.</p>
+</div></details>
+<details><summary>6 · Source record & interpretation <span class="tag">Show / hide</span></summary><div class="content">
+<div class="tablewrap"><table><thead><tr><th>Metric / source</th><th>Type</th><th>Proper interpretation</th></tr></thead><tbody>
+<tr><td>1.5R eval / 4R funded, $1K/$4K</td><td>JJ course</td><td>50K Topstep examples, not universal firm rules</td></tr>
+<tr><td>40–45% eval passing</td><td>Self-reported</td><td>JJ 0 to 10K roadmap; not audited</td></tr>
+<tr><td>25%, 33%, 50% eval passing</td><td>Illustrative</td><td>Separate course scenarios; do not average</td></tr>
+<tr><td>$300–$400 cost / funded</td><td>Illustrative</td><td>Varies by pass rate and fee schedule</td></tr>
+<tr><td>25% first, 40% two-try target</td><td>Illustrative</td><td>JJ probability trees, not realized payouts</td></tr>
+<tr><td>$3K total gross payouts after +$4K</td><td>JJ planning</td><td>Future conditional cash, not banked immediately</td></tr>
+<tr><td>Alpha ~$56K net / Lucid $101.7K payouts</td><td>Self-reported</td><td>Firm-level claims; Lucid example was instant-funded</td></tr>
+<tr><td>FTMO phase probabilities and trade WR</td><td>Illustrative</td><td>Requires model or executed trade logs to estimate</td></tr>
+</tbody></table></div>
+<p class="source">Evidence: private user-supplied JJ mentorship transcript research, particularly “0 → 10K/m Roadmap”, “How To Trade Funded Accounts”, “Prop Firm Math Stats”, “Expected Value Variance” and “Managing Resets Billing Cycles”. No protected transcript text or private storage URLs are published here. All self-reported numbers are unverified.</p>
+</div></details>
+<p id="error" class="status" role="status" aria-live="polite"></p>
+<footer class="footer">4Ds Trading Studio · Read-only research calculator · This does not send orders, change firm parameters, access broker credentials, or certify real-world results.</footer>
+</main>
+<script>
+(function(){
+'use strict';
+function n(id){var el=document.getElementById(id);return el&&el.value.trim()!==''?Number(el.value):NaN;}
+function prob(id){var x=n(id);return Number.isFinite(x)&&x>=0&&x<=100?x/100:NaN;}
+function nonneg(id){var x=n(id);return Number.isFinite(x)&&x>=0?x:NaN;}
+function fmt(x,kind){if(!Number.isFinite(x))return '—';if(kind==='money')return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(x);if(kind==='pct')return (x*100).toFixed(1)+'%';if(kind==='multiple')return x.toFixed(2)+'×';if(kind==='R')return (x>=0?'+':'')+x.toFixed(2)+'R';return x.toFixed(1);}
+function model(kind){
+ var jj=kind==='jj',pre=jj?'jj':'ft';
+ var fee=nonneg(pre==='jj'?'jjFee':'ftFee'),activation=nonneg(pre==='jj'?'jjActivation':'ftActivation');
+ var p1=prob(pre==='jj'?'jjP1':'ftP1'),p2=jj?1:prob('ftP2'),funded=prob(jj?'jjFunded':'ftFunded'),realize=prob(jj?'jjRealize':'ftRealize');
+ var payout=nonneg(jj?'jjPayout':'ftPayout'),split=prob(jj?'jjSplit':'ftSplit'),refund=jj?0:nonneg('ftRefund'),count=n('count'),weeks=n('weeks');
+ var pf=p1*p2,paid=pf*funded*realize;
+ if(!Number.isFinite(count)||count<1||!Number.isFinite(pf)||!Number.isFinite(paid)||!Number.isFinite(fee)||fee<=0||!Number.isFinite(activation)||!Number.isFinite(payout)||!Number.isFinite(split)||!Number.isFinite(refund))return null;
+ var totalCost=count*(fee+pf*activation),fundedCount=count*pf,paidCount=count*paid,cashPerSuccess=payout*split,receipts=paidCount*(cashPerSuccess+refund),net=receipts-totalCost;
+ return {fee:fee,pass:pf,payout:paid,fundedCount:fundedCount,paidCount:paidCount,cost:totalCost,costFunded:pf>0?fee/pf+activation:NaN,costPaid:paid>0?totalCost/paidCount:NaN,cash:receipts,net:net,roi:totalCost>0?net/totalCost:NaN,multiple:totalCost>0?receipts/totalCost:NaN,payoutPerFunded:pf>0?receipts/fundedCount:NaN,netPerEval:net/count,netPerWeek:Number.isFinite(weeks)&&weeks>0?net/weeks:NaN};
+}
+function tradeEV(wid,rr){var win=prob(wid);return Number.isFinite(win)&&Number.isFinite(rr)&&rr>0?win*rr-(1-win):NaN;}
+function val(text,kind,format){return fmt(text,format||kind);}
+function row(label,a,b,kind){return '<tr><td>'+label+'</td><td>'+fmt(a,kind)+'</td><td>'+fmt(b,kind)+'</td></tr>';}
+function render(){
+ var jj=model('jj'),ft=model('ft');
+ var err=document.getElementById('error');
+ if(!jj||!ft){err.textContent='Check inputs: costs must be positive, probabilities between 0 and 100, and portfolio size at least 1. No result is shown for invalid inputs.';document.getElementById('comparisonRows').innerHTML='<tr><td>Invalid assumptions</td><td>—</td><td>—</td></tr>';return;}
+ err.textContent='';
+ document.getElementById('jjCost').textContent=fmt(jj.costFunded,'money');document.getElementById('ftmoCost').textContent=fmt(ft.costFunded,'money');
+ document.getElementById('jjROI').textContent=fmt(jj.roi,'pct');document.getElementById('ftmoROI').textContent=fmt(ft.roi,'pct');
+ var ftFundedRR=n('ftFundedRR');
+ var rows=[
+ row('Purchases in cohort',n('count'),n('count'),'count'),
+ row('Evaluation → funded',jj.pass,ft.pass,'pct'),
+ row('Cost per funded account',jj.costFunded,ft.costFunded,'money'),
+ row('Funded → milestone',prob('jjFunded'),prob('ftFunded'),'pct'),
+ row('Milestone → eligible cash',prob('jjRealize'),prob('ftRealize'),'pct'),
+ row('Purchase → first cash payout',jj.payout,ft.payout,'pct'),
+ row('Funded accounts · expected',jj.fundedCount,ft.fundedCount,'count'),
+ row('Accounts with first payout · expected',jj.paidCount,ft.paidCount,'count'),
+ row('Cost per first payout event',jj.costPaid,ft.costPaid,'money'),
+ row('Cash receipts / funded account',jj.payoutPerFunded,ft.payoutPerFunded,'money'),
+ row('All cash expenses',jj.cost,ft.cost,'money'),
+ row('Cash received incl. first fee refund',jj.cash,ft.cash,'money'),
+ row('Net cash profit',jj.net,ft.net,'money'),
+ row('Net EV per evaluation purchased',jj.netPerEval,ft.netPerEval,'money'),
+ row('Gross cash / expense multiple',jj.multiple,ft.multiple,'multiple'),
+ row('Net ROI on cash expenses',jj.roi,ft.roi,'pct'),
+ row('Net cash per calendar week (if entered)',jj.netPerWeek,ft.netPerWeek,'money'),
+ row('Evaluation break-even trade WR',1/2.5,1/4,'pct'),
+ row('Evaluation trade EV',tradeEV('jjTradeWR',1.5),tradeEV('ftEvalWR',3),'R'),
+ row('Funded break-even trade WR',1/5,1/(1+ftFundedRR),'pct'),
+ row('Funded trade EV',tradeEV('jjFundedWR',4),tradeEV('ftFundedWR',ftFundedRR),'R')
+ ];
+ document.getElementById('comparisonRows').innerHTML=rows.join('');
+ document.getElementById('cohortDescription').textContent='Illustrative cohort: '+fmt(n('count'),'count')+' evaluation purchases each. JJ scenario gives '+fmt(jj.paidCount,'count')+' expected payout events; FTMO '+fmt(ft.paidCount,'count')+'. These are first-cycle events only; no lifetime repeat-payout income is assumed.';
+}
+document.querySelectorAll('input').forEach(function(el){el.addEventListener('input',render);});
+document.getElementById('jjPlanning').addEventListener('click',function(){document.getElementById('jjP1').value='33.3';render();});
+document.getElementById('jjReported').addEventListener('click',function(){document.getElementById('jjP1').value='42.5';render();});
+render();
+})();
+</script>
+</body></html>
