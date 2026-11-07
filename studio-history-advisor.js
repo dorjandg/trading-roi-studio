@@ -10,7 +10,15 @@ const average=(items,key)=>items.length?items.reduce((s,x)=>s+(num(x[key])||0),0
 const fmtDate=s=>{let d=new Date(s);return Number.isFinite(d.getTime())?d.toLocaleString():'unknown'};
 function reports(){
  const api=root.StudioAdvisorReadOnly;
- const runs=api?.getRuns?.()||[];
+ let runs=api?.getRuns?.()||[];
+ if(!api?.getRuns){
+  try{
+   const selected=localStorage.getItem('4ds:active-user:v1');
+   const user=['doen','dori','dona','dion'].includes(selected)?selected:'dori';
+   const raw=JSON.parse(localStorage.getItem('4ds:v1:'+user+':portfolio-simulation-history:v1')||'[]');
+   runs=Array.isArray(raw)?raw.slice(0,15):[];
+  }catch(_){runs=[]}
+ }
  const saved=runs.filter(r=>r?.schema==='4ds-portfolio-simulation-v1'&&Array.isArray(r.firms));
  const optimizer=runs.filter(r=>r?.kind==='calculate-investment'||r?.schema==='4ds-payout-optimizer-v1');
  const records=saved.flatMap(r=>r.firms.filter(f=>f&&f.avg).map(f=>({
