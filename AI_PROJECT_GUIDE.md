@@ -1,3 +1,9 @@
+## Studio evidence chat — Section 11 (Nov 7, 2026)
+
+- Added `studio-evidence-chat.js` to `portfolio-simulator.html` Section 11, ahead of the existing GPT review request and published reports. It injects a compact, internally scrolling, mobile-responsive conversational box with suggested questions, bounded per-user browser-local history, answer saving, unanswered-question tracking, source/confidence labels and arithmetic explanations about budget/target return and illustrative trade expectancy.
+- This is an explicitly labeled **rule-based local evidence assistant**, **not** a hosted generative AI model, live GPT or private cloud data analysis. Only selected visible form assumptions and documented modeling concepts are used. Answers do not claim to read latest simulation results, saved cloud runs, or live firm rules. Existing GPT review queue and Live GPT Review buttons stay available separately.
+- Data is stored under `4ds:v1:{active-user}:studio-evidence-chat:v1`; no credentials, external requests, profile writes, changed risk policies or trading execution. JS syntax and GitHub source inclusion readback passed; live Cloudflare deployment and device/browser tests remain unverified.
+
 ## Compact Firms Phase 1 / Phase 2 / Funded risk planners (Nov 7, 2026)
 
 - Per user screenshot, added a **Firms-only** style block `#firms-stage-compact-v3` to index.html. It reduces vertical padding in all three phase headers, "Ways to reach this stage target," dynamically rendered risk planners, Smart Setup Optimizer, advanced search and route scanner summaries, risk-route results and recovery options. Stage title and metadata occupy the same line on larger screens.
