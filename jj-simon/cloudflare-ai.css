@@ -80,3 +80,21 @@
 #jj-helper-app>.jj-helper-form{position:relative;margin-top:9px;border:1px solid var(--stroke);border-radius:12px;padding:10px;background:var(--panel)}
 #jj-helper-app>.jj-helper-form textarea{min-height:52px}
 @media(max-width:600px){#jj-cloudflare-ai>.jj-ai-thread>.jj-ai-turn{max-width:100%}#jj-cloudflare-ai>.jj-ai-thread>.jj-ai-assistant{margin-right:0}#jj-cloudflare-ai>.jj-ai-thread>.jj-ai-user{margin-left:9%}}
+
+/* Constrain the chat transcript to its own scroll area, keeping the composer below. */
+#jj-cloudflare-ai>.jj-ai-thread{
+ height:clamp(280px,52vh,560px);
+ max-height:560px;
+ min-height:0;
+ overflow-y:auto;
+ overflow-x:hidden;
+ overscroll-behavior:contain;
+ scrollbar-width:thin;
+ scrollbar-color:var(--stroke) transparent;
+ padding:6px 8px 12px 2px;
+ scroll-behavior:smooth;
+}
+#jj-cloudflare-ai>.jj-ai-thread>.jj-ai-turn{flex-shrink:0}
+@media(max-width:600px){
+ #jj-cloudflare-ai>.jj-ai-thread{height:clamp(260px,48dvh,440px);max-height:440px;padding-right:5px}
+}
