@@ -2478,7 +2478,8 @@ function applySmartSetup(stage,kind){
  const model=entry.result?.models?.find(x=>x.kind===kind);
  if(!model)return;
  const riskText=RECOVERY_LEVELS.map(k=>k.toUpperCase()+' '+recoveryMoney(model.risks[k])).join(' / ');
- if(!confirm('Apply '+model.label+' to '+stageRecoverySetup(stage).name+' for the selected account?\n'+riskText+
+ const note=model.sweptR3?'\nLAST-CHANCE R3: An R3 loss can hit the overall loss floor and fail the account. The normal overall safety buffer is waived on that trade only; the daily buffer is not.':'';
+ if(!confirm('Apply '+model.label+' to '+stageRecoverySetup(stage).name+' for the selected account?\n'+riskText+note+
    '\n\nThis updates this stage\'s R1–R4 inputs, R1/R2 saved risk references and its Firms planner decision sequence. '+
    'It does NOT place trades or transfer the smart sequence to the separate Portfolio Simulator. You can Undo Apply.'))return;
  const snap=recoverySnapshot(stage),old=plannerLevels(snap,stageRecoverySetup(stage));
@@ -2502,11 +2503,27 @@ function undoSmartSetup(stage){
  const entry=smartSetupResults[stage];if(entry){entry.signature=JSON.stringify(smartSetupConfig(stage));delete entry.appliedKind}
  render();
 }
+document.addEventListener('change',event=>{
+ const el=event.target;
+ if(!el.matches?.('[data-smart-sweep],[data-smart-sweep-threshold]'))return;
+ const host=el.closest('[data-recovery-stage]');
+ if(!host)return;
+ const stage=host.dataset.recoveryStage,snap=recoverySnapshot(stage);
+ if(el.hasAttribute('data-smart-sweep'))snap.sweepRemainder=el.value==='sweep';
+ else {
+  const value=Number(el.value);
+  if(!Number.isFinite(value))return;
+  snap.sweepThreshold=Math.max(0,Math.min(1000,value));
+ }
+ snap.smartOpen=true;
+ persistRecoverySnapshot(stage);
+ renderRecoveryPlanners();
+});
 document.addEventListener('click',async event=>{
  const treeToggle=event.target.closest?.('[data-smart-tree-toggle]');
  if(treeToggle){
   const host=treeToggle.closest('[data-recovery-stage]'),kind=treeToggle.dataset.smartTreeToggle;
-  if(!host||!['fast','low','balanced','recovery','overall'].includes(kind))return;
+  if(!host||!['fast','low','balanced','recovery','overall','last'].includes(kind))return;
   const stage=host.dataset.recoveryStage,detail=host.querySelector('[data-smart-tree-detail="'+kind+'"]');
   if(!detail)return;
   const open=detail.hidden;
