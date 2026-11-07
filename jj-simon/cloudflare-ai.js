@@ -22,6 +22,7 @@
  try{const v=JSON.parse(localStorage.getItem(studyKey)||'{}');if(Array.isArray(v.bookmarks))study.bookmarks=v.bookmarks;if(Array.isArray(v.queue))study.queue=v.queue}catch(_){}
  const saveStudy=()=>{try{localStorage.setItem(studyKey,JSON.stringify(study))}catch(_){}};
  const prompts=['Which original lessons support this answer?','Compare JJ explanations across lessons and identify contradictions.','What information is still unverified?'];
+ function tradeArithmetic(q){const amounts=q.split('$').slice(1).map(x=>Number((x.match(/^[0-9,]+/)||[''])[0].replaceAll(',',''))).filter(x=>x>0);if(amounts.length!==2||!q.toLowerCase().includes('loss')||!q.toLowerCase().includes('win'))return '';const net=amounts[1]-amounts[0];return 'Independent scenario check, assuming loss then gross win: -$'+amounts[0]+' + $'+amounts[1]+' = '+(net<0?'-$':'$')+Math.abs(net)+' net before fees. Not a full audit.';}
  function renderAnswer(target,value,sourceList=[]){
   target.replaceChildren();
   let text=String(value||'').replace(/\r/g,'').replace(/\*\*([^*\n]+)\*\*/g,'\n$1\n');
@@ -210,7 +211,7 @@
     status.textContent='AI synthesis of indexed Academy research. Verify original lesson evidence; assumptions are not actual JJ performance.';
     const citedSources=hits.slice(0,5).map(hit=>({title:hit.title,url:hit.sourceUrl||'',chapter:hit.chapter||''}));
     const responseText=String(data.answer||'').slice(0,6500);
-    conversation.push({role:'assistant',content:responseText,sources:citedSources});
+    conversation.push({role:'assistant',content:responseText,sources:citedSources,mathNote:tradeArithmetic(question)});
     if(/not documented|insufficient evidence|cannot verify|not specified|unknown from/i.test(responseText))queueQuestion(question,'Evidence gap');
     save();drawThread();drawChats();
     answer.replaceChildren();sources.replaceChildren();
