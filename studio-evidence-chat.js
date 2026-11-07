@@ -65,6 +65,8 @@ function reportAnswer(q){
 const suggestions=['Explain my results','Why is ROI low?','What does win rate mean?','Explain Section 7 journey','How does account capacity work?','Explain trading-day horizon'];
 function reply(question){
  const q=question.toLowerCase(),wr=n('winRate'),budget=n('budget'),goal=n('netGoal'),days=n('days'),trials=n('trials');
+ const guideQuery=/^(how|what|where|which|define|meaning)/.test(q)||/explain (section|parameter|setting|input)|how .* work/.test(q);
+ if(guideQuery){const guide=window.StudioKnowledge?.answer(question);if(guide)return guide;}
  const report=reportAnswer(q);if(report)return report;
  const website=window.StudioKnowledge?.answer(question);if(website)return website;
  const s='Source: '+source()+'. Inputs are assumptions, not realized outcomes.';
