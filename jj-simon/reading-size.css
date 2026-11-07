@@ -15,7 +15,7 @@
 .jj-reader-reset{width:100%;font-size:11px;margin-top:7px}
 .jj-reader-popup small{display:block;color:var(--muted);font-size:10px;margin-top:8px;line-height:1.35}
 /* Zoom only reading surfaces, not the application's header, chapter selection, or controls. */
-#dashboard,#chapters,#jj-update-history{zoom:var(--jj-reading-scale)}
+#dashboard,#chapters,#jj-update-history,#jj-updated-answers{zoom:var(--jj-reading-scale)}
 @media(max-width:750px){
   .jj-reader-trigger{height:31px;min-width:32px}
   .jj-reader-popup{width:220px;max-width:calc(100vw - 20px)}
