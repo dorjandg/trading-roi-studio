@@ -30,53 +30,68 @@
   return p;
  }
  function evaluate(p,risks){
-  const hit=[],fail=[],blocked=[],stop=[],active=[];
-  const stack=[{pnl:p.pnl,dayStart:p.pnl,tradesDay:0,days:0,peak:p.pnl,dd:0,
-   wl:'',tiers:'',next:'r1',history:[]}];
-  while(stack.length){
-   const a=stack.pop();
-   if(a.pnl>=p.goal-.005){hit.push(a);continue}
-   if(a.wl.length>=p.depth){active.push(a);continue}
+  const leaves=[],todo=[{pnl:p.pnl,dayStart:p.pnl,tradesDay:0,days:0,peak:p.pnl,dd:0,
+   wl:'',tiers:'',next:'r1',prob:1}];
+  const counts={hit:0,stopped:0,blocked:0,failed:0,active:0};
+  let success=0,stopped=0,blocked=0,failed=0,active=0;
+  let tradeSum=0,daysSum=0,ddSum=0,hitTradesSum=0;
+  function finish(node,status,reason){
+   const entry={wl:node.wl,tiers:node.tiers,status,reason:reason||'',pnl:node.pnl,
+    trades:node.wl.length,days:node.days,dd:money(node.dd),prob:node.prob,
+    pendingDays:status==='hit'?Math.max(0,p.minDays-p.completedDays-node.days):0};
+   leaves.push(entry);counts[status]++;
+   tradeSum+=node.prob*entry.trades;daysSum+=node.prob*entry.days;ddSum+=node.prob*entry.dd;
+   if(status==='hit'){success+=node.prob;hitTradesSum+=node.prob*entry.trades}
+   else if(status==='stopped')stopped+=node.prob;
+   else if(status==='blocked')blocked+=node.prob;
+   else if(status==='failed')failed+=node.prob;
+   else active+=node.prob;
+  }
+  while(todo.length){
+   const a=todo.pop();
+   if(a.pnl>=p.goal-.005){finish(a,'hit');continue}
+   if(a.wl.length>=p.depth){finish(a,'active','Trade horizon reached');continue}
    const tier=a.next,risk=risks[tier]||0;
-   if(!(risk>=.01)){stop.push(a);continue}
+   if(tier==='stop'||risk<.01){finish(a,'stopped','Next risk tier disabled');continue}
    const room=Math.min(p.daily>0?p.daily+a.pnl-a.dayStart-p.buffer:Infinity,
     p.staticFloor&&p.overall>0?p.overall+a.pnl-p.buffer:Infinity);
-   if(risk>room+1e-7){blocked.push(a);continue}
+   if(risk>room+1e-7){finish(a,'blocked','Risk exceeds modeled daily/overall allowance after buffer');continue}
    for(const outcome of ['L','W']){
     const win=outcome==='W',newPnl=money(a.pnl+(win?risk*p.rr:-risk));
-    const newDays=a.days+(a.tradesDay===0?1:0);
-    const item={pnl:newPnl,dayStart:a.dayStart,tradesDay:a.tradesDay+1,days:newDays,
-      peak:Math.max(a.peak,newPnl),dd:Math.max(a.dd,a.peak-newPnl),
-      wl:a.wl+outcome,tiers:a.tiers+tier.slice(-1),history:[...a.history,{tier,outcome,risk,day:newDays,pnl:newPnl}],next:tier};
-    if(p.staticFloor&&p.overall>0&&p.overall+newPnl<=0||
-       p.daily>0&&p.daily+newPnl-a.dayStart<=0){fail.push(item);continue}
-    if(newPnl>=p.goal-.005){hit.push(item);continue}
-    if(win){
-     item.next=tier==='r1'?'r2':tier==='r2'?'r2':tier==='r3'?'r2':'r2';
-    }else{
-     item.next=tier==='r1'?'r2':tier==='r2'?'r3':tier==='r3'?'r4':'stop';
-    }
-    if(!win||item.tradesDay>=p.winCap){
-     item.dayStart=newPnl;item.tradesDay=0;
-    }
-    if(item.next==='stop'||!risks[item.next])stop.push(item);
-    else stack.push(item);
+    const dayCount=a.days+(a.tradesDay===0?1:0);
+    const next={pnl:newPnl,dayStart:a.dayStart,tradesDay:a.tradesDay+1,days:dayCount,
+     peak:Math.max(a.peak,newPnl),dd:Math.max(a.dd,a.peak-newPnl),wl:a.wl+outcome,
+     tiers:a.tiers+tier.slice(-1),prob:a.prob*(win?p.wr:1-p.wr),
+     next:win?'r2':tier==='r1'?'r2':tier==='r2'?'r3':tier==='r3'?'r4':'stop'};
+    if((p.staticFloor&&p.overall>0&&p.overall+newPnl<=0)||
+       (p.daily>0&&p.daily+newPnl-a.dayStart<=0)){finish(next,'failed','Modeled firm loss limit breached');continue}
+    if(newPnl>=p.goal-.005){finish(next,'hit');continue}
+    if(next.wl.length>=p.depth){finish(next,'active','Trade horizon reached');continue}
+    if(!win||next.tradesDay>=p.winCap){next.dayStart=newPnl;next.tradesDay=0}
+    if(next.next==='stop'||!(risks[next.next]>=.01))
+     finish(next,'stopped',tier==='r3'&&!win?'R3 loss — strategy stopped; not necessarily account breach':'Next risk tier disabled');
+    else todo.push(next);
    }
   }
-  const routeOrder=(a,b)=>a.wl.length-b.wl.length||a.days-b.days||a.dd-b.dd||a.history.reduce((s,h)=>s+h.risk,0)-b.history.reduce((s,h)=>s+h.risk,0);
-  hit.sort(routeOrder);
-  const afterLoss=hit.filter(x=>x.wl.includes('L'));
-  const afterDouble=hit.filter(x=>x.wl.includes('LL'));
-  const boosterHits=hit.filter(x=>x.wl.startsWith('LLW')&&x.tiers.startsWith('123')&&x.wl.length>=4);
-  const afterTriple=hit.filter(x=>x.wl.includes('LLL'));
-  const fastest=hit[0]||null;
-  const bestAfterLoss=afterLoss[0]||null;
-  const bestAfterDouble=afterDouble[0]||null;
-  const bestBooster=boosterHits[0]||null,bestAfterTriple=afterTriple[0]||null;
-  return {fastest,bestAfterLoss,bestAfterDouble,bestBooster,bestAfterTriple,
-   examples:[fastest,bestAfterLoss,bestAfterDouble].filter((v,i,a)=>v&&a.findIndex(x=>x?.wl===v.wl&&x?.tiers===v.tiers)===i).slice(0,3),
-   counts:{hit:hit.length,active:active.length,blocked:blocked.length,stopped:stop.length,failed:fail.length},
-   maxRisk:Math.max(...LEVELS.map(n=>risks[n]||0)),risks};
+  leaves.sort((a,b)=>a.trades-b.trades||b.prob-a.prob||a.wl.localeCompare(b.wl));
+  const find=wl=>leaves.find(x=>x.wl===wl)||null;
+  const first=find('W'),second=find('LW'),booster=find('LLWW'),thirdLoss=find('LLL');
+  const afterLoss=leaves.filter(x=>x.status==='hit'&&x.wl.includes('L'));
+  const afterDouble=leaves.filter(x=>x.status==='hit'&&x.wl.includes('LL'));
+  const fastest=leaves.find(x=>x.status==='hit')||null;
+  const bestAfterLoss=afterLoss[0]||null,bestAfterDouble=afterDouble[0]||null;
+  const complete=risks.r1>=.01&&risks.r2>=.01&&risks.r3>=.01&&booster?.status==='hit';
+  return {fastest,bestAfterLoss,bestAfterDouble,bestBooster:booster?.status==='hit'?booster:null,
+   bestAfterTriple:leaves.find(x=>x.status==='hit'&&x.wl.includes('LLL'))||null,
+   first,second,thirdLoss,leaves,complete,risks,
+   examples:[first,second,booster,thirdLoss,leaves.find(x=>x.status==='blocked'||x.status==='failed')]
+    .filter(Boolean).filter((v,i,a)=>a.findIndex(x=>x.wl===v.wl)===i),
+   counts,hitProbability:success,stopProbability:stopped,blockedProbability:blocked,
+   failedProbability:failed,activeProbability:active,expectedTrades:tradeSum,
+   expectedDays:daysSum,expectedDD:ddSum,expectedHitTrades:success?hitTradesSum/success:null,
+   maxRisk:Math.max(...LEVELS.map(x=>risks[x]||0)),
+   worstDD:Math.max(0,...leaves.map(x=>x.dd)),
+   fullTree:counts.active===0};
  }
  function candidates(p){
   const used=new Set(),all=[];
@@ -128,61 +143,83 @@
   }
   return all;
  }
- function rank(p,obj,rec){
-  const path=obj==='recovery'?(rec.bestBooster||rec.bestAfterDouble||rec.bestAfterLoss):rec.fastest;
-  if(!path)return Infinity;
-  const cap=Math.max(.01,p.cap),r=rec.maxRisk/cap,dd=path.dd/cap;
-  const losses=path.wl.split('L').length-1;
-  if(obj==='fast')return path.wl.length*1000+path.days*50+r*25+dd*10+
-    (rec.bestAfterLoss?.wl==='LW'?0:300);
-  if(obj==='low')return rec.maxRisk*100+path.wl.length*12+path.days;
-  if(obj==='balanced')return path.wl.length*110+r*200+dd*30+(rec.bestAfterLoss?0:45);
-  if(obj==='recovery')return (rec.bestBooster?0:300)+(rec.bestAfterDouble?0:350)+path.wl.length*65+r*120+dd*65-losses*2;
-  return path.wl.length*100+r*180+dd*35+(rec.bestAfterLoss?0:80)+(rec.bestAfterDouble?0:40)+
-   (rec.risks.r4>0&&!rec.bestAfterTriple?30:0)+
-   (rec.counts.blocked+rec.counts.failed)/(rec.counts.hit+rec.counts.active+rec.counts.stopped+1)*30;
+ function rank(p,obj,r){
+  if(!r.complete)return -Infinity;
+  const risk=r.maxRisk/Math.max(.01,p.cap);
+  const dd=r.worstDD/Math.max(.01,p.overall||p.daily||p.cap);
+  const stop=r.stopProbability,block=r.blockedProbability,fail=r.failedProbability;
+  if(obj==='fast')return (r.first?.status==='hit'?3:0)+(r.second?.status==='hit'?2:0)+
+   r.hitProbability*2-r.expectedHitTrades*.04-risk*.08-(block+fail)*2;
+  if(obj==='low')return 3-risk*.9-dd*.15+r.hitProbability*.1-block;
+  if(obj==='balanced')return r.hitProbability*3-stop*.6-fail*2-risk*.5-dd*.4-r.expectedTrades*.025;
+  if(obj==='recovery')return 2+r.hitProbability*2.5-stop*.7-risk*.4+
+   (r.bestAfterTriple?.status==='hit'?.08:0)-block*2;
+  return r.hitProbability*4-stop*.8-block*2-fail*2-risk*.3-dd*.2-r.expectedTrades*.02;
  }
  function search(input,onProgress){
   const p=configOf(input);
+  p.wr=Math.min(.99,Math.max(.01,num(input.winRate,40)/100));
   if(p.error)return Promise.resolve({error:p.error});
+  if(p.depth<4)return Promise.resolve({error:'Full R1 → R2 → R3 → R2 recovery needs a search depth of at least 4 trades.'});
   const grid=candidates(p);
-  if(!grid.length)return Promise.resolve({error:'No candidate risks fit the modeled initial loss headroom.'});
-  const results=[];let i=0;
+  if(input.levels?.r1>=.01&&input.levels?.r2>=.01&&input.levels?.r3>=.01){
+   const r={...input.levels};
+   if(!grid.some(v=>LEVELS.every(k=>Math.abs(v[k]-r[k])<.001)))grid.push(r);
+  }
+  if(!grid.length)return Promise.resolve({error:'No three-tier risks fit the account limits.'});
+  const results=[],current=input.levels?.r3>=.01?evaluate(p,input.levels):null;
+  let i=0;
   return new Promise(resolve=>{
    function batch(){
-    const limit=Math.min(grid.length,i+75);
+    const limit=Math.min(grid.length,i+65);
     for(;i<limit;i++){
      const evaluated=evaluate(p,grid[i]);
-     if(evaluated.fastest)results.push(evaluated);
+     if(evaluated.complete)results.push(evaluated);
     }
     if(onProgress)onProgress({done:i,total:grid.length,valid:results.length});
     if(i<grid.length){setTimeout(batch,0);return}
-    if(!results.length){resolve({error:'No tested setup reaches the profit target inside '+p.depth+' trades. Increase the search horizon or review the modeled limits.',tested:grid.length});return}
+    if(!results.length){
+     resolve({error:'No complete 3-risk recovery tree found within the loss limits and selected trade horizon.',tested:grid.length});
+     return;
+    }
     const used=new Set(),models=[];
     for(const [kind,label] of OBJECTIVES){
-     const pool=[...results].sort((a,b)=>rank(p,kind,a)-rank(p,kind,b)||
-      a.maxRisk-b.maxRisk||a.fastest.wl.length-b.fastest.wl.length);
-     const record=pool.find(r=>!used.has(LEVELS.map(k=>r.risks[k]).join('/'))&&
-      (kind!=='recovery'||r.bestBooster||r.bestAfterDouble||r.bestAfterLoss));
+     const sorted=[...results].sort((a,b)=>rank(p,kind,b)-rank(p,kind,a)||
+      a.maxRisk-b.maxRisk||b.hitProbability-a.hitProbability);
+     const record=sorted.find(r=>!used.has(LEVELS.map(k=>r.risks[k]).join('/'))) ||sorted[0];
      if(!record)continue;
-     const signature=LEVELS.map(k=>record.risks[k]).join('/');
-     used.add(signature);
-     const primary=kind==='recovery'?(record.bestBooster||record.bestAfterDouble||record.bestAfterLoss):record.fastest;
-     models.push({kind,label,risks:{...record.risks},route:{
-      wl:primary.wl,tiers:primary.tiers,trades:primary.wl.length,days:primary.days,
-      pnl:primary.pnl,dd:money(primary.dd),
-      pendingDays:Math.max(0,p.minDays-p.completedDays-primary.days)
-     },examples:record.examples.map(v=>({wl:v.wl,tiers:v.tiers,pnl:v.pnl,dd:money(v.dd),
-      trades:v.wl.length,days:v.days,pendingDays:Math.max(0,p.minDays-p.completedDays-v.days)})),
-     maxRisk:record.maxRisk,hitAfterLoss:!!record.bestAfterLoss,
-     hitAfterDouble:!!record.bestAfterDouble,hitAfterTriple:!!record.bestAfterTriple,
-     boosterRoute:!!record.bestBooster,counts:record.counts});
+     used.add(LEVELS.map(k=>record.risks[k]).join('/'));
+     const primary=record.first?.status==='hit'?record.first:
+      record.second?.status==='hit'?record.second:record.bestBooster;
+     const convert=v=>({wl:v.wl,tiers:v.tiers,trades:v.trades,days:v.days,pnl:v.pnl,
+      dd:v.dd,status:v.status,reason:v.reason,pendingDays:v.pendingDays,
+      probability:Math.round(v.prob*10000)/100});
+     models.push({kind,label,risks:{...record.risks},route:convert(primary),
+      examples:record.examples.map(convert),leaves:record.leaves.map(convert),
+      maxRisk:record.maxRisk,maxDD:record.worstDD,
+      hitProbability:Math.round(record.hitProbability*10000)/100,
+      stopProbability:Math.round(record.stopProbability*10000)/100,
+      blockedProbability:Math.round(record.blockedProbability*10000)/100,
+      failedProbability:Math.round(record.failedProbability*10000)/100,
+      activeProbability:Math.round(record.activeProbability*10000)/100,
+      expectedTrades:money(record.expectedTrades),expectedHitTrades:record.expectedHitTrades===null?null:money(record.expectedHitTrades),
+      expectedDD:money(record.expectedDD),firstHit:record.first?.status==='hit',
+      secondHit:record.second?.status==='hit',thirdLossOutcome:record.thirdLoss?.status||'continued',
+      fullTree:record.fullTree,treeBranches:record.leaves.length,boosterRoute:true,
+      hitAfterLoss:!!record.bestAfterLoss,hitAfterDouble:!!record.bestAfterDouble,
+      hitAfterTriple:!!record.bestAfterTriple,counts:record.counts});
     }
     resolve({models,tested:grid.length,viable:results.length,horizon:p.depth,
-      maxInitialRisk:money(p.cap),limitsVerified:p.staticFloor,searchType:'sampled candidate optimization'});
+      winRate:Math.round(p.wr*10000)/100,
+      currentPlan:current?{complete:current.complete,first:current.first?.status||'none',
+       second:current.second?.status||'none',booster:current.bestBooster?.status||'none',
+       thirdLoss:current.thirdLoss?.status||'continued',
+       blockedProbability:Math.round(current.blockedProbability*10000)/100}:null,
+      maxInitialRisk:money(p.cap),limitsVerified:p.staticFloor,
+      searchType:'full WIN/LOSS recovery decision trees over sampled R1–R4 candidates'});
    }
    setTimeout(batch,0);
   });
  }
- global.StudioSmartRiskOptimizer={search,version:'1.0'};
+ global.StudioSmartRiskOptimizer={search,evaluate,version:'2.0-full-tree'};
 })(window);
