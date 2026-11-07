@@ -94,7 +94,7 @@ function staleCheck(question){
  if(!result?.visible)return ['No active Full Simulation report is currently displayed in this page. Open Portfolio Simulator and run or restore a report to check freshness.','Data readiness · High',false];
  return [result.stale?'The displayed report is outdated because inputs changed. Rerun Full Simulation.':'The simulator has not flagged changes since this report was rendered. Last rendered '+(result.updatedAt||'time unavailable')+'. This does not independently verify saved external firm profiles or cloud freshness.','Live simulator freshness · High',false];
 }
-const suggestions=['Explain the ROI formula','Check formula audit','Explain this page','Are my results up to date?','Analyze saved simulations','Suggest parameter tests','Explain my results','Why is ROI low?','What does win rate mean?','Explain Section 7 journey','How does account capacity work?','Explain trading-day horizon'];
+const suggestions=['Explain this tab’s formula','AI health status','Explain the ROI formula','Check formula audit','Explain this page','Are my results up to date?','Analyze saved simulations','Suggest parameter tests','Explain my results','Why is ROI low?','What does win rate mean?','Explain Section 7 journey','How does account capacity work?','Explain trading-day horizon'];
 function reply(question){
  const q=question.toLowerCase(),wr=n('winRate'),budget=n('budget'),goal=n('netGoal'),days=n('days'),trials=n('trials');
  const freshness=staleCheck(question);if(freshness)return freshness;
@@ -111,11 +111,14 @@ function reply(question){
    const found=window.StudioReviewCues?.inspect?.()||[];
    return [found.length?'Strict formula inconsistencies detected: '+found.map(x=>x.metric+' ('+x.program+')').join(', ')+'. Review cue delivery status in Section 11.':'No strict arithmetic or stage-order inconsistencies detected in the displayed report. This does not validate every strategy assumption or external firm rule.','Strict formula audit · High for checked invariants',false];
  }
- if(/formula coverage|formula map|what formulas do you know/.test(q))return ['Verified map: '+(window.StudioFormulaAudit?.entries?.length||0)+' Portfolio Simulator formula categories, plus a source-file map for Trading Studio pages. Coverage is intentionally incomplete; equations for every Lab and every Firms strategy have NOT yet been audited.','Formula coverage · High',false];
+ if(/ai health|health status|system status|cloud health|knowledge status/.test(q)){const health=window.StudioAiHealth?.snapshot?.();return ['Open AI Health inside this chat for the detailed checks. The read-only Refresh button verifies cloud read access and matches published GPT reports to request IDs; successful cloud queuing alone does not mean GPT reviewed a request.','Live health monitor · Source status',false];}
+ if(/formula coverage|formula map|what formulas do you know/.test(q))return ['Formula map: '+(window.StudioFormulaAudit?.entries?.length||0)+' Portfolio Simulator categories and '+(window.StudioCrossPageFormulas?.entries?.length||0)+' source-grounded formulas for other Studio calculators. These are source explanations, not a proof of correctness for every branch or official prop-firm rule.','Formula coverage · High',false];
+ const crosspage=window.StudioCrossPageFormulas?.answer(question);if(crosspage)return crosspage;
  const formula=window.StudioFormulaAudit?.answer(question);if(formula)return formula;
  const cues=/(review queue|queued cue|gpt cue|gpt alert|formula audit|formula error|formula inconsistency)/.test(q);
  if(cues){const items=window.StudioReviewCues?.read?.()||[];return ['Review cues: '+items.length+' locally tracked. '+items.slice(-4).reverse().map(x=>x.label+' ('+x.status+')').join('; ')+'. Cloud-verified means queued for the scheduled GPT review, not reviewed.','Local review queue · High',false]}
  const historical=window.StudioHistoryAdvisor?.answer(question);if(historical)return historical;
+ const published=window.StudioResearchKnowledge?.answer(question);if(published)return published;
  const guideQuery=/^(how|what|where|which|define|meaning)/.test(q)||/explain (section|parameter|setting|input)|how .* work/.test(q);
  if(guideQuery){const guide=window.StudioKnowledge?.answer(question);if(guide)return guide;}
  const report=reportAnswer(q);if(report)return report;
