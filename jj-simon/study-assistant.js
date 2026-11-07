@@ -137,6 +137,135 @@ function jjHelperSearch(question){
 function jjHelperNode(tag,css,text){const el=document.createElement(tag);if(css)el.className=css;if(text!==undefined)el.textContent=text;return el}
 let jjHelperQuestion='';
 
+/* Local question history contains ordinary searches and unanswered searches.
+   Private to this browser, never sent to the cloud by this history feature. */
+const jjRecentKey='jj-study-recent-questions-v1';
+let jjRecentPage=1,jjRecentSize=5,jjRecentSearch='';
+function jjRecentRead(){
+ let raw=null;
+ try{raw=localStorage.getItem(jjRecentKey)}catch(_){return []}
+ if(raw!==null){
+  try{const parsed=JSON.parse(raw);return Array.isArray(parsed)?parsed.filter(x=>x&&typeof x.question==='string'):[]}
+  catch(_){return []}
+ }
+ // One-time local import of older unanswered questions without changing their review state.
+ const older=jjQueueRead().map(x=>({
+  key:jjQuestionId(x.question||''),question:String(x.question||'').slice(0,1000),
+  askedAt:x.lastSeen||x.createdAt||'',firstAskedAt:x.createdAt||'',times:x.occurrences||1,
+  matchCount:Number(x.matchCount)||0
+ })).filter(x=>x.key);
+ jjRecentWrite(older);
+ return older;
+}
+function jjRecentWrite(rows){
+ try{localStorage.setItem(jjRecentKey,JSON.stringify(rows.slice(-200)));return true}catch(_){return false}
+}
+function jjRecentRecord(question,matchCount){
+ const q=String(question||'').trim().slice(0,1000);
+ if(!q)return;
+ const key=jjQuestionId(q),now=new Date().toISOString(),rows=jjRecentRead();
+ const prev=rows.find(x=>x.key===key);
+ if(prev){prev.question=q;prev.askedAt=now;prev.times=(Number(prev.times)||1)+1;prev.matchCount=matchCount}
+ else rows.push({key,question:q,firstAskedAt:now,askedAt:now,times:1,matchCount});
+ jjRecentWrite(rows);
+ jjRecentPage=1;
+ jjRecentRender();
+}
+function jjRecentTime(iso){
+ const time=Date.parse(String(iso||''));
+ if(!Number.isFinite(time))return '—';
+ return new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Tirane',month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(time);
+}
+function jjRecentRender(){
+ const panel=document.getElementById('jj-recent-questions');
+ if(!panel)return;
+ const full=jjRecentRead().sort((a,b)=>(Date.parse(b.askedAt)||0)-(Date.parse(a.askedAt)||0));
+ const count=panel.querySelector('.jj-recent-count');
+ if(count)count.textContent=full.length+' saved';
+ const matching=full.filter(r=>String(r.question).toLowerCase().includes(jjRecentSearch.toLowerCase().trim()));
+ const pages=Math.max(1,Math.ceil(matching.length/jjRecentSize));
+ jjRecentPage=Math.max(1,Math.min(jjRecentPage,pages));
+ const offset=(jjRecentPage-1)*jjRecentSize;
+ const tbody=panel.querySelector('.jj-recent-body');if(!tbody)return;
+ tbody.replaceChildren();
+ matching.slice(offset,offset+jjRecentSize).forEach((row,i)=>{
+  const tr=jjHelperNode('tr');
+  tr.append(jjHelperNode('td','',String(offset+i+1)));
+  tr.append(jjHelperNode('td','jj-recent-meta',jjRecentTime(row.askedAt)));
+  const q=jjHelperNode('td','jj-recent-question',row.question);tr.append(q);
+  const matches=Number(row.matchCount)||0;
+  const queued=jjQueueRead().some(x=>x.key===row.key&&x.status!=='resolved');
+  tr.append(jjHelperNode('td','jj-recent-meta',queued?'Research queued':matches?matches+' sources':'No match'));
+  const action=jjHelperNode('td');
+  const btn=jjHelperNode('button','jj-recent-open','Open');btn.type='button';
+  btn.setAttribute('aria-label','Reopen question: '+row.question.slice(0,100));
+  btn.onclick=()=>{
+   jjHelperQuestion=row.question;
+   const input=document.querySelector('#jj-helper-app .jj-helper-form textarea');
+   if(input)input.value=row.question;
+   jjHelperAnswer(true);
+   document.getElementById('jj-helper-results')?.scrollIntoView({block:'start',behavior:'smooth'});
+  };
+  action.append(btn);tr.append(action);tbody.append(tr);
+ });
+ if(!matching.length){
+  const tr=jjHelperNode('tr'),cell=jjHelperNode('td','jj-recent-meta','No saved questions match.');
+  cell.colSpan=5;tr.append(cell);tbody.append(tr);
+ }
+ const nav=panel.querySelector('.jj-recent-pagination');nav.replaceChildren();
+ const pageButton=(text,next,disabled,current)=>{
+  const btn=jjHelperNode('button','',text);btn.type='button';btn.disabled=disabled;
+  if(current)btn.setAttribute('aria-current','page');
+  btn.onclick=()=>{jjRecentPage=next;jjRecentRender()};
+  nav.append(btn);
+ };
+ pageButton('‹',jjRecentPage-1,jjRecentPage===1,false);
+ const nums=[...new Set([1,pages,jjRecentPage-1,jjRecentPage,jjRecentPage+1])]
+  .filter(n=>n>0&&n<=pages).sort((a,b)=>a-b);
+ let prev=0;
+ for(const n of nums){
+  if(n>prev+1)nav.append(jjHelperNode('span','','…'));
+  pageButton(String(n),n,false,n===jjRecentPage);prev=n;
+ }
+ pageButton('›',jjRecentPage+1,jjRecentPage>=pages,false);
+ const info=panel.querySelector('.jj-recent-page-label');
+ info.textContent='Page '+jjRecentPage+' of '+pages+' · '+matching.length+' question'+(matching.length===1?'':'s');
+}
+function jjRecentBuild(){
+ const details=jjHelperNode('details','jj-recent-questions');details.id='jj-recent-questions';
+ const summary=jjHelperNode('summary');
+ summary.append(jjHelperNode('span','','Recent Questions'),jjHelperNode('span','jj-recent-count','0 saved'));
+ details.append(summary);
+ const main=jjHelperNode('div','jj-recent-content');
+ const controls=jjHelperNode('div','jj-recent-tools');
+ const search=jjHelperNode('input');
+ search.type='search';search.placeholder='Search previous questions';search.setAttribute('aria-label','Search previous questions');
+ search.oninput=()=>{jjRecentSearch=search.value;jjRecentPage=1;jjRecentRender()};
+ controls.append(search);
+ const size=jjHelperNode('select');
+ size.setAttribute('aria-label','Questions per page');
+ for(const n of [5,10,20]){
+  const opt=jjHelperNode('option','',n+' rows');opt.value=String(n);size.append(opt);
+ }
+ size.value=String(jjRecentSize);
+ size.onchange=()=>{jjRecentSize=Number(size.value)||5;jjRecentPage=1;jjRecentRender()};
+ controls.append(size);main.append(controls);
+ const scroll=jjHelperNode('div','jj-recent-scroll'),table=jjHelperNode('table','jj-recent-table');
+ table.setAttribute('aria-label','Recent Study Assistant questions');
+ const thead=jjHelperNode('thead'),tr=jjHelperNode('tr');
+ for(const label of ['#','Last asked','Question','Result','']){const th=jjHelperNode('th','',label);th.scope='col';tr.append(th)}
+ thead.append(tr);table.append(thead);
+ table.append(jjHelperNode('tbody','jj-recent-body'));scroll.append(table);main.append(scroll);
+ const footer=jjHelperNode('div','jj-recent-footer');
+ footer.append(jjHelperNode('span','jj-recent-page-label','Page 1 of 1'));
+ footer.append(jjHelperNode('div','jj-recent-pagination'));
+ main.append(footer);
+ main.append(jjHelperNode('p','jj-recent-note','Saved on this device only. Previous unanswered questions are included. Research updates appear under Updated Answers.'));
+ details.append(main);
+ return details;
+}
+
+
 /* Unanswered-question queue. Browser storage is the fallback when no shared backend exists. */
 const jjQuestionQueueKey='jj-unanswered-questions-v1';
 const jjQuestionShareKey='jj-question-sharing-consent-v1';
@@ -231,7 +360,7 @@ function jjQueueRender(){
   item.append(meta);
   const actions=jjHelperNode('div','jj-queue-actions');
   const retry=jjHelperNode('button','','Search again');retry.type='button';retry.onclick=()=>{
-   jjHelperQuestion=row.question;const input=root.querySelector('.jj-helper-form textarea');if(input)input.value=row.question;jjHelperAnswer();
+   jjHelperQuestion=row.question;const input=root.querySelector('.jj-helper-form textarea');if(input)input.value=row.question;jjHelperAnswer(true);
   };
   const resolved=jjHelperNode('button','','Mark resolved locally');resolved.type='button';resolved.onclick=()=>{
    const current=jjQueueRead();const target=current.find(x=>x.id===row.id);if(target){target.status='resolved';target.resolvedAt=new Date().toISOString();jjQueueWrite(current);jjQueueRender()}
@@ -285,10 +414,11 @@ function jjQueueFeedback(question,hits){
  }
 }
 
-function jjHelperAnswer(){
+function jjHelperAnswer(record=false){
  const root=document.getElementById('jj-helper-app');if(!root)return;
  const output=root.querySelector('#jj-helper-results');output.replaceChildren();
  const hits=jjHelperSearch(jjHelperQuestion);
+ if(record&&jjHelperQuestion.trim())jjRecentRecord(jjHelperQuestion,hits.length);
  if(!jjHelperQuestion.trim()){
   jjQueueFeedback('',[]);
   output.append(jjHelperNode('p','jj-helper-hint','Ask a question to find the most relevant course passages.'));
@@ -336,14 +466,15 @@ function jjHelperMount(){
  const action=jjHelperNode('div','jj-helper-form-actions');
  const ask=jjHelperNode('button','','Find course answers');ask.type='submit';action.append(ask);
  const clear=jjHelperNode('button','','Clear');clear.type='button';clear.onclick=()=>{input.value='';jjHelperQuestion='';jjHelperAnswer();input.focus()};action.append(clear);form.append(action);
- form.addEventListener('submit',e=>{e.preventDefault();jjHelperQuestion=input.value.trim();jjHelperAnswer()});
+ form.addEventListener('submit',e=>{e.preventDefault();jjHelperQuestion=input.value.trim();jjHelperAnswer(true)});
  root.append(form);
  const examples=jjHelperNode('div','jj-helper-examples');
  for(const query of ['What is fair price?','When does JJ trade after 11?','How does the 50-point funded setup work?','What is risk of ruin?','When should accounts be copied?']){
   const button=jjHelperNode('button','',query);button.type='button';
-  button.onclick=()=>{input.value=query;jjHelperQuestion=query;jjHelperAnswer()};examples.append(button);
+  button.onclick=()=>{input.value=query;jjHelperQuestion=query;jjHelperAnswer(true)};examples.append(button);
  }
  root.append(examples);
+ const recent=jjRecentBuild();root.append(recent);jjRecentRender();
  const results=jjHelperNode('div','jj-helper-results');results.id='jj-helper-results';results.setAttribute('aria-live','polite');root.append(results);
  const feedback=jjHelperNode('div','jj-helper-feedback');feedback.id='jj-helper-feedback';root.append(feedback);
  const queue=jjHelperNode('section','jj-question-queue');queue.id='jj-question-queue';root.append(queue);
