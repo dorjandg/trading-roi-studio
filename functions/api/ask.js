@@ -39,7 +39,10 @@ export async function onRequestPost({request,env}){
  }catch(error){
   const message=String(error?.message||'AI request failed');
   const limit=/quota|rate|neurons|exceed|limit|429/i.test(message);
-  return json({error:limit?'FREE_TIER_LIMIT':'AI_UNAVAILABLE',message:limit?'Free AI allowance or request limit reached. Use the existing local search.':'Cloudflare AI is temporarily unavailable. Use the existing local search.'},limit?429:503);
+  const code=Number(error?.status||error?.code||0);
+  const detail=message.replace(/[\\r\\n]+/g,' ').slice(0,220);
+  console.error('JJ_AI_INFERENCE_ERROR',JSON.stringify({model:MODEL,code,detail}));
+  return json({error:limit?'FREE_TIER_LIMIT':'AI_UNAVAILABLE',code:code||null,detail:/[<>]|token|secret|key|bearer|password/i.test(detail)?'See Cloudflare Functions logs for details.':detail,message:limit?'Free AI allowance or request limit reached. Use the existing local search.':'Cloudflare AI inference failed. The AI binding is connected, but the model request was rejected or unavailable.'},limit?429:503);
  }
 }
 export async function onRequestGet({env}){
