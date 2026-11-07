@@ -161,6 +161,35 @@ html[data-theme="light"] .recovery-direct{background:#f0faf6;border-color:#8bcdb
 .risk-route-filter select,.risk-route-filter button{background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:6px 8px}
 .risk-route-filter button:disabled{opacity:.35}
 @media(max-width:600px){.risk-route-action .caption{width:100%}.risk-route-filter .caption{flex:1;min-width:135px}}
+
+/* Compact stage risk planner — parameters, cards, metadata and mobile layout */
+.recovery-planner{margin-top:8px}
+.recovery-details{padding:8px 10px}
+.recovery-details summary{font-size:12px}
+.recovery-details h4{margin:8px 0 4px;font-size:12px}
+.recovery-fields{display:grid;grid-template-columns:minmax(68px,.8fr) minmax(140px,1.5fr) repeat(4,minmax(70px,1fr));gap:6px;margin:8px 0}
+.recovery-fields label{font-size:10px;line-height:1.2;min-width:0}
+.recovery-fields input,.recovery-fields select{width:100%;min-width:0;min-height:30px;margin-top:3px;padding:3px 6px;font-size:12px;border-radius:6px}
+.recovery-details .caption{font-size:10px;margin:6px 0}
+.recovery-details .compact-help{margin:4px 0 8px}
+.recovery-stats{margin:7px 0;gap:5px}
+.recovery-stats span{padding:4px 7px;font-size:10px}
+.recovery-stats b{display:inline;font-size:11px;margin-left:3px}
+.recovery-option{padding:6px 8px;margin:5px 0}
+.recovery-option summary{gap:5px}
+.recovery-option summary small{font-size:10px}
+.recovery-option .caption{margin:5px 0}
+.recovery-option-risk-grid{margin:7px 0 9px;gap:5px}
+.recovery-option-risk-grid select{min-height:30px}
+.recovery-guide{border-top:1px solid var(--border);padding:5px 0;margin:6px 0}
+.recovery-guide summary{color:var(--muted);font-size:10px;font-weight:650}
+.recovery-guide[open] summary{margin-bottom:6px}
+.recovery-options-toolbar{gap:6px;margin:7px 0 3px}
+.recovery-options-toolbar select{padding:5px 7px}
+.recovery-pages{padding:5px 0}
+.recovery-table th,.recovery-table td{padding:5px 7px}
+@media(max-width:760px){.recovery-fields{grid-template-columns:repeat(4,minmax(0,1fr))}.recovery-fields>label:nth-child(2){grid-column:span 3}}
+@media(max-width:430px){.recovery-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.recovery-fields>label:nth-child(2){grid-column:auto}.recovery-details{padding:6px 7px}.recovery-option{padding:5px 6px}}
 .scenario-advisor{margin-top:10px;padding:10px;border:1px solid var(--border,#526071);border-radius:9px;display:grid;gap:8px}.scenario-advisor-item{padding:7px 9px;border-left:3px solid #7790a5;background:rgba(127,127,127,.06);border-radius:4px}.scenario-advisor-critical{border-left-color:#cc6161}.scenario-advisor-warning{border-left-color:#d2a64b}.scenario-advisor-good{border-left-color:#4aaf83}.scenario-advisor-item p{margin:3px 0;font-size:12px;line-height:1.4}.scenario-advisor small{opacity:.75;font-size:11px}
 </style>
 <script>window.FOUR_DS_CLOUD_ENDPOINT = "https://script.google.com/macros/s/AKfycbyZW792ZLBPxusQwthCJr0bVdZwCjXyeNaklq4Dk-BuSQ8P9gdg2zdTiWFKEmYuy5sY9Q/exec";</script>
@@ -1826,13 +1855,14 @@ function stageRecoverySetup(stage){
  dailyCap:Math.max(1,positive(state[root+'DailyCap'])),funded:root==='funded'};
 }
 function recoveryMoney(n){return Number(n).toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:2})}
-const RECOVERY_LEVELS=['r1','r2','r3'];
+const RECOVERY_LEVELS=['r1','r2','r3','r4'];
 function plannerLevels(snapshot,setup){
  const levels=snapshot.levels||{};
  const r1=Object.prototype.hasOwnProperty.call(levels,'r1')?positive(levels.r1):setup.base;
  const r2=Object.prototype.hasOwnProperty.call(levels,'r2')?positive(levels.r2):(setup.recovery||setup.base);
  const r3=Object.prototype.hasOwnProperty.call(levels,'r3')?positive(levels.r3):(setup.recovery||setup.base);
- return {r1,r2,r3};
+ const r4=Object.prototype.hasOwnProperty.call(levels,'r4')?positive(levels.r4):0;
+ return {r1,r2,r3,r4};
 }
 // Default policy: use R1 first, R2 after one consecutive loss, R3 after two+;
 // reset to R1 following a win. Any option can override every step individually.
@@ -1844,14 +1874,19 @@ function plannerDefaultSequence(path){
   return level;
  });
 }
-function plannerOptionSequence(snapshot,path){
+function plannerOptionSequence(snapshot,path,levels){
  const mode=['saved','streak','flat','after-win','protect-after-loss'].includes(snapshot.policyMode)?snapshot.policyMode:'saved';
  const fallback=mode==='flat'?[...path].map(()=>'r1'):
   mode==='after-win'?[...path].map((_,i)=>i===0?'r1':path[i-1]==='W'?'r2':'r3'):
   mode==='protect-after-loss'?[...path].map((_,i)=>i>0&&path[i-1]==='L'?'r3':'r1'):
   plannerDefaultSequence(path);
  const saved=snapshot.optionSequences?.[path];
- return fallback.map((level,index)=>Array.isArray(saved)&&RECOVERY_LEVELS.includes(saved[index])?saved[index]:level);
+ const available=RECOVERY_LEVELS.filter(tier=>Number(levels?.[tier])>=0.01);
+ const first=available[0]||'r1';
+ return fallback.map((level,index)=>{
+  const choice=Array.isArray(saved)&&RECOVERY_LEVELS.includes(saved[index])?saved[index]:level;
+  return available.includes(choice)?choice:available.includes(level)?level:first;
+ });
 }
 function recoveryPlanPath(outcomes,params){
  const {setup,initialPnl,completedDays,overall,daily,buffer,staticFloor,consistencyPct}=params;
@@ -2035,7 +2070,7 @@ function renderRecoveryPlanners(){
   // Option 1 and all other options go through precisely the same calculation and card renderer.
   const entries=[],seen=new Set();
   for(const path of ['W',...paths]){
-   const riskSequence=plannerOptionSequence(snapshot,path);
+   const riskSequence=plannerOptionSequence(snapshot,path,levels);
    const sim=recoveryPlanPath([...path],{...params,riskSequence});
    const executed=sim.items.filter(x=>typeof x.win==='boolean');
    const effective=executed.map(x=>x.win?'W':'L').join('');
@@ -2086,7 +2121,7 @@ function renderRecoveryPlanners(){
    const planned=trades.map((trade,i)=>{
     const slot=entry.riskSequence[i];
     return '<label>Trade '+(i+1)+' · '+(trade.win?'WIN':'LOSS')+
-    '<select data-option-path="'+path+'" data-option-step="'+i+'">'+RECOVERY_LEVELS.map(v=>
+    '<select data-option-path="'+path+'" data-option-step="'+i+'">'+RECOVERY_LEVELS.filter(v=>levels[v]>=0.01).map(v=>
     '<option value="'+v+'"'+(slot===v?' selected':'')+'>'+v.toUpperCase()+' · '+recoveryMoney(levels[v])+'</option>').join('')+
     '</select></label>';
    }).join('');
@@ -2111,7 +2146,7 @@ function renderRecoveryPlanners(){
     (remainingMinDays?' · '+remainingMinDays+' more minimum day'+(remainingMinDays===1?'':'s')+' needed':'');
    const actualSequence=trades.map(x=>x.riskSlot.toUpperCase()).join(' → ');
    const outcomeLine=trades.map(x=>x.win?'W':'L').join(' → ');
-   return '<details class="recovery-option" data-outcome-path="'+path+'"'+((snapshot.openOptionPath?snapshot.openOptionPath===path:k===0)?' open':'')+'>'+
+   return '<details class="recovery-option" data-outcome-path="'+path+'"'+(snapshot.openOptionPath===path?' open':'')+'>'+
     '<summary><span class="recovery-option-title">Option '+index+' · '+(outcomeLine||path.split('').join(' → '))+
     '<small>'+actualSequence+' · '+setup.rr.toFixed(2)+'R RR · Max drawdown '+recoveryMoney(pathStats(entry).dd)+'</small></span>'+
     '<span class="recovery-option-timing">'+outcomeTiming+
@@ -2141,18 +2176,18 @@ function renderRecoveryPlanners(){
    '<h4>Risk &amp; reward · '+setup.name+'</h4><div class="recovery-fields">'+
    '<label>Reward / Risk (RR)<input data-option-rr type="number" min="0.1" max="100" step="0.1" value="'+setup.rr+'"></label>'+
    '<label>Risk sequence'+select('policyMode',[['saved','Saved option choices'],['streak','After-loss tiers'],['flat','Flat R1'],['after-win','Boost after WIN'],['protect-after-loss','Protect after LOSS']],snapshot.policyMode||'saved')+'</label>'+
-   RECOVERY_LEVELS.map((level,index)=>'<label>'+(index===0?'R1 · Initial':index===1?'R2 · Recovery':'R3 · Additional')+' ($)'+
+   RECOVERY_LEVELS.map((level,index)=>'<label title="0 disables this tier in risk route planning">'+(['R1 · Initial','R2 · Recovery','R3 · Additional','R4 · Optional'][index])+' ($)'+
     '<input type="number" min="0" step="0.01" data-risk-level="'+level+'" value="'+levels[level]+'"></label>').join('')+'</div>'+
-   '<p class="caption">Edit R1, R2 and R3 once, then assign them in each option.</p>'+
+   '<p class="caption compact-help">Set any R1–R4 tier to <b>0</b> to exclude it from route scans and per-trade choices. R4 starts disabled.</p>'+
    '<details class="option-planner-settings"'+(snapshot.settingsOpen?' open':'')+'><summary>Advanced: search settings, current progress and filters</summary><div class="recovery-fields">'+
    '<label>Current stage P/L ($)<input data-recovery-input="pnl" type="number" step="1" value="'+pnl+'"></label>'+
    '<label>Trading days completed<input data-recovery-input="days" type="number" min="0" step="1" value="'+days+'"></label>'+
    '<label>Max trades on a winning day'+select('winCap',[[1,'1 trade'],[2,'2 trades'],[3,'3 trades'],[4,'4 trades'],[5,'5 trades'],[6,'6 trades']],requestedWinCap)+'</label>'+
    '<label>Max trades per option'+select('depth',[[3,'3 trades'],[4,'4 trades'],[5,'5 trades'],[6,'6 trades'],[7,'7 trades'],[8,'8 trades']],depth)+'</label>'+
    '<label>Sort'+select('sortBy',[['fast','Fastest target'],['drawdown','Lowest modeled drawdown']],snapshot.sortBy||'fast')+'</label></div></details>'+
-   '<p class="caption">Risk sequence: '+({saved:'Saved choices / after-loss defaults',streak:'R1 → R2 after 1 loss → R3 after 2+',flat:'R1 every trade','after-win':'R2 after WIN, R3 after LOSS','protect-after-loss':'R3 after LOSS, otherwise R1'}[snapshot.policyMode||'saved']||'Saved choices')+'. You can override individual trade risks. The selected risk is used in full or the trade is blocked if modeled limits are insufficient.</p>'+
+   '<details class="recovery-guide"><summary>Method, limits &amp; risk sequence</summary><p class="caption">Risk sequence: '+({saved:'Saved choices / after-loss defaults',streak:'R1 → R2 after 1 loss → R3 after 2+',flat:'R1 every trade','after-win':'R2 after WIN, R3 after LOSS','protect-after-loss':'R3 after LOSS, otherwise R1'}[snapshot.policyMode||'saved']||'Saved choices')+'. You can override individual trade risks. The selected risk is used in full or the trade is blocked if modeled limits are insufficient.</p>'+
    '<p class="caption">'+setup.name+' · '+setup.rr.toFixed(2)+'R · Target '+recoveryMoney(setup.goal)+' · Starting P/L '+recoveryMoney(pnl)+
-    ' · Minimum trading days '+setup.minDays+' · Saved stage trade cap '+setup.dailyCap+' · Winning-day planner cap '+winCap+'.'+(winCap>setup.dailyCap?' Planner wins may exceed the saved stage trade cap; update that setting before live use.':'')+'</p>'+
+    ' · Minimum trading days '+setup.minDays+' · Saved stage trade cap '+setup.dailyCap+' · Winning-day planner cap '+winCap+'.'+(winCap>setup.dailyCap?' Planner wins may exceed the saved stage trade cap; update that setting before live use.':'')+'</p></details>'+
    routeScanUI(stage)+
    '<div class="recovery-stats"><span>Modeled paths <b>'+entries.length+'</b></span><span>Reach target <b>'+targetCount+'</b></span><span>Breach floor <b>'+failedCount+'</b></span><span>Page <b>'+page+' / '+totalPages+'</b></span></div>'+
    (noTargetFallback?'<p class="caption">No path reaches the target within '+depth+' trades at these risks and RR. Showing unfinished paths instead.</p>':'')+
@@ -2160,7 +2195,7 @@ function renderRecoveryPlanners(){
    '<div class="recovery-options-toolbar"><label>Options to show '+select('filter',options,filter)+'</label>'+
    '<label>Options per page '+select('pageSize',[[5,'5'],[8,'8'],[10,'10'],[20,'20'],[50,'50'],[100,'100'],['all','All']],snapshot.pageSize||8)+'</label></div>'+
    pageControls+optionHtml+pageControls+
-   '<p class="caption">'+caution+' Losses close their trading day; wins may continue up to the planner winning-day trade cap. Fees, slippage, open positions, trailing drawdown, consistency and withdrawal rules may change real outcomes. This is not an account-safety guarantee.</p>'+
+   '<details class="recovery-guide"><summary>Risk &amp; firm-limit assumptions</summary><p class="caption">'+caution+' Losses close their trading day; wins may continue up to the planner winning-day trade cap. Fees, slippage, open positions, trailing drawdown, consistency and withdrawal rules may change real outcomes. This is not an account-safety guarantee.</p></details>'+
    '</details>';
   const open=host.querySelector('.recovery-details');if(open)open.open=snapshot.open===true;
  }
@@ -2184,7 +2219,9 @@ document.addEventListener('change',event=>{
  }else if(el.hasAttribute('data-option-path')){
   const path=el.dataset.optionPath,step=Number(el.dataset.optionStep),value=el.value;
   if(!/^[WL]{1,8}$/.test(path)||!Number.isInteger(step)||step<0||step>=path.length||!RECOVERY_LEVELS.includes(value))return;
-  const seq=plannerOptionSequence(snapshot,path);seq[step]=value;snapshot.optionSequences[path]=seq;
+  const lvls=plannerLevels(snapshot,stageRecoverySetup(stage));
+  if(!(Number(lvls[value])>=0.01))return;
+  const seq=plannerOptionSequence(snapshot,path,lvls);seq[step]=value;snapshot.optionSequences[path]=seq;
  }else if(el.hasAttribute('data-recovery-input')){
   const field=el.dataset.recoveryInput;
   if(field==='filter'){snapshot.filter=el.value;snapshot.page=1;snapshot.openOptionPath='';}
@@ -2195,7 +2232,7 @@ document.addEventListener('change',event=>{
   else if(field==='sortBy'){snapshot.sortBy=el.value==='drawdown'?'drawdown':'fast';snapshot.page=1;snapshot.openOptionPath='';}
   else if(field==='pageSize'){snapshot.pageSize=el.value==='all'?'all':Math.max(1,Math.min(100,Math.floor(Number(el.value)||8)));snapshot.page=1;snapshot.openOptionPath='';}
   else if(field==='page'){snapshot.page=Math.max(1,Math.floor(Number(el.value)||1));snapshot.openOptionPath='';}
-  else if(field==='depth')snapshot.depth=Math.max(1,Math.min(8,Math.floor(Number(el.value)||6)));
+  else if(field==='depth'){snapshot.depth=Math.max(1,Math.min(8,Math.floor(Number(el.value)||6)));snapshot.page=1;}
   else if(field==='winCap')snapshot.winCap=Math.max(1,Math.min(6,Math.floor(Number(el.value)||2)));
   else if(field==='days')snapshot.days=Math.max(0,Math.floor(Number(el.value)||0));
   else if(field==='pnl')snapshot.pnl=Number(el.value)||0;
