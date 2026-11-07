@@ -81,9 +81,13 @@ function doPost(e){
    // Receipt tokens never go in public sheets or public URLs; verify via hash key.
    var receiptHash=jjHash_(token);
    var id='uq_'+fingerprint.slice(0,22);
-   // Persistent per-browser capability. Store only the hash; never the token.
-   // New browser submissions of the same question receive their own capability.
-   jjGrantAnswerAccess_(receiptHash,id);
+   // Grant answer readback only to the first submission, or a browser that
+   // proves it already has a valid access receipt. Submitting identical text
+   // from another browser must NOT reveal another student's private answer.
+   var previous=String(p.previousReceipt||'');
+   if(!found||(previous&&jjQuestionForReceipt_(previous)===id)){
+    jjGrantAnswerAccess_(receiptHash,id);
+   }
    CacheService.getScriptCache().put('jjreceipt:'+receiptHash,id,21600);
    // Durable receipt with 48 h TTL via Script Properties, pruned opportunistically.
    props.setProperty('jjreceipt:'+receiptHash,id+'|'+(Date.now()+48*3600000));
