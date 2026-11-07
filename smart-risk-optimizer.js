@@ -5,7 +5,8 @@
  const LEVELS=['r1','r2','r3','r4'];
  const OBJECTIVES=[
   ['fast','S1 · Fastest'],['low','S2 · Lowest Risk'],
-  ['balanced','S3 · Balanced'],['recovery','S4 · Recovery'],['overall','S5 · Best Overall']
+  ['balanced','S3 · Balanced'],['recovery','S4 · Recovery'],['overall','S5 · Best Overall'],
+  ['last','S6 · Last-Chance R3']
  ];
  const money=n=>Math.round((Number(n)||0)*100)/100;
  const ceil=n=>Math.ceil((Number(n)||0)*100-1e-7)/100;
@@ -102,9 +103,10 @@
    worstDD:Math.max(0,...leaves.map(x=>x.dd)),
    fullTree:counts.active===0};
  }
- function candidates(p){
+ function candidates(p,input){
   const used=new Set(),all=[];
-  const need=p.need,rr=p.rr,cap=p.cap;
+  const need=p.need,rr=p.rr,cap=p.cap,seed=input.levels||{};
+  p.seed=seed;
   function addR(list,v){
    const amount=ceil(v);
    if(amount>=.01&&amount<=cap+1e-8&&!list.includes(amount))list.push(amount);
@@ -113,12 +115,13 @@
   for(const fraction of [1,.9,.8,.75,.67,.6,.5,.4,.33,.25,.2,.15,.125])addR(r1List,need/rr*fraction);
   for(let n=2;n<=p.depth;n++)addR(r1List,need/(rr*n));
   for(const fraction of [1,.9,.75,.6])addR(r1List,cap*fraction);
+  if(seed.r1>=.01)addR(r1List,seed.r1);
   r1List.sort((a,b)=>b-a);
   for(const r1 of r1List){
    const r2List=[];
    for(const fraction of [1,.9,.8,.67,.5,.4,.33])addR(r2List,(need+r1)/rr*fraction);
    for(const fraction of [1,.8,.6])addR(r2List,cap*fraction);
-   for(const v of [r1,need/(rr*2),need/(rr*3),need/(rr*5)])addR(r2List,v);
+   for(const v of [r1,need/(rr*2),need/(rr*3),need/(rr*5),seed.r2])addR(r2List,v);
    r2List.sort((a,b)=>b-a);
    for(const r2 of r2List){
     const llRoom=Math.min(cap,p.staticFloor&&p.overall>0?p.overall+p.pnl-r1-r2-p.buffer:cap);
@@ -129,7 +132,7 @@
     if(llRoom>=.01){
      // After L(R1) L(R2), W(R3) W(R2) should finish whenever possible.
      const booster=(need+r1-(rr-1)*r2)/rr;
-     for(const v of [booster,booster*.8,booster*1.15,r1*.4,llRoom*.5,llRoom*.85]){
+     for(const v of [booster,booster*.8,booster*1.15,r1*.4,llRoom*.5,llRoom*.85,seed.r3]){
       const n=ceil(v);
       if(n>=.01&&n<=llRoom+1e-8&&!r3List.includes(n))r3List.push(n);
      }
@@ -168,6 +171,13 @@
   const risk=r.maxRisk/Math.max(.01,p.cap);
   const dd=r.worstDD/Math.max(.01,p.overall||p.daily||p.cap);
   const stop=r.stopProbability,block=r.blockedProbability,fail=r.failedProbability;
+  if(obj==='last'){
+   if(!p.sweepRemainder||!r.sweptR3)return -Infinity;
+   const seedDist=(p.seed?.r1>=.01&&p.seed?.r2>=.01)?
+    (Math.abs(r.risks.r1-p.seed.r1)+Math.abs(r.risks.r2-p.seed.r2))/Math.max(1,p.cap):0;
+   return (r.first?.status==='hit'?4:0)+(r.second?.status==='hit'?3:0)+
+    r.hitProbability*2-seedDist*7-r.blockedProbability*4-r.activeProbability*.5;
+  }
   if(obj==='fast')return (r.first?.status==='hit'?3:0)+(r.second?.status==='hit'?2:0)+
    r.hitProbability*2-r.expectedHitTrades*.04-risk*.08-(block+fail)*2;
   if(obj==='low')return 3-risk*.9-dd*.15+r.hitProbability*.1-block-r.activeProbability*.15;
@@ -183,7 +193,7 @@
   p.wr=Math.min(.99,Math.max(.01,num(input.winRate,40)/100));
   if(p.error)return Promise.resolve({error:p.error});
   if(p.depth<4)return Promise.resolve({error:'Full R1 → R2 → R3 → R2 recovery needs a search depth of at least 4 trades.'});
-  const grid=candidates(p);
+  const grid=candidates(p,input);
   if(input.levels?.r1>=.01&&input.levels?.r2>=.01&&input.levels?.r3>=.01){
    const r={...input.levels};
    if(!grid.some(v=>LEVELS.every(k=>Math.abs(v[k]-r[k])<.001)))grid.push(r);
@@ -213,9 +223,10 @@
     }
     const models=[];
     for(const [kind,label] of OBJECTIVES){
+     if(kind==='last'&&!p.sweepRemainder)continue;
      const sorted=[...results].sort((a,b)=>rank(p,kind,b)-rank(p,kind,a)||
       a.maxRisk-b.maxRisk||b.hitProbability-a.hitProbability);
-     const record=sorted[0];
+     const record=kind==='last'?sorted.find(r=>r.sweptR3):sorted[0];
      if(!record)continue;
      const primary=record.first?.status==='hit'?record.first:
       record.second?.status==='hit'?record.second:record.bestBooster;
