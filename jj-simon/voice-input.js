@@ -11,9 +11,9 @@
     if (!target || !mount || mount.querySelector('[data-jj-mic="' + kind + '"]')) return;
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'jj-voice-button' + (kind === 'search' ? ' jj-voice-search-button' : '');
+    button.className = 'jj-voice-button' + (kind === 'search' ? ' jj-voice-search-button' : ' jj-voice-question-button');
     button.dataset.jjMic = kind;
-    button.innerHTML = icon + (kind === 'question' ? '<span>Ask by voice</span>' : '');
+    button.innerHTML = icon + (kind === 'question' ? '<span>Speak</span>' : '');
     button.setAttribute('aria-label',kind === 'question' ? 'Speak a question' : 'Search Academy by voice');
     button.setAttribute('aria-pressed','false');
     button.title = 'Speak in English; tap again to finish';
@@ -22,9 +22,13 @@
     status.setAttribute('role','status');
     status.setAttribute('aria-live','polite');
     if (kind === 'question') {
-      const clear = mount.querySelector('button[type="button"]');
-      if (clear) mount.insertBefore(button,clear); else mount.appendChild(button);
-      mount.after(status);
+      // Keep the mic directly inside the question field, not hidden in the
+      // action row under the question. Recreated forms get their own button.
+      const wrapper = document.createElement('div');
+      wrapper.className = 'jj-voice-question-wrap';
+      target.before(wrapper);
+      wrapper.append(target,button);
+      wrapper.after(status);
     } else {
       mount.appendChild(button);
       mount.appendChild(status);
@@ -40,7 +44,7 @@
       button.setAttribute('aria-pressed',String(listening));
       button.setAttribute('aria-label',listening?'Stop listening':(kind==='question'?'Speak a question':'Search Academy by voice'));
       button.title=listening?'Tap to stop listening':'Speak in English; tap again to finish';
-      if(kind==='question')button.querySelector('span').textContent=listening?'Stop listening':'Ask by voice';
+      if(kind==='question')button.querySelector('span').textContent=listening?'Stop':'Speak';
     }
     function report(message,error=false){
       status.textContent=message;
@@ -62,7 +66,7 @@
       recognition.interimResults=true;
       recognition.maxAlternatives=1;
       const existing=target.value.trim();
-      let finalTranscript='',hasError=false;
+      let finalTranscript='',interimTranscript='',hasError=false;
       const join=(a,b)=>[a,b].filter(Boolean).join(' ').trim();
       const session={recognition,button,target,reset:()=>changeButton(false)};
       recognition.onstart=()=>{if(active===session){changeButton(true);report('Listening… speak now.')}};
@@ -75,7 +79,8 @@
           if(event.results[i].isFinal)finals.push(part);else interims.push(part);
         }
         finalTranscript=finals.join(' ').trim();
-        target.value=join(existing,join(finalTranscript,interims.join(' ')));
+        interimTranscript=interims.join(' ').trim();
+        target.value=join(existing,join(finalTranscript,interimTranscript));
         target.dispatchEvent(new Event('input',{bubbles:true}));
         report(interims.length?'Recognizing…':'Speech captured.');
       };
@@ -98,9 +103,13 @@
         active=null;
         changeButton(false);
         if(!target.isConnected)return;
-        target.value=join(existing,finalTranscript);
+        // Preserve recognized interim words if the browser stops without
+        // emitting a final segment. Never erase what the user dictated.
+        const speech=finalTranscript||(!hasError?interimTranscript:'');
+        if(speech)target.value=join(existing,speech);
+        else if(!hasError)target.value=existing;
         target.dispatchEvent(new Event('input',{bubbles:true}));
-        if(finalTranscript){
+        if(speech){
           if(kind==='question'){
             report('Question transcribed. Searching Academy…');
             const form=target.closest('form');
@@ -136,8 +145,7 @@
     const form=document.querySelector('#jj-helper-app .jj-helper-form');
     if(form){
       const textarea=form.querySelector('textarea');
-      const actions=form.querySelector('.jj-helper-form-actions');
-      if(textarea && actions)insertMic(textarea,actions,'question');
+      if(textarea)insertMic(textarea,form,'question');
     }
     if(active && !active.target.isConnected)cancelActive();
   }
