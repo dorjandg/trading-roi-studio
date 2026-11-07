@@ -1,0 +1,27 @@
+/* JJ Academy — source-attributed JJ reference figures; not performance claims. */
+.jj-stats-reference{display:grid;gap:13px;margin:12px 0 16px}
+.jj-stats-summary{border:1px solid var(--stroke);padding:11px 13px;border-radius:8px;background:var(--panel)}
+.jj-stats-summary strong{font-size:13px}
+.jj-stats-summary p{font-size:11px;color:var(--muted);line-height:1.5;margin:7px 0 0}
+.jj-stats-summary em{font-style:normal;color:var(--accent)}
+.jj-stats-group{border:1px solid var(--stroke);border-radius:8px;overflow:hidden;background:var(--panel)}
+.jj-stats-group>summary{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:9px;padding:11px 13px;list-style:none;font-size:12px;font-weight:700}
+.jj-stats-group>summary::-webkit-details-marker{display:none}
+.jj-stats-group>summary:after{content:"+";font-size:16px;color:var(--accent)}
+.jj-stats-group[open]>summary:after{content:"−"}
+.jj-stats-group[open]>summary{border-bottom:1px solid var(--stroke)}
+.jj-stats-group>summary:hover{background:var(--hover)}
+.jj-stats-group .jj-stats-panel{padding:10px}
+.jj-stats-scroll{max-width:100%;overflow-x:auto;border:1px solid var(--stroke);border-radius:7px}
+.jj-stats-table{border-collapse:collapse;width:100%;min-width:780px;font-size:11px}
+.jj-stats-table th{text-align:left;padding:9px;background:var(--bg);color:var(--muted);font-size:10px;white-space:nowrap}
+.jj-stats-table td{padding:10px 9px;border-top:1px solid var(--stroke);vertical-align:top;line-height:1.45;overflow-wrap:anywhere}
+.jj-stats-table tr:nth-child(even) td{background:var(--hover)}
+.jj-stats-table td strong{font-weight:700}
+.jj-stats-table a{color:var(--accent);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+.jj-stats-table .jj-stats-metric{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:650}
+.jj-stats-footnote{font-size:11px;line-height:1.55;color:var(--muted);padding:2px 3px;margin:7px 0}
+.jj-stats-legend{display:flex;gap:8px;flex-wrap:wrap;font-size:10px;color:var(--muted);margin-top:8px}
+.jj-stats-legend span{border:1px solid var(--stroke);border-radius:5px;padding:4px 7px}
+.jj-stats-checks{padding-left:18px;margin:7px 0;font-size:11px;line-height:1.7}
+@media(max-width:750px){.jj-stats-reference{gap:9px}.jj-stats-summary{padding:10px}.jj-stats-group>summary{padding:9px 10px;font-size:11px}.jj-stats-group .jj-stats-panel{padding:7px}.jj-stats-table{min-width:700px}.jj-stats-table td{padding:8px}}
