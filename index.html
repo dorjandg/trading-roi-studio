@@ -226,6 +226,33 @@ html[data-theme="light"] .recovery-direct{background:#f0faf6;border-color:#8bcdb
 .smart-route-examples>summary{font-size:10px;cursor:pointer}
 .smart-route-examples>div{font-size:9px;padding:2px 0;white-space:nowrap}
 @media(max-width:650px){.smart-setup{padding:6px 7px}.smart-table{min-width:830px}}
+
+/* Compact independent Firms folds; the account selector always stays visible. */
+#page-firms .firms-fold-toolbar{display:flex;align-items:center;gap:5px;justify-content:flex-end;margin:2px 0 7px}
+#page-firms .firms-fold-toolbar span{font-size:11px;color:var(--muted);margin-right:3px}
+#page-firms .firms-fold-toolbar .btn{font-size:11px;padding:4px 8px;border-radius:7px}
+#page-firms .firms-fold{margin-top:6px!important;margin-bottom:6px!important;min-width:0}
+#page-firms .firms-fold>.firms-fold-head{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;min-width:0;padding:8px 11px!important}
+#page-firms .firms-fold>.firms-fold-head>.firms-fold-main{flex:1;min-width:0}
+#page-firms .firms-fold>.firms-fold-head h2{font-size:14px;line-height:1.25;margin:0}
+#page-firms .firms-fold>.firms-fold-head h3{font-size:13px;line-height:1.25;margin:0}
+#page-firms .firms-fold.is-collapsed>.firms-fold-head p:not(.firms-fold-summary){display:none}
+#page-firms .firms-fold.is-collapsed>.firms-fold-head .section-tag{display:none}
+#page-firms .firms-fold.is-collapsed>:not(.firms-fold-head){display:none!important}
+#page-firms .firms-fold-summary{font-size:10px;color:var(--muted);line-height:1.3;margin:3px 0 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums}
+#page-firms .firms-fold-toggle{flex:none;border:1px solid var(--border);border-radius:7px;background:var(--panel);color:var(--text);padding:4px 9px;font-size:11px;min-width:53px;min-height:27px}
+#page-firms .firms-fold-toggle:hover{border-color:var(--blue)}
+#page-firms .firms-fold.is-collapsed{padding-bottom:0!important}
+#page-firms #firmHealthPanel.is-collapsed,#page-firms #symbolPanel.is-collapsed{padding:0!important}
+#page-firms .risk-phase-group.is-collapsed>.firms-fold-head{background:var(--panel2)}
+@media(max-width:600px){
+ #page-firms .firms-fold>.firms-fold-head{padding:7px 9px!important;gap:5px}
+ #page-firms .firms-fold>.firms-fold-head h2{font-size:12px}
+ #page-firms .firms-fold>.firms-fold-head h3{font-size:12px}
+ #page-firms .firms-fold-summary{font-size:9px;max-width:100%}
+ #page-firms .firms-fold-toggle{padding:3px 7px;min-width:48px;min-height:25px;font-size:10px}
+ #page-firms .firms-fold-toolbar{margin:0 0 5px}
+}
 .scenario-advisor{margin-top:10px;padding:10px;border:1px solid var(--border,#526071);border-radius:9px;display:grid;gap:8px}.scenario-advisor-item{padding:7px 9px;border-left:3px solid #7790a5;background:rgba(127,127,127,.06);border-radius:4px}.scenario-advisor-critical{border-left-color:#cc6161}.scenario-advisor-warning{border-left-color:#d2a64b}.scenario-advisor-good{border-left-color:#4aaf83}.scenario-advisor-item p{margin:3px 0;font-size:12px;line-height:1.4}.scenario-advisor small{opacity:.75;font-size:11px}
 </style>
 <script>window.FOUR_DS_CLOUD_ENDPOINT = "https://script.google.com/macros/s/AKfycbyZW792ZLBPxusQwthCJr0bVdZwCjXyeNaklq4Dk-BuSQ8P9gdg2zdTiWFKEmYuy5sY9Q/exec";</script>
@@ -534,6 +561,11 @@ html[data-theme="light"] .recovery-details .caption{color:#53677c}
 </section>
 <section id="page-firms" class="page"><div class="panel" style="padding:0;overflow:hidden"><iframe id="firmsFrame" title="Prop firm account selector and rules" src="about:blank" data-src="rules.html?embedded=1&v=fit-symbols-20261104" loading="eager" style="display:block;width:100%;height:1px;min-height:0;border:0;background:#080d16;overflow:hidden"></iframe></div><div class="notice" id="firmStrategyStatus" style="margin:16px 0">Select a firm, program and account size above to load this account's saved trading parameters.</div>
 <div id="firmTradingWorkspace">
+<div class="firms-fold-toolbar" role="group" aria-label="Firms section visibility">
+ <span>Sections</span>
+ <button type="button" class="btn small quiet" id="firmsShowAll">Show all</button>
+ <button type="button" class="btn small quiet" id="firmsHideAll">Hide all</button>
+</div>
 <section class="panel" id="firmHealthPanel" style="margin-bottom:16px">
  <div class="panel-header"><div><h2>Parameter Health Check</h2><p class="caption">Checks the selected firm's published drawdown classification and consistency against your separate stage settings. Advisory only.</p></div><span class="section-tag">LIVE PARAMETER REVIEW</span></div>
  <div id="firmHealthSummary" class="notice">Loading account rules…</div>
@@ -2769,5 +2801,6 @@ $('compareB').addEventListener('change',e=>{compareB=e.target.value;renderPreset
 </script>
 <script>window.FOUR_DS_CURRENT_USER=(function(){const u=localStorage.getItem("4ds:active-user:v1");return ["doen","dori","dona","dion"].includes(u)?u:"dori"})();</script>
 <script>window.FOUR_DS_BOOTSTRAP.then(()=>{const el=document.createElement('script');el.src='cloud-sync.js?v=4ds-auto-first-20261104-a';document.body.appendChild(el);});</script>
+<script src="firms-folds.js?v=20261107-firms-compact-v1"></script>
 </body>
 </html>
