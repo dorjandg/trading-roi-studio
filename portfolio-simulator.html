@@ -1465,6 +1465,7 @@ function renderResults(list,inputs,source='run'){
  reportMode=source==='investment'?'investment':'run';
  if(source==='run')regularReport={list,inputs};
  lastResults=list;lastInputs=inputs;reportStale=false;reportUpdatedAt=new Date().toISOString();
+ setTimeout(()=>window.dispatchEvent(new Event('studio:report-rendered')),0);
  const sourceBar=$('reportSourceBar');
  if(sourceBar){
   $('reportSourceLabel').textContent=reportMode==='investment'?investmentReport?.label||'Selected investment scenario':'Run Simulation';
