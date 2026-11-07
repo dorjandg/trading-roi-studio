@@ -1320,6 +1320,45 @@ $('chartsContents').addEventListener('click',event=>{
  renderCharts();saveView();
 });
 let regularReport=null,investmentReport=null,reportMode='run';
+function renderWeeklyEconomics(list,inputs){
+ const holder=$('weeklyEconomicsContents');
+ if(!holder||!weekly)return;
+ const fmt=x=>x==null||!Number.isFinite(x)?'—':usd(x);
+ const percentage=x=>x==null||!Number.isFinite(x)?'—':pct(x);
+ const summaries=list.map(r=>({r,w:weekly.summarize(r)})).filter(x=>x.w);
+ const headers='<tr><th>Week · days</th><th>Signals</th><th>Traded</th><th>Bought</th><th>P1 passed</th><th>P2 passed</th><th>Funded</th><th>Paid</th><th>Fees spent</th><th>Cash receipts</th><th>Net this week</th><th>Cumulative net</th></tr>';
+ const row=w=>'<tr><td>'+w.week+' · '+w.fromDay+'–'+w.toDay+'</td><td>'+dec(w.opportunities)+'</td><td>'+dec(w.trades)+'</td><td>'+dec(w.bought)+'</td><td>'+dec(w.challengePasses)+'</td><td>'+dec(w.verificationPasses)+'</td><td>'+dec(w.funded)+'</td><td>'+dec(w.paid)+'</td><td>'+usd(w.spent)+'</td><td>'+usd(w.receipts)+'</td><td class="'+(w.net>=0?'good':'bad')+'">'+usd(w.net)+'</td><td>'+usd(w.cumulativeNet)+'</td></tr>';
+ const table=items=>'<div class="tablewrap"><table><thead>'+headers+'</thead><tbody>'+items.map(row).join('')+'</tbody></table></div>';
+ const firmCard=({r,w})=>'<details class="weekly-economics-firm"><summary><strong>'+esc(r.plan.firm+' · '+r.plan.programName+' · '+usd(r.plan.size))+'</strong> · Net/week '+usd(w.netPerWeek)+' · Payout chance '+percentage(w.chanceAnyPayout)+'</summary>'+
+  '<div class="result-grid">'+
+  '<div title="Mean net first-payout cash less incurred fees, divided by selected trading-week horizon; not a steady-state income estimate"><small>Net per week · horizon avg.</small><strong>'+usd(w.netPerWeek)+'</strong></div>'+
+  '<div title="All incurred fees, including still-unfinished accounts, divided by payouts completed by the horizon"><small>Fees / first payout</small><strong>'+fmt(w.costPerPaid)+'</strong></div>'+
+  '<div title="First payouts completed / purchased challenges across the selected finite horizon, not lifetime success probability"><small>First payouts / challenges</small><strong>'+percentage(w.conversion)+'</strong></div>'+
+  '<div title="Mean first paid trading day among simulation trials where a payout occurred"><small>First payout day · conditional</small><strong>'+(w.firstPayoutDay==null?'—':dec(w.firstPayoutDay))+'</strong></div>'+
+  '<div><small>Net cash / challenge purchased</small><strong>'+fmt(w.netPerPurchased)+'</strong></div>'+
+  '<div><small>Phase 1 passes / purchased</small><strong>'+percentage(w.phase1Conversion)+'</strong></div>'+
+  '</div>'+table(w.weeks)+'</details>';
+ let combined='';
+ if(inputs.budgetMode==='split'&&summaries.length){
+  const days=Math.max(1,Number(inputs.days)||20),count=Math.ceil(days/5);
+  const keys=['opportunities','trades','bought','challengePasses','verificationPasses','funded','paid','spent','receipts','net','cumulativeNet'];
+  const weeks=Array.from({length:count},(_,i)=>{
+   const base={week:i+1,fromDay:i*5+1,toDay:Math.min(days,(i+1)*5)};
+   for(const key of keys)base[key]=summaries.reduce((sum,x)=>sum+(Number(x.w.weeks[i]?.[key])||0),0);
+   return base;
+  });
+  const net=list.reduce((v,r)=>v+r.avg.net,0),spent=list.reduce((v,r)=>v+r.avg.spent,0);
+  const bought=list.reduce((v,r)=>v+r.avg.bought,0),paid=list.reduce((v,r)=>v+r.avg.paid,0);
+  combined='<div class="result-card"><h3>Combined shared-budget portfolio · '+usd(net/(days/5))+' net/week (horizon avg.)</h3>'+
+   '<p class="hint">First payouts / challenges: '+(bought?pct(paid/bought):'—')+
+   ' · Fees / completed payout: '+(paid?usd(spent/paid):'—')+
+   '. Per-firm details below are components of this ONE split portfolio.</p>'+table(weeks)+'</div>';
+ }
+ $('weeklyEconomicsHint').textContent=(inputs.signalPace==='weekly20'?'20 signals/week · 3,4,5,4,4':'Fixed '+inputs.tradesPerDay+'/day')+
+  ' · '+summaries.length+' account type(s)';
+ holder.innerHTML='<p class="hint">Week = 5 trading days. Cash net = first-payout receipts minus challenge/activation fees, never the profit target of an unfinished evaluation phase. Values are Monte Carlo averages. Fees / payout include spending on accounts not yet paid, and conversion is first payouts divided by challenges purchased WITHIN the selected horizon. The average first payout day excludes trials without a payout. Net/week is an average over this horizon including upfront costs and waiting, NOT an ongoing weekly income forecast. Independent comparison alternatives must not be summed.</p>'+
+  combined+summaries.map(firmCard).join('');
+}
 function renderResults(list,inputs,source='run'){
  reportMode=source==='investment'?'investment':'run';
  if(source==='run')regularReport={list,inputs};
@@ -1388,6 +1427,7 @@ function renderResults(list,inputs,source='run'){
    '<div><small>Chance of positive net</small><strong>'+pct(combinedStats.chancePositive)+'</strong></div></div></div>';
  }
  $('details').innerHTML=list.map((result,index)=>makeResultCard(result,index,reportMode==='investment')).join('');
+ renderWeeklyEconomics(list,inputs);
  $('status').style.color='var(--green)';
  $('status').textContent=reportMode==='investment'?'Viewing selected investment scenario · '+inputs.trials+' validated trials':'Completed · '+inputs.trials+' trials · '+list.length+' account types';
  if(source!=='run')return;
