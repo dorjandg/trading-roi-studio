@@ -24,6 +24,10 @@ function sourceSnapshot(){
 function displayMode(mode,message){
  $('autoModeLabel').textContent=mode;
  $('autoManual').hidden=!active;
+ const notice=$('ftSectionModeNotice');
+ if(notice)notice.textContent=active?
+  'AUTO is active. These FTMO inputs are manual examples only; automatic KPIs use saved Firms strategy and the WR, days and trials above.':
+  'Manual FTMO assumptions below control the dashboard. Auto FTMO uses saved Firms risks and its own controls above.';
  if(message)$('autoStatus').textContent=message;
 }
 function manual(message){
