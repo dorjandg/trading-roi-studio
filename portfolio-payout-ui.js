@@ -644,7 +644,7 @@ function start(){
  for(const id of Object.values(assumptionIds))$(id).addEventListener('change',()=>{storeAssumptions();save()});
  $('payoutOptReset').addEventListener('click',()=>{loadAssumptions(true);storeAssumptions();save()});
  $('payoutOptAccount').addEventListener('change',()=>{loadAssumptions();loadedAssumptionsAccount=acctValue();save()});
- let currentSortMode=['model','net','budgetRoi','feeRoi','chance','payouts','investment','firstDay'].includes(prior.sortMode)?prior.sortMode:'model';
+ let currentSortMode=['model','net','budgetRoi','feeRoi','chance','payouts','investment','costGoal','firstDay'].includes(prior.sortMode)?prior.sortMode:'model';
  let lastOptimizerRecordId=null;
  let lastOptimizerOutput=null,lastOptimizerAccountKey='',lastOptimizerInputs=null,lastModelSearch=null,moreSortKey='net',moreDescending=true,moreColumnView='trading',moreSourceFilter='all';
  document.addEventListener('portfolio-investment-import',event=>{
@@ -887,6 +887,11 @@ function start(){
    add('Average payouts received '+advisorMoney(avg.receipts)+' minus incurred costs '+advisorMoney(spent)+' = expected net '+advisorMoney(net)+'.');
    add('Starting investment '+advisorMoney(record.budget)+'; fee ROI '+advisorPct(r.roi)+' and return on starting investment '+advisorPct(record.budget>0?net/record.budget:null)+'.');
    add('Average challenges bought '+bought.toFixed(2)+'. Reserved starting budget and incurred fees are different quantities.');
+   add('Modeled fees per successful full goal: '+(s.costPerGoal==null?'not estimable (0 goal hits in validation)':
+    advisorMoney(s.costPerGoal))+' from '+(s.goalHits??0)+' / '+(s.goalTrials??0)+
+    ' validation runs, including fees spent in unsuccessful runs. Successful-run fees alone: '+
+    (s.spentIfGoal==null?'not observed':advisorMoney(s.spentIfGoal))+'.');
+   test('Compare Cost / Goal Hit at the same trade win-rate, horizon and payout target. It is a model estimate, not a promised real-world purchase cost.');
    test('Use Section 9 Daily Spending Ledger for purchase and payout timing; compare expected net dollars alongside ROI.');
   }else if(topic==='compare'){
    title='Comparison with available models';
@@ -943,6 +948,8 @@ function start(){
    add(86,'cost','What is keeping net P&L '+advisorMoney(goal-net)+' below my target?');
   if(spent>0&&net<=0)
    add(83,'cost','Why are my '+advisorMoney(spent)+' in incurred fees not covered by payouts?');
+  if(goal>0&&Number(score.hit)>0&&Number(score.hit)<.8)
+   add(81,'cost','How much in fees does this setup spend per successful full payout and net-profit goal?');
   if(bought>0&&failed/bought>.2)
    add(79,'risk','Are account failures too high compared with purchased challenges?');
   if(all.length>1)
@@ -1347,7 +1354,7 @@ function start(){
  $('payoutOptMoreModels').addEventListener('change',event=>{
   if(!lastOptimizerOutput)return;
   const el=event.target;
-  if(el.matches?.('[data-more-sort]'))moreSortKey=el.value;
+  if(el.matches?.('[data-more-sort]')){moreSortKey=el.value;if(el.value==='costGoal')moreDescending=false;}
   else if(el.matches?.('[data-more-columns]'))moreColumnView=el.value;
   else if(el.matches?.('[data-more-source]'))moreSourceFilter=el.value;
   else return;
