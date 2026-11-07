@@ -153,6 +153,7 @@
   if(obj==='low')return 3-risk*.9-dd*.15+r.hitProbability*.1-block-r.activeProbability*.15;
   if(obj==='balanced')return r.hitProbability*3-stop*.6-fail*2-risk*.5-dd*.4-r.expectedTrades*.025-r.activeProbability*.8;
   if(obj==='recovery')return 2+r.hitProbability*2.5-stop*.7-risk*.4+
+   .65*(r.risks.r3/Math.max(.01,p.cap))+
    (r.bestAfterTriple?.status==='hit'?.08:0)-block*2;
   return r.hitProbability*4-stop*.8-block*2-fail*2-risk*.3-dd*.2-r.expectedTrades*.02-r.activeProbability*.8;
  }
