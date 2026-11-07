@@ -1,3 +1,9 @@
+## Free Trading Studio knowledge assistant expansion (Nov 7, 2026)
+
+- Added `studio-knowledge.js`, a dedicated offline/read-only local explanation index for simulator sections 1–11 and major portfolio assumptions: win rate, Monte Carlo trial count, seed, signal schedule, correlated outcomes, purchase mode, capacity, purchase/day limit, reinvestment, horizon, budget and net target. Each answer reads current inputs when present, distinguishes model rules from observed results, and cites its evidence class without claiming live official verification.
+- Existing `studio-evidence-chat.js` now routes how-it-works questions to local knowledge and result questions to the **rendered** Section 5 comparison, with current values only when results exist. Added a compact fixed-position Ask Studio AI shortcut that opens Section 11 and focuses the chat. Chat, saved answers, unanswered questions, and per-user localStorage are retained. No OpenAI key, API charges or external AI endpoint; this remains rule-based, not generative chat.
+- No changes to stage strategies, simulator math, Monte Carlo draws, cloud data or Google Drive records. Browser visual/mobile and Cloudflare live deployment not independently verified. Source script syntax and include-order checks passed.
+
 ## Studio AI scope clarification (Nov 7, 2026)
 
 - Studio AI is **exclusive to the Trading Studio website**. It does not access JJ Academy or any other site's course content.
