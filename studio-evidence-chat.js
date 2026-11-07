@@ -99,6 +99,7 @@ const suggestions=['Explain this tab’s formula','AI health status','Explain th
 function reply(question){
  const q=question.toLowerCase(),wr=n('winRate'),budget=n('budget'),goal=n('netGoal'),days=n('days'),trials=n('trials');
  const freshness=staleCheck(question);if(freshness)return freshness;
+ if(/formula|how .*roi|how .*net profit|how .*drawdown|where .*number|which .*calculation|source.*calculation/.test(q)){const scoped=window.StudioCrossPageFormulas?.answer(question);if(scoped)return scoped;}
  const contextAnswer=window.StudioKnowledge?.pageAnswer?.(question);if(contextAnswer)return contextAnswer;
  const currentPage=pageContext(question);if(currentPage)return currentPage;
  const snapshot=window.StudioAdvisorReadOnly?.getCurrent?.();
@@ -118,6 +119,7 @@ function reply(question){
  const formula=window.StudioFormulaAudit?.answer(question);if(formula)return formula;
  const cues=/(review queue|queued cue|gpt cue|gpt alert|formula audit|formula error|formula inconsistency)/.test(q);
  if(cues){const items=window.StudioReviewCues?.read?.()||[];return ['Review cues: '+items.length+' locally tracked. '+items.slice(-4).reverse().map(x=>x.label+' ('+x.status+')').join('; ')+'. Cloud-verified means queued for the scheduled GPT review, not reviewed.','Local review queue · High',false]}
+ if(/published|research|reviewed finding|evidence report/.test(q)){const finding=window.StudioResearchKnowledge?.answer(question);if(finding)return finding;}
  const historical=window.StudioHistoryAdvisor?.answer(question);if(historical)return historical;
  const published=window.StudioResearchKnowledge?.answer(question);if(published)return published;
  const guideQuery=/^(how|what|where|which|define|meaning)/.test(q)||/explain (section|parameter|setting|input)|how .* work/.test(q);
