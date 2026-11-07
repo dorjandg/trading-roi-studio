@@ -474,11 +474,12 @@ function jjHelperMount(){
   button.onclick=()=>{input.value=query;jjHelperQuestion=query;jjHelperAnswer(true)};examples.append(button);
  }
  root.append(examples);
- const recent=jjRecentBuild();root.append(recent);jjRecentRender();
+ const recent=jjRecentBuild();root.append(recent);
  const results=jjHelperNode('div','jj-helper-results');results.id='jj-helper-results';results.setAttribute('aria-live','polite');root.append(results);
  const feedback=jjHelperNode('div','jj-helper-feedback');feedback.id='jj-helper-feedback';root.append(feedback);
  const queue=jjHelperNode('section','jj-question-queue');queue.id='jj-question-queue';root.append(queue);
  const toc=article.querySelector(':scope > .chapter-toc');if(toc)toc.before(root);else article.append(root);
+ jjRecentRender();
  jjHelperAnswer();
  jjQueueRender();
  if(jjQuestionShareEnabled()&&jjCloudEndpoint())jjQueueSyncPending().catch(()=>{});
