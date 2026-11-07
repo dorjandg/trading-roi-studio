@@ -163,7 +163,7 @@ function row(label,a,b,kind){return '<tr><td>'+label+'</td><td>'+fmt(a,kind)+'</
 function render(){
  var jj=model('jj'),ft=model('ft');
  var err=document.getElementById('error');
- if(!jj||!ft){err.textContent='Check inputs: costs must be positive, probabilities between 0 and 100, and portfolio size at least 1. No result is shown for invalid inputs.';document.getElementById('comparisonRows').innerHTML='<tr><td>Invalid assumptions</td><td>—</td><td>—</td></tr>';return;}
+ if(!jj||!ft){err.textContent='Check inputs: costs must be positive, probabilities between 0 and 100, and portfolio size at least 1. No result is shown for invalid inputs.';document.querySelectorAll('.dashboard-groups .kpi strong').forEach(function(el){el.textContent='—';});document.getElementById('comparisonRows').innerHTML='<tr><td>Invalid assumptions</td><td>—</td><td>—</td></tr>';document.getElementById('cohortDescription').textContent='';return;}
  err.textContent='';
  document.getElementById('jjCost').textContent=fmt(jj.costFunded,'money');document.getElementById('ftmoCost').textContent=fmt(ft.costFunded,'money');
  document.getElementById('jjROI').textContent=fmt(jj.roi,'pct');document.getElementById('ftmoROI').textContent=fmt(ft.roi,'pct');
