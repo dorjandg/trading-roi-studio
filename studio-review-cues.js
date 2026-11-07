@@ -32,8 +32,8 @@ function readRemote(user){
 let busy=false;
 async function queue({kind='manual',label='',note='',automatic=false,fingerprint='' }={}){
  const user=selected(),existing=read(),idKey=String(fingerprint||kind+':'+clean(label).toLowerCase()).slice(0,170);
- const prior=existing.find(x=>x.fingerprint===idKey&&(!automatic||x.day===day())&&['queued-cloud','verified','sending','queued'].includes(x.status));
- if(prior)return {ok:prior.status==='queued-cloud'||prior.status==='verified',status:prior.status,duplicate:true};
+ const prior=existing.find(x=>x.fingerprint===idKey&&(!automatic||x.day===day())&&['queued-cloud','verified','sending','queued','review-verified','review-published','under-review','needs-attention'].includes(x.status));
+ if(prior)return {ok:['queued-cloud','verified','review-verified','review-published','under-review'].includes(prior.status),status:prior.status,duplicate:true};
  if(busy)return {ok:false,status:'busy'};
  const today=existing.filter(x=>x.day===day()&&x.automatic&&['queued-cloud','verified','sending'].includes(x.status)).length;
  if(automatic&&today>=2)return {ok:false,status:'daily-limit'};
@@ -91,6 +91,25 @@ function inspect(){
  }
  return findings;
 }
+
+async function refreshPublished(){
+ try{
+  const res=await fetch('gpt-research-reports.json',{cache:'no-store'});
+  if(!res.ok)throw Error('Published report feed unavailable');
+  const data=await res.json();
+  const rows=Array.isArray(data?.reviews)?data.reviews:[];
+  let linked=0;
+  const cues=read().map(cue=>{
+   const report=rows.find(r=>Array.isArray(r.reviewedRequestIds)&&r.reviewedRequestIds.includes(cue.id));
+   if(!report)return cue;
+   linked++;
+   const status=report.status==='verified'?'review-verified':report.status==='needs-review'?'needs-attention':report.status==='pending-review'?'under-review':'review-published';
+   return {...cue,status,reportId:String(report.id||'').slice(0,90)};
+  });
+  if(linked)write(cues);
+  return {linked,total:cues.length};
+ }catch(e){return {linked:0,error:String(e?.message||e)}}
+}
 function mount(){
  const host=document.querySelector('#gptResearchPanel .numbered-content');
  if(!host||document.getElementById('studioCuePanel'))return;
@@ -99,10 +118,10 @@ function mount(){
  host.insertBefore(details,host.firstChild);
  const list=details.querySelector('[data-studio-cues]');
  function redraw(){list.replaceChildren();for(const x of read().slice(-12).reverse()){const p=document.createElement('p');p.className='hint';p.textContent=x.timestamp.slice(0,16)+' · '+x.label+' · '+(x.status==='queued-cloud'||x.status==='verified'?'Queued (cloud verified; GPT not yet reviewed)':x.status==='not-confirmed'?'Needs attention — cloud not confirmed':x.status)+(x.error?' · '+x.error:'');list.append(p)}}
- details.addEventListener('click',e=>{if(e.target.closest('[data-studio-audit]')){const x=inspect();announce(x.length?x.length+' strict formula issue(s) detected; cloud verification may still be in progress.':'No strict arithmetic or funnel invariant failures in the displayed report. This does not validate all model assumptions.');redraw()}if(e.target.closest('[data-studio-refresh]'))redraw()});
+ details.addEventListener('click',e=>{if(e.target.closest('[data-studio-audit]')){const x=inspect();announce(x.length?x.length+' strict formula issue(s) detected; cloud verification may still be in progress.':'No strict arithmetic or funnel invariant failures in the displayed report. This does not validate all model assumptions.');redraw()}if(e.target.closest('[data-studio-refresh]')){announce('Checking published reports for explicitly linked cue IDs…');refreshPublished().then(v=>{announce(v.error?'Published report status unavailable: '+v.error:v.linked+' of '+v.total+' cue(s) explicitly linked to published reports. Unlinked cues remain queued or unknown.');redraw()})}});
  root.addEventListener?.('studio:cues-updated',redraw);redraw();
 }
-root.StudioReviewCues={queue,inspect,read,formulaFindings,mount};
+root.StudioReviewCues={queue,inspect,read,refreshPublished,formulaFindings,mount};
 root.addEventListener?.('studio:report-rendered',inspect);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
 })(window);
