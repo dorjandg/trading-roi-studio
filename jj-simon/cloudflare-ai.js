@@ -398,7 +398,7 @@
    .jj-helper-form-actions > :not(.jj-ai-button):not(.jj-ai-reset){display:none!important}
    .jj-helper-form-actions{gap:6px!important}
    .jj-helper-form-actions button{min-height:32px!important;padding:6px 9px!important;font-size:11px!important}
-   @media(max-width:1024px){
+   @media(max-width:1024px), (pointer:coarse){
     #jj-helper-app{height:var(--jj-chat-vh,100dvh)!important;max-height:var(--jj-chat-vh,100dvh)!important}
     #jj-cloudflare-ai{overflow:hidden!important;padding:6px!important}
     #jj-cloudflare-ai>.jj-ai-thread{flex:1 1 auto!important;height:auto!important;min-height:0!important;max-height:none!important;overflow-y:auto!important}
