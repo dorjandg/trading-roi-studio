@@ -55,6 +55,7 @@
    target.append(node);
   }
  }
+ const privateExcerpts=[];
  function archiveHits(question,limit=12){
   const base=jjHelperSearch(question);
   const extra=typeof jjHelperDocuments==='function'?jjHelperDocuments():[];
@@ -64,7 +65,8 @@
    const count=words.filter(w=>title.includes(w)||content.includes(w)).length;
    return {...d,score:count*4+words.filter(w=>title.includes(w)).length*7+(d.quoted?3:0),match:count};
   }).filter(d=>d.match>=Math.min(2,words.length)&&d.match>0).sort((a,b)=>b.score-a.score);
-  const combined=[...base,...ranked],seen=new Set();
+  const local=privateExcerpts.map(d=>{const t=(d.title+' '+d.text).toLowerCase();const count=words.filter(w=>t.includes(w)).length;return {...d,score:count*6,match:count}}).filter(d=>d.match>0).sort((a,b)=>b.score-a.score);
+  const combined=[...local,...base,...ranked],seen=new Set();
   return combined.filter(d=>{if(seen.has(d.id))return false;seen.add(d.id);return true}).slice(0,limit);
  }
  function selectHits(question){
@@ -143,7 +145,27 @@
     archiveResults.append(item);
    }
   };
-  archive.append(archiveTitle,archiveSearch,archiveResults);
+  const importLabel=el('label','jj-ai-import-label','Import private .txt/.vtt/.srt transcript (this session only)');
+  const importInput=el('input','jj-ai-import-input');importInput.type='file';importInput.accept='.txt,.vtt,.srt,text/plain';importInput.multiple=true;
+  const importStatus=el('small','','Imported transcripts stay in this browser tab. AI questions may send selected matching excerpts to Cloudflare; use Archive Search for local-only lookup.');
+  importInput.onchange=async()=>{
+   let added=0;
+   for(const file of [...importInput.files].slice(0,20)){
+    if(file.size>3000000){importStatus.textContent='Skipped '+file.name+': file exceeds 3 MB';continue}
+    const raw=await file.text();
+    const clean=raw.replace(/^WEBVTT[^\\n]*$/gm,'').replace(/^\\d+$/gm,'').replace(/^\\d\\d:\\d\\d:\\d\\d[.,]\\d+\\s*-->.*$/gm,'').replace(/<[^>]+>/g,'').trim();
+    for(let offset=0;offset<clean.length;offset+=1800){
+     const chunk=clean.slice(offset,offset+2100).trim();
+     if(chunk.length<35)continue;
+     privateExcerpts.push({id:'local:'+file.name+':'+offset,type:'Private transcript · session only',title:file.name+' · excerpt '+(Math.floor(offset/1800)+1),text:chunk,quoted:chunk,searchText:chunk,sourceUrl:'',footnote:'Local import; source timestamp not verified'});
+     added++;
+    }
+   }
+   importStatus.textContent=added+' transcript excerpts indexed in this tab. Not uploaded or stored on GitHub. AI answers may transmit selected excerpts to Cloudflare.';
+   importInput.value='';
+  };
+  importLabel.append(importInput);
+  archive.append(archiveTitle,archiveSearch,importLabel,importStatus,archiveResults);
   // One compact collapsible tools drawer, with the conversation always visible.
   const drawer=el('details','jj-ai-unified-tools');
   const drawerTitle=el('summary','','Chat tools · history, saved answers & archive');
