@@ -345,6 +345,78 @@
   form.addEventListener('submit',()=>{panel.hidden=false});
   const input=form.querySelector('textarea');if(input)input.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();button.click()}});
  }
+
+ // One shared AI experience on every Academy chapter. The floating view uses
+ // this same page and same-origin storage; it never starts an AI call merely by opening.
+ const floatMode=new URLSearchParams(location.search).get('jj_ai_float')==='1';
+ if(floatMode){
+  const compact=el('style');compact.textContent=`
+   html,body{height:100%;overflow:hidden!important;background:var(--bg)!important}
+   header,aside,.jj-helper-app > :not(.jj-ai-panel):not(.jj-helper-form){display:none!important}
+   .layout,main,#chapters{display:block!important;min-height:0!important;width:100%!important;margin:0!important;padding:0!important;max-width:none!important}
+   .jj-helper-app,.chapter{border:0!important;border-radius:0!important;box-shadow:none!important;margin:0!important;padding:0!important;background:var(--bg)!important}
+   .jj-helper-app{display:flex!important;flex-direction:column!important;height:100dvh!important;min-height:0!important}
+   #jj-cloudflare-ai{display:flex!important;flex:1 1 auto!important;flex-direction:column!important;min-height:0!important;overflow:auto!important;padding:9px!important;margin:0!important;border:0!important}
+   #jj-cloudflare-ai .jj-ai-thread{flex:1 1 auto!important;min-height:100px!important;max-height:none!important;overflow:auto!important}
+   #jj-cloudflare-ai .jj-ai-answer,#jj-cloudflare-ai .jj-ai-sources{max-height:25vh;overflow:auto}
+   .jj-helper-form{flex:0 0 auto!important;padding:8px!important;background:var(--panel)!important;border-top:1px solid var(--stroke)!important;margin:0!important}
+   .jj-helper-form textarea{min-height:54px!important;height:54px!important;font-size:12px!important}
+   .jj-helper-form-actions > :not(.jj-ai-button):not(.jj-ai-reset){display:none!important}
+   .jj-helper-form-actions{gap:6px!important}
+   .jj-helper-form-actions button{min-height:32px!important;padding:6px 9px!important;font-size:11px!important}
+   @media(max-width:750px){.jj-helper-app{height:100dvh!important}}
+  `;document.head.append(compact);
+  const prune=()=>{
+   const root=document.getElementById('jj-helper-app');
+   if(!root)return;
+   let node=root;
+   while(node&&node!==document.body){
+    for(const child of [...node.parentElement.children])if(child!==node)child.style.setProperty('display','none','important');
+    if(node.tagName==='MAIN')break;
+    node=node.parentElement;
+   }
+   const panel=document.getElementById('jj-cloudflare-ai');
+   if(panel)panel.hidden=false;
+  };
+  init();prune();
+ }else{
+  const open=el('button','jj-ai-float-launch','✦ Ask JJ AI');
+  open.type='button';open.setAttribute('aria-label','Open JJ Academy AI consultant');
+  open.title='Ask JJ Academy AI on any chapter';
+  const shell=el('section','jj-ai-float-shell');shell.hidden=true;
+  shell.setAttribute('role','dialog');shell.setAttribute('aria-label','JJ Academy AI consultant');
+  const bar=el('div','jj-ai-float-bar');
+  const heading=el('strong','','✦ JJ Academy AI');
+  const full=el('button','','Full page');full.type='button';full.title='Open the full Study Assistant';
+  full.onclick=()=>{location.href='?topic='+encodeURIComponent(jjHelperSlug)};
+  const close=el('button','','✕');close.type='button';close.title='Close AI consultant';close.setAttribute('aria-label','Close AI consultant');
+  bar.append(heading,full,close);
+  const frame=el('iframe','jj-ai-float-frame');
+  frame.title='JJ Academy AI conversation';frame.setAttribute('loading','lazy');
+  shell.append(bar,frame);document.body.append(open,shell);
+  const show=(value)=>{
+   shell.hidden=!value;open.setAttribute('aria-expanded',String(value));
+   if(value){
+    if(!frame.src)frame.src='?topic='+encodeURIComponent(jjHelperSlug)+'&jj_ai_float=1';
+    close.focus();
+   }else open.focus();
+  };
+  open.onclick=()=>show(shell.hidden);
+  close.onclick=()=>show(false);
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!shell.hidden)show(false)});
+  const css=el('style');css.textContent=`
+   .jj-ai-float-launch{position:fixed!important;bottom:18px!important;right:18px!important;z-index:10010!important;border:1px solid var(--accent)!important;border-radius:28px!important;background:var(--panel)!important;color:var(--accent)!important;font:700 12px system-ui,sans-serif!important;padding:11px 15px!important;box-shadow:0 6px 24px #0005!important;cursor:pointer!important}
+   .jj-ai-float-shell[hidden]{display:none!important}
+   .jj-ai-float-shell{position:fixed!important;bottom:70px!important;right:18px!important;z-index:10011!important;display:flex!important;flex-direction:column!important;width:min(420px,calc(100vw - 20px))!important;height:min(650px,calc(100dvh - 92px))!important;background:var(--bg)!important;border:1px solid var(--stroke)!important;border-radius:13px!important;box-shadow:0 14px 55px #0009!important;overflow:hidden!important}
+   .jj-ai-float-bar{display:flex!important;align-items:center!important;gap:9px!important;flex:0 0 43px!important;padding:7px 10px!important;background:var(--panel)!important;border-bottom:1px solid var(--stroke)!important}
+   .jj-ai-float-bar strong{flex:1!important;font-size:12px!important}
+   .jj-ai-float-bar button{background:transparent!important;border:1px solid var(--stroke)!important;color:var(--text)!important;border-radius:6px!important;padding:6px 8px!important;font-size:11px!important;cursor:pointer!important}
+   .jj-ai-float-frame{border:0!important;width:100%!important;flex:1 1 auto!important;min-height:0!important;background:var(--bg)!important}
+   @media(max-width:600px){.jj-ai-float-launch{bottom:calc(10px + env(safe-area-inset-bottom))!important;right:10px!important;padding:9px 12px!important;font-size:11px!important}.jj-ai-float-shell{right:5px!important;bottom:calc(52px + env(safe-area-inset-bottom))!important;width:calc(100vw - 10px)!important;height:min(650px,calc(100dvh - 68px - env(safe-area-inset-bottom)))!important;border-radius:10px!important}}
+   @media(prefers-reduced-motion:reduce){.jj-ai-float-shell,.jj-ai-float-launch{transition:none!important}}
+  `;document.head.append(css);
+ }
+
  const previous=render;
  render=function(){previous();if(active===jjHelperSlug)init()};
  if(active===jjHelperSlug)init();
