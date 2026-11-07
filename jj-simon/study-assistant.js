@@ -186,7 +186,7 @@ async function jjQueueTrySync(question,reason,matchCount){
  const key=jjQuestionId(question),endpoint=jjCloudEndpoint();
  if(!jjQuestionShareEnabled()||!endpoint||jjQaSyncBusy.has(key))return false;
  const rows=jjQueueRead(),entry=rows.find(r=>r.key===key&&r.status!=='resolved');
- if(!entry||entry.synced)return !!entry?.synced;
+ if(!entry||(entry.synced&&entry.accessReceipt))return !!entry?.synced;
  jjQaSyncBusy.add(key);
  const receipt=jjRandomReceipt();
  try{
@@ -196,7 +196,7 @@ async function jjQueueTrySync(question,reason,matchCount){
   const verified=await jjVerifyReceipt(endpoint,receipt);
   if(!verified.id||!verified.id.startsWith('uq_'))throw Error('Invalid verified question receipt');
   const fresh=jjQueueRead();
-  for(const row of fresh)if(row.key===key){row.synced=true;row.serverId=verified.id;row.syncedAt=new Date().toISOString();delete row.syncError}
+  for(const row of fresh)if(row.key===key){row.synced=true;row.serverId=verified.id;row.accessReceipt=receipt;row.syncedAt=new Date().toISOString();delete row.syncError}
   jjQueueWrite(fresh);jjQueueRender();return true;
  }catch(error){
   const fresh=jjQueueRead();
@@ -206,7 +206,7 @@ async function jjQueueTrySync(question,reason,matchCount){
 }
 async function jjQueueSyncPending(){
  if(!jjQuestionShareEnabled()||!jjCloudEndpoint())return false;
- const rows=jjQueueRead().filter(r=>r.status!=='resolved'&&!r.synced).slice(0,15);
+ const rows=jjQueueRead().filter(r=>r.status!=='resolved'&&(!r.synced||!r.accessReceipt)).slice(0,15);
  for(const row of rows)await jjQueueTrySync(row.question,row.reason||'Question not answered',row.matchCount||0);
  return true;
 }
