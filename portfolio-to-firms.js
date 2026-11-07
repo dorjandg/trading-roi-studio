@@ -2,7 +2,7 @@
    Accept only one explicitly selected, existing account profile; preserve backup. */
 (function(root){
 'use strict';
-const modes=new Set(['saved','streak','flat','after-win','protect-after-loss','target-now','repair-r2','buffered-target','eval-recovery-burn','funded-profit-ladder','funded-staged-recovery']);
+const modes=new Set(['smart-sequence','saved','streak','flat','after-win','protect-after-loss','target-now','repair-r2','buffered-target','eval-recovery-burn','funded-profit-ladder','funded-staged-recovery']);
 const stagesFor=id=>id==='topstep'?['p1','funded']:['ftmo2','holaPrime','holaPro'].includes(id)?['p1','p2','funded']:['funded'];
 const profileKey=(user,key)=>'4ds:v1:'+user+':studio-account-profile-v1:'+key;
 const snapKey=(user,key,stage)=>'4ds:recovery-planner:v2:'+user+':'+key+':'+stage;
@@ -27,6 +27,9 @@ function validate(user,key,plan){
   if(!Number.isInteger(c.maxWinsPerDay)||c.maxWinsPerDay<1||c.maxWinsPerDay>6)
    throw Error(stage+' winning-day cap invalid');
   if(!modes.has(c.policy?.mode||'saved'))throw Error(stage+' policy is unknown');
+  if(c.policy?.mode==='smart-sequence'&&
+   (!Number.isFinite(Number(c.r4||0))||Number(c.r4||0)<0))
+   throw Error(stage+' optional R4 risk is invalid');
  }
  return phases;
 }
@@ -49,8 +52,17 @@ function prepare(storage,user,key,plan){
   // Structured policy excludes stale per-option overrides. The pre-transfer
   // overrides are kept in the full backup and can be restored.
   const snapshot={...prev,
-   levels:{...(prev.levels||{}),r1:Number(c.r1),r2:Number(c.r2),r3:Number(c.r3)},
+   levels:{...(prev.levels||{}),r1:Number(c.r1),r2:Number(c.r2),r3:Number(c.r3),r4:policyMode==='smart-sequence'?Number(c.r4||0):Number(prev.levels?.r4||0)},
    winCap:c.maxWinsPerDay,policyMode,
+   sweepRemainder:policyMode==='smart-sequence'?c.sweepRemainder===true:prev.sweepRemainder,
+   sweepThreshold:policyMode==='smart-sequence'?Number(c.sweepThreshold??100):prev.sweepThreshold,
+   targetOverride:policyMode==='smart-sequence'?Number(c.target):prev.targetOverride,
+   appliedSmartSetup:policyMode==='smart-sequence'?{
+    label:String(c.appliedSmartLabel||'Portfolio Sim smart strategy').slice(0,100),
+    source:'Portfolio Simulator',appliedAt:new Date().toISOString(),
+    simulationPolicy:'smart-sequence',profitTarget:Number(c.target),rr:Number(c.rr),
+    levels:{r1:Number(c.r1),r2:Number(c.r2),r3:Number(c.r3),r4:Number(c.r4||0)}
+   }:undefined,
    rrByTier:c.rrByTier?{...c.rrByTier}:null,
    dynamicMaxRisk:Number.isFinite(Number(c.dynamicMaxRisk))&&c.dynamicMaxRisk!=null?Number(c.dynamicMaxRisk):null,
    fundedStarterRisk:Number.isFinite(Number(c.fundedStarterRisk))&&c.fundedStarterRisk!=null?Number(c.fundedStarterRisk):null,
