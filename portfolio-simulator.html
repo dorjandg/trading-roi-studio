@@ -726,8 +726,9 @@ const user=localStorage.getItem('4ds:active-user:v1')||'dori';
 const rootKey='4ds:v1:'+user+':';
 const simulationHistory=window.StudioPortfolioHistory?.create({user,element:document.getElementById('simulationHistory'),endpoint:window.FOUR_DS_CLOUD_ENDPOINT})||null;
 let catalog=null,audit=null,rows=[],lastResults=[],lastInputs=null;
+let reportStale=false,reportUpdatedAt=null;
 // Read-only bridge: exposes already-loaded history and current report to the local advisor.
-window.StudioAdvisorReadOnly={getRuns:()=>simulationHistory?.getRuns()||[],getTestCases:()=>lastResults.slice(0,2).map(r=>({plan:JSON.parse(JSON.stringify(r.plan)),config:{...(lastInputs||{}),budget:r.budget,evaluationAllocationCap:r.config?.evaluationAllocationCap||0,fundedAllocationCap:r.config?.fundedAllocationCap||0}})),getCurrent:()=>({results:lastResults.map(r=>({programId:r.plan?.id,firm:r.plan?.firm,accountSize:r.plan?.size,avg:{...r.avg},stages:[...(r.stages||[])],roi:r.roi,chancePayout:r.chancePayout,budget:r.budget})),inputs:lastInputs?{...lastInputs}:null,visible:!document.getElementById('results')?.hidden})};
+window.StudioAdvisorReadOnly={getRuns:()=>simulationHistory?.getRuns()||[],getTestCases:()=>lastResults.slice(0,2).map(r=>({plan:JSON.parse(JSON.stringify(r.plan)),config:{...(lastInputs||{}),budget:r.budget,evaluationAllocationCap:r.config?.evaluationAllocationCap||0,fundedAllocationCap:r.config?.fundedAllocationCap||0}})),getCurrent:()=>({stale:reportStale,updatedAt:reportUpdatedAt,results:lastResults.map(r=>({programId:r.plan?.id,firm:r.plan?.firm,accountSize:r.plan?.size,avg:{...r.avg},stages:[...(r.stages||[])],roi:r.roi,chancePayout:r.chancePayout,budget:r.budget})),inputs:lastInputs?{...lastInputs}:null,visible:!document.getElementById('results')?.hidden})};
 let testRisks={}; // simulator-only risk/strategy experiments, never written to Firms
 let discovered=null; // exploration candidates (not saved as Firms profile)
 let discoveryTableOpen=true;
@@ -1057,6 +1058,7 @@ function syncPurchaseMode(){
   updateCapacityHint();
 }
 function setStale(){
+ if(lastResults.length)reportStale=true;
  if(lastResults.length){$('status').textContent='Inputs changed · run again for updated results';$('status').style.color='var(--amber)';}
  if(discovered){discovered.stale=true;$('ideaStatus').textContent='Inputs changed · run Find Better Models again for updated suggestions';$('ideaStatus').style.color='var(--amber)';}
  saveView();
@@ -1462,7 +1464,7 @@ function renderWeeklyEconomics(list,inputs){
 function renderResults(list,inputs,source='run'){
  reportMode=source==='investment'?'investment':'run';
  if(source==='run')regularReport={list,inputs};
- lastResults=list;lastInputs=inputs;
+ lastResults=list;lastInputs=inputs;reportStale=false;reportUpdatedAt=new Date().toISOString();
  const sourceBar=$('reportSourceBar');
  if(sourceBar){
   $('reportSourceLabel').textContent=reportMode==='investment'?investmentReport?.label||'Selected investment scenario':'Run Simulation';
