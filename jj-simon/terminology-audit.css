@@ -34,3 +34,41 @@
 .jj-term-body .jj-term-footer{font-size:10px;color:var(--muted);margin-top:11px}
 .jj-terms-app input:focus-visible,.jj-terms-app select:focus-visible,.jj-terms-app button:focus-visible,.jj-term-item>summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 @media(max-width:750px){.jj-terms-app{padding:10px;margin:7px 0}.jj-terms-app h3{font-size:14px}.jj-terms-filters{grid-template-columns:1fr}.jj-terms-filters input,.jj-terms-filters select{font-size:16px;min-height:43px}.jj-term-item>summary{flex-wrap:wrap;gap:5px}.jj-term-left{min-width:0}.jj-term-category{margin-left:27px}.jj-terms-count{margin-left:0}.jj-term-body{padding:10px}}
+
+/* Logical dictionary navigation: topic → subtopic → definition. */
+.jj-terms-group-summary{font-size:11px;color:var(--muted);margin:1px 0 9px}
+.jj-terms-results{gap:8px}
+.jj-term-group{border:1px solid var(--stroke);border-radius:9px;background:var(--bg);overflow:hidden}
+.jj-term-group>.jj-term-group-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 13px;list-style:none;cursor:pointer}
+.jj-term-group>.jj-term-group-heading::-webkit-details-marker{display:none}
+.jj-term-group>.jj-term-group-heading:before{content:"+";color:var(--accent);font-size:17px;font-weight:600;flex:none}
+.jj-term-group[open]>.jj-term-group-heading:before{content:"−"}
+.jj-term-group>.jj-term-group-heading:hover{background:var(--hover)}
+.jj-term-group[open]>.jj-term-group-heading{border-bottom:1px solid var(--stroke)}
+.jj-term-group-label{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
+.jj-term-group-label strong{font-size:13px;line-height:1.3;color:var(--text)}
+.jj-term-group-label small{font-size:10px;color:var(--muted);line-height:1.4}
+.jj-term-group-count{font-size:10px;font-weight:500;color:var(--muted);white-space:nowrap;flex:none}
+.jj-term-group-contents{padding:5px 8px 8px;display:grid;gap:5px}
+.jj-term-subgroup{border:1px solid var(--stroke);border-radius:7px;overflow:hidden;background:var(--panel)}
+.jj-term-subgroup>.jj-term-subgroup-heading{display:flex;align-items:center;gap:9px;justify-content:space-between;cursor:pointer;padding:9px 11px;list-style:none}
+.jj-term-subgroup>.jj-term-subgroup-heading::-webkit-details-marker{display:none}
+.jj-term-subgroup>.jj-term-subgroup-heading:before{content:"+";font-size:13px;color:var(--accent);font-weight:650}
+.jj-term-subgroup[open]>.jj-term-subgroup-heading:before{content:"−"}
+.jj-term-subgroup>.jj-term-subgroup-heading strong{font-size:11px;flex:1}
+.jj-term-subgroup>.jj-term-subgroup-heading:hover{background:var(--hover)}
+.jj-term-subgroup[open]>.jj-term-subgroup-heading{border-bottom:1px solid var(--stroke)}
+.jj-term-subgroup-cards{padding:7px;display:grid;gap:5px}
+.jj-term-subgroup-cards .jj-term-item{border-radius:6px}
+.jj-term-subgroup-cards .jj-term-item>summary{padding:8px 10px}
+.jj-term-subgroup-cards .jj-term-category{font-size:10px;white-space:normal}
+.jj-terms-app .jj-term-group>summary:focus-visible,.jj-terms-app .jj-term-subgroup>summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+@media(max-width:750px){
+ .jj-term-group>.jj-term-group-heading{padding:10px 9px;gap:8px}
+ .jj-term-group-label strong{font-size:12px}
+ .jj-term-group-label small{font-size:10px}
+ .jj-term-group-contents{padding:4px 5px 6px}
+ .jj-term-subgroup>.jj-term-subgroup-heading{padding:8px}
+ .jj-term-subgroup-cards{padding:5px}
+ .jj-term-subgroup-cards .jj-term-item>summary{padding:8px}
+}
