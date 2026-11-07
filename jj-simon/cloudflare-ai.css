@@ -240,3 +240,7 @@
  #jj-cloudflare-ai .jj-ai-followups{margin:2px 0 4px!important}
  #jj-cloudflare-ai>.jj-ai-unified-tools>summary{padding:7px 8px!important}
 }
+
+#jj-cloudflare-ai .jj-ai-import-label{display:block;font-size:11px;color:var(--accent);margin:7px 0;cursor:pointer}
+#jj-cloudflare-ai .jj-ai-import-input{display:block;max-width:100%;font-size:11px;margin:5px 0;color:var(--text)}
+#jj-cloudflare-ai .jj-ai-archive>small{display:block;font-size:10px;color:var(--muted);line-height:1.45;margin:5px 0 8px}
