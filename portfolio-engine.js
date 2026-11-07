@@ -9,6 +9,7 @@ const money=x=>Math.round((Number(x)||0)*100)/100;
 const has=(obj,key)=>obj&&Object.prototype.hasOwnProperty.call(obj,key);
 const dynamic=(record,key,def)=>has(record,key)&&Number.isFinite(Number(record[key]))?Number(record[key]):def;
 const slotLevels=['r1','r2','r3','r4'];
+const FtmoBuffer=root.StudioFtmoFundedBuffer||null;
 const phasesFor=id=>id==='instant'?['funded']:['ftmo2','holaPrime','holaPro'].includes(id)?['p1','p2','funded']:['p1','funded'];
 const supported=new Set(['ftmo2','holaPrime','holaPro','topstep']);
 function rngFactory(seed){
@@ -103,11 +104,12 @@ function buildPlan(programId,size,program,profile={},snapshots={},audit=null){
    key==='p2'?dynamic(state,'p2Target',size*pos(program.targets?.[1])/100):result.fundedTarget;
   // A phase planning target transfers to Monte Carlo ONLY for an Applied
   // smart-sequence policy, preserving legacy profile/firm rule targets.
+  const appliedFtmoBuffer=programId==='ftmo2'&&key==='funded'&&snap.policyMode==='ftmo-funded-buffer';
   const appliedSmart=snap.policyMode==='smart-sequence';
   const requestedTarget=Number(snap.targetOverride);
-  const target=appliedSmart&&Number.isFinite(requestedTarget)&&requestedTarget>=.01?
+  const target=(appliedSmart||appliedFtmoBuffer)&&Number.isFinite(requestedTarget)&&requestedTarget>=.01?
    requestedTarget:officialTarget;
-  if(key==='funded'&&appliedSmart)result.fundedTarget=pos(target);
+  if(key==='funded'&&(appliedSmart||appliedFtmoBuffer))result.fundedTarget=pos(target);
   const minDays=key==='p1'?dynamic(state,'p1MinDays',pos(program.days?.[0])):
    key==='p2'?dynamic(state,'p2MinDays',pos(program.days?.[1])):0;
   const base=defaultRisk(programId,size,key);
@@ -118,7 +120,7 @@ function buildPlan(programId,size,program,profile={},snapshots={},audit=null){
   const rrBase=dynamic(state.rrByTier,root+'Base',dynamic(state,'rr',3));
   const rr=clamp(rrBase,.1,100);
   const policy=resolvePolicy(snap.optionSequences||{});
-  if(['saved','streak','flat','after-win','protect-after-loss','target-now','repair-r2','buffered-target','eval-recovery-burn','funded-profit-ladder','funded-staged-recovery','smart-sequence'].includes(snap.policyMode))
+  if(['saved','streak','flat','after-win','protect-after-loss','target-now','repair-r2','buffered-target','eval-recovery-burn','funded-profit-ladder','funded-staged-recovery','smart-sequence','ftmo-funded-buffer'].includes(snap.policyMode))
    policy.mode=snap.policyMode;
   result.riskProfiles[key]={
    target:pos(target),
@@ -129,6 +131,9 @@ function buildPlan(programId,size,program,profile={},snapshots={},audit=null){
    officialTarget:pos(officialTarget),
    appliedSmart:appliedSmart,
    appliedSmartLabel:appliedSmart?String(snap.appliedSmartSetup?.label||'Smart R1-first strategy').slice(0,100):'',
+   appliedFtmoBuffer:appliedFtmoBuffer,
+   ftmoBuffer:appliedFtmoBuffer&&FtmoBuffer?FtmoBuffer.normalize(snap.ftmoBuffer):null,
+   ftmoBufferLabel:appliedFtmoBuffer?String(snap.appliedFtmoBuffer?.label||'FTMO Funded Buffer Builder').slice(0,100):'',
    sweepRemainder:appliedSmart&&snap.sweepRemainder!==false,
    sweepThreshold:clamp(dynamic(snap,'sweepThreshold',100),0,1000),
    rrByTier:snap.rrByTier&&['r1','r2','r3'].every(t=>Number.isFinite(Number(snap.rrByTier[t]))&&Number(snap.rrByTier[t])>0)?
@@ -162,6 +167,13 @@ function validatePlan(p){
  if(p.riskProfiles.funded?.target<=0)errors.push('Set a positive first-payout planning target.');
  for(const [stage,c] of Object.entries(p.riskProfiles)){
   if(c.target<=0)errors.push(stage+': profit target missing.');
+  if(c.policy.mode==='ftmo-funded-buffer'){
+   if(p.id!=='ftmo2'||stage!=='funded')
+    errors.push(stage+': FTMO Funded Buffer Builder is not allowed on this firm/stage.');
+   if(!FtmoBuffer||!FtmoBuffer.valid(c.ftmoBuffer))
+    errors.push(stage+': FTMO buffer sizing module/parameters missing.');
+   if(c.rr<=0)errors.push(stage+': positive RR required for buffer policy.');
+  }
   if(c.policy.mode==='smart-sequence'){
    if(c.rr<=0||c.r1<=0||c.r2<=0||c.r3<=0||c.r4<0||
       ![c.r1,c.r2,c.r3,c.r4].every(Number.isFinite))
@@ -180,6 +192,14 @@ function validatePlan(p){
 const adaptiveModes=new Set(['target-now','repair-r2','buffered-target','eval-recovery-burn','funded-profit-ladder','funded-staged-recovery']);
 function chooseTradeRisk(p,ac,stage,c,dayProfit=0){
  const mode=c.policy?.mode||'saved';
+ if(mode==='ftmo-funded-buffer'){
+  if(p.id!=='ftmo2'||stage!=='funded'||!FtmoBuffer)
+   return {slot:'invalid-buffer-policy',risk:0,rr:c.rr};
+  const q=FtmoBuffer.quote(c.ftmoBuffer,{
+   pnl:ac.stagePnl,stageTrades:ac.stageTrades||0,rr:c.rr,target:c.target,tradeCost:p.tradeCost
+  });
+  return {slot:'buffer-'+q.phase,risk:q.risk,rr:c.rr,bufferPhase:q.phase};
+ }
  const smart=mode==='smart-sequence';
  const forceTopstepR3=!smart&&p.id==='topstep'&&stage==='funded'&&ac.fundedTargetDay!==null&&ac.funded150Days<5;
  const topstepCombine=!smart&&p.id==='topstep'&&stage==='p1';
@@ -252,7 +272,7 @@ function chooseTradeRisk(p,ac,stage,c,dayProfit=0){
  return {slot,risk,rr};
 }
 function makeAccount(i){return {
- id:i,stageIndex:0,stageDay:0,activeDays:0,adminDays:0,totalAdminDays:0,
+ id:i,stageIndex:0,stageDay:0,stageTrades:0,activeDays:0,adminDays:0,totalAdminDays:0,
  stagePnl:0,history:'',dailyProfit:0,dayProfits:[],peakEod:0,bestDay:0,
  status:'active',trades:0,qualificationTrades:0,wins:0,losses:0,firstPaid:0,
  purchaseDay:0,fundedActivatedDay:null,fundedFirstTradeDay:null,fundedTargetDay:null,payoutRequestedDay:null,paidDay:null,closedDay:null,
@@ -261,7 +281,7 @@ function makeAccount(i){return {
  repairSlot:'r1',repairAnchor:0,smartNext:'r1',
  fundedDays:0,fundedPositiveDays:0,funded150Days:0,trace:[]
 };}
-function newStage(ac){ac.stageDay=0;ac.activeDays=0;ac.adminDays=0;ac.stagePnl=0;ac.history='';
+function newStage(ac){ac.stageDay=0;ac.stageTrades=0;ac.activeDays=0;ac.adminDays=0;ac.stagePnl=0;ac.history='';
  ac.dayProfits=[];ac.peakEod=0;ac.bestDay=0;ac.peakPnl=0;ac.realizedDD=0;ac.repairSlot='r1';ac.repairAnchor=0;ac.smartNext='r1';}
 function stageName(p,ac){return p.stageList[ac.stageIndex]||'paid'}
 function isEvaluation(stage){return stage==='p1'||stage==='p2'}
@@ -390,7 +410,7 @@ function runAccountDay(p,ac,day,rand,config,record){
   ac.stagePnl=money(ac.stagePnl+delta);dayProfit=money(dayProfit+delta);
   if(stage==='funded'&&ac.stagePnl>=c.target-.005&&ac.fundedTargetDay===null)
    ac.fundedTargetDay=day;
-  ac.trades++;hadTrade=true;ac.totalR+=delta/risk;
+  ac.trades++;ac.stageTrades=(ac.stageTrades||0)+1;hadTrade=true;ac.totalR+=delta/risk;
   ac.grossProfit+=Math.max(0,delta);ac.grossLoss+=Math.max(0,-delta);
   ac.tradePnl+=delta;ac.riskTotal+=risk;ac.plannedReward+=risk*tradeRR;
   if(win){ac.wins++;winsToday++;ac.winPnl+=delta;}
@@ -821,7 +841,7 @@ function stageFunnel(result,useSample=false){
 // figures are hypothetical risk amounts, not the sample's actual outcomes.
 function previewLossPath(p,stage,steps=3){
  const cfg=p.riskProfiles?.[stage];if(!cfg)return [];
- const ac={stagePnl:0,history:'',repairSlot:'r1',repairAnchor:0,smartNext:'r1',
+ const ac={stagePnl:0,stageTrades:0,history:'',repairSlot:'r1',repairAnchor:0,smartNext:'r1',
   peakEod:0,fundedTargetDay:null,funded150Days:0};
  const arr=[];
  for(let i=0;i<steps;i++){
@@ -838,7 +858,7 @@ function previewLossPath(p,stage,steps=3){
   arr.push({step:i+1,slot:selected.slot,risk:allowed?risk:0,
    calculatedRisk:risk,allowed,before:prior,after:allowed?prior-risk-cost:prior});
   if(!allowed)break;
-  ac.stagePnl=prior-risk-cost;
+  ac.stagePnl=prior-risk-cost;ac.stageTrades++;
   ac.history=(ac.history+'L').slice(-8);
   if(cfg.policy?.mode==='smart-sequence')
    ac.smartNext=selected.slot==='r1'?'r2':selected.slot==='r2'?'r3':
