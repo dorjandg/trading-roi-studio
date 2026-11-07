@@ -468,7 +468,8 @@ function jjHelperMount(){
  const clear=jjHelperNode('button','','Clear');clear.type='button';clear.onclick=()=>{input.value='';jjHelperQuestion='';jjHelperAnswer();input.focus()};action.append(clear);form.append(action);
  form.addEventListener('submit',e=>{e.preventDefault();jjHelperQuestion=input.value.trim();jjHelperAnswer(true)});
  root.append(form);
- const examples=jjHelperNode('div','jj-helper-examples');
+ const examples=jjHelperNode('details','jj-helper-examples jj-helper-examples-collapsed');
+ examples.append(jjHelperNode('summary','','Example questions'));
  for(const query of ['What is fair price?','When does JJ trade after 11?','How does the 50-point funded setup work?','What is risk of ruin?','When should accounts be copied?']){
   const button=jjHelperNode('button','',query);button.type='button';
   button.onclick=()=>{input.value=query;jjHelperQuestion=query;jjHelperAnswer(true)};examples.append(button);
