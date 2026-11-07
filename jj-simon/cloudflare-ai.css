@@ -10,3 +10,7 @@
 .jj-ai-source{color:var(--muted);line-height:1.45}
 .jj-ai-source a,.jj-ai-source button{color:var(--accent);font-size:10px}
 @media(max-width:600px){.jj-ai-panel{padding:8px}.jj-ai-button{font-size:11px!important}}
+
+.jj-ai-answer{white-space:normal;display:grid;gap:7px}
+.jj-ai-answer p{margin:0;line-height:1.55;font-size:12px}
+.jj-ai-answer h4{margin:5px 0 0;font-size:12px;color:var(--accent);font-weight:700}
