@@ -127,3 +127,41 @@
 #jj-cloudflare-ai .jj-ai-usage-details>summary::-webkit-details-marker{display:none}
 #jj-cloudflare-ai .jj-ai-usage-details[open]{flex-basis:auto}
 #jj-cloudflare-ai .jj-ai-usage-details p{position:absolute;z-index:5;left:0;top:22px;width:min(270px,70vw);margin:0;padding:9px 10px;border:1px solid var(--stroke);border-radius:8px;background:var(--panel);box-shadow:0 5px 18px #0004;font-size:10px;line-height:1.45}
+
+/* Prevent narrow flex/grid parents from breaking each usage word onto a new line. */
+#jj-cloudflare-ai>.jj-ai-usage{
+ display:flex!important;
+ flex-direction:row!important;
+ align-items:center!important;
+ justify-content:flex-start!important;
+ flex-wrap:nowrap!important;
+ width:100%!important;
+ min-width:0!important;
+ gap:8px!important;
+}
+#jj-cloudflare-ai>.jj-ai-usage>span{
+ display:block!important;
+ flex:0 1 auto!important;
+ width:auto!important;
+ min-width:0!important;
+ max-width:calc(100% - 32px)!important;
+ white-space:nowrap!important;
+ overflow:hidden!important;
+ text-overflow:ellipsis!important;
+ word-break:normal!important;
+ overflow-wrap:normal!important;
+}
+#jj-cloudflare-ai>.jj-ai-usage>.jj-ai-usage-details{
+ display:block!important;
+ flex:0 0 20px!important;
+ width:20px!important;
+ min-width:20px!important;
+ position:relative;
+}
+#jj-cloudflare-ai>.jj-ai-usage>.jj-ai-usage-details>summary{white-space:nowrap}
+#jj-cloudflare-ai>.jj-ai-usage>.jj-ai-usage-details p{
+ width:min(270px,calc(100vw - 55px));
+ max-width:calc(100vw - 55px);
+ white-space:normal!important;
+ overflow-wrap:break-word!important;
+}
