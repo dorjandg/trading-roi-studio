@@ -79,6 +79,7 @@ function sampleMilestones(r,signalDay='1',tableOpen={}){
   if(ac.status==='paid')return 'Paid';
   if(ac.status==='failed')return 'Failed';
   if(ac.status==='exhausted')return 'Risk blocked';
+  if(ac.status==='strategy-stopped')return 'Strategy stopped';
   if(ac.status==='activation-wait')return 'Awaiting activation';
   if(ac.status==='payout-pending')return 'Payout requested';
   return ac.status==='active'?(r.plan?.stageList?.[ac.stageIndex]==='p1'?'Challenge':
@@ -90,12 +91,13 @@ function sampleMilestones(r,signalDay='1',tableOpen={}){
   if(name==='Challenge')counts.challenge++;
   if(name==='Verification')counts.verification++;
   if(name==='Funded')counts.funded++;
-  if(name==='Failed'||name==='Risk blocked')counts.closed++;
+  if(name==='Failed'||name==='Risk blocked'||name==='Strategy stopped')counts.closed++;
   const p1=ac.passes?.find(x=>x.stage==='p1')?.day;
   const p2=ac.passes?.find(x=>x.stage==='p2')?.day;
-  const exit=[...(ac.trace||[])].reverse().find(x=>x.type==='failed'||x.type==='blocked');
+  const exit=[...(ac.trace||[])].reverse().find(x=>x.type==='failed'||x.type==='blocked'||x.type==='strategy-stop');
   const phase=exit?.stage==='p1'?'CH':exit?.stage==='p2'?'VR':exit?.stage==='funded'?'FD':'';
   const closeReason=ac.status==='failed'?'Loss limit breached'+(phase?' · '+phase:''):
+   ac.status==='strategy-stopped'?'Conditional R1–R4 strategy stopped'+(phase?' · '+phase:''):
    ac.status==='exhausted'?'Trade risk too large'+(phase?' · '+phase:'')+
     (Number.isFinite(Number(exit?.risk))?' · risk '+usd(Number(exit.risk)):'')+
     (exit?.headroom!=null&&Number.isFinite(Number(exit.headroom))?' / room '+usd(Number(exit.headroom)):''):
@@ -110,12 +112,12 @@ function sampleMilestones(r,signalDay='1',tableOpen={}){
   '<div class="journey-account-heading">'+acs.length+' purchased accounts · stage progress and exit dates</div>'+
   '<div class="journey-account-totals">Now: CH '+counts.challenge+
   ' · VR '+counts.verification+' · FD '+counts.funded+
-  ' · Closed (breach + risk block) '+counts.closed+'</div>'+
+  ' · Closed (breach / risk block / strategy stop) '+counts.closed+'</div>'+
   '<div class="tablewrap journey-ledger-table"><table><thead><tr>'+
   ['Account','Bought','Tr','W','L','Status','P1 pass','P2 pass',
    'Funded','Target','Requested','Paid','Closed day','Closure reason'].map(k=>'<th>'+k+'</th>').join('')+
   '</tr></thead><tbody>'+rows+'</tbody></table></div>'+
-  '<p class="hint">Closed = actual loss-limit breach (Failed) OR configured-risk block (Risk blocked). A risk-blocked account is not a firm-rule breach, but this simulation does not automatically resize its next trade. The Closed day column records the closure day, not a breach for every account. All purchased accounts are retained.</p>',tableOpen.accounts===true);
+  '<p class="hint">Closed includes actual loss-floor breach (Failed), a blocked selected risk (Risk blocked), or an intentionally stopped conditional strategy (Strategy stopped). Only Failed means a modeled loss-limit breach. No hidden risk resizing is applied. All purchased accounts are retained.</p>',tableOpen.accounts===true);
  const assignments=r?.sample?.tradeAssignments||[];
  const dates=[...new Set(assignments.map(a=>a.day))].sort((x,y)=>x-y);
  const chosen=signalDay==='all'||dates.includes(Number(signalDay))?signalDay:String(dates[0]||1);
