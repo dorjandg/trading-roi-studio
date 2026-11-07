@@ -193,8 +193,17 @@
    importInput.value='';
   };
   loadPrivateExcerpts().then(n=>{importStatus.textContent=n+' private excerpts available on this device. Search locally, or ask AI (selected excerpts may be sent to Cloudflare).'}).catch(()=>{importStatus.textContent='Private browser storage unavailable; imports last for this tab only.'});
+  const coverage=el('small','jj-ai-coverage','Knowledge coverage · checking local index…');
+  const updateCoverage=()=>{
+   const names=new Set(privateExcerpts.map(x=>x.title.replace(/ · excerpt .*$/,'')));
+   const queue=typeof jjQueueRead==='function'?jjQueueRead().filter(x=>x.status!=='resolved'):[];
+   coverage.textContent='Knowledge coverage · '+names.size+' imported transcripts · '+privateExcerpts.length+' searchable excerpts · '+queue.length+' open research questions · private Drive sync not connected';
+  };
+  loadPrivateExcerpts().then(updateCoverage).catch(updateCoverage);
+  const originalImport=importInput.onchange;
+  importInput.onchange=async()=>{await originalImport();updateCoverage()};
   importLabel.append(importInput);
-  archive.append(archiveTitle,archiveSearch,importLabel,importStatus,archiveResults);
+  archive.append(archiveTitle,coverage,archiveSearch,importLabel,importStatus,archiveResults);
   // One compact collapsible tools drawer, with the conversation always visible.
   const drawer=el('details','jj-ai-unified-tools');
   const drawerTitle=el('summary','','Chat tools · history, saved answers & archive');
