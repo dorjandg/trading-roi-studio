@@ -87,10 +87,23 @@ function pageContext(question){
  const tab=active?.id?.replace(/^page-/,'')||'standalone page';
  return ['Current Trading Studio view: '+title+' ('+tab+'). This assistant explains visible website inputs and its documented calculations. In Portfolio Simulator it can also explain displayed Monte Carlo results and saved simulation history. If the requested metric is not exposed here, I will not invent a value.','Current website view · High',false];
 }
-const suggestions=['Analyze saved simulations','Suggest parameter tests','Explain my results','Why is ROI low?','What does win rate mean?','Explain Section 7 journey','How does account capacity work?','Explain trading-day horizon'];
+function staleCheck(question){
+ const q=String(question).toLowerCase();
+ if(!/(up to date|outdated|stale|fresh|last run)/.test(q))return null;
+ const result=window.StudioAdvisorReadOnly?.getCurrent?.();
+ if(!result?.visible)return ['No active Full Simulation report is currently displayed in this page. Open Portfolio Simulator and run or restore a report to check freshness.','Data readiness · High',false];
+ return [result.stale?'The displayed report is outdated because inputs changed. Rerun Full Simulation.':'The simulator has not flagged changes since this report was rendered. Last rendered '+(result.updatedAt||'time unavailable')+'. This does not independently verify saved external firm profiles or cloud freshness.','Live simulator freshness · High',false];
+}
+const suggestions=['Explain this page','Are my results up to date?','Analyze saved simulations','Suggest parameter tests','Explain my results','Why is ROI low?','What does win rate mean?','Explain Section 7 journey','How does account capacity work?','Explain trading-day horizon'];
 function reply(question){
  const q=question.toLowerCase(),wr=n('winRate'),budget=n('budget'),goal=n('netGoal'),days=n('days'),trials=n('trials');
+ const freshness=staleCheck(question);if(freshness)return freshness;
+ const contextAnswer=window.StudioKnowledge?.pageAnswer?.(question);if(contextAnswer)return contextAnswer;
  const currentPage=pageContext(question);if(currentPage)return currentPage;
+ const snapshot=window.StudioAdvisorReadOnly?.getCurrent?.();
+ if(snapshot?.visible&&snapshot.stale&&/(roi|results?|simulat|why|profit|funded|payout|optimi[sz]|recommend)/.test(q)){
+  return ['The displayed simulator report is STALE: one or more inputs changed since the last result was calculated. Run Full Simulation again before trusting its ROI, payout counts or comparisons. Existing results are not updated automatically.','Live simulator freshness · High',false];
+ }
  const historical=window.StudioHistoryAdvisor?.answer(question);if(historical)return historical;
  const guideQuery=/^(how|what|where|which|define|meaning)/.test(q)||/explain (section|parameter|setting|input)|how .* work/.test(q);
  if(guideQuery){const guide=window.StudioKnowledge?.answer(question);if(guide)return guide;}
@@ -118,7 +131,7 @@ function reply(question){
  if(/(missing|source|evidence|confidence|data|save)/.test(q)){
   return ['This assistant reads the currently displayed Section 5 comparison table, current form inputs and documented simulation mechanics. It cannot independently inspect your private cloud runs, infer the latest simulated outcome from a hidden dashboard, verify live prop-firm rules, or prove causal effects. Section 10 stores history and Section 11 publishes reviewed research. Saved answers and unanswered questions in this chat remain in this browser workspace.','Capability disclosure · High',false];
  }
- return ['I cannot verify an answer to that question from the available model rules and visible inputs. I saved it to the unanswered tracker. Use “Queue GPT Review” below for research or “Live GPT Review” to continue in ChatGPT without sending private data in a URL.','Unanswered · Low',true];
+ return ['I cannot verify an answer from the available website rules, visible inputs and locally available simulation records. I added it to Unanswered questions for later review. This free assistant does not send it to an external AI service.','Unanswered · Low',true];
 }
 function render(){
  const log=el('.studio-ai-log');log.replaceChildren();
