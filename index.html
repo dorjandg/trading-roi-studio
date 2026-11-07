@@ -310,7 +310,7 @@ html[data-theme="light"] .recovery-direct{background:#f0faf6;border-color:#8bcdb
  #page-firms .firms-quick-nav .btn:last-child:nth-child(odd){grid-column:auto}
 }
 
-.smart-table{min-width:1030px}
+.smart-table{min-width:1120px}
 .smart-table th,.smart-table td{white-space:nowrap;text-align:right}
 .smart-table th:first-child,.smart-table td:first-child,.smart-table th:last-child,.smart-table td:last-child{text-align:left}
 .smart-table td:first-child{white-space:normal;min-width:120px}
@@ -2289,7 +2289,7 @@ function smartSetupUI(stage){
  };
  const fullTree=m=>'<details class="smart-route-examples"><summary>Full W/L tree · '+m.treeBranches+
   ' endings · '+m.hitProbability.toFixed(1)+'% modeled target</summary>'+
-  '<p class="caption">Every branch uses the same R1-first policy. Losses end their day. Percentages assume independent '+
+  '<p class="caption">Every branch uses the same R1-first policy. Losses end their day. Active means unresolved within the search horizon. Percentages assume independent '+
    data.winRate+'% wins per trade; they are NOT observed prop-firm pass rates.</p>'+
   '<div class="tablewrap"><table class="recovery-table smart-tree-table"><thead><tr>'+
    '<th>W/L</th><th>R sequence</th><th>Trades</th><th>Days</th><th>Final P/L</th><th>Max DD</th><th>Chance</th><th>Result</th>'+
@@ -2302,11 +2302,13 @@ function smartSetupUI(stage){
  const row=m=>{
   const riskCells=RECOVERY_LEVELS.map(tier=>'<td class="num'+(m.risks[tier]<.01?' smart-off':'')+'">'+
    (m.risks[tier]<.01?'Off':money2(m.risks[tier]))+'</td>').join('');
-  const riskLine='R1 → R2 → R3 '+(m.risks.r4>=.01?'→ R4 optional':'→ Stop after R3 loss');
+  const riskLine='W '+(m.firstHit?'Hit':'Continue')+' · LW '+(m.secondHit?'Hit':'Continue')+
+   ' · LLWW Hit · LLL '+(m.thirdLossOutcome==='stopped'?'Stop':m.thirdLossOutcome==='continued'?'Continue via R4':m.thirdLossOutcome);
   return '<tr><td><strong>'+m.label+'</strong><small>'+riskLine+'</small></td>'+
    riskCells+'<td><b>'+m.route.wl+'</b><small>'+[...m.route.tiers].map(n=>'R'+n).join('→')+'</small></td>'+
    '<td class="num">'+stat(m.hitProbability)+'</td><td class="num">'+stat(m.stopProbability)+'</td>'+
-   '<td class="num">'+stat(m.blockedProbability)+'</td><td class="num">'+m.expectedTrades.toFixed(2)+'</td>'+
+   '<td class="num">'+stat(m.blockedProbability)+'</td><td class="num">'+stat(m.activeProbability)+'</td>'+
+   '<td class="num">'+(m.expectedHitTrades===null?'—':m.expectedHitTrades.toFixed(2))+'</td>'+
    '<td class="num">'+money2(m.maxRisk)+'</td><td class="num">'+money2(m.maxDD)+'</td>'+
    '<td><button class="btn small" type="button" data-smart-apply="'+m.kind+'">Apply</button>'+
    fullTree(m)+'</td></tr>';
@@ -2323,13 +2325,14 @@ function smartSetupUI(stage){
   const levels=config.levels,room=Math.min(config.daily>0?config.daily-config.buffer:Infinity,
    config.staticFloor&&config.overall>0?config.overall+config.initialPnl-levels.r1-levels.r2-config.buffer:Infinity);
   manual='<p class="caption smart-manual-alert"><strong>Current R values do not complete the LLWW booster recovery.</strong> '+
-   (levels.r3>room+.001?'After R1 and R2 losses, R3 '+money2(levels.r3)+' exceeds the modeled '+
+   (levels.r3<.01?'R3 is currently disabled (0). The recovery route after two losses therefore stops.':
+    levels.r3>room+.001?'After R1 and R2 losses, R3 '+money2(levels.r3)+' exceeds the modeled '+
     money2(Math.max(0,room))+' risk room (including buffer).':
     'The R3 WIN → R2 WIN branch does not reach the target within modeled limits.')+
    ' Existing amounts have NOT been changed.</p>';
  }
  const header='<thead><tr><th>Setup</th><th>R1</th><th>R2</th><th>R3</th><th>R4</th>'+
-  '<th>Best route</th><th>Hit %</th><th>Stop %</th><th>Blocked %</th><th>Avg T</th>'+
+  '<th>Best route</th><th>Hit %</th><th>Stop %</th><th>Blocked %</th><th>Unresolved %</th><th>Avg Hit T</th>'+
   '<th>Max R</th><th>Max DD</th><th>Action / tree</th></tr></thead>';
  return '<details class="smart-setup"'+(snap.smartOpen?' open':'')+'><summary>'+title+'</summary>'+
   '<div class="smart-toolbar"><button type="button" class="btn small" data-smart-run="'+stage+'"'+
@@ -2339,7 +2342,8 @@ function smartSetupUI(stage){
   manual+
   (models.length?'<p class="caption"><b>Compare complete decision trees:</b> Hit = modeled target reached; Stop = strategy abandons after loss; '+
    'Blocked = risk cannot be placed. Each setup includes R1, R2, R3 and an LLWW target branch. '+
-   'Avg T includes success and stop paths. Branch percentages assume independent '+data.winRate+'% wins, not verified live odds.</p>'+
+   'Avg Hit T counts trades on successful routes only. Unresolved routes have not hit the target within the search horizon. '+
+   'Branch percentages assume independent '+data.winRate+'% wins, not verified live odds.</p>'+
    '<div class="tablewrap"><table class="recovery-table smart-table">'+header+
     '<tbody>'+models.map(row).join('')+'</tbody></table></div>'+
    '<p class="caption">Modeled initial risk ceiling '+money2(data.maxInitialRisk)+
