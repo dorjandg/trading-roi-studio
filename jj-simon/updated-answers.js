@@ -151,7 +151,15 @@
       let ok=0,fail=0,upgrade=false;
       for(const row of pending){
         try{
-          const res=await readStatus(row.accessReceipt);
+          let res=await readStatus(row.accessReceipt);
+          // Older verified receipts preceded private answer access. Automatically
+          // relink only if the upgraded server explicitly reports no capability.
+          if(res?.ok===false&&String(res.error||'').includes('Question access unavailable')&&
+             typeof jjQueueTrySync==='function'){
+            const linked=await jjQueueTrySync(row.question,row.reason||'Previously reviewed question',row.matchCount||0,true);
+            const newest=nativeRows().find(x=>x.key===row.key);
+            if(linked&&newest?.accessReceipt)res=await readStatus(newest.accessReceipt);
+          }
           if(res?.ok===true&&res.id===row.serverId){
             state.data[row.key]={status:String(res.status||'queued'),answer:String(res.answer||''),
               evidence:String(res.evidence||''),updatedAt:res.updatedAt||'',
