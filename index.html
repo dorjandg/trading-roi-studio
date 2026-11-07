@@ -1863,7 +1863,8 @@ function recoveryStoreKey(stage){
  return '4ds:recovery-planner:v2:'+owner+':'+String(activeProgramKey||'none')+':'+stage;
 }
 function recoverySnapshot(stage){
- const key=String(activeProgramKey||'none')+':'+stage;
+ const owner=typeof activeUser==='string'?activeUser:'local';
+ const key=owner+':'+String(activeProgramKey||'none')+':'+stage;
  if(!recoverySnapshots[key]){
   let saved={};
   try{saved=JSON.parse(localStorage.getItem(recoveryStoreKey(stage))||'{}')||{}}catch(e){}
