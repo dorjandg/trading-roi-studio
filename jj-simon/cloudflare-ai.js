@@ -11,12 +11,14 @@
  const save=()=>{try{sessionStorage.setItem(historyKey,JSON.stringify(conversation.slice(-12)))}catch(_){}};
  function renderAnswer(target,value){
   target.replaceChildren();
-  const raw=String(value||'').replace(/\\r/g,'').replace(/\\*\\*([^*\\n]+)\\*\\*/g,'\\n\\n$1\\n').replace(/\\s+([•])\\s+/g,'\\n$1 ');
-  const chunks=raw.split(/\\n+/).map(x=>x.trim()).filter(Boolean);
+  const raw=String(value||'')
+    .replace(/\r/g,'')
+    .replace(/\*\*([^*\n]+)\*\*/g,'\n\n$1\n')
+    .replace(/([.!?])\s+(?=(?:ACCOUNT MANAGEMENT|TRADE CAPACITY|STRATEGY FOR|RISK MANAGEMENT|FIRST TRADE|SECOND TRADE)\b)/g,'$1\n\n');
+  const chunks=raw.split(/\n+/).map(x=>x.trim()).filter(Boolean);
   for(const chunk of chunks){
    const heading=/^(?:[A-Z][A-Z0-9 /&–—:-]{7,}|(?:First trade|Second trade|Risk|Profit|Loss|Summary|Important|Account management)[^.!?]{0,65}:?)$/.test(chunk);
-   const node=el(heading?'h4':'p','',chunk.replace(/^[-*]\\s+/,'• '));
-   target.append(node);
+   target.append(el(heading?'h4':'p','',chunk.replace(/^[-*]\s+/,'• ')));
   }
  }
  function selectHits(question){
