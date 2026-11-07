@@ -112,6 +112,7 @@
  referenceExtras=function(c){
   return c.slug===slug ? markup() : oldExtras(c);
  };
+ if(new URLSearchParams(location.search).get('topic')===slug)active=slug;
  if(typeof jjRebuildMobileSelector==='function')jjRebuildMobileSelector();
  renderNav();render();
 })();
