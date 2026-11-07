@@ -547,7 +547,7 @@ details p{margin:6px 0}
 <nav class="studio-labs-nav" aria-label="Lab tabs"><a href="monitor.html">Monitor</a><a href="index.html?view=investments">Budget</a><a class="active" aria-current="page" href="portfolio-simulator.html">Portfolio Sim</a><a href="investment-lab.html">Invest Lab</a><a href="comparison-lab.html">Compare Lab</a><a href="trade-lab.html">Trade Lab</a></nav>
 <div class="eyebrow">Options-based Monte Carlo · cash risk · first payout</div>
 <h1>Budget → Challenges → Phases → Payout</h1>
-<p class="muted">Uses the saved RR, R1/R2/R3 and risk decisions from your account's phase options. It simulates random trade outcomes rather than choosing future winning paths. No orders are placed.</p>
+<p class="muted">Uses the selected account’s saved RR, R1–R4 and applied conditional WIN/LOSS strategy from Firms, including its stage targets and loss buffers. Trade outcomes are simulated, never predicted; no orders are placed.</p>
 <div class="alert"><strong>Model scope:</strong> Risk amounts are used exactly or the trade is blocked. Minimum trading days after reaching a target are represented as <b>administrative qualification assumptions</b> (not invented W/L trades). Payout eligibility, subscriptions, trailing losses, firm allocation and checkout rules need separate verification.</div>
 <details class="sim-charts-panel numbered-panel" id="section1Panel" open><summary><strong>1 · Investment & simulation inputs</strong><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><p class="hint">Same-budget comparison allocates the entire budget separately to each firm. Split-budget mode divides one budget across the selected firms.</p>
  <div class="fields">
@@ -580,7 +580,7 @@ details p{margin:6px 0}
  </div>
  <p class="hint" id="budgetModeNote">In compare mode each firm uses its own hypothetical budget and trade schedule. In split-budget mode the dynamic daily trade opportunities are shared among firms. Do not sum independent comparisons.</p>
 </div></details>
-<details class="sim-charts-panel numbered-panel" id="section2Panel" open><summary><strong>2 · Prop-firm accounts</strong><button id="run" type="button" class="primary section-run-btn" title="Run simulation with current account and strategy settings">Run Simulation</button><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><p class="hint">Saved profiles and phase-risk options are read from this browser's selected 4Ds user (<b id="userLabel">—</b>). Use Firms on the main site to adjust R1/R2/R3 and RR; the simulator doesn't create a second set of risk settings.</p>
+<details class="sim-charts-panel numbered-panel" id="section2Panel" open><summary><strong>2 · Prop-firm accounts</strong><button id="run" type="button" class="primary section-run-btn" title="Run simulation with current account and strategy settings">Run Simulation</button><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><p class="hint">Saved profiles and phase-risk options are read from this browser's selected 4Ds user (<b id="userLabel">—</b>). Press Apply on a Smart Setup in Firms to use its R1–R4 decision tree and phase targets here. Click Reload saved stage settings if Firms changed in another tab. Global win rate, signal count and trial assumptions remain editable here.</p>
  <div id="accounts"></div>
  <div class="actions"><button id="addAccount" type="button">+ Add account to comparison</button><button id="reload" type="button">Reload saved stage settings</button><span id="profileStatus" class="hint"></span></div>
  <div class="actions"><span id="status" class="status" role="status">Loading account catalog…</span></div>
@@ -687,7 +687,7 @@ const user=localStorage.getItem('4ds:active-user:v1')||'dori';
 const rootKey='4ds:v1:'+user+':';
 const simulationHistory=window.StudioPortfolioHistory?.create({user,element:document.getElementById('simulationHistory'),endpoint:window.FOUR_DS_CLOUD_ENDPOINT})||null;
 let catalog=null,audit=null,rows=[],lastResults=[],lastInputs=null;
-let testRisks={}; // simulator-only R1/R2/R3 and RR experiments, never written to Firms
+let testRisks={}; // simulator-only risk/strategy experiments, never written to Firms
 let discovered=null; // exploration candidates (not saved as Firms profile)
 let discoveryTableOpen=true;
 let ideaReserveAccountKey='';
@@ -1318,7 +1318,7 @@ function renderResults(list,inputs,source='run'){
  if($('journeyPanel').open)renderJourney();
  if($('section9Panel').open)renderSpendingLedger();
  const mixed=inputs.budgetMode==='split';
- $('summaryCaption').textContent=reportMode==='investment'?'Full Section 2 simulation of the selected Investment option · '+inputs.trials+' fresh Monte Carlo trials · selected stage R1/R2/R3 and account paths preserved. Regular Run Simulation results remain separate.':(mixed?'One budget distributed across accounts':'Independent alternatives, each using the full budget')+
+ $('summaryCaption').textContent=reportMode==='investment'?'Full Section 2 simulation of the selected Investment option · '+inputs.trials+' fresh Monte Carlo trials · selected stage risk profiles and account paths preserved. Regular Run Simulation results remain separate.':(mixed?'One budget distributed across accounts':'Independent alternatives, each using the full budget')+
   ' · '+inputs.days+' trading days · '+inputs.trials+' trials · '+dec(inputs.winRate)+'% win rate · '+inputs.signalMode+' outcomes · '+
   (inputs.purchaseMode==='recycle'?'automatic reuse-first purchasing':'all challenges purchased upfront')+'.';
  const comp=inputs.budgetMode==='compare';
