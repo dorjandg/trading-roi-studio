@@ -171,7 +171,7 @@ function updateScenario(wb){
 }
 function mount(){
  const wb=document.querySelector('.jj-workbench');
- if(!wb||wb.querySelector('.jj-kpi-guides'))return;
+ if(!wb||!wb.querySelector('#wb-outputs')||wb.querySelector('.jj-kpi-guides'))return;
  buildGuide(wb);
 }
 if(typeof render==='function'){
