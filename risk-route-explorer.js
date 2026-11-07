@@ -10,13 +10,20 @@
  function score(rec){
   return rec.days*100000000+rec.trades*1000000+Math.round(rec.drawdown*100);
  }
- function keepBest(lists,rec){
+ function keepBest(lists,rec,worst){
   const list=lists[rec.status],cap=LIMITS[rec.status],s=score(rec);
+  const bound=worst[rec.status];
+  if(list.length>=cap&&s>=bound.score)return;
   rec.score=s;
-  if(list.length<cap){list.push(rec);return}
-  let worst=0;
-  for(let i=1;i<list.length;i++)if(list[i].score>list[worst].score)worst=i;
-  if(s<list[worst].score)list[worst]=rec;
+  if(list.length<cap){
+   list.push(rec);
+   if(s>bound.score){bound.score=s;bound.index=list.length-1}
+   return;
+  }
+  list[bound.index]=rec;
+  let wi=0;
+  for(let i=1;i<list.length;i++)if(list[i].score>list[wi].score)wi=i;
+  bound.index=wi;bound.score=list[wi].score;
  }
  function search(input,onProgress){
   const p={
@@ -31,6 +38,7 @@
   if(p.rr<=0||p.goal<=0)return Promise.resolve({error:'A positive target and RR are required.'});
   const stats={visited:0,target:0,active:0,failed:0,blocked:0};
   const lists={target:[],active:[],failed:[],blocked:[]};
+  const worst=Object.fromEntries(Object.keys(lists).map(k=>[k,{score:-Infinity,index:0}]));
   const stack=[{wl:'',tiers:'',pnl:p.pnl,day:0,dayStart:p.pnl,tradesToday:0,usedDays:0,peak:p.pnl,dd:0}];
   function finish(status,node,extraTier){
    stats[status]++;
@@ -40,7 +48,7 @@
     drawdown:node.dd,
     minDaysPending:status==='target'?Math.max(0,Math.floor(finite(input.minDays))-(p.days+node.usedDays)):0
    };
-   keepBest(lists,rec);
+   keepBest(lists,rec,worst);
   }
   return new Promise(resolve=>{
    function batch(){
