@@ -283,10 +283,17 @@ function wireHelpPopovers(){
      ev.preventDefault();ev.stopPropagation();
      if(pinned===el)close();else show(el,true);
    });
-   if(el.classList.contains('kpi'))el.addEventListener('click',function(ev){
-     if(ev.target.closest('.help-dot'))return;
-     if(pinned===el)close();else show(el,true);
-   });
+   if(el.classList.contains('kpi')){
+     el.addEventListener('click',function(ev){
+       if(ev.target.closest('.help-dot'))return;
+       if(pinned===el)close();else show(el,true);
+     });
+     el.addEventListener('keydown',function(ev){
+       if(ev.target!==el||(ev.key!=='Enter'&&ev.key!==' '))return;
+       ev.preventDefault();
+       if(pinned===el)close();else show(el,true);
+     });
+   }
  });
  document.addEventListener('pointerdown',function(ev){
    if(pinned&&!pinned.contains(ev.target)&&!pop.contains(ev.target))close();
