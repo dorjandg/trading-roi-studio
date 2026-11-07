@@ -1,3 +1,7 @@
+## Concise JJ × FTMO help text (Nov 7, 2026)
+
+- Shortened all 66 data-help definitions on jj-ftmo-kpis.html to plain one-line explanations (average 42 characters; longest 64). Preserved critical source caveats: JJ trade WR unknown and other input probabilities illustrative. No UI, tooltip behavior, form values, calculated results, risk parameters or saved data changed. Script parses and all 40 KPI plus 26 input help targets remain intact. Live Cloudflare/browser not verified.
+
 ## Contextual KPI and parameter explanations via hover, focus and tap (Nov 7, 2026)
 
 - The JJ × FTMO research page jj-ftmo-kpis.html provides inline definition popovers for 40 KPI cards, 24 matched JJ/FTMO strategy parameter inputs and both portfolio cohort controls. Native browser title-only hints were replaced with a shared high-contrast in-page info popover, displaying each box's meaning and formula, e.g. funded pass probability versus payout success, cohort expected value versus trade EV, and why JJ historical WR remains unknown.
