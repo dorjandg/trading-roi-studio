@@ -1,11 +1,11 @@
-/* 4Ds Trading Studio — explicit R1/R2/R3 route explorer.
+/* 4Ds Trading Studio — explicit R1/R2/R3/R4 route explorer.
    Enumerates every valid risk-tier choice and W/L continuation to the selected
    horizon; early target / floor / blocked paths terminate instead of duplicating
    artificial later trades. Purely illustrative; does not modify any strategy. */
 (function(global){
  'use strict';
- const LEVELS=['r1','r2','r3'];
- const LIMITS={target:150,active:50,failed:50,blocked:50};
+ const LEVELS=['r1','r2','r3','r4'];
+ const LIMITS={target:500,active:200,failed:200,blocked:200};
  function finite(n,fallback=0){n=Number(n);return Number.isFinite(n)?n:fallback}
  function score(rec){
   return rec.days*100000000+rec.trades*1000000+Math.round(rec.drawdown*100);
@@ -36,12 +36,15 @@
    levels:Object.fromEntries(LEVELS.map(k=>[k,Math.max(0,finite(input.levels?.[k]))]))
   };
   if(p.rr<=0||p.goal<=0)return Promise.resolve({error:'A positive target and RR are required.'});
-  const stats={visited:0,target:0,active:0,failed:0,blocked:0};
+  const activeLevels=LEVELS.filter(level=>p.levels[level]>=0.01);
+  if(!activeLevels.length)return Promise.resolve({error:'All risk tiers are 0. Enter a positive amount in at least one of R1–R4.'});
+  const stats={visited:0,target:0,targetReady:0,targetPending:0,active:0,failed:0,blocked:0};
   const lists={target:[],active:[],failed:[],blocked:[]};
   const worst=Object.fromEntries(Object.keys(lists).map(k=>[k,{score:-Infinity,index:0}]));
   const stack=[{wl:'',tiers:'',pnl:p.pnl,day:0,dayStart:p.pnl,tradesToday:0,usedDays:0,peak:p.pnl,dd:0}];
   function finish(status,node,extraTier){
    stats[status]++;
+   if(status==='target')stats[p.days+node.usedDays>=Math.floor(finite(input.minDays))?'targetReady':'targetPending']++;
    const rec={
     status,sequence:node.wl,tiers:node.tiers+(extraTier||''),
     pnl:node.pnl,days:node.usedDays,trades:node.wl.length,
@@ -63,7 +66,7 @@
      const dailyRoom=p.daily>0?p.daily+node.pnl-dayStart:Infinity;
      const overallRoom=p.staticFloor&&p.overall>0?p.overall+node.pnl:Infinity;
      const available=Math.min(dailyRoom-p.buffer,overallRoom-p.buffer);
-     for(const tier of LEVELS){
+     for(const tier of activeLevels){
       const risk=p.levels[tier];
       if(!(risk>=0.01)||risk>available+0.000001){
        finish('blocked',node,tier.slice(-1));
@@ -95,7 +98,7 @@
     if(stack.length)setTimeout(batch,0);
     else {
      for(const key of Object.keys(lists))lists[key].sort((a,b)=>a.score-b.score||a.tiers.localeCompare(b.tiers));
-     resolve({stats,lists,depth:p.depth,levels:p.levels});
+     resolve({stats,lists,depth:p.depth,levels:p.levels,activeLevels,retentionLimits:LIMITS});
     }
    }
    setTimeout(batch,0);
