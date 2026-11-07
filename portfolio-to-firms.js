@@ -54,6 +54,7 @@ function prepare(storage,user,key,plan){
    rrByTier:c.rrByTier?{...c.rrByTier}:null,
    dynamicMaxRisk:Number.isFinite(Number(c.dynamicMaxRisk))&&c.dynamicMaxRisk!=null?Number(c.dynamicMaxRisk):null,
    fundedStarterRisk:Number.isFinite(Number(c.fundedStarterRisk))&&c.fundedStarterRisk!=null?Number(c.fundedStarterRisk):null,
+   fundedMaxTradeRisk:Number.isFinite(Number(c.fundedMaxTradeRisk))&&c.fundedMaxTradeRisk!=null?Number(c.fundedMaxTradeRisk):null,
    fundedRecoveryLevels:Array.isArray(c.fundedRecoveryLevels)?c.fundedRecoveryLevels.map(Number):null,
    optionSequences:policyMode==='saved'?(prev.optionSequences||{}):{},
    open:true};
