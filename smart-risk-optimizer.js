@@ -150,11 +150,11 @@
   const stop=r.stopProbability,block=r.blockedProbability,fail=r.failedProbability;
   if(obj==='fast')return (r.first?.status==='hit'?3:0)+(r.second?.status==='hit'?2:0)+
    r.hitProbability*2-r.expectedHitTrades*.04-risk*.08-(block+fail)*2;
-  if(obj==='low')return 3-risk*.9-dd*.15+r.hitProbability*.1-block;
-  if(obj==='balanced')return r.hitProbability*3-stop*.6-fail*2-risk*.5-dd*.4-r.expectedTrades*.025;
+  if(obj==='low')return 3-risk*.9-dd*.15+r.hitProbability*.1-block-r.activeProbability*.15;
+  if(obj==='balanced')return r.hitProbability*3-stop*.6-fail*2-risk*.5-dd*.4-r.expectedTrades*.025-r.activeProbability*.8;
   if(obj==='recovery')return 2+r.hitProbability*2.5-stop*.7-risk*.4+
    (r.bestAfterTriple?.status==='hit'?.08:0)-block*2;
-  return r.hitProbability*4-stop*.8-block*2-fail*2-risk*.3-dd*.2-r.expectedTrades*.02;
+  return r.hitProbability*4-stop*.8-block*2-fail*2-risk*.3-dd*.2-r.expectedTrades*.02-r.activeProbability*.8;
  }
  function search(input,onProgress){
   const p=configOf(input);
@@ -167,7 +167,7 @@
    if(!grid.some(v=>LEVELS.every(k=>Math.abs(v[k]-r[k])<.001)))grid.push(r);
   }
   if(!grid.length)return Promise.resolve({error:'No three-tier risks fit the account limits.'});
-  const results=[],current=input.levels?.r3>=.01?evaluate(p,input.levels):null;
+  const results=[],current=input.levels?evaluate(p,input.levels):null;
   let i=0;
   return new Promise(resolve=>{
    function batch(){
@@ -182,13 +182,12 @@
      resolve({error:'No complete 3-risk recovery tree found within the loss limits and selected trade horizon.',tested:grid.length});
      return;
     }
-    const used=new Set(),models=[];
+    const models=[];
     for(const [kind,label] of OBJECTIVES){
      const sorted=[...results].sort((a,b)=>rank(p,kind,b)-rank(p,kind,a)||
       a.maxRisk-b.maxRisk||b.hitProbability-a.hitProbability);
-     const record=sorted.find(r=>!used.has(LEVELS.map(k=>r.risks[k]).join('/'))) ||sorted[0];
+     const record=sorted[0];
      if(!record)continue;
-     used.add(LEVELS.map(k=>record.risks[k]).join('/'));
      const primary=record.first?.status==='hit'?record.first:
       record.second?.status==='hit'?record.second:record.bestBooster;
      const convert=v=>({wl:v.wl,tiers:v.tiers,trades:v.trades,days:v.days,pnl:v.pnl,
