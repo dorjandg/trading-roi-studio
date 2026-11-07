@@ -258,6 +258,13 @@ function jjQueueRender(){
  sync.title=!endpoint?'Google Apps Script endpoint needs activation':!jjQuestionShareEnabled()?'Enable private queue sharing first':'Send unsynced questions to Google Drive and verify receipts';
  sync.onclick=async()=>{sync.disabled=true;sync.textContent='Syncing…';await jjQueueSyncPending();sync.textContent='Sync unanswered questions';sync.disabled=!jjCloudEndpoint()||!jjQuestionShareEnabled();jjQueueRender()};
  options.append(sync);
+ const viewUpdated=jjHelperNode('button','','Updated Answers');viewUpdated.type='button';
+ viewUpdated.onclick=()=>{
+  pick('dashboard');
+  const panel=document.getElementById('jj-updated-answers');
+  if(panel){panel.open=true;panel.scrollIntoView({block:'start',behavior:'smooth'});}
+ };
+ options.append(viewUpdated);
  container.append(options);
  if(!endpoint)container.append(jjHelperNode('p','jj-helper-hint','Google Apps Script review queue not connected yet; all questions remain saved in this browser.'));
 }
