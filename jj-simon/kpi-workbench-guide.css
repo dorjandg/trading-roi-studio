@@ -33,3 +33,10 @@
 .jj-kpi-scenario ul{padding-left:18px}
 .jj-kpi-scenario li{margin:7px 0}
 @media(max-width:680px){.jj-kpi-guides>summary{flex-wrap:wrap}.jj-kpi-guides .jj-kpi-summary-note{text-align:left}.jj-kpi-glossary{grid-template-columns:minmax(100px, .38fr) 1fr}.jj-kpi-guide-section-content{padding:8px}}
+
+/* Same hidden guide treatment for the Evaluation Acquisition Calculator. */
+.jj-acq-howto{margin:8px 0 12px}
+.jj-acq-howto .jj-kpi-guides{margin:6px 0}
+.jj-acq-howto .jj-calc-load-example{border:1px solid var(--accent);color:var(--accent);background:var(--panel);padding:8px 11px;border-radius:6px;cursor:pointer;font:inherit;font-size:11px;font-weight:700}
+.jj-acq-howto .jj-calc-load-example:hover{background:var(--hover)}
+.jj-acq-howto .jj-kpi-guide-section-content a{overflow-wrap:anywhere}
