@@ -1,3 +1,9 @@
+## Compact Firms Phase 1 / Phase 2 / Funded risk planners (Nov 7, 2026)
+
+- Per user screenshot, added a **Firms-only** style block `#firms-stage-compact-v3` to index.html. It reduces vertical padding in all three phase headers, "Ways to reach this stage target," dynamically rendered risk planners, Smart Setup Optimizer, advanced search and route scanner summaries, risk-route results and recovery options. Stage title and metadata occupy the same line on larger screens.
+- Dynamic target, RR, risk policy and R1–R4 controls use a seven-position grid on wide screens so R4 no longer wraps to an extra row unnecessarily, then 4 columns below 920px and 2 below 560px. Numeric inputs are 27px tall instead of ~30–38px, with smaller card gaps and compact text. A couple of planner labels shorten to Target · $ and RR; existing data attributes, risk-policy options and values remain unchanged.
+- This is entirely **display-only** other than shortening two labels: no changes to saved 4Ds settings or localStorage keys, route and smart optimizer calculations, live trading rules, stage identity, saved fold state or account logic. All three phase wrappers, inline JS parsing, stored snapshot access and recovery functions were checked after GitHub readback. Live Cloudflare deployment / tablet visual checks not independently verified.
+
 ## Portfolio Simulator section numbering consistency (Nov 7, 2026)
 
 - Corrected the duplicate displayed Section 5 in portfolio-simulator.html: Charts now displays **6 · Charts**, matching the existing Detailed reports navigation. Sections 5–11 now have unique, sequential visible labels: 5 Results, 6 Charts, 7 Account Journey, 8 Trade Risks, 9 Daily Spending, 10 Simulation History, 11 GPT Research. Also corrected a stale CSS comment naming Account Journey Section 6 rather than 7.
