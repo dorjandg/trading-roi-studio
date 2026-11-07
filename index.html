@@ -2191,8 +2191,8 @@ function routeScanUI(stage){
  const old=riskRouteResults[stage],result=old?.sig===sig&&!old.result?.error?old.result:null;
  const tiers=RECOVERY_LEVELS.filter(tier=>Number(config.levels[tier])>=0.01);
  const activeTiers=tiers.map(tier=>tier.toUpperCase()).join(' / ')||'none';
- const filters=[['all','All results'],['target','Target reached'],['target-ready','Target + days met'],
-  ['target-pending','Target · days pending'],['active','Still active'],['blocked','Risk blocked'],['failed','Floor breached']];
+ const filters=[['all','All results'],['target','Profit target hit'],['target-ready','Hit + min days met'],
+  ['target-pending','Hit · min days left'],['active','Still active'],['blocked','Risk blocked'],['failed','Floor breached']];
  const filter=filters.some(item=>item[0]===snap.routeFilter)?snap.routeFilter:'target';
  const sortValues=[['days','Trading days'],['trades','Fewest trades'],['dd','Max drawdown'],['pnl','Ending P/L'],
   ['wl','W/L sequence'],['tiers','Risk sequence'],['status','Status']];
@@ -2229,8 +2229,8 @@ function routeScanUI(stage){
  const stats=result?.stats;
  const totalCount=!stats?0:filter==='all'?stats.target+stats.active+stats.blocked+stats.failed:
   filter==='target-ready'?stats.targetReady:filter==='target-pending'?stats.targetPending:stats[filter]||0;
- const countText=stats?'Target '+stats.target.toLocaleString()+' ('+stats.targetReady.toLocaleString()+' ready · '+
-  stats.targetPending.toLocaleString()+' pending) · Active '+stats.active.toLocaleString()+' · Blocked '+
+ const countText=stats?'Profit target hit '+stats.target.toLocaleString()+' ('+stats.targetReady.toLocaleString()+' with min days met · '+
+  stats.targetPending.toLocaleString()+' with min days remaining) · Active '+stats.active.toLocaleString()+' · Blocked '+
   stats.blocked.toLocaleString()+' · Floor '+stats.failed.toLocaleString():'';
  const scanStatus=riskRouteRunning[stage]?'Scanning routes…':result?'Scan complete · '+config.depth+'-trade horizon':
   old?.sig===sig&&old?.result?.error?String(old.result.error):old?'Parameters changed · scan again':
@@ -2260,7 +2260,7 @@ function routeScanUI(stage){
     'Every active R1–R4 tier and W/L continuation up to '+config.depth+' trades is evaluated; 0 tiers are excluded. '+
     'Results stop at target, modeled failure, or unavailable risk. Exact totals cover evaluated routes, while sorting, '+
     'filtering and pagination display the retained best-ranked examples (up to 500 target, 200 per other outcome), not '+
-    'every individual route. Target days pending means additional minimum trading days are needed. '+
+    'every individual route. Hit means the profit target is reached, regardless of minimum-day eligibility. '+
     'These are hypothetical routes, not success probabilities or verified prop-firm compliance.</p></details></details>':'')+
   '</div>';
 }
@@ -2733,7 +2733,7 @@ function renderRecoveryPlanners(){
   const filter=String(snapshot.filter||'all');
   const select=(name,values,current)=>'<select data-recovery-input="'+name+'">'+values.map(([value,label])=>
    '<option value="'+value+'"'+(String(value)===String(current)?' selected':'')+'>'+label+'</option>').join('')+'</select>';
-  const options=[['all','All options'],['target','Target reached'],['target-ready','Target + days met'],['target-pending','Target · days pending'],['active','Still active'],['stopped','Strategy stopped'],['blocked','Risk blocked'],['failed','Floor breached']];
+  const options=[['all','All options'],['target','Profit target hit'],['target-ready','Hit + min days met'],['target-pending','Hit · min days left'],['active','Still active'],['stopped','Strategy stopped'],['blocked','Risk blocked'],['failed','Floor breached']];
   const pageChoices=Array.from({length:totalPages},(_,i)=>[i+1,String(i+1)]);
   const pageControls='<nav class="recovery-pages" aria-label="'+setup.name+' option pages">'+
    '<span class="recovery-pages-count">'+(totalOptions?
