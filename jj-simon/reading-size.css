@@ -1,0 +1,22 @@
+/* JJ Academy reading size control. Navigation, inputs and mobile menus remain compact. */
+:root{--jj-reading-scale:1}
+.jj-reader-size{position:relative;flex:0 0 auto}
+.jj-reader-trigger{display:flex;align-items:center;justify-content:center;min-width:33px;height:31px;padding:0 5px;border:1px solid var(--stroke);border-radius:7px;background:none;color:var(--text);font-family:system-ui,Segoe UI,Arial,sans-serif;font-size:12px;font-weight:700;cursor:pointer}
+.jj-reader-trigger:hover,.jj-reader-trigger[aria-expanded="true"]{background:var(--hover);border-color:var(--accent)}
+.jj-reader-popup{position:absolute;top:calc(100% + 9px);right:0;z-index:35;min-width:220px;padding:12px;background:var(--panel);color:var(--text);border:1px solid var(--stroke);border-radius:10px;box-shadow:0 12px 38px rgba(0,0,0,.29)}
+.jj-reader-popup[hidden]{display:none!important}
+.jj-reader-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;font-weight:700;font-size:12px;margin-bottom:9px}
+.jj-reader-percent{color:var(--accent);font-variant-numeric:tabular-nums}
+.jj-reader-steps{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.jj-reader-steps button,.jj-reader-reset{min-height:34px;border-radius:7px;border:1px solid var(--stroke);background:var(--bg);color:var(--text);cursor:pointer;font-family:inherit}
+.jj-reader-steps button{font-size:15px;font-weight:700}
+.jj-reader-steps button:hover:not(:disabled),.jj-reader-reset:hover:not(:disabled){border-color:var(--accent);background:var(--hover)}
+.jj-reader-steps button:disabled,.jj-reader-reset:disabled{opacity:.35;cursor:default}
+.jj-reader-reset{width:100%;font-size:11px;margin-top:7px}
+.jj-reader-popup small{display:block;color:var(--muted);font-size:10px;margin-top:8px;line-height:1.35}
+/* Zoom only reading surfaces, not the application's header, chapter selection, or controls. */
+#dashboard,#chapters,#jj-update-history{zoom:var(--jj-reading-scale)}
+@media(max-width:750px){
+  .jj-reader-trigger{height:31px;min-width:32px}
+  .jj-reader-popup{width:220px;max-width:calc(100vw - 20px)}
+}
