@@ -57,7 +57,8 @@
    if(!question){panel.hidden=false;status.textContent='Please enter a question first.';return}
    jjHelperQuestion=question;
    jjHelperAnswer(true);
-   const hits=selectHits(question);
+   let hits=selectHits(question);
+   if(!hits.length&&conversation.length){const previousQuestion=[...conversation].reverse().find(m=>m.role==='user');if(previousQuestion)hits=selectHits(previousQuestion.content)}
    panel.hidden=false;answer.replaceChildren();sources.replaceChildren();
    if(!hits.length){status.textContent='No new source matches found. Rephrase with a course topic to retrieve evidence before asking AI.';return}
    busy=true;button.disabled=true;button.textContent='Asking AI…';
