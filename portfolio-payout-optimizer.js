@@ -744,7 +744,7 @@ function renderUnifiedInvestmentModels(out,more=null,sortKey='net',descending=tr
  const baselineNet=baseline?.result?.avg?.net??0;
  const all=[...original,...additional];
  const keys={
-  net:m=>m.result.avg.net,improvement:m=>m.result.avg.net-baselineNet,
+  net:m=>m.result.avg.net,weeklyNet:m=>m.result.avg.net/(Math.max(1,Number(m.result.config?.days)||20)/5),improvement:m=>m.result.avg.net-baselineNet,
   costGoal:m=>m.score.costPerGoal??Infinity,
   roi:m=>m.result.roi,investment:m=>m.budget,goal:m=>m.score.hit,
   payout:m=>m.result.chancePayout,p10:m=>m.result.p10,
@@ -761,7 +761,7 @@ function renderUnifiedInvestmentModels(out,more=null,sortKey='net',descending=tr
   p1r3:m=>Number(m.plan.riskProfiles.p1?.dynamicMaxRisk??m.plan.riskProfiles.p1?.r3)||0
  };
  const options=[
-  ['net','Expected net'],['improvement','Net improvement'],['roi','Fee ROI'],
+  ['net','Expected net'],['weeklyNet','Expected net/week'],['improvement','Net improvement'],['roi','Fee ROI'],
   ['investment','Starting investment'],['goal','Payout + net goal chance'],['costGoal','Fees per goal success'],
   ['payout','First payout chance'],['firstDay','First payout day'],['goalDay','Goal payout day'],['p10','Downside P10'],['blocked','Risk blocked'],['breached','Actual breaches'],
   ['paid','Paid accounts'],['funded','Funded'],['bought','Challenges bought'],['spent','Fees'],
@@ -799,7 +799,7 @@ function renderUnifiedInvestmentModels(out,more=null,sortKey='net',descending=tr
   return '<tr><th scope="row"><b>'+escapeHtml(m.title)+'</b>'+
    '<small class="payout-more-model-reason">'+sourceName+' · '+escapeHtml(m.reason)+'</small>'+
    '<details><summary>R1/R2/R3 · phase settings</summary>'+risks+'</details></th>'+
-   '<td>'+usd(r.avg.net)+'</td><td>'+rate(r.roi)+'</td><td>'+rate(s.hit)+'</td><td>'+(s.costPerGoal==null?'—':usd(s.costPerGoal))+'</td>'+
+   '<td>'+usd(r.avg.net)+'</td><td>'+usd(s.netPerWeek??(r.avg.net/(Math.max(1,Number(r.config?.days)||20)/5)))+'</td><td>'+rate(r.roi)+'</td><td>'+rate(s.hit)+'</td><td>'+(s.costPerGoal==null?'—':usd(s.costPerGoal))+'</td>'+
    '<td>'+usd(m.budget)+'</td><td>'+delta+'</td>'+
    '<td class="payout-col-accounts">'+usd(r.p10)+'</td><td class="payout-col-accounts">'+rate(r.chancePayout)+'</td>'+
    '<td class="payout-col-accounts">'+fmt(r.avg.exhausted)+'</td><td class="payout-col-accounts">'+fmt(r.avg.failed)+'</td><td class="payout-col-accounts">'+fmt(r.avg.paid)+'</td>'+
@@ -832,7 +832,7 @@ function renderUnifiedInvestmentModels(out,more=null,sortKey='net',descending=tr
    ' as reference; goals require BOTH first-payout count and net P&L. Sorting does not rerun simulations.</p>':
    '<p class="hint">These are the validated Calculate Investment options. Expand an option and select Find More Risk Models to add alternatives to this same table.</p>')+
   '<div class="tablewrap"><table class="payout-more-table" data-view="'+(columnView==='accounts'?'accounts':columnView==='all'?'all':'trading')+'"><thead><tr>'+
-  '<th>Model</th><th>Net</th><th>ROI</th><th>Goal</th><th title="Total fees spent in simulated trials divided by runs meeting the full goal">Cost / Goal</th><th>Investment</th><th>Δ Net</th>'+
+  '<th>Model</th><th>Net</th><th title="Expected cash net divided by trading weeks in each scenario horizon">Net / Week</th><th>ROI</th><th>Goal</th><th title="Total fees spent in simulated trials divided by runs meeting the full goal">Cost / Goal</th><th>Investment</th><th>Δ Net</th>'+
   '<th class="payout-col-accounts">P10</th><th class="payout-col-accounts">CP</th>'+
   '<th class="payout-col-accounts">BA</th><th class="payout-col-accounts">Breached</th><th class="payout-col-accounts">Paid</th><th class="payout-col-accounts">Funded</th><th class="payout-col-accounts">First day</th><th class="payout-col-accounts">Goal day</th><th class="payout-col-accounts">Bought</th><th class="payout-col-accounts">Fees</th>'+
   '<th class="payout-col-trading">PF</th><th class="payout-col-trading">WR</th><th class="payout-col-trading">RR</th><th class="payout-col-trading">AR</th><th class="payout-col-trading">AW</th><th class="payout-col-trading">AL</th><th class="payout-col-trading">EV</th><th class="payout-col-trading">Trades</th><th>View</th>'+
