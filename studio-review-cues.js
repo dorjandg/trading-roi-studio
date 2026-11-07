@@ -32,10 +32,10 @@ function readRemote(user){
 let busy=false;
 async function queue({kind='manual',label='',note='',automatic=false,fingerprint='' }={}){
  const user=selected(),existing=read(),idKey=String(fingerprint||kind+':'+clean(label).toLowerCase()).slice(0,170);
- const prior=existing.find(x=>x.fingerprint===idKey&&(!automatic||x.day===day())&&['verified','sending','queued'].includes(x.status));
- if(prior)return {ok:prior.status==='verified',status:prior.status,duplicate:true};
+ const prior=existing.find(x=>x.fingerprint===idKey&&(!automatic||x.day===day())&&['queued-cloud','verified','sending','queued'].includes(x.status));
+ if(prior)return {ok:prior.status==='queued-cloud'||prior.status==='verified',status:prior.status,duplicate:true};
  if(busy)return {ok:false,status:'busy'};
- const today=existing.filter(x=>x.day===day()&&x.automatic&&['verified','sending'].includes(x.status)).length;
+ const today=existing.filter(x=>x.day===day()&&x.automatic&&['queued-cloud','verified','sending'].includes(x.status)).length;
  if(automatic&&today>=2)return {ok:false,status:'daily-limit'};
  if(!configured())return {ok:false,status:'unavailable'};
  busy=true;
@@ -70,10 +70,10 @@ async function queue({kind='manual',label='',note='',automatic=false,fingerprint
  }catch(e){reason=e?.message||String(e)}
  finally{
   busy=false;
-  const updated=read().map(x=>x.id===cue.id?{...x,status:success?'verified':'not-confirmed',error:success?'':String(reason).slice(0,100)}:x);
+  const updated=read().map(x=>x.id===cue.id?{...x,status:success?'queued-cloud':'not-confirmed',error:success?'':String(reason).slice(0,100)}:x);
   write(updated);announce(success?'Cue saved and verified in cloud. It is queued for scheduled GPT review; review has not run.':'Cue not confirmed in cloud: '+reason+'. Retry manually.');
  }
- return {ok:success,status:success?'verified':'not-confirmed'};
+ return {ok:success,status:success?'queued-cloud':'not-confirmed'};
 }
 function formulaFindings(){
  const result=root.StudioAdvisorReadOnly?.getCurrent?.();
@@ -98,7 +98,7 @@ function mount(){
  details.innerHTML='<summary><strong>Studio AI → GPT review cues</strong><span class="sim-charts-summary"> · Formula audit · Cloud queue status</span></summary><div class="gpt-research-content"><p class="hint">Only hard formula inconsistencies auto-escalate (max two per day). Unanswered questions need a manual Queue action in Studio AI. Review runs on its scheduled task, never instantly.</p><div class="actions"><button type="button" data-studio-audit>Check current formulas</button><button type="button" data-studio-refresh>Refresh cue status</button></div><p data-studio-cue-status class="hint">No check run yet.</p><div data-studio-cues></div></div>';
  host.insertBefore(details,host.firstChild);
  const list=details.querySelector('[data-studio-cues]');
- function redraw(){list.replaceChildren();for(const x of read().slice(-12).reverse()){const p=document.createElement('p');p.className='hint';p.textContent=x.timestamp.slice(0,16)+' · '+x.label+' · '+x.status+(x.error?' · '+x.error:'');list.append(p)}}
+ function redraw(){list.replaceChildren();for(const x of read().slice(-12).reverse()){const p=document.createElement('p');p.className='hint';p.textContent=x.timestamp.slice(0,16)+' · '+x.label+' · '+(x.status==='queued-cloud'||x.status==='verified'?'Queued (cloud verified; GPT not yet reviewed)':x.status==='not-confirmed'?'Needs attention — cloud not confirmed':x.status)+(x.error?' · '+x.error:'');list.append(p)}}
  details.addEventListener('click',e=>{if(e.target.closest('[data-studio-audit]')){const x=inspect();announce(x.length?x.length+' strict formula issue(s) detected; cloud verification may still be in progress.':'No strict arithmetic or funnel invariant failures in the displayed report. This does not validate all model assumptions.');redraw()}if(e.target.closest('[data-studio-refresh]'))redraw()});
  root.addEventListener?.('studio:cues-updated',redraw);redraw();
 }
