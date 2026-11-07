@@ -2,7 +2,7 @@
 // Requires a Workers AI binding named AI on the Pages project.
 // The browser sends only the selected public Academy research summaries,
 // never the full private transcript store, API keys, or account information.
-const MODEL='@cf/meta/llama-3.1-8b-instruct';
+const MODEL='@cf/google/gemma-4-26b-a4b-it';
 const json=(data,status=200)=>new Response(JSON.stringify(data),{
  status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'}
 });
@@ -31,9 +31,9 @@ export async function onRequestPost({request,env}){
  try{
   const result=await env.AI.run(MODEL,{
    messages:[{role:'system',content:system},{role:'user',content:user}],
-   max_tokens:650,temperature:0.2
+   max_completion_tokens:650,temperature:0.2,chat_template_kwargs:{enable_thinking:false}
   });
-  const answer=clean(typeof result==='string'?result:result?.response);
+  const answer=clean(typeof result==='string'?result:(result?.response||result?.choices?.[0]?.message?.content||result?.result?.response||result?.result?.choices?.[0]?.message?.content));
   if(!answer)return json({error:'The AI did not return an answer. Please use local source search.'},502);
   return json({answer:answer.slice(0,6500),model:MODEL,sources:sources.map(s=>({number:s.number,title:s.title})),note:'AI synthesis of indexed Academy summaries, not independently verified trading results.'});
  }catch(error){
