@@ -7,13 +7,20 @@ const $=id=>document.getElementById(id);
 const A=root.StudioJjFtmoAuto;
 const E=root.StudioPortfolioEngine;
 const W=root.StudioWeeklyEconomics;
-let active=false;
+let active=false,savedSourceSnapshot='';
 const cash=x=>Number.isFinite(x)?x.toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}):'—';
 const pct=x=>Number.isFinite(x)?(x*100).toFixed(1)+'%':'—';
 const amount=x=>Number.isFinite(x)?x.toFixed(1):'—';
 const mult=x=>Number.isFinite(x)?x.toFixed(2)+'×':'—';
 const ev=(w,r)=>Number.isFinite(w)&&Number.isFinite(r)&&r>0?(w*r-(1-w)):NaN;
 const formatR=x=>Number.isFinite(x)?(x>=0?'+':'')+x.toFixed(2)+'R':'—';
+function sourceSnapshot(){
+ const u=localStorage.getItem('4ds:active-user:v1')||'dori';
+ const p='4ds:v1:'+u+':',a='ftmo2:10000';
+ return JSON.stringify([u,localStorage.getItem(p+'studio-account-profile-v1:'+a),
+ localStorage.getItem(p+'ftmo-roi-studio-v1'),localStorage.getItem(p+'studio-active-profile-v1'),
+ ...['p1','p2','funded'].map(stage=>localStorage.getItem('4ds:recovery-planner:v2:'+u+':'+a+':'+stage))]);
+}
 function displayMode(mode,message){
  $('autoModeLabel').textContent=mode;
  $('autoManual').hidden=!active;
@@ -21,7 +28,7 @@ function displayMode(mode,message){
 }
 function manual(message){
  const wasActive=active;
- active=false;
+ active=false;savedSourceSnapshot='';
  $('autoTimings').hidden=true;
  // The original input listener re-renders ALL manual KPI cards, source and detail rows.
  if(wasActive&&$('ftP1'))$('ftP1').dispatchEvent(new Event('input',{bubbles:false}));
@@ -110,6 +117,7 @@ async function run(){
   const {result,model}=A.simulate(E,W,{plan,count:Number($('count').value),days:Number($('autoDays').value),
    trials:Number($('autoTrials').value),winRate:wr,
    signalsMode:pace==='weekly20'?'weekly20':'daily',signalsPerDay:4,seed:24717});
+  savedSourceSnapshot=sourceSnapshot();
   showAuto(result,model,wr,pace,warnings);
  }catch(err){
   manual('Auto FTMO unavailable: '+(err?.message||String(err))+'. Manual results remain displayed.');
@@ -130,5 +138,22 @@ for(const id of ['ftFee','ftP1','ftP2','ftFunded','ftRealize','ftPayout','ftSpli
   if(active)manual('Switched to manual FTMO assumptions after editing its parameters.');
  });
 }
+// Inputs from either strategy can trigger the legacy manual renderer. Never retain an
+// AUTO badge over values that have been returned to manual by any on-page edit.
+document.querySelectorAll('input').forEach(function(el){
+ el.addEventListener('input',function(){
+  if(active)manual('Manual input changed. Re-run Auto FTMO for a new linked result.');
+ });
+});
+for(const id of ['jjPlanning','jjReported','ftReset']){
+ $(id)?.addEventListener('click',function(){if(active)manual('Preset changed; Auto FTMO must be run again.');});
+}
+function checkSourceFresh(){
+ if(active&&savedSourceSnapshot&&sourceSnapshot()!==savedSourceSnapshot)
+  manual('Saved FTMO profile changed. Auto FTMO must be run again.');
+}
+root.addEventListener?.('focus',checkSourceFresh);
+root.addEventListener?.('pageshow',checkSourceFresh);
+root.addEventListener?.('storage',checkSourceFresh);
 root.StudioJjFtmoAutoController={run,manual};
 })(typeof window!=='undefined'?window:globalThis);
