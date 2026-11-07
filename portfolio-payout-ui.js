@@ -647,7 +647,7 @@ function start(){
  for(const id of Object.values(assumptionIds))$(id).addEventListener('change',()=>{storeAssumptions();save()});
  $('payoutOptReset').addEventListener('click',()=>{loadAssumptions(true);storeAssumptions();save()});
  $('payoutOptAccount').addEventListener('change',()=>{loadAssumptions();loadedAssumptionsAccount=acctValue();save()});
- let currentSortMode=['model','net','budgetRoi','feeRoi','chance','payouts','investment','costGoal','firstDay'].includes(prior.sortMode)?prior.sortMode:'model';
+ let currentSortMode=['model','net','weeklyNet','budgetRoi','feeRoi','chance','payouts','investment','costGoal','firstDay'].includes(prior.sortMode)?prior.sortMode:'model';
  let lastOptimizerRecordId=null;
  let lastOptimizerOutput=null,lastOptimizerAccountKey='',lastOptimizerInputs=null,lastModelSearch=null,moreSortKey='net',moreDescending=true,moreColumnView='trading',moreSourceFilter='all';
  document.addEventListener('portfolio-investment-import',event=>{
