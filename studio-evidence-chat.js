@@ -47,7 +47,7 @@ function reportAnswer(q){
  if(!wants)return null;
  const label=source();
  const line=r=>r.firm+': purchased '+r.bought+', phase 1 '+r.phase1+', phase 2 '+r.phase2+', funded '+r.funded+', first-paid '+r.paid+'; spend '+r.spent+', receipts '+r.receipts+', net '+r.net+', ROI '+r.roi+', chance of ≥1 payout '+r.chance+'.';
- let answer='Displayed Section 5 results ('+label+'):\\n'+chosen.map(line).join('\\n');
+ let answer='Displayed Section 5 results ('+label+'):\n'+chosen.map(line).join('\n');
  if(/why|low|negative|bad|cost|fees|funnel|funded|payout|phase|account/.test(q)){
   const observations=chosen.map(r=>{
    let spent=numeric(r.spent),receipts=numeric(r.receipts),bought=numeric(r.bought),funded=numeric(r.funded),paid=numeric(r.paid);
@@ -57,9 +57,9 @@ function reportAnswer(q){
    if(funded>0&&paid!==null)notes.push('first-paid / funded ≈ '+(100*paid/funded).toFixed(1)+'%');
    return r.firm+': '+notes.join('; ')+'.';
   });
-  answer+='\\nReadout: '+observations.join(' ')+' These are descriptive ratios of trial averages, not a causal diagnosis or true account-level pass probabilities.';
+  answer+='\nReadout: '+observations.join(' ')+' These are descriptive ratios of trial averages, not a causal diagnosis or true account-level pass probabilities.';
  }
- answer+='\\nSource: currently displayed Section 5 Monte Carlo report; averages and modeled assumptions, not realized trading payouts. Changing settings after running can make these numbers stale—rerun the simulation to update.';
+ answer+='\nSource: currently displayed Section 5 Monte Carlo report; averages and modeled assumptions, not realized trading payouts. Changing settings after running can make these numbers stale—rerun the simulation to update.';
  return [answer,'Displayed report · High for copied values; Medium for interpretation',false];
 }
 const suggestions=['Explain my latest results','Why is my ROI low?','Explain win rate and risk','Check my target and budget','Why are funded accounts few?','Compare evaluation and funded','What information is missing?'];
