@@ -17,6 +17,10 @@
  const save=()=>{const chat=current();if(chat){chat.messages=conversation;chat.updated=Date.now();if(chat.title==='New chat'&&conversation.length)chat.title=conversation.find(x=>x.role==='user')?.content?.slice(0,65)||chat.title}try{localStorage.setItem(storeKey,JSON.stringify({chats:chats.slice(0,40),currentId}))}catch(_){}};
  save();
 
+ const usageKey='jj-ai-daily-requests-v1';
+ const utcDay=()=>new Date().toISOString().slice(0,10);
+ const readUsage=()=>{try{const x=JSON.parse(localStorage.getItem(usageKey)||'{}');return x.day===utcDay()?x:{day:utcDay(),success:0,attempts:0,limited:false}}catch(_){return {day:utcDay(),success:0,attempts:0,limited:false}}};
+ const recordUsage=(kind)=>{const x=readUsage();if(kind==='attempt')x.attempts++;if(kind==='success')x.success++;if(kind==='limited')x.limited=true;try{localStorage.setItem(usageKey,JSON.stringify(x))}catch(_){}};
  const studyKey='jj-ai-study-v1';
  let study={bookmarks:[],queue:[]};
  try{const v=JSON.parse(localStorage.getItem(studyKey)||'{}');if(Array.isArray(v.bookmarks))study.bookmarks=v.bookmarks;if(Array.isArray(v.queue))study.queue=v.queue}catch(_){}
@@ -71,6 +75,9 @@
   const panel=el('section','jj-ai-panel');panel.id='jj-cloudflare-ai';
   panel.hidden=true;
   const status=el('p','jj-ai-status','');
+  const usage=el('div','jj-ai-usage');const usageLabel=el('span','','');const usageDetails=el('details','');usageDetails.append(el('summary','','Usage details'),el('p','','This counter shows successful AI responses in this browser today (UTC), not Cloudflare Neurons or remaining quota. Cloudflare free usage is shared across the account and cannot be measured accurately by this page without authenticated Cloudflare usage data.'));usage.append(usageLabel,usageDetails);
+  const refreshUsage=()=>{const x=readUsage();usageLabel.textContent=(x.limited?'Free AI limit reported · ':'AI requests today · ')+x.success+' answered / '+x.attempts+' attempted · remaining Neurons unavailable';};
+  refreshUsage();
   const answer=el('div','jj-ai-answer');answer.setAttribute('aria-live','polite');
   const sources=el('div','jj-ai-sources');
   const thread=el('div','jj-ai-thread');
@@ -99,7 +106,7 @@
    studyBody.append(el('small','','Saved locally on this device. The queue is not sent to an external research service.'));
   };
   const queueQuestion=(question,reason)=>{if(!question||study.queue.some(x=>x.question===question))return;study.queue.push({question,reason});study.queue=study.queue.slice(-100);saveStudy();drawStudy()};
-  panel.append(library,studyPanel,el('strong','','JJ Academy AI · conversation'),status,thread,answer,sources,history);
+  panel.append(library,studyPanel,el('strong','','JJ Academy AI · conversation'),usage,status,thread,answer,sources,history);
   const showLatest=()=>{
    answer.replaceChildren();sources.replaceChildren();drawThread();
    const latest=conversation[conversation.length-1];
@@ -188,6 +195,7 @@
    panel.hidden=false;sources.replaceChildren();
    if(!hits.length){queueQuestion(question,'No source matches');status.textContent='No source matches. Saved to local research queue; no AI request made.';return}
    busy=true;button.disabled=true;reset.disabled=true;button.textContent='Asking AI…';
+   recordUsage('attempt');refreshUsage();
    conversation.push({role:'user',content:question.slice(0,750)});save();drawThread();drawChats();
    status.textContent='Thinking… · '+Math.min(hits.length,5)+' Academy sources';
    try{
@@ -210,6 +218,7 @@
     if(!response.ok)throw Error([data.message||data.error||'AI endpoint unavailable',data.code?'Code: '+data.code:'',data.detail||''].filter(Boolean).join(' · '));
     status.textContent='AI synthesis of indexed Academy research. Verify original lesson evidence; assumptions are not actual JJ performance.';
     const citedSources=hits.slice(0,5).map(hit=>({title:hit.title,url:hit.sourceUrl||'',chapter:hit.chapter||''}));
+    recordUsage('success');refreshUsage();
     const responseText=String(data.answer||'').slice(0,6500);
     conversation.push({role:'assistant',content:responseText,sources:citedSources,mathNote:tradeArithmetic(question)});
     if(/not documented|insufficient evidence|cannot verify|not specified|unknown from/i.test(responseText))queueQuestion(question,'Evidence gap');
@@ -220,7 +229,7 @@
    }catch(error){
     const message=String(error?.message||'AI unavailable');
     status.textContent=/abort/i.test(message)?'AI request timed out.':message;
-    const code=/FREE_TIER_LIMIT|quota|neurons|429/i.test(message);status.textContent=code?'Daily free AI allowance reached. Try again after 00:00 UTC. Academy course search remains available.':status.textContent;const notice=el('div','jj-ai-error',code?'Daily free AI allowance reached. Your chats remain saved; try again after the daily reset.':'AI could not answer this time. '+message);thread.append(notice);
+    const code=/FREE_TIER_LIMIT|quota|neurons|429/i.test(message);if(code){recordUsage('limited');refreshUsage()}status.textContent=code?'Daily free AI allowance reached. Try again after 00:00 UTC. Academy course search remains available.':status.textContent;const notice=el('div','jj-ai-error',code?'Daily free AI allowance reached. Your chats remain saved; try again after the daily reset.':'AI could not answer this time. '+message);thread.append(notice);
    }finally{busy=false;button.disabled=false;reset.disabled=false;button.textContent='Ask Cloudflare AI'}
   });
   form.addEventListener('submit',()=>{panel.hidden=false});
