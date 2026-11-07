@@ -51,6 +51,61 @@ if(!curriculum.some(x=>x.slug===slug)){
   reason:'Interactive JJ-derived evaluation acquisition probability model; user assumptions and firm costs require verification.'
  });
 }
+/* Independent collapsed instructions above the editable acquisition inputs. */
+function mountAcquisitionHelp(){
+ const wb=document.querySelector('#calc-acquisition .jj-acquisition-workbench');
+ if(!wb||wb.querySelector('.jj-acq-howto'))return;
+ const inputs=wb.querySelector('.calc-fields');
+ if(!inputs)return;
+ const guide=document.createElement('div');
+ guide.className='jj-acq-howto';
+ guide.innerHTML=`
+ <details class="jj-kpi-guides">
+  <summary><span>How to use · 4 steps</span><span class="jj-kpi-summary-note">Hidden until opened</span></summary>
+  <div class="jj-kpi-guide-body jj-kpi-guide-section-content">
+   <ol>
+    <li><strong>Eval fee:</strong> enter the cash cost of one evaluation attempt, not the stated account balance.</li>
+    <li><strong>Pass rate:</strong> enter the percentage of purchased evaluations that actually reach the funded stage. Include both phases when the firm requires two.</li>
+    <li><strong>Funded success:</strong> enter the probability of the modeled success <em>after</em> funding. When studying cash payouts, success must mean receiving an eligible payout, not merely touching a trading profit target.</li>
+    <li><strong>Activation fee and attempts:</strong> add fees charged on passing and the number of planned purchases. Read acquisition cost, single-attempt payout pathway, chance of at least one success, and purchase spending.</li>
+   </ol>
+   <p class="jj-kpi-alert">The results assume independent attempts with stable probabilities. They exclude payout amount, payout eligibility rules, commission, resets, most renewals, trading-day timing and correlated copy trading. Do not interpret a high success chance as a profitable plan.</p>
+  </div>
+ </details>
+ <details class="jj-kpi-guides">
+  <summary><span>Worked example · JJ probability method</span><span class="jj-kpi-summary-note">Inputs · formula · outcomes</span></summary>
+  <div class="jj-kpi-guide-body jj-kpi-guide-section-content">
+   <p>Try this illustrative case: <strong>$100 evaluation fee, 33% pass rate, 25% conditional funded success, $0 activation fee, 10 independent attempts</strong>.</p>
+   <div class="jj-kpi-formula">
+    Acquisition cost = $100 ÷ 0.33 + $0 = <strong>$303.03 per funded account</strong><br>
+    Payout pathway = 0.33 × 0.25 = <strong>8.25% per purchase</strong><br>
+    At least one successful pathway across 10 = 1 − (1 − 0.0825)<sup>10</sup> ≈ <strong>57.73%</strong><br>
+    Evaluation purchase spending = 10 × $100 = <strong>$1,000</strong>
+   </div>
+   <p>There is still about a <strong>42.27% probability of no successful payout pathway</strong> across these 10 independent attempts. Even a successful pathway does not tell you the net ROI without the actual withdrawable payout and all costs.</p>
+   <button type="button" class="jj-calc-load-example">Load this example into calculator</button>
+   <p class="jj-kpi-alert">These are illustrative input assumptions inspired by JJ's two-stage probability methodology—not verified current provider terms or his personal pass-rate statistics.</p>
+   <p>JJ sources: <a href="https://drive.google.com/file/d/1bzGIqxU1BCDPqKblORKaCUsjRFMsMBVs/view" target="_blank" rel="noopener noreferrer">Prop Firm Math Stats (00:30–01:10; 05:00–07:16)</a> and <a href="https://drive.google.com/file/d/1VOJtRPDpy9LB4UakPYfZChROyAtPLQfv/view" target="_blank" rel="noopener noreferrer">Risk Of Ruin Bankroll Management (03:25–04:50)</a>.</p>
+  </div>
+ </details>`;
+ wb.insertBefore(guide,inputs);
+ const button=guide.querySelector('.jj-calc-load-example');
+ if(button)button.addEventListener('click',()=>{
+  const example={'jj-cost':100,'jj-pass':33,'jj-win':25,'jj-activation':0,'jj-n':10};
+  for(const [id,value] of Object.entries(example)){
+   const field=wb.querySelector('#'+id);
+   if(field){field.value=String(value);field.dispatchEvent(new Event('input',{bubbles:true}));}
+  }
+  if(typeof jjCalculate==='function')jjCalculate();
+  button.textContent='Example loaded';
+ });
+}
+const jjCalcOriginalRender=render;
+render=function(){
+ jjCalcOriginalRender();
+ if(active===slug)mountAcquisitionHelp();
+};
+
 // A direct URL to the calculator should work even on the initial page load.
 const deep=new URLSearchParams(location.search).get('topic');
 if(deep===slug)active=slug;
