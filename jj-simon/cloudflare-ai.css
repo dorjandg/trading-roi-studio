@@ -114,3 +114,8 @@
 #jj-cloudflare-ai .jj-ai-followups{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
 #jj-cloudflare-ai .jj-ai-followups strong{flex-basis:100%;font-size:11px;color:var(--muted)}
 #jj-cloudflare-ai .jj-ai-followups button{color:var(--accent)}
+
+#jj-cloudflare-ai .jj-ai-usage{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:10px;color:var(--muted);border-bottom:1px solid var(--stroke);padding:3px 0 8px}
+#jj-cloudflare-ai .jj-ai-usage summary{cursor:pointer;color:var(--accent)}
+#jj-cloudflare-ai .jj-ai-usage details[open]{flex-basis:100%}
+#jj-cloudflare-ai .jj-ai-usage p{margin:5px 0;line-height:1.5}
