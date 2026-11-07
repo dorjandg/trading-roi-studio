@@ -23,6 +23,7 @@ function jjIndexDriveTranscripts(){
   const indexed=new Map();
   old.forEach(row=>indexed.set(String(row[1]),String(row[3])));
   let files=0,chunks=0,skipped=0;
+  const startedAt=new Date().toISOString();
   for(const folderId of ids){
     const folder=DriveApp.getFolderById(folderId);
     const iterator=folder.getFiles();
@@ -51,6 +52,36 @@ function jjIndexDriveTranscripts(){
       files++;
     }
   }
-  console.log(JSON.stringify({filesUpdated:files,chunksWritten:chunks,skipped}));
-  return {filesUpdated:files,chunksWritten:chunks,skipped};
+  // Metadata only: no transcript text in status sheet.
+  let status=book.getSheetByName('IndexStatus');
+  if(!status)status=book.insertSheet('IndexStatus');
+  status.clearContents();
+  const records=Math.max(0,tab.getLastRow()-1);
+  const allIds=records?tab.getRange(2,2,records,1).getValues().map(r=>String(r[0])):[];
+  const metadata=[
+    ['Metric','Value'],
+    ['Last started (UTC)',startedAt],
+    ['Last completed (UTC)',new Date().toISOString()],
+    ['Files updated',files],
+    ['Chunks written',chunks],
+    ['Files skipped',skipped],
+    ['Indexed files',new Set(allIds).size],
+    ['Indexed excerpts',records],
+    ['Folder count',ids.length],
+    ['Visibility','Private Google Sheet; no public transcript API']
+  ];
+  status.getRange(1,1,metadata.length,2).setValues(metadata);
+  console.log(JSON.stringify({filesUpdated:files,chunksWritten:chunks,skipped,indexedFiles:new Set(allIds).size,indexedExcerpts:records}));
+  return {filesUpdated:files,chunksWritten:chunks,skipped,indexedFiles:new Set(allIds).size,indexedExcerpts:records};
+}
+
+/**
+ * Optional owner-installed hourly trigger. Run once after reviewing folder IDs.
+ * Does not deploy a public web endpoint or share any private Sheet.
+ */
+function jjInstallHourlyIndexTrigger(){
+  const name='jjIndexDriveTranscripts';
+  ScriptApp.getProjectTriggers().filter(t=>t.getHandlerFunction()===name).forEach(t=>ScriptApp.deleteTrigger(t));
+  ScriptApp.newTrigger(name).timeBased().everyHours(1).create();
+  return 'Installed one hourly private index trigger';
 }
