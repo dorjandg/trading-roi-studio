@@ -13,6 +13,24 @@ const entries=[
  {id:'distribution',name:'Monte Carlo percentiles',terms:['p10','p90','median','percentile','net distribution'],formula:'P10 / median / P90 are 10th / 50th / 90th percentiles of simulated net outcomes.',inputs:'per-trial portfolio net results',source:'portfolio-engine.js · quantile / simulatePortfolio',output:'Section 5 net distribution and Section 6 charts',caveat:'Distribution describes model uncertainty, not empirical live trading risk or worst possible loss.'},
  {id:'days',name:'Timing and first payout',terms:['payout waiting','payout delay','trading days','horizon','funded wait'],formula:'The model advances accounts over configured trading-day horizon and provider-specific funded/payout waiting states. Average first-payout day is conditional on trials reaching the first payout.',inputs:'days, trading schedule, firm plan rules, per-trial event timing',source:'portfolio-engine.js · oneTrial / simulatePortfolio',output:'Section 7 journey, Section 9 daily ledger',caveat:'Trading days are not calendar days; some provider waiting, processing and eligibility rules are planning approximations.'}
 ];
+
+const lineage=[
+ {names:['overview','dashboard'],source:'index.html',inputs:'Selected 4Ds user, active firm/account profile and Overview controls',results:'Overview KPIs and strategy summary',note:'Overview calculations are managed by index.html; the detailed calculation graph has not been exhaustively mapped.'},
+ {names:['firms','firm settings','risk planner'],source:'index.html + rules.html + ftmo-funded-buffer.js + saved Firms profiles',inputs:'Selected firm, program, account size, per-stage risk settings and catalog rules',results:'Stage plans and account-specific risk parameters',note:'Source profiles remain authoritative; Studio AI reads only visible controls, not hidden cloud settings.'},
+ {names:['portfolio','simulator'],source:'portfolio-simulator.html + portfolio-engine.js + portfolio-history.js',inputs:'Budget, win rate, horizon, signals, program rules, saved risk profiles and policies',results:'Monte Carlo account stage funnel, cash metrics, journeys and chart summaries',note:'10 verified formula definitions are mapped individually; not all engine branches have been independently audited.'},
+ {names:['investment lab','investment'],source:'investment-lab.html',inputs:'Visible investment control settings and selected local Studio data when available',results:'Investment scenarios',note:'This is a separate calculation context; never treat its values as Run Full Simulation output without an explicit source label.'},
+ {names:['comparison lab','comparison'],source:'comparison-lab.html',inputs:'Visible account/strategy comparison settings',results:'Side-by-side comparison outputs',note:'Formula coverage is not exhaustive; no causal effect is inferred from displayed comparison.'},
+ {names:['trade lab','trade'],source:'trade-lab.html',inputs:'Visible trade, risk and prop-firm scenario inputs',results:'Trade and equity scenario projections',note:'Distinct lab model, not the full Portfolio Simulator Monte Carlo model.'},
+ {names:['labs'],source:'labs.html + comparison-lab.html + investment-lab.html + trade-lab.html',inputs:'User-selected lab and visible control settings',results:'Analysis tool links and standalone projections',note:'Each Lab has its own model; assumptions should not be mixed across pages.'},
+ {names:['jj ftmo kpis','kpi benchmark'],source:'jj-ftmo-kpis.html + jj-ftmo-auto.js + portfolio-engine.js (automatic FTMO mode)',inputs:'Illustrative JJ/FTMO assumptions or saved FTMO 10K plan in auto mode',results:'Scenario/cohort KPI estimates',note:'Illustrative manual probabilities are not empirically measured and must not be presented as real pass rates.'}
+];
+function sourceAnswer(q){
+ const text=norm(q);
+ if(!/(source|data flow|where.*(data|value|number)|calculate|derive|depend|origin|formula|from which|which code|trace)/.test(text))return null;
+ const item=lineage.find(x=>x.names.some(k=>text.includes(k)));
+ if(!item)return null;
+ return ['Source map · '+item.names[0]+'\nFiles: '+item.source+'\nInputs: '+item.inputs+'\nOutputs: '+item.results+'\nCoverage: '+item.note,'Source-file map · Medium (not all branches verified)',false];
+}
 const n=x=>typeof x==='number'&&Number.isFinite(x)?x:null;
 const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
 function lookup(q){
@@ -29,7 +47,7 @@ function lookup(q){
  return best;
 }
 function answer(q){
- const item=lookup(q);if(!item)return null;
+ const item=lookup(q);if(!item)return sourceAnswer(q);
  const ask=norm(q);
  if(!/(how|why|explain|formula|calculate|definition|meaning|derive|source|where|trace|depend|what|audit|check)/.test(ask))return null;
  return [item.name+'\nFormula: '+item.formula+'\nInputs: '+item.inputs+'\nCode source: '+item.source+'\nShown in: '+item.output+'\nLimit: '+item.caveat,'Verified engine formula map · High',false];
@@ -55,5 +73,5 @@ function audit(results){
  }
  return findings;
 }
-root.StudioFormulaAudit={entries,lookup,answer,audit};
+root.StudioFormulaAudit={entries,lineage,lookup,answer,sourceAnswer,audit};
 })(window);
