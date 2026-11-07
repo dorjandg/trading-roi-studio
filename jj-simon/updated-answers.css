@@ -1,0 +1,39 @@
+/* Private per-browser JJ Academy reviewed-answer history */
+#jj-updated-answers{background:var(--panel);border:1px solid var(--stroke);border-radius:10px;overflow:hidden;margin:12px 0 14px}
+.chapter-mode #jj-updated-answers{display:none!important}
+#jj-updated-answers > summary{list-style:none;cursor:pointer;display:flex;gap:8px;justify-content:space-between;align-items:center;padding:12px 14px}
+#jj-updated-answers > summary::-webkit-details-marker{display:none}
+#jj-updated-answers > summary:hover{background:var(--hover)}
+.jj-answers-label{display:flex;flex-direction:column;gap:2px}
+.jj-answers-label strong{font-size:13px}
+.jj-answers-label small,.jj-answers-note{font-size:11px;color:var(--muted)}
+.jj-answers-caret{font-size:17px;color:var(--accent);transition:transform .15s}
+#jj-updated-answers[open] .jj-answers-caret{transform:rotate(90deg)}
+.jj-answers-main{border-top:1px solid var(--stroke);padding:11px}
+.jj-answers-controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 10px}
+.jj-answers-controls input,.jj-answers-controls select{font:inherit;font-size:12px;color:var(--text);background:var(--bg);border:1px solid var(--stroke);border-radius:6px;min-height:33px;padding:6px 8px}
+.jj-answers-controls input{flex:1;min-width:160px}
+.jj-answers-controls button,.jj-answers-pagination button{border:1px solid var(--stroke);background:var(--bg);color:var(--text);border-radius:6px;font:inherit;font-size:12px;min-height:33px;padding:6px 9px;cursor:pointer}
+.jj-answers-controls button:hover,.jj-answers-pagination button:hover:not(:disabled){background:var(--hover)}
+.jj-answers-controls button:disabled,.jj-answers-pagination button:disabled{opacity:.4;cursor:default}
+.jj-answers-pagination button[aria-current=page]{color:var(--accent);border-color:var(--accent)}
+.jj-answers-scroll{max-width:100%;overflow-x:auto;border:1px solid var(--stroke);border-radius:7px}
+.jj-answers-table{border-collapse:collapse;width:100%;min-width:610px;font-size:12px}
+.jj-answers-table th{background:var(--bg);padding:8px;text-align:left;color:var(--muted);font-size:11px;white-space:nowrap}
+.jj-answers-table th:first-child,.jj-answers-table td:first-child{text-align:right;width:36px}
+.jj-answers-table td{padding:9px;border-top:1px solid var(--stroke);vertical-align:top;line-height:1.45}
+.jj-answers-table tbody tr:nth-child(even){background:var(--hover)}
+.jj-answers-question{font-weight:650}
+.jj-answers-time{white-space:nowrap;color:var(--muted);font-size:11px}
+.jj-answers-status{font-size:11px;white-space:nowrap}
+.jj-answers-status[data-status=needs_review]{color:var(--accent)}
+.jj-answers-preview{font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere;max-width:540px}
+.jj-answers-history{display:block;margin-top:8px;border:1px solid var(--stroke);border-radius:6px;padding:7px}
+.jj-answers-history summary{cursor:pointer;color:var(--accent);font-size:11px;font-weight:600}
+.jj-answers-version{border-top:1px solid var(--stroke);margin-top:7px;padding-top:7px;font-size:11px}
+.jj-answers-version time{font-weight:650}
+.jj-answers-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-top:9px}
+.jj-answers-pagination{display:flex;gap:5px;align-items:center}
+.jj-answers-note{margin:9px 0 0;line-height:1.4}
+.jj-answers-empty{color:var(--muted);padding:18px;text-align:center}
+@media(max-width:750px){.jj-answers-main{padding:8px}.jj-answers-controls input{flex-basis:100%;width:100%}.jj-answers-label small{font-size:10px}}
