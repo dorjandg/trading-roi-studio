@@ -2404,6 +2404,9 @@ function smartSetupUI(stage){
     money2(Math.max(0,room))+' risk room (including buffer).':
     'The R3 WIN → R2 WIN branch does not reach the target within modeled limits.')+
    ' Existing amounts have NOT been changed.</p>';
+ }else if(curr?.complete&&config.sweepRemainder&&curr.thirdLoss==='failed'){
+  manual='<p class="caption smart-manual-alert"><strong>Your entered R values work as a Last-Chance R3 setup.</strong> '+
+   'R3 WIN returns toward R2; R3 LOSS reaches the modeled account loss floor. Not guaranteed safe for live trading.</p>';
  }
  const header='<thead><tr><th>Setup</th><th>R1</th><th>R2</th><th>R3</th><th>R4</th>'+
   '<th>Best route</th><th>Hit %</th><th>Stop %</th><th>Failed %</th><th>Blocked %</th><th>Unresolved %</th><th>Avg Hit T</th>'+
@@ -2419,7 +2422,7 @@ function smartSetupUI(stage){
   (snap.smartUndo?'<button type="button" class="btn small quiet" data-smart-undo="'+stage+'">Undo Apply</button>':'')+
   '<span class="caption" data-smart-status="'+stage+'">'+status+'</span></div>'+
   '<p class="caption smart-sweep-note">'+(config.sweepRemainder?
-   '<strong>Last-chance mode:</strong> When terminal R3 would leave ≤ '+money2(config.sweepThreshold)+
+   '<strong>Last-chance mode (static loss floor only):</strong> When terminal R3 would leave ≤ '+money2(config.sweepThreshold)+
     ' of overall loss allowance unused, test risking that remainder instead. The daily safety buffer still applies. '+
     'An R3 LOSS can <strong>fail the account</strong>; slippage or intratrade drawdown may fail it sooner.':
    'Protected mode: keep the normal daily and overall loss reserves. Terminal R3 sweep is disabled.')+
@@ -2434,7 +2437,8 @@ function smartSetupUI(stage){
    '<p class="caption">Modeled initial risk ceiling '+money2(data.maxInitialRisk)+
     ' · Complete R1→R2→R3 recovery required · Scanned '+data.horizon+'-trade horizon. '+
     (data.limitsVerified?'Static overall floor checked.':'Trailing overall floor cannot be independently validated.')+
-    ' These are ranked sampled candidates, not mathematically guaranteed global optima.</p>':'')+
+    ' These are ranked sampled candidates, not mathematically guaranteed global optima. '+
+    'The unrestricted All Risk Routes scanner still uses the standard overall safety buffer; terminal-R3 sweep is exclusive to Smart Setups and the applied smart phase policy.</p>':'')+
   '<details class="recovery-guide"><summary>Decision tree rules & assumptions</summary><p class="caption">'+
    'R1 always first; after R1 loss use R2; after R2 loss use R3; after R3 WIN return to R2; '+
    'after R3 LOSS stop when R4 is off, otherwise try R4 if within risk limits. '+
