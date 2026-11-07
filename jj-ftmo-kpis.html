@@ -9,6 +9,15 @@
 :root{color-scheme:dark;--bg:#080f1a;--panel:#111c2d;--panel2:#17263a;--line:#2b4059;--text:#edf4fd;--muted:#a4b4c8;--accent:#51e1b2;--blue:#91b4ff;--warn:#efc68e}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 Inter,system-ui,-apple-system,"Segoe UI",sans-serif}a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}.shell{max-width:1190px;margin:auto;padding:16px 16px 70px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-bottom:13px;border-bottom:1px solid var(--line)}.brand{font-size:17px;font-weight:800}.nav{display:flex;gap:15px;flex-wrap:wrap;font-size:12px}.label{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px}h1{font-size:clamp(24px,4vw,33px);letter-spacing:-.7px;margin:17px 0 4px}h2{font-size:17px;margin:0 0 8px}h3{font-size:14px;margin:12px 0 8px}p{margin:7px 0 13px}.muted{color:var(--muted)}.panel{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:16px;margin:13px 0}.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}.kpi{background:var(--panel2);border:1px solid var(--line);padding:12px;border-radius:11px;min-width:0}.kpi strong{font-size:21px;display:block;margin-top:4px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.kpi small{color:var(--muted);font-size:11px}.good{color:var(--accent)}.warn{color:var(--warn)}.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}table{width:100%;border-collapse:collapse;min-width:680px}th,td{padding:9px 11px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;font-size:12px}th{color:var(--muted);background:var(--panel2);font-weight:750}td:first-child,th:first-child{text-align:left}tbody tr:last-child td{border-bottom:0}tbody tr:nth-child(even){background:rgba(255,255,255,.015)}.notes{font-size:11px;color:var(--muted);line-height:1.6}.formgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.field label{display:block;color:var(--muted);font-size:11px;margin-bottom:4px}.field input{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:7px 9px;min-height:36px;font:inherit;font-variant-numeric:tabular-nums}.field input:focus-visible,.nav a:focus-visible,button:focus-visible{outline:2px solid var(--blue)}.small{font-size:12px}.controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}button{border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:8px;padding:8px 12px;cursor:pointer;font:inherit;font-weight:650;font-size:12px}button:hover{border-color:var(--blue)}details{margin:11px 0;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:11px 13px}details summary{cursor:pointer;font-weight:700}details .content{padding-top:13px}.source{font-size:12px;color:var(--muted)}.tag{background:var(--panel2);color:var(--muted);padding:3px 7px;border-radius:7px;font-size:10px}.legend{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}.formula{font-size:12px;color:var(--muted);padding:8px 10px;border-left:2px solid var(--accent);margin:7px 0}.footer{color:var(--muted);font-size:11px;margin-top:18px}.status{color:var(--warn);font-size:12px}
 @media(max-width:800px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.formgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.panel{padding:12px}.shell{padding:12px 10px 50px}th,td{padding:8px 9px;font-size:11px}}
+
+/* Top-level dashboard stays visible; detailed tables remain collapsed. */
+.result-dashboard .kpis{gap:7px}
+.result-dashboard .kpi{padding:9px 10px}
+.result-dashboard .kpi strong{font-size:19px;margin-top:3px}
+.result-dashboard .kpi small{line-height:1.3;display:block}
+.result-dashboard .table-detail{margin:11px 0 0}
+.table-panel{margin:13px 0}
+@media(max-width:600px){.result-dashboard .kpis{gap:6px}.result-dashboard .kpi{padding:8px}.result-dashboard .kpi strong{font-size:17px}}
 </style>
 </head>
 <body><main class="shell">
@@ -16,7 +25,21 @@
 <h1>JJ × FTMO · Same KPIs</h1>
 <p class="muted">A transparent <strong>research comparison</strong>, not a prediction or a substitute for Run Simulation. Each side uses the same cash-flow definitions; changing inputs does not update saved Firms settings.</p>
 <div class="legend"><span class="tag">JJ: course examples & self-report</span><span class="tag">FTMO: illustrative assumptions</span><span class="tag">No historical win-rate claims</span></div>
-<section class="panel"><h2>1 · Strategy reference</h2>
+<section class="panel result-dashboard"><h2>1 · Results dashboard</h2>
+<div class="kpis" aria-live="polite"><div class="kpi"><small>JJ · cost / funded</small><strong id="jjCost">—</strong></div><div class="kpi"><small>FTMO · cost / funded</small><strong id="ftmoCost">—</strong></div><div class="kpi"><small>JJ · net ROI</small><strong id="jjROI">—</strong></div><div class="kpi"><small>FTMO · net ROI</small><strong id="ftmoROI">—</strong></div>
+<div class="kpi"><small>JJ · pass evaluation</small><strong id="jjPass">—</strong></div>
+<div class="kpi"><small>FTMO · pass both phases</small><strong id="ftPass">—</strong></div>
+<div class="kpi"><small>JJ · first cash payout chance</small><strong id="jjPaid">—</strong></div>
+<div class="kpi"><small>FTMO · first cash payout chance</small><strong id="ftPaid">—</strong></div>
+<div class="kpi"><small>JJ · net EV / purchased eval</small><strong id="jjEV">—</strong></div>
+<div class="kpi"><small>FTMO · net EV / purchased eval</small><strong id="ftEV">—</strong></div>
+<div class="kpi"><small>JJ · total net cash in cohort</small><strong id="jjNet">—</strong></div>
+<div class="kpi"><small>FTMO · total net cash in cohort</small><strong id="ftNet">—</strong></div></div>
+<p class="notes">The numbers below are <strong>model outputs from editable illustrative assumptions</strong>, not measured JJ trade outcomes or verified FTMO success rates. A funded milestone and a completed eligible payout are different events.</p>
+<details class="table-detail"><summary>1A · Full KPI comparison <span class="tag">Show / hide</span></summary><div class="content"><div class="tablewrap"><table><thead><tr><th title="Definitions match across the columns">Same KPI</th><th>JJ benchmark scenario</th><th>FTMO planning scenario</th></tr></thead><tbody id="comparisonRows"><tr><td>Loading…</td><td>—</td><td>—</td></tr></tbody></table></div>
+<p class="notes" id="cohortDescription"></p></div></details>
+</section>
+<details class="panel table-panel"><summary>2 · Strategy reference <span class="tag">Show / hide</span></summary><div class="content">
 <div class="tablewrap"><table><thead><tr><th>Metric</th><th>JJ · Topstep 50K</th><th>FTMO · 10K two-step</th></tr></thead><tbody>
 <tr><td>Evaluation stages</td><td>1</td><td>2</td></tr>
 <tr><td>Evaluation targets</td><td>$3,000; consistency applies</td><td>$1,000 / $500</td></tr>
@@ -28,13 +51,7 @@
 <tr><td>Funded payout handling</td><td>Qualifying days; staged withdrawals</td><td>80% split; wait; payout period reset</td></tr>
 <tr><td>Real trade win rates</td><td>Not independently measured</td><td>35% hypothetical assumption</td></tr>
 </tbody></table></div>
-<p class="notes">Firm rules, purchase fees and splits are time-dependent. JJ's course illustrations reflect specific program versions; the FTMO figures are the selected planning example, not live account settings.</p></section>
-<section class="panel"><h2>2 · Cash-flow comparison</h2>
-<div class="kpis" aria-live="polite"><div class="kpi"><small>JJ · cost / funded</small><strong id="jjCost">—</strong></div><div class="kpi"><small>FTMO · cost / funded</small><strong id="ftmoCost">—</strong></div><div class="kpi"><small>JJ · net ROI</small><strong id="jjROI">—</strong></div><div class="kpi"><small>FTMO · net ROI</small><strong id="ftmoROI">—</strong></div></div>
-<p class="notes">The numbers below are <strong>model outputs from editable illustrative assumptions</strong>, not measured JJ trade outcomes or verified FTMO success rates. A funded milestone and a completed eligible payout are different events.</p>
-<div class="tablewrap"><table><thead><tr><th title="Definitions match across the columns">Same KPI</th><th>JJ benchmark scenario</th><th>FTMO planning scenario</th></tr></thead><tbody id="comparisonRows"><tr><td>Loading…</td><td>—</td><td>—</td></tr></tbody></table></div>
-<p class="notes" id="cohortDescription"></p>
-</section>
+<p class="notes">Firm rules, purchase fees and splits are time-dependent. JJ's course illustrations reflect specific program versions; the FTMO figures are the selected planning example, not live account settings.</p></div></details>
 <details><summary>3 · Edit JJ benchmark assumptions <span class="tag">Show / hide</span></summary><div class="content">
 <div class="controls"><button type="button" id="jjPlanning">JJ planning example · 33.3%</button><button type="button" id="jjReported">JJ self-reported pass rate · 42.5%</button></div>
 <p class="notes">The reported 40–45% evaluation pass rate and the $300–$400 cost examples come from different lessons. The 90% post-milestone cash conversion below is an <strong>unsourced sensitivity assumption</strong>—not JJ's measured conversion rate.</p>
@@ -114,6 +131,10 @@ function render(){
  err.textContent='';
  document.getElementById('jjCost').textContent=fmt(jj.costFunded,'money');document.getElementById('ftmoCost').textContent=fmt(ft.costFunded,'money');
  document.getElementById('jjROI').textContent=fmt(jj.roi,'pct');document.getElementById('ftmoROI').textContent=fmt(ft.roi,'pct');
+ document.getElementById('jjPass').textContent=fmt(jj.pass,'pct');document.getElementById('ftPass').textContent=fmt(ft.pass,'pct');
+ document.getElementById('jjPaid').textContent=fmt(jj.payout,'pct');document.getElementById('ftPaid').textContent=fmt(ft.payout,'pct');
+ document.getElementById('jjEV').textContent=fmt(jj.netPerEval,'money');document.getElementById('ftEV').textContent=fmt(ft.netPerEval,'money');
+ document.getElementById('jjNet').textContent=fmt(jj.net,'money');document.getElementById('ftNet').textContent=fmt(ft.net,'money');
  var ftFundedRR=n('ftFundedRR');
  var rows=[
  row('Purchases in cohort',n('count'),n('count'),'count'),
