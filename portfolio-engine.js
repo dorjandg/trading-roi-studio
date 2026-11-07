@@ -122,6 +122,7 @@ function buildPlan(programId,size,program,profile={},snapshots={},audit=null){
     Object.fromEntries(['r1','r2','r3'].map(t=>[t,Number(snap.rrByTier[t])])):undefined,
    dynamicMaxRisk:snap.dynamicMaxRisk!=null&&Number(snap.dynamicMaxRisk)>0?Number(snap.dynamicMaxRisk):undefined,
    fundedStarterRisk:key==='funded'&&snap.fundedStarterRisk!=null&&Number(snap.fundedStarterRisk)>0?Number(snap.fundedStarterRisk):undefined,
+   fundedMaxTradeRisk:key==='funded'&&snap.fundedMaxTradeRisk!=null&&Number(snap.fundedMaxTradeRisk)>0?Number(snap.fundedMaxTradeRisk):undefined,
    fundedRecoveryLevels:key==='funded'&&Array.isArray(snap.fundedRecoveryLevels)&&snap.fundedRecoveryLevels.length===4&&
     snap.fundedRecoveryLevels.every(n=>Number.isFinite(Number(n))&&Number(n)>0)?
     snap.fundedRecoveryLevels.map(Number):undefined,
@@ -179,7 +180,8 @@ function chooseTradeRisk(p,ac,stage,c,dayProfit=0){
   const starter=pos(c.fundedStarterRisk??c.r1);
   const targetRisk=ac.stagePnl>0.05?Math.max(0,ac.stagePnl-cost):
    ac.stagePnl< -0.05?Math.ceil((-ac.stagePnl+cost)/rr*100)/100:starter;
-  const risk=Math.max(0,Math.floor(Math.min(room,targetRisk)*100)/100);
+  const cap=pos(c.fundedMaxTradeRisk??Infinity);
+  const risk=Math.max(0,Math.floor(Math.min(room,targetRisk,cap)*100)/100);
   return {slot:ac.stagePnl>0?'r2':ac.stagePnl<0?'r3':'r1',risk,rr};
  }
  if(mode==='funded-staged-recovery'&&stage==='funded'&&!forceTopstepR3){
@@ -188,7 +190,7 @@ function chooseTradeRisk(p,ac,stage,c,dayProfit=0){
   const match=ac.history.match(/L+$/),streak=match?match[0].length:0;
   const levels=c.fundedRecoveryLevels||[150,200,250,200];
   // On a positive winning path, compound the accumulated funded profit:
-  // +450 -> risk 450 -> +1800 -> risk 1800 if firm's limits permit.
+  // +450 -> risk 450 -> +1800 -> risk capped at $450 for optional third win.
   // A losing streak uses the explicitly requested 150/200/250/200 tiers.
   // A winning recovery that reaches zero restarts at the initial 150 tier.
   const positiveWin=ac.stagePnl>0.05&&ac.history.endsWith('W');
@@ -199,7 +201,8 @@ function chooseTradeRisk(p,ac,stage,c,dayProfit=0){
    positiveWin?Math.max(0,ac.stagePnl-cost):
    ac.stagePnl>0.05?Math.max(0,ac.stagePnl-cost):
    streak?levels[Math.min(streak,levels.length-1)]:levels[0];
-  const risk=Math.max(0,Math.floor(Math.min(room,Math.max(0,desired))*100)/100);
+  const cap=pos(c.fundedMaxTradeRisk??Infinity);
+  const risk=Math.max(0,Math.floor(Math.min(room,Math.max(0,desired),cap)*100)/100);
   return {slot:streak===0?'r1':streak===1?'r2':'r3',risk,rr};
  }
  if(!adaptiveModes.has(mode)||topstepCombine||forceTopstepR3)return {slot,risk:pos(c[slot]),rr};
