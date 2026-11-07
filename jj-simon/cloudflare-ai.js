@@ -75,8 +75,8 @@
   const panel=el('section','jj-ai-panel');panel.id='jj-cloudflare-ai';
   panel.hidden=true;
   const status=el('p','jj-ai-status','');
-  const usage=el('div','jj-ai-usage');const usageLabel=el('span','','');const usageDetails=el('details','');usageDetails.append(el('summary','','Usage details'),el('p','','This counter shows successful AI responses in this browser today (UTC), not Cloudflare Neurons or remaining quota. Cloudflare free usage is shared across the account and cannot be measured accurately by this page without authenticated Cloudflare usage data.'));usage.append(usageLabel,usageDetails);
-  const refreshUsage=()=>{const x=readUsage();usageLabel.textContent=(x.limited?'Free AI limit reported · ':'AI requests today · ')+x.success+' answered / '+x.attempts+' attempted · remaining Neurons unavailable';};
+  const usage=el('div','jj-ai-usage');const usageLabel=el('span','','');const usageDetails=el('details','jj-ai-usage-details');usageDetails.append(el('summary','','ⓘ'),el('p','','Browser-only count since this feature was added. Cloudflare account Neurons and remaining quota are not available. Resets at 00:00 UTC.'));usageDetails.title='How AI usage is counted';usage.append(usageLabel,usageDetails);
+  const refreshUsage=()=>{const x=readUsage();usageLabel.textContent=(x.limited?'Free limit reached · ':'AI today · ')+x.success+' answers / '+x.attempts+' attempts';};
   refreshUsage();
   const answer=el('div','jj-ai-answer');answer.setAttribute('aria-live','polite');
   const sources=el('div','jj-ai-sources');
