@@ -555,7 +555,7 @@ details p{margin:6px 0}
   <div class="field"><label for="netGoal">Target net profit (USD)</label><input id="netGoal" type="number" min="0" step="100" value="20000"></div>
   <div class="field"><label for="winRate">Win rate (%) — same for comparisons</label><input id="winRate" type="number" min="0" max="100" step=".5" value="40"></div>
   <div class="field"><label for="days">Trading-day horizon</label><select id="days"><option value="10">10 days</option><option value="20" selected>20 days</option><option value="30">30 days</option><option value="40">40 days</option><option value="60">60 days</option><option value="90">90 days</option></select></div>
-  <div class="field"><label for="tradesPerDay">Trade signals / portfolio / day</label><select id="tradesPerDay"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option><option>15</option><option>16</option><option>17</option><option>18</option><option>19</option><option>20</option></select></div>
+  <div class="field"><label for="signalPace">Trade opportunity schedule</label><select id="signalPace"><option value="weekly20" selected>20/week · 3,4,5,4,4</option><option value="daily">Fixed signals per day</option></select></div><div class="field"><label for="tradesPerDay">Trade signals / portfolio / day</label><select id="tradesPerDay"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option><option>15</option><option>16</option><option>17</option><option>18</option><option>19</option><option>20</option></select></div>
   <div class="field"><label for="trials">Monte Carlo trials</label><select id="trials"><option value="100">100 · quick</option><option value="300" selected>300 · standard</option><option value="750">750 · detailed</option><option value="1500">1,500 · comprehensive</option></select></div>
   <div class="field"><label for="signalMode">Accounts' trade outcomes</label><select id="signalMode"><option value="independent" selected>Independent per account</option><option value="shared">Same daily signal within firm</option></select></div>
   <div class="field"><label for="seed">Repeatable random seed</label><input id="seed" type="number" step="1" min="1" value="24717"></div>
@@ -615,7 +615,7 @@ details p{margin:6px 0}
 <details class="sim-charts-panel numbered-panel" id="section4Panel" open><summary><strong>5 · Results across prop firms</strong><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><p id="summaryCaption" class="hint"></p><div id="totals" class="kpis"></div>
  <div class="tablewrap"><table><thead><tr><th>Firm / account</th><th>Budget</th><th>Challenges</th><th>Spent avg.</th><th>Phase 1 passes</th><th>Phase 2 passes</th><th>Funded</th><th>Paid</th><th>Payouts avg.</th><th>Net avg.</th><th>ROI</th><th>Chance ≥1 payout</th></tr></thead><tbody id="comparisonRows"></tbody></table></div>
  <p class="hint">Counts and profits are averages over simulated trials, not whole-account predictions. ROI = expected net / expected incurred costs. Starting budget is not account capital.</p>
- <div id="combined" hidden></div>
+ <div id="combined" hidden></div><details id="weeklyEconomicsPanel" class="sim-charts-panel" style="margin-top:12px"><summary><strong>Weekly cash flow · payout economics</strong><span class="sim-charts-summary" id="weeklyEconomicsHint">Fees · payouts · net/week · conversion</span></summary><div id="weeklyEconomicsContents" class="numbered-content"><p class="hint">Run Simulation to see weekly results.</p></div></details>
 </div></details>
 <details id="chartsPanel" class="sim-charts-panel"><summary><strong>5 · Charts</strong><span class="sim-charts-summary">Equity · Drawdown · Distributions · Payouts</span><span class="sim-charts-hint">Show / hide</span></summary><div id="chartsContents" class="sim-charts-contents"><p class="hint">Run a simulation to load charts.</p></div></details>
 <details id="journeyPanel" class="sim-charts-panel journey-panel">
@@ -658,7 +658,7 @@ details p{margin:6px 0}
 </div></details>
 </div>
 <script src="ftmo-funded-buffer.js?v=20261107-ftmo-funded-buffer-v1"></script>
-<script src="portfolio-engine.js?v=20261107-ftmo-buffer-engine-v2"></script>
+<script src="portfolio-engine.js?v=20261107-weekly-schedule-v1"></script><script src="portfolio-weekly.js?v=20261107-weekly-cashflow-v1"></script>
 <script src="portfolio-payout-optimizer.js?v=20261107-goal-success-cost-v2"></script>
 <script src="portfolio-discovery.js?v=20261107-target-exact-v1"></script>
 <script src="portfolio-recovery-ladder.js?v=20261107-recovery-ladder-v1"></script>
@@ -674,6 +674,7 @@ details p{margin:6px 0}
 (function(){
 'use strict';
 const E=window.StudioPortfolioEngine;
+const weekly=window.StudioWeeklyEconomics;
 const charts=window.StudioPortfolioCharts;
 const journey=window.StudioPortfolioJourney;
 const reportSource=window.StudioReportSource;
@@ -779,7 +780,7 @@ function saveView(){
   budget:$('budget').value,netGoal:$('netGoal').value,winRate:$('winRate').value,
   purchaseMode:$('purchaseMode').value,capacityMode:$('capacityMode').value,maxActive:$('maxActive').value,
   maxBuysPerDay:$('maxBuysPerDay').value,reinvestPayouts:$('reinvestPayouts').value,
-  days:$('days').value,tradesPerDay:$('tradesPerDay').value,trials:$('trials').value,
+  days:$('days').value,tradesPerDay:$('tradesPerDay').value,signalPace:$('signalPace').value,trials:$('trials').value,
   signalMode:$('signalMode').value,seed:$('seed').value,
   budgetMode:document.querySelector('[name="budgetMode"]:checked').value,rows,testRisks,
   chartsOpen:$('chartsPanel').open,chartPrefs:{...chartState},
@@ -828,7 +829,7 @@ function loadView(){
  }
  testRisks=prior.testRisks&&typeof prior.testRisks==='object'&&!Array.isArray(prior.testRisks)?prior.testRisks:{};
  const defaults={budget:main.budget||5000,netGoal:20000,winRate:main.winRate??40,days:20,
-  tradesPerDay:2,trials:300,signalMode:'independent',seed:main.randomSeed||24717,budgetMode:'compare'};
+  tradesPerDay:4,signalPace:'weekly20',trials:300,signalMode:'independent',seed:main.randomSeed||24717,budgetMode:'compare'};
  for(const id of Object.keys(defaults)){
   const val=prior[id]??defaults[id];
   if(id==='budgetMode'){const radio=document.querySelector('[name="budgetMode"][value="'+val+'"]');if(radio)radio.checked=true}
@@ -942,14 +943,15 @@ function refreshIdeaCeiling(){
   '. A $0 test reserve still keeps $0.01 clearance. Limits are starting-state estimates; after losses, equity and drawdown headroom can be smaller.';
 }
 function updateCapacityHint(){
- const opportunities=Math.max(1,Math.min(20,Math.floor(Number($('tradesPerDay').value)||2)));
- const manual=$('capacityMode').value==='manual';
+  const varied=$('signalPace').value==='weekly20';
+  const opportunities=varied?5:Math.max(1,Math.min(20,Math.floor(Number($('tradesPerDay').value)||4)));
+  const manual=$('capacityMode').value==='manual';
  const active=Math.max(1,Math.min(100,Math.floor(Number($('maxActive').value)||1)));
  const buys=Math.max(1,Math.min(20,Math.floor(Number($('maxBuysPerDay').value)||1)));
  const limited=manual&&(active<opportunities||buys<opportunities);
- const msg=!manual?
-  'Automatic routing: '+opportunities+' signals/day → '+opportunities+
-  ' DIFFERENT eligible existing accounts when available. All previously purchased accounts stay in rotation; purchase only to fill missing slots.':
+  const msg=!manual?
+   'Automatic routing: '+(varied?'20 signals/week (3,4,5,4,4 per day)':'Up to '+opportunities+' signals/day')+' → '+opportunities+
+   ' distinct eligible accounts on peak days when available. Existing accounts stay in rotation; new purchases fill missing slots.':
   limited?'Manual capacity limits '+opportunities+' signals/day to '+active+' simultaneous accounts and '+buys+
    ' daily purchases. Some signals may go unused.':
    'Manual capacity permits '+opportunities+' different accounts/day when the budget allows.';
@@ -962,9 +964,11 @@ function syncPurchaseMode(){
  const dynamic=$('purchaseMode').value==='recycle';
  $('dynamicPurchaseSettings').hidden=!dynamic;
  $('manualCapacityFields').hidden=!dynamic||$('capacityMode').value!=='manual';
- $('tradesPerDay').closest('.field').querySelector('label').textContent=
-  'Trade signals / portfolio / day';
- updateCapacityHint();
+  const varied=$('signalPace').value==='weekly20';
+  $('tradesPerDay').disabled=varied;
+  $('tradesPerDay').closest('.field').querySelector('label').textContent=
+   varied?'Signals/day · fixed daily mode only':'Trade signals / portfolio / day';
+  updateCapacityHint();
 }
 function setStale(){
  if(lastResults.length){$('status').textContent='Inputs changed · run again for updated results';$('status').style.color='var(--amber)';}
@@ -1012,15 +1016,15 @@ $('addAccount').addEventListener('click',()=>{
  rows.push({id,size:catalog.programs[id].sizes[0],weight:20});renderRows();setStale();
 });
 $('reload').addEventListener('click',()=>{renderRows();setStale();$('status').textContent='Saved phase settings reloaded from this browser'});
-document.querySelectorAll('#budget,#netGoal,#winRate,#days,#tradesPerDay,#trials,#seed,#signalMode,#purchaseMode,#capacityMode,#maxActive,#maxBuysPerDay,#reinvestPayouts,[name="budgetMode"]').forEach(el=>{
+document.querySelectorAll('#budget,#netGoal,#winRate,#days,#signalPace,#tradesPerDay,#trials,#seed,#signalMode,#purchaseMode,#capacityMode,#maxActive,#maxBuysPerDay,#reinvestPayouts,[name="budgetMode"]').forEach(el=>{
  el.addEventListener('change',()=>{
   if(el.name==='budgetMode')renderRows();
-  if(['purchaseMode','capacityMode','tradesPerDay','maxActive','maxBuysPerDay'].includes(el.id))syncPurchaseMode();
+  if(['purchaseMode','capacityMode','signalPace','tradesPerDay','maxActive','maxBuysPerDay'].includes(el.id))syncPurchaseMode();
   setStale();
  });
 });
 $('matchTradeCapacity').addEventListener('click',()=>{
- const n=Math.max(1,Math.min(20,Math.floor(Number($('tradesPerDay').value)||2)));
+  const n=$('signalPace').value==='weekly20'?5:Math.max(1,Math.min(20,Math.floor(Number($('tradesPerDay').value)||4)));
  $('maxActive').value=String(Math.max(n,Math.floor(Number($('maxActive').value)||1)));
  $('maxBuysPerDay').value=String(Math.max(n,Math.floor(Number($('maxBuysPerDay').value)||1)));
  syncPurchaseMode();
@@ -1335,7 +1339,7 @@ function renderResults(list,inputs,source='run'){
  if($('section9Panel').open)renderSpendingLedger();
  const mixed=inputs.budgetMode==='split';
  $('summaryCaption').textContent=reportMode==='investment'?'Full Section 2 simulation of the selected Investment option · '+inputs.trials+' fresh Monte Carlo trials · selected stage risk profiles and account paths preserved. Regular Run Simulation results remain separate.':(mixed?'One budget distributed across accounts':'Independent alternatives, each using the full budget')+
-  ' · '+inputs.days+' trading days · '+inputs.trials+' trials · '+dec(inputs.winRate)+'% win rate · '+inputs.signalMode+' outcomes · '+
+   ' · '+inputs.days+' trading days · '+inputs.trials+' trials · '+dec(inputs.winRate)+'% win rate · '+(inputs.signalPace==='weekly20'?'20 signals/week (3–5/day)':'fixed '+inputs.tradesPerDay+' signals/day')+' · '+inputs.signalMode+' outcomes · '+
   (inputs.purchaseMode==='recycle'?'automatic reuse-first purchasing':'all challenges purchased upfront')+'.';
  const comp=inputs.budgetMode==='compare';
  const grand=(key)=>list.reduce((a,r)=>a+r.avg[key],0);
@@ -1700,11 +1704,12 @@ function currentDiscoveryInputs(row){
  const budget=Math.max(0,Number($('budget').value)||0);
  const weights=rows.reduce((a,r)=>a+Math.max(0,Number(r.weight)||0),0);
  const allocated=mode==='split'?weights>0?budget*Math.max(0,Number(row.weight)||0)/weights:0:budget;
- const schedule=mode==='split'&&$('purchaseMode').value==='recycle'?sharedDailyTradeSchedules()?.[rows.indexOf(row)]:null;
+  const schedule=mode==='split'?sharedDailyTradeSchedules()?.[rows.indexOf(row)]:
+   $('signalPace').value==='weekly20'?weekly.schedule(Number($('days').value),'weekly20',4):null;
  return {
   budget:allocated,netGoal:Math.max(0,Number($('netGoal').value)||0),
   winRate:Math.max(0,Math.min(100,Number($('winRate').value)||0)),
-  days:Number($('days').value)||20,tradesPerDay:Number($('tradesPerDay').value)||2,
+   days:Number($('days').value)||20,tradesPerDay:$('signalPace').value==='weekly20'?4:(Number($('tradesPerDay').value)||4),
   signalMode:$('signalMode').value,seed:Number($('seed').value)||24717,
   purchaseMode:$('purchaseMode').value,capacityMode:$('capacityMode').value,
   maxActive:Math.max(1,Math.min(100,Math.floor(Number($('maxActive').value)||1))),
@@ -1905,14 +1910,14 @@ $('ideaResults').addEventListener('click',event=>{
 
 function sharedDailyTradeSchedules(){
  const days=Math.max(1,Math.min(120,Math.floor(Number($('days').value)||20)));
- const perDay=Math.max(1,Math.min(20,Math.floor(Number($('tradesPerDay').value)||2)));
- const weights=rows.map(r=>Math.max(0,Number(r.weight)||0));
+  const daily=weekly.schedule(days,$('signalPace').value,Number($('tradesPerDay').value)||4);
+  const weights=rows.map(r=>Math.max(0,Number(r.weight)||0));
  const total=weights.reduce((sum,x)=>sum+x,0);
  if(total<=0)return null;
  const credits=weights.map(()=>0);
  const schedules=weights.map(()=>Array(days).fill(0));
  for(let day=0;day<days;day++){
-  for(let ix=0;ix<perDay;ix++){
+   for(let ix=0;ix<daily[day];ix++){
    for(let i=0;i<credits.length;i++)credits[i]+=weights[i];
    let chosen=-1;
    for(let i=0;i<credits.length;i++)if(weights[i]>0&&(chosen<0||credits[i]>credits[chosen]))chosen=i;
@@ -1927,8 +1932,10 @@ function run(){
  const mode=document.querySelector('[name="budgetMode"]:checked').value;
  const inputs={budget:Math.max(0,Number($('budget').value)||0),netGoal:Math.max(0,Number($('netGoal').value)||0),
   winRate:Math.max(0,Math.min(100,Number($('winRate').value)||0)),
-  days:Number($('days').value),tradesPerDay:Number($('tradesPerDay').value),trials:Number($('trials').value),
-  signalMode:$('signalMode').value,seed:Number($('seed').value)||24717,budgetMode:mode,
+   days:Number($('days').value),signalPace:$('signalPace').value,
+   tradesPerDay:$('signalPace').value==='weekly20'?4:Number($('tradesPerDay').value),
+   tradeSchedule:$('signalPace').value==='weekly20'?weekly.schedule(Number($('days').value),'weekly20',4):null,
+   trials:Number($('trials').value),signalMode:$('signalMode').value,seed:Number($('seed').value)||24717,budgetMode:mode,
   purchaseMode:$('purchaseMode').value,capacityMode:$('capacityMode').value,
   maxActive:Math.max(1,Math.min(100,Math.floor(Number($('maxActive').value)||1))),
   maxBuysPerDay:Math.max(1,Math.min(20,Math.floor(Number($('maxBuysPerDay').value)||1))),
@@ -1944,7 +1951,7 @@ function run(){
    seen.add(id);
   }
  }
- const schedules=mode==='split'&&inputs.purchaseMode==='recycle'?sharedDailyTradeSchedules():null;
+  const schedules=mode==='split'?sharedDailyTradeSchedules():null;
  const jobs=rows.map((row,i)=>{
   const budget=mode==='split'?inputs.budget*Math.max(0,row.weight)/totalWeight:inputs.budget;
   const p=accountPlan(row),validation=E.validatePlan(p);
@@ -1962,7 +1969,7 @@ function run(){
   try{
    const results=jobs.map(j=>E.simulatePortfolio(j.p,{
     ...inputs,budget:j.budget,seed:inputs.seed+j.index*120011,maxAccounts:100,
-    tradeSchedule:j.tradeSchedule,trackCharts:true,
+     tradeSchedule:j.tradeSchedule||inputs.tradeSchedule,trackCharts:true,
      evaluationAllocationCap:j.allocation.evaluation||0,
      fundedAllocationCap:j.allocation.funded||0}));
    renderResults(results,inputs);
@@ -2004,7 +2011,8 @@ async function init(){
   catalog=await rulesRes.json();
   audit=auditRes.ok?await auditRes.json():null;
   loadView();renderRows();
-  $('status').textContent='Ready · choose budget and Run simulation';
+   syncPurchaseMode();
+   $('status').textContent='Ready · choose budget and Run simulation';
   $('status').style.color='var(--green)';
  }catch(e){$('status').textContent=e.message;$('status').style.color='var(--red)';$('run').disabled=true}
 }
@@ -2058,8 +2066,9 @@ window.StudioPayoutBridge={
   const budget=number(candidate.initialBudget,candidate.result.budget,0);
   if(!(budget>0))throw Error('Selected scenario has no positive investment budget.');
   const config={
-   days:bounded(sourceInputs?.days,1,120,bounded(cfg.days,1,120,30)),
-   tradesPerDay:bounded(sourceInputs?.tradesPerDay,1,20,bounded(cfg.tradesPerDay,1,20,1)),
+    days:bounded(sourceInputs?.days,1,120,bounded(cfg.days,1,120,30)),
+    tradesPerDay:bounded(sourceInputs?.tradesPerDay,1,20,bounded(cfg.tradesPerDay,1,20,1)),
+    tradeSchedule:Array.isArray(sourceInputs?.tradeSchedule)?sourceInputs.tradeSchedule:(Array.isArray(cfg.tradeSchedule)?cfg.tradeSchedule:null),
    winRate:number(sourceInputs?.winRate,cfg.winRate*100,40),
    seed:bounded($('seed').value,1,2147483647,24717),
    trials,signalMode:sourceInputs?.signalMode||cfg.signalMode||'independent',
@@ -2108,8 +2117,10 @@ window.StudioPayoutBridge={
  label:row=>catalog?.programs?.[row.id]?catalog.programs[row.id].firm+' · '+catalog.programs[row.id].name+' · '+usd(row.size):row.id+' '+row.size,
  getInputs:row=>{
   const p=accountPlan(row),limit=allocationLimits[p.id+':'+p.size]||{};
-  return {days:Number($('days').value),tradesPerDay:Number($('tradesPerDay').value),
-   winRate:Number($('winRate').value),seed:Number($('seed').value)||24717,
+   return {days:Number($('days').value),
+    tradesPerDay:$('signalPace').value==='weekly20'?4:Number($('tradesPerDay').value),
+    tradeSchedule:$('signalPace').value==='weekly20'?weekly.schedule(Number($('days').value),'weekly20',4):null,
+    signalPace:$('signalPace').value,winRate:Number($('winRate').value),seed:Number($('seed').value)||24717,
    signalMode:$('signalMode').value,purchaseMode:$('purchaseMode').value,
    capacityMode:$('capacityMode').value,maxActive:Number($('maxActive').value),
    maxBuysPerDay:Number($('maxBuysPerDay').value),
