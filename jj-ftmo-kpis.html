@@ -10,6 +10,23 @@
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 Inter,system-ui,-apple-system,"Segoe UI",sans-serif}a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}.shell{max-width:1190px;margin:auto;padding:16px 16px 70px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-bottom:13px;border-bottom:1px solid var(--line)}.brand{font-size:17px;font-weight:800}.nav{display:flex;gap:15px;flex-wrap:wrap;font-size:12px}.label{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px}h1{font-size:clamp(24px,4vw,33px);letter-spacing:-.7px;margin:17px 0 4px}h2{font-size:17px;margin:0 0 8px}h3{font-size:14px;margin:12px 0 8px}p{margin:7px 0 13px}.muted{color:var(--muted)}.panel{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:16px;margin:13px 0}.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}.kpi{background:var(--panel2);border:1px solid var(--line);padding:12px;border-radius:11px;min-width:0}.kpi strong{font-size:21px;display:block;margin-top:4px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.kpi small{color:var(--muted);font-size:11px}.good{color:var(--accent)}.warn{color:var(--warn)}.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}table{width:100%;border-collapse:collapse;min-width:680px}th,td{padding:9px 11px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;font-size:12px}th{color:var(--muted);background:var(--panel2);font-weight:750}td:first-child,th:first-child{text-align:left}tbody tr:last-child td{border-bottom:0}tbody tr:nth-child(even){background:rgba(255,255,255,.015)}.notes{font-size:11px;color:var(--muted);line-height:1.6}.formgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.field label{display:block;color:var(--muted);font-size:11px;margin-bottom:4px}.field input{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:7px 9px;min-height:36px;font:inherit;font-variant-numeric:tabular-nums}.field input:focus-visible,.nav a:focus-visible,button:focus-visible{outline:2px solid var(--blue)}.small{font-size:12px}.controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}button{border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:8px;padding:8px 12px;cursor:pointer;font:inherit;font-weight:650;font-size:12px}button:hover{border-color:var(--blue)}details{margin:11px 0;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:11px 13px}details summary{cursor:pointer;font-weight:700}details .content{padding-top:13px}.source{font-size:12px;color:var(--muted)}.tag{background:var(--panel2);color:var(--muted);padding:3px 7px;border-radius:7px;font-size:10px}.legend{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}.formula{font-size:12px;color:var(--muted);padding:8px 10px;border-left:2px solid var(--accent);margin:7px 0}.footer{color:var(--muted);font-size:11px;margin-top:18px}.status{color:var(--warn);font-size:12px}
 @media(max-width:800px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.formgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.panel{padding:12px}.shell{padding:12px 10px 50px}th,td{padding:8px 9px;font-size:11px}}
 
+
+/* Keep benchmarks clearly separated and aligned on desktop, stacked on mobile. */
+.dashboard-groups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.dashboard-side{min-width:0;border:1px solid var(--line);border-radius:12px;padding:11px;background:var(--panel2)}
+.dashboard-jj{border-top:3px solid var(--blue)}
+.dashboard-ftmo{border-top:3px solid var(--accent)}
+.dashboard-side-head{display:flex;align-items:center;justify-content:space-between;gap:9px;margin-bottom:10px}
+.dashboard-side-head h3{font-size:16px;letter-spacing:-.2px;margin:0}
+.dashboard-side-head span{display:block;color:var(--muted);font-size:11px}
+.dashboard-side .dashboard-type{font-size:10px;font-weight:800;letter-spacing:.4px;border-radius:7px;padding:4px 7px;color:var(--text);border:1px solid var(--line)}
+.dashboard-side .kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));margin:0;gap:7px}
+.dashboard-side .kpi{background:var(--panel);padding:9px;min-width:0}
+.dashboard-side .kpi small{font-size:11px;line-height:1.3;min-height:28px}
+.dashboard-side .kpi strong{font-size:18px}
+@media(max-width:800px){.dashboard-groups{grid-template-columns:1fr}.dashboard-side{padding:10px}}
+@media(max-width:420px){.dashboard-side .kpi{padding:7px}.dashboard-side .kpi strong{font-size:17px}.dashboard-side .kpi small{font-size:10px}}
+
 /* Top-level dashboard stays visible; detailed tables remain collapsed. */
 .result-dashboard .kpis{gap:7px}
 .result-dashboard .kpi{padding:9px 10px}
@@ -26,15 +43,16 @@
 <p class="muted">A transparent <strong>research comparison</strong>, not a prediction or a substitute for Run Simulation. Each side uses the same cash-flow definitions; changing inputs does not update saved Firms settings.</p>
 <div class="legend"><span class="tag">JJ: course examples & self-report</span><span class="tag">FTMO: illustrative assumptions</span><span class="tag">No historical win-rate claims</span></div>
 <section class="panel result-dashboard"><h2>1 · Results dashboard</h2>
-<div class="kpis" aria-live="polite"><div class="kpi"><small>JJ · cost / funded</small><strong id="jjCost">—</strong></div><div class="kpi"><small>FTMO · cost / funded</small><strong id="ftmoCost">—</strong></div><div class="kpi"><small>JJ · net ROI</small><strong id="jjROI">—</strong></div><div class="kpi"><small>FTMO · net ROI</small><strong id="ftmoROI">—</strong></div>
-<div class="kpi"><small>JJ · pass evaluation</small><strong id="jjPass">—</strong></div>
-<div class="kpi"><small>FTMO · pass both phases</small><strong id="ftPass">—</strong></div>
-<div class="kpi"><small>JJ · first cash payout chance</small><strong id="jjPaid">—</strong></div>
-<div class="kpi"><small>FTMO · first cash payout chance</small><strong id="ftPaid">—</strong></div>
-<div class="kpi"><small>JJ · net EV / purchased eval</small><strong id="jjEV">—</strong></div>
-<div class="kpi"><small>FTMO · net EV / purchased eval</small><strong id="ftEV">—</strong></div>
-<div class="kpi"><small>JJ · total net cash in cohort</small><strong id="jjNet">—</strong></div>
-<div class="kpi"><small>FTMO · total net cash in cohort</small><strong id="ftNet">—</strong></div></div>
+<div class="dashboard-groups" aria-live="polite">
+<section class="dashboard-side dashboard-jj" aria-label="JJ Simon Topstep result KPIs">
+<div class="dashboard-side-head"><div><h3>JJ Simon</h3><span>Topstep 50K · research benchmark</span></div><span class="dashboard-type">JJ</span></div>
+<div class="kpis"><div class="kpi"><small>Cost / funded account</small><strong id="jjCost">—</strong></div><div class="kpi"><small>Net ROI</small><strong id="jjROI">—</strong></div><div class="kpi"><small>Evaluation pass rate</small><strong id="jjPass">—</strong></div><div class="kpi"><small>First cash payout chance</small><strong id="jjPaid">—</strong></div><div class="kpi"><small>Net EV / purchased evaluation</small><strong id="jjEV">—</strong></div><div class="kpi"><small>Total net cash · cohort</small><strong id="jjNet">—</strong></div></div>
+</section>
+<section class="dashboard-side dashboard-ftmo" aria-label="FTMO result KPIs">
+<div class="dashboard-side-head"><div><h3>FTMO 10K</h3><span>2-Step · planning scenario</span></div><span class="dashboard-type">FTMO</span></div>
+<div class="kpis"><div class="kpi"><small>Cost / funded account</small><strong id="ftmoCost">—</strong></div><div class="kpi"><small>Net ROI</small><strong id="ftmoROI">—</strong></div><div class="kpi"><small>Both phases pass</small><strong id="ftPass">—</strong></div><div class="kpi"><small>First cash payout chance</small><strong id="ftPaid">—</strong></div><div class="kpi"><small>Net EV / purchased evaluation</small><strong id="ftEV">—</strong></div><div class="kpi"><small>Total net cash · cohort</small><strong id="ftNet">—</strong></div></div>
+</section>
+</div>
 <p class="notes">The numbers below are <strong>model outputs from editable illustrative assumptions</strong>, not measured JJ trade outcomes or verified FTMO success rates. A funded milestone and a completed eligible payout are different events.</p>
 <details class="table-detail"><summary>1A · Full KPI comparison <span class="tag">Show / hide</span></summary><div class="content"><div class="tablewrap"><table><thead><tr><th title="Definitions match across the columns">Same KPI</th><th>JJ benchmark scenario</th><th>FTMO planning scenario</th></tr></thead><tbody id="comparisonRows"><tr><td>Loading…</td><td>—</td><td>—</td></tr></tbody></table></div>
 <p class="notes" id="cohortDescription"></p></div></details>
