@@ -62,3 +62,21 @@
 .jj-ai-chat-item .jj-ai-chat-open.active{border-color:#5ee3bc;color:#5ee3bc}
 .jj-ai-chat-item .jj-ai-chat-action{flex-shrink:0}
 .jj-ai-history .jj-ai-thread{max-height:none;overflow:visible}
+
+/* Chat-first interface: continuous full conversation and composer underneath. */
+#jj-cloudflare-ai{display:flex;flex-direction:column;gap:9px;max-width:100%;padding:12px}
+#jj-cloudflare-ai>.jj-ai-thread{display:flex;flex-direction:column;gap:12px;max-height:none;overflow:visible;margin:4px 0}
+#jj-cloudflare-ai>.jj-ai-thread>.jj-ai-turn{max-width:94%;padding:12px 14px;border-radius:12px;font-size:12px;line-height:1.6}
+#jj-cloudflare-ai>.jj-ai-thread>.jj-ai-user{align-self:flex-end;margin:0 0 0 12%;background:var(--panel);border-color:var(--stroke)}
+#jj-cloudflare-ai>.jj-ai-thread>.jj-ai-assistant{align-self:flex-start;margin:0 10% 0 0;background:transparent;border:0;padding:7px 3px}
+#jj-cloudflare-ai .jj-ai-turn>strong{display:block;margin-bottom:6px;font-size:11px;color:#5ee3bc}
+#jj-cloudflare-ai .jj-ai-turn>p{font-size:12px;max-height:none;overflow:visible;white-space:pre-wrap;margin:0}
+#jj-cloudflare-ai .jj-ai-message-sources{margin-top:10px;border-top:1px solid var(--stroke);padding-top:7px;font-size:11px}
+#jj-cloudflare-ai .jj-ai-message-sources summary{cursor:pointer;color:var(--muted)}
+#jj-cloudflare-ai .jj-ai-message-sources a{color:#5ee3bc;text-decoration:underline}
+#jj-cloudflare-ai>.jj-ai-answer:empty,#jj-cloudflare-ai>.jj-ai-sources:empty{display:none}
+#jj-cloudflare-ai>.jj-ai-history{display:none}
+#jj-cloudflare-ai .jj-ai-error{border:1px solid var(--stroke);padding:10px;border-radius:8px;color:var(--muted)}
+#jj-helper-app>.jj-helper-form{position:relative;margin-top:9px;border:1px solid var(--stroke);border-radius:12px;padding:10px;background:var(--panel)}
+#jj-helper-app>.jj-helper-form textarea{min-height:52px}
+@media(max-width:600px){#jj-cloudflare-ai>.jj-ai-thread>.jj-ai-turn{max-width:100%}#jj-cloudflare-ai>.jj-ai-thread>.jj-ai-assistant{margin-right:0}#jj-cloudflare-ai>.jj-ai-thread>.jj-ai-user{margin-left:9%}}
