@@ -32,10 +32,10 @@
     filter=$('jj-answers-filter'),size=$('jj-answers-size'),pages=$('jj-answers-pages'),
     total=$('jj-answers-total'),message=$('jj-answers-message'),refreshButton=$('jj-answers-refresh');
 
-  function readStatus(secret){
+  function readStatus(secret,action='status'){
     return new Promise((resolve,reject)=>{
       const url=endpoint();
-      if(!url||!secret)return reject(new Error('Not connected'));
+      if(!url||(action==='status'&&!secret))return reject(new Error('Not connected'));
       const callback='jjAnsCb'+Math.random().toString(36).slice(2);
       const script=document.createElement('script');
       let timer;
@@ -50,7 +50,7 @@
       timer=setTimeout(()=>finish(new Error('Answer request timed out')),14000);
       script.referrerPolicy='no-referrer';
       script.src=url+(url.includes('?')?'&':'?')+new URLSearchParams({
-        action:'status',receipt:secret,callback,t:Date.now()
+        action,receipt:secret||'',callback,t:Date.now()
       });
       document.head.append(script);
     });
@@ -140,6 +140,12 @@
       }
       if(!endpoint()){
         state.notice='Question review service is not configured. See the private Google Sheet for current research.';
+        return;
+      }
+      let health;
+      try{health=await readStatus('', 'health')}catch(_){health=null}
+      if(health?.ok!==true||health?.version!=='answers-v2'){
+        state.notice='Google Apps Script needs updating: replace Code.gs with the latest JJ Academy version and redeploy the EXISTING web app (New version). Existing answers remain safe in the private Sheet.';
         return;
       }
       if(typeof jjQueueSyncPending==='function')await jjQueueSyncPending();
