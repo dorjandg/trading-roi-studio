@@ -1,0 +1,17 @@
+/* JJ Academy voice input: browser-native speech recognition, no audio upload code. */
+.jj-voice-button{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--stroke);border-radius:7px;background:var(--bg);color:var(--accent);min-height:34px;padding:7px 10px;cursor:pointer;font:inherit;font-size:11px;font-weight:650}
+.jj-voice-button svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.jj-voice-button:hover:not(:disabled),.jj-voice-button:focus-visible{border-color:var(--accent);background:var(--hover)}
+.jj-voice-button:disabled{opacity:.45;cursor:not-allowed}
+.jj-voice-button[data-listening="true"]{color:#fff;background:#b92c37;border-color:#e64f57}
+.jj-voice-button[data-listening="true"] svg{animation:jj-voice-pulse 1.35s ease-in-out infinite}
+.jj-voice-status{font-size:11px;line-height:1.4;color:var(--muted)}
+.jj-voice-status[data-error="true"]{color:#ef9b9e}
+.jj-voice-form-status{margin:0 0 2px;min-height:0}
+.jj-voice-search-button{position:absolute;right:7px;top:50%;transform:translateY(-50%);z-index:2;width:32px;height:32px;min-height:32px;padding:5px;line-height:1}
+.search-wrap .search:has(+ .jj-voice-search-button){padding-right:45px}
+.jj-voice-search-status{position:absolute;right:0;top:calc(100% + 4px);z-index:32;max-width:min(300px,90vw);border:1px solid var(--stroke);border-radius:6px;padding:5px 8px;background:var(--panel);box-shadow:0 8px 18px rgba(0,0,0,.18)}
+.jj-voice-search-status:empty{display:none}
+@keyframes jj-voice-pulse{50%{opacity:.55;transform:scale(1.07)}}
+@media(prefers-reduced-motion:reduce){.jj-voice-button[data-listening="true"] svg{animation:none}}
+@media(max-width:750px){.jj-voice-search-button{width:30px;height:30px;right:5px}.jj-voice-button{min-height:32px;padding:6px 9px}.jj-voice-form-status{font-size:10px}}
