@@ -1,3 +1,8 @@
+## JJ and FTMO KPI dashboard panels (Nov 7, 2026)
+
+- The visible Results Dashboard in jj-ftmo-kpis.html is split into two clearly labeled, separate side-by-side panels: JJ Simon / Topstep 50K research benchmark and FTMO 10K / 2-Step planning scenario. Six cards per panel (cost per funded, net ROI, evaluation pass, first cash payout chance, net EV per purchased evaluation, cohort total net cash), with matching order. CSS stacks panels vertically on mobile, preserving two dense KPI columns within each panel.
+- The existing JJ × FTMO page title, closed detail tables, input selectors, illustrative assumptions, formulas, source labels, and read-only behavior remain unchanged. Smoke tests verified unchanged baseline calculations and immediate FTMO P1 70% -> 80% recalculation. This is a source and mock-DOM check, not independent confirmation of Cloudflare deployment or mobile screenshots.
+
 ## JJ × FTMO dashboard-first collapsible layout (Nov 7, 2026)
 
 - Per user request, jj-ftmo-kpis.html now places the always-visible results dashboard at the top, before all detail tables. Its live KPI cards include JJ/FTMO paired cost per funded, net ROI, evaluation funded conversion, purchase-to-first-cash-payout probability, net expected cash per evaluation purchase and total net cash for the selected cohort.
