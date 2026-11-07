@@ -47,6 +47,22 @@
     } finally { clearTimeout(timer); }
   }
 
+  async function allRecentCommits() {
+    const collected = [];
+    for (let page = 1; page <= 8; page++) {
+      try {
+        const batch = await json(base + '/commits?sha=jj-simon-knowledge-hub&path=jj-simon&per_page=100&page=' + page);
+        if (!Array.isArray(batch)) throw new Error('Invalid GitHub commit page');
+        collected.push(...batch);
+        if (batch.length < 100) break;
+      } catch (error) {
+        if (!collected.length) throw error;
+        break; // Preserve the pages already retrieved if a later page is unavailable.
+      }
+    }
+    return collected;
+  }
+
   function commitsToRows(items) {
     if (!Array.isArray(items)) throw new Error('GitHub commit list unavailable');
     return items.filter(isCommit).map(c => ({
@@ -176,7 +192,7 @@
         } catch(e) { state.liveMessage='Saved snapshot unavailable; trying GitHub live history.'; }
       }
       const [commits,runs]=await Promise.allSettled([
-        json(base+'/commits?sha=jj-simon-knowledge-hub&path=jj-simon&per_page=100'),
+        allRecentCommits(),
         json(base+'/actions/workflows/jj-youtube-ingest.yml/runs?per_page=50')
       ]);
       const issues=[];
@@ -189,6 +205,9 @@
       state.liveMessage=issues.length ?
         'Some live history unavailable ('+issues.join(', ')+'). Showing available records and saved history.' :
         'Live GitHub history loaded. Times are commit/job times, not guaranteed Cloudflare deployment times.';
+      state.loaded=true;
+    } catch (error) {
+      state.liveMessage='Live update history could not be fully refreshed. Displaying saved history instead.';
       state.loaded=true;
     } finally {
       state.busy=false;
