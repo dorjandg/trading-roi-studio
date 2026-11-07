@@ -103,7 +103,10 @@ function buildGuide(wb){
  glossary(outputs.body,resultHelp);
  outputs.body.insertAdjacentHTML('beforeend','<div class="jj-kpi-formula"><strong>Example from JJ\'s probability framework:</strong> $100 evaluation fee × 1 purchase, 25% pass rate, 50% conditional funded payout chance, $1,000 withdrawable payout, and $0 activation. Payout-path chance = 12.5%; expected net per purchase = 0.125 × $1,000 − $100 = <strong>+$25</strong>, before omitted fees. This is a hypothetical probability model, not a guarantee.</div>');
  body.append(outputs.container);
- const jj=section('4 · JJ course suggestions (source-linked)');
+ const worked=section('4 · Worked example — trade EV and 15 evaluations');
+ worked.body.innerHTML='<p><strong>Example A · Trade expectancy.</strong> Suppose 35 of 100 comparable trades win, with an average winning trade of $3,000 and an average losing trade of $1,000.</p><div class="jj-kpi-formula">Trade EV = 0.35 × $3,000 − 0.65 × $1,000 = <strong>+$400 per trade</strong>. Break-even win rate for these average amounts = $1,000 ÷ ($3,000 + $1,000) = <strong>25%</strong>.</div><p><strong>Example B · Prop-account economics.</strong> Assume 15 independent evaluations at $100 each, a 33% chance of passing, a 30% conditional chance of a $3,000 actual funded payout, and no activation fee.</p><div class="jj-kpi-formula">Payout path = 0.33 × 0.30 = <strong>9.9%</strong><br>Chance of at least one payout = 1 − (1 − 0.099)<sup>15</sup> ≈ <strong>79.1%</strong><br>Expected net total = 15 × (0.099 × $3,000 − $100) = <strong>+$2,955</strong>, before omitted costs.</div><p><strong>Important:</strong> The same assumptions leave roughly a <strong>20.9% chance of zero payouts</strong> across the 15 attempts. Copy trading, provider limits, missing fees and changing probabilities can make these figures inaccurate. This is a model example, <strong>not</strong> JJ’s verified personal win rate or a recommendation to purchase 15 accounts.</p>';
+ body.append(worked.container);
+ const jj=section('5 · JJ course suggestions (source-linked)');
  const ul=document.createElement('ul');
  lessons.forEach(item=>{
    const li=document.createElement('li');
@@ -115,7 +118,7 @@ function buildGuide(wb){
  });
  jj.body.append(ul,text('p','Source notes paraphrase historical JJ course explanations. They are not verified up-to-date prop firm rules or universally recommended risk settings.','jj-kpi-alert'));
  body.append(jj.container);
- const scenario=section('5 · What your current numbers suggest');
+ const scenario=section('6 · What your current numbers suggest');
  const notes=text('div',undefined,'jj-kpi-scenario');
  notes.id='jj-kpi-scenario';
  scenario.body.append(text('p','Calculated from your own inputs. These are model diagnostics, not statements by JJ.'),notes);
