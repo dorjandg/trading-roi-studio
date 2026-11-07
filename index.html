@@ -268,6 +268,12 @@ html[data-theme="light"] .recovery-direct{background:#f0faf6;border-color:#8bcdb
 .recovery-details>.recovery-subfold .caption{font-size:10px}
 .recovery-details>.smart-setup>summary{font-size:11px}
 @media(max-width:600px){.recovery-details>.recovery-subfold{margin:4px 0;padding:4px 7px}.recovery-details>.recovery-subfold>summary{font-size:10px}}
+
+/* Each individual trade option can show only the specific editor/table needed. */
+.recovery-option .recovery-trade-subfold{margin:5px 0;border:1px solid var(--border);border-radius:7px;padding:5px 7px;background:var(--panel2)}
+.recovery-option .recovery-trade-subfold>summary{font-size:10px;font-weight:650;color:var(--text);cursor:pointer}
+.recovery-option .recovery-trade-subfold[open]>summary{margin-bottom:5px}
+.recovery-option .recovery-trade-subfold .recovery-option-risk-grid{margin:5px 0}
 .scenario-advisor{margin-top:10px;padding:10px;border:1px solid var(--border,#526071);border-radius:9px;display:grid;gap:8px}.scenario-advisor-item{padding:7px 9px;border-left:3px solid #7790a5;background:rgba(127,127,127,.06);border-radius:4px}.scenario-advisor-critical{border-left-color:#cc6161}.scenario-advisor-warning{border-left-color:#d2a64b}.scenario-advisor-good{border-left-color:#4aaf83}.scenario-advisor-item p{margin:3px 0;font-size:12px;line-height:1.4}.scenario-advisor small{opacity:.75;font-size:11px}
 </style>
 <script>window.FOUR_DS_CLOUD_ENDPOINT = "https://script.google.com/macros/s/AKfycbyZW792ZLBPxusQwthCJr0bVdZwCjXyeNaklq4Dk-BuSQ8P9gdg2zdTiWFKEmYuy5sY9Q/exec";</script>
@@ -2225,7 +2231,10 @@ function smartSetupUI(stage){
  const status=busy?'Calculating candidate setups…':data?.error?'No match: '+data.error:
   models.length?data.tested.toLocaleString()+' risk combinations · '+data.viable.toLocaleString()+' viable':
   saved?'Inputs changed — recalculate':'Find target, low-risk and recovery setups.';
- return '<details class="smart-setup"'+(snap.smartOpen?' open':'')+'><summary>Smart Setup Optimizer · Find R1–R4</summary>'+
+ const fastest=models.find(m=>m.kind==='fast');
+ const headline=fastest?'Smart Setup Optimizer · '+models.length+' models · fastest '+fastest.route.trades+' trade'+(fastest.route.trades===1?'':'s'):
+  busy?'Smart Setup Optimizer · searching…':'Smart Setup Optimizer · Find R1–R4';
+ return '<details class="smart-setup"'+(snap.smartOpen?' open':'')+'><summary>'+headline+'</summary>'+
   '<div class="smart-toolbar"><button type="button" class="btn small" data-smart-run="'+stage+'"'+(busy?' disabled':'')+
   '>Find Smart Setups</button>'+
   (snap.smartUndo?'<button type="button" class="btn small quiet" data-smart-undo="'+stage+'">Undo Apply</button>':'')+
@@ -2457,9 +2466,13 @@ function renderRecoveryPlanners(){
     '<span class="recovery-option-timing">'+outcomeTiming+
     '<small>'+trades.length+' trade'+(trades.length===1?'':'s')+' · '+(dayBreakdown||'No trades executed')+'</small>'+
     '<strong>'+status+' · '+recoveryMoney(sim.pnl)+'</strong></span></summary>'+
-    '<p class="caption">Trades toward the modeled target: '+(outcomeLine||'none executed')+'. No extra W/L trades are added solely to satisfy minimum trading days. Edit the risk for each executed trade below.</p>'+
-    '<div class="recovery-option-risk-grid">'+planned+'</div>'+
-    '<div class="tablewrap"><table class="recovery-table"><thead><tr><th>Day / outcome</th><th>Risk level</th><th>Trade risk</th><th>Trade P/L</th><th>Stage P/L</th><th>Daily buffer</th><th>Overall buffer</th><th>Next action</th></tr></thead><tbody>'+rows+'</tbody></table></div></details>';
+    '<details class="recovery-trade-subfold recovery-trade-risks" data-option-child="risks"'+(snapshot.optionDetailOpen?.[path]?.risks?' open':'')+'>'+
+    '<summary>Trade risk choices · '+(actualSequence||'None')+'</summary>'+
+    '<p class="caption">Edit each trade risk if using a manual policy. Smart sequence risks are automatic.</p>'+
+    '<div class="recovery-option-risk-grid">'+planned+'</div></details>'+
+    '<details class="recovery-trade-subfold recovery-trade-table" data-option-child="table"'+(snapshot.optionDetailOpen?.[path]?.table?' open':'')+'>'+
+    '<summary>Trade details · '+trades.length+' trades · P/L '+recoveryMoney(sim.pnl)+'</summary>'+
+    '<div class="tablewrap"><table class="recovery-table"><thead><tr><th>Day / outcome</th><th>Risk level</th><th>Trade risk</th><th>Trade P/L</th><th>Stage P/L</th><th>Daily buffer</th><th>Overall buffer</th><th>Next action</th></tr></thead><tbody>'+rows+'</tbody></table></div></details></details>';
   }).join('');
   const filter=String(snapshot.filter||'all');
   const select=(name,values,current)=>'<select data-recovery-input="'+name+'">'+values.map(([value,label])=>
@@ -2581,7 +2594,19 @@ document.addEventListener('toggle',event=>{
  else if(target.classList.contains('recovery-risk-inputs'))snapshot.riskInputsOpen=target.open;
  else if(target.classList.contains('recovery-route-block'))snapshot.allRoutesOpen=target.open;
  else if(target.classList.contains('recovery-path-options'))snapshot.optionsOpen=target.open;
- else if(target.classList.contains('recovery-option')&&target.open)snapshot.openOptionPath=target.dataset.outcomePath||'';
+ else if(target.classList.contains('recovery-option')){
+  const path=target.dataset.outcomePath||'';
+  if(target.open)snapshot.openOptionPath=path;
+  else if(snapshot.openOptionPath===path)snapshot.openOptionPath='';
+ }
+ else if(target.classList.contains('recovery-trade-subfold')){
+  const path=target.closest('[data-outcome-path]')?.dataset.outcomePath;
+  const kind=target.dataset.optionChild;
+  if(!/^[WL]{1,8}$/.test(path||'')||!['risks','table'].includes(kind))return;
+  snapshot.optionDetailOpen=snapshot.optionDetailOpen||{};
+  snapshot.optionDetailOpen[path]=snapshot.optionDetailOpen[path]||{};
+  snapshot.optionDetailOpen[path][kind]=target.open;
+ }
  else return;
  persistRecoverySnapshot(stage);
 },true);
