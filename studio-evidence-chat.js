@@ -1,5 +1,6 @@
 /* 4Ds Studio Evidence Chat — local, explainable, no third-party AI requests or credential exposure. */
 (()=>{'use strict';
+if(window.self!==window.top)return; // Embedded Firms already uses parent Studio AI.
 if(document.getElementById('studioFloatingAI'))return;
 const style=document.createElement('style');style.textContent=`
 .studio-ai{position:fixed;z-index:1001;right:14px;bottom:62px;width:min(410px,calc(100vw - 20px));max-height:min(650px,calc(100dvh - 92px));overflow:hidden;display:flex;flex-direction:column;border:1px solid #34485c;border-radius:13px;background:#101b2a;box-shadow:0 10px 40px #0009;padding:11px;font-size:12px;color:#ecf5ff;line-height:1.45}.studio-ai[hidden]{display:none!important}
