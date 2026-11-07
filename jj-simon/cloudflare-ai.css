@@ -175,3 +175,12 @@
 #jj-cloudflare-ai .jj-ai-archive-item p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5}
 #jj-cloudflare-ai .jj-ai-archive-item small{display:block;color:var(--muted)}
 #jj-cloudflare-ai .jj-ai-archive-item a{display:inline-block;margin-top:5px;color:var(--accent)}
+
+/* Consolidated chat tools: collapsed by default, no extra vertical sections. */
+#jj-cloudflare-ai>.jj-ai-unified-tools{margin:0 0 10px;border:1px solid var(--stroke);border-radius:9px;padding:0;background:transparent}
+#jj-cloudflare-ai>.jj-ai-unified-tools>summary{padding:10px 12px;cursor:pointer;color:var(--accent);font-size:12px;font-weight:700;list-style-position:inside}
+#jj-cloudflare-ai>.jj-ai-unified-tools>.jj-ai-unified-body{padding:0 12px 10px;display:grid;gap:4px}
+#jj-cloudflare-ai .jj-ai-unified-body>details{margin:0!important;padding:8px 0!important;border:0!important;border-top:1px solid var(--stroke)!important;border-radius:0!important;background:transparent!important}
+#jj-cloudflare-ai .jj-ai-unified-body>details>summary{font-size:11px;cursor:pointer}
+#jj-cloudflare-ai .jj-ai-unified-body .jj-recent-content{max-width:100%;overflow-x:auto}
+#jj-cloudflare-ai .jj-ai-unified-body .jj-recent-scroll{max-width:100%;overflow-x:auto}
