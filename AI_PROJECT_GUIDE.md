@@ -1,3 +1,8 @@
+## Compact JJ / FTMO results panels (Nov 7, 2026)
+
+- On user request, made the two separate panels in jj-ftmo-kpis.html materially smaller: 3 metrics per row within each side on desktop/tablet, 2 metrics per row on narrow mobile (470px or less), reduced card padding/labels/value typography/gaps/outer margins, and shortened labels. Removed redundant mini JJ/FTMO badges because section names already identify each side; kept two distinct panels with separate accent borders. Page title remains unchanged.
+- No changes to KPI inputs, formulas, source data, collapsible tables, saved Firms settings, simulation engine or cloud history. Verified script parse, fixed default ROI figures (223.7% JJ, 216.5% FTMO), automatic 80% FTMO Phase-1 recalculation to 56.0% both-phase passing and $179 funded acquisition, two panel boundaries, both detail panels collapsed by default. GitHub source validation only; Cloudflare production/mobile browser not independently verified.
+
 ## JJ and FTMO KPI dashboard panels (Nov 7, 2026)
 
 - The visible Results Dashboard in jj-ftmo-kpis.html is split into two clearly labeled, separate side-by-side panels: JJ Simon / Topstep 50K research benchmark and FTMO 10K / 2-Step planning scenario. Six cards per panel (cost per funded, net ROI, evaluation pass, first cash payout chance, net EV per purchased evaluation, cohort total net cash), with matching order. CSS stacks panels vertically on mobile, preserving two dense KPI columns within each panel.
