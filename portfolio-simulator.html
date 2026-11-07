@@ -746,7 +746,18 @@ const profileFor=(id,size)=>{
  }
  return null;
 };
-const snapFor=(id,size,stage)=>readJson('4ds:recovery-planner:v2:'+user+':'+id+':'+size+':'+stage,{});
+function savedStageInfo(id,size,stage){
+ const direct=readJson('4ds:recovery-planner:v2:'+user+':'+id+':'+size+':'+stage,null);
+ const mirror=readJson(rootKey+'studio-stage-risk-v1:'+id+':'+size+':'+stage,null);
+ const hasRisk=s=>s&&typeof s==='object'&&!Array.isArray(s)&&
+  (s.policyMode||s.ftmoBuffer||s.appliedSmartSetup||
+   s.levels&&Object.keys(s.levels).length>0||
+   s.optionSequences&&Object.keys(s.optionSequences).length>0);
+ if(hasRisk(direct))return {snapshot:direct,source:'Local Firms'};
+ if(mirror?.v===1&&hasRisk(mirror.risk))return {snapshot:mirror.risk,source:'Synced Firms'};
+ return {snapshot:direct||{},source:'Profile fallback'};
+}
+const snapFor=(id,size,stage)=>savedStageInfo(id,size,stage).snapshot;
 function accountPlan(row){
  const program=catalog.programs[row.id],size=Number(row.size);
  const profile=profileFor(row.id,size);
@@ -912,7 +923,9 @@ function rowSummary(row){
    ' / R3 '+usdExact(c.r3)+(smart?' / R4 '+(c.r4>0?usdExact(c.r4):'Off'):'')+
    ' · '+dec(c.rr)+'R'+(smart?' · '+(c.sweepRemainder?'R3 sweep':'Reserve protected'):'');
  }).join('  |  ');
+ const stageSources=p.stageList.map(stage=>stage.toUpperCase()+': '+savedStageInfo(row.id,row.size,stage).source).join(' · ');
  return title+' · Fee '+usd(p.fee)+(p.activationFee?' + '+usd(p.activationFee)+' activation reserve':'')+
+  '<span style="display:block;margin-top:4px">Stage sources: '+esc(stageSources)+'</span>'+
   '<span style="display:block;margin-top:4px">'+esc(risks)+'</span>'+
   (v.errors.length?'<span class="bad">'+esc(v.errors.join(' · '))+'</span>':'');
 }
@@ -934,7 +947,9 @@ function renderRows(){
     '<div class="field"><label>Funded payout profit target ($)</label><input type="number" data-field="fundedTarget" min="0.01" step="100" value="'+accountPlan(r).riskProfiles.funded.target+'"></div>'+
     '<div class="field"><label>Payout wait from first funded trade (calendar days)</label><input type="number" data-field="payoutWait" min="0" max="120" step="1" value="'+accountPlan(r).payoutWaitCalendarDays+'"></div>'+
     '<div class="field"><label>Modeled payout processing (calendar days)</label><input type="number" data-field="payoutProcessing" min="0" max="120" step="1" value="'+accountPlan(r).payoutProcessingCalendarDays+'"></div>'+
-    '<details class="account-risk-details"><summary>Fee &amp; phase risks · show / hide</summary><div class="source">'+rowSummary(r)+'</div></details>'+
+    '<details class="account-risk-details"><summary>Fee &amp; phase risks · '+
+     esc(accountPlan(r).stageList.map(stage=>stage.toUpperCase()+' '+(savedStageInfo(r.id,r.size,stage).source==='Profile fallback'?'fallback':'saved')).join(' · '))+
+    '</summary><div class="source">'+rowSummary(r)+'</div></details>'+
    '<button type="button" class="remove" data-remove="'+i+'" title="Remove this comparison row" aria-label="Remove account">×</button>'+
    '</div></article>';
  }).join('');
@@ -944,7 +959,9 @@ function renderRows(){
  if(priorIdea!==''&&rows[Number(priorIdea)])$('ideaAccount').value=priorIdea;
  refreshIdeaCeiling();
  window.StudioPayoutBridge?.onAccountsChanged?.();
- $('profileStatus').textContent=rows.length+' account type'+(rows.length===1?'':'s')+' selected.';
+ const first=rows[0],stages=first?accountPlan(first).stageList:[];
+ $('profileStatus').textContent=rows.length+' account type'+(rows.length===1?'':'s')+
+  (first?' · '+stages.map(stage=>stage.toUpperCase()+' '+(savedStageInfo(first.id,first.size,stage).source==='Profile fallback'?'fallback':'saved')).join(' · '):'');
  $('budgetModeNote').textContent=mode==='compare'?
   'Every firm receives the FULL starting budget in its own alternative scenario. Do not add the row totals.':
   'One starting budget is split across the selected firms in proportion to the weights above. The combined result is calculated as one portfolio.';
@@ -1046,7 +1063,18 @@ $('addAccount').addEventListener('click',()=>{
  const id=available.find(x=>!rows.some(r=>r.id===x))||'ftmo2';
  rows.push({id,size:catalog.programs[id].sizes[0],weight:20});renderRows();setStale();
 });
-$('reload').addEventListener('click',()=>{renderRows();setStale();$('status').textContent='Saved phase settings reloaded from this browser'});
+$('reload').addEventListener('click',()=>{
+ // Restore Firms risk plans instead of retaining hidden simulation-only overrides.
+ let cleared=0;
+ for(const row of rows){
+  const key=row.id+':'+row.size;
+  if(Object.prototype.hasOwnProperty.call(testRisks,key)){delete testRisks[key];cleared++;}
+ }
+ renderRows();setStale();
+ $('status').textContent='Reloaded Firms stage risks ('+cleared+' simulator-only override'+(cleared===1?'':'s')+
+  ' cleared). Expand Fee & phase risks to verify P1, P2 and Funded.';
+ $('status').style.color='var(--green)';
+});
 document.querySelectorAll('#budget,#netGoal,#winRate,#days,#signalPace,#tradesPerDay,#trials,#seed,#signalMode,#purchaseMode,#capacityMode,#maxActive,#maxBuysPerDay,#reinvestPayouts,[name="budgetMode"]').forEach(el=>{
  el.addEventListener('change',()=>{
   if(el.name==='budgetMode')renderRows();
