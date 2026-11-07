@@ -121,8 +121,14 @@ function earliestPayoutTimeline(p){
 }
 function assess(r,count,netTarget,perPayout){
  const trials=r.chartTrials||[];
- const successes=trials.filter(t=>val(t.paid)>=count&&val(t.net)+1e-8>=netTarget).length;
+ const winners=trials.filter(t=>val(t.paid)>=count&&val(t.net)+1e-8>=netTarget);
+ const successes=winners.length,totalFees=trials.reduce((sum,t)=>sum+val(t.spent),0);
+ const successFees=winners.reduce((sum,t)=>sum+val(t.spent),0),losers=trials.length-successes;
  return {hit:trials.length?successes/trials.length:0,
+  goalHits:successes,goalTrials:trials.length,
+  costPerGoal:successes?totalFees/successes:null,
+  spentIfGoal:successes?successFees/successes:null,
+  spentIfMiss:losers?(totalFees-successFees)/losers:null,
   avgPaid:val(r.avg.paid),avgReceipts:val(r.avg.receipts),
   avgNet:val(r.avg.net),avgSpent:val(r.avg.spent),p10:val(r.p10),
   avgPurchased:val(r.avg.bought),avgFunded:val(r.avg.funded),
@@ -469,6 +475,7 @@ const payoutSortModes={
  chance:'Highest goal probability',
  payouts:'Most first payouts',
  investment:'Lowest starting investment',
+ costGoal:'Lowest modeled fees per goal hit',
  firstDay:'Earliest first payout'
 };
 function sortedPayoutCandidates(out,sortMode='model'){
@@ -486,6 +493,7 @@ function sortedPayoutCandidates(out,sortMode='model'){
    case 'chance':delta=num(y,'hit')-num(x,'hit');break;
    case 'payouts':delta=num(y,'avgPaid')-num(x,'avgPaid');break;
    case 'investment':delta=Number(x.initialBudget)-Number(y.initialBudget);break;
+   case 'costGoal':delta=(x.score.costPerGoal??Infinity)-(y.score.costPerGoal??Infinity);break;
    case 'firstDay':delta=(x.score.firstPayoutDay??Infinity)-(y.score.firstPayoutDay??Infinity);break;
   }
   return delta||a.originalIndex-b.originalIndex;
@@ -615,7 +623,8 @@ function render(out,sortMode='model',currentPlan=null){
    summaryMetric('Net P&L',money(s.avgNet))+
    summaryMetric('Net ROI',pct(s.budgetRoi))+
    summaryMetric('Investment',money(candidate.initialBudget))+
-   summaryMetric('Goal chance',pct(s.hit))+'</span>'+
+   summaryMetric('Goal chance',pct(s.hit))+
+   summaryMetric('Cost / Goal Hit',s.costPerGoal==null?'—':money(s.costPerGoal))+'</span>'+
    '<span class="reverse-summary-toggle">Details</span>'+
    '</summary>'+
    '<div class="reverse-candidate-body">'+
@@ -647,11 +656,16 @@ function render(out,sortMode='model',currentPlan=null){
    '<div><small>Tested starting budget</small><strong>'+money(candidate.initialBudget)+'</strong></div>'+
    '<div><small>ROI on incurred fees</small><strong>'+pct(s.roi)+'</strong></div>'+ 
    '<div><small>Net ROI on investment</small><strong>'+pct(s.budgetRoi)+'</strong></div>'+ 
-   '<div><small>Chance of payout goal</small><strong>'+pct(s.hit)+'</strong></div>'+
+   '<div><small>Chance of payout goal</small><strong>'+pct(s.hit)+'</strong></div>'+ 
+   '<div><small>Chance of any payout</small><strong>'+pct(s.chanceAnyPayout)+'</strong></div>'+
    '<div><small>Avg. first payouts</small><strong>'+s.avgPaid.toFixed(2)+'</strong></div>'+
    '<div><small>Est. payouts incl. fees</small><strong>'+s.indicativePayouts+'</strong></div>'+
    '<div><small>Avg. cash received</small><strong>'+money(s.avgReceipts)+'</strong></div>'+
-   '<div><small>Avg. incurred fees</small><strong>'+money(s.avgSpent)+'</strong></div>'+
+   '<div><small>Avg. incurred fees / run</small><strong>'+money(s.avgSpent)+'</strong></div>'+
+   '<div><small>Cost per full-goal success</small><strong>'+(s.costPerGoal==null?'Not observed':money(s.costPerGoal))+'</strong></div>'+
+   '<div><small>Fees in successful runs</small><strong>'+(s.spentIfGoal==null?'Not observed':money(s.spentIfGoal))+'</strong></div>'+
+   '<div><small>Fees in unsuccessful runs</small><strong>'+(s.spentIfMiss==null?'—':money(s.spentIfMiss))+'</strong></div>'+
+   '<div><small>Full-goal hits / trials</small><strong>'+s.goalHits+' / '+s.goalTrials+'</strong></div>'+
    '<div><small>Avg. net after fees</small><strong>'+money(s.avgNet)+'</strong></div>'+ 
    '<div><small>Avg. challenges bought</small><strong>'+s.avgPurchased.toFixed(2)+'</strong></div>'+ 
    '<div><small>Avg. funded reached</small><strong>'+s.avgFunded.toFixed(2)+'</strong></div>'+ 
@@ -676,7 +690,7 @@ function render(out,sortMode='model',currentPlan=null){
  return '<div class="reverse-simple-heading">Simulation result</div>'+
   '<details class="reverse-info-section"><summary><strong>Target &amp; calculation rules</strong> <span>· '+out.requiredPayouts+' minimum payouts · '+money(out.minNetPnl)+' net goal</span></summary><p class="hint">Net P&L target: '+money(out.minNetPnl)+' after incurred fees. Minimum '+out.requiredPayouts+
   ' first payouts at '+money(out.perPayout)+' each before fees; more may be needed to cover purchase costs. Allowed trade RR: '+out.minRR.toFixed(2)+'–'+out.maxRR.toFixed(2)+'R. Minimum fee-based ROI: '+pct(out.minRoi)+'. Minimum net ROI on starting investment: '+pct(out.minNetRoi)+'. Minimum net P&L: '+money(out.minNetPnl)+'. The account must first reach approximately '+
-  money(out.profitPerAccount)+' funded trading profit (based on the modeled profit payout split, excluding any refunded challenge fee). Probability is the share of trials reaching the minimum first-payout count AND net P&L target within the trading-day horizon.</p></details>'+
+  money(out.profitPerAccount)+' funded trading profit (based on the modeled profit payout split, excluding any refunded challenge fee). Probability is the share of trials reaching the minimum first-payout count AND net P&L target within the trading-day horizon. Cost / Goal Hit is total fees spent across validation runs divided by full-goal successes, and is undefined if none occurred.</p></details>'+
   '<div class="reverse-result-overview"><strong>Result summary</strong> · '+(out.feasible?'<span class="good">Target met in a validated scenario</span>':'<span class="bad">No scenario met all targets</span>')+'</div>'+ 
   (out.candidates[0]?'<p class="reverse-critical-gap"><strong>Most important gap:</strong> '+
    (gaps(out,out.candidates[0].score)[0]||'No expected-value target gap; check payout probability and downside risk')+'</p>':'')+
@@ -687,6 +701,7 @@ function render(out,sortMode='model',currentPlan=null){
   (out.fastestGoal?'Full '+out.requiredPayouts+'-payout goal: day '+out.fastestGoal.score.goalPayoutDay.toFixed(1)+
    ' in successful trials':'Net profit / payout-count goal not reached in validated trials')+
   '<small> · Conditional averages, not guaranteed dates; minimum-day and processing waits included.</small></div></details>'+
+  '<p class="hint">Goal chance = simulated chance of meeting BOTH required first-payout count and net-profit target. <b>Cost / Goal Hit</b> = total incurred fees across all validation runs divided by full-goal successes. It is not the starting investment or a guaranteed one-time payment. No observed successes means the cost cannot be estimated.</p>'+
   '<div class="reverse-simple-heading">Investment scenarios <small>('+out.candidates.length+' optimizer cards)</small></div>'+
   '<div id="fundedComparisonNotice" class="hint" role="status">These are only the original optimizer cards. Funded-compounding models appear in Model comparison below after calculation.</div>'+
 
@@ -720,6 +735,7 @@ function renderUnifiedInvestmentModels(out,more=null,sortKey='net',descending=tr
  const all=[...original,...additional];
  const keys={
   net:m=>m.result.avg.net,improvement:m=>m.result.avg.net-baselineNet,
+  costGoal:m=>m.score.costPerGoal??Infinity,
   roi:m=>m.result.roi,investment:m=>m.budget,goal:m=>m.score.hit,
   payout:m=>m.result.chancePayout,p10:m=>m.result.p10,
   blocked:m=>m.result.avg.exhausted,breached:m=>m.result.avg.failed,paid:m=>m.result.avg.paid,
@@ -736,7 +752,7 @@ function renderUnifiedInvestmentModels(out,more=null,sortKey='net',descending=tr
  };
  const options=[
   ['net','Expected net'],['improvement','Net improvement'],['roi','Fee ROI'],
-  ['investment','Starting investment'],['goal','Payout + net goal chance'],
+  ['investment','Starting investment'],['goal','Payout + net goal chance'],['costGoal','Fees per goal success'],
   ['payout','First payout chance'],['firstDay','First payout day'],['goalDay','Goal payout day'],['p10','Downside P10'],['blocked','Risk blocked'],['breached','Actual breaches'],
   ['paid','Paid accounts'],['funded','Funded'],['bought','Challenges bought'],['spent','Fees'],
   ['pf','Profit factor'],['wr','Win rate'],['rr','Planned RR'],['ar','Realized R'],
@@ -770,7 +786,7 @@ function renderUnifiedInvestmentModels(out,more=null,sortKey='net',descending=tr
   return '<tr><th scope="row"><b>'+escapeHtml(m.title)+'</b>'+
    '<small class="payout-more-model-reason">'+sourceName+' · '+escapeHtml(m.reason)+'</small>'+
    '<details><summary>R1/R2/R3 · phase settings</summary>'+risks+'</details></th>'+
-   '<td>'+usd(r.avg.net)+'</td><td>'+rate(r.roi)+'</td><td>'+rate(s.hit)+'</td>'+
+   '<td>'+usd(r.avg.net)+'</td><td>'+rate(r.roi)+'</td><td>'+rate(s.hit)+'</td><td>'+(s.costPerGoal==null?'—':usd(s.costPerGoal))+'</td>'+
    '<td>'+usd(m.budget)+'</td><td>'+delta+'</td>'+
    '<td class="payout-col-accounts">'+usd(r.p10)+'</td><td class="payout-col-accounts">'+rate(r.chancePayout)+'</td>'+
    '<td class="payout-col-accounts">'+fmt(r.avg.exhausted)+'</td><td class="payout-col-accounts">'+fmt(r.avg.failed)+'</td><td class="payout-col-accounts">'+fmt(r.avg.paid)+'</td>'+
@@ -803,12 +819,12 @@ function renderUnifiedInvestmentModels(out,more=null,sortKey='net',descending=tr
    ' as reference; goals require BOTH first-payout count and net P&L. Sorting does not rerun simulations.</p>':
    '<p class="hint">These are the validated Calculate Investment options. Expand an option and select Find More Risk Models to add alternatives to this same table.</p>')+
   '<div class="tablewrap"><table class="payout-more-table" data-view="'+(columnView==='accounts'?'accounts':columnView==='all'?'all':'trading')+'"><thead><tr>'+
-  '<th>Model</th><th>Net</th><th>ROI</th><th>Goal</th><th>Investment</th><th>Δ Net</th>'+
+  '<th>Model</th><th>Net</th><th>ROI</th><th>Goal</th><th title="Total fees spent in simulated trials divided by runs meeting the full goal">Cost / Goal</th><th>Investment</th><th>Δ Net</th>'+
   '<th class="payout-col-accounts">P10</th><th class="payout-col-accounts">CP</th>'+
   '<th class="payout-col-accounts">BA</th><th class="payout-col-accounts">Breached</th><th class="payout-col-accounts">Paid</th><th class="payout-col-accounts">Funded</th><th class="payout-col-accounts">First day</th><th class="payout-col-accounts">Goal day</th><th class="payout-col-accounts">Bought</th><th class="payout-col-accounts">Fees</th>'+
   '<th class="payout-col-trading">PF</th><th class="payout-col-trading">WR</th><th class="payout-col-trading">RR</th><th class="payout-col-trading">AR</th><th class="payout-col-trading">AW</th><th class="payout-col-trading">AL</th><th class="payout-col-trading">EV</th><th class="payout-col-trading">Trades</th><th>View</th>'+
   '</tr></thead><tbody>'+rows+'</tbody></table></div>'+
-  '<details class="payout-more-help"><summary>KPI key</summary><p class="hint">Goal = probability of meeting payout count AND net-profit target; P10 = lower 10th percentile of net outcomes; CP = chance of at least one payout; BA = risk-blocked accounts, not breaches; Breached = actual modeled loss-limit failures. First day / Goal day = conditional average trading day among trials achieving the milestone, not unconditional time; inspect payout chance too. PF = profit factor, WR = win rate, RR = planned reward/risk, AR = realized R, AW/AL = average win/loss, EV = expected trade P&L. Simulated outcomes are not guarantees.</p></details>';
+  '<details class="payout-more-help"><summary>KPI key</summary><p class="hint">Goal = probability of meeting payout count AND net-profit target; Cost / Goal = total incurred simulated fees divided by full-goal successful runs, not starting investment; P10 = lower 10th percentile of net outcomes; CP = chance of at least one payout; BA = risk-blocked accounts, not breaches; Breached = actual modeled loss-limit failures. First day / Goal day = conditional average trading day among trials achieving the milestone, not unconditional time; inspect payout chance too. PF = profit factor, WR = win rate, RR = planned reward/risk, AR = realized R, AW/AL = average win/loss, EV = expected trade P&L. Simulated outcomes are not guarantees.</p></details>';
 }
 
 root.StudioPayoutOptimizer={needed,profitNeeded,planFor,assess,optimize,render,renderAccountPath,sampleAccounts,diagnoseScenario,renderUnifiedInvestmentModels};
