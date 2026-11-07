@@ -138,7 +138,15 @@
    }
   };
   archive.append(archiveTitle,archiveSearch,archiveResults);
-  panel.append(library,studyPanel,archive,el('strong','','JJ Academy AI · conversation'),usage,status,thread,answer,sources,history);
+  // One compact collapsible tools drawer, with the conversation always visible.
+  const drawer=el('details','jj-ai-unified-tools');
+  const drawerTitle=el('summary','','Chat tools · history, saved answers & archive');
+  const drawerBody=el('div','jj-ai-unified-body');
+  const recent=document.getElementById('jj-recent-questions');
+  if(recent)drawerBody.append(recent);
+  drawerBody.append(library,studyPanel,archive);
+  drawer.append(drawerTitle,drawerBody);
+  panel.append(drawer,el('strong','','JJ Academy AI · conversation'),usage,status,thread,answer,sources,history);
   const showLatest=()=>{
    answer.replaceChildren();sources.replaceChildren();drawThread();
    const latest=conversation[conversation.length-1];
