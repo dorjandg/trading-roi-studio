@@ -572,7 +572,11 @@ details p{margin:6px 0}
  .sim-help-popup{font-size:11px;padding:8px 9px}
 }
 </style>
-</head><body><div class="shell">
+<style id="sim-stage-source-fix">
+.sim-stage-source-alert{font-size:11px;line-height:1.4;padding:7px 9px;border:1px solid var(--amber);border-radius:7px;background:var(--panel2);color:var(--text);margin:5px 0}
+.sim-stage-source-alert[hidden]{display:none!important}
+.sim-stage-source-alert a{font-weight:700;text-decoration:underline}
+</style></head><body><div class="shell">
 <header class="studio-site-header"><a class="studio-site-brand" href="index.html?view=dashboard"><span class="studio-site-mark">F<small>↗</small></span><span class="studio-site-title"><strong>4Ds Trading Studio</strong><small>STRATEGY · PAYOUTS · CAPITAL ALLOCATION</small></span></a><div class="studio-site-tools"><label class="studio-site-user" for="studioUserSelect">User <select id="studioUserSelect" aria-label="Active Studio user"><option value="doen">Doen</option><option value="dori">Dori</option><option value="dona">Dona</option><option value="dion">Dion</option></select></label><button type="button" id="theme" class="studio-site-theme" aria-label="Switch theme" title="Switch theme">◐</button></div></header>
 <nav class="studio-primary-nav" aria-label="Studio pages"><a href="index.html?view=dashboard">Overview</a><a href="index.html?view=firms">Firms</a><a href="labs.html">Labs</a><a href="portfolio-simulator.html" class="active" aria-current="page">Portfolio Sim</a><a href="jj-ftmo-kpis.html">JJ × FTMO KPIs</a><a href="index.html?view=presets">Presets</a><a href="index.html?view=settings">Help</a><a href="index.html?view=profile">Profile</a></nav>
 <nav class="studio-labs-nav" aria-label="Lab tabs"><a href="monitor.html">Monitor</a><a href="index.html?view=investments">Budget</a><a class="active" aria-current="page" href="portfolio-simulator.html">Portfolio Sim</a><a href="investment-lab.html">Invest Lab</a><a href="comparison-lab.html">Compare Lab</a><a href="trade-lab.html">Trade Lab</a></nav>
@@ -613,6 +617,7 @@ details p{margin:6px 0}
 </div></details>
 <details class="sim-charts-panel numbered-panel" id="section2Panel" open><summary><strong>2 · Prop-firm accounts</strong><button id="run" type="button" class="primary section-run-btn" title="Run simulation with current account and strategy settings">Run Simulation</button><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><p class="hint">Saved profiles and phase-risk options are read from this browser's selected 4Ds user (<b id="userLabel">—</b>). Press Apply on a Smart Setup or FTMO Funded Buffer Builder in Firms to use that account’s strategy and phase targets here. Click Reload saved stage settings if Firms changed in another tab. Global win rate, signal count and trial assumptions remain editable here.</p>
  <div id="accounts"></div>
+ <div id="stageSourceAlert" class="sim-stage-source-alert" role="status" hidden></div>
  <div class="actions"><button id="addAccount" type="button">+ Add account to comparison</button><button id="reload" type="button">Reload saved stage settings</button><span id="profileStatus" class="hint"></span></div>
  <div class="actions"><span id="status" class="status" role="status">Loading account catalog…</span></div>
 </div></details>
@@ -963,6 +968,32 @@ function renderRows(){
  const first=rows[0],stages=first?accountPlan(first).stageList:[];
  $('profileStatus').textContent=rows.length+' account type'+(rows.length===1?'':'s')+
   (first?' · '+stages.map(stage=>stage.toUpperCase()+' '+(savedStageInfo(first.id,first.size,stage).source==='Profile fallback'?'fallback':'saved')).join(' · '):'');
+ const missing=[],overridden=[];
+ for(const row of rows){
+  const name=(catalog.programs[row.id]?.firm||row.id)+' '+usd(row.size);
+  for(const stage of accountPlan(row).stageList)
+   if(savedStageInfo(row.id,row.size,stage).source==='Profile fallback')missing.push(name+' '+stage.toUpperCase());
+  if(Object.keys(testRisks[row.id+':'+row.size]||{}).length)overridden.push(name);
+ }
+ const alert=$('stageSourceAlert');
+ if(alert){
+  alert.hidden=!missing.length&&!overridden.length;
+  if(!alert.hidden){
+   const parts=[];
+   if(missing.length)parts.push('Detailed Firms stage risks missing for '+missing.slice(0,5).join(', ')+
+    (missing.length>5?' and '+(missing.length-5)+' more':'')+
+    '. These stages use profile risks and fallback R3/R4, not your saved planner options.');
+   if(overridden.length)parts.push('Simulator-only overrides active for '+overridden.join(', ')+
+    '. Click Reload saved stage settings to restore Firms.');
+   alert.textContent=parts.join(' ');
+   if(first&&missing.length){
+    alert.appendChild(document.createTextNode(' '));
+    const link=document.createElement('a');
+    link.href='index.html?view=firms&account='+encodeURIComponent(first.id+':'+first.size);
+    link.textContent='Open selected Firms account';alert.appendChild(link);
+   }
+  }
+ }
  $('budgetModeNote').textContent=mode==='compare'?
   'Every firm receives the FULL starting budget in its own alternative scenario. Do not add the row totals.':
   'One starting budget is split across the selected firms in proportion to the weights above. The combined result is calculated as one portfolio.';
