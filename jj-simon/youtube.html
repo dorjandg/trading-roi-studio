@@ -62,7 +62,7 @@ for(const id of ['q','filter','sort'])$(id).addEventListener(id==='q'?'input':'c
  const close=document.createElement('button');close.type='button';close.textContent='✕';close.setAttribute('aria-label','Close AI consultant');
  const iframe=document.createElement('iframe');iframe.title='JJ Academy AI conversation';iframe.loading='lazy';
  header.append(title,full,close);box.append(header,iframe);document.body.append(launch,box);
- const toggle=value=>{box.hidden=!value;launch.setAttribute('aria-expanded',String(value));if(value){if(!iframe.src)iframe.src='./?topic=academy-study-assistant&jj_ai_float=1&jj_context=youtube-library';close.focus()}else launch.focus()};
+ const toggle=value=>{if(value&&window.matchMedia('(max-width:1024px), (pointer:coarse)').matches){location.assign('./?topic=academy-study-assistant&jj_ai_mobile=1&jj_context=youtube-library');return}box.hidden=!value;launch.setAttribute('aria-expanded',String(value));if(value){if(!iframe.src)iframe.src='./?topic=academy-study-assistant&jj_ai_float=1&jj_context=youtube-library';close.focus()}else launch.focus()};
  launch.onclick=()=>toggle(box.hidden);close.onclick=()=>toggle(false);
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!box.hidden)toggle(false)});
 })();
