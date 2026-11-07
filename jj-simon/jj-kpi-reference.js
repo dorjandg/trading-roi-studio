@@ -17,7 +17,7 @@
  const escapeHTML=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const src=key=>{
   const s=sources[key];if(!s)return 'Source not indexed';
-  return '<a href="https://drive.google.com/file/d/'+encodeURIComponent(s.id)+'/view" target="_blank" rel="noopener noreferrer" title="'+escapeHTML(s.name+' · '+s.time)+'">'+escapeHTML(s.name)+'</a><div class="jj-stats-footnote">'+escapeHTML(s.time)+'</div>';
+  return '<a href="https://drive.google.com/file/d/'+encodeURIComponent(s.id)+'/view" target="_blank" rel="noopener noreferrer" title="'+escapeHTML(s.name+' · '+s.time)+'">View lesson</a><div class="jj-stats-footnote">'+escapeHTML(s.time)+'</div>';
  };
  const perFunded='$2,000 per active funded / month (assumed average)';
  const targets=[
@@ -64,9 +64,13 @@
    '<div class="jj-stats-summary"><strong>JJ Statistics & Targets — course reference</strong>'+
    '<p>One place to compare JJ’s <em>stated examples and target scenarios</em>. These are not independently verified account results. The course uses different assumptions in different chapters, so example percentages and projected payouts must not be described as JJ’s personally measured win rate or profits.</p>'+
    '<div class="jj-stats-legend"><span>JJ illustration = described in a lesson</span><span>Derived = formula under stated assumptions</span><span>Unverified = no audited result in indexed research</span></div></div>'+
-   section('01 · Monthly profit goals and evaluation inventory',table(
+   '<div class="jj-plan-shortcuts"><a href="?topic=jj-plan-10k" data-jj-plan="jj-plan-10k"><strong>$10K plan</strong><small>5 active fundeds · 15 example evals · full plan</small></a>'+
+   '<a href="?topic=jj-plan-20k" data-jj-plan="jj-plan-20k"><strong>$20K plan</strong><small>10 active fundeds · 30 example evals · full plan</small></a>'+
+   '<a href="?topic=jj-plan-30k" data-jj-plan="jj-plan-30k"><strong>$30K plan</strong><small>15 active fundeds · 45 example evals · full plan</small></a>'+
+   '<a href="?topic=jj-plan-100k" data-jj-plan="jj-plan-100k"><strong>$100K advanced</strong><small>Separate $50K spending / $150K payout illustration</small></a></div>'+
+   section('01 · Quick goal comparison (expand)',table(
      ['Goal','JJ active funded target','Example evaluations at 33% pass rate','Interpretation','Evidence type','JJ source'],
-     targets),true)+
+     targets),false)+
    '<p class="jj-stats-footnote"><strong>Important:</strong> 15 evaluation purchases at 33% passing mean 4.95 expected qualifications—not five guaranteed funded accounts. The target ladder uses a $2,000/month profit assumption per active funded account; payout approvals and costs are separate. The 0→10K roadmap also discusses ten newly funded accounts, a different teaching scenario, not a correction to the five-active-funded heuristic.</p>'+
    section('02 · Example risk, reward and trade win rates',table(
      ['Stage / example','Setup','Illustrative stop risk','Illustrative win target','Probability / qualification','JJ source'],
