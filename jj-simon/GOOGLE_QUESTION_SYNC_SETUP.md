@@ -2,6 +2,8 @@
 
 The canonical Academy homepage now has a **collapsed Updated Answers** section under study progress. It lists original questions saved on **this browser**, timestamps (Albania time), current review status, the latest private research draft, evidence IDs, and expandable answer history; includes search, pagination and Refresh.
 
+A **live, owner-private Updated Answers tab** has also been created in the Google Sheet. Its columns (original question, review status, latest answer, reviewed UTC, evidence references, question ID) are formulas linked directly to the Unanswered Questions tab. It updates immediately when an hourly review changes the private answer; **no Apps Script redeployment is required to view this private tab**. Direct link: https://docs.google.com/spreadsheets/d/1kdDaTIsElKKI8l3SwDZGCkCwhoo4b-lqk6SlUVUhk_U/edit?gid=27471300#gid=27471300. Older drafts are preserved separately in Answer History.
+
 Private backend:
 - Source workbook: [JJ Academy — Private Unanswered Questions](https://docs.google.com/spreadsheets/d/1kdDaTIsElKKI8l3SwDZGCkCwhoo4b-lqk6SlUVUhk_U/edit).
 - Tabs: `Unanswered Questions` (A:N), `Answer History` (A:G), and hidden `Question Access` (hashed receipt only).
