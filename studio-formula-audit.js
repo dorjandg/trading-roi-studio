@@ -50,7 +50,7 @@ function answer(q){
  const item=lookup(q);if(!item)return sourceAnswer(q);
  const ask=norm(q);
  if(!/(how|why|explain|formula|calculate|definition|meaning|derive|source|where|trace|depend|what|audit|check)/.test(ask))return null;
- return [item.name+'\nFormula: '+item.formula+'\nInputs: '+item.inputs+'\nCode source: '+item.source+'\nShown in: '+item.output+'\nLimit: '+item.caveat,'Verified engine formula map · High',false];
+ return [item.name+'\nFormula: '+item.formula+'\nInputs: '+item.inputs+'\nCode source: '+item.source+'\nShown in: '+item.output+'\nScope: Portfolio Simulator model, not all standalone calculators.\nLimit: '+item.caveat,'Verified engine formula map · High',false];
 }
 function audit(results){
  const findings=[];
