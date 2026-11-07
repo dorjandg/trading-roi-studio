@@ -891,6 +891,7 @@ function start(){
     advisorMoney(s.costPerGoal))+' from '+(s.goalHits??0)+' / '+(s.goalTrials??0)+
     ' validation runs, including fees spent in unsuccessful runs. Successful-run fees alone: '+
     (s.spentIfGoal==null?'not observed':advisorMoney(s.spentIfGoal))+'.');
+   add('Modeled fees per run with at least one payout: '+(s.costPerPayoutRun==null?'not observed':advisorMoney(s.costPerPayoutRun))+' ('+(s.anyPayoutRuns??0)+' runs with a payout). This is different from the complete net-profit goal cost.');
    test('Compare Cost / Goal Hit at the same trade win-rate, horizon and payout target. It is a model estimate, not a promised real-world purchase cost.');
    test('Use Section 9 Daily Spending Ledger for purchase and payout timing; compare expected net dollars alongside ROI.');
   }else if(topic==='compare'){
