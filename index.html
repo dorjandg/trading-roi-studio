@@ -2051,8 +2051,12 @@ function persistRecoverySnapshot(stage){
 }
 function stageRecoverySetup(stage){
  const root=stage==='p1'?'p1':stage==='p2'?'p2':'funded';
+ const firmTarget=positive(state[root==='p1'?'p1Target':root==='p2'?'p2Target':'profitTarget']);
+ const stored=Number(recoverySnapshot(root).targetOverride);
+ const override=Number.isFinite(stored)&&stored>=.01?stored:null;
  return {name:root==='p1'?'Phase 1':root==='p2'?'Phase 2':'Funded',root,
- goal:positive(state[root==='p1'?'p1Target':root==='p2'?'p2Target':'profitTarget']),
+ goal:override===null?firmTarget:override,firmTarget,
+ targetOverridden:override!==null&&Math.abs(override-firmTarget)>.005,
  base:positive(state[root+'Base']),recovery:positive(state[root+'Recovery']),rr:tierRR(root+'Base'),
  minDays:root==='funded'?0:positive(state[root+'MinDays']),
  dailyCap:Math.max(1,positive(state[root+'DailyCap'])),funded:root==='funded'};
@@ -2205,12 +2209,13 @@ function routeScanUI(stage){
  const pages=Math.max(1,Math.ceil(items.length/pageSize));
  const page=Math.max(1,Math.min(pages,Math.floor(Number(snap.routePage)||1)));
  const rows=items.slice((page-1)*pageSize,page*pageSize).map(r=>{
-  const label=r.status==='target'?(r.minDaysPending?'Pending':'Hit'):
+  const label=r.status==='target'?'Hit':
    r.status==='blocked'?'Blocked':r.status==='failed'?'Failed':'Active';
   return '<tr data-result="'+r.status+'"><td>'+([...r.sequence].join(' → ')||'—')+'</td><td>'+
    ([...r.tiers].map(n=>'R'+n).join(' → ')||'—')+'</td><td class="num">'+r.trades+'</td>'+
    '<td class="num">'+r.days+'</td><td class="num">'+recoveryMoney(r.drawdown)+'</td>'+
-   '<td class="num">'+recoveryMoney(r.pnl)+'</td><td>'+label+'</td></tr>';
+   '<td class="num">'+recoveryMoney(r.pnl)+'</td><td>'+label+'</td>'+ 
+   '<td>'+(r.status==='target'?(r.minDaysPending?r.minDaysPending+' left':'Met'):'—')+'</td></tr>';
  }).join('');
  const options=values=>values.map(([v,t])=>'<option value="'+v+'"'+(v===(values===filters?filter:sortBy)?' selected':'')+'>'+t+'</option>').join('');
  const button=(key,label)=>'<button type="button" data-route-page="'+key+'" aria-label="'+label+'" '+
@@ -2242,8 +2247,8 @@ function routeScanUI(stage){
    '</div>'+
    '<div class="tablewrap"><table class="recovery-table risk-route-table"><thead><tr>'+
     header('wl','W/L')+header('tiers','Risk path')+header('trades','Trades')+header('days','Days')+
-    header('dd','Max DD')+header('pnl','Ending P/L')+header('status','Result')+'</tr></thead><tbody>'+
-    (rows||'<tr><td colspan="7">No route matches this filter.</td></tr>')+'</tbody></table></div>'+
+    header('dd','Max DD')+header('pnl','Ending P/L')+header('status','Result')+'<th>Min days</th></tr></thead><tbody>'+
+    (rows||'<tr><td colspan="8">No route matches this filter.</td></tr>')+'</tbody></table></div>'+
    '<nav class="risk-route-nav" aria-label="'+stage+' route result pages">'+
     button('first','«')+button('prev','‹')+'<span>'+page+' / '+pages+'</span>'+
     button('next','›')+button('last','»')+'</nav>'+
@@ -2335,14 +2340,14 @@ function smartSetupUI(stage){
  const curr=data?.currentPlan;
  const money2=n=>recoveryMoney(n);
  const stat=n=>Number(n||0).toFixed(1)+'%';
- const routeLabel=r=>r.status==='hit'?(r.pendingDays?'Pending':'Hit'):
+ const routeLabel=r=>r.status==='hit'?'Hit':
   r.status==='stopped'?'Stop':r.status==='failed'?'Failed':r.status==='blocked'?'Blocked':'Active';
  const explain=x=>{
   if(x==='stopped')return 'Strategy stopped (not necessarily a prop-firm loss breach)';
   if(x==='blocked')return 'Risk blocked by modeled safety limit';
   if(x==='active')return 'Unresolved inside the selected trade horizon';
   if(x==='failed')return 'Modeled loss floor breached';
-  return 'Target hit (minimum days may remain)';
+  return 'Profit target hit; minimum trading days may still remain';
  };
  // Each decision tree is a separate full-width row directly BELOW its setup.
  // Keep that row inside the same comparison table so horizontal scrolling aligns.
@@ -2351,18 +2356,19 @@ function smartSetupUI(stage){
   return '<tr class="smart-tree-detail" data-smart-tree-detail="'+m.kind+'" id="smartTree-'+stage+'-'+m.kind+'"'+
    (open?'':' hidden')+'><td colspan="15"><div class="smart-tree-wrap">'+
    '<div class="smart-tree-head"><strong>'+m.label+' · Full W/L decision tree</strong>'+
-   '<span>'+m.treeBranches+' endings · '+m.hitProbability.toFixed(1)+'% modeled target</span>'+
+   '<span>'+m.treeBranches+' endings · '+m.hitProbability.toFixed(1)+'% modeled target · '+money2(config.goal)+' target</span>'+
    '<button type="button" class="smart-tree-close" data-smart-tree-toggle="'+m.kind+
     '" aria-controls="smartTree-'+stage+'-'+m.kind+'" aria-expanded="'+String(open)+'">Hide routes</button></div>'+
    '<p class="caption">Every branch follows R1 first. Losses end their day. Active = unresolved within the horizon. '+
     'Probabilities assume independent '+data.winRate+'% wins per trade; not verified pass rates.</p>'+
    '<div class="tablewrap smart-tree-scroll"><table class="recovery-table smart-tree-table"><thead><tr>'+
-   '<th>W/L</th><th>R sequence</th><th>Trades</th><th>Days</th><th>Final P/L</th><th>Max DD</th><th>Chance</th><th>Result</th>'+
+   '<th>W/L</th><th>R sequence</th><th>Trades</th><th>Days</th><th>Final P/L</th><th>Max DD</th><th>Chance</th><th>Result</th><th>Min days</th>'+
    '</tr></thead><tbody>'+m.leaves.map(x=>'<tr><td>'+x.wl+'</td><td>'+
     [...x.tiers].map(n=>'R'+n).join('→')+'</td><td class="num">'+x.trades+'</td>'+
     '<td class="num">'+x.days+'</td><td class="num">'+money2(x.pnl)+'</td>'+
     '<td class="num">'+money2(x.dd)+'</td><td class="num">'+x.probability.toFixed(2)+'%</td>'+
-    '<td title="'+explain(x.status)+'">'+routeLabel(x)+'</td></tr>').join('')+
+    '<td title="'+explain(x.status)+'">'+routeLabel(x)+'</td>'+ 
+    '<td>'+(x.status==='hit'?(x.pendingDays?x.pendingDays+' left':'Met'):'—')+'</td></tr>').join('')+
    '</tbody></table></div></div></td></tr>';
  };
  const row=m=>{
@@ -2412,6 +2418,8 @@ function smartSetupUI(stage){
   '<th>Best route</th><th>Hit %</th><th>Stop %</th><th>Failed %</th><th>Blocked %</th><th>Unresolved %</th><th>Avg Hit T</th>'+
   '<th>Max R</th><th>Max DD</th><th>Action / tree</th></tr></thead>';
  return '<details class="smart-setup"'+(snap.smartOpen?' open':'')+'><summary>'+title+'</summary>'+
+  '<p class="caption smart-target-note"><strong>Profit target '+money2(config.goal)+
+   '</strong> · Minimum trading days '+config.minDays+' · Hit and minimum days are separate checks.</p>'+ 
   '<div class="smart-toolbar"><button type="button" class="btn small" data-smart-run="'+stage+'"'+
    (busy?' disabled':'')+'>Find Smart Setups</button>'+
   '<label class="smart-sweep-field">Terminal R3 <select data-smart-sweep>'+
@@ -2629,7 +2637,7 @@ function renderRecoveryPlanners(){
   const getStatus=entry=>{
    const sim=entry.sim;
    if(sim.fail)return 'Loss floor breached';
-   if(sim.hit)return sim.days>=setup.minDays?'Profit target hit':'Profit target · days pending';
+   if(sim.hit)return 'Profit target HIT'+(sim.days<setup.minDays?' · '+(setup.minDays-sim.days)+' min days left':' · days met');
    if(sim.items.some(x=>x.stopKind==='strategy'))return 'Strategy stopped';
    if(sim.items.some(x=>x.stop))return 'Risk blocked · check limits';
    return 'Still active at horizon';
@@ -2741,7 +2749,7 @@ function renderRecoveryPlanners(){
    validRoute.active.toLocaleString()+' active · '+validRoute.blocked.toLocaleString()+' blocked':
    'All risk routes · up to '+depth+' trades';
   const caution=staticFloor?'Static overall floor: modeled headroom = overall allowance + realized stage P/L. This is not live equity headroom.':'Trailing or stage-dependent overall floor: broker high-water mark and current equity are not available. The planner checks modeled daily room but cannot verify trailing overall headroom.';
-  host.innerHTML='<details class="recovery-details"><summary>'+setup.name+' · '+recoveryMoney(setup.goal)+' target · '+setup.rr.toFixed(2)+'R · '+RECOVERY_LEVELS.filter(x=>levels[x]>=0.01).length+' active tiers</summary>'+
+  host.innerHTML='<details class="recovery-details"><summary>'+setup.name+' · '+recoveryMoney(setup.goal)+' target · '+setup.minDays+' min days · '+setup.rr.toFixed(2)+'R · '+RECOVERY_LEVELS.filter(x=>levels[x]>=0.01).length+' active tiers</summary>'+
    '<details class="recovery-subfold recovery-risk-inputs"'+(snapshot.riskInputsOpen?' open':'')+'><summary>Risk values &amp; sequence · '+riskHeadline+'</summary><div class="recovery-fields">'+
    '<label>Reward / Risk (RR)<input data-option-rr type="number" min="0.1" max="100" step="0.1" value="'+setup.rr+'"></label>'+
    '<label>Risk sequence'+select('policyMode',[['saved','Saved option choices'],['smart-sequence','Smart R1-first recovery'],['streak','After-loss tiers'],['flat','Flat R1'],['after-win','Boost after WIN'],['protect-after-loss','Protect after LOSS']],snapshot.policyMode||'saved')+'</label>'+
