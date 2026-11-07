@@ -5,6 +5,10 @@
  const API='/api/ask';
  const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n};
  let busy=false;
+ const historyKey='jj-ai-conversation-v1';
+ let conversation=[];
+ try{const saved=JSON.parse(sessionStorage.getItem(historyKey)||'[]');if(Array.isArray(saved))conversation=saved.slice(-12)}catch(_){}
+ const save=()=>{try{sessionStorage.setItem(historyKey,JSON.stringify(conversation.slice(-12)))}catch(_){}};
  function renderAnswer(target,value){
   target.replaceChildren();
   const raw=String(value||'').replace(/\r/g,'').replace(/\*\*([^*\n]+)\*\*/g,'\n$1\n');
@@ -33,12 +37,18 @@
   const button=el('button','jj-ai-button','Ask Cloudflare AI');button.type='button';button.disabled=false;
   button.title='Optional AI synthesis from the top indexed Academy summaries. No full private transcripts are sent.';
   actions.insertBefore(button,actions.firstChild);
+  const reset=el('button','jj-ai-reset','New conversation');reset.type='button';reset.title='Clear the AI conversation context for this tab';actions.append(reset);
   const panel=el('section','jj-ai-panel');panel.id='jj-cloudflare-ai';
   panel.hidden=true;
   const status=el('p','jj-ai-status','');
   const answer=el('div','jj-ai-answer');answer.setAttribute('aria-live','polite');
   const sources=el('div','jj-ai-sources');
-  panel.append(el('strong','','Cloudflare AI · grounded answer'),status,answer,sources);
+  const thread=el('div','jj-ai-thread');
+  panel.append(el('strong','','Cloudflare AI · conversation'),status,thread,answer,sources);
+  const drawThread=()=>{thread.replaceChildren();for(const turn of conversation.slice(-8)){const item=el('div','jj-ai-turn jj-ai-'+turn.role);item.append(el('strong','',turn.role==='user'?'You':'AI'),el('p','',turn.content));thread.append(item)}};
+  drawThread();
+  if(conversation.length){panel.hidden=false;status.textContent='Conversation restored in this browser tab. Ask a follow-up question.'}
+  reset.addEventListener('click',()=>{conversation=[];save();thread.replaceChildren();answer.replaceChildren();sources.replaceChildren();panel.hidden=true;form.querySelector('textarea').value='';form.querySelector('textarea').focus()});
   const result=root.querySelector('#jj-helper-results');
   if(result)result.before(panel);else root.append(panel);
   button.addEventListener('click',async()=>{
@@ -47,14 +57,14 @@
    if(!question){panel.hidden=false;status.textContent='Please enter a question first.';return}
    jjHelperQuestion=question;
    jjHelperAnswer(true);
-   const hits=jjHelperSearch(question);
+   const hits=selectHits(question);
    panel.hidden=false;answer.replaceChildren();sources.replaceChildren();
-   if(!hits.length){status.textContent='No relevant Academy passages found. AI cannot answer reliably without evidence; use the research queue below.';return}
+   if(!hits.length){status.textContent='No new source matches found. Rephrase with a course topic to retrieve evidence before asking AI.';return}
    busy=true;button.disabled=true;button.textContent='Asking AI…';
    status.textContent='Sending your question and '+Math.min(hits.length,5)+' selected Academy summaries to Cloudflare AI. No full private transcripts are sent.';
    try{
     const payload={
-     question:question.slice(0,750),
+     question:question.slice(0,750),history:conversation.slice(-6),
      sources:hits.slice(0,5).map(hit=>({
       title:hit.title,type:hit.type,summary:hit.text,
       limitation:hit.footnote||''
@@ -71,6 +81,7 @@
     try{data=await response.json()}catch(_){}
     if(!response.ok)throw Error([data.message||data.error||'AI endpoint unavailable',data.code?'Code: '+data.code:'',data.detail||''].filter(Boolean).join(' · '));
     status.textContent='AI synthesis of indexed Academy research. Verify original lesson evidence; assumptions are not actual JJ performance.';
+    conversation.push({role:'user',content:question.slice(0,750)},{role:'assistant',content:String(data.answer||'').slice(0,1400)});conversation=conversation.slice(-12);save();drawThread();
     renderAnswer(answer,data.answer||'No answer returned');
     const label=el('strong','','Source passages used:');sources.append(label);
     hits.slice(0,5).forEach((hit,i)=>{
