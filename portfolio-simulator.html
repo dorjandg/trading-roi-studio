@@ -727,7 +727,7 @@ const rootKey='4ds:v1:'+user+':';
 const simulationHistory=window.StudioPortfolioHistory?.create({user,element:document.getElementById('simulationHistory'),endpoint:window.FOUR_DS_CLOUD_ENDPOINT})||null;
 let catalog=null,audit=null,rows=[],lastResults=[],lastInputs=null;
 // Read-only bridge: exposes already-loaded history and current report to the local advisor.
-window.StudioAdvisorReadOnly={getRuns:()=>simulationHistory?.getRuns()||[],getCurrent:()=>({results:lastResults.map(r=>({programId:r.plan?.id,firm:r.plan?.firm,accountSize:r.plan?.size,avg:{...r.avg},stages:[...(r.stages||[])],roi:r.roi,chancePayout:r.chancePayout,budget:r.budget})),inputs:lastInputs?{...lastInputs}:null,visible:!document.getElementById('results')?.hidden})};
+window.StudioAdvisorReadOnly={getRuns:()=>simulationHistory?.getRuns()||[],getTestCases:()=>lastResults.slice(0,2).map(r=>({plan:JSON.parse(JSON.stringify(r.plan)),config:{...(lastInputs||{}),budget:r.budget,evaluationAllocationCap:r.config?.evaluationAllocationCap||0,fundedAllocationCap:r.config?.fundedAllocationCap||0}})),getCurrent:()=>({results:lastResults.map(r=>({programId:r.plan?.id,firm:r.plan?.firm,accountSize:r.plan?.size,avg:{...r.avg},stages:[...(r.stages||[])],roi:r.roi,chancePayout:r.chancePayout,budget:r.budget})),inputs:lastInputs?{...lastInputs}:null,visible:!document.getElementById('results')?.hidden})};
 let testRisks={}; // simulator-only risk/strategy experiments, never written to Firms
 let discovered=null; // exploration candidates (not saved as Firms profile)
 let discoveryTableOpen=true;
