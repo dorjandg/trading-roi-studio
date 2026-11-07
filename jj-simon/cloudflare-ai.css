@@ -52,3 +52,13 @@
 #jj-cloudflare-ai .jj-ai-answer h4{font-size:13px!important;font-weight:800!important;color:#5ee3bc!important;margin:15px 0 5px!important;line-height:1.4!important}
 #jj-cloudflare-ai .jj-ai-answer p{font-size:12px;line-height:1.55;margin:0 0 8px}
 #jj-cloudflare-ai .jj-ai-citation{color:#5ee3bc;font-weight:800;text-decoration:underline}
+
+.jj-ai-chat-library{margin-bottom:12px;border-bottom:1px solid var(--stroke);padding-bottom:9px}
+.jj-ai-chat-library>summary{cursor:pointer;font-size:12px;font-weight:700;color:#5ee3bc}
+.jj-ai-chat-list{display:grid;gap:5px;margin-top:9px;max-height:260px;overflow:auto}
+.jj-ai-chat-item{display:flex;align-items:center;gap:5px}
+.jj-ai-chat-item button{border:1px solid var(--stroke);border-radius:6px;background:transparent;color:inherit;cursor:pointer;padding:6px 8px;font-size:11px}
+.jj-ai-chat-item .jj-ai-chat-open{flex:1;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.jj-ai-chat-item .jj-ai-chat-open.active{border-color:#5ee3bc;color:#5ee3bc}
+.jj-ai-chat-item .jj-ai-chat-action{flex-shrink:0}
+.jj-ai-history .jj-ai-thread{max-height:none;overflow:visible}
