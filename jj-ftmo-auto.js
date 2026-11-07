@@ -25,7 +25,12 @@ function savedPlan(storage,user,program,audit,engine){
  if(!(profile?.state))throw Error('No saved FTMO 10K Firms profile found in this browser. Open Firms, save your FTMO settings and try again.');
  const snaps={};
  for(const stage of ['p1','p2','funded']){
-  snaps[stage]=readJSON(storage,'4ds:recovery-planner:v2:'+user+':ftmo2:10000:'+stage,{});
+  const local=readJSON(storage,'4ds:recovery-planner:v2:'+user+':ftmo2:10000:'+stage,null);
+  const mirrored=readJSON(storage,prefix+'studio-stage-risk-v1:ftmo2:10000:'+stage,null);
+  const hasPlan=s=>s&&typeof s==='object'&&!Array.isArray(s)&&
+   (s.policyMode||s.ftmoBuffer||s.appliedSmartSetup||s.levels&&Object.keys(s.levels).length||
+    s.optionSequences&&Object.keys(s.optionSequences).length);
+  snaps[stage]=hasPlan(local)?local:mirrored?.v===1&&hasPlan(mirrored.risk)?mirrored.risk:local||{};
  }
  const plan=engine.buildPlan('ftmo2',10000,program,profile,snaps,audit);
  if(plan.provisional)throw Error('FTMO saved profile could not be verified.');
