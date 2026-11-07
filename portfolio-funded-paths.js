@@ -17,18 +17,18 @@ function show(container,comparison){
  wrap.append(description);
  const cases=[
   ['W','First +$450 win'],['WW','Two wins · aim +$1,800'],
-  ['WWW','Three wins · test +$7,200'],['LW','Loss then win'],
+  ['WWW','Three wins · max $450 per trade'],['LW','Loss then win'],
   ['LLW','Two losses then win'],['LLLWW','Three losses then two wins'],
   ['WLW','Win, giveback loss, restart']
  ];
  const number=n=>(Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
- for(const variant of ideas.filter(v=>v.key==='recovery-1800'||v.key==='recovery-7200')){
+ for(const variant of ideas.filter(v=>v.key==='recovery-1800'||v.key==='recovery-3150')){
   const details=document.createElement('details');
   details.open=variant.key==='recovery-1800';
   const sum=document.createElement('summary');sum.textContent=variant.title;details.append(sum);
   const info=document.createElement('p');info.className='hint';
   const plan=variant.plan,stage=plan.riskProfiles.funded;
-  info.textContent='Stop trading at +$'+number(stage.target)+' funded profit · daily loss $'+number(plan.dailyLoss)+' · overall loss $'+number(plan.overallLoss)+' · RR 3';
+  info.textContent='Stop at +$'+number(stage.target)+' funded profit · daily loss $'+number(plan.dailyLoss)+' · maximum funded risk per trade $'+number(stage.fundedMaxTradeRisk||450)+' · RR 3';
   details.append(info);
   const table=document.createElement('table');table.className='journey-table';
   const header=document.createElement('tr');
@@ -52,7 +52,7 @@ function show(container,comparison){
   tablewrap.append(table);details.append(tablewrap);wrap.append(details);
  }
  const foot=document.createElement('p');foot.className='hint';
- foot.textContent='Important: +$450 is a milestone, not an automatic payout. The +$1,800 version stops after two consecutive wins; the +$7,200 version continues but firm limits can cap the intended $1,800 third trade. To run a FULL simulation of one of these policies, choose its row in the model comparison below and click Analyze. The normal Run Simulation button still uses your saved strategy settings. The original investment option may have a different funded target, so compare the two variants with the same +$1,800 or +$7,200 target for a like-for-like comparison.';
+ foot.textContent='Maximum funded trade risk is $450. The $1,800 model stops after two wins, so WWW has no third trade there. Expand the $3,150 model for the full $150, $450, $450 winning sequence. Firm limits apply. Click Analyze in the comparison table to test the portfolio.';
  wrap.append(foot);container.prepend(wrap);
 }
 D.renderFundedPaths=show;
