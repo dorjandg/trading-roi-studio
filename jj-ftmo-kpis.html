@@ -66,6 +66,20 @@
 .help-popover strong{display:block;font-size:12px;margin-bottom:4px;color:#a9ceff}
 .help-popover p{margin:0;white-space:normal}
 @media(max-width:470px){.help-popover{max-width:calc(100vw - 16px);min-width:0;width:270px}}
+
+.auto-bar{border:1px solid var(--line);border-radius:9px;padding:7px 9px;margin:0 0 8px;background:var(--panel2)}
+.auto-heading{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px 12px;font-size:12px}
+.auto-heading .notes{margin:0;font-size:10px}
+.auto-actions{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:6px 0}
+.auto-actions button,.auto-actions a{min-height:26px;padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--text);font-size:11px;font-weight:700;text-decoration:none}
+.auto-actions .auto-primary{background:var(--accent);border-color:var(--accent);color:#05221b}
+.auto-actions button:disabled{opacity:.5}.auto-actions [hidden]{display:none}
+.auto-options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;max-width:720px}
+.auto-options label{display:block;min-width:0;font-size:10px;color:var(--muted)}
+.auto-options input,.auto-options select{width:100%;height:29px;min-height:29px;border-radius:6px;padding:3px 7px;margin-top:3px;font-size:12px;background:var(--panel);color:var(--text);border:1px solid var(--line)}
+.auto-status{color:var(--muted);font-size:11px;line-height:1.35;margin:6px 0 0}
+.auto-timing{font-size:10px;color:var(--muted);margin:5px 0 0}.auto-timing[hidden]{display:none}
+@media(max-width:520px){.auto-options{grid-template-columns:repeat(2,minmax(0,1fr))}.auto-actions{gap:4px}.auto-heading{display:block}}
 </style>
 </head>
 <body><main class="shell">
@@ -74,6 +88,18 @@
 <p class="muted">A transparent <strong>research comparison</strong>, not a prediction or a substitute for Run Simulation. Each side uses the same cash-flow definitions; changing inputs does not update saved Firms settings.</p>
 <div class="legend"><span class="tag">JJ: course examples & self-report</span><span class="tag">FTMO: illustrative assumptions</span><span class="tag">No historical win-rate claims</span></div>
 <section class="panel result-dashboard"><h2>1 · Results dashboard</h2>
+<div class="auto-bar">
+ <div class="auto-heading"><strong>FTMO results: <span id="autoModeLabel">Manual assumptions</span></strong><span class="notes">JJ remains a research benchmark.</span></div>
+ <div class="auto-actions"><button type="button" id="autoRun" class="auto-primary">Run Auto FTMO</button><button type="button" id="autoManual" hidden>Manual mode</button><a href="portfolio-simulator.html?account=ftmo2%3A10000">Open Portfolio Simulator</a></div>
+ <div class="auto-options">
+ <label>WR % <input id="autoWR" type="number" min="0" max="100" step=".5" value="35" title="One assumed WR shared across all account phases" /></label>
+ <label>Trading days <input id="autoDays" type="number" min="5" max="120" step="5" value="60" title="Finite simulation horizon" /></label>
+ <label>Signals <select id="autoPace"><option value="weekly20">20 / week</option><option value="daily4">4 / day</option></select></label>
+ <label>Trials <select id="autoTrials"><option value="100">100</option><option value="200" selected>200</option><option value="500">500</option></select></label>
+ </div>
+ <p id="autoStatus" class="auto-status" role="status">Manual inputs are illustrative. Auto FTMO uses your saved FTMO 10K Firms risk policy with the Portfolio Simulator engine.</p>
+ <div id="autoTimings" class="auto-timing" hidden></div>
+ </div>
 <div class="dashboard-groups" aria-live="polite">
 <section class="dashboard-side dashboard-jj" aria-label="JJ Simon Topstep result KPIs">
 <div class="dashboard-side-head"><div><h3>JJ Simon</h3><span>Topstep 50K · research benchmark</span></div></div>
@@ -155,6 +181,10 @@
 <footer class="footer">4Ds Trading Studio · Read-only research calculator · This does not send orders, change firm parameters, access broker credentials, or certify real-world results.</footer>
 </main>
 <div id="boxHelpPopover" class="help-popover" role="tooltip" hidden><strong id="boxHelpTitle"></strong><p id="boxHelpBody"></p></div>
+<script src="ftmo-funded-buffer.js?v=20261107-ftmo-funded-buffer-v1"></script>
+<script src="portfolio-engine.js?v=20261107-weekly-timing-v2"></script>
+<script src="portfolio-weekly.js?v=20261107-weekly-cashflow-v2"></script>
+<script src="jj-ftmo-auto.js?v=20261107-bridge-v1"></script>
 <script>
 (function(){
 'use strict';
