@@ -700,6 +700,7 @@ details p{margin:6px 0}
 <script src="portfolio-charts.js?v=20261107-smart-stopped-charts-v1"></script>
 <script src="portfolio-journey.js?v=20261107-smart-stopped-journey-v1"></script>
 <script src="cloud-config.js"></script>
+<script src="cloud-bootstrap.js?v=4ds-auto-first-20261104-a"></script>
 <script src="portfolio-history.js?v=20261107-models-history-fix-v3"></script>
 <script>
 (function(){
@@ -2105,6 +2106,12 @@ $('reportSourceBar').addEventListener('click',event=>{
 $('run').addEventListener('click',event=>{event.preventDefault();event.stopPropagation();run();});
 async function init(){
  try{
+  // Load the user's cloud-backed Firms profiles before reading account rows.
+  // The bootstrap protects unsynced local data and does not write to Firms.
+  if(window.FOUR_DS_BOOTSTRAP){
+   $('status').textContent='Loading saved Firms profiles and phase risks…';
+   await window.FOUR_DS_BOOTSTRAP;
+  }
   if(!E)throw Error('Calculation engine did not load');
   const [rulesRes,auditRes]=await Promise.all([
    fetch('prop-firm-rules.json',{cache:'no-store'}),fetch('prop-firm-official-audit.json',{cache:'no-store'})
