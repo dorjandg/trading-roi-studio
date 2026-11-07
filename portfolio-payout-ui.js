@@ -1121,7 +1121,7 @@ function start(){
    }
    if(funded450.disabled)return;
    const oldLabel=funded450.textContent;funded450.disabled=true;funded450.textContent='Testing funded compounding…';
-   if(status)status.textContent='Comparing $450 → $1,800 → $7,200 compounded profit milestones with funded loss recovery and real risk ceilings…';
+   if(status)status.textContent='Comparing $450 → $1,800 → $3,150 compounded profit milestones with funded loss recovery and real risk ceilings…';
    try{
     const done=await runFundedComparison(index,{scroll:true});
     if(status)status.textContent='Funded compounding: '+done.total+' models visible.'+done.saved;
