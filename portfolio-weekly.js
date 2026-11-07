@@ -14,7 +14,8 @@ function summarize(result){
  const curve=result.cashCurve||[];
  const weeks=[];
  for(let start=0;start<days;start+=5){
-  const end=Math.min(days,start+5),before=curve[start],after=curve[end];
+  // Day-zero upfront purchases are part of Week 1 cash outflow.
+  const end=Math.min(days,start+5),before=start===0?{spent:0,receipts:0,net:0,bought:0,paid:0,passed1:0,passed2:0,activated:0}:curve[start],after=curve[end];
   if(!before||!after)continue;
   weeks.push({
    week:Math.floor(start/5)+1,fromDay:start+1,toDay:end,
