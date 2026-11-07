@@ -48,7 +48,7 @@
   const drawThread=()=>{thread.replaceChildren();for(const turn of conversation.slice(-8)){const item=el('div','jj-ai-turn jj-ai-'+turn.role);item.append(el('strong','',turn.role==='user'?'You':'AI'),el('p','',turn.content));thread.append(item)}};
   drawThread();
   if(conversation.length){panel.hidden=false;status.textContent='Conversation restored in this browser tab. Ask a follow-up question.'}
-  reset.addEventListener('click',()=>{conversation=[];save();thread.replaceChildren();answer.replaceChildren();sources.replaceChildren();panel.hidden=true;const input=form.querySelector('textarea');input.value='';input.placeholder='Ask a question about JJ’s trading course…';input.focus()});
+  reset.addEventListener('click',()=>{if(busy)return;conversation=[];save();thread.replaceChildren();answer.replaceChildren();sources.replaceChildren();panel.hidden=true;const input=form.querySelector('textarea');input.value='';input.placeholder='Ask a question about JJ’s trading course…';input.focus()});
   const result=root.querySelector('#jj-helper-results');
   if(result)result.before(panel);else root.append(panel);
   button.addEventListener('click',async()=>{
@@ -65,7 +65,7 @@
    const hits=[...primaryHits,...contextHits,...previousHits].filter((hit,index,all)=>all.findIndex(x=>x.id===hit.id)===index).slice(0,5);
    panel.hidden=false;answer.replaceChildren();sources.replaceChildren();
    if(!hits.length){status.textContent='No new source matches found. Rephrase with a course topic to retrieve evidence before asking AI.';return}
-   busy=true;button.disabled=true;button.textContent='Asking AI…';
+   busy=true;button.disabled=true;reset.disabled=true;button.textContent='Asking AI…';
    status.textContent='Sending your question and '+Math.min(hits.length,5)+' selected Academy summaries to Cloudflare AI. No full private transcripts are sent.';
    try{
     const payload={
@@ -103,7 +103,7 @@
     const message=String(error?.message||'AI unavailable');
     status.textContent=/abort/i.test(message)?'AI request timed out.':message;
     answer.textContent='Your Cloudflare AI binding is connected, but the model call did not complete. The local source results below are still available. If the error persists, check Cloudflare Pages Functions logs.';
-   }finally{busy=false;button.disabled=false;button.textContent='Ask Cloudflare AI'}
+   }finally{busy=false;button.disabled=false;reset.disabled=false;button.textContent='Ask Cloudflare AI'}
   });
   form.addEventListener('submit',()=>{if(!conversation.length)panel.hidden=true});
  }
