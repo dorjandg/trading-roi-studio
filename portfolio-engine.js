@@ -107,6 +107,7 @@ function buildPlan(programId,size,program,profile={},snapshots={},audit=null){
   const requestedTarget=Number(snap.targetOverride);
   const target=appliedSmart&&Number.isFinite(requestedTarget)&&requestedTarget>=.01?
    requestedTarget:officialTarget;
+  if(key==='funded'&&appliedSmart)result.fundedTarget=pos(target);
   const minDays=key==='p1'?dynamic(state,'p1MinDays',pos(program.days?.[0])):
    key==='p2'?dynamic(state,'p2MinDays',pos(program.days?.[1])):0;
   const base=defaultRisk(programId,size,key);
