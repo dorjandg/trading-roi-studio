@@ -133,7 +133,8 @@
   if(!path)return Infinity;
   const cap=Math.max(.01,p.cap),r=rec.maxRisk/cap,dd=path.dd/cap;
   const losses=path.wl.split('L').length-1;
-  if(obj==='fast')return path.wl.length*1000+path.days*50+r*25+dd*10;
+  if(obj==='fast')return path.wl.length*1000+path.days*50+r*25+dd*10+
+    (rec.bestAfterLoss?.wl==='LW'?0:300);
   if(obj==='low')return rec.maxRisk*100+path.wl.length*12+path.days;
   if(obj==='balanced')return path.wl.length*110+r*200+dd*30+(rec.bestAfterLoss?0:45);
   if(obj==='recovery')return (rec.bestBooster?0:300)+(rec.bestAfterDouble?0:350)+path.wl.length*65+r*120+dd*65-losses*2;
