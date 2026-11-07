@@ -8,7 +8,7 @@ const finite=(x,d)=>Number.isFinite(Number(x))?Number(x):d;
 const money=x=>Math.round((Number(x)||0)*100)/100;
 const has=(obj,key)=>obj&&Object.prototype.hasOwnProperty.call(obj,key);
 const dynamic=(record,key,def)=>has(record,key)&&Number.isFinite(Number(record[key]))?Number(record[key]):def;
-const slotLevels=['r1','r2','r3'];
+const slotLevels=['r1','r2','r3','r4'];
 const phasesFor=id=>id==='instant'?['funded']:['ftmo2','holaPrime','holaPro'].includes(id)?['p1','p2','funded']:['p1','funded'];
 const supported=new Set(['ftmo2','holaPrime','holaPro','topstep']);
 function rngFactory(seed){
@@ -99,25 +99,37 @@ function buildPlan(programId,size,program,profile={},snapshots={},audit=null){
  for(const key of stages){
   const snap=snapshots[key]||{},lev=snap.levels||{};
   const root=key==='funded'?'funded':key;
-  const target=key==='p1'?dynamic(state,'p1Target',size*pos(program.targets?.[0])/100):
+  const officialTarget=key==='p1'?dynamic(state,'p1Target',size*pos(program.targets?.[0])/100):
    key==='p2'?dynamic(state,'p2Target',size*pos(program.targets?.[1])/100):result.fundedTarget;
+  // A phase planning target transfers to Monte Carlo ONLY for an Applied
+  // smart-sequence policy, preserving legacy profile/firm rule targets.
+  const appliedSmart=snap.policyMode==='smart-sequence';
+  const requestedTarget=Number(snap.targetOverride);
+  const target=appliedSmart&&Number.isFinite(requestedTarget)&&requestedTarget>=.01?
+   requestedTarget:officialTarget;
   const minDays=key==='p1'?dynamic(state,'p1MinDays',pos(program.days?.[0])):
    key==='p2'?dynamic(state,'p2MinDays',pos(program.days?.[1])):0;
   const base=defaultRisk(programId,size,key);
   const r1=dynamic(lev,'r1',dynamic(state,root+'Base',base));
   const r2=dynamic(lev,'r2',dynamic(state,root+'Recovery',Math.round(base*.72)));
   const r3=dynamic(lev,'r3',dynamic(state,root+'Recovery',Math.round(base*.52)));
+  const r4=dynamic(lev,'r4',0);
   const rrBase=dynamic(state.rrByTier,root+'Base',dynamic(state,'rr',3));
   const rr=clamp(rrBase,.1,100);
   const policy=resolvePolicy(snap.optionSequences||{});
-  if(['saved','streak','flat','after-win','protect-after-loss','target-now','repair-r2','buffered-target','eval-recovery-burn','funded-profit-ladder','funded-staged-recovery'].includes(snap.policyMode))
+  if(['saved','streak','flat','after-win','protect-after-loss','target-now','repair-r2','buffered-target','eval-recovery-burn','funded-profit-ladder','funded-staged-recovery','smart-sequence'].includes(snap.policyMode))
    policy.mode=snap.policyMode;
   result.riskProfiles[key]={
    target:pos(target),
    minDays:clamp(minDays,0,60),
    maxWinsPerDay:clamp(dynamic(snap,'winCap',2),1,6),
    maxDays:clamp(dynamic(state,root==='funded'?'fundedDays':root+'Days',30),1,365),
-   rr,r1:pos(r1),r2:pos(r2),r3:pos(r3),
+   rr,r1:pos(r1),r2:pos(r2),r3:pos(r3),r4:pos(r4),
+   officialTarget:pos(officialTarget),
+   appliedSmart:appliedSmart,
+   appliedSmartLabel:appliedSmart?String(snap.appliedSmartSetup?.label||'Smart R1-first strategy').slice(0,100):'',
+   sweepRemainder:appliedSmart&&snap.sweepRemainder!==false,
+   sweepThreshold:clamp(dynamic(snap,'sweepThreshold',100),0,1000),
    rrByTier:snap.rrByTier&&['r1','r2','r3'].every(t=>Number.isFinite(Number(snap.rrByTier[t]))&&Number(snap.rrByTier[t])>0)?
     Object.fromEntries(['r1','r2','r3'].map(t=>[t,Number(snap.rrByTier[t])])):undefined,
    dynamicMaxRisk:snap.dynamicMaxRisk!=null&&Number(snap.dynamicMaxRisk)>0?Number(snap.dynamicMaxRisk):undefined,
@@ -126,7 +138,7 @@ function buildPlan(programId,size,program,profile={},snapshots={},audit=null){
    fundedRecoveryLevels:key==='funded'&&Array.isArray(snap.fundedRecoveryLevels)&&snap.fundedRecoveryLevels.length===4&&
     snap.fundedRecoveryLevels.every(n=>Number.isFinite(Number(n))&&Number(n)>0)?
     snap.fundedRecoveryLevels.map(Number):undefined,
-   policy:isTopstep&&key==='p1'?{map:{},conflicts:[],mode:'flat'}:policy,
+   policy:isTopstep&&key==='p1'&&!appliedSmart?{map:{},conflicts:[],mode:'flat'}:policy,
    consistency:isTopstep&&key==='p1'?.55:0,
    name:key==='p1'?(isTopstep?'Challenge · Trading Combine':'Phase 1'):key==='p2'?'Phase 2':(isTopstep?'Funded · XFA':'Funded')
   };
@@ -149,7 +161,14 @@ function validatePlan(p){
  if(p.riskProfiles.funded?.target<=0)errors.push('Set a positive first-payout planning target.');
  for(const [stage,c] of Object.entries(p.riskProfiles)){
   if(c.target<=0)errors.push(stage+': profit target missing.');
-  if(c.rr<=0||c.r1<=0||((p.id!=='topstep'||stage!=='p1')&&(c.r2<=0||c.r3<=0)))errors.push(stage+': set positive RR and required risk amounts.');
+  if(c.policy.mode==='smart-sequence'){
+   if(c.rr<=0||c.r1<=0||c.r2<=0||c.r3<=0||c.r4<0||
+      ![c.r1,c.r2,c.r3,c.r4].every(Number.isFinite))
+    errors.push(stage+': Smart Setup requires R1, R2, R3 > 0 and R4 >= 0.');
+   if(c.sweepRemainder&&p.drawdownKind!=='static')
+    warnings.push(stage+': terminal R3 overall-buffer sweep cannot be verified for a non-static/trailing floor and will not be used.');
+  }else if(c.rr<=0||c.r1<=0||((p.id!=='topstep'||stage!=='p1')&&(c.r2<=0||c.r3<=0)))
+   errors.push(stage+': set positive RR and required risk amounts.');
    if(c.rrByTier&&['r1','r2','r3'].some(t=>!Number.isFinite(c.rrByTier[t])||c.rrByTier[t]<=0))
     errors.push(stage+': every tier reward/risk must be positive.');
   if(c.policy.conflicts.length)warnings.push(stage+': conflicting saved option risk choices at '+c.policy.conflicts.length+' history prefixes; default risk rules apply there.');
@@ -160,12 +179,24 @@ function validatePlan(p){
 const adaptiveModes=new Set(['target-now','repair-r2','buffered-target','eval-recovery-burn','funded-profit-ladder','funded-staged-recovery']);
 function chooseTradeRisk(p,ac,stage,c,dayProfit=0){
  const mode=c.policy?.mode||'saved';
- const forceTopstepR3=p.id==='topstep'&&stage==='funded'&&ac.fundedTargetDay!==null&&ac.funded150Days<5;
- const topstepCombine=p.id==='topstep'&&stage==='p1';
- let slot=topstepCombine?'r1':forceTopstepR3?'r3':plannedSlot(ac.history,c.policy);
+ const smart=mode==='smart-sequence';
+ const forceTopstepR3=!smart&&p.id==='topstep'&&stage==='funded'&&ac.fundedTargetDay!==null&&ac.funded150Days<5;
+ const topstepCombine=!smart&&p.id==='topstep'&&stage==='p1';
+ let slot=smart?(ac.smartNext||'r1'):topstepCombine?'r1':forceTopstepR3?'r3':plannedSlot(ac.history,c.policy);
  if(mode==='repair-r2'&&!topstepCombine&&!forceTopstepR3)slot=ac.repairSlot||'r1';
  if((mode==='target-now'||mode==='buffered-target')&&!topstepCombine&&!forceTopstepR3)slot='r1';
  const rr=Number(c.rrByTier?.[slot]??c.rr);
+ if(smart){
+  const risk=slot==='stop'?0:pos(c[slot]);
+  const rawRoom=ac.stagePnl-floorFor(p,ac);
+  const remaining=rawRoom-risk-pos(p.tradeCost);
+  // ONLY waive the overall reserve on a terminal R3 with static floor.
+  // The daily reserve remains enforced in preflight and execution.
+  const allIn=slot==='r3'&&c.r4<.01&&c.sweepRemainder===true&&
+   p.drawdownKind==='static'&&Number.isFinite(p.overallLoss)&&
+   remaining>=-1e-7&&remaining<=c.sweepThreshold+1e-7;
+  return {slot,risk,rr,allIn};
+ }
  if(mode==='eval-recovery-burn'&&!topstepCombine&&isEvaluation(stage)){
   const cost=pos(p.tradeCost),allIn=ac.history.endsWith('LL');
   const reserve=allIn?0:Math.max(.01,pos(p.riskReserve));
@@ -226,11 +257,11 @@ function makeAccount(i){return {
  purchaseDay:0,fundedActivatedDay:null,fundedFirstTradeDay:null,fundedTargetDay:null,payoutRequestedDay:null,paidDay:null,closedDay:null,
  grossProfit:0,grossLoss:0,winPnl:0,lossPnl:0,riskTotal:0,plannedReward:0,tradePnl:0,
  passes:[],totalR:0,realizedDD:0,peakPnl:0,blocked:0,
- repairSlot:'r1',repairAnchor:0,
+ repairSlot:'r1',repairAnchor:0,smartNext:'r1',
  fundedDays:0,fundedPositiveDays:0,funded150Days:0,trace:[]
 };}
 function newStage(ac){ac.stageDay=0;ac.activeDays=0;ac.adminDays=0;ac.stagePnl=0;ac.history='';
- ac.dayProfits=[];ac.peakEod=0;ac.bestDay=0;ac.peakPnl=0;ac.realizedDD=0;ac.repairSlot='r1';ac.repairAnchor=0;}
+ ac.dayProfits=[];ac.peakEod=0;ac.bestDay=0;ac.peakPnl=0;ac.realizedDD=0;ac.repairSlot='r1';ac.repairAnchor=0;ac.smartNext='r1';}
 function stageName(p,ac){return p.stageList[ac.stageIndex]||'paid'}
 function isEvaluation(stage){return stage==='p1'||stage==='p2'}
 function floorFor(p,ac){
@@ -323,19 +354,24 @@ function runAccountDay(p,ac,day,rand,config,record){
    ac.fundedTargetDay!==null&&ac.funded150Days<5;
   // Combine uses the one Challenge R1. XFA uses R3 once the target is
   // reached, while further eligible $150 winning days are required.
-  const {slot,risk,rr:tradeRR}=chooseTradeRisk(p,ac,stage,c,dayProfit);
+  const {slot,risk,rr:tradeRR,allIn=false}=chooseTradeRisk(p,ac,stage,c,dayProfit);
+  if(c.policy?.mode==='smart-sequence'&&slot==='stop'){
+   ac.status='strategy-stopped';ac.closedDay=day;
+   if(record)ac.trace.push({day,stage,type:'strategy-stop',label:'Smart R1–R4 sequence stopped after terminal LOSS (account not necessarily breached)'});
+   break;
+  }
   // User-selected risk is always exact; no hidden downsizing.
   const dailyHeadroom=p.dailyLoss-dayProfit;
   const overallHeadroom=ac.stagePnl-floorFor(p,ac);
   const reserve=stage!=='funded'&&c.policy?.mode==='eval-recovery-burn'&&
    ac.history.endsWith('LL')?0:Math.max(.01,p.riskReserve);
-  // The firm loss buffer includes the whole possible losing trade, including
-  // modelled trade cost. A trade that would breach daily/overall room is blocked.
-  const potentialLoss=risk+p.tradeCost+reserve;
-  if(risk<.01||potentialLoss>dailyHeadroom+1e-8||potentialLoss>overallHeadroom+1e-8){
+  // Terminal R3 can waive ONLY overall reserve, never the daily allowance.
+  const dailyPotential=risk+p.tradeCost+Math.max(.01,p.riskReserve);
+  const overallPotential=risk+p.tradeCost+(allIn?0:reserve);
+  if(risk<.01||dailyPotential>dailyHeadroom+1e-8||overallPotential>overallHeadroom+1e-8){
    ac.blocked++;
-   const overallBlocked=risk<.01||potentialLoss>overallHeadroom+1e-8;
-   const impossibleDaily=Number.isFinite(p.dailyLoss)&&potentialLoss>p.dailyLoss+1e-8;
+   const overallBlocked=risk<.01||overallPotential>overallHeadroom+1e-8;
+   const impossibleDaily=Number.isFinite(p.dailyLoss)&&dailyPotential>p.dailyLoss+1e-8;
    // A tier that cannot fit even on a fresh trading day, or cannot fit the
    // overall headroom, is untradeable without changing the configured policy.
    if(overallBlocked||impossibleDaily){ac.status='exhausted';ac.closedDay=day;}
@@ -360,6 +396,10 @@ function runAccountDay(p,ac,day,rand,config,record){
   else{ac.losses++;ac.lossPnl+=delta;}
   // Preserve only recent outcome prefix for deterministic risk policy.
   ac.history=(ac.history+(win?'W':'L')).slice(-8);
+  if(c.policy?.mode==='smart-sequence'){
+   ac.smartNext=win?'r2':slot==='r1'?'r2':slot==='r2'?'r3':
+    slot==='r3'&&c.r4>=.01?'r4':'stop';
+  }
   // R3 repairs the R2 loss, then returns to R2 (not an automatic R1 reset).
   if(c.policy?.mode==='repair-r2'&&!qualificationTopstep&&!(p.id==='topstep'&&stage==='p1')){
    if(slot==='r1')ac.repairSlot=win?'r1':'r2';
@@ -377,7 +417,14 @@ function runAccountDay(p,ac,day,rand,config,record){
    ac.status='failed';ac.closedDay=day;if(record)ac.trace.push({day,stage,type:'failed',label:'Modeled loss floor breached'});
    break;
   }
-  if(!win)break; // A loss closes this trading day; wins can continue.
+  if(!win){
+   if(c.policy?.mode==='smart-sequence'&&ac.smartNext==='stop'){
+    ac.status='strategy-stopped';ac.closedDay=day;
+    if(record)ac.trace.push({day,stage,type:'strategy-stop',
+     label:'Terminal risk tier LOST — strategy abandoned account (firm loss limit not necessarily breached)'});
+   }
+   break; // A loss closes this trading day; wins can continue.
+  }
  }
  if(hadTrade){
   ac.activeDays++;
@@ -437,10 +484,13 @@ function nextRiskStatus(p,ac){
  const useR3=p.id==='topstep'&&stage==='funded'&&
   ac.fundedTargetDay!==null&&ac.funded150Days<5;
  const {slot,risk,allIn}=chooseTradeRisk(p,ac,stage,c,0);
- const required=risk+p.tradeCost+(allIn?0:Math.max(.01,p.riskReserve));
+ if(c.policy?.mode==='smart-sequence'&&slot==='stop')return {strategyStop:true,slot,risk:0};
+ const cost=pos(p.tradeCost),reserve=Math.max(.01,pos(p.riskReserve));
+ const overallRequired=risk+cost+(allIn?0:reserve);
+ const dailyRequired=risk+cost+reserve;
  const available=ac.stagePnl-floorFor(p,ac);
- if(risk<.01||required>available+1e-8||required>p.dailyLoss+1e-8)
-  return {slot,risk,required,available};
+ if(risk<.01||overallRequired>available+1e-8||dailyRequired>p.dailyLoss+1e-8)
+  return {slot,risk,required:overallRequired,available};
  return null;
 }
 function oneTrial(p,config,rng,record=false){
@@ -496,6 +546,12 @@ function oneTrial(p,config,rng,record=false){
    if(ac.status!=='active')continue;
    const blocked=nextRiskStatus(p,ac);
    if(!blocked)continue;
+   if(blocked.strategyStop){
+    ac.status='strategy-stopped';ac.closedDay=day;
+    if(record)ac.trace.push({day,stage:stageName(p,ac),type:'strategy-stop',
+     label:'Smart strategy stopped at its terminal LOSS branch'});
+    continue;
+   }
    ac.status='exhausted';ac.closedDay=day;ac.blocked++;
    if(record)ac.trace.push({day,stage:stageName(p,ac),type:'blocked',
     risk:blocked.risk,slot:blocked.slot,headroom:blocked.available,
@@ -586,7 +642,7 @@ function oneTrial(p,config,rng,record=false){
    dailyCash.push({day,spent,receipts,net:receipts-spent,paid,
     bought,challengeSpent,activationSpent,live:liveCount(),
     opportunities,tradesToday,qualificationToday,unusedToday:Math.max(0,opportunities-tradesToday),
-    burned:accounts.filter(a=>a.status==='failed'||a.status==='exhausted').length,
+    burned:accounts.filter(a=>a.status==='failed'||a.status==='exhausted'||a.status==='strategy-stopped').length,
     failed:accounts.filter(a=>a.status==='failed').length,
     riskBlocked:accounts.filter(a=>a.status==='exhausted').length,
     ...journeyCounts()});
@@ -597,9 +653,10 @@ function oneTrial(p,config,rng,record=false){
  const funded=activations;
  const exhausted=accounts.filter(x=>x.status==='exhausted').length;
  const failed=accounts.filter(x=>x.status==='failed').length;
+ const strategyStopped=accounts.filter(x=>x.status==='strategy-stopped').length;
  const pending=accounts.filter(x=>['active','activation-wait','payout-pending'].includes(x.status)).length;
  const net=receipts-spent;
- return {bought,paid,passes,funded,failed,exhausted,pending,spent,receipts,net,activations,
+ return {bought,paid,passes,funded,failed,exhausted,strategyStopped,pending,spent,receipts,net,activations,
     targetHit:accounts.filter(a=>a.fundedTargetDay!==null).length,
     payoutRequested:accounts.filter(a=>a.payoutRequestedDay!==null).length,
    trades:accounts.reduce((sum,a)=>sum+a.trades,0),
@@ -658,7 +715,7 @@ function simulatePortfolio(p,config={}){
   reinvestPayouts:config.reinvestPayouts===true
  };
  const results=[],stageTotals=p.stageList.filter(x=>x!=='funded').map(()=>0);
- const total={bought:0,paid:0,funded:0,targetHit:0,payoutRequested:0,failed:0,exhausted:0,pending:0,spent:0,receipts:0,net:0,activations:0,trades:0,qualifying:0,qualificationTrades:0,
+ const total={bought:0,paid:0,funded:0,targetHit:0,payoutRequested:0,failed:0,exhausted:0,strategyStopped:0,pending:0,spent:0,receipts:0,net:0,activations:0,trades:0,qualifying:0,qualificationTrades:0,
   wins:0,losses:0,grossProfit:0,grossLoss:0,winPnl:0,lossPnl:0,riskTotal:0,plannedReward:0,totalR:0,tradePnl:0};
  const rand=rngFactory(settings.seed);
  const chartTrials=settings.trackDaily?[]:null;
@@ -761,7 +818,7 @@ function stageFunnel(result,useSample=false){
 // figures are hypothetical risk amounts, not the sample's actual outcomes.
 function previewLossPath(p,stage,steps=3){
  const cfg=p.riskProfiles?.[stage];if(!cfg)return [];
- const ac={stagePnl:0,history:'',repairSlot:'r1',repairAnchor:0,
+ const ac={stagePnl:0,history:'',repairSlot:'r1',repairAnchor:0,smartNext:'r1',
   peakEod:0,fundedTargetDay:null,funded150Days:0};
  const arr=[];
  for(let i=0;i<steps;i++){
@@ -771,13 +828,18 @@ function previewLossPath(p,stage,steps=3){
   const cost=pos(p.tradeCost),reserve=cfg.policy?.mode==='eval-recovery-burn'&&ac.history.endsWith('LL')?
    0:Math.max(.01,pos(p.riskReserve));
   const floor=floorFor(p,ac);
-  const available=Math.min(ac.stagePnl-floor,p.dailyLoss)-cost-reserve;
-  const allowed=risk>=.01&&risk<=available+1e-8;
+  const requiredOverall=risk+cost+(selected.allIn?0:reserve);
+  const requiredDaily=risk+cost+Math.max(.01,pos(p.riskReserve));
+  const allowed=selected.slot!=='stop'&&risk>=.01&&
+   requiredOverall<=ac.stagePnl-floor+1e-8&&requiredDaily<=p.dailyLoss+1e-8;
   arr.push({step:i+1,slot:selected.slot,risk:allowed?risk:0,
    calculatedRisk:risk,allowed,before:prior,after:allowed?prior-risk-cost:prior});
   if(!allowed)break;
   ac.stagePnl=prior-risk-cost;
   ac.history=(ac.history+'L').slice(-8);
+  if(cfg.policy?.mode==='smart-sequence')
+   ac.smartNext=selected.slot==='r1'?'r2':selected.slot==='r2'?'r3':
+    selected.slot==='r3'&&cfg.r4>0?'r4':'stop';
   if(cfg.policy?.mode==='repair-r2'){
    if(selected.slot==='r1')ac.repairSlot='r2';
    else if(selected.slot==='r2'){ac.repairAnchor=prior;ac.repairSlot='r3'}
