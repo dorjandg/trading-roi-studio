@@ -208,6 +208,24 @@ html[data-theme="light"] .recovery-direct{background:#f0faf6;border-color:#8bcdb
 .risk-route-panel{padding-top:6px;margin:7px 0}
 .risk-route-action .btn{padding:5px 8px;font-size:11px}
 @media(max-width:600px){.risk-route-filter{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.risk-route-filter label{min-width:0}.risk-route-filter select{width:100%;max-width:none}.risk-route-filter button{align-self:end}.risk-route-nav{justify-content:center}}
+
+.smart-setup{border:1px solid var(--border);border-radius:9px;padding:7px 9px;margin:8px 0;background:var(--panel)}
+.smart-setup>summary{font-size:12px;font-weight:750;cursor:pointer}
+.smart-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin:7px 0}
+.smart-toolbar button{padding:5px 9px}
+.smart-toolbar .caption{flex:1;min-width:130px}
+.smart-table{font-size:10px;min-width:890px}
+.smart-table th,.smart-table td{padding:5px 6px}
+.smart-table th:not(:first-child){text-align:right}
+.smart-table td:first-child{min-width:110px}
+.smart-table td small{display:block;color:var(--muted);font-size:9px;line-height:1.35;margin-top:3px}
+.smart-table td:last-child{text-align:center}
+.smart-table button{padding:4px 8px}
+.smart-off{opacity:.4}
+.smart-route-examples{margin-top:4px;text-align:left}
+.smart-route-examples>summary{font-size:10px;cursor:pointer}
+.smart-route-examples>div{font-size:9px;padding:2px 0;white-space:nowrap}
+@media(max-width:650px){.smart-setup{padding:6px 7px}.smart-table{min-width:830px}}
 .scenario-advisor{margin-top:10px;padding:10px;border:1px solid var(--border,#526071);border-radius:9px;display:grid;gap:8px}.scenario-advisor-item{padding:7px 9px;border-left:3px solid #7790a5;background:rgba(127,127,127,.06);border-radius:4px}.scenario-advisor-critical{border-left-color:#cc6161}.scenario-advisor-warning{border-left-color:#d2a64b}.scenario-advisor-good{border-left-color:#4aaf83}.scenario-advisor-item p{margin:3px 0;font-size:12px;line-height:1.4}.scenario-advisor small{opacity:.75;font-size:11px}
 </style>
 <script>window.FOUR_DS_CLOUD_ENDPOINT = "https://script.google.com/macros/s/AKfycbyZW792ZLBPxusQwthCJr0bVdZwCjXyeNaklq4Dk-BuSQ8P9gdg2zdTiWFKEmYuy5sY9Q/exec";</script>
@@ -533,7 +551,7 @@ html[data-theme="light"] .recovery-details .caption{color:#53677c}
    <input id="customSymbolInput" type="text" placeholder="e.g. US100, GC, MNQ" maxlength="40"></div>
  </div>
  <div class="notice" id="phaseStructureNote" style="margin-top:16px">Trading stages depend on the selected program.</div>
- <div class="notice" id="firmsImportedModel" style="margin-top:10px" hidden></div><div class="actionrow"><a class="btn primary" href="portfolio-simulator.html">Simulate this plan across a budget</a><button type="button" class="btn small" id="scanRiskAllStages">Find All Risk Routes · All Phases</button><span class="caption">Portfolio simulation uses the existing saved strategy. R3/R4 route exploration is separate.</span></div>
+ <div class="notice" id="firmsImportedModel" style="margin-top:10px" hidden></div><div class="actionrow"><a class="btn primary" href="portfolio-simulator.html">Simulate this plan across a budget</a><button type="button" class="btn small" id="smartAllStages">Find Smart Setups · All Phases</button><button type="button" class="btn small" id="scanRiskAllStages">Find All Risk Routes · All Phases</button><span class="caption">Portfolio simulation uses the existing saved strategy. R3/R4 route exploration is separate.</span></div>
  <div class="notice" style="margin-top:8px;padding:8px 10px;font-size:11px"><strong>Route planning:</strong> RR + R1–R4 (0 = off) · What-if paths only; not trade probabilities or orders.</div>
 <section class="risk-phase-group" style="border:1px solid var(--border);border-radius:13px;overflow:hidden;margin-top:16px"><div style="padding:15px 17px;background:var(--panel2)"><h3 style="margin:0 0 5px;font-size:16px">01 · Phase 1 — Evaluation</h3><p class="caption" style="margin:0">RR + R1–R4 · 0 disables a tier · Tap to view options.</p></div><div style="padding:0 16px 16px"><div style="border-top:1px solid var(--border);margin-top:12px;padding-top:14px"><strong style="font-size:14px">Ways to reach this stage target</strong><div class="caption" data-phase-meta="p1" style="margin:12px 0 6px">Phase 1 target and minimum trading days are linked to the selected firm’s rules.</div><div class="recovery-planner" data-recovery-stage="p1"></div><details class="stage-extra-details"><summary>Advanced: trading schedule</summary><div id="phase1Fields" class="formgrid" style="margin-top:12px"></div></details><details class="legacy-risk-details"><summary>Advanced: older two-strategy simulation inputs</summary><p class="caption">Retained for the separate probability estimator. R1/R2 and RR sync with the older estimator; R3/R4 and custom routes are planner-only.</p><div class="tablewrap"><table class="cash-risk-table" aria-label="01 · Phase 1 — Evaluation stop losses in US dollars"><thead><tr><th>Order / risk tier</th><th class="num">Stop loss (USD)</th><th class="num">RR</th><th class="num">Winning profit (USD)</th></tr></thead><tbody><tr><td><strong>Strategy 1 · First trade</strong><div class="caption" style="margin-top:3px">Risk per trade before the loss threshold</div></td><td><input type="number" inputmode="decimal" min="0" step="1" aria-label="Strategy 1 · First trade stop loss in USD" data-risk-field="p1Base"></td><td><input class="tier-rr" type="number" inputmode="decimal" min="0.1" max="100" step="0.1" aria-label="p1Base risk reward ratio" data-risk-rr="p1Base" title="RR for this order tier; change to update winning profit and stage simulation"></td><td class="num" data-risk-profit="p1Base">—</td></tr><tr><td><strong>Strategy 2 · After Strategy 1 loses</strong><div class="caption" style="margin-top:3px">Only after Strategy 1 loses in the same trading day. Not an automatic order.</div></td><td><input type="number" inputmode="decimal" min="0" step="1" aria-label="Strategy 2 · After Strategy 1 loses stop loss in USD" data-risk-field="p1Recovery"></td><td><input class="tier-rr" type="number" inputmode="decimal" min="0.1" max="100" step="0.1" aria-label="p1Recovery risk reward ratio" data-risk-rr="p1Recovery" title="RR for this order tier; change to update winning profit and stage simulation"></td><td class="num" data-risk-profit="p1Recovery">—</td></tr></tbody></table></div></details></div></div></section>
 <section class="risk-phase-group" style="border:1px solid var(--border);border-radius:13px;overflow:hidden;margin-top:16px"><div style="padding:15px 17px;background:var(--panel2)"><h3 style="margin:0 0 5px;font-size:16px">02 · Phase 2 — Verification</h3><p class="caption" style="margin:0">RR + R1–R4 · 0 disables a tier · Tap to view options.</p></div><div style="padding:0 16px 16px"><div style="border-top:1px solid var(--border);margin-top:12px;padding-top:14px"><strong style="font-size:14px">Ways to reach this stage target</strong><div class="caption" data-phase-meta="p2" style="margin:12px 0 6px">Phase 2 target and minimum trading days are linked to the selected firm’s rules.</div><div class="recovery-planner" data-recovery-stage="p2"></div><details class="stage-extra-details"><summary>Advanced: trading schedule</summary><div id="phase2Fields" class="formgrid" style="margin-top:12px"></div></details><details class="legacy-risk-details"><summary>Advanced: older two-strategy simulation inputs</summary><p class="caption">Retained for the separate probability estimator. R1/R2 and RR sync with the older estimator; R3/R4 and custom routes are planner-only.</p><div class="tablewrap"><table class="cash-risk-table" aria-label="02 · Phase 2 — Verification stop losses in US dollars"><thead><tr><th>Order / risk tier</th><th class="num">Stop loss (USD)</th><th class="num">RR</th><th class="num">Winning profit (USD)</th></tr></thead><tbody><tr><td><strong>Strategy 1 · First trade</strong><div class="caption" style="margin-top:3px">Risk for the first trade of the day.</div></td><td><input type="number" inputmode="decimal" min="0" step="1" aria-label="Strategy 1 · First trade stop loss in USD" data-risk-field="p2Base"></td><td><input class="tier-rr" type="number" inputmode="decimal" min="0.1" max="100" step="0.1" aria-label="p2Base risk reward ratio" data-risk-rr="p2Base" title="RR for this order tier; change to update winning profit and stage simulation"></td><td class="num" data-risk-profit="p2Base">—</td></tr><tr><td><strong>Strategy 2 · After Strategy 1 loses</strong><div class="caption" style="margin-top:3px">Only after Strategy 1 loses, if there is enough remaining loss allowance.</div></td><td><input type="number" inputmode="decimal" min="0" step="1" aria-label="Strategy 2 · After Strategy 1 loses stop loss in USD" data-risk-field="p2Recovery"></td><td><input class="tier-rr" type="number" inputmode="decimal" min="0.1" max="100" step="0.1" aria-label="p2Recovery risk reward ratio" data-risk-rr="p2Recovery" title="RR for this order tier; change to update winning profit and stage simulation"></td><td class="num" data-risk-profit="p2Recovery">—</td></tr></tbody></table></div></details></div></div></section>
@@ -2126,6 +2144,135 @@ document.addEventListener('change',event=>{
  persistRecoverySnapshot(host.dataset.recoveryStage);renderRecoveryPlanners();
 });
 
+
+const smartSetupRunning=Object.create(null),smartSetupResults=Object.create(null);
+function smartSetupConfig(stage){
+ const config=routeScanConfig(stage),{levels,...base}=config;
+ return {...base,stage,user:String(activeUser||'local')};
+}
+function smartSetupUI(stage){
+ const snap=recoverySnapshot(stage),config=smartSetupConfig(stage),signature=JSON.stringify(config);
+ const saved=smartSetupResults[stage],match=saved?.signature===signature;
+ const data=match?saved.result:null;
+ const models=Array.isArray(data?.models)?data.models:[];
+ const busy=!!smartSetupRunning[stage];
+ const riskAmount=n=>recoveryMoney(n);
+ const risks=r=>RECOVERY_LEVELS.map(k=>riskAmount(r[k]));
+ const labelFor=r=>r.route.pendingDays>0?'Pending':'Hit';
+ const row=m=>{
+  const cells=risks(m.risks).map((value,i)=>'<td class="num'+(m.risks[RECOVERY_LEVELS[i]]<.01?' smart-off':'')+'">'+value+'</td>').join('');
+  const examples=m.examples.map(x=>'<div>'+x.wl+' · '+[...x.tiers].map(n=>'R'+n).join('→')+
+   ' · '+x.trades+'T / '+x.days+'D · '+riskAmount(x.pnl)+
+   (x.pendingDays?' · '+x.pendingDays+' days pending':'')+'</div>').join('');
+  const warnings=(m.boosterRoute?'R3 booster path available':'')+
+   (m.hitAfterLoss?' · Recovery after loss':'')+
+   (m.hitAfterTriple?' · R4 recovery available':'');
+  return '<tr><td><strong>'+m.label+'</strong><small>'+warnings.replace(/^ · /,'')+'</small></td>'+
+   cells+'<td>'+m.route.wl+'<small>'+[...m.route.tiers].map(n=>'R'+n).join('→')+'</small></td>'+
+   '<td class="num">'+m.route.trades+'</td><td class="num">'+m.route.days+'</td>'+
+   '<td class="num">'+riskAmount(m.maxRisk)+'</td><td class="num">'+riskAmount(m.route.dd)+'</td>'+
+   '<td>'+labelFor(m)+'</td><td><button class="btn small" type="button" data-smart-apply="'+m.kind+'">Apply</button>'+
+   '<details class="smart-route-examples"><summary>Routes</summary>'+examples+'</details></td></tr>';
+ };
+ const status=busy?'Calculating candidate setups…':data?.error?'No match: '+data.error:
+  models.length?data.tested.toLocaleString()+' risk combinations · '+data.viable.toLocaleString()+' viable':
+  saved?'Inputs changed — recalculate':'Find target, low-risk and recovery setups.';
+ return '<details class="smart-setup"'+(snap.smartOpen?' open':'')+'><summary>Smart Setup Optimizer · Find R1–R4</summary>'+
+  '<div class="smart-toolbar"><button type="button" class="btn small" data-smart-run="'+stage+'"'+(busy?' disabled':'')+
+  '>Find Smart Setups</button>'+
+  (snap.smartUndo?'<button type="button" class="btn small quiet" data-smart-undo="'+stage+'">Undo Apply</button>':'')+
+  '<span class="caption" data-smart-status="'+stage+'">'+status+'</span></div>'+
+  (models.length?'<div class="tablewrap"><table class="recovery-table smart-table"><thead><tr>'+
+   '<th>Setup</th><th>R1</th><th>R2</th><th>R3</th><th>R4</th><th>W/L</th><th>Trades</th>'+
+   '<th>Days</th><th>Max R</th><th>DD</th><th>Result</th><th>Action</th></tr></thead><tbody>'+
+   models.map(row).join('')+'</tbody></table></div>'+
+   '<p class="caption">Modeled initial risk ceiling '+riskAmount(data.maxInitialRisk)+' · Target and daily limits checked at each step. '+
+   (data.limitsVerified?'Static overall floor modeled.':'Trailing overall floor not verifiable without live high-water equity.')+
+   ' The five setups are ranked from sampled risk candidates, not guaranteed global optima.</p>':'')+
+  '<details class="recovery-guide"><summary>How it works</summary><p class="caption">'+
+  'R1 always first. R2 follows R1, R3 follows R2 loss, R2 follows R3 win, and R4 is optional after R3 loss. '+
+  '0 disables a risk tier. A losing trade ends its day. Wins can continue up to the configured winning-day cap. '+
+  'A setup stops when its next tier is disabled; stopping is not the same as breaching a firm loss floor. '+
+  'The search uses the selected stage P/L, target, RR, safety buffer, limits, trade horizon and minimum days. '+
+  'Click Apply to save values and smart sequence for this Firms planner stage only. '+
+  'Portfolio Sim still uses its separate risk engine; brokerage positions, commissions, trailing limits and payout eligibility are not guaranteed.</p></details>'+
+  '</details>';
+}
+async function runSmartSetup(stage){
+ if(smartSetupRunning[stage]||!selectedAccountSupportsSimulation)return;
+ if(!window.StudioSmartRiskOptimizer?.search){
+  const status=document.querySelector('[data-smart-status="'+stage+'"]');
+  if(status)status.textContent='Optimizer file unavailable. Reload the website.';
+  return;
+ }
+ const config=smartSetupConfig(stage),signature=JSON.stringify(config);
+ smartSetupRunning[stage]=true;
+ const snap=recoverySnapshot(stage);snap.smartOpen=true;persistRecoverySnapshot(stage);
+ renderRecoveryPlanners();
+ try{
+  const result=await window.StudioSmartRiskOptimizer.search(config,progress=>{
+   const status=document.querySelector('[data-smart-status="'+stage+'"]');
+   if(status)status.textContent='Optimizing '+progress.done.toLocaleString()+' / '+
+    progress.total.toLocaleString()+' risk combinations · '+progress.valid.toLocaleString()+' viable';
+  });
+  smartSetupResults[stage]={signature,result};
+ }catch(error){smartSetupResults[stage]={signature,result:{error:String(error)}}}
+ finally{
+  smartSetupRunning[stage]=false;
+  const now=recoverySnapshot(stage);now.smartOpen=true;persistRecoverySnapshot(stage);
+  renderRecoveryPlanners();
+ }
+}
+function applySmartSetup(stage,kind){
+ const config=smartSetupConfig(stage),entry=smartSetupResults[stage];
+ if(!entry||entry.signature!==JSON.stringify(config)){alert('The phase inputs changed. Find Smart Setups again.');return}
+ const model=entry.result?.models?.find(x=>x.kind===kind);
+ if(!model)return;
+ const riskText=RECOVERY_LEVELS.map(k=>k.toUpperCase()+' '+recoveryMoney(model.risks[k])).join(' / ');
+ if(!confirm('Apply '+model.label+' to '+stageRecoverySetup(stage).name+' for the selected account?\n'+riskText+
+   '\n\nThis updates this stage\'s R1–R4 inputs, R1/R2 saved risk references and its Firms planner decision sequence. '+
+   'It does NOT place trades or transfer the smart sequence to the separate Portfolio Simulator. You can Undo Apply.'))return;
+ const snap=recoverySnapshot(stage),old=plannerLevels(snap,stageRecoverySetup(stage));
+ snap.smartUndo={levels:{...old},policyMode:snap.policyMode||'saved',
+  base:state[stage+'Base'],recovery:state[stage+'Recovery']};
+ snap.levels={...model.risks};snap.policyMode='smart-sequence';snap.open=true;snap.smartOpen=true;
+ snap.openOptionPath='';snap.page=1;
+ state[stage+'Base']=model.risks.r1;state[stage+'Recovery']=model.risks.r2;
+ lastSim=null;dirtySim=true;save();persistRecoverySnapshot(stage);render();
+}
+function undoSmartSetup(stage){
+ const snap=recoverySnapshot(stage),old=snap.smartUndo;
+ if(!old)return;
+ if(!confirm('Restore the previous R1–R4 amounts and risk sequence for '+stageRecoverySetup(stage).name+'?'))return;
+ snap.levels={...old.levels};snap.policyMode=old.policyMode||'saved';
+ state[stage+'Base']=old.base;state[stage+'Recovery']=old.recovery;
+ delete snap.smartUndo;snap.open=true;snap.smartOpen=true;
+ snap.page=1;lastSim=null;dirtySim=true;save();persistRecoverySnapshot(stage);render();
+}
+document.addEventListener('click',async event=>{
+ const run=event.target.closest?.('[data-smart-run]');
+ if(run){await runSmartSetup(run.dataset.smartRun);return}
+ const apply=event.target.closest?.('[data-smart-apply]');
+ if(apply){
+  const host=apply.closest('[data-recovery-stage]');
+  if(host)applySmartSetup(host.dataset.recoveryStage,apply.dataset.smartApply);
+  return;
+ }
+ const undo=event.target.closest?.('[data-smart-undo]');
+ if(undo){undoSmartSetup(undo.dataset.smartUndo);return}
+ const all=event.target.closest?.('#smartAllStages');
+ if(all&&!all.disabled){
+  all.disabled=true;all.textContent='Optimizing stages…';
+  try{
+   const m=phaseModel();
+   for(const stage of ['p1','p2','funded']){
+    if(stage==='p1'&&!m.phase1||stage==='p2'&&!m.phase2)continue;
+    await runSmartSetup(stage);
+   }
+  }finally{all.disabled=false;all.textContent='Find Smart Setups · All Phases'}
+ }
+});
+
 function renderRecoveryPlanners(){
  const imported=$('firmsImportedModel');
  if(imported){
@@ -2298,7 +2445,7 @@ function renderRecoveryPlanners(){
    '<details class="recovery-guide"><summary>Method, limits &amp; risk sequence</summary><p class="caption">Risk sequence: '+({saved:'Saved choices / after-loss defaults','smart-sequence':'R1 first; R2 after R1, R3 after R2 loss, R2 after R3 win, R4 after R3 loss if active. Stop when next tier disabled.',streak:'R1 → R2 after 1 loss → R3 after 2+',flat:'R1 every trade','after-win':'R2 after WIN, R3 after LOSS','protect-after-loss':'R3 after LOSS, otherwise R1'}[snapshot.policyMode||'saved']||'Saved choices')+'. You can override individual trade risks. The selected risk is used in full or the trade is blocked if modeled limits are insufficient.</p>'+
    '<p class="caption">'+setup.name+' · '+setup.rr.toFixed(2)+'R · Target '+recoveryMoney(setup.goal)+' · Starting P/L '+recoveryMoney(pnl)+
     ' · Minimum trading days '+setup.minDays+' · Saved stage trade cap '+setup.dailyCap+' · Winning-day planner cap '+winCap+'.'+(winCap>setup.dailyCap?' Planner wins may exceed the saved stage trade cap; update that setting before live use.':'')+'</p></details>'+
-   routeScanUI(stage)+
+   smartSetupUI(stage)+routeScanUI(stage)+
    '<div class="recovery-stats"><span>Routes <b>'+entries.length+'</b></span><span>Target <b>'+targetCount+'</b></span><span>Days met <b>'+readyCount+'</b></span><span>Blocked <b>'+blockedCount+'</b></span><span>Breached <b>'+failedCount+'</b></span></div>'+
    (noTargetFallback?'<p class="caption">No target routes within '+depth+' trades. Select All or Still active to inspect other paths.</p>':'')+
    '<p class="caption">Hypothetical outcomes, not pass probabilities. The separate Portfolio Simulator does not automatically adopt R3/R4.</p>'+
@@ -2373,6 +2520,7 @@ document.addEventListener('toggle',event=>{
  if(target.classList.contains('recovery-details'))snapshot.open=target.open;
  else if(target.classList.contains('option-planner-settings'))snapshot.settingsOpen=target.open;
  else if(target.classList.contains('risk-route-results'))snapshot.routeOpen=target.open;
+ else if(target.classList.contains('smart-setup'))snapshot.smartOpen=target.open;
  else if(target.classList.contains('recovery-option')&&target.open)snapshot.openOptionPath=target.dataset.outcomePath||'';
  else return;
  persistRecoverySnapshot(stage);
