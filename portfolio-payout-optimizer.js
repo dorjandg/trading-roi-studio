@@ -123,10 +123,13 @@ function assess(r,count,netTarget,perPayout){
  const trials=r.chartTrials||[];
  const winners=trials.filter(t=>val(t.paid)>=count&&val(t.net)+1e-8>=netTarget);
  const successes=winners.length,totalFees=trials.reduce((sum,t)=>sum+val(t.spent),0);
+ const payoutRunCount=trials.filter(t=>val(t.paid)>0).length;
  const successFees=winners.reduce((sum,t)=>sum+val(t.spent),0),losers=trials.length-successes;
  return {hit:trials.length?successes/trials.length:0,
   goalHits:successes,goalTrials:trials.length,
   costPerGoal:successes?totalFees/successes:null,
+  costPerPayoutRun:payoutRunCount?totalFees/payoutRunCount:null,
+  anyPayoutRuns:payoutRunCount,
   spentIfGoal:successes?successFees/successes:null,
   spentIfMiss:losers?(totalFees-successFees)/losers:null,
   avgPaid:val(r.avg.paid),avgReceipts:val(r.avg.receipts),
@@ -663,6 +666,8 @@ function render(out,sortMode='model',currentPlan=null){
    '<div><small>Avg. cash received</small><strong>'+money(s.avgReceipts)+'</strong></div>'+
    '<div><small>Avg. incurred fees / run</small><strong>'+money(s.avgSpent)+'</strong></div>'+
    '<div><small>Cost per full-goal success</small><strong>'+(s.costPerGoal==null?'Not observed':money(s.costPerGoal))+'</strong></div>'+
+   '<div><small>Cost per run with ≥1 payout</small><strong>'+(s.costPerPayoutRun==null?'Not observed':money(s.costPerPayoutRun))+'</strong></div>'+
+   '<div><small>Runs with any payout / trials</small><strong>'+s.anyPayoutRuns+' / '+s.goalTrials+'</strong></div>'+
    '<div><small>Fees in successful runs</small><strong>'+(s.spentIfGoal==null?'Not observed':money(s.spentIfGoal))+'</strong></div>'+
    '<div><small>Fees in unsuccessful runs</small><strong>'+(s.spentIfMiss==null?'—':money(s.spentIfMiss))+'</strong></div>'+
    '<div><small>Full-goal hits / trials</small><strong>'+s.goalHits+' / '+s.goalTrials+'</strong></div>'+
@@ -701,7 +706,7 @@ function render(out,sortMode='model',currentPlan=null){
   (out.fastestGoal?'Full '+out.requiredPayouts+'-payout goal: day '+out.fastestGoal.score.goalPayoutDay.toFixed(1)+
    ' in successful trials':'Net profit / payout-count goal not reached in validated trials')+
   '<small> · Conditional averages, not guaranteed dates; minimum-day and processing waits included.</small></div></details>'+
-  '<p class="hint">Goal chance = simulated chance of meeting BOTH required first-payout count and net-profit target. <b>Cost / Goal Hit</b> = total incurred fees across all validation runs divided by full-goal successes. It is not the starting investment or a guaranteed one-time payment. No observed successes means the cost cannot be estimated.</p>'+
+  '<p class="hint">Trade win rate is a simulation input. <b>Any payout chance</b> = at least one received payout. <b>Goal chance</b> = BOTH required first-payout count and net-profit target. <b>Cost / Goal Hit</b> = total incurred fees from all validation runs divided by full-goal successes. It is not the starting investment or a guaranteed one-time payment. Zero observed successes means no cost estimate.</p>'+
   '<div class="reverse-simple-heading">Investment scenarios <small>('+out.candidates.length+' optimizer cards)</small></div>'+
   '<div id="fundedComparisonNotice" class="hint" role="status">These are only the original optimizer cards. Funded-compounding models appear in Model comparison below after calculation.</div>'+
 
