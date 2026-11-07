@@ -178,7 +178,8 @@ async function optimize({plan,perPayout,maxInvestment,minRoi=2,minNetRoi=0,minNe
  const candidates=[];
  let checked=0;
  const simulate=(p,units,trials,seed)=>E.simulatePortfolio(p,{
-  days:inputs.days,tradesPerDay:inputs.tradesPerDay,winRate:inputs.winRate,
+  days:inputs.days,tradesPerDay:inputs.tradesPerDay,
+  tradeSchedule:Array.isArray(inputs.tradeSchedule)?inputs.tradeSchedule:null,winRate:inputs.winRate,
   signalMode:inputs.signalMode,seed,trials,netGoal:minNetPnl,
   budget:Math.round(units*unit*100)/100,
   purchaseMode:inputs.purchaseMode,capacityMode:inputs.capacityMode,
@@ -325,7 +326,8 @@ async function optimize({plan,perPayout,maxInvestment,minRoi=2,minNetRoi=0,minNe
    return shown.sort((a,b)=>candidates.indexOf(a)-candidates.indexOf(b));
   })(),
   blockedReference:candidates.find(x=>!r3Executable(x))||null,firm:plan.firm,size:plan.size,
-  inputs:{days:inputs.days,tradesPerDay:inputs.tradesPerDay,winRate:inputs.winRate,
+  inputs:{days:inputs.days,tradesPerDay:inputs.tradesPerDay,signalPace:inputs.signalPace||'daily',
+   tradeSchedule:Array.isArray(inputs.tradeSchedule)?inputs.tradeSchedule:null,winRate:inputs.winRate,
    purchaseMode:inputs.purchaseMode,capacityMode:inputs.capacityMode}};
 }
 function gaps(out,score){
