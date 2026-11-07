@@ -9,7 +9,7 @@
  let conversation=[];
  try{const saved=JSON.parse(sessionStorage.getItem(historyKey)||'[]');if(Array.isArray(saved))conversation=saved.slice(-12)}catch(_){}
  const save=()=>{try{sessionStorage.setItem(historyKey,JSON.stringify(conversation.slice(-12)))}catch(_){}};
- function renderAnswer(target,value){
+ function renderAnswer(target,value,sourceList=[]){
   target.replaceChildren();
   let text=String(value||'').replace(/\r/g,'').replace(/\*\*([^*\n]+)\*\*/g,'\n$1\n');
   const headings=['STRATEGY FOR NEW FUNDED ACCOUNTS','ACCOUNT MANAGEMENT AND CORRELATION','TRADE CAPACITY AND ASSIGNMENT','RISK MANAGEMENT','FIRST TRADE','SECOND TRADE','SUMMARY','LIMITATIONS'];
@@ -19,7 +19,20 @@
   const lines=text.split(/\n+/).map(x=>x.trim()).filter(Boolean);
   for(const line of lines){
    const isHeading=headings.includes(line.toUpperCase())||(/^[A-Z][A-Z0-9 /&–—:-]{7,}$/.test(line)&&line.length<90);
-   target.append(el(isHeading?'h4':'p','',line.replace(/^[-*]\s+/,'• ')));
+   const node=el(isHeading?'h4':'p','');
+   const parts=line.replace(/^[-*]\s+/,'• ').split(/(\[\d+\])/g);
+   for(const part of parts){
+    const number=/^\[(\d+)\]$/.exec(part);
+    const source=number&&sourceList[Number(number[1])-1];
+    if(source&&(source.url||source.chapter)){
+     const link=el('a','jj-ai-citation',part);
+     link.title=source.title||'Academy source';
+     if(source.url){link.href=source.url;link.target='_blank';link.rel='noopener noreferrer'}
+     else link.href='?topic='+encodeURIComponent(source.chapter);
+     node.append(link);
+    }else node.append(document.createTextNode(part));
+   }
+   target.append(node);
   }
  }
  function selectHits(question){
@@ -52,10 +65,10 @@
    const earlier=conversation.slice(0,-2).slice(-8);
    history.hidden=!earlier.length;
    historyTitle.textContent='Earlier conversation · '+Math.floor(earlier.length/2)+' exchanges';
-   for(const turn of earlier){const item=el('div','jj-ai-turn jj-ai-'+turn.role);item.append(el('strong','',turn.role==='user'?'You':'AI'));if(turn.role==='assistant')renderAnswer(item,turn.content);else item.append(el('p','',turn.content));thread.append(item)}
+   for(const turn of earlier){const item=el('div','jj-ai-turn jj-ai-'+turn.role);item.append(el('strong','',turn.role==='user'?'You':'AI'));if(turn.role==='assistant')renderAnswer(item,turn.content,turn.sources||[]);else item.append(el('p','',turn.content));thread.append(item)}
   };
   drawThread();
-  if(conversation.length){panel.hidden=false;status.textContent='Latest response · Ask a follow-up below.';const latest=conversation[conversation.length-1];if(latest?.role==='assistant')renderAnswer(answer,latest.content)}
+  if(conversation.length){panel.hidden=false;status.textContent='Latest response · Ask a follow-up below.';const latest=conversation[conversation.length-1];if(latest?.role==='assistant')renderAnswer(answer,latest.content,latest.sources||[])}
   reset.addEventListener('click',()=>{if(busy)return;conversation=[];save();thread.replaceChildren();answer.replaceChildren();sources.replaceChildren();panel.hidden=true;const input=form.querySelector('textarea');input.value='';input.placeholder='Ask a question about JJ’s trading course…';input.focus()});
   const result=root.querySelector('#jj-helper-results');
   if(result)result.before(panel);else root.append(panel);
@@ -95,8 +108,9 @@
     try{data=await response.json()}catch(_){}
     if(!response.ok)throw Error([data.message||data.error||'AI endpoint unavailable',data.code?'Code: '+data.code:'',data.detail||''].filter(Boolean).join(' · '));
     status.textContent='AI synthesis of indexed Academy research. Verify original lesson evidence; assumptions are not actual JJ performance.';
-    conversation.push({role:'user',content:question.slice(0,750)},{role:'assistant',content:String(data.answer||'').slice(0,3500)});conversation=conversation.slice(-12);save();drawThread();
-    renderAnswer(answer,data.answer||'No answer returned');
+    const citedSources=hits.slice(0,5).map(hit=>({title:hit.title,url:hit.sourceUrl||'',chapter:hit.chapter||''}));
+    conversation.push({role:'user',content:question.slice(0,750)},{role:'assistant',content:String(data.answer||'').slice(0,6500),sources:citedSources});conversation=conversation.slice(-12);save();drawThread();
+    renderAnswer(answer,data.answer||'No answer returned',citedSources);
     const questionBox=form.querySelector('textarea');if(questionBox){questionBox.value='';questionBox.placeholder='Ask a follow-up about this conversation…'}
     const label=el('strong','','Source passages used:');sources.append(label);
     hits.slice(0,5).forEach((hit,i)=>{
