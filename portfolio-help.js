@@ -22,7 +22,34 @@ const HELP_ID={
  ideaEffort:'Search depth: discovery trials and separate validation trials.',
  ideaReserve:'Extra cash protection held back from risk calculations.',
  gptReviewNote:'Optional question for the next GPT research review; not a trade.',
- studioUserSelect:'Selects whose locally saved trading profiles are displayed.'
+ studioUserSelect:'Selects whose locally saved trading profiles are displayed.',
+ payoutOptNetPnl:'Net cash target after modeled evaluation and activation expenses.',
+ payoutOptPer:'Minimum first payout desired from a successful account.',
+ payoutOptAccount:'Prop firm and account size being compared for investment cost.',
+ payoutOptMax:'Maximum available cash for purchasing and activating accounts.',
+ payoutOptRoi:'Minimum net profit as a percentage of fees spent.',
+ payoutOptNetRoi:'Minimum net profit as a percentage of starting investment budget.',
+ payoutOptMinRR:'Lowest reward-to-risk multiple permitted in model search.',
+ payoutOptMaxRR:'Highest reward-to-risk multiple permitted in model search.',
+ payoutOptDays:'Trading-day horizon used in the investment scenario.',
+ payoutOptPace:'Weekly 3/4/5/4/4 signal schedule or a fixed daily count.',
+ payoutOptSignals:'Trading signals available to the investment portfolio each day.',
+ payoutOptWinRate:'Assumed win percentage for the investment scenario.',
+ payoutOptPurchase:'Buy challenge accounts as needed or all at the start.',
+ payoutOptSignalMode:'Shared or independent simulated trade outcomes across accounts.',
+ payoutOptReinvest:'Let realized payouts pay for more challenges.',
+ payoutOptCapacity:'Automatic account rotation or explicit account-count limits.',
+ payoutOptMaxActive:'Maximum simultaneously active accounts in manual allocation.',
+ payoutOptBuys:'Maximum new evaluations purchased per day in manual mode.',
+ payoutOptSeed:'Seed for repeatable Monte Carlo trial comparisons.',
+ payoutOptP1Days:'Minimum Phase 1 qualification days used in this estimate.',
+ payoutOptP2Days:'Minimum Phase 2 qualification days used in this estimate.',
+ payoutOptWait:'Days after first funded trade before payout eligibility.',
+ payoutOptProcessing:'Calendar days assumed to process the payout.',
+ payoutMoreObjective:'Goal used to rank potential improved investment models.',
+ payoutMoreEffort:'Number of trials used to find and independently test ideas.',
+ payoutAdvisorModel:'Model whose results the scenario advisor explains.',
+ payoutAdvisorQuestion:'Ask a question about the selected model outcomes.'
 };
 const HELP_FIELD={
  id:'Firm and program whose saved stage settings this row uses.',
@@ -126,6 +153,7 @@ const HELP_KPI={
  'first payout day · conditional':'Mean first-payout day when at least one payout occurs.'
 };
 const trim=s=>String(s||'').replace(/\s+/g,' ').trim().replace(/\s*[ⓘℹ]$/,'');
+const brief=s=>{const t=trim(s);return t.length<=115?t:t.slice(0,112).replace(/\s+\S*$/,'')+'…';};
 const key=s=>trim(s).toLowerCase().replace(/\s*\([^)]*\)/g,m=>m.toLowerCase());
 function labelText(label){
  if(!label)return '';
@@ -157,7 +185,7 @@ function controlInfo(el){
  if(!help&&el.closest('#details'))help='Simulation-only scenario input; does not change saved Firms risk settings.';
  if(!help&&el.closest('#accounts'))help='Controls how this account is modeled in Portfolio Simulator.';
  if(!help)help='Adjust this scenario control; rerun to recalculate if needed.';
- return {label:name,help,box:field||label||el};
+ return {label:name,help:brief(help),box:field||label||el};
 }
 function metricInfo(box){
  const label=trim(box.querySelector('small,b')?.textContent||box.getAttribute('aria-label')||'Result');
@@ -166,13 +194,13 @@ function metricInfo(box){
  if(!help&&text.includes(' · '))help=text.split(' · ').slice(1).join(' · ');
  if(!help&&text.includes(': '))help=text.slice(text.indexOf(': ')+2);
  if(!help)help='Modeled statistic from the selected scenario; not a historical guarantee.';
- return {label,help,box};
+ return {label,help:brief(help),box};
 }
 function headerInfo(th){
  const label=trim(th.querySelector('button')?.textContent||th.textContent).replace(/[▲▼⇅]/g,'').trim();
  const hint=trim(th.getAttribute('data-tooltip')||th.getAttribute('title')||'');
  const help=HELP_LABEL[key(label)]||HELP_KPI[key(label)]||hint||'Column value for the selected simulated scenario.';
- return {label,help,box:th};
+ return {label,help:brief(help),box:th};
 }
 function fromTarget(target){
  if(!(target instanceof Element))return null;
@@ -194,20 +222,24 @@ function fromTarget(target){
  if(metric)return metricInfo(metric);
  const th=target.closest('th');if(th)return headerInfo(th);
  const label=target.closest('label');
- if(label&&label.closest('#section1Panel,#discovery,#results,#section9Panel,#section8Panel,#gptResearchPanel')){
+ if(label){
   const c=label.querySelector('input,select,textarea');
-  if(c)return controlInfo(c);
+  if(c&&!c.matches('[type="radio"],[type="checkbox"]'))return controlInfo(c);
  }
  return null;
 }
 function addHelp(node){
  if(!node||!node.querySelectorAll)return;
  let fields=[];
- if(node.matches?.('.field,.kpi'))fields.push(node);
- node.querySelectorAll('.field,.kpi').forEach(x=>fields.push(x));
+ const selector='.field,.kpi,.result-grid>div,label';
+ if(node.matches?.(selector))fields.push(node);
+ node.querySelectorAll(selector).forEach(x=>fields.push(x));
  for(const box of fields){
-  const field=box.matches('.field'),c=field?box.querySelector('input:not([type="hidden"]),select,textarea'):null;
+  const labelBox=box.tagName==='LABEL',field=box.matches('.field')||labelBox;
+  if(labelBox&&box.closest('.field'))continue;
+  const c=field?box.querySelector('input:not([type="hidden"]),select,textarea'):null;
   if(field&&(!c||c.matches('[type="radio"],[type="checkbox"]')))continue;
+  if(!field&&!box.querySelector('small'))continue;
   if(box.querySelector(':scope > .sim-help-i'))continue;
   const btn=document.createElement('button');
   btn.type='button';btn.className='sim-help-i';btn.textContent='i';
