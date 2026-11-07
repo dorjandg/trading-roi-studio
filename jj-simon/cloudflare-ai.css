@@ -119,3 +119,11 @@
 #jj-cloudflare-ai .jj-ai-usage summary{cursor:pointer;color:var(--accent)}
 #jj-cloudflare-ai .jj-ai-usage details[open]{flex-basis:100%}
 #jj-cloudflare-ai .jj-ai-usage p{margin:5px 0;line-height:1.5}
+
+/* Keep usage information on a single compact row; expanded help stays small. */
+#jj-cloudflare-ai .jj-ai-usage{display:flex;align-items:center;justify-content:flex-start;gap:8px;flex-wrap:nowrap;padding:2px 0 5px;border-bottom:0;font-size:10px}
+#jj-cloudflare-ai .jj-ai-usage-details{position:relative;flex:0 0 auto}
+#jj-cloudflare-ai .jj-ai-usage-details>summary{list-style:none;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border:1px solid var(--stroke);border-radius:50%;font-size:11px;line-height:1;cursor:pointer}
+#jj-cloudflare-ai .jj-ai-usage-details>summary::-webkit-details-marker{display:none}
+#jj-cloudflare-ai .jj-ai-usage-details[open]{flex-basis:auto}
+#jj-cloudflare-ai .jj-ai-usage-details p{position:absolute;z-index:5;left:0;top:22px;width:min(270px,70vw);margin:0;padding:9px 10px;border:1px solid var(--stroke);border-radius:8px;background:var(--panel);box-shadow:0 5px 18px #0004;font-size:10px;line-height:1.45}
