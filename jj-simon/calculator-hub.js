@@ -57,6 +57,16 @@ function mountAcquisitionHelp(){
  if(!wb||wb.querySelector('.jj-acq-howto'))return;
  const inputs=wb.querySelector('.calc-fields');
  if(!inputs)return;
+ // Net payout is deliberately optional: no payout/ROI is invented when empty.
+ const payoutLabel=document.createElement('label');
+ payoutLabel.textContent='Net payout received ($) · optional';
+ payoutLabel.title='Actual net cash received for ONE successful payout path, after any payout split. Leave blank if unknown.';
+ const payoutInput=document.createElement('input');
+ payoutInput.id='jj-payout';payoutInput.type='number';payoutInput.min='0';payoutInput.step='any';
+ payoutInput.placeholder='Enter payout for EV / ROI';
+ payoutInput.setAttribute('aria-label','Net cash payout received per successful funded account (optional)');
+ payoutLabel.append(payoutInput);inputs.append(payoutLabel);
+ for(const key of ['jj-pass','jj-win']){const el=wb.querySelector('#'+key);if(el)el.min='0';}
  const guide=document.createElement('div');
  guide.className='jj-acq-howto';
  guide.innerHTML=`
@@ -69,7 +79,7 @@ function mountAcquisitionHelp(){
     <li><strong>Funded success:</strong> enter the probability of the modeled success <em>after</em> funding. When studying cash payouts, success must mean receiving an eligible payout, not merely touching a trading profit target.</li>
     <li><strong>Activation fee and attempts:</strong> add fees charged on passing and the number of planned purchases. Read acquisition cost, single-attempt payout pathway, chance of at least one success, and purchase spending.</li>
    </ol>
-   <p class="jj-kpi-alert">The results assume independent attempts with stable probabilities. They exclude payout amount, payout eligibility rules, commission, resets, most renewals, trading-day timing and correlated copy trading. Do not interpret a high success chance as a profitable plan.</p>
+   <p class="jj-kpi-alert">Enter your actual net withdrawable payout in the optional final field to activate expected profit and ROI. Activation fees are included in expected spending. The model still assumes stable independent outcomes and excludes commissions, most resets, renewals, calendar timing, payout restrictions, repeat payouts and correlated copy trading.</p>
   </div>
  </details>
  <details class="jj-kpi-guides">
@@ -89,9 +99,37 @@ function mountAcquisitionHelp(){
   </div>
  </details>`;
  wb.insertBefore(guide,inputs);
+ const audit=document.createElement('details');
+ audit.className='jj-kpi-guides jj-acq-audit';
+ audit.innerHTML='<summary><span>Check formulas, spending & probability</span><span class="jj-kpi-summary-note">Live calculation · hidden until opened</span></summary><div class="jj-kpi-guide-body"><p class="jj-kpi-start" id="jj-calc-interpretation"></p><div id="jj-calc-breakdown" class="jj-audit-formulas"></div><p class="jj-kpi-alert">Cost per funded and break-even payout are long-run expectations, not the price of any single account. Payout success is conditional on passing. Probability of at least one payout assumes independent trials. No trade sequence, funded drawdown path, reset cost, payout time or copying correlation is simulated.</p></div>';
+ const outputs=wb.querySelector('#jj-results');
+ if(outputs)outputs.after(audit);
+ const oldValuesKey='jj-acquisition-calculator-values-v1';
+ let stored=null;
+ try{stored=JSON.parse(localStorage.getItem(oldValuesKey)||'null')}catch(_){}
+ if(stored&&typeof stored==='object'){
+  for(const id of ['jj-cost','jj-pass','jj-win','jj-activation','jj-n','jj-payout']){
+   const f=wb.querySelector('#'+id);
+   if(f&&Object.prototype.hasOwnProperty.call(stored,id)&&typeof stored[id]==='string')
+    f.value=stored[id].slice(0,40);
+  }
+ }
+ const saveValues=()=>{
+  const values={};
+  for(const id of ['jj-cost','jj-pass','jj-win','jj-activation','jj-n','jj-payout']){
+   const f=wb.querySelector('#'+id);if(f)values[id]=f.value;
+  }
+  try{localStorage.setItem(oldValuesKey,JSON.stringify(values))}catch(_){}
+ };
+ wb.addEventListener('input',event=>{
+  if(!event.target.matches('input[id^="jj-"]'))return;
+  saveValues();
+  if(event.target.id==='jj-payout'&&typeof jjCalculate==='function')jjCalculate();
+ });
+ if(typeof jjCalculate==='function')jjCalculate();
  const button=guide.querySelector('.jj-calc-load-example');
  if(button)button.addEventListener('click',()=>{
-  const example={'jj-cost':100,'jj-pass':33,'jj-win':25,'jj-activation':0,'jj-n':10};
+  const example={'jj-cost':100,'jj-pass':33,'jj-win':25,'jj-activation':0,'jj-n':10,'jj-payout':''};
   for(const [id,value] of Object.entries(example)){
    const field=wb.querySelector('#'+id);
    if(field){field.value=String(value);field.dispatchEvent(new Event('input',{bubbles:true}));}
