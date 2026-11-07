@@ -16,6 +16,12 @@
  conversation=current().messages;
  const save=()=>{const chat=current();if(chat){chat.messages=conversation;chat.updated=Date.now();if(chat.title==='New chat'&&conversation.length)chat.title=conversation.find(x=>x.role==='user')?.content?.slice(0,65)||chat.title}try{localStorage.setItem(storeKey,JSON.stringify({chats:chats.slice(0,40),currentId}))}catch(_){}};
  save();
+
+ const studyKey='jj-ai-study-v1';
+ let study={bookmarks:[],queue:[]};
+ try{const v=JSON.parse(localStorage.getItem(studyKey)||'{}');if(Array.isArray(v.bookmarks))study.bookmarks=v.bookmarks;if(Array.isArray(v.queue))study.queue=v.queue}catch(_){}
+ const saveStudy=()=>{try{localStorage.setItem(studyKey,JSON.stringify(study))}catch(_){}};
+ const prompts=['Which original lessons support this answer?','Compare JJ explanations across lessons and identify contradictions.','What information is still unverified?'];
  function renderAnswer(target,value,sourceList=[]){
   target.replaceChildren();
   let text=String(value||'').replace(/\r/g,'').replace(/\*\*([^*\n]+)\*\*/g,'\n$1\n');
@@ -69,7 +75,30 @@
   const thread=el('div','jj-ai-thread');
   const history=el('details','jj-ai-history');const historyTitle=el('summary','','Earlier conversation');history.append(historyTitle);
   const library=el('details','jj-ai-chat-library');const libraryTitle=el('summary','','Saved chats');const chatList=el('div','jj-ai-chat-list');library.append(libraryTitle,chatList);
-  panel.append(library,el('strong','','JJ Academy AI · conversation'),status,thread,answer,sources,history);
+
+  const studyPanel=el('details','jj-ai-tools'),studyBody=el('div','jj-ai-tools-body');
+  studyPanel.append(el('summary','','Study tools · saved answers & research queue'),studyBody);
+  const setQuestion=q=>{const input=form.querySelector('textarea');if(input){input.value=q;input.focus()}};
+  const drawStudy=()=>{
+   studyBody.replaceChildren();
+   studyBody.append(el('strong','','Saved answers · '+study.bookmarks.length));
+   for(const b of [...study.bookmarks].reverse()){
+    const row=el('div','jj-ai-tool-row');row.append(el('span','',b.category+' · '+b.question));
+    const open=el('button','','Open');open.type='button';open.onclick=()=>{const c=chats.find(x=>x.id===b.chatId);if(c){currentId=c.id;conversation=c.messages;save();drawChats();drawThread();studyPanel.open=false}else setQuestion(b.question)};
+    const remove=el('button','','Remove');remove.type='button';remove.onclick=()=>{study.bookmarks=study.bookmarks.filter(x=>x.id!==b.id);saveStudy();drawStudy()};
+    row.append(open,remove);studyBody.append(row);
+   }
+   studyBody.append(el('strong','','Unanswered questions · '+study.queue.length));
+   for(const q of [...study.queue].reverse()){
+    const row=el('div','jj-ai-tool-row');row.append(el('span','',q.question+' · pending'));
+    const revisit=el('button','','Revisit');revisit.type='button';revisit.onclick=()=>setQuestion(q.question);
+    const remove=el('button','','Remove');remove.type='button';remove.onclick=()=>{study.queue=study.queue.filter(x=>x!==q);saveStudy();drawStudy()};
+    row.append(revisit,remove);studyBody.append(row);
+   }
+   studyBody.append(el('small','','Saved locally on this device. The queue is not sent to an external research service.'));
+  };
+  const queueQuestion=(question,reason)=>{if(!question||study.queue.some(x=>x.question===question))return;study.queue.push({question,reason});study.queue=study.queue.slice(-100);saveStudy();drawStudy()};
+  panel.append(library,studyPanel,el('strong','','JJ Academy AI · conversation'),status,thread,answer,sources,history);
   const showLatest=()=>{
    answer.replaceChildren();sources.replaceChildren();drawThread();
    const latest=conversation[conversation.length-1];
@@ -88,14 +117,31 @@
    }
   };
   drawChats();
+  drawStudy();
   const drawThread=()=>{
    thread.replaceChildren();
    history.hidden=true;
-   for(const turn of conversation){
+   for(let i=0;i<conversation.length;i++){
+    const turn=conversation[i];
     const item=el('article','jj-ai-turn jj-ai-'+turn.role);
     item.append(el('strong','',turn.role==='user'?'You':'JJ Academy AI'));
     if(turn.role==='assistant'){
      const body=el('div','jj-ai-answer');renderAnswer(body,turn.content,turn.sources||[]);item.append(body);
+
+     const evidence=el('div','jj-ai-evidence',turn.sources?.length?'Source passages available · AI synthesis, not independently verified':'No saved source passages · verify original lessons');
+     item.append(evidence);
+     if(turn.mathNote)item.append(el('div','jj-ai-math',turn.mathNote));
+     const actions=el('div','jj-ai-message-actions');
+     const saveButton=el('button','','☆ Save');saveButton.type='button';saveButton.onclick=()=>{
+      const question=conversation.slice(0,i).reverse().find(x=>x.role==='user')?.content||'Untitled';
+      const category=prompt('Category:', 'General');
+      if(category===null)return;
+      study.bookmarks.push({id:Date.now()+'-'+Math.random(),chatId:currentId,question,category:(category.trim()||'General').slice(0,50)});
+      study.bookmarks=study.bookmarks.slice(-100);saveStudy();drawStudy();saveButton.textContent='✓ Saved';
+     };
+     const compare=el('button','','Compare lessons');compare.type='button';compare.onclick=()=>{const q=conversation.slice(0,i).reverse().find(x=>x.role==='user')?.content||'this topic';setQuestion('Compare JJ explanations across lessons about '+q+'. Show differences and contradictions with citations.')};
+     const flag=el('button','','Needs research');flag.type='button';flag.onclick=()=>{const q=conversation.slice(0,i).reverse().find(x=>x.role==='user')?.content||'Unknown question';queueQuestion(q,'Manually flagged');flag.textContent='✓ Queued'};
+     actions.append(saveButton,compare,flag);item.append(actions);
      if(turn.sources?.length){
       const details=el('details','jj-ai-message-sources');
       details.append(el('summary','','Sources · '+turn.sources.length));
@@ -111,6 +157,11 @@
      }
     }else item.append(el('p','',turn.content));
     thread.append(item);
+   }
+   if(conversation[conversation.length-1]?.role==='assistant'){
+    const follow=el('div','jj-ai-followups');follow.append(el('strong','','Explore further'));
+    for(const p of prompts){const b=el('button','',p);b.type='button';b.onclick=()=>setQuestion(p);follow.append(b)}
+    thread.append(follow);
    }
    panel.hidden=false;
    requestAnimationFrame(()=>{thread.scrollTop=thread.scrollHeight});
@@ -134,7 +185,7 @@
    const previousHits=previousQuestion?selectHits(previousQuestion.content):[];
    const hits=[...primaryHits,...contextHits,...previousHits].filter((hit,index,all)=>all.findIndex(x=>x.id===hit.id)===index).slice(0,5);
    panel.hidden=false;sources.replaceChildren();
-   if(!hits.length){status.textContent='No new source matches found. Rephrase with a course topic to retrieve evidence before asking AI.';return}
+   if(!hits.length){queueQuestion(question,'No source matches');status.textContent='No source matches. Saved to local research queue; no AI request made.';return}
    busy=true;button.disabled=true;reset.disabled=true;button.textContent='Asking AI…';
    conversation.push({role:'user',content:question.slice(0,750)});save();drawThread();drawChats();
    status.textContent='Thinking… · '+Math.min(hits.length,5)+' Academy sources';
@@ -158,7 +209,10 @@
     if(!response.ok)throw Error([data.message||data.error||'AI endpoint unavailable',data.code?'Code: '+data.code:'',data.detail||''].filter(Boolean).join(' · '));
     status.textContent='AI synthesis of indexed Academy research. Verify original lesson evidence; assumptions are not actual JJ performance.';
     const citedSources=hits.slice(0,5).map(hit=>({title:hit.title,url:hit.sourceUrl||'',chapter:hit.chapter||''}));
-    conversation.push({role:'assistant',content:String(data.answer||'').slice(0,6500),sources:citedSources});save();drawThread();drawChats();
+    const responseText=String(data.answer||'').slice(0,6500);
+    conversation.push({role:'assistant',content:responseText,sources:citedSources});
+    if(/not documented|insufficient evidence|cannot verify|not specified|unknown from/i.test(responseText))queueQuestion(question,'Evidence gap');
+    save();drawThread();drawChats();
     answer.replaceChildren();sources.replaceChildren();
     const questionBox=form.querySelector('textarea');if(questionBox){questionBox.value='';questionBox.placeholder='Ask a follow-up about this conversation…'}
 
