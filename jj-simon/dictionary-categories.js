@@ -4,7 +4,7 @@ const jjDictionaryCategoryMap={
  'Trade Risk':'Trades & Instruments','Futures Instruments':'Trades & Instruments',
  'Probability and math':'Statistics & EV','Probability & Statistics':'Statistics & EV',
  'Account stage':'Accounts & Prop Firms','Account Survival':'Accounts & Prop Firms',
- 'Portfolio risk':'Portfolio & Scaling','Portfolio management':'Portfolio & Scaling','Portfolio Execution':'Portfolio & Scaling','Payouts & Scaling':'Portfolio & Scaling',
+ 'Portfolio risk':'Portfolio & Scaling','Portfolio Risk':'Portfolio & Scaling','Portfolio management':'Portfolio & Scaling','Portfolio Execution':'Portfolio & Scaling','Payouts & Scaling':'Portfolio & Scaling',
  'Accounting':'Accounting & Payouts',
  'Structure & Liquidity':'Structure & Strategy',
  'Sessions & Timing':'Sessions & Timing',
