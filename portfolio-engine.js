@@ -391,15 +391,15 @@ function runAccountDay(p,ac,day,rand,config,record){
   const dailyPotential=risk+p.tradeCost+Math.max(.01,p.riskReserve);
   const overallPotential=risk+p.tradeCost+(allIn?0:reserve);
   // Firms permits R2–R4 = 0 to disable that path, not breach a loss limit.
-  if(risk<.01){
+  if(risk<.01&&slotLevels.includes(slot)&&pos(c[slot])<.01){
    ac.status='strategy-stopped';ac.closedDay=day;
    if(record)ac.trace.push({day,stage,type:'strategy-stop',slot,
     label:'Risk tier '+String(slot).toUpperCase()+' is off (0); route stopped, not a drawdown breach'});
    break;
   }
-  if(dailyPotential>dailyHeadroom+1e-8||overallPotential>overallHeadroom+1e-8){
+  if(risk<.01||dailyPotential>dailyHeadroom+1e-8||overallPotential>overallHeadroom+1e-8){
    ac.blocked++;
-   const overallBlocked=overallPotential>overallHeadroom+1e-8;
+   const overallBlocked=risk<.01||overallPotential>overallHeadroom+1e-8;
    const impossibleDaily=Number.isFinite(p.dailyLoss)&&dailyPotential>p.dailyLoss+1e-8;
    // A tier that cannot fit even on a fresh trading day, or cannot fit the
    // overall headroom, is untradeable without changing the configured policy.
@@ -514,6 +514,8 @@ function nextRiskStatus(p,ac){
   ac.fundedTargetDay!==null&&ac.funded150Days<5;
  const {slot,risk,allIn}=chooseTradeRisk(p,ac,stage,c,0);
  if(c.policy?.mode==='smart-sequence'&&slot==='stop')return {strategyStop:true,slot,risk:0};
+ // A deliberately disabled tier is a strategy stop, not a risk-floor breach.
+ if(slotLevels.includes(slot)&&pos(c[slot])<.01)return {strategyStop:true,disabledTier:true,slot,risk:0};
  const cost=pos(p.tradeCost),reserve=Math.max(.01,pos(p.riskReserve));
  const overallRequired=risk+cost+(allIn?0:reserve);
  const dailyRequired=risk+cost+reserve;
@@ -578,7 +580,7 @@ function oneTrial(p,config,rng,record=false){
    if(blocked.strategyStop){
     ac.status='strategy-stopped';ac.closedDay=day;
     if(record)ac.trace.push({day,stage:stageName(p,ac),type:'strategy-stop',
-     label:'Smart strategy stopped at its terminal LOSS branch'});
+     label:blocked.disabledTier?'Configured risk tier '+String(blocked.slot).toUpperCase()+' is disabled (0); strategy stopped without a drawdown breach':'Smart strategy stopped at its terminal LOSS branch'});
     continue;
    }
    ac.status='exhausted';ac.closedDay=day;ac.blocked++;
