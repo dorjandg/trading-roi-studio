@@ -299,6 +299,16 @@ html[data-theme="light"] .recovery-direct{background:#f0faf6;border-color:#8bcdb
  #page-firms .firms-quick-nav .btn.primary{font-size:11px}
  #page-firms .firms-quick-nav .btn:last-child:nth-child(odd){grid-column:span 2}
 }
+
+#page-firms .firms-quick-nav .firms-route-label{color:var(--muted);font-size:11px;margin-right:-3px;font-weight:650}
+#page-firms .firms-quick-nav #firmRoutePhase{min-height:32px;max-width:118px;width:auto;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:5px 7px;font-size:11px}
+#page-firms .firms-quick-nav #openFirmsFindRoutes{background:var(--green);color:#061a1b;font-weight:850}
+@media(max-width:650px){
+ #page-firms .firms-quick-nav .firms-route-label{grid-column:1;font-size:10px;align-self:center;margin:0}
+ #page-firms .firms-quick-nav #firmRoutePhase{grid-column:2;width:100%;max-width:none;min-height:34px}
+ #page-firms .firms-quick-nav #openFirmsFindRoutes{grid-column:span 2}
+ #page-firms .firms-quick-nav .btn:last-child:nth-child(odd){grid-column:auto}
+}
 .scenario-advisor{margin-top:10px;padding:10px;border:1px solid var(--border,#526071);border-radius:9px;display:grid;gap:8px}.scenario-advisor-item{padding:7px 9px;border-left:3px solid #7790a5;background:rgba(127,127,127,.06);border-radius:4px}.scenario-advisor-critical{border-left-color:#cc6161}.scenario-advisor-warning{border-left-color:#d2a64b}.scenario-advisor-good{border-left-color:#4aaf83}.scenario-advisor-item p{margin:3px 0;font-size:12px;line-height:1.4}.scenario-advisor small{opacity:.75;font-size:11px}
 </style>
 <script>window.FOUR_DS_CLOUD_ENDPOINT = "https://script.google.com/macros/s/AKfycbyZW792ZLBPxusQwthCJr0bVdZwCjXyeNaklq4Dk-BuSQ8P9gdg2zdTiWFKEmYuy5sY9Q/exec";</script>
@@ -606,10 +616,15 @@ html[data-theme="light"] .recovery-details .caption{color:#53677c}
   <div class="panel"><h2>4Ds cloud synchronization</h2><p class="subtle">One shared website, with separate profiles for Doen, Dori, Dona and Dion. No logins: anyone with access can select any name and change that profile.</p><div class="notice" id="cloudSyncStatus" role="status">Checking cloud connection…</div><div class="actionrow" style="margin-top:12px"><button type="button" class="btn" id="cloudUpload">Overwrite cloud with this device</button><button type="button" class="btn" id="cloudDownload">Load cloud onto this device</button></div><p class="caption">Settings are saved on this device first. When connected, cloud synchronization transfers them between devices. Keep a JSON backup for important configurations.</p></div>
 </section>
 <section id="page-firms" class="page">
-<div class="firms-quick-nav" role="group" aria-label="Simulation and trading tools">
- <a class="btn primary" href="portfolio-simulator.html" title="Open the separate portfolio trade and account simulator">Portfolio Simulator</a>
- <button type="button" class="btn small" id="openFirmsStrategySimulator" title="Open the older two-risk strategy simulation inside Firms">2-Risk Simulator</button>
- <button type="button" class="btn small" id="openFirmsSmartPlanner" title="Open the R1–R4 Smart Setup Optimizer for Phase 1">Smart R1–R4 Planner</button>
+<div class="firms-quick-nav" role="group" aria-label="Trading routes and simulation tools">
+ <label class="firms-route-label" for="firmRoutePhase">Find routes for</label>
+ <select id="firmRoutePhase" aria-label="Phase to find profit-target routes">
+  <option value="p1">Phase 1</option><option value="p2">Phase 2</option><option value="funded">Funded</option>
+ </select>
+ <button type="button" class="btn primary" id="openFirmsFindRoutes" title="Open the selected stage and calculate all risk routes using its current R1–R4 values">Find Target Routes</button>
+ <button type="button" class="btn small" id="openFirmsSmartPlanner" title="Find faster and lower-risk R1–R4 setups for the selected phase">Optimize R1–R4</button>
+ <a class="btn small" href="portfolio-simulator.html" title="Open the separate account progression simulator">Portfolio Simulator</a>
+ <button type="button" class="btn small quiet" id="openFirmsStrategySimulator" title="Open the older two-risk strategy simulator inside Firms">2-Risk Simulator</button>
 </div><div class="panel" style="padding:0;overflow:hidden"><iframe id="firmsFrame" title="Prop firm account selector and rules" src="about:blank" data-src="rules.html?embedded=1&v=compact-account-simulator-20261107" loading="eager" style="display:block;width:100%;height:1px;min-height:0;border:0;background:#080d16;overflow:hidden"></iframe></div><div class="notice" id="firmStrategyStatus" style="margin:16px 0">Select a firm, program and account size above to load this account's saved trading parameters.</div>
 <div id="firmTradingWorkspace">
 <div class="firms-fold-toolbar" role="group" aria-label="Firms section visibility">
@@ -832,6 +847,13 @@ function phaseModel(id=String(activeProgramKey||'').split(':')[0]){
 function phase2Rate(){return phaseModel().phase2?prob(state.p2):1;}
 function applyPhaseVisibility(){
  const m=phaseModel(),groups=[...document.querySelectorAll('.risk-phase-group')];
+ const picker=document.getElementById('firmRoutePhase');
+ if(picker){
+  for(const option of picker.options){
+   option.disabled=option.value==='p1'&&!m.phase1||option.value==='p2'&&!m.phase2;
+  }
+  if(picker.selectedOptions[0]?.disabled)picker.value=m.phase1?'p1':'funded';
+ }
  if(groups.length>=3){
   groups[0].style.display=m.phase1?'':'none';
   groups[1].style.display=m.phase2?'':'none';
@@ -2835,6 +2857,36 @@ window.addEventListener('message',event=>{
 function openFirmsFold(node){
  if(node?.classList.contains('is-collapsed'))node.querySelector('.firms-fold-toggle')?.click();
 }
+function selectedFirmsRouteStage(){
+ const model=phaseModel(),choice=document.getElementById('firmRoutePhase')?.value;
+ return choice==='funded'||choice==='p2'&&model.phase2||choice==='p1'&&model.phase1?choice:model.phase1?'p1':'funded';
+}
+function showFirmsRouteArea(stage){
+ openFirmsFold(document.getElementById('symbolPanel'));
+ const holder=document.querySelector('[data-recovery-stage="'+stage+'"]');
+ const phase=holder?.closest('.risk-phase-group');
+ openFirmsFold(phase);
+ const snap=recoverySnapshot(stage);
+ snap.open=true;
+ snap.allRoutesOpen=true;
+ snap.routeOpen=true;
+ persistRecoverySnapshot(stage);
+ renderRecoveryPlanners();
+ requestAnimationFrame(()=>{
+  const route=document.querySelector('[data-recovery-stage="'+stage+'"] .recovery-route-block');
+  if(route){route.open=true;route.scrollIntoView({behavior:'smooth',block:'start'})}
+ });
+}
+document.getElementById('openFirmsFindRoutes')?.addEventListener('click',async()=>{
+ const stage=selectedFirmsRouteStage();
+ if(!selectedAccountSupportsSimulation){
+  notify('This account is not supported by the route calculator. Choose a supported program in Firms.');
+  return;
+ }
+ showFirmsRouteArea(stage);
+ await runStageRiskRoutes(stage);
+});
+
 document.getElementById('openFirmsStrategySimulator')?.addEventListener('click',()=>{
  openFirmsFold(document.getElementById('symbolPanel'));
  const details=document.querySelector('#page-firms .legacy-estimator-details');
@@ -2846,14 +2898,16 @@ document.getElementById('openFirmsStrategySimulator')?.addEventListener('click',
  });
 });
 document.getElementById('openFirmsSmartPlanner')?.addEventListener('click',()=>{
+ const stage=selectedFirmsRouteStage();
  openFirmsFold(document.getElementById('symbolPanel'));
- const phase=document.querySelector('#page-firms .risk-phase-group');
- openFirmsFold(phase);
- const snap=recoverySnapshot('p1');
+ const holder=document.querySelector('[data-recovery-stage="'+stage+'"]');
+ openFirmsFold(holder?.closest('.risk-phase-group'));
+ const snap=recoverySnapshot(stage);
  snap.open=true;snap.smartOpen=true;
- persistRecoverySnapshot('p1');
+ persistRecoverySnapshot(stage);
  renderRecoveryPlanners();
- requestAnimationFrame(()=>{const target=document.querySelector('[data-recovery-stage="p1"] .smart-setup');
+ requestAnimationFrame(()=>{
+  const target=document.querySelector('[data-recovery-stage="'+stage+'"] .smart-setup');
   if(target){target.open=true;target.scrollIntoView({behavior:'smooth',block:'start'})}
  });
 });
