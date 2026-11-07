@@ -1994,8 +1994,8 @@ function routeScanUI(stage){
  const pages=Math.max(1,Math.ceil(items.length/pageSize));
  const page=Math.max(1,Math.min(pages,Math.floor(Number(snap.routePage)||1)));
  const rows=items.slice((page-1)*pageSize,page*pageSize).map(r=>{
-  const label=r.status==='target'?(r.minDaysPending?'Target · '+r.minDaysPending+' days pending':'Target + days met'):
-   r.status==='blocked'?'Risk blocked':r.status==='failed'?'Floor breached':'Still active';
+  const label=r.status==='target'?(r.minDaysPending?'Pending':'Hit'):
+   r.status==='blocked'?'Blocked':r.status==='failed'?'Failed':'Active';
   return '<tr data-result="'+r.status+'"><td>'+([...r.sequence].join(' → ')||'—')+'</td><td>'+
    ([...r.tiers].map(n=>'R'+n).join(' → ')||'—')+'</td><td class="num">'+r.trades+'</td>'+
    '<td class="num">'+r.days+'</td><td class="num">'+recoveryMoney(r.drawdown)+'</td>'+
