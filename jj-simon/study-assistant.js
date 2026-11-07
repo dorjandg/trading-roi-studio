@@ -190,7 +190,7 @@ async function jjQueueTrySync(question,reason,matchCount,force=false){
  jjQaSyncBusy.add(key);
  const receipt=jjRandomReceipt();
  try{
-  const body=new URLSearchParams({action:'submit',question,reason,matchCount:String(Math.max(0,Math.min(Number(matchCount)||0,1000))),receipt});
+  const body=new URLSearchParams({action:'submit',question,reason,matchCount:String(Math.max(0,Math.min(Number(matchCount)||0,1000))),receipt,previousReceipt:entry.accessReceipt||''});
   // Like Trading Studio: Apps Script POST has opaque response; trust only verified GET readback.
   await fetch(endpoint,{method:'POST',mode:'no-cors',body,cache:'no-store',signal:AbortSignal.timeout(16000)});
   const verified=await jjVerifyReceipt(endpoint,receipt);
