@@ -74,5 +74,5 @@ function answer(q){
  }
  return null;
 }
-root.StudioKnowledge={answer,fieldMatch,sectionMatch,currentContext,sections:sections.map(s=>({id:s.id,title:s.title}))};
+root.StudioKnowledge={answer,fieldMatch,sectionMatch,pageAnswer,currentContext,sections:sections.map(s=>({id:s.id,title:s.title}))};
 })(window);
