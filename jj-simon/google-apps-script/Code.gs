@@ -155,6 +155,13 @@ function jjPublicAnswerStatus_(p){
 }
 function doGet(e){
  var p=(e&&e.parameter)||{};
+ if(p.action==='health'){
+  var health={ok:true,service:'JJ Academy Questions',version:'answers-v2',
+    features:['question_receipts','private_answer_readback','answer_history']};
+  if(p.callback)return jjJsonp_(p.callback,health);
+  return ContentService.createTextOutput(JSON.stringify(health))
+    .setMimeType(ContentService.MimeType.JSON);
+ }
  if(p.action==='status'){
   try{return jjJsonp_(p.callback,jjPublicAnswerStatus_(p))}
   catch(_){return jjJsonp_(p.callback,{ok:false,error:'Answer status temporarily unavailable'})}
