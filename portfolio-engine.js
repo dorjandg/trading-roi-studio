@@ -558,7 +558,7 @@ function oneTrial(p,config,rng,record=false){
   [{day:0,spent,receipts,net:receipts-spent,paid,bought,challengeSpent,activationSpent,
    live:liveCount(),burned:0,failed:0,riskBlocked:0,strategyStopped:0,opportunities:0,tradesToday:0,qualificationToday:0,unusedToday:0,...journeyCounts()}]:null;
  for(let day=1;day<=config.days;day++){
-  const dailyOpportunities=dynamic?(config.tradeSchedule?config.tradeSchedule[day-1]:config.tradesPerDay):config.tradesPerDay;
+  const dailyOpportunities=config.tradeSchedule?config.tradeSchedule[day-1]:config.tradesPerDay;
   const tradesBefore=accounts.reduce((sum,ac)=>sum+ac.trades,0);
   const qualificationsBefore=accounts.reduce((sum,ac)=>sum+ac.qualificationTrades,0);
   // Close only the ability to trade at the configured tier; DO NOT record
