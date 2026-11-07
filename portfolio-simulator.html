@@ -912,8 +912,11 @@ function loadView(){
 function rowSummary(row){
  const p=accountPlan(row),v=E.validatePlan(p);
  const hasTest=Object.keys(testRisks[p.id+':'+p.size]||{}).length>0;
- const title=hasTest?'<strong style="color:var(--amber)">Simulator test risks (Firms unchanged)</strong>':
-  p.sourceSaved?'<strong class="good">Saved phase settings</strong>':'<strong style="color:var(--amber)">Illustrative defaults · not saved</strong>';
+ const allStagesSaved=p.stageList.every(stage=>savedStageInfo(row.id,row.size,stage).source!=='Profile fallback');
+ const title=hasTest?'<strong style="color:var(--amber)">Simulator-only risk overrides (Firms unchanged)</strong>':
+  !p.sourceSaved?'<strong style="color:var(--amber)">Illustrative account profile · not saved</strong>':
+  allStagesSaved?'<strong class="good">Saved Firms profile + all stage risks</strong>':
+   '<strong style="color:var(--amber)">Saved Firms profile · planner stage fallback</strong>';
  const risks=p.stageList.map(stage=>{
   const c=p.riskProfiles[stage],smart=c.policy?.mode==='smart-sequence';
   const fundedBuffer=c.policy?.mode==='ftmo-funded-buffer';
