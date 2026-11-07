@@ -104,6 +104,14 @@ function reply(question){
  if(snapshot?.visible&&snapshot.stale&&/(roi|results?|simulat|why|profit|funded|payout|optimi[sz]|recommend)/.test(q)){
   return ['The displayed simulator report is STALE: one or more inputs changed since the last result was calculated. Run Full Simulation again before trusting its ROI, payout counts or comparisons. Existing results are not updated automatically.','Live simulator freshness · High',false];
  }
+ if(/check formula audit|audit formulas|are formulas correct|formula mismatch|audit my calculations/.test(q)){
+   const current=window.StudioAdvisorReadOnly?.getCurrent?.();
+   if(!current?.visible)return ['A current Portfolio Simulator report is required for the strict formula audit. Open the simulator and run Full Simulation.','Audit readiness · High',false];
+   if(current.stale)return ['Current results are stale. Rerun Full Simulation before checking formulas.','Audit readiness · High',false];
+   const found=window.StudioReviewCues?.inspect?.()||[];
+   return [found.length?'Strict formula inconsistencies detected: '+found.map(x=>x.metric+' ('+x.program+')').join(', ')+'. Review cue delivery status in Section 11.':'No strict arithmetic or stage-order inconsistencies detected in the displayed report. This does not validate every strategy assumption or external firm rule.','Strict formula audit · High for checked invariants',false];
+ }
+ if(/formula coverage|formula map|what formulas do you know/.test(q))return ['Verified map: '+(window.StudioFormulaAudit?.entries?.length||0)+' Portfolio Simulator formula categories, plus a source-file map for Trading Studio pages. Coverage is intentionally incomplete; equations for every Lab and every Firms strategy have NOT yet been audited.','Formula coverage · High',false];
  const formula=window.StudioFormulaAudit?.answer(question);if(formula)return formula;
  const cues=/(review queue|queued cue|gpt cue|gpt alert|formula audit|formula error|formula inconsistency)/.test(q);
  if(cues){const items=window.StudioReviewCues?.read?.()||[];return ['Review cues: '+items.length+' locally tracked. '+items.slice(-4).reverse().map(x=>x.label+' ('+x.status+')').join('; ')+'. Cloud-verified means queued for the scheduled GPT review, not reviewed.','Local review queue · High',false]}
