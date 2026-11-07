@@ -67,10 +67,13 @@
   hit.sort(routeOrder);
   const afterLoss=hit.filter(x=>x.wl.includes('L'));
   const afterDouble=hit.filter(x=>x.wl.includes('LL'));
+  const boosterHits=hit.filter(x=>x.wl.startsWith('LLW')&&x.tiers.startsWith('123')&&x.wl.length>=4);
+  const afterTriple=hit.filter(x=>x.wl.includes('LLL'));
   const fastest=hit[0]||null;
   const bestAfterLoss=afterLoss[0]||null;
   const bestAfterDouble=afterDouble[0]||null;
-  return {fastest,bestAfterLoss,bestAfterDouble,
+  const bestBooster=boosterHits[0]||null,bestAfterTriple=afterTriple[0]||null;
+  return {fastest,bestAfterLoss,bestAfterDouble,bestBooster,bestAfterTriple,
    examples:[fastest,bestAfterLoss,bestAfterDouble].filter((v,i,a)=>v&&a.findIndex(x=>x?.wl===v.wl&&x?.tiers===v.tiers)===i).slice(0,3),
    counts:{hit:hit.length,active:active.length,blocked:blocked.length,stopped:stop.length,failed:fail.length},
    maxRisk:Math.max(...LEVELS.map(n=>risks[n]||0)),risks};
@@ -84,6 +87,7 @@
   }
   const r1List=[];
   for(const fraction of [1,.9,.8,.75,.67,.6,.5,.4,.33,.25,.2,.15,.125])addR(r1List,need/rr*fraction);
+  for(let n=2;n<=p.depth;n++)addR(r1List,need/(rr*n));
   for(const fraction of [1,.9,.75,.6])addR(r1List,cap*fraction);
   r1List.sort((a,b)=>b-a);
   for(const r1 of r1List){
@@ -125,15 +129,16 @@
   return all;
  }
  function rank(p,obj,rec){
-  const path=obj==='recovery'?(rec.bestAfterDouble||rec.bestAfterLoss):rec.fastest;
+  const path=obj==='recovery'?(rec.bestBooster||rec.bestAfterDouble||rec.bestAfterLoss):rec.fastest;
   if(!path)return Infinity;
   const cap=Math.max(.01,p.cap),r=rec.maxRisk/cap,dd=path.dd/cap;
   const losses=path.wl.split('L').length-1;
   if(obj==='fast')return path.wl.length*1000+path.days*50+r*25+dd*10;
   if(obj==='low')return rec.maxRisk*100+path.wl.length*12+path.days;
   if(obj==='balanced')return path.wl.length*110+r*200+dd*30+(rec.bestAfterLoss?0:45);
-  if(obj==='recovery')return (rec.bestAfterDouble?0:350)+path.wl.length*65+r*120+dd*65-losses*2;
+  if(obj==='recovery')return (rec.bestBooster?0:300)+(rec.bestAfterDouble?0:350)+path.wl.length*65+r*120+dd*65-losses*2;
   return path.wl.length*100+r*180+dd*35+(rec.bestAfterLoss?0:80)+(rec.bestAfterDouble?0:40)+
+   (rec.risks.r4>0&&!rec.bestAfterTriple?30:0)+
    (rec.counts.blocked+rec.counts.failed)/(rec.counts.hit+rec.counts.active+rec.counts.stopped+1)*30;
  }
  function search(input,onProgress){
@@ -157,11 +162,11 @@
      const pool=[...results].sort((a,b)=>rank(p,kind,a)-rank(p,kind,b)||
       a.maxRisk-b.maxRisk||a.fastest.wl.length-b.fastest.wl.length);
      const record=pool.find(r=>!used.has(LEVELS.map(k=>r.risks[k]).join('/'))&&
-      (kind!=='recovery'||r.bestAfterDouble||r.bestAfterLoss));
+      (kind!=='recovery'||r.bestBooster||r.bestAfterDouble||r.bestAfterLoss));
      if(!record)continue;
      const signature=LEVELS.map(k=>record.risks[k]).join('/');
      used.add(signature);
-     const primary=kind==='recovery'?(record.bestAfterDouble||record.bestAfterLoss):record.fastest;
+     const primary=kind==='recovery'?(record.bestBooster||record.bestAfterDouble||record.bestAfterLoss):record.fastest;
      models.push({kind,label,risks:{...record.risks},route:{
       wl:primary.wl,tiers:primary.tiers,trades:primary.wl.length,days:primary.days,
       pnl:primary.pnl,dd:money(primary.dd),
@@ -169,7 +174,8 @@
      },examples:record.examples.map(v=>({wl:v.wl,tiers:v.tiers,pnl:v.pnl,dd:money(v.dd),
       trades:v.wl.length,days:v.days,pendingDays:Math.max(0,p.minDays-p.completedDays-v.days)})),
      maxRisk:record.maxRisk,hitAfterLoss:!!record.bestAfterLoss,
-     hitAfterDouble:!!record.bestAfterDouble,counts:record.counts});
+     hitAfterDouble:!!record.bestAfterDouble,hitAfterTriple:!!record.bestAfterTriple,
+     boosterRoute:!!record.bestBooster,counts:record.counts});
     }
     resolve({models,tested:grid.length,viable:results.length,horizon:p.depth,
       maxInitialRisk:money(p.cap),limitsVerified:p.staticFloor,searchType:'sampled candidate optimization'});
