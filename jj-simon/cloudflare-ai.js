@@ -327,7 +327,6 @@
    const previousQuestion=[...conversation].reverse().find(m=>m.role==='user');
    const contextQuery=previousQuestion?previousQuestion.content+' '+question:question;
    const contextualQuestion=pageTitle&&!question.toLowerCase().includes(pageTitle.toLowerCase())?pageTitle+' '+question:question;
-   const primaryHits=selectHits(question);'),'i').test(question)?pageTitle+' '+question:question;
    const primaryHits=selectHits(question);
    const contextHits=previousQuestion?selectHits(contextQuery):[];
    const pageHits=pageTitle?selectHits(contextualQuestion).filter(x=>x.chapter===pageSlug||x.searchText?.toLowerCase().includes(pageTitle.toLowerCase())):[];
