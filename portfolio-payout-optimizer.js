@@ -133,7 +133,7 @@ function assess(r,count,netTarget,perPayout){
   spentIfGoal:successes?successFees/successes:null,
   spentIfMiss:losers?(totalFees-successFees)/losers:null,
   avgPaid:val(r.avg.paid),avgReceipts:val(r.avg.receipts),
-  avgNet:val(r.avg.net),avgSpent:val(r.avg.spent),p10:val(r.p10),
+  avgNet:val(r.avg.net),netPerWeek:val(r.avg.net)/(Math.max(1,Number(r.config?.days)||20)/5),avgSpent:val(r.avg.spent),p10:val(r.p10),
   avgPurchased:val(r.avg.bought),avgFunded:val(r.avg.funded),
   avgBreached:val(r.avg.failed),avgRiskBlocked:val(r.avg.exhausted),
   avgFundedTargets:val(r.avg.targetHit),avgRequests:val(r.avg.payoutRequested),roi:val(r.roi),
@@ -475,6 +475,7 @@ function diagnoseScenario(candidate,out){
 const payoutSortModes={
  model:'Optimizer ranking',
  net:'Highest net P&L',
+ weeklyNet:'Highest net per trading week',
  budgetRoi:'Highest investment ROI',
  feeRoi:'Highest fee ROI',
  chance:'Highest goal probability',
@@ -493,6 +494,7 @@ function sortedPayoutCandidates(out,sortMode='model'){
   let delta=0;
   switch(key){
    case 'net':delta=num(y,'avgNet')-num(x,'avgNet');break;
+   case 'weeklyNet':delta=num(y,'netPerWeek')-num(x,'netPerWeek');break;
    case 'budgetRoi':delta=num(y,'budgetRoi')-num(x,'budgetRoi');break;
    case 'feeRoi':delta=num(y,'roi')-num(x,'roi');break;
    case 'chance':delta=num(y,'hit')-num(x,'hit');break;
@@ -626,6 +628,7 @@ function render(out,sortMode='model',currentPlan=null){
    (candidate.r3Feasible===false?'R3 blocked after LL':goalMet?'Targets met':'Below target')+'</span></span>'+
    '<span class="reverse-summary-kpis">'+
    summaryMetric('Net P&L',money(s.avgNet))+
+   summaryMetric('Net / Week',money(s.netPerWeek))+
    summaryMetric('Net ROI',pct(s.budgetRoi))+
    summaryMetric('Investment',money(candidate.initialBudget))+
    summaryMetric('Goal chance',pct(s.hit))+
