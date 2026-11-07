@@ -1,8 +1,28 @@
 {
   "schema": "4ds-gpt-research-v1",
-  "updatedAt": "2026-11-06T20:31:52.485Z",
+  "updatedAt": "2026-11-07T18:21:00.000Z",
   "visibility": "public-generic",
   "reviews": [
+    {
+      "id": "review-cloud-trace-risk-block-evidence-20261107-v1",
+      "date": "2026-11-07",
+      "category": "Simulation evidence",
+      "status": "verified",
+      "priority": "high",
+      "title": "Newer cloud Full Simulation records contain account-level traces; risk blocks are not breaches",
+      "finding": "The latest cloud workspace contains four Full Simulation records with sample account traces, alongside a newer Calculate Investment optimizer summary. In two distinct inspected full-simulation samples, every sample account marked exhausted had a corresponding blocked event explicitly stating that the next risk tier exceeded remaining drawdown without an account breach. Sample paid transitions had paid-day markers. Three earlier runs share matching sample event counts and status distributions, so repeated output alone is not evidence of a calculation defect. These are stored hypothetical simulations, not live trading results.",
+      "suggestion": "Compare blocked-event counts, loss events, firm-breach events, and payout transitions by run and policy before interpreting exhausted as a failed challenge. For future review, retain account sample traces and a fixed seed; distinguish Calculate Investment aggregates from Full Simulation event traces.",
+      "measurements": [
+        "New cloud records inspected: 5 history records (4 Full Simulation, 1 Calculate Investment)",
+        "Two distinct Full Simulation samples inspected: 33 and 50 account traces",
+        "Blocked events in those samples: 22 and 38, respectively; all correspond to exhausted sample accounts",
+        "No sampled exhausted account lacked a blocked event; no sampled paid account lacked a paid-day marker",
+        "Manual Section 11 request IDs found in inspected cloud profiles: none"
+      ],
+      "action": "Published evidence clarification only; no trading risk policy or simulation engine changes. Prior generic claim that recent cloud history lacks account-level traces does not apply to these newer Full Simulation records.",
+      "source": "Private connected Google Drive 4Ds Trading Studio Cloud Data snapshot structure and sample trace event categories, summarized without personal data; current GitHub simulator code and existing public research history.",
+      "verified": "Cloud snapshot inspected through 2026-11-07T17:56:31Z. Two distinct samples checked for event/status consistency. Not a full Monte Carlo replay, independent trading audit, or live Cloudflare verification. No new manual request was present; no request ID was processed."
+    },
     {
       "id": "review-report-status-display-v1",
       "date": "2026-11-06",
