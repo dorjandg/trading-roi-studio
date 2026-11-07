@@ -1,0 +1,26 @@
+/* Mobile-only compact Academy chapter picker. Desktop nav and native select remain unchanged. */
+.jj-mobile-nav{display:none}
+@media(max-width:750px){
+  .tools{position:relative}
+  #mobile.mobile{display:none!important}
+  .jj-mobile-nav{display:block;position:relative;flex:0 0 auto;min-width:0}
+  .jj-mobile-trigger{width:122px;min-height:32px;padding:6px 8px;border:1px solid var(--stroke);background:var(--panel);color:var(--text);border-radius:7px;display:flex;align-items:center;justify-content:space-between;gap:6px;cursor:pointer;text-align:left;font:inherit;font-size:11px}
+  .jj-mobile-label{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:96px}
+  .jj-mobile-arrow{font-size:10px;flex:0 0 auto;color:var(--muted)}
+  .jj-mobile-trigger[aria-expanded=true]{border-color:var(--accent)}
+  .jj-mobile-menu{position:absolute;left:0;top:calc(100% + 5px);width:min(340px,calc(100vw - 20px));max-height:min(59dvh,430px);overflow-y:auto;overscroll-behavior:contain;z-index:20;background:var(--panel);border:1px solid var(--stroke);border-radius:9px;box-shadow:0 14px 38px rgba(0,0,0,.28);padding:5px;scrollbar-width:thin}
+  .jj-mobile-menu[hidden]{display:none!important}
+  .jj-mobile-menu button{display:flex;align-items:center;min-height:30px;width:100%;padding:5px 9px;border:0;border-radius:5px;text-align:left;font:inherit;font-size:11px;line-height:1.35;color:var(--text);background:none;cursor:pointer;white-space:normal;overflow-wrap:anywhere}
+  .jj-mobile-menu button:hover,.jj-mobile-menu button:focus-visible{background:var(--hover)}
+  .jj-mobile-menu button[aria-current=page]{color:var(--accent);background:var(--hover);font-weight:700}
+  .jj-mobile-menu .jj-mobile-chapter{padding-left:13px}
+  .jj-mobile-menu .jj-mobile-group{margin:3px 0;border-top:1px solid var(--stroke)}
+  .jj-mobile-menu .jj-mobile-group summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:30px;padding:6px 9px;font-size:11px;font-weight:700;cursor:pointer;color:var(--muted)}
+  .jj-mobile-menu .jj-mobile-group summary::-webkit-details-marker{display:none}
+  .jj-mobile-menu .jj-mobile-group summary::after{content:'+';color:var(--accent);font-weight:600}
+  .jj-mobile-menu .jj-mobile-group[open] summary::after{content:'−'}
+  .jj-mobile-menu .jj-mobile-group summary:hover{background:var(--hover)}
+  .jj-mobile-menu .jj-mobile-group summary span{font-size:10px;opacity:.8;font-weight:400}
+  .jj-mobile-menu .jj-mobile-separator{height:1px;background:var(--stroke);margin:3px 0}
+  .tools .search-wrap{min-width:0;flex:1}
+}
