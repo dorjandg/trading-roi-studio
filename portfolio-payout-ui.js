@@ -30,6 +30,7 @@ function start(){
   '<label>Min RR<input id="payoutOptMinRR" type="number" min="0.1" max="20" step="0.25" value="1.5"></label>'+
   '<label>Max RR<input id="payoutOptMaxRR" type="number" min="0.1" max="20" step="0.25" value="3"></label>'+
   '<label>Trading days<select id="payoutOptDays"><option>10</option><option>20</option><option>30</option><option>40</option><option>60</option><option>90</option><option>120</option></select></label>'+
+  '<label>Signal schedule<select id="payoutOptPace"><option value="weekly20">20/week · 3,4,5,4,4</option><option value="daily">Fixed signals / day</option></select></label>'+
   '<label>Signals / day<select id="payoutOptSignals"></select></label>'+
   '<label>Win rate (%)<input id="payoutOptWinRate" type="number" min="0" max="100" step="0.5"></label>'+
   '<label>Purchase mode<select id="payoutOptPurchase"><option value="recycle">Dynamic · as needed</option><option value="upfront">Buy upfront</option></select></label>'+
@@ -568,7 +569,7 @@ function start(){
  panel.open=!window.matchMedia('(max-width:650px)').matches&&prior.open===true;
 
  $('payoutOptSignals').innerHTML=Array.from({length:20},(_,i)=>'<option>'+String(i+1)+'</option>').join('');
- const assumptionIds={days:'payoutOptDays',tradesPerDay:'payoutOptSignals',winRate:'payoutOptWinRate',
+ const assumptionIds={days:'payoutOptDays',pace:'payoutOptPace',tradesPerDay:'payoutOptSignals',winRate:'payoutOptWinRate',
   purchaseMode:'payoutOptPurchase',signalMode:'payoutOptSignalMode',reinvestPayouts:'payoutOptReinvest',
   capacityMode:'payoutOptCapacity',maxActive:'payoutOptMaxActive',maxBuysPerDay:'payoutOptBuys',seed:'payoutOptSeed',
   p1MinDays:'payoutOptP1Days',p2MinDays:'payoutOptP2Days',wait:'payoutOptWait',processing:'payoutOptProcessing'};
@@ -577,7 +578,7 @@ function start(){
   const key=$('payoutOptAccount').value,row=bridge.getRows().find(r=>r.id+':'+r.size===key);
   if(!row)return;
   const base=bridge.getInputs(row),p=bridge.getPlan(row);
-  const inherited={days:base.days,tradesPerDay:base.tradesPerDay,winRate:base.winRate,
+  const inherited={days:base.days,pace:base.signalPace==='weekly20'?'weekly20':'daily',tradesPerDay:base.tradesPerDay,winRate:base.winRate,
    purchaseMode:base.purchaseMode,signalMode:base.signalMode,reinvestPayouts:base.reinvestPayouts?'yes':'no',
    capacityMode:base.capacityMode,maxActive:base.maxActive,maxBuysPerDay:base.maxBuysPerDay,seed:base.seed,
    p1MinDays:p.riskProfiles.p1?.minDays??0,p2MinDays:p.riskProfiles.p2?.minDays??0,
@@ -585,21 +586,23 @@ function start(){
   if(reset)accountAssumptions[key]=inherited;
   const vals={...inherited,...(accountAssumptions[key]||{})};
   for(const [name,id] of Object.entries(assumptionIds))$(id).value=String(vals[name]);
+  $('payoutOptSignals').disabled=vals.pace==='weekly20';
   $('payoutOptP2Days').disabled=!p.riskProfiles.p2;
   $('payoutOptWait').disabled=p.id==='topstep';
   const usd=n=>Number.isFinite(n)?'$'+n.toLocaleString():'not set';
   $('payoutOptLimits').textContent='Firm rules (read-only): daily '+usd(p.dailyLoss)+
    ' · overall '+usd(p.overallLoss)+' · reserve '+usd(p.riskReserve)+
    (p.id==='topstep'?' · funded winning-day eligibility applies':'');
-  $('payoutOptAssumptionsSummary').textContent='· '+vals.days+'d · '+vals.tradesPerDay+
-   ' signals/day · '+vals.winRate+'% WR';
+  $('payoutOptAssumptionsSummary').textContent='· '+vals.days+'d · '+(vals.pace==='weekly20'?'20 signals/week':vals.tradesPerDay+' signals/day')+
+   ' · '+vals.winRate+'% WR';
  }
  function storeAssumptions(){
   const key=$('payoutOptAccount').value;if(!key)return;
   const v={};for(const [name,id] of Object.entries(assumptionIds))v[name]=$(id).value;
   accountAssumptions[key]=v;
-  $('payoutOptAssumptionsSummary').textContent='· '+v.days+'d · '+v.tradesPerDay+
-   ' signals/day · '+v.winRate+'% WR';
+  $('payoutOptSignals').disabled=v.pace==='weekly20';
+  $('payoutOptAssumptionsSummary').textContent='· '+v.days+'d · '+(v.pace==='weekly20'?'20 signals/week':v.tradesPerDay+' signals/day')+
+   ' · '+v.winRate+'% WR';
  }
 
  let loadedAssumptionsAccount='';
@@ -1449,6 +1452,10 @@ function start(){
   try{
    inputs.days=readNum('payoutOptDays',1,120);
    inputs.tradesPerDay=readNum('payoutOptSignals',1,20);
+   inputs.signalPace=$('payoutOptPace').value;
+   inputs.tradeSchedule=inputs.signalPace==='weekly20'?
+    window.StudioWeeklyEconomics.schedule(inputs.days,'weekly20',4):null;
+   if(inputs.signalPace==='weekly20')inputs.tradesPerDay=4;
    inputs.winRate=readNum('payoutOptWinRate',0,100);
    inputs.purchaseMode=$('payoutOptPurchase').value;
    inputs.signalMode=$('payoutOptSignalMode').value;
