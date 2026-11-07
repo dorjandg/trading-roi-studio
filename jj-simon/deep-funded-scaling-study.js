@@ -15,5 +15,18 @@ points:[
 ],
 src:[["10k/m → 30k/m Scaling","04:21–04:50; 05:26–08:19","1qZ6MdjEXqSX7dSCLFlXONa1MEl6XavlD"],["Expected Value Variance","07:37–10:55","1MPxCD1UKr76oqPKB_0Hxwc1WSmX_K_w1"]]
 });
+
+jjExecutionDeepStudy.find(b=>b.slug==="account-management").sections.push({
+title:"Account Execution Deep Study 03 — Three funded opportunities versus ten winning-day accounts",
+points:[
+"JJ's How Many Trades Per Day? describes up to three distinct new-funded opportunity types per day (overnight, NY AM 100-point, and a two-leg 50-point path), usually one main attempt per new-funded account. The two-leg path is an explicit exception.",
+"In When To Take Payouts, he instead describes making one small winning-day attempt on each of ten existing winning-funded accounts in a day. Winning Days also describes multiple fast momentum attempts. These are different stages and should not be combined into a universal three-trade cap.",
+"Winning Days offers three alternative qualifying-day methods: fast NY momentum/news continuation with preset exits, fair-price/BOS reversions around session anchors, and slower 40-point trades with two MNQ. The two-MNQ example is $4 per index point, so 40 points yields $160 gross, about $157 after the narrated $3 cost—not automatically enough for a $200 qualifying threshold.",
+"When To Take Payouts advocates requesting withdrawals when eligible and stopping after a roughly $200 winning-day loss, but its claim of a statistically guaranteed payout within about 12 days is not mathematically established. Even a 20-loss streak at $200 per loss can consume a $4,000 cushion; provider drawdown may breach earlier.",
+"Track independent signals separately from account executions: copying ten accounts creates correlated outcomes, not ten independent wins. Track stage, qualifying-day threshold, fees, buffer, payout request, approval, and settled cash separately.",
+"Historical mentor examples only; firm-specific winning-day thresholds, scalping restrictions, original chart demonstrations, audio accuracy and payout eligibility remain unverified. No student speaker Q&A verified in these three transcripts."
+],
+src:[["How Many Trades Per Day?","00:00–00:24; 01:57–02:25","1cdESUiP_6dF8s8VZjVKBmVa2a8ey4kve"],["When To Take Payouts","00:07–01:36; 03:13–03:33","1xVDQxTxneJ0EG2AOPgbB0Yp16xc2BCSn"],["Winning Days","00:00–00:42; 04:26–06:15","19DLGJ-t74Q0AOhVpKgtuE4P2uhVp1TPp"]]
+});
 for(const block of jjExecutionDeepStudy){const chapter=chapters.find(x=>x.slug===block.slug);if(!chapter)continue;for(const s of block.sections){if(!chapter.sections.some(x=>x.title===s.title))chapter.sections.push(s)}}
 renderNav();render();
