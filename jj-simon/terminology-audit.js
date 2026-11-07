@@ -73,6 +73,7 @@ function jjTermsRenderResults(){
    const terms=subcategories.get(sub).slice().sort((a,b)=>a.term.localeCompare(b.term));
    const subgroup=jjTermEl('details','jj-term-subgroup');
    const key=category+'|'+sub;
+   subgroup.dataset.key=key;
    subgroup.open=hasFilter||jjTermsOpenSubcategories.has(key);
    const subheading=jjTermEl('summary','jj-term-subgroup-heading');
    subheading.append(jjTermEl('strong','',sub),jjTermEl('span','jj-term-group-count',terms.length+' terms'));
@@ -112,6 +113,7 @@ function jjTermsRenderResults(){
    }
    subgroup.append(cards);
    subgroup.addEventListener('toggle',()=>{
+    if(hasFilter)return;
     if(subgroup.open)jjTermsOpenSubcategories.add(key);
     else jjTermsOpenSubcategories.delete(key);
    });
@@ -119,6 +121,7 @@ function jjTermsRenderResults(){
   }
   group.append(contents);
   group.addEventListener('toggle',()=>{
+   if(hasFilter)return;
    if(group.open)jjTermsOpenCategories.add(category);
    else jjTermsOpenCategories.delete(category);
   });
@@ -155,7 +158,11 @@ function jjTermsMount(){
  const checklabel=jjTermEl('label','jj-terms-check');const check=jjTermEl('input');check.type='checkbox';check.checked=jjTermsState.onlyUnresolved;check.onchange=()=>{jjTermsState.onlyUnresolved=check.checked;jjTermsRenderResults()};checklabel.append(check,jjTermEl('span','','Needs external verification / conflict'));row.append(checklabel);
  const expand=jjTermEl('button','','Expand groups');expand.type='button';
  expand.onclick=()=>{
-  root.querySelectorAll('.jj-term-group,.jj-term-subgroup').forEach(panel=>{panel.open=true});
+  root.querySelectorAll('.jj-term-group,.jj-term-subgroup').forEach(panel=>{
+   panel.open=true;
+   if(panel.classList.contains('jj-term-group'))jjTermsOpenCategories.add(panel.dataset.category);
+   else jjTermsOpenSubcategories.add(panel.dataset.key);
+  });
  };
  row.append(expand);
  const collapse=jjTermEl('button','','Collapse groups');collapse.type='button';
