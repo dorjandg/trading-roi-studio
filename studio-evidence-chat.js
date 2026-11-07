@@ -1,11 +1,11 @@
 /* 4Ds Studio Evidence Chat — local, explainable, no third-party AI requests or credential exposure. */
 (()=>{'use strict';
-const host=document.querySelector('#gptResearchPanel .numbered-content');if(!host)return;
+if(document.getElementById('studioFloatingAI'))return;
 const style=document.createElement('style');style.textContent=`
-.studio-ai{border:1px solid #34485c;border-radius:12px;background:#101b2a;margin:10px 0 14px;padding:11px;font-size:12px}
+.studio-ai{position:fixed;z-index:1001;right:14px;bottom:62px;width:min(410px,calc(100vw - 20px));max-height:min(650px,calc(100dvh - 92px));overflow:hidden;display:flex;flex-direction:column;border:1px solid #34485c;border-radius:13px;background:#101b2a;box-shadow:0 10px 40px #0009;padding:11px;font-size:12px;color:#ecf5ff;line-height:1.45}.studio-ai[hidden]{display:none!important}
 .studio-ai *{box-sizing:border-box}.studio-ai-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .studio-ai-head strong{font-size:13px}.studio-ai-note{color:#99adc3;font-size:11px;margin:5px 0 8px}
-.studio-ai-log{height:220px;max-height:40vh;overflow-y:auto;overscroll-behavior:contain;border:1px solid #293b50;border-radius:9px;background:#0b1421;padding:8px;display:flex;flex-direction:column;gap:8px}
+.studio-ai-log{height:310px;min-height:95px;max-height:40dvh;overflow-y:auto;overscroll-behavior:contain;border:1px solid #293b50;border-radius:9px;background:#0b1421;padding:8px;display:flex;flex-direction:column;gap:8px}
 .studio-ai-msg{max-width:92%;padding:8px 10px;border-radius:10px;background:#1b2b41;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}
 .studio-ai-msg.user{align-self:flex-end;background:#17463d}.studio-ai-msg.assistant{align-self:flex-start}
 .studio-ai-meta{display:block;color:#abc0d2;font-size:10px;margin-top:5px}.studio-ai-actions{display:flex;gap:5px;margin-top:5px;flex-wrap:wrap}
@@ -13,22 +13,26 @@ const style=document.createElement('style');style.textContent=`
 .studio-ai button:hover{border-color:#7ea4c5}.studio-ai .studio-ai-send{background:#276f59}
 .studio-ai-suggestions{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0}
 .studio-ai-input{display:flex;gap:6px;margin-top:8px}.studio-ai-input textarea{flex:1;min-width:0;resize:vertical;min-height:42px;max-height:100px;background:#0d1827;border:1px solid #3b536c;border-radius:8px;padding:8px;color:#edf5fc;font:inherit}
-.studio-ai-open{position:fixed;right:14px;bottom:14px;z-index:80;border:1px solid #479a83;border-radius:22px;background:#163c38;color:#e7fff6;padding:9px 14px;font:700 12px system-ui;box-shadow:0 6px 22px #0008;cursor:pointer}.studio-ai-open:hover{background:#24574f}.studio-ai-saved{margin-top:8px}.studio-ai-saved summary{cursor:pointer}.studio-ai-saved p{margin:4px 0;color:#afc2d2}
-@media(max-width:600px){.studio-ai{padding:7px}.studio-ai-log{height:180px}.studio-ai-msg{max-width:98%;font-size:11px}.studio-ai button{font-size:10px;padding:4px 6px}.studio-ai-input textarea{font-size:12px}}
+.studio-ai-open{position:fixed;right:14px;bottom:14px;z-index:1002;border:1px solid #479a83;border-radius:22px;background:#163c38;color:#e7fff6;padding:9px 14px;font:700 12px system-ui;box-shadow:0 6px 22px #0008;cursor:pointer}.studio-ai-open:hover{background:#24574f}.studio-ai-saved{margin-top:8px;overflow-y:auto;max-height:100px}.studio-ai-saved summary{cursor:pointer}.studio-ai-saved p{margin:4px 0;color:#afc2d2}
+@media(max-width:600px){.studio-ai{right:6px;bottom:58px;width:calc(100vw - 12px);padding:7px;max-height:calc(100dvh - 74px)}.studio-ai-log{height:180px}.studio-ai-msg{max-width:98%;font-size:11px}.studio-ai button{font-size:10px;padding:4px 6px}.studio-ai-input textarea{font-size:12px}}
 `;document.head.appendChild(style);
-const panel=document.createElement('section');panel.className='studio-ai';panel.setAttribute('aria-label','Trading Studio evidence assistant');
-panel.innerHTML='<div class="studio-ai-head"><strong>Studio AI · Website assistant</strong><button type="button" data-act="clear">Clear chat</button></div><p class="studio-ai-note">Free local assistant · Explains website parameters, displayed results and saved simulation history. Answers are limited to supported website knowledge. No trading settings changed.</p><div class="studio-ai-log" role="log" aria-live="polite"></div><div class="studio-ai-suggestions"></div><div class="studio-ai-input"><textarea maxlength="900" aria-label="Question about trading simulation" placeholder="Ask about a section, parameter or simulation result…"></textarea><button class="studio-ai-send" type="button" data-act="ask">Ask</button></div><details class="studio-ai-saved"><summary>Saved answers &amp; unanswered questions</summary><div data-saved></div><div data-unanswered></div></details>';
-host.insertBefore(panel,host.firstChild);
+const panel=document.createElement('section');panel.id='studioFloatingAI';panel.className='studio-ai';panel.setAttribute('aria-label','Trading Studio evidence assistant');
+panel.innerHTML='<div class="studio-ai-head"><strong>Studio AI · Website assistant</strong><button type="button" data-act="close">× Close</button><button type="button" data-act="clear">Clear chat</button></div><p class="studio-ai-note">Free local assistant · Explains website parameters, displayed results and saved simulation history. Answers are limited to supported website knowledge. No trading settings changed.</p><div class="studio-ai-log" role="log" aria-live="polite"></div><div class="studio-ai-suggestions"></div><div class="studio-ai-input"><textarea maxlength="900" aria-label="Question about trading simulation" placeholder="Ask about a section, parameter or simulation result…"></textarea><button class="studio-ai-send" type="button" data-act="ask">Ask</button></div><details class="studio-ai-saved"><summary>Saved answers &amp; unanswered questions</summary><div data-saved></div><div data-unanswered></div></details>';
+document.body.appendChild(panel);
+panel.hidden=true;
 
 const quick=document.createElement('button');
 quick.type='button';quick.className='studio-ai-open';quick.textContent='Ask Studio AI';
 quick.setAttribute('aria-label','Open Trading Studio assistant');
-quick.addEventListener('click',()=>{
- const outer=document.getElementById('gptResearchPanel');
- if(outer)outer.open=true;
- panel.scrollIntoView({behavior:'smooth',block:'center'});
- setTimeout(()=>el('textarea')?.focus({preventScroll:true}),180);
-});
+function toggleAI(force){
+ const opening=typeof force==='boolean'?force:panel.hidden;
+ panel.hidden=!opening;
+ quick.setAttribute('aria-expanded',String(opening));
+ quick.textContent=opening?'Close Studio AI':'Ask Studio AI';
+ if(opening){ if(key!==storage())load(); el('textarea')?.focus({preventScroll:true});}
+}
+quick.addEventListener('click',()=>toggleAI());
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!panel.hidden)toggleAI(false)});
 document.body.appendChild(quick);
 
 const el=s=>panel.querySelector(s), storage=()=>{let u='dori';try{u=localStorage.getItem('4ds:active-user:v1')||'dori'}catch{}return '4ds:v1:'+u+':studio-evidence-chat:v1'};
@@ -74,9 +78,18 @@ function reportAnswer(q){
  answer+='\nSource: currently displayed Section 5 Monte Carlo report; averages and modeled assumptions, not realized trading payouts. Changing settings after running can make these numbers stale—rerun the simulation to update.';
  return [answer,'Displayed report · High for copied values; Medium for interpretation',false];
 }
+function pageContext(question){
+ const q=question.toLowerCase();
+ if(!/(this (page|tab|section)|current (page|tab)|what (am i|is this)|explain (overview|firms|labs|presets|profile|help)|where am i)/.test(q))return null;
+ const active=document.querySelector('main .page.active')||document.querySelector('.page.active');
+ const title=active?.querySelector('h1,h2')?.textContent?.trim()||document.querySelector('main h1')?.textContent?.trim()||document.title;
+ const tab=active?.id?.replace(/^page-/,'')||'standalone page';
+ return ['Current Trading Studio view: '+title+' ('+tab+'). This assistant explains visible website inputs and its documented calculations. In Portfolio Simulator it can also explain displayed Monte Carlo results and saved simulation history. If the requested metric is not exposed here, I will not invent a value.','Current website view · High',false];
+}
 const suggestions=['Analyze saved simulations','Suggest parameter tests','Explain my results','Why is ROI low?','What does win rate mean?','Explain Section 7 journey','How does account capacity work?','Explain trading-day horizon'];
 function reply(question){
  const q=question.toLowerCase(),wr=n('winRate'),budget=n('budget'),goal=n('netGoal'),days=n('days'),trials=n('trials');
+ const currentPage=pageContext(question);if(currentPage)return currentPage;
  const historical=window.StudioHistoryAdvisor?.answer(question);if(historical)return historical;
  const guideQuery=/^(how|what|where|which|define|meaning)/.test(q)||/explain (section|parameter|setting|input)|how .* work/.test(q);
  if(guideQuery){const guide=window.StudioKnowledge?.answer(question);if(guide)return guide;}
@@ -116,7 +129,7 @@ function render(){
  h=document.createElement('p');h.textContent='Unanswered: '+data.unanswered.length;un.append(h);data.unanswered.slice(-15).reverse().forEach(x=>{const p=document.createElement('p');p.textContent=x;un.append(p)});
 }
 function ask(t){let question=String(t||'').trim().slice(0,900);if(!question)return;if(key!==storage())load();const [answer,meta,missing]=reply(question);data.messages.push({role:'user',text:question},{role:'assistant',text:answer,meta});if(missing&&!data.unanswered.includes(question))data.unanswered.push(question);data.messages=data.messages.slice(-100);persist();render();el('textarea').value=''}
-panel.addEventListener('click',e=>{let b=e.target.closest('button');if(!b)return;if(b.dataset.question)ask(b.dataset.question);else if(b.dataset.act==='ask')ask(el('textarea').value);else if(b.dataset.act==='clear'){data.messages=[];persist();render()}else if(b.dataset.save!==undefined){let i=Number(b.dataset.save),m=data.messages[i];if(m?.role==='assistant'){let q=data.messages[i-1]?.text||'Question';let v=q+' — '+m.text;if(!data.saved.includes(v))data.saved.push(v);data.saved=data.saved.slice(-50);persist();render()}}});
+panel.addEventListener('click',e=>{let b=e.target.closest('button');if(!b)return;if(b.dataset.question)ask(b.dataset.question);else if(b.dataset.act==='ask')ask(el('textarea').value);else if(b.dataset.act==='close'){toggleAI(false)}else if(b.dataset.act==='clear'){data.messages=[];persist();render()}else if(b.dataset.save!==undefined){let i=Number(b.dataset.save),m=data.messages[i];if(m?.role==='assistant'){let q=data.messages[i-1]?.text||'Question';let v=q+' — '+m.text;if(!data.saved.includes(v))data.saved.push(v);data.saved=data.saved.slice(-50);persist();render()}}});
 el('textarea').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();ask(el('textarea').value)}});
 window.addEventListener('storage',e=>{if(e.key==='4ds:active-user:v1'||e.key===key)load()});window.addEventListener('focus',()=>{if(key!==storage())load()});
 load();
