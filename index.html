@@ -782,7 +782,7 @@ html[data-theme="light"] .recovery-details .caption{color:#53677c}
    <input id="customSymbolInput" type="text" placeholder="e.g. US100, GC, MNQ" maxlength="40"></div>
  </div>
  <div class="notice" id="phaseStructureNote" style="margin-top:16px">Trading stages depend on the selected program.</div>
- <div class="notice" id="firmsImportedModel" style="margin-top:10px" hidden></div><div class="actionrow"><a class="btn primary" href="portfolio-simulator.html">Simulate this plan across a budget</a><button type="button" class="btn small" id="smartAllStages">Find Smart Setups · All Phases</button><button type="button" class="btn small" id="scanRiskAllStages">Find All Risk Routes · All Phases</button><span class="caption">Portfolio simulation uses the existing saved strategy. R3/R4 route exploration is separate.</span></div>
+ <div class="notice" id="firmsImportedModel" style="margin-top:10px" hidden></div><div class="actionrow"><a class="btn primary firms-to-sim-link" href="portfolio-simulator.html">Simulate this plan across a budget</a><button type="button" class="btn small" id="smartAllStages">Find Smart Setups · All Phases</button><button type="button" class="btn small" id="scanRiskAllStages">Find All Risk Routes · All Phases</button><span class="caption">Portfolio simulation uses the existing saved strategy. R3/R4 route exploration is separate.</span></div>
  <div class="notice" style="margin-top:8px;padding:8px 10px;font-size:11px"><strong>Route planning:</strong> RR + R1–R4 (0 = off) · What-if paths only; not trade probabilities or orders.</div>
  </details>
 <section class="risk-phase-group" style="border:1px solid var(--border);border-radius:13px;overflow:hidden;margin-top:16px"><div style="padding:15px 17px;background:var(--panel2)"><h3 style="margin:0 0 5px;font-size:16px">01 · Phase 1 — Evaluation</h3><p class="caption" style="margin:0">RR + R1–R4 · 0 disables a tier · Tap to view options.</p></div><div style="padding:0 16px 16px"><div style="border-top:1px solid var(--border);margin-top:12px;padding-top:14px"><strong style="font-size:14px">Ways to reach this stage target</strong><div class="caption" data-phase-meta="p1" style="margin:12px 0 6px">Phase 1 target and minimum trading days are linked to the selected firm’s rules.</div><div class="recovery-planner" data-recovery-stage="p1"></div><details class="stage-extra-details" data-firms-static-fold="p1-schedule"><summary>Advanced: trading schedule</summary><div id="phase1Fields" class="formgrid" style="margin-top:12px"></div></details><details class="legacy-risk-details" data-firms-static-fold="p1-old-strategy"><summary>Advanced: older two-strategy simulation inputs</summary><p class="caption">Retained for the separate probability estimator. R1/R2 and RR sync with the older estimator; R3/R4 and custom routes are planner-only.</p><div class="tablewrap"><table class="cash-risk-table" aria-label="01 · Phase 1 — Evaluation stop losses in US dollars"><thead><tr><th>Order / risk tier</th><th class="num">Stop loss (USD)</th><th class="num">RR</th><th class="num">Winning profit (USD)</th></tr></thead><tbody><tr><td><strong>Strategy 1 · First trade</strong><div class="caption" style="margin-top:3px">Risk per trade before the loss threshold</div></td><td><input type="number" inputmode="decimal" min="0" step="1" aria-label="Strategy 1 · First trade stop loss in USD" data-risk-field="p1Base"></td><td><input class="tier-rr" type="number" inputmode="decimal" min="0.1" max="100" step="0.1" aria-label="p1Base risk reward ratio" data-risk-rr="p1Base" title="RR for this order tier; change to update winning profit and stage simulation"></td><td class="num" data-risk-profit="p1Base">—</td></tr><tr><td><strong>Strategy 2 · After Strategy 1 loses</strong><div class="caption" style="margin-top:3px">Only after Strategy 1 loses in the same trading day. Not an automatic order.</div></td><td><input type="number" inputmode="decimal" min="0" step="1" aria-label="Strategy 2 · After Strategy 1 loses stop loss in USD" data-risk-field="p1Recovery"></td><td><input class="tier-rr" type="number" inputmode="decimal" min="0.1" max="100" step="0.1" aria-label="p1Recovery risk reward ratio" data-risk-rr="p1Recovery" title="RR for this order tier; change to update winning profit and stage simulation"></td><td class="num" data-risk-profit="p1Recovery">—</td></tr></tbody></table></div></details></div></div></section>
@@ -2103,12 +2103,37 @@ function recoveryStoreKey(stage){
  const owner=typeof activeUser==='string'?activeUser:'local';
  return '4ds:recovery-planner:v2:'+owner+':'+String(activeProgramKey||'none')+':'+stage;
 }
+// Browser-only legacy snapshots are mirrored into the per-user cloud namespace.
+const RECOVERY_CLOUD_FIELDS=['levels','rrByTier','policyMode','optionSequences','winCap','targetOverride',
+ 'sweepRemainder','sweepThreshold','appliedSmartSetup','appliedFtmoBuffer','ftmoBuffer',
+ 'fundedStarterRisk','fundedMaxTradeRisk','fundedRecoveryLevels','dynamicMaxRisk'];
+function recoveryCloudKey(stage){return userStoreKey('studio-stage-risk-v1:'+String(activeProgramKey||'none')+':'+stage);}
+function exportRecoveryRisk(source){
+ const risk={};
+ if(!source||typeof source!=='object'||Array.isArray(source))return risk;
+ for(const field of RECOVERY_CLOUD_FIELDS)
+  if(Object.prototype.hasOwnProperty.call(source,field))risk[field]=source[field];
+ return risk;
+}
+function mirrorRecoveryRisk(stage,source){
+ if(!/^(ftmo2|holaPrime|holaPro|topstep|instant):[1-9]\d{3,6}$/.test(String(activeProgramKey||'')))return;
+ const key=recoveryCloudKey(stage),value=JSON.stringify({v:1,risk:exportRecoveryRisk(source)});
+ if(localStorage.getItem(key)===value)return;
+ localStorage.setItem(key,value);window.fourDsQueueCloudSave?.();
+}
 function recoverySnapshot(stage){
  const owner=typeof activeUser==='string'?activeUser:'local';
  const key=owner+':'+String(activeProgramKey||'none')+':'+stage;
  if(!recoverySnapshots[key]){
-  let saved={};
-  try{saved=JSON.parse(localStorage.getItem(recoveryStoreKey(stage))||'{}')||{}}catch(e){}
+  let saved={},raw=null,mirror=null;
+  try{
+   raw=localStorage.getItem(recoveryStoreKey(stage));
+   mirror=JSON.parse(localStorage.getItem(recoveryCloudKey(stage))||'null');
+   if(raw)saved=JSON.parse(raw)||{};
+   else if(mirror?.v===1&&mirror.risk&&typeof mirror.risk==='object')saved=mirror.risk;
+  }catch(e){saved={};}
+  // Existing local plans are migrated once; no saved amounts are altered.
+  if(raw&&!mirror&&Object.keys(exportRecoveryRisk(saved)).length)try{mirrorRecoveryRisk(stage,saved)}catch(e){}
   recoverySnapshots[key]={
    pnl:0,days:0,open:true,settingsOpen:false,openOptionPath:'',depth:6,filter:'all',winCap:2,page:1,pageSize:8,sortBy:'fast',
    ...saved,
@@ -2122,7 +2147,11 @@ function recoverySnapshot(stage){
  return recoverySnapshots[key];
 }
 function persistRecoverySnapshot(stage){
- try{localStorage.setItem(recoveryStoreKey(stage),JSON.stringify(recoverySnapshot(stage)))}catch(e){}
+ try{
+  const snap=recoverySnapshot(stage);
+  localStorage.setItem(recoveryStoreKey(stage),JSON.stringify(snap));
+  mirrorRecoveryRisk(stage,snap);
+ }catch(e){console.warn('Stage planner settings could not be saved',e)}
 }
 function stageRecoverySetup(stage){
  const root=stage==='p1'?'p1':stage==='p2'?'p2':'funded';
@@ -2779,6 +2808,11 @@ function renderRecoveryPlanners(){
  if(quickLink){
   const selected=String(activeProgramKey||'');
   quickLink.href=/^(ftmo2|holaPrime|holaPro|topstep):[1-9]\d{3,6}$/.test(selected)?
+   'portfolio-simulator.html?account='+encodeURIComponent(selected):'portfolio-simulator.html';
+ }
+ for(const link of document.querySelectorAll('.firms-to-sim-link')){
+  const selected=String(activeProgramKey||'');
+  link.href=/^(ftmo2|holaPrime|holaPro|topstep):[1-9]\d{3,6}$/.test(selected)?
    'portfolio-simulator.html?account='+encodeURIComponent(selected):'portfolio-simulator.html';
  }
  const imported=$('firmsImportedModel');
