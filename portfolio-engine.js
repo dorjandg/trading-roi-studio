@@ -174,7 +174,7 @@ function validatePlan(p){
     errors.push(stage+': FTMO buffer sizing module/parameters missing.');
    if(c.rr<=0)errors.push(stage+': positive RR required for buffer policy.');
   }
-  if(c.policy.mode==='smart-sequence'){
+  else if(c.policy.mode==='smart-sequence'){
    if(c.rr<=0||c.r1<=0||c.r2<=0||c.r3<=0||c.r4<0||
       ![c.r1,c.r2,c.r3,c.r4].every(Number.isFinite))
     errors.push(stage+': Smart Setup requires R1, R2, R3 > 0 and R4 >= 0.');
