@@ -102,6 +102,7 @@ function sensitivity(){
  const current=api?.getCurrent?.();
  if(!current?.visible||!current?.inputs||!engine?.simulatePortfolio)
   return {error:'Run or restore a full simulation first. Tests require an active report and its exact current plan.'};
+ if(current.stale)return {error:'The displayed result is stale: rerun Full Simulation with current parameters before testing alternatives.'};
  const cases=api.getTestCases?.()||[];
  if(!cases.length)return {error:'No active account plan available.'};
  const output=[];
@@ -125,9 +126,13 @@ function sensitivity(){
    output.push({firm:p.firm+' '+p.size,test:v.name,parameter:v.parameter,from:v.before,to:v.after,
     baseNet:num(baseline.avg.net),net:num(test.avg.net),basePaid:num(baseline.avg.paid),paid:num(test.avg.paid),
     baseSpent:num(baseline.avg.spent),spent:num(test.avg.spent),baseBlocked:num(baseline.avg.exhausted),blocked:num(test.avg.exhausted),
-    trials:50});
+    trials:50,baseRoi:num(baseline.roi),roi:num(test.roi),
+    deltaNet:(num(test.avg.net)||0)-(num(baseline.avg.net)||0),
+    deltaPaid:(num(test.avg.paid)||0)-(num(baseline.avg.paid)||0),
+    deltaBlocked:(num(test.avg.exhausted)||0)-(num(baseline.avg.exhausted)||0)});
   }
  }
+ output.sort((a,b)=>((b.deltaNet>0?1:0)+(b.deltaPaid>0?1:0)+(b.deltaBlocked<0?1:0))-((a.deltaNet>0?1:0)+(a.deltaPaid>0?1:0)+(a.deltaBlocked<0?1:0))||b.deltaNet-a.deltaNet);
  return {output};
 }
 function mount(){
@@ -142,8 +147,8 @@ function mount(){
    const x=sensitivity();const t=section.querySelector('[data-advisor-tests]');t.replaceChildren();
    if(x.error){t.textContent=x.error;return;}
    if(!x.output.length){t.textContent='No eligible test cases found in the current report.';return;}
-   const heading=document.createElement('p');heading.className='hint';heading.textContent='Controlled tests: 50 trials per scenario; same seed, saved strategy, model and starting budget. Figures are simulated, not guaranteed or statistically conclusive.';t.append(heading);
-   x.output.forEach(v=>{const p=document.createElement('p');p.textContent=v.firm+' · '+v.test+' ('+v.from+' → '+v.to+'): net '+usd(v.baseNet)+' → '+usd(v.net)+'; first-paid '+fixed(v.basePaid)+' → '+fixed(v.paid)+'; spend '+usd(v.baseSpent)+' → '+usd(v.spent)+'; risk-blocked '+fixed(v.baseBlocked)+' → '+fixed(v.blocked)+'.';t.append(p)});
+   const heading=document.createElement('p');heading.className='hint';heading.textContent='Ranked exploratory tests: 50 trials per scenario, fixed seed, unchanged risk policy and budget. Ranking favors net gain, paid-account improvement and fewer blocked accounts, but is NOT statistically reliable; confirm with larger independent trials.';t.append(heading);
+   x.output.forEach((v,i)=>{const p=document.createElement('p');p.textContent='#'+(i+1)+' '+v.firm+' · '+v.test+' ('+v.from+' → '+v.to+'): net '+usd(v.baseNet)+' → '+usd(v.net)+' ('+(v.deltaNet>=0?'+':'')+usd(v.deltaNet)+'); first-paid '+fixed(v.basePaid)+' → '+fixed(v.paid)+'; spend '+usd(v.baseSpent)+' → '+usd(v.spent)+'; risk-blocked '+fixed(v.baseBlocked)+' → '+fixed(v.blocked)+'.'+(v.deltaNet>0&&v.deltaPaid>=0&&v.deltaBlocked<=0?' Candidate for larger-trial confirmation.':' Mixed or worse result — not recommended without further checks.');t.append(p)});
    return;
   }
   if(!e.target.closest('[data-advisor-run]'))return;
