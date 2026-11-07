@@ -17,7 +17,7 @@ const style=document.createElement('style');style.textContent=`
 @media(max-width:600px){.studio-ai{padding:7px}.studio-ai-log{height:180px}.studio-ai-msg{max-width:98%;font-size:11px}.studio-ai button{font-size:10px;padding:4px 6px}.studio-ai-input textarea{font-size:12px}}
 `;document.head.appendChild(style);
 const panel=document.createElement('section');panel.className='studio-ai';panel.setAttribute('aria-label','Trading Studio evidence assistant');
-panel.innerHTML='<div class="studio-ai-head"><strong>Studio AI · Ask about your results</strong><button type="button" data-act="clear">Clear chat</button></div><p class="studio-ai-note">Trading Studio assistant · Explains Section 5 results, website inputs and model rules. No API fees. Not a generative AI service. Does not place trades or change settings.</p><div class="studio-ai-log" role="log" aria-live="polite"></div><div class="studio-ai-suggestions"></div><div class="studio-ai-input"><textarea maxlength="900" aria-label="Question about trading simulation" placeholder="Why is ROI low? What does win rate change?"></textarea><button class="studio-ai-send" type="button" data-act="ask">Ask</button></div><details class="studio-ai-saved"><summary>Saved answers &amp; unanswered questions</summary><div data-saved></div><div data-unanswered></div></details>';
+panel.innerHTML='<div class="studio-ai-head"><strong>Studio AI · Website assistant</strong><button type="button" data-act="clear">Clear chat</button></div><p class="studio-ai-note">Free local assistant · Explains this website, its parameters and displayed results. Answers are limited to supported website knowledge. No trading settings changed.</p><div class="studio-ai-log" role="log" aria-live="polite"></div><div class="studio-ai-suggestions"></div><div class="studio-ai-input"><textarea maxlength="900" aria-label="Question about trading simulation" placeholder="Ask about a section, parameter or simulation result…"></textarea><button class="studio-ai-send" type="button" data-act="ask">Ask</button></div><details class="studio-ai-saved"><summary>Saved answers &amp; unanswered questions</summary><div data-saved></div><div data-unanswered></div></details>';
 host.insertBefore(panel,host.firstChild);
 const el=s=>panel.querySelector(s), storage=()=>{let u='dori';try{u=localStorage.getItem('4ds:active-user:v1')||'dori'}catch{}return '4ds:v1:'+u+':studio-evidence-chat:v1'};
 const initial=()=>({messages:[],saved:[],unanswered:[]});
@@ -62,10 +62,11 @@ function reportAnswer(q){
  answer+='\nSource: currently displayed Section 5 Monte Carlo report; averages and modeled assumptions, not realized trading payouts. Changing settings after running can make these numbers stale—rerun the simulation to update.';
  return [answer,'Displayed report · High for copied values; Medium for interpretation',false];
 }
-const suggestions=['Explain my latest results','Why is my ROI low?','Explain win rate and risk','Check my target and budget','Why are funded accounts few?','Compare evaluation and funded','What information is missing?'];
+const suggestions=['Explain my results','Why is ROI low?','What does win rate mean?','Explain Section 7 journey','How does account capacity work?','Explain trading-day horizon'];
 function reply(question){
  const q=question.toLowerCase(),wr=n('winRate'),budget=n('budget'),goal=n('netGoal'),days=n('days'),trials=n('trials');
  const report=reportAnswer(q);if(report)return report;
+ const website=window.StudioKnowledge?.answer(question);if(website)return website;
  const s='Source: '+source()+'. Inputs are assumptions, not realized outcomes.';
  const context='Current inputs: '+(wr===null?'unknown':wr+'%')+' trade win rate, '+(days??'?')+' trading days, '+(trials??'?')+' trials, '+(budget===null?'unknown':money(budget))+' budget, '+(goal===null?'unknown':money(goal))+' net goal.';
  if(/^(?:hi|hello|hey)\b/.test(q))return ['Ask me about ROI, probabilities, funded-account funnel, cash costs or risk. I can explain the model and check arithmetic.','Model explanation · High',false];
