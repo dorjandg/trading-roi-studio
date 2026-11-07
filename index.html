@@ -686,7 +686,7 @@ html[data-theme="light"] .recovery-details .caption{color:#53677c}
  </select>
  <button type="button" class="btn primary" id="openFirmsFindRoutes" title="Open the selected stage and calculate all risk routes using its current R1–R4 values">Find Target Routes</button>
  <button type="button" class="btn small" id="openFirmsSmartPlanner" title="Find faster and lower-risk R1–R4 setups for the selected phase">Optimize R1–R4</button>
- <a class="btn small" href="portfolio-simulator.html" title="Open the separate account progression simulator">Portfolio Simulator</a>
+ <a class="btn small" id="firmPortfolioQuickLink" href="portfolio-simulator.html" title="Open Portfolio Simulator with the selected Firms account included">Portfolio Simulator</a>
  <button type="button" class="btn small quiet" id="openFirmsStrategySimulator" title="Open the older two-risk strategy simulator inside Firms">2-Risk Simulator</button>
 </div><div class="panel" style="padding:0;overflow:hidden"><iframe id="firmsFrame" title="Prop firm account selector and rules" src="about:blank" data-src="rules.html?embedded=1&v=compact-account-simulator-20261107" loading="eager" style="display:block;width:100%;height:1px;min-height:0;border:0;background:#080d16;overflow:hidden"></iframe></div><div class="notice" id="firmStrategyStatus" style="margin:16px 0">Select a firm, program and account size above to load this account's saved trading parameters.</div>
 <div id="firmTradingWorkspace">
@@ -2598,6 +2598,12 @@ document.addEventListener('click',async event=>{
 });
 
 function renderRecoveryPlanners(){
+ const quickLink=document.getElementById('firmPortfolioQuickLink');
+ if(quickLink){
+  const selected=String(activeProgramKey||'');
+  quickLink.href=/^(ftmo2|holaPrime|holaPro|topstep):[1-9]\d{3,6}$/.test(selected)?
+   'portfolio-simulator.html?account='+encodeURIComponent(selected):'portfolio-simulator.html';
+ }
  const imported=$('firmsImportedModel');
  if(imported){
   const saved=activeProgramKey?storedProfile(activeProgramKey)?.latestImportedModel:null;
