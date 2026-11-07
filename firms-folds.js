@@ -3,7 +3,7 @@
 (function(){
  'use strict';
  const defaults={health:false,stages:true,p1:false,p2:false,funded:false,payout:false,probability:false,results:false};
- const folds=new Map();
+ const folds=new Map(),staticFolds=new Map();
  const getOwner=()=>{
   try{return ['doen','dori','dona','dion'].includes(localStorage.getItem('4ds:active-user:v1'))?
    localStorage.getItem('4ds:active-user:v1'):'dori'}catch(_){return 'dori'}
@@ -15,8 +15,9 @@
   catch(_){return {}}
  }
  function persist(){
-  const data={};
+  const data={...load()};
   for(const [key,fold] of folds)data[key]=!fold.node.classList.contains('is-collapsed');
+  for(const [key,node] of staticFolds)data['detail:'+key]=node.open;
   try{localStorage.setItem(storeKey(),JSON.stringify(data))}catch(_){}
  }
  function setFold(key,open,save=true){
@@ -109,13 +110,22 @@
    if(!header||(key!=='p1'&&key!=='p2'&&key!=='funded'&&!header.classList.contains('panel-header')))continue;
    addFold(key,node,header,typeof saved[key]==='boolean'?saved[key]:defaults[key]);
   }
+  for(const details of page.querySelectorAll('details[data-firms-static-fold]')){
+   const key=details.dataset.firmsStaticFold;
+   if(!key||staticFolds.has(key))continue;
+   staticFolds.set(key,details);
+   details.open=saved['detail:'+key]===true;
+   details.addEventListener('toggle',()=>persist());
+  }
   refresh();
   document.getElementById('firmsShowAll')?.addEventListener('click',()=>{
    for(const key of folds.keys())setFold(key,true,false);
+   for(const details of staticFolds.values())details.open=true;
    persist();
   });
   document.getElementById('firmsHideAll')?.addEventListener('click',()=>{
    for(const key of folds.keys())setFold(key,false,false);
+   for(const details of staticFolds.values())details.open=false;
    persist();
   });
   page.addEventListener('click',event=>{
