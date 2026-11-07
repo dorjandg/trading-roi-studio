@@ -17,7 +17,7 @@ const style=document.createElement('style');style.textContent=`
 @media(max-width:600px){.studio-ai{padding:7px}.studio-ai-log{height:180px}.studio-ai-msg{max-width:98%;font-size:11px}.studio-ai button{font-size:10px;padding:4px 6px}.studio-ai-input textarea{font-size:12px}}
 `;document.head.appendChild(style);
 const panel=document.createElement('section');panel.className='studio-ai';panel.setAttribute('aria-label','Trading Studio evidence assistant');
-panel.innerHTML='<div class="studio-ai-head"><strong>Studio AI · Website assistant</strong><button type="button" data-act="clear">Clear chat</button></div><p class="studio-ai-note">Free local assistant · Explains this website, its parameters and displayed results. Answers are limited to supported website knowledge. No trading settings changed.</p><div class="studio-ai-log" role="log" aria-live="polite"></div><div class="studio-ai-suggestions"></div><div class="studio-ai-input"><textarea maxlength="900" aria-label="Question about trading simulation" placeholder="Ask about a section, parameter or simulation result…"></textarea><button class="studio-ai-send" type="button" data-act="ask">Ask</button></div><details class="studio-ai-saved"><summary>Saved answers &amp; unanswered questions</summary><div data-saved></div><div data-unanswered></div></details>';
+panel.innerHTML='<div class="studio-ai-head"><strong>Studio AI · Website assistant</strong><button type="button" data-act="clear">Clear chat</button></div><p class="studio-ai-note">Free local assistant · Explains website parameters, displayed results and saved simulation history. Answers are limited to supported website knowledge. No trading settings changed.</p><div class="studio-ai-log" role="log" aria-live="polite"></div><div class="studio-ai-suggestions"></div><div class="studio-ai-input"><textarea maxlength="900" aria-label="Question about trading simulation" placeholder="Ask about a section, parameter or simulation result…"></textarea><button class="studio-ai-send" type="button" data-act="ask">Ask</button></div><details class="studio-ai-saved"><summary>Saved answers &amp; unanswered questions</summary><div data-saved></div><div data-unanswered></div></details>';
 host.insertBefore(panel,host.firstChild);
 
 const quick=document.createElement('button');
@@ -74,9 +74,10 @@ function reportAnswer(q){
  answer+='\nSource: currently displayed Section 5 Monte Carlo report; averages and modeled assumptions, not realized trading payouts. Changing settings after running can make these numbers stale—rerun the simulation to update.';
  return [answer,'Displayed report · High for copied values; Medium for interpretation',false];
 }
-const suggestions=['Explain my results','Why is ROI low?','What does win rate mean?','Explain Section 7 journey','How does account capacity work?','Explain trading-day horizon'];
+const suggestions=['Analyze saved simulations','Suggest parameter tests','Explain my results','Why is ROI low?','What does win rate mean?','Explain Section 7 journey','How does account capacity work?','Explain trading-day horizon'];
 function reply(question){
  const q=question.toLowerCase(),wr=n('winRate'),budget=n('budget'),goal=n('netGoal'),days=n('days'),trials=n('trials');
+ const historical=window.StudioHistoryAdvisor?.answer(question);if(historical)return historical;
  const guideQuery=/^(how|what|where|which|define|meaning)/.test(q)||/explain (section|parameter|setting|input)|how .* work/.test(q);
  if(guideQuery){const guide=window.StudioKnowledge?.answer(question);if(guide)return guide;}
  const report=reportAnswer(q);if(report)return report;
