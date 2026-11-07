@@ -115,9 +115,15 @@
     const remove=el('button','','Remove');remove.type='button';remove.onclick=()=>{study.queue=study.queue.filter(x=>x!==q);saveStudy();drawStudy()};
     row.append(revisit,remove);studyBody.append(row);
    }
-   studyBody.append(el('small','','Saved locally on this device. The queue is not sent to an external research service.'));
+   studyBody.append(el('small','','Saved locally. When the Academy private review opt-in is enabled and its endpoint is configured, questions are submitted through the existing verified research queue.'));
   };
-  const queueQuestion=(question,reason)=>{if(!question||study.queue.some(x=>x.question===question))return;study.queue.push({question,reason});study.queue=study.queue.slice(-100);saveStudy();drawStudy()};
+  const queueQuestion=(question,reason)=>{
+   if(!question)return;
+   if(!study.queue.some(x=>x.question===question)){study.queue.push({question,reason});study.queue=study.queue.slice(-100);saveStudy();drawStudy()}
+   // Reuse the Academy's existing opt-in, receipt-verified private research queue.
+   // jjQueueAdd itself checks consent and whether a private endpoint is configured.
+   if(typeof jjQueueAdd==='function')jjQueueAdd(question,reason,0);
+  };
   const archive=el('details','jj-ai-archive');
   const archiveTitle=el('summary','','Archive search · indexed excerpts');
   const archiveResults=el('div','jj-ai-archive-results');
