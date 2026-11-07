@@ -211,7 +211,7 @@ html[data-theme="light"] .recovery-direct{background:#f0faf6;border-color:#8bcdb
 .scenario-advisor{margin-top:10px;padding:10px;border:1px solid var(--border,#526071);border-radius:9px;display:grid;gap:8px}.scenario-advisor-item{padding:7px 9px;border-left:3px solid #7790a5;background:rgba(127,127,127,.06);border-radius:4px}.scenario-advisor-critical{border-left-color:#cc6161}.scenario-advisor-warning{border-left-color:#d2a64b}.scenario-advisor-good{border-left-color:#4aaf83}.scenario-advisor-item p{margin:3px 0;font-size:12px;line-height:1.4}.scenario-advisor small{opacity:.75;font-size:11px}
 </style>
 <script>window.FOUR_DS_CLOUD_ENDPOINT = "https://script.google.com/macros/s/AKfycbyZW792ZLBPxusQwthCJr0bVdZwCjXyeNaklq4Dk-BuSQ8P9gdg2zdTiWFKEmYuy5sY9Q/exec";</script>
-<script src="cloud-bootstrap.js?v=4ds-auto-first-20261104-a"></script><script src="risk-route-explorer.js?v=20261107-all-routes-v1"></script>
+<script src="cloud-bootstrap.js?v=4ds-auto-first-20261104-a"></script><script src="risk-route-explorer.js?v=20261107-r4-filter-sort-v2"></script>
 <script>window.FOUR_DS_BOOTSTRAP = window.FOUR_DS_BOOTSTRAP || Promise.resolve('bootstrap-script-unavailable');</script>
 <style>.overview-account-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}@media(max-width:720px){.overview-account-grid{grid-template-columns:1fr}}</style><style>.overview-summary-strip{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:14px 18px;border:1px solid var(--border);border-radius:14px;background:var(--panel2);margin-bottom:18px;flex-wrap:wrap}.overview-summary-strip>div:first-child{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.overview-summary-strip strong{font-size:28px;color:var(--green)}.overview-summary-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}@media(max-width:720px){.overview-summary-strip{align-items:flex-start}.overview-summary-strip>div:first-child{gap:8px}}</style><style>.overview-investment-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;align-items:end}.overview-investment-grid strong{font-size:21px;line-height:42px}.overview-investment-grid .field{min-width:0}@media(max-width:850px){.overview-investment-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:520px){.overview-investment-grid{grid-template-columns:1fr}}</style><style id="studio-theme">
 html[data-theme="light"]{color-scheme:light;--bg:#f3f6fa;--panel:#ffffff;--panel2:#eef3f9;--panel3:#e7eef7;--border:#cbd7e5;--text:#172638;--muted:#53677e;--faint:#64768b;--green:#087c60;--blue:#215fbd;--amber:#925600;--red:#b42338}
@@ -2019,8 +2019,8 @@ function routeScanUI(stage){
   'data-route-scan="'+stage+'"'+(riskRouteRunning[stage]?' disabled':'')+'>Scan '+activeTiers+' routes</button>'+
   '<span class="caption" data-route-status="'+stage+'">'+scanStatus+'</span></div>'+
   (result?'<details class="risk-route-results"'+(snap.routeOpen?' open':'')+'>'+
-   '<summary>All risk routes · '+countText+'</summary>'+
-   '<div class="risk-route-filter"><label>Status <select data-route-filter>'+options(filters)+'</select></label>'+
+   '<summary>Routes · '+stats.target.toLocaleString()+' hit · '+stats.active.toLocaleString()+' active · '+stats.blocked.toLocaleString()+' blocked · '+stats.failed.toLocaleString()+' breached</summary>'+
+   '<p class="caption">'+countText+'</p><div class="risk-route-filter"><label>Status <select data-route-filter>'+options(filters)+'</select></label>'+
    '<label>Sort <select data-route-sort>'+options(sortValues)+'</select></label>'+
    '<button type="button" data-route-dir title="Change sort direction" aria-label="Change sort direction">'+
     (dir==='asc'?'↑ Asc':'↓ Desc')+'</button>'+
@@ -2261,7 +2261,7 @@ function renderRecoveryPlanners(){
     '<button type="button" data-recovery-page-nav="last" aria-label="Last page"'+(page===totalPages?' disabled':'')+'>»</button>'+
    '</div></nav>';
   const caution=staticFloor?'Static overall floor: modeled headroom = overall allowance + realized stage P/L. This is not live equity headroom.':'Trailing or stage-dependent overall floor: broker high-water mark and current equity are not available. The planner checks modeled daily room but cannot verify trailing overall headroom.';
-  host.innerHTML='<details class="recovery-details"><summary>'+setup.name+' · Options to reach the target</summary>'+
+  host.innerHTML='<details class="recovery-details"><summary>'+setup.name+' · '+recoveryMoney(setup.goal)+' target · '+setup.rr.toFixed(2)+'R · '+RECOVERY_LEVELS.filter(x=>levels[x]>=0.01).length+' active tiers</summary>'+
    '<h4>Risk &amp; reward · '+setup.name+'</h4><div class="recovery-fields">'+
    '<label>Reward / Risk (RR)<input data-option-rr type="number" min="0.1" max="100" step="0.1" value="'+setup.rr+'"></label>'+
    '<label>Risk sequence'+select('policyMode',[['saved','Saved option choices'],['streak','After-loss tiers'],['flat','Flat R1'],['after-win','Boost after WIN'],['protect-after-loss','Protect after LOSS']],snapshot.policyMode||'saved')+'</label>'+
