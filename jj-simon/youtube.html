@@ -50,6 +50,7 @@ for(const id of ['q','filter','sort'])$(id).addEventListener(id==='q'?'input':'c
 .jj-youtube-ai-window[hidden]{display:none}.jj-youtube-ai-window{position:fixed;right:14px;bottom:67px;z-index:1001;width:min(420px,calc(100vw - 16px));height:min(650px,calc(100dvh - 85px));display:flex;flex-direction:column;background:#0c121b;border:1px solid #28394b;border-radius:12px;overflow:hidden;box-shadow:0 15px 55px #0009}
 .jj-youtube-ai-header{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#151f2b;border-bottom:1px solid #28394b;font-size:12px}.jj-youtube-ai-header strong{flex:1}.jj-youtube-ai-header button,.jj-youtube-ai-header a{border:1px solid #28394b;background:transparent;color:#e9f2fa;border-radius:6px;padding:5px 8px;text-decoration:none;font-size:11px;cursor:pointer}
 .jj-youtube-ai-window iframe{width:100%;flex:1;min-height:0;border:0;background:#0c121b}
+@media(min-width:601px) and (max-width:1180px){.jj-youtube-ai-window{width:min(500px,calc(100vw - 24px));height:min(720px,calc(100dvh - 90px))}}
 @media(max-width:600px){.jj-youtube-ai-trigger{bottom:calc(10px + env(safe-area-inset-bottom));right:10px;padding:9px 12px}.jj-youtube-ai-window{right:5px;bottom:calc(50px + env(safe-area-inset-bottom));width:calc(100vw - 10px);height:calc(100dvh - 66px - env(safe-area-inset-bottom))}}
 </style>
 <script>
@@ -62,7 +63,7 @@ for(const id of ['q','filter','sort'])$(id).addEventListener(id==='q'?'input':'c
  const close=document.createElement('button');close.type='button';close.textContent='✕';close.setAttribute('aria-label','Close AI consultant');
  const iframe=document.createElement('iframe');iframe.title='JJ Academy AI conversation';iframe.loading='lazy';
  header.append(title,full,close);box.append(header,iframe);document.body.append(launch,box);
- const toggle=value=>{if(value&&window.matchMedia('(max-width:1024px), (pointer:coarse)').matches){location.assign('./?topic=academy-study-assistant&jj_ai_mobile=1&jj_context=youtube-library');return}box.hidden=!value;launch.setAttribute('aria-expanded',String(value));if(value){if(!iframe.src)iframe.src='./?topic=academy-study-assistant&jj_ai_float=1&jj_context=youtube-library';close.focus()}else launch.focus()};
+ const toggle=value=>{if(value&&window.matchMedia('(max-width:600px) and (pointer:coarse)').matches){location.assign('./?topic=academy-study-assistant&jj_ai_mobile=1&jj_context=youtube-library');return}box.hidden=!value;launch.setAttribute('aria-expanded',String(value));if(value){if(!iframe.src)iframe.src='./?topic=academy-study-assistant&jj_ai_float=1&jj_context=youtube-library';close.focus()}else launch.focus()};
  launch.onclick=()=>toggle(box.hidden);close.onclick=()=>toggle(false);
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!box.hidden)toggle(false)});
 })();
