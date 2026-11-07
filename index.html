@@ -190,6 +190,24 @@ html[data-theme="light"] .recovery-direct{background:#f0faf6;border-color:#8bcdb
 .recovery-table th,.recovery-table td{padding:5px 7px}
 @media(max-width:760px){.recovery-fields{grid-template-columns:repeat(4,minmax(0,1fr))}.recovery-fields>label:nth-child(2){grid-column:span 3}}
 @media(max-width:430px){.recovery-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.recovery-fields>label:nth-child(2){grid-column:auto}.recovery-details{padding:6px 7px}.recovery-option{padding:5px 6px}}
+
+.risk-route-filter{gap:5px;margin:7px 0;align-items:flex-end}
+.risk-route-filter label{color:var(--muted);font-size:10px;min-width:0}
+.risk-route-filter select{display:block;min-height:29px;padding:4px 6px;font-size:11px;margin-top:2px;max-width:180px}
+.risk-route-filter button{padding:4px 7px;min-height:29px;font-size:11px}
+.risk-route-table{min-width:665px;font-size:10px}
+.risk-route-table th,.risk-route-table td{padding:5px 6px}
+.risk-route-table th button{border:0;background:none;color:inherit;font:inherit;font-weight:750;cursor:pointer;white-space:nowrap;padding:2px}
+.risk-route-table th button:hover{color:var(--blue)}
+.risk-route-count{font-size:10px;color:var(--muted);margin:6px 0}
+.risk-route-nav{display:flex;justify-content:flex-end;align-items:center;gap:4px;margin:6px 0}
+.risk-route-nav button{background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:7px;min-width:29px;min-height:28px;padding:3px 7px}
+.risk-route-nav button:disabled{opacity:.3}
+.risk-route-nav span{font-size:11px;padding:0 7px}
+.risk-route-results summary{font-size:11px}
+.risk-route-panel{padding-top:6px;margin:7px 0}
+.risk-route-action .btn{padding:5px 8px;font-size:11px}
+@media(max-width:600px){.risk-route-filter{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.risk-route-filter label{min-width:0}.risk-route-filter select{width:100%;max-width:none}.risk-route-filter button{align-self:end}.risk-route-nav{justify-content:center}}
 .scenario-advisor{margin-top:10px;padding:10px;border:1px solid var(--border,#526071);border-radius:9px;display:grid;gap:8px}.scenario-advisor-item{padding:7px 9px;border-left:3px solid #7790a5;background:rgba(127,127,127,.06);border-radius:4px}.scenario-advisor-critical{border-left-color:#cc6161}.scenario-advisor-warning{border-left-color:#d2a64b}.scenario-advisor-good{border-left-color:#4aaf83}.scenario-advisor-item p{margin:3px 0;font-size:12px;line-height:1.4}.scenario-advisor small{opacity:.75;font-size:11px}
 </style>
 <script>window.FOUR_DS_CLOUD_ENDPOINT = "https://script.google.com/macros/s/AKfycbyZW792ZLBPxusQwthCJr0bVdZwCjXyeNaklq4Dk-BuSQ8P9gdg2zdTiWFKEmYuy5sY9Q/exec";</script>
@@ -1952,34 +1970,79 @@ function routeScanConfig(stage){
 function routeScanUI(stage){
  const config=routeScanConfig(stage),sig=JSON.stringify(config),snap=recoverySnapshot(stage);
  const old=riskRouteResults[stage],result=old?.sig===sig&&!old.result?.error?old.result:null;
- const filter=['target','active','blocked','failed'].includes(snap.routeFilter)?snap.routeFilter:'target';
- const samples=result?.lists?.[filter]||[],page=Math.max(1,Math.min(Math.ceil(samples.length/15)||1,Math.floor(Number(snap.routePage)||1)));
- const pages=Math.ceil(samples.length/15)||1;
- const options=[['target','Reach target'],['active','Still active'],['blocked','Risk blocked'],['failed','Floor breached']]
-  .map(([v,s])=>'<option value="'+v+'"'+(filter===v?' selected':'')+'>'+s+'</option>').join('');
- const rows=samples.slice((page-1)*15,page*15).map(r=>'<tr><td>'+([...r.sequence].join(' → ')||'—')+
-  '</td><td>'+([...r.tiers].map(n=>'R'+n).join(' → ')||'—')+'</td><td class="num">'+r.trades+
-  '</td><td class="num">'+r.days+'</td><td class="num">'+recoveryMoney(r.drawdown)+'</td><td class="num">'+
-  recoveryMoney(r.pnl)+'</td><td>'+(r.status==='target'?(r.minDaysPending?'Target · days pending':'Target hit'):
-   r.status==='blocked'?'Risk blocked':r.status==='failed'?'Floor breached':'Still active')+'</td></tr>').join('');
- const stats=result?.stats,summary=stats?'Hit '+stats.target.toLocaleString()+' · Active '+stats.active.toLocaleString()+
-  ' · Blocked '+stats.blocked.toLocaleString()+' · Failed '+stats.failed.toLocaleString():'';
- return '<div class="risk-route-panel"><div class="risk-route-action"><button type="button" class="btn small" data-route-scan="'+stage+'"'+
-  (riskRouteRunning[stage]?' disabled':'')+'>Find All R1 / R2 / R3 Routes</button><span class="caption" data-route-status="'+stage+'">'+
-  (riskRouteRunning[stage]?'Scanning all routes…':result?'All routes up to '+config.depth+' trades evaluated.':
-   old?'Parameters changed — scan again.':'Checks every risk and W/L branch up to '+config.depth+' trades.')+
-  '</span></div>'+(result?'<details class="risk-route-results"'+(snap.routeOpen?' open':'')+'><summary>'+
-  'Route search · '+summary+'</summary><p class="caption">Every risk choice and W/L continuation was tested up to '+
-  config.depth+' trades. Target/failure/blocked branches stop early. The table ranks the best 150 target routes '+
-  'and up to 50 examples for other results; the counts include every enumerated route. Not probabilities.</p>'+
-  '<div class="risk-route-filter"><label>Show <select data-route-filter>'+options+'</select></label>'+
-  '<span class="caption">Best '+samples.length+' / '+(stats[filter]||0).toLocaleString()+' · Page '+page+'/'+pages+'</span>'+
-  '<button type="button" data-route-page="prev"'+(page===1?' disabled':'')+'>‹</button>'+
-  '<button type="button" data-route-page="next"'+(page===pages?' disabled':'')+'>›</button></div>'+
-  '<div class="tablewrap"><table class="recovery-table"><thead><tr><th>W/L</th><th>Risk route</th><th>Trades</th>'+
-  '<th>Days</th><th>Max DD</th><th>Ending P/L</th><th>Result</th></tr></thead><tbody>'+
-  (rows||'<tr><td colspan="7">No routes in this category.</td></tr>')+'</tbody></table></div></details>':
-  old?.sig===sig&&old?.result?.error?'<p class="caption">Scan unavailable: check the target and RR values, or refresh this page.</p>':'')+'</div>';
+ const tiers=RECOVERY_LEVELS.filter(tier=>Number(config.levels[tier])>=0.01);
+ const activeTiers=tiers.map(tier=>tier.toUpperCase()).join(' / ')||'none';
+ const filters=[['all','All results'],['target','Target reached'],['target-ready','Target + days met'],
+  ['target-pending','Target · days pending'],['active','Still active'],['blocked','Risk blocked'],['failed','Floor breached']];
+ const filter=filters.some(item=>item[0]===snap.routeFilter)?snap.routeFilter:'target';
+ const sortValues=[['days','Trading days'],['trades','Fewest trades'],['dd','Max drawdown'],['pnl','Ending P/L'],
+  ['wl','W/L sequence'],['tiers','Risk sequence'],['status','Status']];
+ const sortBy=sortValues.some(item=>item[0]===snap.routeSort)?snap.routeSort:'days';
+ const dir=snap.routeDir==='desc'?'desc':'asc';
+ const pageSize=[10,20,50,100].includes(Number(snap.routePerPage))?Number(snap.routePerPage):10;
+ const all=result?Object.values(result.lists).flat():[];
+ const filtered=!result?[]:filter==='all'?all:filter==='target-ready'?result.lists.target.filter(x=>x.minDaysPending===0):
+  filter==='target-pending'?result.lists.target.filter(x=>x.minDaysPending>0):result.lists[filter]||[];
+ const routeCompare=(a,b)=>{
+  const field=sortBy==='wl'?'sequence':sortBy==='tiers'?'tiers':sortBy;
+  let aValue=a[field],bValue=b[field],delta;
+  if(typeof aValue==='string'&&typeof bValue==='string')delta=aValue.localeCompare(bValue);
+  else delta=(Number(aValue)||0)-(Number(bValue)||0);
+  return (dir==='desc'?-delta:delta)||a.score-b.score||a.tiers.localeCompare(b.tiers);
+ };
+ const items=[...filtered].sort(routeCompare);
+ const pages=Math.max(1,Math.ceil(items.length/pageSize));
+ const page=Math.max(1,Math.min(pages,Math.floor(Number(snap.routePage)||1)));
+ const rows=items.slice((page-1)*pageSize,page*pageSize).map(r=>{
+  const label=r.status==='target'?(r.minDaysPending?'Target · '+r.minDaysPending+' days pending':'Target + days met'):
+   r.status==='blocked'?'Risk blocked':r.status==='failed'?'Floor breached':'Still active';
+  return '<tr data-result="'+r.status+'"><td>'+([...r.sequence].join(' → ')||'—')+'</td><td>'+
+   ([...r.tiers].map(n=>'R'+n).join(' → ')||'—')+'</td><td class="num">'+r.trades+'</td>'+
+   '<td class="num">'+r.days+'</td><td class="num">'+recoveryMoney(r.drawdown)+'</td>'+
+   '<td class="num">'+recoveryMoney(r.pnl)+'</td><td>'+label+'</td></tr>';
+ }).join('');
+ const options=values=>values.map(([v,t])=>'<option value="'+v+'"'+(v===(values===filters?filter:sortBy)?' selected':'')+'>'+t+'</option>').join('');
+ const button=(key,label)=>'<button type="button" data-route-page="'+key+'" aria-label="'+label+'" '+
+  ((key==='first'||key==='prev'?page===1:page===pages)?'disabled':'')+'>'+label+'</button>';
+ const header=(key,label)=>'<th scope="col"><button type="button" data-route-col="'+key+'" '+
+  'aria-label="Sort by '+label+'" title="Sort retained routes by '+label+'">'+label+(sortBy===key?(dir==='asc'?' ▲':' ▼'):'')+'</button></th>';
+ const stats=result?.stats;
+ const totalCount=!stats?0:filter==='all'?stats.target+stats.active+stats.blocked+stats.failed:
+  filter==='target-ready'?stats.targetReady:filter==='target-pending'?stats.targetPending:stats[filter]||0;
+ const countText=stats?'Target '+stats.target.toLocaleString()+' ('+stats.targetReady.toLocaleString()+' ready · '+
+  stats.targetPending.toLocaleString()+' pending) · Active '+stats.active.toLocaleString()+' · Blocked '+
+  stats.blocked.toLocaleString()+' · Floor '+stats.failed.toLocaleString():'';
+ const scanStatus=riskRouteRunning[stage]?'Scanning routes…':result?'Scan complete · '+config.depth+'-trade horizon':
+  old?.sig===sig&&old?.result?.error?String(old.result.error):old?'Parameters changed · scan again':
+  'R1–R4 checked up to '+config.depth+' trades';
+ return '<div class="risk-route-panel"><div class="risk-route-action"><button type="button" class="btn small" '+
+  'data-route-scan="'+stage+'"'+(riskRouteRunning[stage]?' disabled':'')+'>Scan '+activeTiers+' routes</button>'+
+  '<span class="caption" data-route-status="'+stage+'">'+scanStatus+'</span></div>'+
+  (result?'<details class="risk-route-results"'+(snap.routeOpen?' open':'')+'>'+
+   '<summary>All risk routes · '+countText+'</summary>'+
+   '<div class="risk-route-filter"><label>Status <select data-route-filter>'+options(filters)+'</select></label>'+
+   '<label>Sort <select data-route-sort>'+options(sortValues)+'</select></label>'+
+   '<button type="button" data-route-dir title="Change sort direction" aria-label="Change sort direction">'+
+    (dir==='asc'?'↑ Asc':'↓ Desc')+'</button>'+
+   '<label>Rows <select data-route-per-page>'+[10,20,50,100].map(n=>'<option value="'+n+'"'+(pageSize===n?' selected':'')+'>'+n+'</option>').join('')+'</select></label></div>'+
+   '<div class="risk-route-count"><b>'+totalCount.toLocaleString()+'</b> matching routes · '+
+    items.length.toLocaleString()+' retained examples · '+Math.min(items.length,(page-1)*pageSize+1)+'–'+
+    Math.min(items.length,page*pageSize)+' shown · Page '+page+'/'+pages+
+   '</div>'+
+   '<div class="tablewrap"><table class="recovery-table risk-route-table"><thead><tr>'+
+    header('wl','W/L')+header('tiers','Risk path')+header('trades','Trades')+header('days','Days')+
+    header('dd','Max DD')+header('pnl','Ending P/L')+header('status','Result')+'</tr></thead><tbody>'+
+    (rows||'<tr><td colspan="7">No route matches this filter.</td></tr>')+'</tbody></table></div>'+
+   '<nav class="risk-route-nav" aria-label="'+stage+' route result pages">'+
+    button('first','«')+button('prev','‹')+'<span>'+page+' / '+pages+'</span>'+
+    button('next','›')+button('last','»')+'</nav>'+
+   '<details class="recovery-guide"><summary>About these results</summary><p class="caption">'+
+    'Every active R1–R4 tier and W/L continuation up to '+config.depth+' trades is evaluated; 0 tiers are excluded. '+
+    'Results stop at target, modeled failure, or unavailable risk. Exact totals cover evaluated routes, while sorting, '+
+    'filtering and pagination display the retained best-ranked examples (up to 500 target, 200 per other outcome), not '+
+    'every individual route. Target days pending means additional minimum trading days are needed. '+
+    'These are hypothetical routes, not success probabilities or verified prop-firm compliance.</p></details></details>':'')+
+  '</div>';
 }
 async function runStageRiskRoutes(stage){
  if(riskRouteRunning[stage]||!selectedAccountSupportsSimulation)return;
@@ -2015,16 +2078,32 @@ document.addEventListener('click',async event=>{
  const button=event.target.closest?.('[data-route-page]');
  if(button&&!button.disabled){
   const host=button.closest('[data-recovery-stage]');if(!host)return;
-  const snap=recoverySnapshot(host.dataset.recoveryStage);
-  snap.routePage=Math.max(1,(Math.floor(Number(snap.routePage)||1))+(button.dataset.routePage==='next'?1:-1));
-  snap.routeOpen=true;persistRecoverySnapshot(host.dataset.recoveryStage);renderRecoveryPlanners();
+  const snap=recoverySnapshot(host.dataset.recoveryStage),action=button.dataset.routePage;
+  const count=Math.max(1,Number(button.closest('.risk-route-nav')?.querySelector('span')?.textContent.split('/')?.[1])||1);
+  const current=Math.max(1,Math.floor(Number(snap.routePage)||1));
+  snap.routePage=action==='first'?1:action==='last'?count:
+   action==='next'?Math.min(count,current+1):Math.max(1,current-1);
+  snap.routeOpen=true;persistRecoverySnapshot(host.dataset.recoveryStage);renderRecoveryPlanners();return;
+ }
+ const sortButton=event.target.closest?.('[data-route-col],[data-route-dir]');
+ if(sortButton){
+  const host=sortButton.closest('[data-recovery-stage]');if(!host)return;
+  const snap=recoverySnapshot(host.dataset.recoveryStage),col=sortButton.dataset.routeCol;
+  if(col){snap.routeDir=snap.routeSort===col&&snap.routeDir!=='desc'?'desc':'asc';snap.routeSort=col}
+  else snap.routeDir=snap.routeDir==='desc'?'asc':'desc';
+  snap.routePage=1;snap.routeOpen=true;
+  persistRecoverySnapshot(host.dataset.recoveryStage);renderRecoveryPlanners();
  }
 });
 document.addEventListener('change',event=>{
- if(!event.target.matches?.('[data-route-filter]'))return;
- const host=event.target.closest('[data-recovery-stage]');if(!host)return;
+ const control=event.target;
+ if(!control.matches?.('[data-route-filter],[data-route-sort],[data-route-per-page]'))return;
+ const host=control.closest('[data-recovery-stage]');if(!host)return;
  const snap=recoverySnapshot(host.dataset.recoveryStage);
- snap.routeFilter=event.target.value;snap.routePage=1;snap.routeOpen=true;
+ if(control.hasAttribute('data-route-filter'))snap.routeFilter=control.value;
+ if(control.hasAttribute('data-route-sort'))snap.routeSort=control.value;
+ if(control.hasAttribute('data-route-per-page'))snap.routePerPage=Math.max(10,Math.min(100,Number(control.value)||10));
+ snap.routePage=1;snap.routeOpen=true;
  persistRecoverySnapshot(host.dataset.recoveryStage);renderRecoveryPlanners();
 });
 
