@@ -93,6 +93,19 @@ function inspect(){
  return findings;
 }
 
+let lastProbe={status:'not-checked',checkedAt:null,detail:''};
+async function probeCloud(){
+ const checkedAt=new Date().toISOString();
+ if(!configured()){lastProbe={status:'unavailable',checkedAt,detail:'Cloud endpoint is not configured'};return {...lastProbe};}
+ try{
+  const response=await readRemote(selected());
+  const snapshot=response?.snapshot;
+  if(snapshot&&(snapshot.schema!=='4ds-profile-export-v1'||snapshot.user!==selected()))throw Error('Unexpected user or schema');
+  lastProbe={status:'read-verified',checkedAt,detail:'Selected workspace cloud profile read completed (read only)'};
+ }catch(e){lastProbe={status:'unavailable',checkedAt,detail:String(e?.message||e).slice(0,110)}}
+ return {...lastProbe};
+}
+function cloudState(){return {...lastProbe,configured:configured()}}
 async function refreshPublished(){
  try{
   const res=await fetch('gpt-research-reports.json',{cache:'no-store'});
@@ -122,7 +135,7 @@ function mount(){
  details.addEventListener('click',e=>{if(e.target.closest('[data-studio-audit]')){const x=inspect();announce(x.length?x.length+' strict formula issue(s) detected; cloud verification may still be in progress.':'No strict arithmetic or funnel invariant failures in the displayed report. This does not validate all model assumptions.');redraw()}if(e.target.closest('[data-studio-refresh]')){announce('Checking published reports for explicitly linked cue IDs…');refreshPublished().then(v=>{announce(v.error?'Published report status unavailable: '+v.error:v.linked+' of '+v.total+' cue(s) explicitly linked to published reports. Unlinked cues remain queued or unknown.');redraw()})}});
  root.addEventListener?.('studio:cues-updated',redraw);redraw();
 }
-root.StudioReviewCues={queue,inspect,read,refreshPublished,formulaFindings,mount};
+root.StudioReviewCues={queue,inspect,read,refreshPublished,probeCloud,cloudState,formulaFindings,mount};
 root.addEventListener?.('studio:report-rendered',inspect);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
 })(window);
