@@ -26,6 +26,19 @@
  try{const v=JSON.parse(localStorage.getItem(studyKey)||'{}');if(Array.isArray(v.bookmarks))study.bookmarks=v.bookmarks;if(Array.isArray(v.queue))study.queue=v.queue}catch(_){}
  const saveStudy=()=>{try{localStorage.setItem(studyKey,JSON.stringify(study))}catch(_){}};
  const prompts=['Which original lessons support this answer?','Compare JJ explanations across lessons and identify contradictions.','What information is still unverified?'];
+ // Only public Academy chapter metadata enters page context; never send browser state or private notes.
+ const pageSlug=new URLSearchParams(location.search).get('jj_context')||'';
+ const pageChapter=typeof chapters!=='undefined'?chapters.find(x=>x.slug===pageSlug):null;
+ const pageTitle=pageChapter?.title||(pageSlug==='youtube-library'?'YouTube Research Library':'');
+ const pageQuestions=pageChapter?[
+  'Explain the core rules in '+pageTitle+'.',
+  'Which original lessons support '+pageTitle+'?',
+  'What is unverified or contradictory in '+pageTitle+'?'
+ ]:pageSlug==='youtube-library'?[
+  'Which JJ YouTube lessons have verified transcript evidence?',
+  'Compare public YouTube explanations with the Academy lessons.'
+ ]:[];
+
  function tradeArithmetic(q){const amounts=q.split('$').slice(1).map(x=>Number((x.match(/^[0-9,]+/)||[''])[0].replaceAll(',',''))).filter(x=>x>0);if(amounts.length!==2||!q.toLowerCase().includes('loss')||!q.toLowerCase().includes('win'))return '';const net=amounts[1]-amounts[0];return 'Independent scenario check, assuming loss then gross win: -$'+amounts[0]+' + $'+amounts[1]+' = '+(net<0?'-$':'$')+Math.abs(net)+' net before fees. Not a full audit.';}
  function renderAnswer(target,value,sourceList=[]){
   target.replaceChildren();
@@ -213,6 +226,21 @@
   drawerBody.append(library,studyPanel,archive);
   drawer.append(drawerTitle,drawerBody);
   panel.append(drawer,el('strong','','JJ Academy AI · conversation'),usage,status,thread,answer,sources,history);
+  if(pageQuestions.length){
+   const contextPanel=el('details','jj-ai-page-context');
+   contextPanel.open=true;
+   contextPanel.append(el('summary','','This page · '+pageTitle));
+   const options=el('div','jj-ai-page-questions');
+   for(const q of pageQuestions){
+    const suggestion=el('button','',q);suggestion.type='button';
+    suggestion.onclick=()=>setQuestion(q);
+    options.append(suggestion);
+   }
+   contextPanel.append(options);
+   panel.insertBefore(contextPanel,thread);
+   const pageCss=el('style');pageCss.textContent='.jj-ai-page-context{border:1px solid var(--stroke);border-radius:7px;padding:6px 9px;margin:5px 0;font-size:11px}.jj-ai-page-context summary{cursor:pointer;color:var(--accent);font-weight:650}.jj-ai-page-questions{display:flex;flex-wrap:wrap;gap:5px;padding-top:6px}.jj-ai-page-questions button{font:inherit;font-size:10px;background:var(--panel);color:var(--text);border:1px solid var(--stroke);border-radius:6px;padding:6px 8px;cursor:pointer}';
+   document.head.append(pageCss);
+  }
   const showLatest=()=>{
    answer.replaceChildren();sources.replaceChildren();drawThread();
    const latest=conversation[conversation.length-1];
@@ -298,10 +326,13 @@
    jjHelperQuestion=question;
    const previousQuestion=[...conversation].reverse().find(m=>m.role==='user');
    const contextQuery=previousQuestion?previousQuestion.content+' '+question:question;
+   const contextualQuestion=pageTitle&&!new RegExp(pageTitle.replace(/[.*+?^${}()|[\]\\]/g,'\\   const contextQuery=previousQuestion?previousQuestion.content+' '+question:question;
+   const primaryHits=selectHits(question);'),'i').test(question)?pageTitle+' '+question:question;
    const primaryHits=selectHits(question);
    const contextHits=previousQuestion?selectHits(contextQuery):[];
+   const pageHits=pageTitle?selectHits(contextualQuestion).filter(x=>x.chapter===pageSlug||x.searchText?.toLowerCase().includes(pageTitle.toLowerCase())):[];
    const previousHits=previousQuestion?selectHits(previousQuestion.content):[];
-   const hits=[...primaryHits,...contextHits,...previousHits].filter((hit,index,all)=>all.findIndex(x=>x.id===hit.id)===index).slice(0,8);
+   const hits=[...pageHits,...primaryHits,...contextHits,...previousHits].filter((hit,index,all)=>all.findIndex(x=>x.id===hit.id)===index).slice(0,8);
    panel.hidden=false;sources.replaceChildren();
    if(!hits.length){queueQuestion(question,'No source matches');status.textContent='No source matches. Saved to local research queue; no AI request made.';return}
    busy=true;button.disabled=true;reset.disabled=true;button.textContent='Asking AI…';
@@ -310,7 +341,7 @@
    status.textContent='Thinking… · '+Math.min(hits.length,8)+' Academy sources';
    try{
     const payload={
-     question:question.slice(0,750),history:conversation.slice(0,-1).slice(-6),
+     question:(pageTitle?'Current Academy page: '+pageTitle+'. User question: ':'')+question.slice(0,650),history:conversation.slice(0,-1).slice(-6),
      sources:hits.slice(0,8).map(hit=>({
       title:hit.title,type:hit.type,summary:[hit.quoted?'Transcript excerpt: '+hit.quoted:'',hit.text].filter(Boolean).join(' | '),
       limitation:hit.footnote||''
@@ -397,7 +428,9 @@
   const show=(value)=>{
    shell.hidden=!value;open.setAttribute('aria-expanded',String(value));
    if(value){
-    if(!frame.src)frame.src='?topic='+encodeURIComponent(jjHelperSlug)+'&jj_ai_float=1';
+    const chapter=typeof active==='string'&&active!==jjHelperSlug?active:'';
+    const wanted='?topic='+encodeURIComponent(jjHelperSlug)+'&jj_ai_float=1'+(chapter?'&jj_context='+encodeURIComponent(chapter):'');
+    if(frame.getAttribute('src')!==wanted)frame.src=wanted;
     close.focus();
    }else open.focus();
   };
