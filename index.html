@@ -309,10 +309,22 @@ html[data-theme="light"] .recovery-direct{background:#f0faf6;border-color:#8bcdb
  #page-firms .firms-quick-nav #openFirmsFindRoutes{grid-column:span 2}
  #page-firms .firms-quick-nav .btn:last-child:nth-child(odd){grid-column:auto}
 }
+
+.smart-table{min-width:1030px}
+.smart-table th,.smart-table td{white-space:nowrap;text-align:right}
+.smart-table th:first-child,.smart-table td:first-child,.smart-table th:last-child,.smart-table td:last-child{text-align:left}
+.smart-table td:first-child{white-space:normal;min-width:120px}
+.smart-table td:last-child{min-width:133px}
+.smart-route-examples{margin:5px 0 0}
+.smart-route-examples[open]{min-width:min(90vw,680px)}
+.smart-tree-table{min-width:630px;font-size:10px}
+.smart-tree-table th,.smart-tree-table td{padding:4px 6px}
+.smart-manual-alert{border:1px solid var(--border);border-radius:7px;padding:7px 8px;margin:6px 0}
+@media(max-width:600px){.smart-table{min-width:985px}.smart-route-examples[open]{min-width:600px}.smart-manual-alert{font-size:10px}}
 .scenario-advisor{margin-top:10px;padding:10px;border:1px solid var(--border,#526071);border-radius:9px;display:grid;gap:8px}.scenario-advisor-item{padding:7px 9px;border-left:3px solid #7790a5;background:rgba(127,127,127,.06);border-radius:4px}.scenario-advisor-critical{border-left-color:#cc6161}.scenario-advisor-warning{border-left-color:#d2a64b}.scenario-advisor-good{border-left-color:#4aaf83}.scenario-advisor-item p{margin:3px 0;font-size:12px;line-height:1.4}.scenario-advisor small{opacity:.75;font-size:11px}
 </style>
 <script>window.FOUR_DS_CLOUD_ENDPOINT = "https://script.google.com/macros/s/AKfycbyZW792ZLBPxusQwthCJr0bVdZwCjXyeNaklq4Dk-BuSQ8P9gdg2zdTiWFKEmYuy5sY9Q/exec";</script>
-<script src="cloud-bootstrap.js?v=4ds-auto-first-20261104-a"></script><script src="risk-route-explorer.js?v=20261107-r4-filter-sort-v2"></script><script src="smart-risk-optimizer.js?v=20261107-smart-setup-v1"></script>
+<script src="cloud-bootstrap.js?v=4ds-auto-first-20261104-a"></script><script src="risk-route-explorer.js?v=20261107-r4-filter-sort-v2"></script><script src="smart-risk-optimizer.js?v=20261107-full-tree-v2"></script>
 <script>window.FOUR_DS_BOOTSTRAP = window.FOUR_DS_BOOTSTRAP || Promise.resolve('bootstrap-script-unavailable');</script>
 <style>.overview-account-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}@media(max-width:720px){.overview-account-grid{grid-template-columns:1fr}}</style><style>.overview-summary-strip{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:14px 18px;border:1px solid var(--border);border-radius:14px;background:var(--panel2);margin-bottom:18px;flex-wrap:wrap}.overview-summary-strip>div:first-child{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.overview-summary-strip strong{font-size:28px;color:var(--green)}.overview-summary-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}@media(max-width:720px){.overview-summary-strip{align-items:flex-start}.overview-summary-strip>div:first-child{gap:8px}}</style><style>.overview-investment-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;align-items:end}.overview-investment-grid strong{font-size:21px;line-height:42px}.overview-investment-grid .field{min-width:0}@media(max-width:850px){.overview-investment-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:520px){.overview-investment-grid{grid-template-columns:1fr}}</style><style id="studio-theme">
 html[data-theme="light"]{color-scheme:light;--bg:#f3f6fa;--panel:#ffffff;--panel2:#eef3f9;--panel3:#e7eef7;--border:#cbd7e5;--text:#172638;--muted:#53677e;--faint:#64768b;--green:#087c60;--blue:#215fbd;--amber:#925600;--red:#b42338}
@@ -2256,57 +2268,92 @@ document.addEventListener('change',event=>{
 const smartSetupRunning=Object.create(null),smartSetupResults=Object.create(null);
 function smartSetupConfig(stage){
  const config=routeScanConfig(stage),{levels,...base}=config;
- return {...base,stage,user:String(activeUser||'local')};
+ return {...base,levels,winRate:Number(state.winRate)||40,stage,user:String(activeUser||'local')};
 }
 function smartSetupUI(stage){
  const snap=recoverySnapshot(stage),config=smartSetupConfig(stage),signature=JSON.stringify(config);
  const saved=smartSetupResults[stage],match=saved?.signature===signature;
- const data=match?saved.result:null;
- const models=Array.isArray(data?.models)?data.models:[];
+ const data=match?saved.result:null,models=Array.isArray(data?.models)?data.models:[];
  const busy=!!smartSetupRunning[stage];
- const riskAmount=n=>recoveryMoney(n);
- const risks=r=>RECOVERY_LEVELS.map(k=>riskAmount(r[k]));
- const labelFor=r=>r.route.pendingDays>0?'Pending':'Hit';
- const row=m=>{
-  const cells=risks(m.risks).map((value,i)=>'<td class="num'+(m.risks[RECOVERY_LEVELS[i]]<.01?' smart-off':'')+'">'+value+'</td>').join('');
-  const examples=m.examples.map(x=>'<div>'+x.wl+' · '+[...x.tiers].map(n=>'R'+n).join('→')+
-   ' · '+x.trades+'T / '+x.days+'D · '+riskAmount(x.pnl)+
-   (x.pendingDays?' · '+x.pendingDays+' days pending':'')+'</div>').join('');
-  const warnings=(m.boosterRoute?'R3 booster path available':'')+
-   (m.hitAfterLoss?' · Recovery after loss':'')+
-   (m.hitAfterTriple?' · R4 recovery available':'');
-  return '<tr><td><strong>'+m.label+'</strong><small>'+warnings.replace(/^ · /,'')+'</small></td>'+
-   cells+'<td>'+m.route.wl+'<small>'+[...m.route.tiers].map(n=>'R'+n).join('→')+'</small></td>'+
-   '<td class="num">'+m.route.trades+'</td><td class="num">'+m.route.days+'</td>'+
-   '<td class="num">'+riskAmount(m.maxRisk)+'</td><td class="num">'+riskAmount(m.route.dd)+'</td>'+
-   '<td>'+labelFor(m)+'</td><td><button class="btn small" type="button" data-smart-apply="'+m.kind+'">Apply</button>'+
-   '<details class="smart-route-examples"><summary>Routes</summary>'+examples+'</details></td></tr>';
+ const curr=data?.currentPlan;
+ const money2=n=>recoveryMoney(n);
+ const stat=n=>Number(n||0).toFixed(1)+'%';
+ const routeLabel=r=>r.status==='hit'?(r.pendingDays?'Pending':'Hit'):
+  r.status==='stopped'?'Stop':r.status==='failed'?'Failed':r.status==='blocked'?'Blocked':'Active';
+ const explain=x=>{
+  if(x==='stopped')return 'Strategy stopped (not necessarily a prop-firm loss breach)';
+  if(x==='blocked')return 'Risk blocked by modeled safety limit';
+  if(x==='active')return 'Unresolved inside the selected trade horizon';
+  if(x==='failed')return 'Modeled loss floor breached';
+  return 'Target hit (minimum days may remain)';
  };
- const status=busy?'Calculating candidate setups…':data?.error?'No match: '+data.error:
-  models.length?data.tested.toLocaleString()+' risk combinations · '+data.viable.toLocaleString()+' viable':
-  saved?'Inputs changed — recalculate':'Find target, low-risk and recovery setups.';
- const fastest=models.find(m=>m.kind==='fast');
- const headline=fastest?'Smart Setup Optimizer · '+models.length+' models · fastest '+fastest.route.trades+' trade'+(fastest.route.trades===1?'':'s'):
-  busy?'Smart Setup Optimizer · searching…':'Smart Setup Optimizer · Find R1–R4';
- return '<details class="smart-setup"'+(snap.smartOpen?' open':'')+'><summary>'+headline+'</summary>'+
-  '<div class="smart-toolbar"><button type="button" class="btn small" data-smart-run="'+stage+'"'+(busy?' disabled':'')+
-  '>Find Smart Setups</button>'+
+ const fullTree=m=>'<details class="smart-route-examples"><summary>Full W/L tree · '+m.treeBranches+
+  ' endings · '+m.hitProbability.toFixed(1)+'% modeled target</summary>'+
+  '<p class="caption">Every branch uses the same R1-first policy. Losses end their day. Percentages assume independent '+
+   data.winRate+'% wins per trade; they are NOT observed prop-firm pass rates.</p>'+
+  '<div class="tablewrap"><table class="recovery-table smart-tree-table"><thead><tr>'+
+   '<th>W/L</th><th>R sequence</th><th>Trades</th><th>Days</th><th>Final P/L</th><th>Max DD</th><th>Chance</th><th>Result</th>'+
+  '</tr></thead><tbody>'+m.leaves.map(x=>'<tr><td>'+x.wl+'</td><td>'+
+   [...x.tiers].map(n=>'R'+n).join('→')+'</td><td class="num">'+x.trades+'</td>'+
+   '<td class="num">'+x.days+'</td><td class="num">'+money2(x.pnl)+'</td>'+
+   '<td class="num">'+money2(x.dd)+'</td><td class="num">'+x.probability.toFixed(2)+'%</td>'+
+   '<td title="'+explain(x.status)+'">'+routeLabel(x)+'</td></tr>').join('')+
+  '</tbody></table></div></details>';
+ const row=m=>{
+  const riskCells=RECOVERY_LEVELS.map(tier=>'<td class="num'+(m.risks[tier]<.01?' smart-off':'')+'">'+
+   (m.risks[tier]<.01?'Off':money2(m.risks[tier]))+'</td>').join('');
+  const riskLine='R1 → R2 → R3 '+(m.risks.r4>=.01?'→ R4 optional':'→ Stop after R3 loss');
+  return '<tr><td><strong>'+m.label+'</strong><small>'+riskLine+'</small></td>'+
+   riskCells+'<td><b>'+m.route.wl+'</b><small>'+[...m.route.tiers].map(n=>'R'+n).join('→')+'</small></td>'+
+   '<td class="num">'+stat(m.hitProbability)+'</td><td class="num">'+stat(m.stopProbability)+'</td>'+
+   '<td class="num">'+stat(m.blockedProbability)+'</td><td class="num">'+m.expectedTrades.toFixed(2)+'</td>'+
+   '<td class="num">'+money2(m.maxRisk)+'</td><td class="num">'+money2(m.maxDD)+'</td>'+
+   '<td><button class="btn small" type="button" data-smart-apply="'+m.kind+'">Apply</button>'+
+   fullTree(m)+'</td></tr>';
+ };
+ const status=busy?'Evaluating complete W/L trees…':data?.error?'No complete setup: '+data.error:
+  models.length?data.tested.toLocaleString()+' candidate risk sets · '+data.viable.toLocaleString()+
+   ' complete recovery schemes · '+data.winRate+'% assumed WR':
+  saved?'Parameters changed — recalculate':'Find complete R1→R2→R3 recovery setups.';
+ const fast=models.find(x=>x.kind==='fast');
+ const title=fast?'Smart Setup Optimizer · '+models.length+' full recovery schemes · best one-win '+fast.route.trades+' trades':
+  busy?'Smart Setup Optimizer · calculating full W/L tree…':'Smart Setup Optimizer · Find R1–R4';
+ let manual='';
+ if(curr&&!curr.complete){
+  const levels=config.levels,room=Math.min(config.daily>0?config.daily-config.buffer:Infinity,
+   config.staticFloor&&config.overall>0?config.overall+config.initialPnl-levels.r1-levels.r2-config.buffer:Infinity);
+  manual='<p class="caption smart-manual-alert"><strong>Current R values do not complete the LLWW booster recovery.</strong> '+
+   (levels.r3>room+.001?'After R1 and R2 losses, R3 '+money2(levels.r3)+' exceeds the modeled '+
+    money2(Math.max(0,room))+' risk room (including buffer).':
+    'The R3 WIN → R2 WIN branch does not reach the target within modeled limits.')+
+   ' Existing amounts have NOT been changed.</p>';
+ }
+ const header='<thead><tr><th>Setup</th><th>R1</th><th>R2</th><th>R3</th><th>R4</th>'+
+  '<th>Best route</th><th>Hit %</th><th>Stop %</th><th>Blocked %</th><th>Avg T</th>'+
+  '<th>Max R</th><th>Max DD</th><th>Action / tree</th></tr></thead>';
+ return '<details class="smart-setup"'+(snap.smartOpen?' open':'')+'><summary>'+title+'</summary>'+
+  '<div class="smart-toolbar"><button type="button" class="btn small" data-smart-run="'+stage+'"'+
+   (busy?' disabled':'')+'>Find Smart Setups</button>'+
   (snap.smartUndo?'<button type="button" class="btn small quiet" data-smart-undo="'+stage+'">Undo Apply</button>':'')+
   '<span class="caption" data-smart-status="'+stage+'">'+status+'</span></div>'+
-  (models.length?'<div class="tablewrap"><table class="recovery-table smart-table"><thead><tr>'+
-   '<th>Setup</th><th>R1</th><th>R2</th><th>R3</th><th>R4</th><th>W/L</th><th>Trades</th>'+
-   '<th>Days</th><th>Max R</th><th>DD</th><th>Result</th><th>Action</th></tr></thead><tbody>'+
-   models.map(row).join('')+'</tbody></table></div>'+
-   '<p class="caption">Modeled initial risk ceiling '+riskAmount(data.maxInitialRisk)+' · Target and daily limits checked at each step. '+
-   (data.limitsVerified?'Static overall floor modeled.':'Trailing overall floor not verifiable without live high-water equity.')+
-   ' The five setups are ranked from sampled risk candidates, not guaranteed global optima.</p>':'')+
-  '<details class="recovery-guide"><summary>How it works</summary><p class="caption">'+
-  'R1 always first. R2 follows R1, R3 follows R2 loss, R2 follows R3 win, and R4 is optional after R3 loss. '+
-  '0 disables a risk tier. A losing trade ends its day. Wins can continue up to the configured winning-day cap. '+
-  'A setup stops when its next tier is disabled; stopping is not the same as breaching a firm loss floor. '+
-  'The search uses the selected stage P/L, target, RR, safety buffer, limits, trade horizon and minimum days. '+
-  'Click Apply to save values and smart sequence for this Firms planner stage only. '+
-  'Portfolio Sim still uses its separate risk engine; brokerage positions, commissions, trailing limits and payout eligibility are not guaranteed.</p></details>'+
+  manual+
+  (models.length?'<p class="caption"><b>Compare complete decision trees:</b> Hit = modeled target reached; Stop = strategy abandons after loss; '+
+   'Blocked = risk cannot be placed. Each setup includes R1, R2, R3 and an LLWW target branch. '+
+   'Avg T includes success and stop paths. Branch percentages assume independent '+data.winRate+'% wins, not verified live odds.</p>'+
+   '<div class="tablewrap"><table class="recovery-table smart-table">'+header+
+    '<tbody>'+models.map(row).join('')+'</tbody></table></div>'+
+   '<p class="caption">Modeled initial risk ceiling '+money2(data.maxInitialRisk)+
+    ' · Complete R1→R2→R3 recovery required · Scanned '+data.horizon+'-trade horizon. '+
+    (data.limitsVerified?'Static overall floor checked.':'Trailing overall floor cannot be independently validated.')+
+    ' These are ranked sampled candidates, not mathematically guaranteed global optima.</p>':'')+
+  '<details class="recovery-guide"><summary>Decision tree rules & assumptions</summary><p class="caption">'+
+   'R1 always first; after R1 loss use R2; after R2 loss use R3; after R3 WIN return to R2; '+
+   'after R3 LOSS stop when R4 is off, otherwise try R4 if within risk limits. '+
+   'A stop does not automatically mean the account breached its overall loss limit. '+
+   'The engine tests both WIN and LOSS outcomes for every reachable branch; results are modeled using a constant independent '+
+   'per-trade win probability. Minimum-day requirements, current stage P/L and loss buffers are checked. '+
+   'Apply requires confirmation and updates only this Firms stage planner and its R1/R2 references. '+
+   'The separate Portfolio Simulator does not yet execute the full R1–R4 conditional decision tree.</p></details>'+
   '</details>';
 }
 async function runSmartSetup(stage){
