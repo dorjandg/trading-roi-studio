@@ -2310,7 +2310,9 @@ function smartSetupUI(stage){
    '<td class="num">'+stat(m.blockedProbability)+'</td><td class="num">'+stat(m.activeProbability)+'</td>'+
    '<td class="num">'+(m.expectedHitTrades===null?'—':m.expectedHitTrades.toFixed(2))+'</td>'+
    '<td class="num">'+money2(m.maxRisk)+'</td><td class="num">'+money2(m.maxDD)+'</td>'+
-   '<td><button class="btn small" type="button" data-smart-apply="'+m.kind+'">Apply</button>'+
+   '<td><button class="btn small" type="button" data-smart-apply="'+m.kind+'"'+
+   (snap.smartUndo&&saved?.appliedKind===m.kind?' disabled title="This setup is applied"':'')+'>'+
+   (snap.smartUndo&&saved?.appliedKind===m.kind?'Applied':'Apply')+'</button>'+
    fullTree(m)+'</td></tr>';
  };
  const status=busy?'Evaluating complete W/L trees…':data?.error?'No complete setup: '+data.error:
@@ -2400,7 +2402,9 @@ function applySmartSetup(stage,kind){
  snap.levels={...model.risks};snap.policyMode='smart-sequence';snap.open=true;snap.smartOpen=true;
  snap.openOptionPath='';snap.page=1;
  state[stage+'Base']=model.risks.r1;state[stage+'Recovery']=model.risks.r2;
- lastSim=null;dirtySim=true;save();persistRecoverySnapshot(stage);render();
+ lastSim=null;dirtySim=true;save();persistRecoverySnapshot(stage);
+ entry.signature=JSON.stringify(smartSetupConfig(stage));entry.appliedKind=kind;
+ render();
 }
 function undoSmartSetup(stage){
  const snap=recoverySnapshot(stage),old=snap.smartUndo;
@@ -2409,7 +2413,9 @@ function undoSmartSetup(stage){
  snap.levels={...old.levels};snap.policyMode=old.policyMode||'saved';
  state[stage+'Base']=old.base;state[stage+'Recovery']=old.recovery;
  delete snap.smartUndo;snap.open=true;snap.smartOpen=true;
- snap.page=1;lastSim=null;dirtySim=true;save();persistRecoverySnapshot(stage);render();
+ snap.page=1;lastSim=null;dirtySim=true;save();persistRecoverySnapshot(stage);
+ const entry=smartSetupResults[stage];if(entry){entry.signature=JSON.stringify(smartSetupConfig(stage));delete entry.appliedKind}
+ render();
 }
 document.addEventListener('click',async event=>{
  const run=event.target.closest?.('[data-smart-run]');
