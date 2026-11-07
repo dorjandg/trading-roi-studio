@@ -190,3 +190,28 @@
 #jj-helper-app>.jj-helper-examples-collapsed>summary{cursor:pointer;display:list-item;font-size:11px;font-weight:600;color:var(--accent);padding:4px 0}
 #jj-helper-app>.jj-helper-examples-collapsed:not([open])>button{display:none!important}
 #jj-helper-app>.jj-helper-examples-collapsed[open]>button{margin:5px 5px 2px 0}
+
+/* Mobile chat: no horizontal overflow, short transcript, accessible 2-column composer. */
+@media(max-width:650px){
+ #jj-helper-app,.jj-helper-app,#jj-cloudflare-ai,#jj-helper-app>.jj-helper-form{box-sizing:border-box;max-width:100%;min-width:0}
+ #jj-cloudflare-ai{padding:8px!important;margin:6px 0!important;overflow-x:clip}
+ #jj-cloudflare-ai>.jj-ai-thread{height:min(40dvh,350px)!important;min-height:220px!important;max-height:350px!important;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain;padding:3px 2px 8px!important;gap:8px!important}
+ #jj-cloudflare-ai>.jj-ai-thread>.jj-ai-turn{box-sizing:border-box;max-width:100%!important;min-width:0!important;overflow-wrap:anywhere;padding:8px 7px!important}
+ #jj-cloudflare-ai>.jj-ai-thread>.jj-ai-user{max-width:92%!important;margin-left:auto!important;padding:9px 11px!important}
+ #jj-cloudflare-ai>.jj-ai-thread>.jj-ai-assistant{width:100%!important;margin:0!important}
+ #jj-cloudflare-ai .jj-ai-answer,#jj-cloudflare-ai .jj-ai-answer *{max-width:100%;overflow-wrap:anywhere}
+ #jj-cloudflare-ai .jj-ai-answer pre,#jj-cloudflare-ai .jj-ai-answer table{display:block;max-width:100%;overflow-x:auto}
+ #jj-cloudflare-ai .jj-ai-message-actions{gap:4px}
+ #jj-cloudflare-ai .jj-ai-message-actions button,#jj-cloudflare-ai .jj-ai-followups button{font-size:11px;min-height:30px}
+ #jj-cloudflare-ai .jj-ai-followups{gap:5px}
+ #jj-cloudflare-ai .jj-ai-followups button{text-align:left}
+ #jj-cloudflare-ai>.jj-ai-unified-tools{margin-bottom:6px}
+ #jj-cloudflare-ai>.jj-ai-unified-tools>summary{padding:8px;font-size:11px}
+ #jj-helper-app>.jj-helper-form{padding:8px!important;margin-top:6px!important;gap:7px}
+ #jj-helper-app>.jj-helper-form textarea{box-sizing:border-box;width:100%!important;min-width:0!important;min-height:74px!important;max-height:160px;font-size:16px!important;line-height:1.4}
+ #jj-helper-app>.jj-helper-form .jj-helper-form-actions{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:6px!important;width:100%;min-width:0}
+ #jj-helper-app>.jj-helper-form .jj-helper-form-actions>button{box-sizing:border-box;width:100%!important;min-width:0!important;min-height:40px!important;padding:8px 5px!important;text-align:center!important;white-space:normal!important;font-size:11px!important;line-height:1.2}
+ #jj-helper-app>.jj-helper-form .jj-helper-form-actions>.jj-ai-button{grid-column:1}
+ #jj-helper-app>.jj-helper-form .jj-helper-form-actions>button[type=submit]{grid-column:2}
+ #jj-helper-app .jj-question-queue,#jj-helper-app .jj-helper-results,#jj-helper-app .jj-helper-feedback{max-width:100%;min-width:0;overflow-wrap:anywhere}
+}
