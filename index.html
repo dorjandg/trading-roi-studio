@@ -664,6 +664,60 @@ html[data-theme="light"] .firm-health-card .firm-health-meta,html[data-theme="li
 html[data-theme="light"] .recovery-details .caption{color:#53677c}
 </style>
 <link rel="stylesheet" href="studio-nav.css?v=20261105-compact-v2"><script src="studio-report-source.js"></script>
+
+<style id="firms-stage-compact-v3">
+/* Compact only the Firms phase planners; keep saved strategies and fold state intact. */
+#page-firms .risk-phase-group{margin-top:7px!important;border-radius:9px!important}
+#page-firms .risk-phase-group>.firms-fold-head{padding:6px 9px!important;gap:6px}
+#page-firms .risk-phase-group>.firms-fold-head h3{font-size:12px!important;margin:0}
+#page-firms .risk-phase-group>.firms-fold-head .firms-fold-summary{font-size:9px;line-height:1.25;margin-top:1px}
+#page-firms .risk-phase-group>div:nth-child(2){padding:0 8px 7px!important}
+#page-firms .risk-phase-group>div:nth-child(2)>div:first-child{margin-top:0!important;padding-top:6px!important}
+#page-firms .risk-phase-group>div:nth-child(2)>div:first-child>strong{font-size:11px!important}
+#page-firms .risk-phase-group [data-phase-meta]{display:inline;margin:0 0 0 7px!important;font-size:10px;line-height:1.3}
+#page-firms .risk-phase-group .recovery-planner{margin:5px 0 0}
+#page-firms .risk-phase-group .recovery-details{padding:5px 7px;border-radius:7px}
+#page-firms .risk-phase-group .recovery-details>summary{font-size:11px;line-height:1.25;padding:1px 0}
+#page-firms .risk-phase-group .recovery-details>.recovery-subfold{margin:3px 0;padding:3px 6px;border-radius:6px}
+#page-firms .risk-phase-group .recovery-details>.recovery-subfold>summary{font-size:10px;line-height:1.3;padding:2px 16px 2px 0}
+#page-firms .risk-phase-group .recovery-details>.recovery-subfold[open]>summary{margin-bottom:3px;padding-bottom:3px}
+#page-firms .risk-phase-group .recovery-risk-inputs .recovery-fields{grid-template-columns:minmax(84px,.9fr) minmax(62px,.6fr) minmax(150px,1.45fr) repeat(4,minmax(65px,.85fr));gap:4px 6px;margin:4px 0}
+#page-firms .risk-phase-group .recovery-fields label{font-size:9px;line-height:1.2;min-width:0}
+#page-firms .risk-phase-group .recovery-fields input,
+#page-firms .risk-phase-group .recovery-fields select{height:27px;min-height:27px;margin-top:2px;padding:3px 6px;border-radius:5px;font-size:12px}
+#page-firms .risk-phase-group .recovery-details .caption{font-size:9px;line-height:1.3;margin:4px 0}
+#page-firms .risk-phase-group .recovery-details .compact-help{margin:2px 0 3px}
+#page-firms .risk-phase-group .option-planner-settings{margin:4px 0 0;padding:5px 7px;border-radius:6px}
+#page-firms .risk-phase-group .option-planner-settings[open]>summary{margin-bottom:5px}
+#page-firms .risk-phase-group .recovery-guide{padding:3px 0;margin:3px 0}
+#page-firms .risk-phase-group .smart-setup{padding:4px 6px;margin:4px 0;border-radius:6px}
+#page-firms .risk-phase-group .smart-setup>summary{font-size:11px;line-height:1.3}
+#page-firms .risk-phase-group .smart-toolbar{gap:4px;margin:4px 0}
+#page-firms .risk-phase-group .smart-toolbar button,
+#page-firms .risk-phase-group .smart-table button{padding:4px 7px;min-height:26px;font-size:10px}
+#page-firms .risk-phase-group .smart-toolbar .caption{font-size:9px;line-height:1.25;margin:0}
+#page-firms .risk-phase-group .smart-manual-alert{padding:4px 6px;margin:3px 0}
+#page-firms .risk-phase-group .recovery-route-block .risk-route-panel{padding-top:3px;margin:2px 0}
+#page-firms .risk-phase-group .risk-route-action{gap:5px}
+#page-firms .risk-phase-group .risk-route-action .btn{padding:4px 8px;min-height:27px;font-size:10px}
+#page-firms .risk-phase-group .risk-route-results{padding:5px;margin-top:5px}
+#page-firms .risk-phase-group .recovery-stats{margin:4px 0;gap:4px}
+#page-firms .risk-phase-group .recovery-stats span{padding:3px 5px}
+#page-firms .risk-phase-group .recovery-option{margin:3px 0;padding:4px 6px}
+#page-firms .risk-phase-group .recovery-pages{padding:3px 0}
+#page-firms .risk-phase-group .stage-extra-details,
+#page-firms .risk-phase-group .legacy-risk-details{margin:5px 0 0;padding:5px 7px}
+@media(max-width:920px){
+ #page-firms .risk-phase-group .recovery-risk-inputs .recovery-fields{grid-template-columns:repeat(4,minmax(0,1fr))}
+ #page-firms .risk-phase-group .recovery-risk-inputs .recovery-fields>label:nth-child(3){grid-column:span 2}
+}
+@media(max-width:560px){
+ #page-firms .risk-phase-group .recovery-risk-inputs .recovery-fields{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #page-firms .risk-phase-group .recovery-risk-inputs .recovery-fields>label:nth-child(3){grid-column:span 2}
+ #page-firms .risk-phase-group [data-phase-meta]{display:block;margin:2px 0 0!important}
+ #page-firms .risk-phase-group>.firms-fold-head{padding:6px 8px!important}
+}
+</style>
 </head>
 <body>
 <div class="shell">
@@ -2898,8 +2952,8 @@ function renderRecoveryPlanners(){
   const caution=staticFloor?'Static overall floor: modeled headroom = overall allowance + realized stage P/L. This is not live equity headroom.':'Trailing or stage-dependent overall floor: broker high-water mark and current equity are not available. The planner checks modeled daily room but cannot verify trailing overall headroom.';
   host.innerHTML='<details class="recovery-details"><summary>'+setup.name+' · '+recoveryMoney(setup.goal)+' target · '+setup.minDays+' min days · '+setup.rr.toFixed(2)+'R · '+RECOVERY_LEVELS.filter(x=>levels[x]>=0.01).length+' active tiers</summary>'+
    '<details class="recovery-subfold recovery-risk-inputs"'+(snapshot.riskInputsOpen?' open':'')+'><summary>Target &amp; risk values · '+recoveryMoney(setup.goal)+' target · '+riskHeadline+'</summary><div class="recovery-fields">'+
-   '<label>Planning profit target ($)<input data-stage-target type="number" min="0.01" step="0.01" value="'+setup.goal+'"></label>'+
-   '<label>Reward / Risk (RR)<input data-option-rr type="number" min="0.1" max="100" step="0.1" value="'+setup.rr+'"></label>'+
+   '<label title="Planning profit target ($)">Target · $<input data-stage-target type="number" min="0.01" step="0.01" value="'+setup.goal+'"></label>'+
+   '<label title="Reward to risk ratio">RR<input data-option-rr type="number" min="0.1" max="100" step="0.1" value="'+setup.rr+'"></label>'+
    '<label>Risk sequence'+(bufferActive?'<strong class="ftmo-buffer-active-mode">FTMO Funded Buffer Builder · dynamic</strong>':
     select('policyMode',[['saved','Saved option choices'],['smart-sequence','Smart R1-first recovery'],['streak','After-loss tiers'],['flat','Flat R1'],['after-win','Boost after WIN'],['protect-after-loss','Protect after LOSS']],snapshot.policyMode||'saved'))+'</label>'+
    (bufferActive?'<p class="caption">Fixed R1–R4 amounts are inactive while FTMO Buffer Builder is applied. Use its outcome-based risk fields below.</p>':RECOVERY_LEVELS.map((level,index)=>'<label title="0 disables this tier in risk route planning">'+(['R1 · Initial','R2 · Recovery','R3 · Additional','R4 · Optional'][index])+' ($)'+
