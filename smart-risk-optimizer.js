@@ -17,7 +17,9 @@
    daily:Math.max(0,num(x.daily)),overall:Math.max(0,num(x.overall)),
    buffer:Math.max(.01,num(x.buffer)),staticFloor:!!x.staticFloor,
    winCap:Math.max(1,Math.min(6,Math.floor(num(x.winCap,2)))),
-   depth:Math.max(1,Math.min(8,Math.floor(num(x.depth,6))))
+   depth:Math.max(1,Math.min(8,Math.floor(num(x.depth,6)))),
+   sweepRemainder:x.sweepRemainder===true,
+   sweepThreshold:Math.max(0,Math.min(1000,num(x.sweepThreshold,100)))
   };
   p.need=p.goal-p.pnl;
   // This is modeled *initial* headroom, not intratrade equity or live broker margin.
@@ -53,9 +55,16 @@
    if(a.wl.length>=p.depth){finish(a,'active','Trade horizon reached');continue}
    const tier=a.next,risk=risks[tier]||0;
    if(tier==='stop'||risk<.01){finish(a,'stopped','Next risk tier disabled');continue}
-   const room=Math.min(p.daily>0?p.daily+a.pnl-a.dayStart-p.buffer:Infinity,
-    p.staticFloor&&p.overall>0?p.overall+a.pnl-p.buffer:Infinity);
-   if(risk>room+1e-7){finish(a,'blocked','Risk exceeds modeled daily/overall allowance after buffer');continue}
+   const dayRoom=p.daily>0?p.daily+a.pnl-a.dayStart-p.buffer:Infinity;
+   const overallRaw=p.staticFloor&&p.overall>0?p.overall+a.pnl:Infinity;
+   const overallSafe=overallRaw-p.buffer;
+   // Terminal R3 sweep explicitly allows the overall reserve to be used:
+   // R3 loss may fail the account. Never waive the DAILY loss reserve.
+   const useSweep=p.sweepRemainder&&p.staticFloor&&p.overall>0&&tier==='r3'&&
+    risks.r4<.01&&risk<=overallRaw+1e-7&&risk>=.01&&
+    overallRaw-risk<=p.sweepThreshold+1e-7;
+   const room=Math.min(dayRoom,useSweep?overallRaw:overallSafe);
+   if(risk>room+1e-7){finish(a,'blocked','Risk exceeds modeled daily/overall allowance'+(useSweep?'':' after buffer'));continue}
    for(const outcome of ['L','W']){
     const win=outcome==='W',newPnl=money(a.pnl+(win?risk*p.rr:-risk));
     const dayCount=a.days+(a.tradesDay===0?1:0);
@@ -114,6 +123,9 @@
    for(const r2 of r2List){
     const llRoom=Math.min(cap,p.staticFloor&&p.overall>0?p.overall+p.pnl-r1-r2-p.buffer:cap);
     const r3List=[0];
+    const sweepRaw=p.staticFloor&&p.overall>0?p.overall+p.pnl-r1-r2:Infinity;
+    const sweepDaily=p.daily>0?p.daily-p.buffer:Infinity;
+    const sweepRisk=Math.floor((Math.min(sweepRaw,sweepDaily)+1e-9)*100)/100;
     if(llRoom>=.01){
      // After L(R1) L(R2), W(R3) W(R2) should finish whenever possible.
      const booster=(need+r1-(rr-1)*r2)/rr;
@@ -122,6 +134,13 @@
       if(n>=.01&&n<=llRoom+1e-8&&!r3List.includes(n))r3List.push(n);
      }
     }
+    // In terminal R3, don't strand <= threshold of overall loss allowance.
+    // A full remainder risk can fail the account; R4 is disabled for that plan.
+    if(p.sweepRemainder&&p.staticFloor&&p.overall>0&&
+      Number.isFinite(sweepRisk)&&sweepRisk>=.01&&
+      sweepRisk>=Math.max(.01,(need+r1-(rr-1)*r2)/rr)-.005&&
+      sweepRaw-Math.max(.01,(need+r1-(rr-1)*r2)/rr)<=p.sweepThreshold+.000001&&
+      sweepRisk>llRoom+.005)r3List.push(sweepRisk);
     for(const r3 of r3List){
      const r4List=[0];
      if(r3>=.01){
@@ -133,6 +152,7 @@
       }
      }
      for(const r4 of r4List){
+      if(r3>llRoom+.005&&r4>=.01)continue; // reserve waiver is terminal R3 only
       const risk={r1,r2,r3,r4};
       const key=LEVELS.map(x=>risk[x].toFixed(2)).join('/');
       if(used.has(key))continue;used.add(key);
@@ -154,6 +174,7 @@
   if(obj==='balanced')return r.hitProbability*3-stop*.6-fail*2-risk*.5-dd*.4-r.expectedTrades*.025-r.activeProbability*.8;
   if(obj==='recovery')return 2+r.hitProbability*2.5-stop*.7-risk*.4+
    .65*(r.risks.r3/Math.max(.01,p.cap))+
+   (p.sweepRemainder&&r.sweptR3?.9:0)+
    (r.bestAfterTriple?.status==='hit'?.08:0)-block*2;
   return r.hitProbability*4-stop*.8-block*2-fail*2-risk*.3-dd*.2-r.expectedTrades*.02-r.activeProbability*.8;
  }
@@ -175,7 +196,14 @@
     const limit=Math.min(grid.length,i+65);
     for(;i<limit;i++){
      const evaluated=evaluate(p,grid[i]);
-     if(evaluated.complete)results.push(evaluated);
+     if(evaluated.complete){
+       const raw=p.staticFloor&&p.overall>0?p.overall+p.pnl-grid[i].r1-grid[i].r2:Infinity;
+       const safe=raw-p.buffer;
+       evaluated.sweptR3=p.sweepRemainder&&grid[i].r4<.01&&p.staticFloor&&
+        grid[i].r3>safe+.005&&grid[i].r3<=raw+.00001&&
+        raw-grid[i].r3<=p.sweepThreshold+.00001;
+       results.push(evaluated);
+     }
     }
     if(onProgress)onProgress({done:i,total:grid.length,valid:results.length});
     if(i<grid.length){setTimeout(batch,0);return}
@@ -196,7 +224,7 @@
       probability:Math.round(v.prob*10000)/100});
      models.push({kind,label,risks:{...record.risks},route:convert(primary),
       examples:record.examples.map(convert),leaves:record.leaves.map(convert),
-      maxRisk:record.maxRisk,maxDD:record.worstDD,
+      maxRisk:record.maxRisk,maxDD:record.worstDD,sweptR3:record.sweptR3===true,
       hitProbability:Math.round(record.hitProbability*10000)/100,
       stopProbability:Math.round(record.stopProbability*10000)/100,
       blockedProbability:Math.round(record.blockedProbability*10000)/100,
@@ -210,6 +238,7 @@
       hitAfterTriple:!!record.bestAfterTriple,counts:record.counts});
     }
     resolve({models,tested:grid.length,viable:results.length,horizon:p.depth,
+      sweepRemainder:p.sweepRemainder,sweepThreshold:p.sweepThreshold,
       winRate:Math.round(p.wr*10000)/100,
       currentPlan:current?{complete:current.complete,first:current.first?.status||'none',
        second:current.second?.status||'none',booster:current.bestBooster?.status||'none',
