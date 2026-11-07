@@ -13,12 +13,24 @@ const style=document.createElement('style');style.textContent=`
 .studio-ai button:hover{border-color:#7ea4c5}.studio-ai .studio-ai-send{background:#276f59}
 .studio-ai-suggestions{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0}
 .studio-ai-input{display:flex;gap:6px;margin-top:8px}.studio-ai-input textarea{flex:1;min-width:0;resize:vertical;min-height:42px;max-height:100px;background:#0d1827;border:1px solid #3b536c;border-radius:8px;padding:8px;color:#edf5fc;font:inherit}
-.studio-ai-saved{margin-top:8px}.studio-ai-saved summary{cursor:pointer}.studio-ai-saved p{margin:4px 0;color:#afc2d2}
+.studio-ai-open{position:fixed;right:14px;bottom:14px;z-index:80;border:1px solid #479a83;border-radius:22px;background:#163c38;color:#e7fff6;padding:9px 14px;font:700 12px system-ui;box-shadow:0 6px 22px #0008;cursor:pointer}.studio-ai-open:hover{background:#24574f}.studio-ai-saved{margin-top:8px}.studio-ai-saved summary{cursor:pointer}.studio-ai-saved p{margin:4px 0;color:#afc2d2}
 @media(max-width:600px){.studio-ai{padding:7px}.studio-ai-log{height:180px}.studio-ai-msg{max-width:98%;font-size:11px}.studio-ai button{font-size:10px;padding:4px 6px}.studio-ai-input textarea{font-size:12px}}
 `;document.head.appendChild(style);
 const panel=document.createElement('section');panel.className='studio-ai';panel.setAttribute('aria-label','Trading Studio evidence assistant');
 panel.innerHTML='<div class="studio-ai-head"><strong>Studio AI · Website assistant</strong><button type="button" data-act="clear">Clear chat</button></div><p class="studio-ai-note">Free local assistant · Explains this website, its parameters and displayed results. Answers are limited to supported website knowledge. No trading settings changed.</p><div class="studio-ai-log" role="log" aria-live="polite"></div><div class="studio-ai-suggestions"></div><div class="studio-ai-input"><textarea maxlength="900" aria-label="Question about trading simulation" placeholder="Ask about a section, parameter or simulation result…"></textarea><button class="studio-ai-send" type="button" data-act="ask">Ask</button></div><details class="studio-ai-saved"><summary>Saved answers &amp; unanswered questions</summary><div data-saved></div><div data-unanswered></div></details>';
 host.insertBefore(panel,host.firstChild);
+
+const quick=document.createElement('button');
+quick.type='button';quick.className='studio-ai-open';quick.textContent='Ask Studio AI';
+quick.setAttribute('aria-label','Open Trading Studio assistant');
+quick.addEventListener('click',()=>{
+ const outer=document.getElementById('gptResearchPanel');
+ if(outer)outer.open=true;
+ panel.scrollIntoView({behavior:'smooth',block:'center'});
+ setTimeout(()=>el('textarea')?.focus({preventScroll:true}),180);
+});
+document.body.appendChild(quick);
+
 const el=s=>panel.querySelector(s), storage=()=>{let u='dori';try{u=localStorage.getItem('4ds:active-user:v1')||'dori'}catch{}return '4ds:v1:'+u+':studio-evidence-chat:v1'};
 const initial=()=>({messages:[],saved:[],unanswered:[]});
 let data=initial(),key='';
