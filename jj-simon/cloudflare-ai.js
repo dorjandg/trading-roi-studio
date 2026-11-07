@@ -378,8 +378,12 @@
 
  // One shared AI experience on every Academy chapter. The floating view uses
  // this same page and same-origin storage; it never starts an AI call merely by opening.
- const floatMode=new URLSearchParams(location.search).get('jj_ai_float')==='1';
- if(floatMode){
+ const jjRoute=new URLSearchParams(location.search);
+ const floatMode=jjRoute.get('jj_ai_float')==='1';
+ const mobileChatMode=jjRoute.get('jj_ai_mobile')==='1';
+ const compactMode=floatMode||mobileChatMode;
+ const mobileDevice=()=>window.matchMedia('(max-width:1024px), (pointer:coarse)').matches;
+ if(compactMode){
   const compact=el('style');compact.textContent=`
    html,body{height:100%;overflow:hidden!important;background:var(--bg)!important}
    header,aside,.jj-helper-app > :not(.jj-ai-panel):not(.jj-helper-form){display:none!important}
@@ -394,8 +398,43 @@
    .jj-helper-form-actions > :not(.jj-ai-button):not(.jj-ai-reset){display:none!important}
    .jj-helper-form-actions{gap:6px!important}
    .jj-helper-form-actions button{min-height:32px!important;padding:6px 9px!important;font-size:11px!important}
-   @media(max-width:750px){.jj-helper-app{height:100dvh!important}}
+   @media(max-width:1024px){
+    #jj-helper-app{height:var(--jj-chat-vh,100dvh)!important;max-height:var(--jj-chat-vh,100dvh)!important}
+    #jj-cloudflare-ai{overflow:hidden!important;padding:6px!important}
+    #jj-cloudflare-ai>.jj-ai-thread{flex:1 1 auto!important;height:auto!important;min-height:0!important;max-height:none!important;overflow-y:auto!important}
+    #jj-helper-app>.jj-helper-form{flex:0 0 auto!important;min-height:0!important;padding:7px 9px calc(7px + env(safe-area-inset-bottom))!important;margin:0!important;gap:6px!important}
+    #jj-helper-app>.jj-helper-form textarea{font-size:16px!important;line-height:1.4!important;height:60px!important;min-height:60px!important;max-height:90px!important;resize:none!important;touch-action:auto!important;pointer-events:auto!important}
+    #jj-helper-app>.jj-helper-form .jj-helper-form-actions{display:flex!important;flex-direction:row!important;gap:7px!important}
+    #jj-helper-app>.jj-helper-form .jj-helper-form-actions>.jj-ai-button{flex:1 1 auto!important;width:auto!important;min-width:0!important;grid-column:auto!important;font-size:12px!important;min-height:40px!important}
+    #jj-helper-app>.jj-helper-form .jj-helper-form-actions>.jj-ai-reset{flex:0 0 auto!important;width:auto!important;grid-column:auto!important;min-height:40px!important}
+    #jj-helper-app>.jj-helper-form .jj-helper-form-actions>button[type=submit]{display:none!important}
+    #jj-cloudflare-ai>.jj-ai-unified-tools{flex:0 0 auto!important}
+   }
   `;document.head.append(compact);
+  if(mobileChatMode){
+   document.documentElement.dataset.jjMobileChat='true';
+   const updateViewport=()=>{
+    const viewport=window.visualViewport;
+    const height=viewport?viewport.height:window.innerHeight;
+    document.documentElement.style.setProperty('--jj-chat-vh',Math.max(200,Math.floor(height))+'px');
+   };
+   updateViewport();
+   window.visualViewport?.addEventListener('resize',updateViewport);
+   window.addEventListener('resize',updateViewport);
+   const bar=el('div','jj-mobile-chat-bar');
+   const back=el('button','','‹ Back');back.type='button';
+   back.onclick=()=>{if(history.length>1)history.back();else location.href='./'};
+   bar.append(back,el('strong','','✦ JJ Academy AI'));
+   document.body.append(bar);
+   const barStyle=el('style');barStyle.textContent=`
+    body{padding-top:43px!important}
+    .jj-mobile-chat-bar{position:fixed;top:0;left:0;right:0;height:43px;z-index:9999;display:flex;align-items:center;gap:10px;padding:5px 10px;background:var(--panel);border-bottom:1px solid var(--stroke);color:var(--text)}
+    .jj-mobile-chat-bar button{background:transparent;border:1px solid var(--stroke);color:var(--text);border-radius:7px;padding:6px 10px;font-size:12px}
+    .jj-mobile-chat-bar strong{font-size:13px}
+    #jj-helper-app{height:calc(var(--jj-chat-vh,100dvh) - 43px)!important;max-height:calc(var(--jj-chat-vh,100dvh) - 43px)!important}
+    #jj-cloudflare-ai>.jj-ai-page-context{flex:0 0 auto!important;max-height:110px;overflow:auto}
+   `;document.head.append(barStyle);
+  }
   const prune=()=>{
    const root=document.getElementById('jj-helper-app');
    if(!root)return;
@@ -429,6 +468,11 @@
    if(value){
     const chapter=typeof active==='string'&&active!==jjHelperSlug?active:'';
     const wanted='?topic='+encodeURIComponent(jjHelperSlug)+'&jj_ai_float=1'+(chapter?'&jj_context='+encodeURIComponent(chapter):'');
+    if(mobileDevice()){
+     const url='?topic='+encodeURIComponent(jjHelperSlug)+'&jj_ai_mobile=1'+(chapter?'&jj_context='+encodeURIComponent(chapter):'');
+     location.assign(url);
+     return;
+    }
     if(frame.getAttribute('src')!==wanted)frame.src=wanted;
     close.focus();
    }else open.focus();
