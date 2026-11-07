@@ -1,3 +1,27 @@
+## Updated Answers dashboard — November 7, 2026
+
+The canonical Academy homepage now has a **collapsed Updated Answers** section under study progress. It lists original questions saved on **this browser**, timestamps (Albania time), current review status, the latest private research draft, evidence IDs, and expandable answer history; includes search, pagination and Refresh.
+
+Private backend:
+- Source workbook: [JJ Academy — Private Unanswered Questions](https://docs.google.com/spreadsheets/d/1kdDaTIsElKKI8l3SwDZGCkCwhoo4b-lqk6SlUVUhk_U/edit).
+- Tabs: `Unanswered Questions` (A:N), `Answer History` (A:G), and hidden `Question Access` (hashed receipt only).
+- The existing hourly **JJ Simon Advanced Course Research** automation is instructed to reconsider `needs_review` rows when genuinely new source evidence appears, update the existing draft, and append a historical version with timestamps. This is a research draft, **not** a claim that the public website has published a verified answer.
+- No private questions, answer text, or bearer tokens are committed to GitHub. The public website loads the visitor's own saved questions from browser localStorage, and reads back each answer via a random per-submission access receipt. No public question list endpoint exists.
+- The status endpoint allows anyone holding a random, high-entropy question receipt to read its associated answer. That receipt stays in the user's browser; avoid putting sensitive personal, financial, or paid-course verbatim material into an unanswered question. The anonymous intake service deduplicates identical question text, so only non-sensitive educational Q&A should be used.
+- For questions submitted from another browser/device, the owner may view all records securely in the private Google Sheet; the public dashboard cannot synchronize unrelated device question lists without real user authentication.
+- Already-synced questions predating this feature are automatically relinked by their originating browser when the updated backend becomes available. No new manual text entry is needed.
+
+**One-time REQUIRED Apps Script deployment update** — changing GitHub code does not update a previously deployed Google Apps Script:
+1. Open the existing private Google Apps Script project **JJ Academy Questions** at https://script.google.com/home/projects (not Trading Studio's separate project).
+2. Replace its `Code.gs` content with the current GitHub source file `jj-simon/google-apps-script/Code.gs` from branch `jj-simon-knowledge-hub`, then save.
+3. Choose **Deploy → Manage deployments → Edit** the EXISTING web app → **Version: New version → Deploy**. Keep the same web app URL and existing execute-as/permissions so no change to `question-cloud-config.js` is needed.
+4. Open the Academy's Updated Answers section and press **Refresh answers**. New questions and revisions will now be readable only from the browser holding their verified receipt. Existing historical answer is already in the private Answer History tab.
+5. Do not share receipt tokens, service-account keys, full raw transcripts or the private sheet publicly.
+
+Until step 3 is completed, the website section can show locally saved questions and a link to the private Google Sheet, but cannot retrieve the proposed answer automatically. Do not claim the whole end-to-end readback is live before a successful real test.
+
+---
+
 # JJ Academy — Google Apps Script question sync (recommended)
 
 This is the simplified **Trading Studio–style** solution for the JJ Simon Study Academy. It does not require Cloudflare D1, a new OpenAI Platform API key, or a second ChatGPT automation. **The existing hourly "JJ Simon Advanced Course Research" automation has been updated** to check a private Google Sheet for unanswered questions.
