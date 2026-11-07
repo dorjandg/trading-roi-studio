@@ -6,7 +6,7 @@
   if(!root) return;
   const $=id=>document.getElementById(id);
   const storeKey='jj-updated-answer-cache-v1';
-  const sourceUrl='https://docs.google.com/spreadsheets/d/1kdDaTIsElKKI8l3SwDZGCkCwhoo4b-lqk6SlUVUhk_U/edit';
+  const sourceUrl='https://docs.google.com/spreadsheets/d/1kdDaTIsElKKI8l3SwDZGCkCwhoo4b-lqk6SlUVUhk_U/edit?gid=27471300#gid=27471300';
   const state={data:{},page:1,size:10,loading:false,loaded:false,notice:''};
   const nativeRows=()=>{
     try {
