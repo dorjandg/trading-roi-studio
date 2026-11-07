@@ -121,7 +121,7 @@ function buildGuide(wb){
  scenario.body.append(text('p','Calculated from your own inputs. These are model diagnostics, not statements by JJ.'),notes);
  body.append(scenario.container);
  guide.append(body);
- wb.append(guide);
+ if(fields)wb.insertBefore(guide,fields);else wb.append(guide);
  for(const [id,name,description] of fieldHelp){
    const input=wb.querySelector('#'+id);
    if(input){input.title=name+': '+description;input.setAttribute('aria-description',description);}
