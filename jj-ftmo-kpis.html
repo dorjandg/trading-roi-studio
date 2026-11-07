@@ -30,6 +30,22 @@
 .table-panel{margin:10px 0}
 @media(max-width:800px){.dashboard-groups{grid-template-columns:1fr}}
 @media(max-width:470px){.result-dashboard .dashboard-side .kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}.result-dashboard .dashboard-side .kpi{padding:5px 7px}.result-dashboard .dashboard-side .kpi small{min-height:0;font-size:10px}.result-dashboard .dashboard-side .kpi strong{font-size:15px}}
+
+/* Identically sized, dense 12-slot parameter grids for JJ and FTMO. */
+.assumption-content{padding-top:8px}
+.assumption-content .assumption-buttons{gap:5px;margin:0 0 6px}
+.assumption-buttons button{padding:4px 8px;font-size:10px;line-height:1.3;min-height:26px}
+.assumption-content .assumption-evidence{margin:0 0 7px;padding:5px 8px;border-radius:7px}
+.assumption-evidence summary{font-size:10px;font-weight:650;color:var(--muted)}
+.assumption-evidence .notes{font-size:10px;margin:6px 0 2px}
+.assumption-content .assumption-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px 7px}
+.assumption-grid .field{min-width:0}
+.assumption-grid .field label{display:block;font-size:10px;line-height:1.15;margin:0 0 3px;min-height:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.assumption-grid .field input{min-width:0;width:100%;min-height:29px;height:29px;padding:4px 7px;border-radius:6px;font-size:12px;line-height:1.2}
+.assumption-grid .field input:disabled{opacity:.66;color:var(--muted);cursor:not-allowed;border-style:dashed}
+@media(max-width:1050px){.assumption-content .assumption-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:630px){.assumption-content .assumption-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:400px){.assumption-content .assumption-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 </head>
 <body><main class="shell">
@@ -65,35 +81,38 @@
 <tr><td>Real trade win rates</td><td>Not independently measured</td><td>35% hypothetical assumption</td></tr>
 </tbody></table></div>
 <p class="notes">Firm rules, purchase fees and splits are time-dependent. JJ's course illustrations reflect specific program versions; the FTMO figures are the selected planning example, not live account settings.</p></div></details>
-<details><summary>3 · Edit JJ benchmark assumptions <span class="tag">Show / hide</span></summary><div class="content">
-<div class="controls"><button type="button" id="jjPlanning">JJ planning example · 33.3%</button><button type="button" id="jjReported">JJ self-reported pass rate · 42.5%</button></div>
-<p class="notes">The reported 40–45% evaluation pass rate and the $300–$400 cost examples come from different lessons. The 90% post-milestone cash conversion below is an <strong>unsourced sensitivity assumption</strong>—not JJ's measured conversion rate.</p>
-<div class="formgrid">
-<div class="field"><label for="jjFee">Evaluation purchase · USD</label><input id="jjFee" type="number" min="0.01" step="1" value="100"></div>
-<div class="field"><label for="jjP1">Evaluation pass rate · %</label><input id="jjP1" type="number" min="0" max="100" step=".1" value="33.3"></div>
-<div class="field"><label for="jjFunded">Reach funded milestone · %</label><input id="jjFunded" type="number" min="0" max="100" step=".1" value="40"></div>
-<div class="field"><label for="jjRealize">Get eligible payout after milestone · %</label><input id="jjRealize" type="number" min="0" max="100" step="1" value="90"></div>
-<div class="field"><label for="jjPayout">Gross payout across completed cycle · USD</label><input id="jjPayout" type="number" min="0" step="100" value="3000"></div>
-<div class="field"><label for="jjSplit">Cash profit split · %</label><input id="jjSplit" type="number" min="0" max="100" step="1" value="90"></div>
-<div class="field"><label for="jjActivation">Activation & other cost per funded · USD</label><input id="jjActivation" type="number" min="0" step="1" value="0"></div>
-<div class="field"><label for="jjTradeWR">Evaluation trade WR · % (unknown)</label><input id="jjTradeWR" type="number" min="0" max="100" step=".1" placeholder="Not measured"></div>
-<div class="field"><label for="jjFundedWR">Funded trade WR · % (unknown)</label><input id="jjFundedWR" type="number" min="0" max="100" step=".1" placeholder="Not measured"></div>
-</div></div></details>
-<details><summary>4 · Edit FTMO 10K assumptions <span class="tag">Show / hide</span></summary><div class="content"><p class="notes">P1 70%, P2 70%, milestone 40% and post-milestone conversion 95% are <strong>example inputs only</strong>. Replace them with results from Full Simulation or trade records. This editor does not read or overwrite your saved FTMO stage presets.</p>
-<div class="formgrid">
-<div class="field"><label for="ftFee">Challenge purchase · USD</label><input id="ftFee" type="number" min="0.01" step="1" value="100"></div>
-<div class="field"><label for="ftP1">Phase 1 pass · %</label><input id="ftP1" type="number" min="0" max="100" step=".1" value="70"></div>
-<div class="field"><label for="ftP2">Phase 2 pass if reached · %</label><input id="ftP2" type="number" min="0" max="100" step=".1" value="70"></div>
-<div class="field"><label for="ftFunded">Funded target hit · %</label><input id="ftFunded" type="number" min="0" max="100" step=".1" value="40"></div>
-<div class="field"><label for="ftRealize">Get eligible payout after target · %</label><input id="ftRealize" type="number" min="0" max="100" step="1" value="95"></div>
-<div class="field"><label for="ftPayout">Funded gross payout-cycle target · USD</label><input id="ftPayout" type="number" min="0" step="100" value="2000"></div>
-<div class="field"><label for="ftSplit">Reward split · %</label><input id="ftSplit" type="number" min="0" max="100" step="1" value="80"></div>
-<div class="field"><label for="ftRefund">First successful payout fee refund · USD</label><input id="ftRefund" type="number" min="0" step="10" value="100"></div>
-<div class="field"><label for="ftActivation">Other cost per funded · USD</label><input id="ftActivation" type="number" min="0" step="1" value="0"></div>
-<div class="field"><label for="ftEvalWR">Evaluation trade WR · % (assumed)</label><input id="ftEvalWR" type="number" min="0" max="100" step=".1" value="35"></div>
-<div class="field"><label for="ftFundedWR">Funded trade WR · % (assumed)</label><input id="ftFundedWR" type="number" min="0" max="100" step=".1" value="35"></div>
-<div class="field"><label for="ftFundedRR">Funded RR (preset)</label><input id="ftFundedRR" type="number" min=".01" step=".5" value="4"></div>
-</div></div></details>
+<details><summary>3 · Edit JJ benchmark assumptions <span class="tag">Show / hide</span></summary><div class="content assumption-content">
+<div class="controls assumption-buttons"><button type="button" id="jjPlanning">JJ example · 33.3%</button><button type="button" id="jjReported">JJ reported · 42.5%</button></div>
+<details class="assumption-evidence"><summary>About these assumptions</summary><p class="notes">The reported 40–45% evaluation pass rate and the $300–$400 cost examples come from different lessons. The 90% post-milestone cash conversion is an <strong>unsourced sensitivity assumption</strong>—not JJ's measured conversion rate. Disabled inputs show fields that do not apply to the one-step Topstep example.</p></details>
+<div class="formgrid assumption-grid"><div class="field"><label for="jjFee" title="Evaluation cost per attempt. Course planning illustration.">Eval fee · $</label><input id="jjFee" type="number" min="0.01" step="1" value="100" title="Evaluation cost per attempt. Course planning illustration."></div>
+<div class="field"><label for="jjP1" title="JJ 33.3% planning example; 40–45% separately self-reported.">Eval pass · %</label><input id="jjP1" type="number" min="0" max="100" step=".1" value="33.3" title="JJ 33.3% planning example; 40–45% separately self-reported."></div>
+<div class="field"><label for="jjP2Static" title="Not applicable: JJ Topstep example has one evaluation stage.">P2 pass · %</label><input id="jjP2Static" type="text" value="N/A" disabled aria-disabled="true" title="Not applicable: JJ Topstep example has one evaluation stage."></div>
+<div class="field"><label for="jjFunded" title="Illustrative probability of reaching funded profit milestone after receiving funded account.">Funded target · %</label><input id="jjFunded" type="number" min="0" max="100" step=".1" value="40" title="Illustrative probability of reaching funded profit milestone after receiving funded account."></div>
+<div class="field"><label for="jjRealize" title="Hypothetical conditional probability of obtaining cash after reaching funded profit milestone, not measured JJ performance.">Payout eligible · %</label><input id="jjRealize" type="number" min="0" max="100" step="1" value="90" title="Hypothetical conditional probability of obtaining cash after reaching funded profit milestone, not measured JJ performance."></div>
+<div class="field"><label for="jjPayout" title="Gross total expected first-cycle withdrawals if fully realized, not profit balance.">Gross payout · $</label><input id="jjPayout" type="number" min="0" step="100" value="3000" title="Gross total expected first-cycle withdrawals if fully realized, not profit balance."></div>
+<div class="field"><label for="jjSplit" title="User's percentage of a completed gross payout.">Cash split · %</label><input id="jjSplit" type="number" min="0" max="100" step="1" value="90" title="User's percentage of a completed gross payout."></div>
+<div class="field"><label for="jjRefundStatic" title="Not modeled for the JJ Topstep example.">First fee refund · $</label><input id="jjRefundStatic" type="number" value="0" disabled aria-disabled="true" title="Not modeled for the JJ Topstep example."></div>
+<div class="field"><label for="jjActivation" title="Any additional acquisition or activation expense per successfully funded account.">Extra / funded · $</label><input id="jjActivation" type="number" min="0" step="1" value="0" title="Any additional acquisition or activation expense per successfully funded account."></div>
+<div class="field"><label for="jjTradeWR" title="Actual JJ evaluation trade win rate not independently established. A typed value affects only trade expectancy.">Eval trade WR · %</label><input id="jjTradeWR" type="number" min="0" max="100" step=".1" placeholder="Unknown" title="Actual JJ evaluation trade win rate not independently established. A typed value affects only trade expectancy."></div>
+<div class="field"><label for="jjFundedWR" title="Actual JJ funded trade win rate not independently established. A typed value affects only trade expectancy.">Funded WR · %</label><input id="jjFundedWR" type="number" min="0" max="100" step=".1" placeholder="Unknown" title="Actual JJ funded trade win rate not independently established. A typed value affects only trade expectancy."></div>
+<div class="field"><label for="jjFundedRRStatic" title="JJ course example: 4R funded trade reward. Trade win rate unknown.">Funded RR</label><input id="jjFundedRRStatic" type="number" value="4" disabled aria-disabled="true" title="JJ course example: 4R funded trade reward. Trade win rate unknown."></div></div>
+</div></details>
+<details><summary>4 · Edit FTMO 10K assumptions <span class="tag">Show / hide</span></summary><div class="content assumption-content">
+<div class="controls assumption-buttons"><button type="button" id="ftReset">Reset FTMO example</button></div>
+<details class="assumption-evidence"><summary>About these assumptions</summary><p class="notes">P1 70%, P2 70%, milestone 40% and post-milestone conversion 95% are <strong>example inputs only</strong>, not measured performance. This editor does not read or overwrite your saved FTMO stage presets.</p></details>
+<div class="formgrid assumption-grid"><div class="field"><label for="ftFee" title="FTMO challenge purchase, illustrative $100.">Eval fee · $</label><input id="ftFee" type="number" min="0.01" step="1" value="100" title="FTMO challenge purchase, illustrative $100."></div>
+<div class="field"><label for="ftP1" title="Hypothetical probability an evaluation reaches Phase 2.">P1 pass · %</label><input id="ftP1" type="number" min="0" max="100" step=".1" value="70" title="Hypothetical probability an evaluation reaches Phase 2."></div>
+<div class="field"><label for="ftP2" title="Conditional probability of passing Phase 2 after Phase 1 success.">P2 pass · %</label><input id="ftP2" type="number" min="0" max="100" step=".1" value="70" title="Conditional probability of passing Phase 2 after Phase 1 success."></div>
+<div class="field"><label for="ftFunded" title="Hypothetical probability of hitting the funded profit goal after funded activation.">Funded target · %</label><input id="ftFunded" type="number" min="0" max="100" step=".1" value="40" title="Hypothetical probability of hitting the funded profit goal after funded activation."></div>
+<div class="field"><label for="ftRealize" title="Hypothetical probability the completed funded target becomes an actual cash payout after all eligibility requirements.">Payout eligible · %</label><input id="ftRealize" type="number" min="0" max="100" step="1" value="95" title="Hypothetical probability the completed funded target becomes an actual cash payout after all eligibility requirements."></div>
+<div class="field"><label for="ftPayout" title="Selected gross funded payout-cycle profit target before profit split.">Gross payout · $</label><input id="ftPayout" type="number" min="0" step="100" value="2000" title="Selected gross funded payout-cycle profit target before profit split."></div>
+<div class="field"><label for="ftSplit" title="Percentage of gross payout retained by trader.">Cash split · %</label><input id="ftSplit" type="number" min="0" max="100" step="1" value="80" title="Percentage of gross payout retained by trader."></div>
+<div class="field"><label for="ftRefund" title="Evaluation fee refunded only if a first payout is successfully received.">First fee refund · $</label><input id="ftRefund" type="number" min="0" step="10" value="100" title="Evaluation fee refunded only if a first payout is successfully received."></div>
+<div class="field"><label for="ftActivation" title="Additional cost per successfully funded FTMO account, if any.">Extra / funded · $</label><input id="ftActivation" type="number" min="0" step="1" value="0" title="Additional cost per successfully funded FTMO account, if any."></div>
+<div class="field"><label for="ftEvalWR" title="Hypothetical FTMO evaluation win rate. This input changes trade expectancy only, not phase pass rates.">Eval trade WR · %</label><input id="ftEvalWR" type="number" min="0" max="100" step=".1" value="35" title="Hypothetical FTMO evaluation win rate. This input changes trade expectancy only, not phase pass rates."></div>
+<div class="field"><label for="ftFundedWR" title="Hypothetical funded trade win rate. This input changes trade expectancy only.">Funded WR · %</label><input id="ftFundedWR" type="number" min="0" max="100" step=".1" value="35" title="Hypothetical funded trade win rate. This input changes trade expectancy only."></div>
+<div class="field"><label for="ftFundedRR" title="Funded target reward-to-risk ratio in the illustrative trade EV calculation.">Funded RR</label><input id="ftFundedRR" type="number" min=".01" step=".5" value="4" title="Funded target reward-to-risk ratio in the illustrative trade EV calculation."></div></div>
+</div></details>
 <details><summary>5 · Portfolio size, timing & formulas <span class="tag">Show / hide</span></summary><div class="content">
 <div class="formgrid"><div class="field"><label for="count">Number of purchased evaluations</label><input id="count" type="number" min="1" max="100000" step="1" value="100"></div><div class="field"><label for="weeks">Calendar weeks for this cohort (optional)</label><input id="weeks" type="number" min=".1" step="1" placeholder="Unknown: weekly metric hidden"></div></div>
 <div class="formula"><strong>P(funded)</strong> = P(P1) × P(P2 conditional). <strong>P(receive payout)</strong> = P(funded) × P(funded target) × P(realize cash after milestone).</div>
@@ -178,6 +197,11 @@ function render(){
 document.querySelectorAll('input').forEach(function(el){el.addEventListener('input',render);});
 document.getElementById('jjPlanning').addEventListener('click',function(){document.getElementById('jjP1').value='33.3';render();});
 document.getElementById('jjReported').addEventListener('click',function(){document.getElementById('jjP1').value='42.5';render();});
+document.getElementById('ftReset').addEventListener('click',function(){
+ var defaults={ftFee:100,ftP1:70,ftP2:70,ftFunded:40,ftRealize:95,ftPayout:2000,ftSplit:80,ftRefund:100,ftActivation:0,ftEvalWR:35,ftFundedWR:35,ftFundedRR:4};
+ Object.keys(defaults).forEach(function(id){document.getElementById(id).value=String(defaults[id]);});
+ render();
+});
 render();
 })();
 </script>
