@@ -904,7 +904,8 @@ function loadView(){
   if(match){
    const id=match[1],size=Number(match[2]);
    if(catalog.programs[id]?.sizes?.includes(size)){
-    rows=[{id,size,weight:40},...rows.filter(r=>r.id!==id||r.size!==size)].slice(0,8);
+    rows=new URLSearchParams(window.location.search).get('single')==='1'?
+     [{id,size,weight:100}]:[{id,size,weight:40},...rows.filter(r=>r.id!==id||r.size!==size)].slice(0,8);
    }
   }
  }catch(e){}
