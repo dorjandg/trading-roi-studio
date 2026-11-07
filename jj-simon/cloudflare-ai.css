@@ -165,3 +165,13 @@
  white-space:normal!important;
  overflow-wrap:break-word!important;
 }
+
+#jj-cloudflare-ai .jj-ai-archive{border-bottom:1px solid var(--stroke);padding:4px 0 8px;font-size:11px}
+#jj-cloudflare-ai .jj-ai-archive>summary{cursor:pointer;color:var(--accent);font-weight:700}
+#jj-cloudflare-ai .jj-ai-archive>button{font-size:11px;border:1px solid var(--stroke);border-radius:7px;background:transparent;color:inherit;padding:6px 9px;margin:8px 0;cursor:pointer}
+#jj-cloudflare-ai .jj-ai-archive-results{display:grid;gap:6px;max-height:300px;overflow-y:auto}
+#jj-cloudflare-ai .jj-ai-archive-item{border:1px solid var(--stroke);border-radius:7px;padding:7px}
+#jj-cloudflare-ai .jj-ai-archive-item summary{cursor:pointer;font-weight:600}
+#jj-cloudflare-ai .jj-ai-archive-item p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5}
+#jj-cloudflare-ai .jj-ai-archive-item small{display:block;color:var(--muted)}
+#jj-cloudflare-ai .jj-ai-archive-item a{display:inline-block;margin-top:5px;color:var(--accent)}
