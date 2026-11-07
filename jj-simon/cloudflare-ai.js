@@ -50,7 +50,7 @@
     })}finally{clearTimeout(timeout)}
     let data={};
     try{data=await response.json()}catch(_){}
-    if(!response.ok)throw Error(data.message||data.error||'AI endpoint unavailable');
+    if(!response.ok)throw Error([data.message||data.error||'AI endpoint unavailable',data.code?'Code: '+data.code:'',data.detail||''].filter(Boolean).join(' · '));
     status.textContent='AI synthesis of indexed Academy research. Verify original lesson evidence; assumptions are not actual JJ performance.';
     answer.textContent=String(data.answer||'No answer returned');
     const label=el('strong','','Source passages used:');sources.append(label);
@@ -66,7 +66,7 @@
    }catch(error){
     const message=String(error?.message||'AI unavailable');
     status.textContent=/abort/i.test(message)?'AI request timed out.':message;
-    answer.textContent='The existing local source results below are still available. Cloudflare Workers AI must be enabled with an AI binding on the Pages project before AI answers can run.';
+    answer.textContent='Your Cloudflare AI binding is connected, but the model call did not complete. The local source results below are still available. If the error persists, check Cloudflare Pages Functions logs.';
    }finally{busy=false;button.disabled=false;button.textContent='Ask Cloudflare AI'}
   });
   form.addEventListener('submit',()=>{panel.hidden=true});
