@@ -2066,7 +2066,13 @@ function sharedDailyTradeSchedules(){
  }
  return schedules;
 }
+function showSimulationError(message){
+ const status=$('status');status.textContent=message;status.style.color='var(--red)';
+ $('section2Panel').open=true;
+ status.scrollIntoView?.({behavior:'smooth',block:'nearest'});
+}
 function run(){
+ if(!catalog){showSimulationError('Loading Firms account rules. Try again once ready.');return;}
  const mode=document.querySelector('[name="budgetMode"]:checked').value;
  const inputs={budget:Math.max(0,Number($('budget').value)||0),netGoal:Math.max(0,Number($('netGoal').value)||0),
   winRate:Math.max(0,Math.min(100,Number($('winRate').value)||0)),
@@ -2078,14 +2084,14 @@ function run(){
   maxActive:Math.max(1,Math.min(100,Math.floor(Number($('maxActive').value)||1))),
   maxBuysPerDay:Math.max(1,Math.min(20,Math.floor(Number($('maxBuysPerDay').value)||1))),
   reinvestPayouts:$('reinvestPayouts').value==='yes'};
- if(!rows.length){$('status').textContent='Select at least one firm';return}
+ if(!rows.length){showSimulationError('Select at least one firm');return}
  const totalWeight=rows.reduce((a,r)=>a+Math.max(0,r.weight),0);
- if(mode==='split'&&totalWeight<=0){$('status').textContent='Set at least one positive budget weight';return}
+ if(mode==='split'&&totalWeight<=0){showSimulationError('Set at least one positive budget weight');return}
  if(mode==='split'){
   const seen=new Set();
   for(const row of rows){
    const id=row.id+':'+row.size;
-   if(seen.has(id)){$('status').textContent='This account appears twice in the split portfolio. Remove the duplicate to avoid bypassing its modeled allocation limits.';return}
+   if(seen.has(id)){showSimulationError('This account appears twice in the split portfolio. Remove the duplicate to avoid bypassing its modeled allocation limits.');return}
    seen.add(id);
   }
  }
@@ -2098,7 +2104,7 @@ function run(){
  });
  const bad=jobs.filter(j=>j.validation.errors.length);
  if(bad.length){
-  $('status').textContent='Cannot run: '+bad.map(j=>j.p.firm+' '+j.p.programName+': '+j.validation.errors.join(' · ')).join(' | ');
+  showSimulationError('Cannot run: '+bad.map(j=>j.p.firm+' '+j.p.programName+': '+j.validation.errors.join(' · ')).join(' | '));
   return;
  }
  $('run').disabled=true;$('status').style.color='var(--muted)';$('status').textContent='Calculating option-based account paths…';
@@ -2120,7 +2126,11 @@ function run(){
 $('simWorkflow').addEventListener('click',event=>{
  const btn=event.target.closest?.('[data-workflow-go]');if(!btn)return;
  const panel=$(btn.dataset.workflowGo);
- if(panel){panel.open=true;panel.scrollIntoView({behavior:'smooth',block:'start'});}
+ if(panel){
+  panel.open=true;
+  if(btn.dataset.workflowGo==='section2Panel')run();
+  else panel.scrollIntoView({behavior:'smooth',block:'start'});
+ }
 });
 $('reportSourceBar').addEventListener('click',event=>{
  const jump=event.target.closest?.('[data-report-jump]');
