@@ -368,6 +368,10 @@ html[data-theme="light"] .recovery-direct{background:#f0faf6;border-color:#8bcdb
 .smart-sweep-note strong{font-weight:750}
 .smart-table{min-width:1200px}
 @media(max-width:600px){.smart-sweep-field{font-size:9px}.smart-sweep-field select{max-width:128px}}
+
+#page-firms .smart-target-reset{font-size:10px;color:var(--blue);background:transparent;border:1px solid var(--border);
+ border-radius:6px;padding:3px 6px;cursor:pointer}
+#page-firms .smart-target-note{font-size:10px!important;margin:5px 0!important}
 .scenario-advisor{margin-top:10px;padding:10px;border:1px solid var(--border,#526071);border-radius:9px;display:grid;gap:8px}.scenario-advisor-item{padding:7px 9px;border-left:3px solid #7790a5;background:rgba(127,127,127,.06);border-radius:4px}.scenario-advisor-critical{border-left-color:#cc6161}.scenario-advisor-warning{border-left-color:#d2a64b}.scenario-advisor-good{border-left-color:#4aaf83}.scenario-advisor-item p{margin:3px 0;font-size:12px;line-height:1.4}.scenario-advisor small{opacity:.75;font-size:11px}
 </style>
 <script>window.FOUR_DS_CLOUD_ENDPOINT = "https://script.google.com/macros/s/AKfycbyZW792ZLBPxusQwthCJr0bVdZwCjXyeNaklq4Dk-BuSQ8P9gdg2zdTiWFKEmYuy5sY9Q/exec";</script>
@@ -2750,12 +2754,15 @@ function renderRecoveryPlanners(){
    'All risk routes · up to '+depth+' trades';
   const caution=staticFloor?'Static overall floor: modeled headroom = overall allowance + realized stage P/L. This is not live equity headroom.':'Trailing or stage-dependent overall floor: broker high-water mark and current equity are not available. The planner checks modeled daily room but cannot verify trailing overall headroom.';
   host.innerHTML='<details class="recovery-details"><summary>'+setup.name+' · '+recoveryMoney(setup.goal)+' target · '+setup.minDays+' min days · '+setup.rr.toFixed(2)+'R · '+RECOVERY_LEVELS.filter(x=>levels[x]>=0.01).length+' active tiers</summary>'+
-   '<details class="recovery-subfold recovery-risk-inputs"'+(snapshot.riskInputsOpen?' open':'')+'><summary>Risk values &amp; sequence · '+riskHeadline+'</summary><div class="recovery-fields">'+
+   '<details class="recovery-subfold recovery-risk-inputs"'+(snapshot.riskInputsOpen?' open':'')+'><summary>Target &amp; risk values · '+recoveryMoney(setup.goal)+' target · '+riskHeadline+'</summary><div class="recovery-fields">'+
+   '<label>Planning profit target ($)<input data-stage-target type="number" min="0.01" step="0.01" value="'+setup.goal+'"></label>'+
    '<label>Reward / Risk (RR)<input data-option-rr type="number" min="0.1" max="100" step="0.1" value="'+setup.rr+'"></label>'+
    '<label>Risk sequence'+select('policyMode',[['saved','Saved option choices'],['smart-sequence','Smart R1-first recovery'],['streak','After-loss tiers'],['flat','Flat R1'],['after-win','Boost after WIN'],['protect-after-loss','Protect after LOSS']],snapshot.policyMode||'saved')+'</label>'+
    RECOVERY_LEVELS.map((level,index)=>'<label title="0 disables this tier in risk route planning">'+(['R1 · Initial','R2 · Recovery','R3 · Additional','R4 · Optional'][index])+' ($)'+
     '<input type="number" min="0" step="0.01" data-risk-level="'+level+'" value="'+levels[level]+'"></label>').join('')+'</div>'+
-   '<p class="caption compact-help">Set any R1–R4 tier to <b>0</b> to exclude it from route scans and per-trade choices. R4 starts disabled.</p></details>'+
+   '<p class="caption compact-help">Firm target (saved): <b>'+recoveryMoney(setup.firmTarget)+'</b> · Minimum trading days: <b>'+setup.minDays+'</b> · '+
+   (setup.targetOverridden?'<button type="button" class="smart-target-reset" data-stage-target-reset>Restore firm target</button> · ':'')+
+   'This planning target only changes Firms route calculations, not official requirements or Portfolio Simulator. Set any R1–R4 tier to 0 to disable it.</p></details>'+
    '<details class="option-planner-settings"'+(snapshot.settingsOpen?' open':'')+'><summary>Advanced: search settings, current progress and filters</summary><div class="recovery-fields">'+
    '<label>Current stage P/L ($)<input data-recovery-input="pnl" type="number" step="1" value="'+pnl+'"></label>'+
    '<label>Trading days completed<input data-recovery-input="days" type="number" min="0" step="1" value="'+days+'"></label>'+
@@ -2782,7 +2789,18 @@ function renderRecoveryPlanners(){
 document.addEventListener('change',event=>{
  const el=event.target,host=el.closest?.('[data-recovery-stage]');if(!host)return;
  const stage=host.dataset.recoveryStage,snapshot=recoverySnapshot(stage);
- if(el.hasAttribute('data-risk-level')){
+ if(el.hasAttribute('data-stage-target')){
+  const amount=Number(el.value);
+  if(!Number.isFinite(amount)||amount<.01||amount>1e9){
+   el.value=stageRecoverySetup(stage).goal;
+   return;
+  }
+  const root=stage==='p1'?'p1':stage==='p2'?'p2':'funded';
+  const firmTarget=positive(state[root==='p1'?'p1Target':root==='p2'?'p2Target':'profitTarget']);
+  if(Math.abs(amount-firmTarget)<.005)delete snapshot.targetOverride;
+  else snapshot.targetOverride=Math.round(amount*100)/100;
+  snapshot.page=1;snapshot.routePage=1;snapshot.riskInputsOpen=true;
+ }else if(el.hasAttribute('data-risk-level')){
   const level=el.dataset.riskLevel;
   if(!RECOVERY_LEVELS.includes(level))return;
   snapshot.levels[level]=Math.max(0,Number(el.value)||0);
@@ -2818,6 +2836,15 @@ document.addEventListener('change',event=>{
   else return;
  }else return;
  snapshot.open=true;persistRecoverySnapshot(stage);render();
+});
+document.addEventListener('click',event=>{
+ const btn=event.target.closest?.('[data-stage-target-reset]');
+ if(!btn)return;
+ const host=btn.closest('[data-recovery-stage]');if(!host)return;
+ const stage=host.dataset.recoveryStage,snap=recoverySnapshot(stage);
+ delete snap.targetOverride;
+ snap.riskInputsOpen=true;snap.open=true;snap.page=1;snap.routePage=1;
+ persistRecoverySnapshot(stage);render();
 });
 document.addEventListener('click',event=>{
  const btn=event.target.closest?.('[data-recovery-page-nav]');
