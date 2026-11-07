@@ -5,7 +5,7 @@
  const API='/api/ask';
  const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n};
  let busy=false;
- const historyKey='jj-ai-conversation-v1';
+ const historyKey='jj-ai-conversation-v2';
  let conversation=[];
  try{const saved=JSON.parse(sessionStorage.getItem(historyKey)||'[]');if(Array.isArray(saved))conversation=saved.slice(-12)}catch(_){}
  const save=()=>{try{sessionStorage.setItem(historyKey,JSON.stringify(conversation.slice(-12)))}catch(_){}};
@@ -45,10 +45,10 @@
   const sources=el('div','jj-ai-sources');
   const thread=el('div','jj-ai-thread');
   panel.append(el('strong','','Cloudflare AI · conversation'),status,thread,answer,sources);
-  const drawThread=()=>{thread.replaceChildren();for(const turn of conversation.slice(0,-1).slice(-8)){const item=el('div','jj-ai-turn jj-ai-'+turn.role);item.append(el('strong','',turn.role==='user'?'You':'AI'),el('p','',turn.content));thread.append(item)}};
+  const drawThread=()=>{thread.replaceChildren();for(const turn of conversation.slice(-8)){const item=el('div','jj-ai-turn jj-ai-'+turn.role);item.append(el('strong','',turn.role==='user'?'You':'AI'),el('p','',turn.content));thread.append(item)}};
   drawThread();
   if(conversation.length){panel.hidden=false;status.textContent='Conversation restored in this browser tab. Ask a follow-up question.'}
-  reset.addEventListener('click',()=>{conversation=[];save();thread.replaceChildren();answer.replaceChildren();sources.replaceChildren();panel.hidden=true;form.querySelector('textarea').value='';form.querySelector('textarea').focus()});
+  reset.addEventListener('click',()=>{conversation=[];save();thread.replaceChildren();answer.replaceChildren();sources.replaceChildren();panel.hidden=true;const input=form.querySelector('textarea');input.value='';input.placeholder='Ask a question about JJ’s trading course…';input.focus()});
   const result=root.querySelector('#jj-helper-results');
   if(result)result.before(panel);else root.append(panel);
   button.addEventListener('click',async()=>{
@@ -59,8 +59,10 @@
    jjHelperAnswer(true);
    const previousQuestion=[...conversation].reverse().find(m=>m.role==='user');
    const contextQuery=previousQuestion?previousQuestion.content+' '+question:question;
-   let hits=selectHits(contextQuery);
-   if(!hits.length)hits=selectHits(question);
+   const primaryHits=selectHits(question);
+   const contextHits=previousQuestion?selectHits(contextQuery):[];
+   const previousHits=previousQuestion?selectHits(previousQuestion.content):[];
+   const hits=[...primaryHits,...contextHits,...previousHits].filter((hit,index,all)=>all.findIndex(x=>x.id===hit.id)===index).slice(0,5);
    panel.hidden=false;answer.replaceChildren();sources.replaceChildren();
    if(!hits.length){status.textContent='No new source matches found. Rephrase with a course topic to retrieve evidence before asking AI.';return}
    busy=true;button.disabled=true;button.textContent='Asking AI…';
@@ -85,8 +87,8 @@
     if(!response.ok)throw Error([data.message||data.error||'AI endpoint unavailable',data.code?'Code: '+data.code:'',data.detail||''].filter(Boolean).join(' · '));
     status.textContent='AI synthesis of indexed Academy research. Verify original lesson evidence; assumptions are not actual JJ performance.';
     conversation.push({role:'user',content:question.slice(0,750)},{role:'assistant',content:String(data.answer||'').slice(0,1400)});conversation=conversation.slice(-12);save();drawThread();
-    renderAnswer(answer,data.answer||'No answer returned');
-    const questionBox=form.querySelector('textarea');if(questionBox){questionBox.value='';questionBox.placeholder='Ask a follow-up about this conversation…';}
+    answer.replaceChildren();
+    const questionBox=form.querySelector('textarea');if(questionBox){questionBox.value='';questionBox.placeholder='Ask a follow-up about this conversation…';questionBox.focus()}
     const label=el('strong','','Source passages used:');sources.append(label);
     hits.slice(0,5).forEach((hit,i)=>{
      const item=el('div','jj-ai-source');
@@ -103,7 +105,7 @@
     answer.textContent='Your Cloudflare AI binding is connected, but the model call did not complete. The local source results below are still available. If the error persists, check Cloudflare Pages Functions logs.';
    }finally{busy=false;button.disabled=false;button.textContent='Ask Cloudflare AI'}
   });
-  form.addEventListener('submit',()=>{panel.hidden=true});
+  form.addEventListener('submit',()=>{if(!conversation.length)panel.hidden=true});
  }
  const previous=render;
  render=function(){previous();if(active===jjHelperSlug)init()};
