@@ -55,11 +55,23 @@
    target.append(node);
   }
  }
+ function archiveHits(question,limit=12){
+  const base=jjHelperSearch(question);
+  const extra=typeof jjHelperDocuments==='function'?jjHelperDocuments():[];
+  const words=[...new Set(String(question).toLowerCase().split(/[^a-z0-9]+/).filter(x=>x.length>3&&!['what','when','where','which','about','could','would','does','have','across','every','explain','compare','lessons','sources'].includes(x)))];
+  const ranked=extra.map(d=>{
+   const title=String(d.title||'').toLowerCase(),content=String(d.searchText||'').toLowerCase();
+   const count=words.filter(w=>title.includes(w)||content.includes(w)).length;
+   return {...d,score:count*4+words.filter(w=>title.includes(w)).length*7+(d.quoted?3:0),match:count};
+  }).filter(d=>d.match>=Math.min(2,words.length)&&d.match>0).sort((a,b)=>b.score-a.score);
+  const combined=[...base,...ranked],seen=new Set();
+  return combined.filter(d=>{if(seen.has(d.id))return false;seen.add(d.id);return true}).slice(0,limit);
+ }
  function selectHits(question){
-  const hits=jjHelperSearch(question);
-  if(!/funded|first two trades|second trade|after a loss|50.point/i.test(question))return hits.slice(0,5);
+  const hits=archiveHits(question,12);
+  if(!/funded|first two trades|second trade|after a loss|50.point/i.test(question))return hits.slice(0,12);
   const filtered=hits.filter(hit=>!/opening candle|opening range|continuation window/i.test(hit.title+' '+hit.text));
-  return (filtered.length?filtered:hits).slice(0,5);
+  return (filtered.length?filtered:hits).slice(0,12);
  }
 
  function init(){
@@ -106,7 +118,27 @@
    studyBody.append(el('small','','Saved locally on this device. The queue is not sent to an external research service.'));
   };
   const queueQuestion=(question,reason)=>{if(!question||study.queue.some(x=>x.question===question))return;study.queue.push({question,reason});study.queue=study.queue.slice(-100);saveStudy();drawStudy()};
-  panel.append(library,studyPanel,el('strong','','JJ Academy AI · conversation'),usage,status,thread,answer,sources,history);
+  const archive=el('details','jj-ai-archive');
+  const archiveTitle=el('summary','','Archive search · indexed excerpts');
+  const archiveResults=el('div','jj-ai-archive-results');
+  const archiveSearch=el('button','','Search all indexed entries');archiveSearch.type='button';
+  archiveSearch.onclick=()=>{
+   const q=form.querySelector('textarea')?.value.trim()||[...conversation].reverse().find(x=>x.role==='user')?.content||'';
+   archiveResults.replaceChildren();
+   if(!q){archiveResults.append(el('p','','Enter a question to search the indexed archive.'));return}
+   const results=archiveHits(q,30);
+   archiveTitle.textContent='Archive search · '+results.length+' indexed matches';
+   if(!results.length)archiveResults.append(el('p','','No indexed matches. Raw Drive transcripts are not searched by this feature.'));
+   for(const d of results){
+    const item=el('details','jj-ai-archive-item');item.append(el('summary','',d.title+' · '+d.type));
+    item.append(el('p','',d.quoted||d.text||''));
+    if(d.footnote)item.append(el('small','',d.footnote));
+    if(d.sourceUrl){const link=el('a','','Original source');link.href=d.sourceUrl;link.target='_blank';link.rel='noopener noreferrer';item.append(link)}
+    archiveResults.append(item);
+   }
+  };
+  archive.append(archiveTitle,archiveSearch,archiveResults);
+  panel.append(library,studyPanel,archive,el('strong','','JJ Academy AI · conversation'),usage,status,thread,answer,sources,history);
   const showLatest=()=>{
    answer.replaceChildren();sources.replaceChildren();drawThread();
    const latest=conversation[conversation.length-1];
@@ -191,18 +223,18 @@
    const primaryHits=selectHits(question);
    const contextHits=previousQuestion?selectHits(contextQuery):[];
    const previousHits=previousQuestion?selectHits(previousQuestion.content):[];
-   const hits=[...primaryHits,...contextHits,...previousHits].filter((hit,index,all)=>all.findIndex(x=>x.id===hit.id)===index).slice(0,5);
+   const hits=[...primaryHits,...contextHits,...previousHits].filter((hit,index,all)=>all.findIndex(x=>x.id===hit.id)===index).slice(0,8);
    panel.hidden=false;sources.replaceChildren();
    if(!hits.length){queueQuestion(question,'No source matches');status.textContent='No source matches. Saved to local research queue; no AI request made.';return}
    busy=true;button.disabled=true;reset.disabled=true;button.textContent='Asking AI…';
    recordUsage('attempt');refreshUsage();
    conversation.push({role:'user',content:question.slice(0,750)});save();drawThread();drawChats();
-   status.textContent='Thinking… · '+Math.min(hits.length,5)+' Academy sources';
+   status.textContent='Thinking… · '+Math.min(hits.length,8)+' Academy sources';
    try{
     const payload={
      question:question.slice(0,750),history:conversation.slice(0,-1).slice(-6),
-     sources:hits.slice(0,5).map(hit=>({
-      title:hit.title,type:hit.type,summary:hit.text,
+     sources:hits.slice(0,8).map(hit=>({
+      title:hit.title,type:hit.type,summary:[hit.quoted?'Transcript excerpt: '+hit.quoted:'',hit.text].filter(Boolean).join(' | '),
       limitation:hit.footnote||''
      }))
     };
@@ -217,7 +249,7 @@
     try{data=await response.json()}catch(_){}
     if(!response.ok)throw Error([data.message||data.error||'AI endpoint unavailable',data.code?'Code: '+data.code:'',data.detail||''].filter(Boolean).join(' · '));
     status.textContent='AI synthesis of indexed Academy research. Verify original lesson evidence; assumptions are not actual JJ performance.';
-    const citedSources=hits.slice(0,5).map(hit=>({title:hit.title,url:hit.sourceUrl||'',chapter:hit.chapter||''}));
+    const citedSources=hits.slice(0,8).map(hit=>({title:hit.title,url:hit.sourceUrl||'',chapter:hit.chapter||''}));
     recordUsage('success');refreshUsage();
     const responseText=String(data.answer||'').slice(0,6500);
     conversation.push({role:'assistant',content:responseText,sources:citedSources,mathNote:tradeArithmetic(question)});
