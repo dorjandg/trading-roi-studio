@@ -435,19 +435,38 @@
     #jj-cloudflare-ai>.jj-ai-page-context{flex:0 0 auto!important;max-height:110px;overflow:auto}
    `;document.head.append(barStyle);
   }
-  const prune=()=>{
-   const root=document.getElementById('jj-helper-app');
-   if(!root)return;
-   let node=root;
-   while(node&&node!==document.body){
-    for(const child of [...node.parentElement.children])if(child!==node)child.style.setProperty('display','none','important');
-    if(node.tagName==='MAIN')break;
-    node=node.parentElement;
-   }
-   const panel=document.getElementById('jj-cloudflare-ai');
+  // Detach chat from chapter/section layout. The chapter's grid and overflow
+  // rules previously pushed the composer below the visible viewport on touch devices.
+  init();
+  const chatRoot=document.getElementById('jj-helper-app');
+  if(chatRoot){
+   document.body.append(chatRoot);
+   const panel=chatRoot.querySelector('#jj-cloudflare-ai');
    if(panel)panel.hidden=false;
-  };
-  init();prune();
+  }
+  const isolated=el('style');isolated.textContent=`
+    body>#jj-helper-app{position:fixed!important;inset:0!important;z-index:9998!important;
+      width:100vw!important;max-width:100vw!important;height:var(--jj-chat-vh,100dvh)!important;
+      min-height:0!important;margin:0!important;padding:0!important;border:0!important;
+      display:flex!important;flex-direction:column!important;overflow:hidden!important;background:var(--bg)!important}
+    body>#jj-helper-app>#jj-cloudflare-ai{flex:1 1 0!important;min-height:0!important;max-height:none!important;
+      overflow-y:auto!important;overscroll-behavior:contain!important}
+    body>#jj-helper-app>.jj-helper-form{display:flex!important;position:relative!important;bottom:auto!important;
+      flex:0 0 auto!important;z-index:2!important;margin:0!important;border:0!important;
+      border-top:1px solid var(--stroke)!important;border-radius:0!important;background:var(--panel)!important}
+    body>#jj-helper-app>.jj-helper-form textarea{display:block!important;visibility:visible!important;opacity:1!important;
+      position:relative!important;pointer-events:auto!important;touch-action:auto!important;z-index:3!important}
+    body>#jj-helper-app #jj-cloudflare-ai>.jj-ai-thread{flex:1 1 auto!important;min-height:0!important;max-height:none!important;
+      overflow-y:auto!important;overscroll-behavior:contain!important}
+    html[data-jj-mobile-chat=true] body>#jj-helper-app{top:43px!important;bottom:auto!important;
+      height:calc(var(--jj-chat-vh,100dvh) - 43px)!important}
+    @media(max-width:1024px),(pointer:coarse){
+      body>#jj-helper-app>.jj-helper-form textarea{font-size:16px!important;min-height:56px!important;height:56px!important}
+      body>#jj-helper-app>.jj-helper-form .jj-helper-form-actions{display:flex!important;grid-template-columns:none!important}
+      body>#jj-helper-app>.jj-helper-form .jj-helper-form-actions>button{grid-column:auto!important}
+      body>#jj-helper-app>.jj-helper-form .jj-helper-form-actions>.jj-ai-button{flex:1!important;min-width:0!important}
+    }
+  `;document.head.append(isolated);
  }else{
   const open=el('button','jj-ai-float-launch','✦ Ask JJ AI');
   open.type='button';open.setAttribute('aria-label','Open JJ Academy AI consultant');
