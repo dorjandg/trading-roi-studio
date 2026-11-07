@@ -677,6 +677,15 @@ function oneTrial(p,config,rng,record=false){
  const failed=accounts.filter(x=>x.status==='failed').length;
  const strategyStopped=accounts.filter(x=>x.status==='strategy-stopped').length;
  const pending=accounts.filter(x=>['active','activation-wait','payout-pending'].includes(x.status)).length;
+ // Elapsed TRADING days from purchase; observed only for completed milestones.
+ const timing={p1:{count:0,days:0},p2:{count:0,days:0},funded:{count:0,days:0},paid:{count:0,days:0}};
+ for(const ac of accounts){
+  const start=Math.max(1,ac.purchaseDay||1);
+  const add=(key,day)=>{if(day==null)return;timing[key].count++;timing[key].days+=Math.max(1,day-start+1)};
+  for(const pass of ac.passes)if(pass.stage==='p1'||pass.stage==='p2')add(pass.stage,pass.day);
+  add('funded',ac.fundedActivatedDay);
+  add('paid',ac.paidDay);
+ }
  const net=receipts-spent;
  return {bought,paid,passes,funded,failed,exhausted,strategyStopped,pending,spent,receipts,net,activations,
     targetHit:accounts.filter(a=>a.fundedTargetDay!==null).length,
@@ -695,6 +704,7 @@ function oneTrial(p,config,rng,record=false){
    tradePnl:accounts.reduce((sum,a)=>sum+a.tradePnl,0),
    qualifying:accounts.reduce((sum,a)=>sum+a.totalAdminDays,0),
    accountDetails:record?accounts:[],
+   timing,
    tradeAssignments:tradeAssignments?.sort((a,b)=>a.day-b.day||a.signal-b.signal)||undefined,
    firstPayoutDay:accounts.filter(a=>a.paidDay!=null).reduce((m,a)=>Math.min(m,a.paidDay),Infinity),
    goalPayoutDay:dailyCash?.find(d=>d.paid>=(config.requiredPayouts||Infinity)&&d.net>=(config.netGoal||Infinity))?.day??Infinity,
@@ -747,10 +757,12 @@ function simulatePortfolio(p,config={}){
    opportunities:0,tradesToday:0,qualificationToday:0,unusedToday:0})):null;
  let withPayout=0,positiveNet=0,goalMet=0, sample=null;
  let firstDayTotal=0,firstDayCount=0,goalDayTotal=0,goalDayCount=0;
+ const timingTotals={p1:{count:0,days:0},p2:{count:0,days:0},funded:{count:0,days:0},paid:{count:0,days:0}};
  const goal=pos(config.netGoal);
  for(let k=0;k<trials;k++){
   const x=oneTrial(p,{...settings,trialIndex:k},rand,k===0);
   if(k===0)sample=x;
+  for(const key of Object.keys(timingTotals))for(const part of ['count','days'])timingTotals[key][part]+=x.timing[key][part];
   if(Number.isFinite(x.firstPayoutDay)){firstDayTotal+=x.firstPayoutDay;firstDayCount++}
   if(Number.isFinite(x.goalPayoutDay)){goalDayTotal+=x.goalPayoutDay;goalDayCount++}
   if(chartTrials)chartTrials.push({
@@ -795,6 +807,8 @@ function simulatePortfolio(p,config={}){
   chanceGoal:goal?goalMet/trials:null,goal,
   roi:avg.spent>0?avg.net/avg.spent:0,
   avgFirstPayoutDay:firstDayCount?firstDayTotal/firstDayCount:null,
+  timeFromPurchase:Object.fromEntries(Object.entries(timingTotals).map(([key,t])=>[key,{
+   completed:t.count/trials,meanTradingDays:t.count?t.days/t.count:null}])),
   avgGoalPayoutDay:goalDayCount?goalDayTotal/goalDayCount:null,
   chanceGoalPayoutDay:goalDayCount/trials,
   median:quantile(nets,.5),p10:quantile(nets,.1),p90:quantile(nets,.9),
