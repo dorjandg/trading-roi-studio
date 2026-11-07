@@ -14,3 +14,12 @@
 .jj-ai-answer{white-space:normal;display:grid;gap:7px}
 .jj-ai-answer p{margin:0;line-height:1.55;font-size:12px}
 .jj-ai-answer h4{margin:5px 0 0;font-size:12px;color:var(--accent);font-weight:700}
+
+.jj-ai-reset{font-size:11px!important;opacity:.85}
+.jj-ai-thread{display:grid;gap:6px;max-height:330px;overflow-y:auto}
+.jj-ai-turn{padding:7px 9px;border:1px solid var(--stroke);border-radius:7px;font-size:11px;line-height:1.45}
+.jj-ai-turn.jj-ai-user{margin-left:12%;background:var(--panel)}
+.jj-ai-turn.jj-ai-assistant{margin-right:8%;background:var(--bg)}
+.jj-ai-turn strong{font-size:10px;color:var(--accent)}
+.jj-ai-turn p{margin:3px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;max-height:125px;overflow:hidden}
+.jj-ai-thread:not(:empty)+.jj-ai-answer{border-top:1px solid var(--stroke);padding-top:8px}
