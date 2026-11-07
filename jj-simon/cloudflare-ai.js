@@ -326,7 +326,7 @@
    jjHelperQuestion=question;
    const previousQuestion=[...conversation].reverse().find(m=>m.role==='user');
    const contextQuery=previousQuestion?previousQuestion.content+' '+question:question;
-   const contextualQuestion=pageTitle&&!new RegExp(pageTitle.replace(/[.*+?^${}()|[\]\\]/g,'\\   const contextQuery=previousQuestion?previousQuestion.content+' '+question:question;
+   const contextualQuestion=pageTitle&&!question.toLowerCase().includes(pageTitle.toLowerCase())?pageTitle+' '+question:question;
    const primaryHits=selectHits(question);'),'i').test(question)?pageTitle+' '+question:question;
    const primaryHits=selectHits(question);
    const contextHits=previousQuestion?selectHits(contextQuery):[];
