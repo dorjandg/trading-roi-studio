@@ -2651,6 +2651,71 @@ function ftmoFundedBufferUI(stage,setup,snap){
    'Some routes may stop before every letter executes. The portfolio Monte Carlo uses current account P/L, fees, stage eligibility and its own signal schedule.</p>'+
   '</details></details>';
 }
+// FTMO-only Funded Buffer Builder: explicit apply; never activates on a draft edit.
+document.addEventListener('change',event=>{
+ const input=event.target;
+ if(!input.hasAttribute?.('data-ftmo-buffer-field'))return;
+ const host=input.closest?.('[data-recovery-stage]');
+ if(!host||host.dataset.recoveryStage!=='funded'||!/^ftmo2:/.test(String(activeProgramKey||'')))return;
+ const key=input.dataset.ftmoBufferField;
+ if(!['starterRisk','bufferTarget','growthCap','recoveryCap'].includes(key))return;
+ const value=Number(input.value);
+ if(!Number.isFinite(value)||value<.01||value>10000000)return;
+ const snap=recoverySnapshot('funded'),F=window.StudioFtmoFundedBuffer;
+ if(!F)return;
+ snap.ftmoBufferDraft={...F.normalize(snap.ftmoBufferDraft||snap.ftmoBuffer||F.defaults),[key]:Math.round(value*100)/100};
+ snap.ftmoBufferOpen=true;
+ persistRecoverySnapshot('funded');
+ renderRecoveryPlanners();
+});
+document.addEventListener('toggle',event=>{
+ const detail=event.target;
+ if(!detail.matches?.('.ftmo-buffer-panel,.ftmo-buffer-paths'))return;
+ const host=detail.closest?.('[data-recovery-stage]');
+ if(!host||host.dataset.recoveryStage!=='funded'||!/^ftmo2:/.test(String(activeProgramKey||'')))return;
+ const snap=recoverySnapshot('funded');
+ if(detail.matches('.ftmo-buffer-panel'))snap.ftmoBufferOpen=detail.open;
+ else snap.ftmoBufferPathsOpen=detail.open;
+ persistRecoverySnapshot('funded');
+},true);
+document.addEventListener('click',event=>{
+ const button=event.target.closest?.('[data-ftmo-buffer-apply],[data-ftmo-buffer-undo]');
+ if(!button)return;
+ const host=button.closest?.('[data-recovery-stage]');
+ if(!host||host.dataset.recoveryStage!=='funded'||!/^ftmo2:[1-9]\\d{3,6}$/.test(String(activeProgramKey||'')))return;
+ const snap=recoverySnapshot('funded'),F=window.StudioFtmoFundedBuffer;
+ if(!F){alert('FTMO Buffer Builder module is unavailable; no strategy changed.');return}
+ if(button.hasAttribute('data-ftmo-buffer-undo')){
+  const saved=snap.ftmoBufferUndo;if(!saved)return;
+  if(!confirm('Undo FTMO Funded Buffer Builder and restore the previous funded risk policy?'))return;
+  snap.policyMode=saved.policyMode||'saved';
+  if(saved.appliedSmartSetup)snap.appliedSmartSetup={...saved.appliedSmartSetup};else delete snap.appliedSmartSetup;
+  if(saved.appliedFtmoBuffer)snap.appliedFtmoBuffer={...saved.appliedFtmoBuffer};else delete snap.appliedFtmoBuffer;
+  if(saved.ftmoBuffer)snap.ftmoBuffer={...saved.ftmoBuffer};else delete snap.ftmoBuffer;
+  delete snap.ftmoBufferUndo;
+ }else{
+  const draft=F.normalize(snap.ftmoBufferDraft||snap.ftmoBuffer||F.defaults);
+  if(!F.valid(draft)){alert('Please enter positive Buffer Builder risk values.');return}
+  const setup=stageRecoverySetup('funded');
+  if(!confirm('Apply FTMO Funded Buffer Builder ONLY to '+String(activeProgramKey)+' / Funded?\\n'+
+   'First risk '+recoveryMoney(draft.starterRisk)+' · buffer '+recoveryMoney(draft.bufferTarget)+
+   ' · growth cap '+recoveryMoney(draft.growthCap)+' · recovery cap '+recoveryMoney(draft.recoveryCap)+
+   ' · RR '+setup.rr.toFixed(2)+' · funded target '+recoveryMoney(setup.goal)+
+   '\\n\\nPortfolio Sim will use this outcome-dependent policy for this FTMO funded stage. Other firms and phases will not be changed. No trades are placed.'))return;
+  if(!snap.ftmoBufferUndo)snap.ftmoBufferUndo={
+   policyMode:snap.policyMode||'saved',
+   appliedSmartSetup:snap.appliedSmartSetup?{...snap.appliedSmartSetup}:null,
+   appliedFtmoBuffer:snap.appliedFtmoBuffer?{...snap.appliedFtmoBuffer}:null,
+   ftmoBuffer:snap.ftmoBuffer?{...snap.ftmoBuffer}:null
+  };
+  snap.ftmoBuffer={...draft};
+  snap.policyMode='ftmo-funded-buffer';
+  snap.appliedFtmoBuffer={label:'FTMO Funded Buffer Builder',appliedAt:new Date().toISOString(),
+   source:'Firms',config:{...draft},rr:setup.rr,profitTarget:setup.goal,simulationPolicy:'ftmo-funded-buffer'};
+ }
+ snap.ftmoBufferOpen=true;snap.open=true;snap.page=1;
+ persistRecoverySnapshot('funded');save();render();
+});
 function renderRecoveryPlanners(){
  const quickLink=document.getElementById('firmPortfolioQuickLink');
  if(quickLink){
