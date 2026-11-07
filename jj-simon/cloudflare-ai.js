@@ -113,6 +113,7 @@
     thread.append(item);
    }
    panel.hidden=false;
+   requestAnimationFrame(()=>{thread.scrollTop=thread.scrollHeight});
    status.textContent=conversation.length?'Conversation saved locally · Ask a follow-up below.':'Ask a question to start a conversation.';
   };
   drawThread();
