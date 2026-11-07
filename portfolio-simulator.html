@@ -658,8 +658,8 @@ details p{margin:6px 0}
 </div></details>
 </div>
 <script src="ftmo-funded-buffer.js?v=20261107-ftmo-funded-buffer-v1"></script>
-<script src="portfolio-engine.js?v=20261107-weekly-schedule-v1"></script><script src="portfolio-weekly.js?v=20261107-weekly-cashflow-v1"></script>
-<script src="portfolio-payout-optimizer.js?v=20261107-goal-success-cost-v2"></script>
+<script src="portfolio-engine.js?v=20261107-weekly-timing-v2"></script><script src="portfolio-weekly.js?v=20261107-weekly-cashflow-v2"></script>
+<script src="portfolio-payout-optimizer.js?v=20261107-weekly-optimizer-v1"></script>
 <script src="portfolio-discovery.js?v=20261107-target-exact-v1"></script>
 <script src="portfolio-recovery-ladder.js?v=20261107-recovery-ladder-v1"></script>
 <script src="portfolio-funded-recovery.js?v=20261107-funded-450-cap-3150-v1"></script>
@@ -1337,6 +1337,9 @@ function renderWeeklyEconomics(list,inputs){
   '<div title="Mean first paid trading day among simulation trials where a payout occurred"><small>First payout day · conditional</small><strong>'+(w.firstPayoutDay==null?'—':dec(w.firstPayoutDay))+'</strong></div>'+
   '<div><small>Net cash / challenge purchased</small><strong>'+fmt(w.netPerPurchased)+'</strong></div>'+
   '<div><small>Phase 1 passes / purchased</small><strong>'+percentage(w.phase1Conversion)+'</strong></div>'+
+  '<div title="Mean elapsed trading days from purchase, only among accounts that passed Phase 1"><small>Phase 1 pass · days from buy</small><strong>'+(r.timeFromPurchase?.p1?.meanTradingDays==null?'—':dec(r.timeFromPurchase.p1.meanTradingDays))+'</strong></div>'+
+  '<div title="Mean elapsed trading days from purchase, only among accounts that passed Phase 2"><small>Phase 2 pass · days from buy</small><strong>'+(r.timeFromPurchase?.p2?.meanTradingDays==null?'—':dec(r.timeFromPurchase.p2.meanTradingDays))+'</strong></div>'+
+  '<div title="Mean elapsed trading days from purchase, only among accounts that obtained their first reward"><small>First payout · days from buy</small><strong>'+(r.timeFromPurchase?.paid?.meanTradingDays==null?'—':dec(r.timeFromPurchase.paid.meanTradingDays))+'</strong></div>'+
   '</div>'+table(w.weeks)+'</details>';
  let combined='';
  if(inputs.budgetMode==='split'&&summaries.length){
@@ -1356,7 +1359,7 @@ function renderWeeklyEconomics(list,inputs){
  }
  $('weeklyEconomicsHint').textContent=(inputs.signalPace==='weekly20'?'20 signals/week · 3,4,5,4,4':'Fixed '+inputs.tradesPerDay+'/day')+
   ' · '+summaries.length+' account type(s)';
- holder.innerHTML='<p class="hint">Week = 5 trading days. Cash net = first-payout receipts minus challenge/activation fees, never the profit target of an unfinished evaluation phase. Values are Monte Carlo averages. Fees / payout include spending on accounts not yet paid, and conversion is first payouts divided by challenges purchased WITHIN the selected horizon. The average first payout day excludes trials without a payout. Net/week is an average over this horizon including upfront costs and waiting, NOT an ongoing weekly income forecast. Independent comparison alternatives must not be summed.</p>'+
+ holder.innerHTML='<p class="hint">Week = 5 trading days. Cash net = first-payout receipts minus challenge/activation fees, never the profit target of an unfinished evaluation phase. Values are Monte Carlo averages. Fees / payout include spending on accounts not yet paid, and conversion is first payouts divided by challenges purchased WITHIN the selected horizon. Average phase and payout durations include only accounts reaching that milestone. The average first payout day excludes trials without a payout. Net/week is an average over this horizon including upfront costs and waiting, NOT an ongoing weekly income forecast. Independent comparison alternatives must not be summed.</p>'+
   combined+summaries.map(firmCard).join('');
 }
 function renderResults(list,inputs,source='run'){
@@ -2174,5 +2177,5 @@ init();
 </script>
 <script src="gpt-review-request.js?v=20261107-queue-live-v2"></script>
 <script src="gpt-research-reports.js?v=20261107-status-values-v5"></script>
-<script src="portfolio-payout-ui.js?v=20261107-goal-success-cost-v2"></script>
+<script src="portfolio-payout-ui.js?v=20261107-weekly-pacing-v1"></script>
 <script src="studio-header.js"></script></body></html>
