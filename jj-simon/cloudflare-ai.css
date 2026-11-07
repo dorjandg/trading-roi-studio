@@ -215,3 +215,12 @@
  #jj-helper-app>.jj-helper-form .jj-helper-form-actions>button[type=submit]{grid-column:2}
  #jj-helper-app .jj-question-queue,#jj-helper-app .jj-helper-results,#jj-helper-app .jj-helper-feedback{max-width:100%;min-width:0;overflow-wrap:anywhere}
 }
+
+/* Smaller example placeholder text in the mobile question composer. */
+@media(max-width:650px){
+ #jj-helper-app>.jj-helper-form textarea::placeholder{
+  font-size:12px!important;
+  line-height:1.35!important;
+  opacity:.75;
+ }
+}
