@@ -996,7 +996,7 @@ function applyPhaseVisibility(){
   groups[2].style.display='';
   groups[0].querySelector('h3').textContent=m.topstep?'01 · Trading Combine — Evaluation':'01 · Phase 1 — Evaluation';
   groups[1].querySelector('h3').textContent='02 · Phase 2 — Verification';
-  groups[2].querySelector('h3').textContent=m.topstep?'02 · Express Funded Account — Payout stage':m.instant?'01 · Funded — Payout stage':m.phase2?'03 · Funded — Payout stage':'02 · Funded — Payout stage';
+  groups[2].querySelector('h3').textContent=m.topstep?'03 · Topstep Express Funded — Payout stage':m.instant?'01 · Funded — Payout stage':m.phase2?'03 · Funded — Payout stage':'02 · Funded — Payout stage';
  }
  const topstepPlan=$('topstepStagePlan');
  if(topstepPlan){
@@ -2059,7 +2059,7 @@ function renderFirmHealth(){
  const stages=[
   ...(m.phase1?[{name:m.topstep?'Evaluation / Combine':'Phase 1',keys:['p1Base','p1Recovery'],cap:positive(state.p1DailyCap),goal:positive(state.p1Target),phase:'evaluation'}]:[]),
   ...(m.phase2?[{name:'Phase 2',keys:['p2Base','p2Recovery'],cap:positive(state.p2DailyCap),goal:positive(state.p2Target),phase:'evaluation'}]:[]),
-  {name:m.topstep?'Funded / XFA':'Funded',keys:['fundedBase','fundedRecovery'],cap:positive(state.fundedDailyCap),goal:positive(state.profitTarget),phase:'funded'}
+  {name:m.topstep?'P3 · Funded / XFA':'Funded',keys:['fundedBase','fundedRecovery'],cap:positive(state.fundedDailyCap),goal:positive(m.topstep?state.topstepFirstPayoutBalance:state.profitTarget),phase:'funded'}
  ];
  const limitFor=(field,pct)=>{const fixed=Number(field?.[size]);return Number.isFinite(fixed)&&fixed>0?fixed:Number(pct)>0?size*Number(pct)/100:null};
  const dailyLimit=limitFor(loss.dailyUSDBySize,loss.dailyPercent),overallLimit=limitFor(loss.maximumUSDBySize,loss.maximumPercent);
@@ -2174,8 +2174,8 @@ function persistRecoverySnapshot(stage){
 }
 function stageRecoverySetup(stage){
  const root=stage==='p1'?'p1':stage==='p2'?'p2':'funded';
- const firmTarget=positive(state[root==='p1'?'p1Target':root==='p2'?'p2Target':'profitTarget']);
- const stored=Number(recoverySnapshot(root).targetOverride);
+ const firmTarget=positive(root==='funded'&&phaseModel().topstep?state.topstepFirstPayoutBalance:state[root==='p1'?'p1Target':root==='p2'?'p2Target':'profitTarget']);
+ const stored=root==='funded'&&phaseModel().topstep?NaN:Number(recoverySnapshot(root).targetOverride);
  const override=Number.isFinite(stored)&&stored>=.01?stored:null;
  return {name:root==='p1'?'Phase 1':root==='p2'?'Phase 2':'Funded',root,
  goal:override===null?firmTarget:override,firmTarget,
