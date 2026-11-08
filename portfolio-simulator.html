@@ -651,7 +651,7 @@ details p{margin:6px 0}
 <details class="sim-charts-panel numbered-panel" id="section4Panel" open><summary><strong>5 · Results across prop firms</strong><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><p id="summaryCaption" class="hint"></p><div id="totals" class="kpis"></div>
  <div class="tablewrap"><table><thead><tr><th>Firm / account</th><th>Budget</th><th>Challenges</th><th>Spent avg.</th><th>Phase 1 passes</th><th>Phase 2 passes</th><th>Funded</th><th>Paid</th><th>Payouts avg.</th><th>Net avg.</th><th>ROI</th><th>Chance ≥1 payout</th></tr></thead><tbody id="comparisonRows"></tbody></table></div>
  <p class="hint">Counts and profits are averages over simulated trials, not whole-account predictions. ROI = expected net / expected incurred costs. Starting budget is not account capital.</p>
- <div id="combined" hidden></div><details id="weeklyEconomicsPanel" class="sim-charts-panel" style="margin-top:12px"><summary><strong>Weekly cash flow · payout economics</strong><span class="sim-charts-summary" id="weeklyEconomicsHint">Fees · payouts · net/week · conversion</span></summary><div id="weeklyEconomicsContents" class="numbered-content"><p class="hint">Run Simulation to see weekly results.</p></div></details>
+ <div id="combined" hidden></div><details id="weeklyEconomicsPanel" class="sim-charts-panel" style="margin-top:12px"><summary><strong>Cash flow · payout economics</strong><span class="sim-charts-summary" id="weeklyEconomicsHint">Fees · payouts · net · conversion</span></summary><div class="numbered-content"><div class="row" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px"><label for="cashPeriod">Period</label><select id="cashPeriod"><option value="5">Weekly · 5 trading days</option><option value="10">Biweekly · 10 trading days</option><option value="20">Monthly · 20 trading days</option><option value="1">Daily</option></select><button type="button" id="cashColumnsToggle">Columns ▾</button><button type="button" id="cashSourcesToggle">Model inputs ▾</button></div><div id="cashColumnsPanel" hidden></div><div id="cashSourcesPanel" hidden></div></div><div id="weeklyEconomicsContents" class="numbered-content"><p class="hint">Run Simulation to see weekly results.</p></div></details>
 </div></details>
 <details id="chartsPanel" class="sim-charts-panel"><summary><strong>6 · Charts</strong><span class="sim-charts-summary">Equity · Drawdown · Distributions · Payouts</span><span class="sim-charts-hint">Show / hide</span></summary><div id="chartsContents" class="sim-charts-contents"><p class="hint">Run a simulation to load charts.</p></div></details>
 <details id="journeyPanel" class="sim-charts-panel journey-panel">
@@ -1419,48 +1419,70 @@ $('chartsContents').addEventListener('click',event=>{
  renderCharts();saveView();
 });
 let regularReport=null,investmentReport=null,reportMode='run';
+
+const cashColumns=[
+ ['period','Period · days'],['opportunities','Signals'],['trades','Traded'],['bought','Bought'],['challengePasses','P1 passed'],['verificationPasses','P2 passed'],['funded','Funded'],['paid','Paid'],['spent','Fees spent'],['receipts','Cash receipts'],['net','Net this period'],['cumulativeNet','Cumulative net'],
+ ['cumulativeBought','Cumulative bought'],['cumulativePaid','Cumulative paid'],['cumulativeSpent','Cumulative fees'],['cumulativeReceipts','Cumulative receipts'],['cumulativeFunded','Cumulative funded'],['cumulativeP1','Cumulative P1'],['cumulativeP2','Cumulative P2']
+];
+let cashVisible=new Set(cashColumns.slice(0,12).map(x=>x[0]));
+let cashLastList=null,cashLastInputs=null;
+function cashPeriodRows(result,span){
+ const curve=result.cashCurve||[],days=Math.max(0,Math.floor(Number(result.config?.days)||0)),out=[];
+ for(let start=0;start<days;start+=span){
+  const end=Math.min(days,start+span);
+  const before=start===0?{spent:0,receipts:0,net:0,bought:0,paid:0,passed1:0,passed2:0,activated:0}:curve[start],after=curve[end];
+  if(!before||!after)continue;
+  const delta=(key)=>Number(after[key]||0)-Number(before[key]||0);
+  const daily=curve.slice(start+1,end+1);
+  out.push({period:Math.floor(start/span)+1,fromDay:start+1,toDay:end,
+   opportunities:daily.reduce((s,x)=>s+Number(x.opportunities||0),0),
+   trades:daily.reduce((s,x)=>s+Number(x.tradesToday||0),0),
+   bought:delta('bought'),challengePasses:delta('passed1'),verificationPasses:delta('passed2'),
+   funded:delta('activated'),paid:delta('paid'),spent:delta('spent'),receipts:delta('receipts'),net:delta('net'),
+   cumulativeNet:Number(after.net||0),cumulativeBought:Number(after.bought||0),cumulativePaid:Number(after.paid||0),
+   cumulativeSpent:Number(after.spent||0),cumulativeReceipts:Number(after.receipts||0),
+   cumulativeFunded:Number(after.activated||0),cumulativeP1:Number(after.passed1||0),cumulativeP2:Number(after.passed2||0)});
+ }
+ return out;
+}
 function renderWeeklyEconomics(list,inputs){
+ cashLastList=list;cashLastInputs=inputs;
  const holder=$('weeklyEconomicsContents');
  if(!holder||!weekly)return;
- const fmt=x=>x==null||!Number.isFinite(x)?'—':usd(x);
- const percentage=x=>x==null||!Number.isFinite(x)?'—':pct(x);
+ const span=Math.max(1,Number($('cashPeriod')?.value)||5);
  const summaries=list.map(r=>({r,w:weekly.summarize(r)})).filter(x=>x.w);
- const headers='<tr><th>Week · days</th><th>Signals</th><th>Traded</th><th>Bought</th><th>P1 passed</th><th>P2 passed</th><th>Funded</th><th>Paid</th><th>Fees spent</th><th>Cash receipts</th><th>Net this week</th><th>Cumulative net</th></tr>';
- const row=w=>'<tr><td>'+w.week+' · '+w.fromDay+'–'+w.toDay+'</td><td>'+dec(w.opportunities)+'</td><td>'+dec(w.trades)+'</td><td>'+dec(w.bought)+'</td><td>'+dec(w.challengePasses)+'</td><td>'+dec(w.verificationPasses)+'</td><td>'+dec(w.funded)+'</td><td>'+dec(w.paid)+'</td><td>'+usd(w.spent)+'</td><td>'+usd(w.receipts)+'</td><td class="'+(w.net>=0?'good':'bad')+'">'+usd(w.net)+'</td><td>'+usd(w.cumulativeNet)+'</td></tr>';
- const table=items=>'<div class="tablewrap"><table><thead>'+headers+'</thead><tbody>'+items.map(row).join('')+'</tbody></table></div>';
- const firmCard=({r,w})=>'<details class="weekly-economics-firm"><summary><strong>'+esc(r.plan.firm+' · '+r.plan.programName+' · '+usd(r.plan.size))+'</strong> · Net/week '+usd(w.netPerWeek)+' · Payout chance '+percentage(w.chanceAnyPayout)+'</summary>'+
-  '<div class="result-grid">'+
-  '<div title="Mean net first-payout cash less incurred fees, divided by selected trading-week horizon; not a steady-state income estimate"><small>Net per week · horizon avg.</small><strong>'+usd(w.netPerWeek)+'</strong></div>'+
-  '<div title="All incurred fees, including still-unfinished accounts, divided by payouts completed by the horizon"><small>Fees / first payout</small><strong>'+fmt(w.costPerPaid)+'</strong></div>'+
-  '<div title="First payouts completed / purchased challenges across the selected finite horizon, not lifetime success probability"><small>First payouts / challenges</small><strong>'+percentage(w.conversion)+'</strong></div>'+
-  '<div title="Mean first paid trading day among simulation trials where a payout occurred"><small>First payout day · conditional</small><strong>'+(w.firstPayoutDay==null?'—':dec(w.firstPayoutDay))+'</strong></div>'+
-  '<div><small>Net cash / challenge purchased</small><strong>'+fmt(w.netPerPurchased)+'</strong></div>'+
-  '<div><small>Phase 1 passes / purchased</small><strong>'+percentage(w.phase1Conversion)+'</strong></div>'+
-  '<div title="Mean elapsed trading days from purchase, only among accounts that passed Phase 1"><small>Phase 1 pass · days from buy</small><strong>'+(r.timeFromPurchase?.p1?.meanTradingDays==null?'—':dec(r.timeFromPurchase.p1.meanTradingDays))+'</strong></div>'+
-  '<div title="Mean elapsed trading days from purchase, only among accounts that passed Phase 2"><small>Phase 2 pass · days from buy</small><strong>'+(r.timeFromPurchase?.p2?.meanTradingDays==null?'—':dec(r.timeFromPurchase.p2.meanTradingDays))+'</strong></div>'+
-  '<div title="Mean elapsed trading days from purchase, only among accounts that obtained their first reward"><small>First payout · days from buy</small><strong>'+(r.timeFromPurchase?.paid?.meanTradingDays==null?'—':dec(r.timeFromPurchase.paid.meanTradingDays))+'</strong></div>'+
-  '</div>'+table(w.weeks)+'</details>';
+ const columns=cashColumns.filter(([key])=>cashVisible.has(key));
+ const money=new Set(['spent','receipts','net','cumulativeNet','cumulativeSpent','cumulativeReceipts']);
+ const renderRow=w=>'<tr>'+columns.map(([key])=>'<td'+(key==='net'?' class="'+(w.net>=0?'good':'bad')+'"':'')+'>'+(key==='period'?w.period+' · '+w.fromDay+'–'+w.toDay:money.has(key)?usd(w[key]):dec(w[key]))+'</td>').join('')+'</tr>';
+ const table=items=>'<div class="tablewrap"><table><thead><tr>'+columns.map(([,label])=>'<th>'+esc(label)+'</th>').join('')+'</tr></thead><tbody>'+items.map(renderRow).join('')+'</tbody></table></div>';
+ const periodName=span===1?'day':span===5?'week':span===10?'10 trading days':'20 trading days';
+ const firmCard=({r,w})=>'<details class="weekly-economics-firm"><summary><strong>'+esc(r.plan.firm+' · '+r.plan.programName+' · '+usd(r.plan.size))+'</strong> · Horizon net / '+esc(periodName)+' '+usd(r.avg.net/(Number(inputs.days)/span))+' · Payout chance '+(w.chanceAnyPayout==null?'—':pct(w.chanceAnyPayout))+'</summary>'+
+ '<div class="result-grid"><div><small>Fees / completed payout</small><strong>'+(w.costPerPaid==null?'—':usd(w.costPerPaid))+'</strong></div><div><small>First payouts / challenges</small><strong>'+(w.conversion==null?'—':pct(w.conversion))+'</strong></div><div><small>First payout day · conditional</small><strong>'+(w.firstPayoutDay==null?'—':dec(w.firstPayoutDay))+'</strong></div><div><small>Phase 1 passes / purchased</small><strong>'+(w.phase1Conversion==null?'—':pct(w.phase1Conversion))+'</strong></div></div>'+table(cashPeriodRows(r,span))+'</details>';
  let combined='';
  if(inputs.budgetMode==='split'&&summaries.length){
-  const days=Math.max(1,Number(inputs.days)||20),count=Math.ceil(days/5);
-  const keys=['opportunities','trades','bought','challengePasses','verificationPasses','funded','paid','spent','receipts','net','cumulativeNet'];
-  const weeks=Array.from({length:count},(_,i)=>{
-   const base={week:i+1,fromDay:i*5+1,toDay:Math.min(days,(i+1)*5)};
-   for(const key of keys)base[key]=summaries.reduce((sum,x)=>sum+(Number(x.w.weeks[i]?.[key])||0),0);
-   return base;
+  const rows=summaries.map(x=>cashPeriodRows(x.r,span)),count=Math.max(...rows.map(x=>x.length));
+  const keys=cashColumns.map(x=>x[0]).filter(x=>x!=='period');
+  const aggregate=Array.from({length:count},(_,i)=>{
+   const base={period:i+1,fromDay:i*span+1,toDay:Math.min(Number(inputs.days), (i+1)*span)};
+   keys.forEach(key=>base[key]=rows.reduce((sum,rr)=>sum+Number(rr[i]?.[key]||0),0));return base;
   });
-  const net=list.reduce((v,r)=>v+r.avg.net,0),spent=list.reduce((v,r)=>v+r.avg.spent,0);
-  const bought=list.reduce((v,r)=>v+r.avg.bought,0),paid=list.reduce((v,r)=>v+r.avg.paid,0);
-  combined='<div class="result-card"><h3>Combined shared-budget portfolio · '+usd(net/(days/5))+' net/week (horizon avg.)</h3>'+
-   '<p class="hint">First payouts / challenges: '+(bought?pct(paid/bought):'—')+
-   ' · Fees / completed payout: '+(paid?usd(spent/paid):'—')+
-   '. Per-firm details below are components of this ONE split portfolio.</p>'+table(weeks)+'</div>';
+  const net=list.reduce((s,r)=>s+Number(r.avg.net||0),0);
+  combined='<div class="result-card"><h3>Combined shared-budget portfolio · '+usd(net/(Number(inputs.days)/span))+' net / '+esc(periodName)+' (horizon avg.)</h3><p class="hint">One shared-budget portfolio. Per-firm rows below are components, not additional portfolios.</p>'+table(aggregate)+'</div>';
  }
- $('weeklyEconomicsHint').textContent=(inputs.signalPace==='weekly20'?'20 signals/week · 3,4,5,4,4':'Fixed '+inputs.tradesPerDay+'/day')+
-  ' · '+summaries.length+' account type(s)';
- holder.innerHTML='<p class="hint">Week = 5 trading days. Cash net = first-payout receipts minus challenge/activation fees, never the profit target of an unfinished evaluation phase. Values are Monte Carlo averages. Fees / payout include spending on accounts not yet paid, and conversion is first payouts divided by challenges purchased WITHIN the selected horizon. Average phase and payout durations include only accounts reaching that milestone. The average first payout day excludes trials without a payout. Net/week is an average over this horizon including upfront costs and waiting, NOT an ongoing weekly income forecast. Independent comparison alternatives must not be summed.</p>'+
-  combined+summaries.map(firmCard).join('');
+ $('weeklyEconomicsHint').textContent=span+' trading-day periods · '+summaries.length+' account type(s)';
+ const plans=summaries.map(({r})=>r.plan);
+ const modelInfo='<p class="hint">Source: current '+(reportMode==='investment'?'selected investment scenario':'Run Simulation')+' result and its daily cashCurve. '+esc(String(inputs.days))+' trading days · '+esc(String(inputs.trials))+' Monte Carlo trials · win rate '+esc(String(inputs.winRate))+'% · '+esc(inputs.signalPace==='weekly20'?'20 signals/week (3,4,5,4,4)':'fixed '+inputs.tradesPerDay+' signals/day')+'.</p>'+
+ '<p class="hint">The risk and reward settings come from the saved/selected account plans and phase policies, not from this table. Account plans: '+plans.map(p=>esc([p.firm,p.programName,usd(p.size)].join(' · '))).join('; ')+'.</p>'+
+ '<p class="hint">Phase risk policies / R1–R4 / RR: inspect the selected Firms account phase configurations. The cash-flow panel does not override or recompute these inputs. Periods are trading-day buckets; Monthly = 20 trading days, not calendar months.</p>';
+ $('cashSourcesPanel').innerHTML=modelInfo;
+ holder.innerHTML='<p class="hint">Monte Carlo mean cash flows. Net = first-payout receipts − incurred challenge/activation fees. Day-zero purchases are included in the first period. Cumulative columns show totals through each period. Horizon net/period is not a recurring income forecast. Independent comparison alternatives must not be added together.</p>'+combined+summaries.map(firmCard).join('');
 }
+$('cashPeriod').addEventListener('change',()=>{if(cashLastList)renderWeeklyEconomics(cashLastList,cashLastInputs);});
+$('cashColumnsToggle').addEventListener('click',()=>{$('cashColumnsPanel').hidden=!$('cashColumnsPanel').hidden;});
+$('cashSourcesToggle').addEventListener('click',()=>{$('cashSourcesPanel').hidden=!$('cashSourcesPanel').hidden;});
+$('cashColumnsPanel').innerHTML='<div style="display:flex;flex-wrap:wrap;gap:10px">'+cashColumns.map(([key,label])=>'<label style="white-space:nowrap"><input type="checkbox" data-cash-col="'+key+'" '+(cashVisible.has(key)?'checked':'')+'> '+esc(label)+'</label>').join('')+'</div>';
+$('cashColumnsPanel').addEventListener('change',e=>{const key=e.target?.getAttribute('data-cash-col');if(!key)return;if(e.target.checked)cashVisible.add(key);else cashVisible.delete(key);if(cashLastList)renderWeeklyEconomics(cashLastList,cashLastInputs);});
+
 function renderResults(list,inputs,source='run'){
  reportMode=source==='investment'?'investment':'run';
  if(source==='run')regularReport={list,inputs};
