@@ -45,69 +45,70 @@ function init(stage){
  const host=document.querySelector('[data-recovery-stage="'+stage+'"]');if(!host||host.dataset.discoveryReady)return;
  host.dataset.discoveryReady='1';
  const p=document.createElement('details');p.className='scenario-discovery';p.style.cssText='margin:8px 0;padding:10px;border:1px solid #344257;border-radius:10px';
- p.innerHTML='<summary style="cursor:pointer;font-weight:600">Scenario Optimizer · find daily target paths</summary><div style="margin:5px 0 6px;display:flex;gap:5px;flex-wrap:wrap;align-items:center;font-size:11px"><label style="display:flex;gap:3px;align-items:center">Goal $ <input data-f="goal" title="Daily profit target. Risk sequences are derived from this target and RR." type="number" min="1" value="'+(stage==='p1'?1500:stage==='funded'?1000:500)+'" style="width:74px;padding:3px 4px;font-size:11px"></label><label style="display:flex;gap:3px;align-items:center">Win % <input data-f="wr" title="Estimated independent probability of a winning trade" type="number" min="1" max="99" value="40" style="width:48px;padding:3px 4px;font-size:11px"></label><label style="display:flex;gap:3px;align-items:center">RR <input data-f="rr" title="Profit multiple of risk on a winning trade" type="number" min=".1" max="20" step=".1" value="3" style="width:44px;padding:3px 4px;font-size:11px"></label><span title="Simulates until the target or risk cap; a 16-trade computational horizon bounds the search" style="opacity:.75">Until target / cap</span><label style="display:flex;gap:3px;align-items:center">Cap $ <input data-f="cap" title="Manual maximum modeled loss, not a verified firm limit" type="number" min="1" value="2000" style="width:66px;padding:3px 4px;font-size:11px"></label><button type="button" data-run style="padding:4px 8px;font-size:11px;min-height:27px">Find paths</button></div><div data-out style="margin-top:6px;font-size:12px"></div><small>Risk is recalculated after each win/loss; trading stops at target or when the cap prevents another trade. Search safety horizon: 16 trades; unresolved paths are shown separately. Risks are derived from the target and RR, not fixed dollar presets. Research model only: independent wins, fixed RR, no commissions/slippage; manual cap is not a verified firm rule. Not a Topstep pass or consistency simulation. Saved selections do not alter Portfolio Simulation.</small>';
+ p.innerHTML='<summary style="cursor:pointer;font-weight:600">Scenario Optimizer · find daily target paths</summary><div style="margin:5px 0 6px;display:flex;gap:5px;flex-wrap:wrap;align-items:center;font-size:11px"><label style="display:flex;gap:3px;align-items:center">Goal $ <input data-f="goal" title="Daily profit target. Risk sequences are derived from this target and RR." type="number" min="1" value="'+(stage==='p1'?1500:stage==='funded'?1000:500)+'" style="width:74px;padding:3px 4px;font-size:11px"></label><label style="display:flex;gap:3px;align-items:center">Win % <input data-f="wr" title="Estimated independent probability of a winning trade" type="number" min="1" max="99" value="40" style="width:48px;padding:3px 4px;font-size:11px"></label><label style="display:flex;gap:3px;align-items:center">RR <input data-f="rr" title="Profit multiple of risk on a winning trade" type="number" min=".1" max="20" step=".1" value="3" style="width:44px;padding:3px 4px;font-size:11px"></label><span title="Simulates until the target or risk cap; four-trade attempt, then restart separately" style="opacity:.75">4-trade attempt</span><label style="display:flex;gap:3px;align-items:center">Cap $ <input data-f="cap" title="Manual maximum modeled loss, not a verified firm limit" type="number" min="1" value="2000" style="width:66px;padding:3px 4px;font-size:11px"></label><button type="button" data-run style="padding:4px 8px;font-size:11px;min-height:27px">Find paths</button></div><div data-out style="margin-top:6px;font-size:12px"></div><small>Fast Pass + Reset: first two trades attack the pass target; third can recover to breakeven; fourth uses remaining risk budget. Stop on pass, reset, or exhaustion. Four-trade attempt: first two target the pass, third targets breakeven recovery, fourth uses remaining risk budget. Recovery to breakeven is a reset, not a pass. Risks are derived from the target and RR, not fixed dollar presets. Research model only: independent wins, fixed RR, no commissions/slippage; manual cap is not a verified firm rule. Not a Topstep pass or consistency simulation. Saved selections do not alter Portfolio Simulation.</small>';
  host.before(p);p.querySelector('[data-run]').addEventListener('click',()=>run(p,stage));
 }
 function run(p,stage){
- const n=k=>Number(p.querySelector('[data-f="'+k+'"]').value),goal=n('goal'),wr=n('wr')/100,rr=n('rr'),max=16,cap=n('cap'),out=p.querySelector('[data-out]');
+ const n=k=>Number(p.querySelector('[data-f="'+k+'"]').value),goal=n('goal'),wr=n('wr')/100,rr=n('rr'),max=4,cap=n('cap'),out=p.querySelector('[data-out]');
  if(!(goal>0&&wr>0&&wr<1&&rr>0&&cap>0)){out.textContent='Check goal, win rate, RR and risk cap.';return;}
- // Scale candidate risks to the daily target: a full-target win requires goal/RR.
- // After losses, the next risk is derived from remaining profit needed (goal - current P&L).
- const roundRisk=x=>Math.max(0.01,Math.round((x+Number.EPSILON)*100)/100);
+ // Fast Pass + Reset model. Each attempt has up to four trades:
+ // 1/2 aim to pass, 3 aims to restore starting balance, 4 uses remaining capacity.
+ // Reset is a distinct terminal outcome, never counted as a pass.
  const roundMoney=x=>Math.round((x+Number.EPSILON)*100)/100;
+ const roundRisk=x=>Math.max(.01,roundMoney(x));
  const candidates=[];
- const add=(name,weights)=>{
-  const risks=[];let losses=0;
-  for(let i=0;i<max;i++){
-   const weight=weights[Math.min(i,weights.length-1)]||0;
-   const risk=weight?roundRisk((goal+losses)/rr*weight):0;
-   risks.push(risk);
-   if(risk)losses+=risk;
-  }
-  candidates.push({id:'target-'+weights.join('-'),name,r:risks,weights});
+ const add=(name,first,second,third,final)=>{
+  candidates.push({id:[first,second,third,final].join('-'),name,first,second,third,final,r:[roundRisk(goal/rr*first)],weights:[first,second,third,final]});
  };
- add('Full-target first risk',[1,1,1,1]);
- add('Gradual risk escalation',[0.65,0.75,0.9,1]);
- add('80% initial risk',[0.8,1,1,1]);
- add('50% initial risk',[0.5,1,1,1]);
- for(const factor of [0.35,0.5,0.65,0.8,0.9,1]){
-  add('Initial risk '+Math.round(factor*100)+'%',[factor,1,1,1]);
+ for(const first of [1,.9,.8,.65,.5]){
+  add('Fast pass '+Math.round(first*100)+'% · reset',first,1,'reset','remaining');
+  add('Fast pass '+Math.round(first*100)+'% · reserve',first,1,'reset','half');
  }
- // The percentages above scale initial risk only; success always requires the full daily goal.
- const unique=[...new Map(candidates.map(x=>[x.r.join('/'),x])).values()];
+ add('Two attacks · strong reset',1,1,'reset','remaining');
+ add('Two attacks · third pass',1,1,'pass','remaining');
  function evaluate(c){
-  let hit=0,breach=0,negative=0,trades=0,expected=0,paths=[];
-  // Each branch recalculates its risk from the ACTUAL P&L, not a precomputed all-loss sequence.
+  let hit=0,breach=0,negative=0,reset=0,trades=0,expected=0,paths=[];
+  const push=(pnl,prob,steps,result)=>{
+   if(result==='hit')hit+=prob;
+   else if(result==='reset')reset+=prob;
+   else if(result==='cap')breach+=prob;
+   else if(pnl<0)negative+=prob;
+   expected+=prob*pnl;
+   paths.push({pnl,prob,steps:steps.join(' → ')||'Stop',result});
+  };
   function walk(i,pnl,prob,steps){
-   const remaining=goal-pnl;
-   if(remaining<=0.005||pnl<=-cap||i>=max||!c.weights[Math.min(i,c.weights.length-1)]){
-    if(remaining<=0.005)hit+=prob;
-    else if(pnl<=-cap)breach+=prob;
-    else if(pnl<0)negative+=prob;
-    expected+=prob*pnl;paths.push({steps:steps.join(' → ')||'Stop',pnl,prob});return;
+   const remaining=roundMoney(cap+pnl);
+   if(pnl>=goal-.005){push(goal,prob,steps,'hit');return}
+   if(pnl>=-.005&&i>=3){push(pnl,prob,steps,'reset');return}
+   if(remaining<.01){push(pnl,prob,steps,'cap');return}
+   if(i>=max){push(pnl,prob,steps,pnl>=-.005?'reset':pnl<=-cap+.005?'cap':'other');return}
+   let desired;
+   if(i===0)desired=goal/rr*c.first;
+   else if(i===1)desired=(goal-pnl)/rr*c.second;
+   else if(i===2)desired=(c.third==='pass'?goal-pnl:Math.max(0,-pnl))/rr;
+   else desired=c.final==='half'?remaining/2:remaining;
+   desired=roundRisk(desired);
+   // Do not breach the loss budget just to attempt a pass or reset.
+   if(desired>remaining+.005){
+    if(i<3){walk(i+1,pnl,prob,[...steps,'Skip T'+(i+1)+' (insufficient budget)']);return}
+    desired=remaining;
    }
-   const desired=roundRisk(remaining/rr*c.weights[Math.min(i,c.weights.length-1)]);
-   const available=roundMoney(cap+pnl);
-   if(desired>available||available<0.01){
-    if(pnl<=-cap)breach+=prob;else if(pnl<0)negative+=prob;
-    expected+=prob*pnl;paths.push({steps:steps.join(' → ')||'Cap prevents next trade',pnl,prob});return;
-   }
-   const risk=desired;
+   if(desired<.01){push(pnl,prob,steps,pnl>=-.005?'reset':'other');return}
    trades+=prob;
-   const winPnl=Math.min(goal,roundMoney(pnl+risk*rr));
-   walk(i+1,winPnl,prob*wr,[...steps,'W '+money(risk)]);
-   walk(i+1,roundMoney(pnl-risk),prob*(1-wr),[...steps,'L '+money(risk)]);
+   const won=roundMoney(pnl+desired*rr);
+   const lost=roundMoney(pnl-desired);
+   walk(i+1,won,prob*wr,[...steps,'W '+money(desired)]);
+   walk(i+1,lost,prob*(1-wr),[...steps,'L '+money(desired)]);
   }
   walk(0,0,1,[]);
-  return {...c,hit,breach,negative,trades,expected,paths};
+  return {...c,hit,breach,negative,reset,trades,expected,paths};
  }
- // Keep every distinct generated scenario; ranking and pagination must not silently discard candidates.
- const ranked=unique.filter(c=>c.weights.every(x=>x>0)).map(evaluate).sort((a,b)=>b.hit-a.hit||a.breach-b.breach||a.trades-b.trades);
- const key='studio:scenario-discovery:v2:'+stage;let saved=[];try{saved=JSON.parse(localStorage.getItem(key)||'[]')}catch(e){}
+ const ranked=candidates.map(evaluate).sort((a,b)=>b.hit-a.hit||b.reset-a.reset||a.breach-b.breach||a.trades-b.trades);
+ const key='studio:scenario-discovery:fast-reset:v1:'+stage;let saved=[];try{saved=JSON.parse(localStorage.getItem(key)||'[]')}catch(e){}
  const pageKey='studio:scenario-discovery:pagesize:'+stage;
  let pageSize='all';try{const stored=localStorage.getItem(pageKey);if(['5','10','20','all'].includes(stored))pageSize=stored==='all'?'all':Number(stored)}catch(e){}
  const priorityKey='studio:scenario-discovery:priority:'+stage;let priority='hit-trades';try{priority=localStorage.getItem(priorityKey)||priority}catch(e){}
- const sortKey='studio:scenario-discovery:sort:'+stage;let sort={field:'hit',dir:'desc'};try{const v=JSON.parse(localStorage.getItem(sortKey)||'null');if(v&&['name','risks','hit','breach','negative','trades'].includes(v.field)&&['asc','desc'].includes(v.dir))sort=v}catch(e){}
+ const sortKey='studio:scenario-discovery:sort:'+stage;let sort={field:'hit',dir:'desc'};try{const v=JSON.parse(localStorage.getItem(sortKey)||'null');if(v&&['name','risks','hit','breach','reset','trades'].includes(v.field)&&['asc','desc'].includes(v.dir))sort=v}catch(e){}
  const value=(c,k)=>k==='name'?c.name.toLowerCase():k==='risks'?c.r[0]:c[k];
  const sortRows=()=>{ranked.sort((a,b)=>{
   if(priority!=='manual'){
@@ -131,21 +132,21 @@ function run(p,stage){
  };
  const renderPaths=c=>{
  const paths=[...c.paths].map((x,i)=>({...x,original:i,stepsCount:x.steps==='Stop'?0:x.steps.split(' → ').length})).sort((a,b)=>b.prob-a.prob||b.pnl-a.pnl);
- const riskKey=c.weights.join('/');
+ const riskKey=c.id;
  const row=x=>{
   const color=x.pnl>=goal?'#80d6a6':x.pnl<0?'#f3a3a3':'#c5d2e2';
   const sequence=String(x.steps).split(' → ').map(t=>'<span style="color:'+(t.startsWith('W ')?'#80d6a6':t.startsWith('L ')?'#f3a3a3':'#c5d2e2')+'">'+esc(t)+'</span>').join(' <span style="opacity:.5">→</span> ');
-  return '<tr data-path-row data-pnl="'+x.pnl+'" data-prob="'+x.prob+'" data-trades="'+x.stepsCount+'" data-result="'+(x.pnl>=goal?'hit':x.pnl<0?'loss':'other')+'" style="border-bottom:1px solid #34425766"><td style="padding:2px 4px;white-space:normal">'+sequence+'</td><td style="padding:2px 4px;color:'+color+';white-space:nowrap;text-align:right">'+money(x.pnl)+'</td><td style="padding:2px 4px;text-align:right;white-space:nowrap">'+pct(x.prob)+'</td><td style="padding:2px 4px;text-align:right">'+x.stepsCount+'</td></tr>';
+  return '<tr data-path-row data-pnl="'+x.pnl+'" data-prob="'+x.prob+'" data-trades="'+x.stepsCount+'" data-result="'+(x.result==='hit'?'hit':x.result==='reset'?'reset':x.result==='cap'?'cap':x.pnl<0?'loss':'other')+'" style="border-bottom:1px solid #34425766"><td style="padding:2px 4px;white-space:normal">'+sequence+'</td><td style="padding:2px 4px;color:'+color+';white-space:nowrap;text-align:right">'+money(x.pnl)+'</td><td style="padding:2px 4px;text-align:right;white-space:nowrap">'+pct(x.prob)+'</td><td style="padding:2px 4px;text-align:right">'+x.stepsCount+'</td></tr>';
  };
  return '<div data-path-mini data-risk-key="'+esc(riskKey)+'" style="font-size:9px;line-height:1.35;width:min(550px,76vw);max-width:100%;white-space:normal">'+
  '<div style="display:flex;gap:5px;align-items:center;justify-content:space-between;margin:3px 0"><span data-path-count>'+paths.length+' paths</span><div style="display:flex;gap:4px;align-items:center">'+
- '<select data-path-filter aria-label="Filter scenario paths" style="font-size:9px;padding:1px 2px"><option value="all">All paths</option><option value="hit">Target hit</option><option value="loss">Negative P&L</option><option value="other">Other</option></select>'+
+ '<select data-path-filter aria-label="Filter scenario paths" style="font-size:9px;padding:1px 2px"><option value="all">All paths</option><option value="hit">Passed</option><option value="reset">Reset</option><option value="cap">Cap reached</option><option value="loss">Negative P&L</option><option value="other">Other</option></select>'+
  '<select data-path-sort aria-label="Sort scenario paths" style="font-size:9px;padding:1px 2px"><option value="prob-desc">Probability ↓</option><option value="prob-asc">Probability ↑</option><option value="pnl-desc">P&L ↓</option><option value="pnl-asc">P&L ↑</option><option value="trades-asc">Trades ↑</option><option value="trades-desc">Trades ↓</option></select></div></div>'+
  '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:9px"><thead><tr style="text-align:left;opacity:.8"><th style="padding:2px 4px">Win/loss sequence</th><th style="text-align:right">Net P&L</th><th style="text-align:right">Chance</th><th style="text-align:right">Trades</th></tr></thead><tbody>'+paths.map(row).join('')+'</tbody></table></div></div>';
  };
  const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- out.innerHTML='<div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin:4px 0;font-size:11px"><label>Show first <select data-priority aria-label="Rank scenarios by priority" style="font-size:11px;padding:2px 4px"><option value="hit-trades">Highest hit % → fewest trades</option><option value="trades-hit">Fewest trades → highest hit %</option><option value="safe">Lowest cap risk → highest hit %</option><option value="profit">Highest expected profit → hit %</option><option value="manual">Manual column sorting</option></select></label><span title="Days to full phase target are not modeled by this daily optimizer" style="opacity:.7">Days: not modeled</span></div><div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap;margin:4px 0 6px"><label style="font-size:11px">Rows <select data-page-size aria-label="Scenario rows per page" style="font-size:11px;padding:2px 4px">'+['all',5,10,20].map(x=>'<option value="'+x+'"'+(pageSize===x?' selected':'')+'>'+ (x==='all'?'All':x)+'</option>').join('')+'</select></label><button type="button" data-prev aria-label="Previous scenario page" style="padding:2px 8px">‹</button><span data-page-status style="font-size:11px;white-space:nowrap"></span><button type="button" data-next aria-label="Next scenario page" style="padding:2px 8px">›</button></div><div style="overflow-x:auto"><table style="width:100%;font-size:10px;border-collapse:collapse"><!--compact--><thead><tr>'+[['Keep','Save for later comparison'],['Scenario','Risk sizing sequence; all candidates aim for the same full daily target'],['Risks','First trade risk only. Later risks are recalculated after each actual outcome; expanded paths show executed trades only.'],['Hit %','Estimated probability of reaching the exact daily target before loss cap or calculation horizon'],['Cap %','Chance of hitting the modeled risk cap'],['Neg %','Chance of ending negative but above cap'],['Trades','Probability-weighted expected number of trades executed before target, cap or horizon']].map((x,i)=>'<th title="'+esc(x[1])+'" style="padding:2px 4px;white-space:nowrap"><button type="button" data-head-help="'+i+'" aria-label="Explain '+esc(x[0])+'" title="'+esc(x[1])+'" style="font:inherit;color:inherit;background:none;border:0;padding:1px 2px;cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px">'+esc(x[0])+' <span aria-hidden="true" style="opacity:.7">ⓘ</span></button></th>').join('')+'</tr></thead><tbody>'+ranked.map((c,i)=>'<tr data-scenario-row style="height:23px"><td style="padding:3px 5px"><input type="checkbox" data-keep="'+i+'" '+(saved.includes(c.r.join('/'))?'checked':'')+' aria-label="Keep '+esc(c.name)+'"></td><td style="padding:3px 5px"><details><summary style="cursor:pointer;white-space:nowrap">'+esc(c.name)+'</summary>'+renderPaths(c)+'</details></td><td style="padding:3px 5px;white-space:nowrap">'+money(c.r[0])+' first · dynamic'+'</td><td style="padding:3px 5px">'+pct(c.hit)+'</td><td style="padding:3px 5px">'+pct(c.breach)+'</td><td style="padding:3px 5px">'+pct(c.negative)+'</td><td style="padding:3px 5px">'+c.trades.toFixed(2)+'</td></tr>').join('')+'</tbody></table></div><small>Ranking: daily-goal hit chance first, then cap risk, then trades. Click a scenario name to see win/loss paths. This is NOT a multi-day pass probability or a firm-approved risk plan.</small>'; out.querySelectorAll('[data-keep]').forEach(el=>el.addEventListener('change',()=>{const picks=[...out.querySelectorAll('[data-keep]:checked')].map(x=>ranked[Number(x.dataset.keep)].r.join('/'));try{localStorage.setItem(key,JSON.stringify(picks))}catch(e){}}));
- const help=[['Keep','Check to remember a risk scenario for comparison. This does not apply it to the main simulation.'],['Scenario','Name of the candidate. Open its row to inspect the possible win/loss paths.'],['Risks','Dollar amount risked on each successive trade, in order. The engine continues until the exact target or cap, with a 16-trade calculation horizon; any unresolved paths are not counted as successes.'],['Hit %','Estimated probability of reaching the DAILY profit goal within the modeled search horizon; not the probability of passing the evaluation.'],['Cap %','Estimated probability of reaching the manually entered loss cap in this simplified daily model; not a verified firm-rule breach rate.'],['Neg %','Estimated probability of ending the tested daily sequence below starting balance but above the modeled loss cap.'],['Trades','Expected number of trades attempted per simulated daily sequence, including early stops.']];
+ out.innerHTML='<div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin:4px 0;font-size:11px"><label>Show first <select data-priority aria-label="Rank scenarios by priority" style="font-size:11px;padding:2px 4px"><option value="hit-trades">Highest hit % → fewest trades</option><option value="trades-hit">Fewest trades → highest hit %</option><option value="safe">Lowest cap risk → highest hit %</option><option value="profit">Highest expected profit → hit %</option><option value="manual">Manual column sorting</option></select></label><span title="Days to full phase target are not modeled by this daily optimizer" style="opacity:.7">Days: not modeled</span></div><div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap;margin:4px 0 6px"><label style="font-size:11px">Rows <select data-page-size aria-label="Scenario rows per page" style="font-size:11px;padding:2px 4px">'+['all',5,10,20].map(x=>'<option value="'+x+'"'+(pageSize===x?' selected':'')+'>'+ (x==='all'?'All':x)+'</option>').join('')+'</select></label><button type="button" data-prev aria-label="Previous scenario page" style="padding:2px 8px">‹</button><span data-page-status style="font-size:11px;white-space:nowrap"></span><button type="button" data-next aria-label="Next scenario page" style="padding:2px 8px">›</button></div><div style="overflow-x:auto"><table style="width:100%;font-size:10px;border-collapse:collapse"><!--compact--><thead><tr>'+[['Keep','Save for later comparison'],['Scenario','Risk sizing sequence; all candidates aim for the same full daily target'],['Risks','First trade risk only. Later risks are recalculated after each actual outcome; expanded paths show executed trades only.'],['Hit %','Estimated probability of reaching the exact daily target before loss cap or calculation horizon'],['Cap %','Chance of hitting the modeled risk cap'],['Reset %','Chance of reaching breakeven or better without passing within four trades'],['Trades','Probability-weighted expected number of trades executed before target, cap or horizon']].map((x,i)=>'<th title="'+esc(x[1])+'" style="padding:2px 4px;white-space:nowrap"><button type="button" data-head-help="'+i+'" aria-label="Explain '+esc(x[0])+'" title="'+esc(x[1])+'" style="font:inherit;color:inherit;background:none;border:0;padding:1px 2px;cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px">'+esc(x[0])+' <span aria-hidden="true" style="opacity:.7">ⓘ</span></button></th>').join('')+'</tr></thead><tbody>'+ranked.map((c,i)=>'<tr data-scenario-row style="height:23px"><td style="padding:3px 5px"><input type="checkbox" data-keep="'+i+'" '+(saved.includes(c.id)?'checked':'')+' aria-label="Keep '+esc(c.name)+'"></td><td style="padding:3px 5px"><details><summary style="cursor:pointer;white-space:nowrap">'+esc(c.name)+'</summary>'+renderPaths(c)+'</details></td><td style="padding:3px 5px;white-space:nowrap">'+money(c.r[0])+' first · dynamic'+'</td><td style="padding:3px 5px">'+pct(c.hit)+'</td><td style="padding:3px 5px">'+pct(c.breach)+'</td><td style="padding:3px 5px">'+pct(c.reset)+'</td><td style="padding:3px 5px">'+c.trades.toFixed(2)+'</td></tr>').join('')+'</tbody></table></div><small>Ranking: daily-goal hit chance first, then cap risk, then trades. Click a scenario name to see win/loss paths. This is NOT a multi-day pass probability or a firm-approved risk plan.</small>'; out.querySelectorAll('[data-keep]').forEach(el=>el.addEventListener('change',()=>{const picks=[...out.querySelectorAll('[data-keep]:checked')].map(x=>ranked[Number(x.dataset.keep)].r.join('/'));try{localStorage.setItem(key,JSON.stringify(picks))}catch(e){}}));
+ const help=[['Keep','Check to remember a risk scenario for comparison. This does not apply it to the main simulation.'],['Scenario','Name of the candidate. Open its row to inspect the possible win/loss paths.'],['Risks','Starting trade risk. Later risks depend on the outcome: second pass attempt, third breakeven reset, fourth remaining budget.'],['Hit %','Estimated chance of reaching the pass target within the four-trade attempt, not an entire multi-day evaluation.'],['Cap %','Estimated probability of reaching the manually entered loss cap in this simplified daily model; not a verified firm-rule breach rate.'],['Reset %','Estimated chance of returning to breakeven or above without reaching the pass target in this four-trade attempt.'],['Trades','Expected number of trades attempted per simulated daily sequence, including early stops.']];
  // Portfolio SIM-style floating tooltip: overlays the table without affecting row layout.
  const explanation=document.createElement('div');
  explanation.setAttribute('data-head-explanation','');
