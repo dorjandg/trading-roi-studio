@@ -30,3 +30,8 @@
 ## Compact table headings (strict)
 - Every displayed table column heading is limited to 12 characters, preferably shorter. Use clear semantic abbreviations, e.g. Failed (failed accounts), Bought, Executed, Qual., Signals, P1 pass, P2 pass, P3 ready, P4 paid. Preserve the full explanation in a tooltip/title and accessible description.
 - Apply this to dynamic tables and filter menus too; keep stable underlying data/column identifiers and migrate saved column presets and order when labels change. Do not change simulation calculations to shorten display labels.
+
+## Shared UI component consistency
+- Treat column-filter popovers, saved column presets, outside-tap dismissal, table headers, and compact pagination as shared UI patterns across the whole site. When modifying one, audit and update every existing instance that uses the same pattern, not just the screenshot's table.
+- Column popovers should be compact, anchored to the table's upper corner, use consistent category/manual tabs, named Save/Load/Delete views, persist visibility and order, close on outside pointer/tap and Escape, and retain accessible labels. Do not silently replace saved user preferences.
+- Verify each affected instance after patching; do not claim every table has been migrated unless the audit and changes are complete.
