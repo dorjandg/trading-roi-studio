@@ -1519,7 +1519,6 @@ const canonicalColumnLabels={
  'Pending':'Payout pending','Paid total':'Paid accounts','Breached':'Failed accounts'
 };
 function canonicalColumnLabel(label){return canonicalColumnLabels[label]||label;}
-const studioJourneyShortLabels={'Signals available':'Signals','Unused signals':'Unused','Qualification trades':'Qual.','Purchased allocation ($)':'Buy 
 const journeyColumnPrefs={};
 function addJourneyColumnFilters(){
  const root=document.getElementById('journeyContents');if(!root)return;
@@ -1528,7 +1527,7 @@ function addJourneyColumnFilters(){
   if(!table||!table.tHead?.rows[0])continue;
   const heads=Array.from(table.tHead.rows[0].cells);
   const ids=heads.map((h,i)=>i===0?'day':(canonicalColumnLabel(h.textContent.trim())||'column-'+i));
-  heads.forEach((h,i)=>{if(i>0){h.textContent=studioJourneyDisplayLabel(ids[i]);h.title=ids[i];}});
+  heads.forEach((h,i)=>{if(i>0)h.textContent=ids[i];});
   const storageKey='studio-journey-columns-v2-'+key;
   if(!journeyColumnPrefs[key]){
    let saved=null;try{saved=JSON.parse(localStorage.getItem(storageKey)||'null');}catch(_){}
@@ -1539,7 +1538,7 @@ function addJourneyColumnFilters(){
   pref.order=[...new Set([...pref.order.map(canonicalColumnLabel).filter(x=>valid.includes(x)),...valid])];
   const toolbar=document.createElement('div');toolbar.style.cssText='display:flex;justify-content:flex-end;position:relative;margin:4px 0';
   const trigger=document.createElement('button');trigger.type='button';trigger.textContent='☷';trigger.title='Filter visible columns';trigger.setAttribute('aria-label','Filter columns');trigger.setAttribute('aria-expanded','false');trigger.style.cssText='font-size:15px;padding:3px 9px;min-width:30px';
-  const controls=document.createElement('div');controls.hidden=true;controls.className='studio-journey-column-panel';controls.style.cssText='position:absolute;right:0;top:100%;z-index:20;width:min(240px,75vw);max-height:min(300px,48vh);overflow:auto;overscroll-behavior:contain;padding:7px;border:1px solid var(--border,#354359);border-radius:8px;background:var(--panel,#182232);box-shadow:0 6px 20px #0005';
+  const controls=document.createElement('div');controls.hidden=true;controls.style.cssText='position:absolute;right:0;top:100%;z-index:20;width:min(330px,90vw);max-height:360px;overflow:auto;padding:10px;border:1px solid var(--border,#354359);border-radius:8px;background:var(--panel,#182232);box-shadow:0 6px 20px #0005';
   toolbar.append(trigger,controls);
   trigger.addEventListener('click',()=>{controls.hidden=!controls.hidden;trigger.setAttribute('aria-expanded',String(!controls.hidden));});
   const persist=()=>{try{localStorage.setItem(storageKey,JSON.stringify(pref));}catch(_){}};
@@ -1554,7 +1553,7 @@ function addJourneyColumnFilters(){
   };
   const renderControls=()=>{
    controls.replaceChildren();
-   const tabs=document.createElement('div');tabs.style.cssText='display:flex;gap:4px;margin-bottom:6px';
+   const tabs=document.createElement('div');tabs.style.cssText='display:flex;gap:6px;margin-bottom:8px';
    const body=document.createElement('div');
    let mode=controls.dataset.mode||'category';
    for(const [value,label] of [['category','By category'],['manual','Manual']]){
@@ -1585,7 +1584,7 @@ function addJourneyColumnFilters(){
     for(const id of valid){
      const label=document.createElement('label'),check=document.createElement('input');check.type='checkbox';check.checked=pref.visible.includes(id);
      check.addEventListener('change',()=>{if(check.checked&&!pref.visible.includes(id))pref.visible.push(id);else if(!check.checked)pref.visible=pref.visible.filter(x=>x!==id);apply();});
-     label.title=id;label.append(check,document.createTextNode(studioJourneyDisplayLabel(id)));grid.appendChild(label);
+     label.append(check,document.createTextNode(id));grid.appendChild(label);
     }body.appendChild(grid);
    }
   };
