@@ -30,3 +30,20 @@ src:[["How Many Trades Per Day?","00:00–00:24; 01:57–02:25","1cdESUiP_6dF8s8
 });
 for(const block of jjExecutionDeepStudy){const chapter=chapters.find(x=>x.slug===block.slug);if(!chapter)continue;for(const s of block.sections){if(!chapter.sections.some(x=>x.title===s.title))chapter.sections.push(s)}}
 renderNav();render();
+
+// Source-audited Module 18 addendum; original chart and firm-rule verification pending.
+(function(){
+const chapter=chapters.find(c=>c.slug==="funded-plan");
+if(!chapter)return;
+const title="150K winning-day recovery: probability branch and contract arithmetic";
+if(chapter.sections.some(s=>s.title===title))return;
+chapter.sections.push({title,points:[
+"JJ's historical 150K illustration separates evaluation risk ($4,500 to seek $4,500), newly funded risk (3 NQ × 37.5-point stop = $2,250; 150-point target = $9,000), and a subsequent winning-day stage seeking $250 daily. These stages must not share one risk setting.",
+"His example starts with $9,000 gross profit and four $250 qualifying days to reach $10,000 nominal profit. Whether $5,000 can then be withdrawn depends on the provider's historical eligibility, consistency, drawdown and live-transition rules; none are independently verified.",
+"Recovery arithmetic requires care: after a $2,000 losing trade, returning to a +$250 daily result requires $2,250 gross. Two NQ contracts at 50 points earn only $2,000 before fees; $2,250 requires 56.25 points at two NQ, assuming $20 per point per contract.",
+"At 10:40–11:05 the transcript appears to describe a 10% first-trade win probability and a 50% second-trade win probability, then says deeper recovery occurs 5% of the time. Under independent outcomes both losses would be 90% × 50% = 45%, whereas both wins are 10% × 50% = 5%. If 10% refers to first-trade losses, the 5% figure may apply to both losses. Original audio must resolve the ambiguity.",
+"JJ's suggestion that all stop sizes have equivalent expected value once profitable is not a general mathematical result: changing stops changes loss size and usually the win probability. A 450-point one-NQ target is $9,000; a $2,250 risk budget permits 112.5 points of stop distance, not exactly 100.",
+"These are source-grounded critiques of historical examples, not verified performance or executable instructions. Original chart demonstrations, news context, student attribution and provider payout terms remain unverified."
+],src:[["30k_month -_ 100k_month Scaling","03:24–03:35; 05:30–05:44; 07:19–11:05; 11:49–13:40","1gKSrmr2naboKQWfZmHCF7OBrArdhf0s0"],["How To Manage Different Drawdown Rules","00:12–00:42; 01:11–01:28","1PMHg2wWs7Vr-x9YbQ-cSVE_RAf-rq3tC"]]});
+renderNav();render();
+})();
