@@ -149,12 +149,12 @@ function pageData(items,page,size){
  return {items:items.slice(first,first+pageSize),current,pages,total:items.length,first,pageSize};
 }
 function pageNav(p,field){
- const opts=Array.from({length:p.pages},(_,i)=>[String(i+1),'Page '+(i+1)]);
- return '<div class="journey-toolbar" style="align-items:center;gap:7px;margin:7px 0">'+
-  '<span class="journey-explainer" style="margin:0">Rows '+(p.total?p.first+1:0)+'–'+Math.min(p.total,p.first+p.pageSize)+' of '+p.total+'</span>'+
-  '<button type="button" data-journey-page="'+field+'" data-journey-step="-1"'+(p.current===1?' disabled':'')+' aria-label="Previous page">‹ Previous</button>'+
-  '<label style="flex:0 1 130px;min-width:110px">Page<select data-journey-field="'+field+'">'+options(opts,String(p.current))+'</select></label>'+
-  '<button type="button" data-journey-page="'+field+'" data-journey-step="1"'+(p.current===p.pages?' disabled':'')+' aria-label="Next page">Next ›</button>'+
+ const start=p.total?p.first+1:0,end=Math.min(p.total,p.first+p.pageSize);
+ return '<div class="journey-toolbar" style="display:flex;justify-content:flex-end;align-items:center;gap:5px;margin:5px 0;flex-wrap:wrap">'+
+  '<span class="journey-explainer" style="margin:0 5px 0 0;font-size:11px">'+start+'–'+end+' / '+p.total+'</span>'+
+  '<button type="button" data-journey-page="'+field+'" data-journey-step="-1"'+(p.current===1?' disabled':'')+' aria-label="Previous page" title="Previous page" style="padding:2px 7px;min-width:26px">‹</button>'+
+  '<span class="journey-explainer" style="font-size:11px;white-space:nowrap">'+p.current+' / '+p.pages+'</span>'+
+  '<button type="button" data-journey-page="'+field+'" data-journey-step="1"'+(p.current===p.pages?' disabled':'')+' aria-label="Next page" title="Next page" style="padding:2px 7px;min-width:26px">›</button>'+
   '</div>';
 }
 // Each header explains whether it is a daily flow, current balance, or cumulative total.
