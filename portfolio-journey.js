@@ -385,9 +385,12 @@ function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true
   {name:'Available',values:allRows.map(d=>({x:d.day,y:n(d.opportunities)}))},
   {name:'Executed',values:allRows.map(d=>({x:d.day,y:n(d.tradesToday)}))}
  ],'Trading day','count',detailRows):'';
- const graphs='<div class="journey-chart-grid"><article><h4>Accounts by active stage</h4>'+
-  chart1+'</article><article><h4>Cumulative milestones</h4>'+chart2+'</article>'+
-  '<article><h4>Daily trade opportunities vs executed</h4>'+utilization+'</article></div>';
+ const graphs=tablePanel('journey-charts','Account journey charts',
+  '<div class="journey-chart-grid">'+
+  '<article><h4>Accounts by active stage</h4>'+chart1+'</article>'+
+  '<article><h4>Cumulative milestones</h4>'+chart2+'</article>'+
+  '<article><h4>Daily trade opportunities vs executed</h4>'+utilization+'</article></div>',
+  tableOpen['journey-charts']===true,'Stage counts · milestones · signal utilization');
  const last=allRows[allRows.length-1]||{},paid=fmt(last.paid,average);
  const used=allRows.reduce((sum,x)=>sum+n(x.tradesToday),0);
  const possible=allRows.reduce((sum,x)=>sum+n(x.opportunities),0);
@@ -409,9 +412,13 @@ function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true
  const capInfo=selected==='all'?'Combined nominal allocation across different firms; firm limits are separate.':'Planning limits: Evaluation '+(n(cap.evaluation)>0?usd(cap.evaluation):'not set')+' · Funded '+(n(cap.funded)>0?usd(cap.funded):'not set')+'. These caps are enforced in new simulation runs: evaluation purchases stop at the cap, and funded activations wait for a free slot. A cap below one account size permits zero accounts. Caps are per selected account type, not pooled across different account sizes of the same firm.';
  return header+(selected==='all'?results.map((item,i)=>passRateFunnel(item,tableOpen,i)).join(''):passRateFunnel(results[Number(selected)],tableOpen,Number(selected)))+
   dailyTradeRouting(results,selected,inputs,routePage,pageSize,tableOpen)+total+
-  helpNotes('payout',estimateNote+'<p class="journey-explainer">'+capInfo+'</p>')+
+  tablePanel('journey-definitions','Payout explanations & allocation rules',
+   helpNotes('payout',estimateNote+'<p class="journey-explainer">'+capInfo+'</p>'),
+   tableOpen['journey-definitions']===true,'Definitions and limits')+
   tablePanel('daily-summary','Day-by-day account summary',table,tableOpen['daily-summary']===true,summaryPagination.total+' days · '+(average?'trial averages':'sample trial'))+
-  graphs+(!average&&selected!=='all'?sampleMilestones(r,signalDay,tableOpen):'')+helpNotes('summary',note);
+  graphs+(!average&&selected!=='all'?sampleMilestones(r,signalDay,tableOpen):'')+
+  tablePanel('journey-methodology','Methodology & definitions',helpNotes('summary',note),
+   tableOpen['journey-methodology']===true,'How the daily figures are calculated');
 }
 root.StudioPortfolioJourney={render,daily,combined,sampleMilestones};
 })(typeof window!=='undefined'?window:globalThis);
