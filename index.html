@@ -3244,7 +3244,7 @@ function chooseOverviewAccount(){
  const fee=Number(p.pricesUSD?.[size]);
  // Apply the selected account immediately from the same firm catalog used by Prop firms.
  // The iframe is synchronized separately; it must not block the Overview dashboard.
- pendingOverviewAccount=null;overviewRequestedKey=profileKey(programId,size);
+ pendingOverviewAccount={programId,size};overviewRequestedKey=profileKey(programId,size);
  const payload={v:1,programId,size,label:p.firm+' '+p.name+' $'+size.toLocaleString('en-US'),compatible:p.compatible===true,targets:p.targets||[],days:p.days||[],daily:p.daily,max:p.max,maxLossUSD:p.firm==='Topstep'?({50000:2000,100000:3000,150000:4500})[size]:null,feeUSD:Number.isFinite(fee)?fee:0};
  useSelectedAccount(payload);
  updateOverviewFromActive();
@@ -3300,7 +3300,10 @@ window.addEventListener('message',event=>{
  if(msg.type==='studio-rules-height'){requestAnimationFrame(fitFirmFrame);return;}
  if(msg.type==='studio-open-trading-workspace'){$('firmTradingWorkspace').scrollIntoView({behavior:'smooth',block:'start'});return;}
  if(msg.type==='studio-rules-ready'){
- $('firmsFrame').dataset.accountFrameReady='yes';sendPendingOverviewAccount();
+ $('firmsFrame').dataset.accountFrameReady='yes';
+ // Parent selection wins over a stale saved selection restored inside the rules iframe.
+ if(activeProgramKey){const [programId,size]=String(activeProgramKey).split(':');pendingOverviewAccount={programId,size:Number(size)};}
+ sendPendingOverviewAccount();
  if($('page-firms')?.classList.contains('active')){
   const [programId,size]=String(activeProgramKey||'').split(':');
   if(programId&&Number(size)>0)$('firmsFrame')?.contentWindow?.postMessage({type:'studio-select-account',programId,size:Number(size)},window.location.origin);
@@ -3313,7 +3316,7 @@ window.addEventListener('message',event=>{
   if(!payload.programId||!Number(payload.size))return;
   // The visible Prop Firm Rules account is authoritative, even when the iframe
   // restored its selection automatically or the parent tab was not yet active.
-  overviewRequestedKey=null;
+  overviewRequestedKey=null;pendingOverviewAccount={programId:payload.programId,size:Number(payload.size)};
   useSelectedAccount(payload);
   updateOverviewFromActive();
   return;
