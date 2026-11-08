@@ -43,3 +43,20 @@ assert.equal(paid.paid,true);
 assert.equal(a.paidDay,11);
 assert.equal(a.trace.filter(x=>x.type==='strategy-stop').length,0,'Disabled R3 cannot stop a target-hit account');
 console.log('PASS: Topstep target lock, disabled R3, frozen trading, 10-day payout and $2000 receipt');
+
+const simulation=engine.oneTrial(p,{
+ count:3,days:40,tradesPerDay:3,tradeSchedule:null,winRate:1,
+ purchaseMode:'upfront',capacityMode:'manual',maxActive:3,maxBuysPerDay:3,
+ evaluationAllocationCap:0,fundedAllocationCap:0,trackDaily:true,
+ signalMode:'independent',allocationMode:'single',maxCopies:1,
+ allocationPriority:'balanced',pairedSignals:false,recycleFundedPayouts:false
+},()=>0,true);
+assert(simulation.funded>0,'Monte Carlo must activate funded accounts');
+assert(simulation.targetHit>0,'Monte Carlo must hit funded targets');
+assert(simulation.payoutRequested>0,'Monte Carlo must request funded payouts');
+assert(simulation.paid>0,'Monte Carlo must complete funded payouts');
+assert(simulation.receipts>0,'Monte Carlo must recognize payout cash');
+console.log('PASS: Full oneTrial simulation completes funded payouts:',JSON.stringify({
+ funded:simulation.funded,targetHit:simulation.targetHit,
+ payoutRequested:simulation.payoutRequested,paid:simulation.paid,receipts:simulation.receipts
+}));
