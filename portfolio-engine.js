@@ -826,7 +826,7 @@ function simulatePortfolio(p,config={}){
   cashCurve:chartSums?.map(d=>({day:d.day,spent:d.spent/trials,
    receipts:d.receipts/trials,net:d.net/trials,paid:d.paid/trials,
    bought:d.bought/trials,challengeSpent:d.challengeSpent/trials,
-   activationSpent:d.activationSpent/trials,live:d.live/trials,burned:d.burned/trials,
+   activationSpent:d.activationSpent/trials,live:d.live/trials,burned:d.burned/trials,failed:d.failed/trials,riskBlocked:d.riskBlocked/trials,
    strategyStopped:d.strategyStopped/trials,
    challenge:d.challenge/trials,verification:d.verification/trials,fundedActive:d.fundedActive/trials,
    fundingWait:d.fundingWait/trials,payoutPending:d.payoutPending/trials,targetHit:d.targetHit/trials,activated:d.activated/trials,
