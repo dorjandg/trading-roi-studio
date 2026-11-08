@@ -728,7 +728,7 @@ details p{margin:6px 0}
 <script src="portfolio-to-firms.js?v=20261107-ftmo-buffer-transfer-v1"></script>
 <script src="studio-report-source.js?v=20261105-account-rotation"></script>
 <script src="portfolio-charts.js?v=20261107-smart-stopped-charts-v1"></script>
-<script src="portfolio-journey.js?v=20261108-unused-reasons-v1"></script>
+<script src="portfolio-journey.js?v=20261108-column-labels-v2"></script>
 <script src="cloud-config.js"></script>
 <script src="cloud-bootstrap.js?v=4ds-auto-first-20261104-a"></script>
 <script src="portfolio-history.js?v=20261107-models-history-fix-v3"></script>
@@ -1442,6 +1442,22 @@ function makeResultCard(result,index,isInvestmentReport=false){
    '</details></article>';
 }
 
+const journeyHiddenColumns={};
+function addJourneyColumnFilters(){
+ const root=document.getElementById('journeyContents');if(!root)return;
+ for(const panel of root.querySelectorAll('[data-journey-table="daily-routing"],[data-journey-table="daily-summary"]')){
+  const key=panel.getAttribute('data-journey-table'),table=panel.querySelector('table');
+  if(!table||!table.tHead?.rows[0])continue;
+  const heads=Array.from(table.tHead.rows[0].cells),hidden=journeyHiddenColumns[key]||(journeyHiddenColumns[key]=new Set());
+  const toolbar=document.createElement('details');toolbar.style.cssText='margin:6px 0 10px;font-size:12px';
+  const summary=document.createElement('summary');summary.textContent='Columns · show / hide';toolbar.appendChild(summary);
+  const choices=document.createElement('div');choices.style.cssText='display:flex;flex-wrap:wrap;gap:6px 14px;padding:8px 0';
+  const apply=()=>{for(const row of table.rows)Array.from(row.cells).forEach((cell,i)=>{cell.hidden=i>0&&hidden.has(i);});};
+  heads.forEach((head,i)=>{if(i===0)return;const label=document.createElement('label');label.style.cssText='display:inline-flex;align-items:center;gap:4px;white-space:nowrap';const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=!hidden.has(i);checkbox.addEventListener('change',()=>{if(checkbox.checked)hidden.delete(i);else hidden.add(i);apply();});label.append(checkbox,document.createTextNode(head.textContent.trim()));choices.appendChild(label);});
+  const reset=document.createElement('button');reset.type='button';reset.textContent='Show all';reset.style.cssText='font-size:11px;padding:3px 8px';reset.addEventListener('click',()=>{hidden.clear();choices.querySelectorAll('input').forEach(x=>x.checked=true);apply();});choices.prepend(reset);toolbar.appendChild(choices);
+  table.closest('.tablewrap')?.before(toolbar);apply();
+ }
+}
 function renderJourney(){
  if(!journey||!lastResults.length||!lastInputs)return;
  const reportLimits=reportMode==='investment'&&lastResults[0]?
@@ -1449,6 +1465,7 @@ function renderJourney(){
    evaluation:lastResults[0].config?.evaluationAllocationCap||0,
    funded:lastResults[0].config?.fundedAllocationCap||0}}:allocationLimits;
  $('journeyContents').innerHTML=journey.render({results:lastResults,inputs:{...lastInputs,allocationLimits:reportLimits},...journeyState});
+ addJourneyColumnFilters();
  if(reportMode==='investment'){
   for(const field of $('journeyContents').querySelectorAll('[data-journey-field="evaluationLimit"],[data-journey-field="fundedLimit"]')){
    field.disabled=true;
