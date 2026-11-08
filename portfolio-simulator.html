@@ -1521,12 +1521,12 @@ const canonicalColumnLabels={
  'Unused':'Unused signals','Unused trades':'Unused signals',
  'Min':'Qualification trades','Buy $':'Purchased allocation ($)','Eval $':'Evaluation allocation ($)','FD $':'Funded allocation ($)',
  'CH':'Challenge active','VR':'Verification active','P1P':'Phase 1 passed','P2P':'Phase 2 passed',
- 'FA':'Funded activated','FW':'Funding wait','PP':'Payout pending','TG':'Target reached',
- 'Pending':'Payout pending','Paid total':'Paid accounts','Breached':'Failed accounts'
+ 'FA':'Funded activated','FW':'Funding wait','PP':'Payout pending','TG':'P3 ready',
+ 'Pending':'Payout pending','Paid total':'P4 paid','Breached':'Failed accounts'
 };
 const phaseColumnNames={
  'Challenge active':'P1','Verification active':'P2','Funded active':'P3',
- 'Payout pending':'P4','Phase 1 passed':'P1 pass','Phase 2 passed':'P2 pass'
+ 'Payout pending':'P4','Target reached':'P3 ready','Paid accounts':'P4 paid','Phase 1 passed':'P1 pass','Phase 2 passed':'P2 pass'
 };
 const phaseColumnDescriptions={
  'P1':'P1 — Challenge: accounts currently in phase 1',
@@ -1534,7 +1534,9 @@ const phaseColumnDescriptions={
  'P3':'P3 — Funded: active funded accounts, including payout-pending',
  'P4':'P4 — Payout pending: subset of P3, not additional allocation',
  'P1 pass':'Cumulative accounts that passed Challenge; not current P1 count',
- 'P2 pass':'Cumulative accounts that passed Verification; not current P2 count'
+ 'P2 pass':'Cumulative accounts that passed Verification; not current P2 count',
+ 'P3 ready':'Funded accounts that reached their payout target; milestone count, not currently trading',
+ 'P4 paid':'Completed payouts; cumulative payout events, not currently payout-pending accounts'
 };
 function canonicalColumnLabel(label){
  const normalized=canonicalColumnLabels[label]||label;
