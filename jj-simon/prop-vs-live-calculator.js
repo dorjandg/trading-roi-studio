@@ -1,0 +1,45 @@
+/* JJ Academy: same-budget prop vs live calculator. Illustrative, not trade replay. */
+(function(){
+'use strict';
+const slug='calc-prop-vs-live';
+if(!chapters.some(c=>c.slug===slug))chapters.push({slug,group:'Calculators & Simulations',title:'Prop Firm vs Live Account Calculator',intro:'Compare JJ-style evaluation spending with trading the same personal budget in a live account over identical signals.',status:'Illustrative mathematical model',sections:[{title:'Same-budget comparison',points:['Prop evaluation fees become the live account starting capital. Both approaches use the same personal budget.','The live example uses a fixed percentage of starting capital per trade; it is not a sequence-aware backtest.','Prop payout is an assumption, not a verified guarantee. Extra activation, reset and trading fees reduce actual net returns.'],src:[]}]});
+if(!curriculum.some(c=>c.slug===slug))curriculum.push({slug,title:'Prop Firm vs Live Account Calculator',status:'review',reason:'Interactive same-budget comparison; outcomes and trade assumptions are editable.'});
+const css=document.createElement('style');css.textContent=`
+#jj-live-compare{margin:16px 0;padding:16px;border:1px solid var(--stroke);border-radius:12px;background:var(--panel);font:inherit}
+#jj-live-compare .inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px}
+#jj-live-compare label{display:flex;flex-direction:column;gap:5px;color:var(--muted);font-size:12px}
+#jj-live-compare input,#jj-live-compare select{width:100%;min-height:36px;border:1px solid var(--stroke);border-radius:7px;background:var(--bg);color:var(--text);padding:7px;font:inherit}
+#jj-live-compare .outputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;margin-top:15px}
+#jj-live-compare .metric{border:1px solid var(--stroke);border-radius:9px;padding:11px;background:var(--bg)}
+#jj-live-compare .metric small{display:block;color:var(--muted)}#jj-live-compare .metric strong{display:block;font-size:20px;margin-top:3px}
+#jj-live-compare .warning{color:var(--muted);font-size:12px;margin-top:12px}
+`;document.head.appendChild(css);
+const key='jj-same-budget-compare-v1';
+const defaults={budget:1500,fee:100,trades:100,risk:5,wr:30,rr:4,payout:10000,extra:0};
+let values={...defaults};try{const saved=JSON.parse(localStorage.getItem(key)||'null');if(saved&&typeof saved==='object')for(const k in defaults)if(Number.isFinite(Number(saved[k])))values[k]=Number(saved[k])}catch(_){}
+const money=n=>Number.isFinite(n)?new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(n):'—';
+function mount(){
+ if(active!==slug)return;
+ const article=document.getElementById(slug);if(!article||article.querySelector('#jj-live-compare'))return;
+ const root=document.createElement('section');root.id='jj-live-compare';
+ const fields=[['budget','Starting budget ($)',1,1000000,1],['fee','Evaluation fee ($)',0,100000,1],['trades','Number of signals',1,10000,1],['risk','Live risk per trade (%)',0.1,100,0.1],['wr','Trade win rate (%)',0,100,1],['rr','Reward / risk ratio',0.1,100,0.1],['payout','Assumed prop payouts ($)',0,10000000,1],['extra','Additional prop fees ($)',0,1000000,1]];
+ root.innerHTML='<h3>Same-budget comparison</h3><p>Money spent on evaluations is the starting live-account balance.</p><div class="inputs">'+fields.map(([id,label,min,max,step])=>'<label>'+label+'<input type="number" data-k="'+id+'" min="'+min+'" max="'+max+'" step="'+step+'" value="'+values[id]+'"></label>').join('')+'</div><div class="outputs" aria-live="polite"></div><p class="warning">Illustrative fixed-dollar risk per signal, calculated from the initial live balance. No compounding, trade-order drawdown, bankruptcy, spreads or commissions. Actual payouts depend on passing and firm rules; evaluation pass rate is not the signal win rate. Copied accounts share correlated trade outcomes.</p>';
+ const output=root.querySelector('.outputs');
+ function update(){
+ const v=values;
+ const count=Math.max(0,Math.floor(v.budget/Math.max(0.01,v.fee)));
+ const riskD=v.budget*v.risk/100;
+ const expectancy=(v.wr/100*v.rr-(1-v.wr/100));
+ const liveProfit=v.trades*riskD*expectancy;
+ const propNet=v.payout-v.budget-v.extra;
+ const metrics=[['Evaluations affordable',String(count)],['Live risk per signal',money(riskD)],['Live expected P&L',money(liveProfit)],['Live ending balance',money(v.budget+liveProfit)],['Live ROI',(liveProfit/v.budget*100).toFixed(1)+'%'],['Prop assumed net profit',money(propNet)],['Prop ROI',(propNet/v.budget*100).toFixed(1)+'%'],['Prop vs live net difference',money(propNet-liveProfit)]];
+ output.innerHTML=metrics.map(([label,val])=>'<div class="metric"><small>'+label+'</small><strong>'+val+'</strong></div>').join('');
+ }
+ root.addEventListener('input',e=>{const k=e.target.dataset.k;if(!Object.hasOwn(defaults,k))return;const n=Number(e.target.value);if(!Number.isFinite(n))return;const def=fields.find(f=>f[0]===k);values[k]=Math.min(def[3],Math.max(def[2],n));try{localStorage.setItem(key,JSON.stringify(values))}catch(_){}update()});
+ const inside=article.querySelector('.chapter-inside');if(inside)inside.after(root);else article.append(root);update();
+}
+const previousRender=render;render=function(){previousRender();mount()};
+if(new URLSearchParams(location.search).get('topic')===slug)active=slug;
+if(typeof jjRebuildMobileSelector==='function')jjRebuildMobileSelector();
+renderNav();render();
+})();
