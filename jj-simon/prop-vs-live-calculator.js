@@ -5,15 +5,16 @@ const slug='calc-prop-vs-live';
 if(!chapters.some(c=>c.slug===slug))chapters.push({slug,group:'Calculators & Simulations',title:'Prop Firm vs Live Account Calculator',intro:'Compare JJ-style evaluation spending with trading the same personal budget in a live account over identical signals.',status:'Illustrative mathematical model',sections:[{title:'Same-budget comparison',points:['Prop evaluation fees become the live account starting capital. Both approaches use the same personal budget.','The live example uses a fixed percentage of starting capital per trade; it is not a sequence-aware backtest.','Prop payout is an assumption, not a verified guarantee. Extra activation, reset and trading fees reduce actual net returns.'],src:[]}]});
 if(!curriculum.some(c=>c.slug===slug))curriculum.push({slug,title:'Prop Firm vs Live Account Calculator',status:'review',reason:'Interactive same-budget comparison; outcomes and trade assumptions are editable.'});
 const css=document.createElement('style');css.textContent=`
-#jj-live-compare{margin:16px 0;padding:16px;border:1px solid var(--stroke);border-radius:12px;background:var(--panel);font:inherit}
-#jj-live-compare .inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px}
-#jj-live-compare label{display:flex;flex-direction:column;gap:9px;color:var(--muted);font-size:12px;padding:9px 10px;border:1px solid var(--stroke);border-radius:9px;background:var(--bg)}
-#jj-live-compare .slider-head{display:flex;align-items:center;justify-content:space-between;gap:8px}#jj-live-compare output{font-size:14px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
-#jj-live-compare input[type=range]{width:100%;height:30px;min-height:30px;padding:0;margin:0;accent-color:var(--accent);cursor:pointer;touch-action:pan-y}#jj-live-compare input[type=range]::-webkit-slider-thumb{cursor:grab}
-#jj-live-compare .outputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;margin-top:15px}
-#jj-live-compare .metric{border:1px solid var(--stroke);border-radius:9px;padding:11px;background:var(--bg)}
-#jj-live-compare .metric small{display:block;color:var(--muted)}#jj-live-compare .metric strong{display:block;font-size:20px;margin-top:3px}
-#jj-live-compare .warning{color:var(--muted);font-size:12px;margin-top:12px}
+#jj-live-compare{margin:10px 0;padding:10px;border:1px solid var(--stroke);border-radius:12px;background:var(--panel);font:inherit}
+#jj-live-compare .inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:7px}
+#jj-live-compare label{display:flex;flex-direction:column;gap:4px;color:var(--muted);font-size:11px;padding:6px 8px;border:1px solid var(--stroke);border-radius:9px;background:var(--bg)}
+#jj-live-compare .slider-head{display:flex;align-items:center;justify-content:space-between;gap:8px}#jj-live-compare output{font-size:12px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+#jj-live-compare input[type=range]{width:100%;height:20px;min-height:20px;padding:0;margin:0;accent-color:var(--accent);cursor:pointer;touch-action:pan-y}#jj-live-compare input[type=range]::-webkit-slider-thumb{cursor:grab}
+#jj-live-compare .outputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:6px;margin-top:9px}
+#jj-live-compare .metric{border:1px solid var(--stroke);border-radius:7px;padding:7px 8px;background:var(--bg)}
+#jj-live-compare .metric small{display:block;color:var(--muted)}#jj-live-compare .metric strong{display:block;font-size:16px;margin-top:1px}
+#jj-live-compare .warning{color:var(--muted);font-size:11px;margin-top:8px}
+@media(max-width:480px){#jj-live-compare .inputs{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}#jj-live-compare .outputs{grid-template-columns:repeat(2,minmax(0,1fr))}#jj-live-compare .slider-head{flex-wrap:wrap}#jj-live-compare .metric strong{font-size:15px}}
 `;document.head.appendChild(css);
 const key='jj-same-budget-compare-v1';
 const defaults={budget:1500,fee:100,trades:100,risk:5,wr:30,rr:4,payout:10000,extra:0};
