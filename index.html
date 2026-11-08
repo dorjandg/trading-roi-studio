@@ -3026,7 +3026,7 @@ function renderRecoveryPlanners(){
   host.innerHTML='<details class="recovery-details"><summary>'+setup.name+' · '+recoveryMoney(setup.goal)+' target · '+setup.minDays+' min days · '+setup.rr.toFixed(2)+'R · '+RECOVERY_LEVELS.filter(x=>levels[x]>=0.01).length+' active tiers</summary>'+
    '<details class="recovery-subfold recovery-risk-inputs"'+(snapshot.riskInputsOpen?' open':'')+'><summary>Target &amp; risk values · '+recoveryMoney(setup.goal)+' target · '+riskHeadline+'</summary><div class="recovery-fields">'+
    '<label title="Planning profit target ($)">Target · $<input data-stage-target type="number" min="0.01" step="0.01" value="'+setup.goal+'"></label>'+
-   '<label title="Reward to risk ratio">RR<input data-option-rr type="number" min="0.1" max="100" step="0.1" value="'+setup.rr+'"></label>'+
+   '<label title="Daily profit objective for Fast Pass + Reset; separately saved in Scenario Optimizer">Daily objective · $<input data-linked-daily type="number" min="1" step="0.01" value="'+(Number(document.querySelector('.scenario-discovery')?.querySelector('[data-f=goal]')?.value)||setup.goal/Math.max(1,setup.minDays))+'" readonly></label>'+ '<label title="Required successful days; optimizer checks this separately from the cumulative phase target">Successful days<input data-linked-days type="number" value="'+Math.max(1,setup.minDays)+'" readonly></label>'+ '<button type="button" data-open-fast-reset title="Open the multi-day Fast Pass + Reset simulator with editable daily objective and successful days">Open Fast Pass + Reset simulation</button>'+'<label title="Reward to risk ratio">RR<input data-option-rr type="number" min="0.1" max="100" step="0.1" value="'+setup.rr+'"></label>'+
    '<label>Risk sequence'+(bufferActive?'<strong class="ftmo-buffer-active-mode">FTMO Funded Buffer Builder · dynamic</strong>':
     select('policyMode',[['saved','Saved option choices'],['smart-sequence','Smart R1-first recovery'],['streak','After-loss tiers'],['flat','Flat R1'],['after-win','Boost after WIN'],['protect-after-loss','Protect after LOSS']],snapshot.policyMode||'saved'))+'</label>'+
    (bufferActive?'<p class="caption">Fixed R1–R4 amounts are inactive while FTMO Buffer Builder is applied. Use its outcome-based risk fields below.</p>':RECOVERY_LEVELS.map((level,index)=>'<label title="0 disables this tier in risk route planning">'+(['R1 · Initial','R2 · Recovery','R3 · Additional','R4 · Optional'][index])+' ($)'+
@@ -3061,6 +3061,7 @@ function renderRecoveryPlanners(){
 document.addEventListener('change',event=>{
  const el=event.target,host=el.closest?.('[data-recovery-stage]');if(!host)return;
  const stage=host.dataset.recoveryStage,snapshot=recoverySnapshot(stage);
+ if(el.hasAttribute('data-open-fast-reset')){const box=document.querySelector('.scenario-discovery')?.closest('details');if(box){box.open=true;box.scrollIntoView({behavior:'smooth',block:'center'});box.querySelector('[data-run]')?.click()}return;}
  if(el.hasAttribute('data-stage-target')){
   const amount=Number(el.value);
   if(!Number.isFinite(amount)||amount<.01||amount>1e9){
