@@ -524,6 +524,13 @@ details p{margin:6px 0}
 .cash-saved-views{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px;margin-bottom:9px;padding-bottom:8px;border-bottom:1px solid var(--line)}
 .cash-saved-views select,.cash-saved-views input{min-width:0;width:100%;font-size:11px;min-height:30px}
 .cash-saved-views button{font-size:11px;min-height:30px;padding:4px 8px}
+.cash-metric-section{margin:5px 0;border:1px solid var(--line);border-radius:7px;overflow:visible}
+.cash-metric-section>summary{display:flex;align-items:center;gap:6px;padding:6px 8px;cursor:pointer;font-size:11px;font-weight:700;color:var(--muted);list-style:none}
+.cash-metric-section>summary::-webkit-details-marker{display:none}
+.cash-metric-section>summary:before{content:'▸';font-size:10px}
+.cash-metric-section[open]>summary:before{content:'▾'}
+.cash-metric-section>summary button{margin-left:auto;width:27px;min-height:26px;padding:0 4px;font-size:15px}
+.cash-metric-section>.cash-kpis,.cash-metric-section>.cash-summary-grid{margin:4px 6px 7px}
 /* Cash-flow table: column filter belongs to the table's upper-right corner. */
 .cash-table-shell{position:relative;min-width:0}
 .cash-table-columns-trigger{position:absolute;right:9px;top:5px;z-index:3;display:flex;align-items:center;justify-content:center;width:29px;height:28px;min-height:28px;padding:0;border:1px solid var(--line);border-radius:6px;background:var(--panel2);color:var(--text);cursor:pointer;font-size:16px}
@@ -1974,6 +1981,13 @@ function cashKpiStrip(result){
  return items.length?'<div class="cash-kpis">'+items.map(([key,name,type,tip])=>'<div class="cash-kpi" title="'+esc(tip)+'"><small>'+esc(name)+'</small><strong>'+fmt(values[key],type)+'</strong></div>').join('')+'</div>':'';
 }
 document.addEventListener('click',event=>{
+ const button=event.target.closest?.('[data-cash-metric-filter]');
+ if(!button)return;
+ event.preventDefault();event.stopPropagation();
+ const id=button.dataset.cashMetricFilter;
+ if(cashToolPanels[id])toggleCashTool(id);
+});
+document.addEventListener('click',event=>{
  const row=event.target.closest?.('[data-cash-period-row]');if(!row)return;
  const details=row.nextElementSibling;if(!details?.classList.contains('cash-period-detail-row'))return;
  details.hidden=!details.hidden;row.setAttribute('aria-expanded',String(!details.hidden));
@@ -2042,7 +2056,9 @@ drawCashDetailsControls();
  const table=items=>'<div class="tablewrap"><table><thead><tr>'+columns.map(([key,label])=>'<th title="'+esc(label)+'">'+esc(cashShortLabels[key]||label)+'</th>').join('')+'</tr></thead><tbody>'+(cashTotalsPosition==='top'?totalsRow(items):'')+items.map(renderRow).join('')+(cashTotalsPosition==='bottom'?totalsRow(items):'')+'</tbody></table></div>';
  const periodName=span===1?'day':span===5?'week':span===10?'10 trading days':'20 trading days';
  const firmCard=({r,w})=>'<details class="weekly-economics-firm"><summary><strong>'+esc(r.plan.firm+' · '+r.plan.programName+' · '+usd(r.plan.size))+'</strong> · Horizon net / '+esc(periodName)+' '+usd(r.avg.net/(Number(inputs.days)/span))+' · Payout chance '+(w.chanceAnyPayout==null?'—':pct(w.chanceAnyPayout))+'</summary>'+
- cashSummaryStrip(r,w)+cashKpiStrip(r)+table(cashPeriodRows(r,span))+'</details>';
+ '<details class="cash-metric-section" data-cash-metric="summary"><summary><span aria-hidden="true">▦</span> Summary <button type="button" data-cash-metric-filter="cashSummaryToggle" aria-label="Filter summary metrics" title="Filter summary metrics">☷</button></summary>'+cashSummaryStrip(r,w)+'</details>'+
+ '<details class="cash-metric-section" data-cash-metric="kpi"><summary><span aria-hidden="true">▥</span> KPIs <button type="button" data-cash-metric-filter="cashKpisToggle" aria-label="Filter KPIs" title="Filter KPIs">☷</button></summary>'+cashKpiStrip(r)+'</details>'+
+ table(cashPeriodRows(r,span))+'</details>';
  let combined='';
  if(inputs.budgetMode==='split'&&summaries.length){
   const rows=summaries.map(x=>cashPeriodRows(x.r,span)),count=Math.max(...rows.map(x=>x.length));
