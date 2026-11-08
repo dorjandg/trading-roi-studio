@@ -720,7 +720,7 @@ details p{margin:6px 0}
  </div>
  <p class="hint" id="budgetModeNote">In compare mode each firm uses its own hypothetical budget and trade schedule. In split-budget mode the dynamic daily trade opportunities are shared among firms. Do not sum independent comparisons.</p>
 </div></details>
-<details class="sim-charts-panel numbered-panel" id="section2Panel" open><summary><strong>2 · Run &amp; calculate · choose one</strong><button id="run" type="button" class="primary section-run-btn" title="Run simulation with current account and strategy settings">Run Simulation</button><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><div class="alert"><strong>Step 2 · Choose an action</strong><div class="actions"><button type="button" class="primary" data-action-run="run" title="Run a new Monte Carlo simulation from Section 1 inputs">1 · Run Simulation</button><button type="button" data-action-run="investment" title="Open investment scenario comparison controls">2 · Calculate Investment</button><button type="button" data-action-run="discover" title="Explore alternative risk plans without changing Firms">3 · Find Better Models</button></div><p class="hint">Start with Run Simulation. Calculate Investment compares capital and model scenarios. Find Better Models explores risk alternatives. Each action is separate; reports below show which result is active.</p><div id="workflowFeedback" class="hint" role="status" aria-live="polite">Choose an action above. No calculation starts until you select one.</div></div><p class="hint">Saved profiles and phase-risk options are read from this browser's selected 4Ds user (<b id="userLabel">—</b>). Press Apply on a Smart Setup or FTMO Funded Buffer Builder in Firms to use that account’s strategy and phase targets here. Click Reload saved stage settings if Firms changed in another tab. Global win rate, signal count and trial assumptions remain editable here.</p>
+<details class="sim-charts-panel numbered-panel" id="section2Panel" open><summary><strong>2 · Run &amp; calculate · choose one</strong><button id="run" type="button" class="primary section-run-btn" title="Run simulation with current account and strategy settings">Run Simulation</button><span id="runSaveStatus" role="status" aria-live="polite" style="font-size:10px;white-space:nowrap;opacity:.9">Not run yet</span><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><div class="alert"><strong>Step 2 · Choose an action</strong><div class="actions"><button type="button" class="primary" data-action-run="run" title="Run a new Monte Carlo simulation from Section 1 inputs">1 · Run Simulation</button><button type="button" data-action-run="investment" title="Open investment scenario comparison controls">2 · Calculate Investment</button><button type="button" data-action-run="discover" title="Explore alternative risk plans without changing Firms">3 · Find Better Models</button></div><p class="hint">Start with Run Simulation. Calculate Investment compares capital and model scenarios. Find Better Models explores risk alternatives. Each action is separate; reports below show which result is active.</p><div id="workflowFeedback" class="hint" role="status" aria-live="polite">Choose an action above. No calculation starts until you select one.</div></div><p class="hint">Saved profiles and phase-risk options are read from this browser's selected 4Ds user (<b id="userLabel">—</b>). Press Apply on a Smart Setup or FTMO Funded Buffer Builder in Firms to use that account’s strategy and phase targets here. Click Reload saved stage settings if Firms changed in another tab. Global win rate, signal count and trial assumptions remain editable here.</p>
  <div id="accountAllocationHome" class="account-allocation-home"></div>
  <p class="hint" id="accountAllocationExplanation">Allocation settings are shown here with the selected account types. Each account card has independent evaluation and funded caps; shared purchase controls remain common assumptions.</p>
  <div id="accounts"></div>
@@ -808,7 +808,7 @@ details p{margin:6px 0}
 <script src="portfolio-journey.js?v=20261108-canonical-labels-v1"></script>
 <script src="cloud-config.js"></script>
 <script src="cloud-bootstrap.js?v=4ds-auto-first-20261104-a"></script>
-<script src="portfolio-history.js?v=20261107-models-history-fix-v3"></script>
+<script src="portfolio-history.js?v=20261108-cloud-save-status-v4"></script>
 <script>
 (function(){
 'use strict';
@@ -848,7 +848,16 @@ const pct=n=>(100*(Number(n)||0)).toFixed(1)+'%';
 const int=n=>Math.max(0,Math.floor(Number(n)||0));
 const user=localStorage.getItem('4ds:active-user:v1')||'dori';
 const rootKey='4ds:v1:'+user+':';
-const simulationHistory=window.StudioPortfolioHistory?.create({user,element:document.getElementById('simulationHistory'),endpoint:window.FOUR_DS_CLOUD_ENDPOINT})||null;
+const setRunSaveStatus=(message,level='info')=>{
+ const el=document.getElementById('runSaveStatus');if(!el)return;
+ el.textContent=message;
+ el.style.color=level==='error'?'var(--red)':level==='warning'?'var(--amber)':level==='success'?'var(--green)':'var(--muted)';
+ el.title=message;
+};
+const simulationHistory=window.StudioPortfolioHistory?.create({
+ user,element:document.getElementById('simulationHistory'),endpoint:window.FOUR_DS_CLOUD_ENDPOINT,
+ onStatus:({message,level})=>setRunSaveStatus(message,level)
+})||null;
 let catalog=null,audit=null,rows=[],lastResults=[],lastInputs=null;
 let reportStale=false,reportUpdatedAt=null;
 // Read-only bridge: exposes already-loaded history and current report to the local advisor.
@@ -2954,7 +2963,7 @@ function run(){
   showSimulationError('Cannot run: '+bad.map(j=>j.p.firm+' '+j.p.programName+': '+j.validation.errors.join(' · ')).join(' | '));
   return;
  }
- $('run').disabled=true;$('status').style.color='var(--muted)';$('status').textContent='Calculating option-based account paths…';
+ setRunSaveStatus('Calculating…');$('run').disabled=true;$('status').style.color='var(--muted)';$('status').textContent='Calculating option-based account paths…';
  saveView();
  requestAnimationFrame(()=>{
   try{
@@ -2966,9 +2975,10 @@ function run(){
      dailyBuyCap:j.allocation.dailyBuyCap||0}));
    renderResults(results,inputs);
    window.__studioSignalAllocationSnapshot={jobs,inputs};
-   simulationHistory?.save({results,inputs,rows});
+   if(simulationHistory){const saved=simulationHistory.save({results,inputs,rows});if(!saved)setRunSaveStatus('Calculated · local save failed','error');}
+   else setRunSaveStatus('Calculated · history module unavailable','error');
   }catch(e){
-   $('status').textContent='Simulation error: '+e.message;$('status').style.color='var(--red)';
+   $('status').textContent='Simulation error: '+e.message;$('status').style.color='var(--red)';setRunSaveStatus('Calculation failed','error');
   }finally{$('run').disabled=false}
  });
 }
