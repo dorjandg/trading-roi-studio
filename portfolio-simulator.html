@@ -524,6 +524,7 @@ details p{margin:6px 0}
 #journeyContents .journey-account-heading{font-size:11px;color:var(--muted);margin-bottom:7px}
 @media(max-width:650px){#journeyContents .journey-data-panel{margin:5px 0}#journeyContents .journey-data-panel>summary{padding:8px 9px}#journeyContents .journey-data-body{padding:5px}}
 
+.cash-tools{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-bottom:7px}.cash-tools label{font-size:11px;color:var(--muted);font-weight:700}.cash-tools select,.cash-tools button{width:auto;min-height:28px;height:29px;padding:3px 8px;font-size:11px;border-radius:7px}.cash-columns-panel{padding:7px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);margin:5px 0}.cash-columns-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:3px 7px}.cash-columns-grid label{display:flex;align-items:center;gap:5px;font-size:10px;line-height:1.25;min-height:24px;cursor:pointer}.cash-columns-grid input{width:13px;height:13px;min-height:13px;margin:0;flex:none;accent-color:var(--green)}.cash-column-actions{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:7px}.cash-column-actions button{min-height:25px;padding:2px 7px;font-size:10px}.cash-columns-panel .hint{font-size:10px;margin:3px 0 6px}@media(max-width:600px){.cash-columns-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cash-tools{gap:4px}.cash-tools select{max-width:165px}}
 </style>
 <link rel="stylesheet" href="studio-nav.css?v=20261105-compact-v2"><style>
 #gptResearchPanel .gpt-review-request{border:1px solid var(--line);border-radius:8px;padding:10px;margin:8px 0;background:var(--panel2)}
@@ -650,7 +651,7 @@ details p{margin:6px 0}
 <details class="sim-charts-panel numbered-panel" id="section4Panel" open><summary><strong>5 · Results across prop firms</strong><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><p id="summaryCaption" class="hint"></p><div id="totals" class="kpis"></div>
  <div class="tablewrap"><table><thead><tr><th>Firm / account</th><th>Budget</th><th>Challenges</th><th>Spent avg.</th><th>Phase 1 passes</th><th>Phase 2 passes</th><th>Funded</th><th>Paid</th><th>Payouts avg.</th><th>Net avg.</th><th>ROI</th><th>Chance ≥1 payout</th></tr></thead><tbody id="comparisonRows"></tbody></table></div>
  <p class="hint">Counts and profits are averages over simulated trials, not whole-account predictions. ROI = expected net / expected incurred costs. Starting budget is not account capital.</p>
- <div id="combined" hidden></div><details id="weeklyEconomicsPanel" class="sim-charts-panel" style="margin-top:12px"><summary><strong>Cash flow · payout economics</strong><span class="sim-charts-summary" id="weeklyEconomicsHint">Fees · payouts · net · conversion</span></summary><div class="numbered-content"><div class="row" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px"><label for="cashPeriod">Period</label><select id="cashPeriod"><option value="5">Weekly · 5 trading days</option><option value="10">Biweekly · 10 trading days</option><option value="20">Monthly · 20 trading days</option><option value="1">Daily</option></select><button type="button" id="cashColumnsToggle">Columns ▾</button><button type="button" id="cashSourcesToggle">Model inputs ▾</button></div><div id="cashColumnsPanel" hidden></div><div id="cashSourcesPanel" hidden><label for="cashInputView">Show input source</label><select id="cashInputView" style="max-width:290px"><option value="effective">Used in displayed simulation</option><option value="firms">Firms baseline (without overrides)</option><option value="overrides">Simulator-only overrides</option><option value="controls">Simulation controls</option></select><div id="cashInputDetails"></div></div></div><div id="weeklyEconomicsContents" class="numbered-content"><p class="hint">Run Simulation to see weekly results.</p></div></details>
+ <div id="combined" hidden></div><details id="weeklyEconomicsPanel" class="sim-charts-panel" style="margin-top:12px"><summary><strong>Cash flow · payout economics</strong><span class="sim-charts-summary" id="weeklyEconomicsHint">Fees · payouts · net · conversion</span></summary><div class="numbered-content"><div class="cash-tools"><label for="cashPeriod">Period</label><select id="cashPeriod"><option value="5">Weekly · 5 trading days</option><option value="10">Biweekly · 10 trading days</option><option value="20">Monthly · 20 trading days</option><option value="1">Daily</option></select><button type="button" id="cashColumnsToggle">Columns ▾</button><button type="button" id="cashSourcesToggle">Model inputs ▾</button></div><div id="cashColumnsPanel" class="cash-columns-panel" hidden></div><div id="cashSourcesPanel" hidden><label for="cashInputView">Show input source</label><select id="cashInputView" style="max-width:290px"><option value="effective">Used in displayed simulation</option><option value="firms">Firms baseline (without overrides)</option><option value="overrides">Simulator-only overrides</option><option value="controls">Simulation controls</option></select><div id="cashInputDetails"></div></div></div><div id="weeklyEconomicsContents" class="numbered-content"><p class="hint">Run Simulation to see weekly results.</p></div></details>
 </div></details>
 <details id="chartsPanel" class="sim-charts-panel"><summary><strong>6 · Charts</strong><span class="sim-charts-summary">Equity · Drawdown · Distributions · Payouts</span><span class="sim-charts-hint">Show / hide</span></summary><div id="chartsContents" class="sim-charts-contents"><p class="hint">Run a simulation to load charts.</p></div></details>
 <details id="journeyPanel" class="sim-charts-panel journey-panel">
@@ -1486,9 +1487,11 @@ let regularReport=null,investmentReport=null,reportMode='run';
 
 const cashColumns=[
  ['period','Period · days'],['opportunities','Signals'],['trades','Traded'],['bought','Bought'],['challengePasses','P1 passed'],['verificationPasses','P2 passed'],['funded','Funded'],['paid','Paid'],['spent','Fees spent'],['receipts','Cash receipts'],['net','Net this period'],['cumulativeNet','Cumulative net'],
- ['cumulativeBought','Cumulative bought'],['cumulativePaid','Cumulative paid'],['cumulativeSpent','Cumulative fees'],['cumulativeReceipts','Cumulative receipts'],['cumulativeFunded','Cumulative funded'],['cumulativeP1','Cumulative P1'],['cumulativeP2','Cumulative P2']
+ ['cumulativeBought','Cumulative bought'],['cumulativePaid','Cumulative paid'],['cumulativeSpent','Cumulative fees'],['cumulativeReceipts','Cumulative receipts'],['cumulativeFunded','Cumulative funded'],['cumulativeP1','Cumulative P1'],['cumulativeP2','Cumulative P2'],
+ ['untraded','Unused signals'],['conversionP1','P1 / bought %'],['conversionP2','P2 / P1 %'],['conversionFunded','Funded / bought %'],['conversionPaid','Paid / bought %'],['costPerBuy','Fees / bought'],['costPerPaid','Fees / payout'],['netPerTrade','Net / trade'],['roiOnFees','Net / fees %'],['cumulativeROI','Cum. net / fees %'],['cumulativeTrades','Cum. trades'],['cumulativeSignals','Cum. signals']
 ];
-let cashVisible=new Set(cashColumns.slice(0,12).map(x=>x[0]));
+const cashDefaultKeys=cashColumns.slice(0,12).map(x=>x[0]);
+let cashVisible=new Set(cashDefaultKeys);
 let cashLastList=null,cashLastInputs=null;
 function cashPeriodRows(result,span){
  const curve=result.cashCurve||[],days=Math.max(0,Math.floor(Number(result.config?.days)||0)),out=[];
@@ -1505,9 +1508,24 @@ function cashPeriodRows(result,span){
    funded:delta('activated'),paid:delta('paid'),spent:delta('spent'),receipts:delta('receipts'),net:delta('net'),
    cumulativeNet:Number(after.net||0),cumulativeBought:Number(after.bought||0),cumulativePaid:Number(after.paid||0),
    cumulativeSpent:Number(after.spent||0),cumulativeReceipts:Number(after.receipts||0),
-   cumulativeFunded:Number(after.activated||0),cumulativeP1:Number(after.passed1||0),cumulativeP2:Number(after.passed2||0)});
+   cumulativeFunded:Number(after.activated||0),cumulativeP1:Number(after.passed1||0),cumulativeP2:Number(after.passed2||0),
+   untraded:daily.reduce((s,x)=>s+Number(x.opportunities||0)-Number(x.tradesToday||0),0),
+   cumulativeTrades:curve.slice(1,end+1).reduce((s,x)=>s+Number(x.tradesToday||0),0),
+   cumulativeSignals:curve.slice(1,end+1).reduce((s,x)=>s+Number(x.opportunities||0),0)});
  }
  return out;
+}
+function cashDerivedValue(w,key,money){
+ const ratio=(a,b)=>Number(b)>0?pct(Number(a)/Number(b)):'—';
+ const per=(a,b)=>Number(b)>0?usd(Number(a)/Number(b)):'—';
+ const derived={
+ conversionP1:()=>ratio(w.challengePasses,w.bought),conversionP2:()=>ratio(w.verificationPasses,w.challengePasses),
+ conversionFunded:()=>ratio(w.funded,w.bought),conversionPaid:()=>ratio(w.paid,w.bought),
+ costPerBuy:()=>per(w.spent,w.bought),costPerPaid:()=>per(w.spent,w.paid),
+ netPerTrade:()=>per(w.net,w.trades),roiOnFees:()=>ratio(w.net,w.spent),
+ cumulativeROI:()=>ratio(w.cumulativeNet,w.cumulativeSpent)
+ };
+ return derived[key]?derived[key]():money.has(key)?usd(w[key]):dec(w[key]??0);
 }
 function renderWeeklyEconomics(list,inputs){
  cashLastList=list;cashLastInputs=inputs;
@@ -1517,7 +1535,7 @@ function renderWeeklyEconomics(list,inputs){
  const summaries=list.map(r=>({r,w:weekly.summarize(r)})).filter(x=>x.w);
  const columns=cashColumns.filter(([key])=>cashVisible.has(key));
  const money=new Set(['spent','receipts','net','cumulativeNet','cumulativeSpent','cumulativeReceipts']);
- const renderRow=w=>'<tr>'+columns.map(([key])=>'<td'+(key==='net'?' class="'+(w.net>=0?'good':'bad')+'"':'')+'>'+(key==='period'?w.period+' · '+w.fromDay+'–'+w.toDay:money.has(key)?usd(w[key]):dec(w[key]))+'</td>').join('')+'</tr>';
+ const renderRow=w=>'<tr>'+columns.map(([key])=>'<td'+(key==='net'?' class="'+(w.net>=0?'good':'bad')+'"':'')+'>'+(key==='period'?w.period+' · '+w.fromDay+'–'+w.toDay:cashDerivedValue(w,key,money))+'</td>').join('')+'</tr>';
  const table=items=>'<div class="tablewrap"><table><thead><tr>'+columns.map(([,label])=>'<th>'+esc(label)+'</th>').join('')+'</tr></thead><tbody>'+items.map(renderRow).join('')+'</tbody></table></div>';
  const periodName=span===1?'day':span===5?'week':span===10?'10 trading days':'20 trading days';
  const firmCard=({r,w})=>'<details class="weekly-economics-firm"><summary><strong>'+esc(r.plan.firm+' · '+r.plan.programName+' · '+usd(r.plan.size))+'</strong> · Horizon net / '+esc(periodName)+' '+usd(r.avg.net/(Number(inputs.days)/span))+' · Payout chance '+(w.chanceAnyPayout==null?'—':pct(w.chanceAnyPayout))+'</summary>'+
@@ -1579,8 +1597,24 @@ $('cashInputView').addEventListener('change',()=>{if(cashLastList)renderWeeklyEc
 $('cashPeriod').addEventListener('change',()=>{if(cashLastList)renderWeeklyEconomics(cashLastList,cashLastInputs);});
 $('cashColumnsToggle').addEventListener('click',()=>{$('cashColumnsPanel').hidden=!$('cashColumnsPanel').hidden;});
 $('cashSourcesToggle').addEventListener('click',()=>{$('cashSourcesPanel').hidden=!$('cashSourcesPanel').hidden;});
-$('cashColumnsPanel').innerHTML='<div style="display:flex;flex-wrap:wrap;gap:10px">'+cashColumns.map(([key,label])=>'<label style="white-space:nowrap"><input type="checkbox" data-cash-col="'+key+'" '+(cashVisible.has(key)?'checked':'')+'> '+esc(label)+'</label>').join('')+'</div>';
-$('cashColumnsPanel').addEventListener('change',e=>{const key=e.target?.getAttribute('data-cash-col');if(!key)return;if(e.target.checked)cashVisible.add(key);else cashVisible.delete(key);if(cashLastList)renderWeeklyEconomics(cashLastList,cashLastInputs);});
+function drawCashColumnControls(){
+ $('cashColumnsPanel').innerHTML='<div class="cash-column-actions"><button type="button" data-cash-preset="default">Default</button><button type="button" data-cash-preset="all">All</button><button type="button" data-cash-preset="none">Clear</button><button type="button" data-cash-preset="cash">Cash only</button><button type="button" data-cash-preset="funnel">Account funnel</button></div>'+
+ '<p class="hint">'+cashVisible.size+' / '+cashColumns.length+' columns selected · scroll table horizontally to see extras</p>'+
+ '<div class="cash-columns-grid">'+cashColumns.map(([key,label])=>'<label><input type="checkbox" data-cash-col="'+key+'" '+(cashVisible.has(key)?'checked':'')+'>'+esc(label)+'</label>').join('')+'</div>';
+}
+drawCashColumnControls();
+$('cashColumnsPanel').addEventListener('click',e=>{
+ const btn=e.target.closest('[data-cash-preset]');if(!btn)return;
+ const preset=btn.dataset.cashPreset;
+ const groups={cash:['period','spent','receipts','net','cumulativeNet','cumulativeSpent','cumulativeReceipts','roiOnFees','cumulativeROI'],funnel:['period','opportunities','trades','bought','challengePasses','verificationPasses','funded','paid','conversionP1','conversionP2','conversionFunded','conversionPaid']};
+ cashVisible=new Set(preset==='all'?cashColumns.map(x=>x[0]):preset==='none'?[]:preset==='default'?cashDefaultKeys:groups[preset]||cashDefaultKeys);
+ drawCashColumnControls();if(cashLastList)renderWeeklyEconomics(cashLastList,cashLastInputs);
+});
+$('cashColumnsPanel').addEventListener('change',e=>{
+ const key=e.target?.getAttribute('data-cash-col');if(!key)return;
+ if(e.target.checked)cashVisible.add(key);else cashVisible.delete(key);
+ drawCashColumnControls();if(cashLastList)renderWeeklyEconomics(cashLastList,cashLastInputs);
+});
 
 function renderResults(list,inputs,source='run'){
  reportMode=source==='investment'?'investment':'run';
