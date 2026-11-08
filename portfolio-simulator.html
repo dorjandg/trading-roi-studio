@@ -1532,7 +1532,13 @@ const cashColumns=[
 ];
 const cashShortLabels={period:'Period',opportunities:'Signals',trades:'Trades',bought:'Bought',challengePasses:'P1+',verificationPasses:'P2+',funded:'Funded',paid:'Paid',spent:'Fees',receipts:'Cash in',net:'Net',cumulativeNet:'Σ Net',cumulativeBought:'Σ Bought',cumulativePaid:'Σ Paid',cumulativeSpent:'Σ Fees',cumulativeReceipts:'Σ Cash',cumulativeFunded:'Σ Funded',cumulativeP1:'Σ P1',cumulativeP2:'Σ P2',untraded:'Unused',conversionP1:'P1 %',conversionP2:'P2 %',conversionFunded:'Fund %',conversionPaid:'Paid %',costPerBuy:'Fee/Buy',costPerPaid:'Fee/Paid',netPerTrade:'Net/Tr',roiOnFees:'ROI %',cumulativeROI:'Σ ROI %',cumulativeTrades:'Σ Trades',cumulativeSignals:'Σ Signals',failedAccounts:'Failed',riskBlockedAccounts:'Blocked',strategyStoppedAccounts:'Stopped',closedAccounts:'Closed',cumulativeFailed:'Σ Failed',cumulativeRiskBlocked:'Σ Blocked',cumulativeStrategyStopped:'Σ Stopped',cumulativeClosed:'Σ Closed'};
 const cashDefaultKeys=cashColumns.slice(0,12).map(x=>x[0]);
-let cashVisible=new Set(cashDefaultKeys);
+const cashTablePrefsKey=rootKey+'portfolio-cash-table-preferences:v1';
+const cashTablePrefs=readJson(cashTablePrefsKey,{});
+let cashVisible=new Set(Array.isArray(cashTablePrefs.columns)?cashTablePrefs.columns.filter(k=>cashColumns.some(([key])=>key===k)):cashDefaultKeys);
+function saveCashTablePrefs(){
+ try{localStorage.setItem(cashTablePrefsKey,JSON.stringify({columns:[...cashVisible],period:$('cashPeriod').value,inputView:$('cashInputView').value,openPanel:Object.entries(cashToolPanels).find(([id,pid])=>!$(pid).hidden)?.[0]||null}));}catch(e){}
+}
+
 let cashLastList=null,cashLastInputs=null;
 function cashPeriodRows(result,span){
  const curve=result.cashCurve||[],days=Math.max(0,Math.floor(Number(result.config?.days)||0)),out=[];
@@ -1773,7 +1779,7 @@ drawCashDetailsControls();
 
  holder.innerHTML='<p class="hint">Monte Carlo mean cash flows. Net = first-payout receipts − incurred challenge/activation fees. Day-zero purchases are included in the first period. Cumulative columns show totals through each period. Horizon net/period is not a recurring income forecast. Independent comparison alternatives must not be added together.</p>'+combined+summaries.map(firmCard).join('');
 }
-$('cashInputView').addEventListener('change',()=>{if(cashLastList)renderWeeklyEconomics(cashLastList,cashLastInputs);});
+$('cashInputView').addEventListener('change',()=>{saveCashTablePrefs();if(cashLastList)renderWeeklyEconomics(cashLastList,cashLastInputs);});
 const cashToolPanels={cashPeriodToggle:'cashPeriodPanel',cashSummaryToggle:'cashSummaryPanel',cashKpisToggle:'cashKpisPanel',cashColumnsToggle:'cashColumnsPanel',cashDetailsToggle:'cashDetailsPanel',cashSourcesToggle:'cashSourcesPanel'};
 function toggleCashTool(buttonId){
  const panelId=cashToolPanels[buttonId],panel=$(panelId),opening=panel.hidden;
@@ -1783,8 +1789,11 @@ function updateCashPeriodLabel(){
  const names={'1':'Daily','5':'Weekly','10':'Biweekly','20':'Monthly'};
  $('cashPeriodToggle').textContent='Period · '+(names[$('cashPeriod').value]||'Weekly')+' ▾';
 }
-for(const id of Object.keys(cashToolPanels))$(id).addEventListener('click',()=>toggleCashTool(id));
-$('cashPeriod').addEventListener('change',()=>{updateCashPeriodLabel();if(cashLastList)renderWeeklyEconomics(cashLastList,cashLastInputs);});
+for(const id of Object.keys(cashToolPanels))$(id).addEventListener('click',()=>{toggleCashTool(id);saveCashTablePrefs();});
+$('cashPeriod').addEventListener('change',()=>{updateCashPeriodLabel();saveCashTablePrefs();if(cashLastList)renderWeeklyEconomics(cashLastList,cashLastInputs);});
+if(['1','5','10','20'].includes(String(cashTablePrefs.period)))$('cashPeriod').value=String(cashTablePrefs.period);
+if(['effective','firms','overrides','controls'].includes(cashTablePrefs.inputView))$('cashInputView').value=cashTablePrefs.inputView;
+if(cashTablePrefs.openPanel&&cashToolPanels[cashTablePrefs.openPanel])toggleCashTool(cashTablePrefs.openPanel);
 updateCashPeriodLabel();
 function drawCashColumnControls(){
  $('cashColumnsPanel').innerHTML=cashTotalsControl()+'<div class="cash-column-actions"><button type="button" data-cash-preset="default">Default</button><button type="button" data-cash-preset="all">All</button><button type="button" data-cash-preset="none">Clear</button><button type="button" data-cash-preset="cash">Cash only</button><button type="button" data-cash-preset="funnel">Account funnel</button></div>'+
@@ -1797,7 +1806,7 @@ $('cashColumnsPanel').addEventListener('click',e=>{
  const preset=btn.dataset.cashPreset;
  const groups={cash:['period','spent','receipts','net','cumulativeNet','cumulativeSpent','cumulativeReceipts','roiOnFees','cumulativeROI'],funnel:['period','opportunities','trades','bought','challengePasses','verificationPasses','funded','paid','failedAccounts','riskBlockedAccounts','strategyStoppedAccounts','conversionP1','conversionP2','conversionFunded','conversionPaid']};
  cashVisible=new Set(preset==='all'?cashColumns.map(x=>x[0]):preset==='none'?[]:preset==='default'?cashDefaultKeys:groups[preset]||cashDefaultKeys);
- drawCashColumnControls();if(cashLastList)renderWeeklyEconomics(cashLastList,cashLastInputs);
+ drawCashColumnControls();saveCashTablePrefs();if(cashLastList)renderWeeklyEconomics(cashLastList,cashLastInputs);
 });
 $('cashColumnsPanel').addEventListener('change',e=>{
  const key=e.target?.getAttribute('data-cash-col');if(!key)return;
