@@ -537,7 +537,7 @@ function oneTrial(p,config,rng,record=false){
  const evaluationCap=config.evaluationAllocationCap>0?Math.floor(config.evaluationAllocationCap/p.size):Infinity;
  const fundedCap=Math.min(p.fundedMaxActive,config.fundedAllocationCap>0?Math.floor(config.fundedAllocationCap/p.size):Infinity);
  // Upfront accounts all begin evaluation; cap is applied before purchase.
- const upfront=Math.min(n,evaluationCap);
+ const upfront=Math.min(n,evaluationCap,config.capacityMode==='manual'?config.maxActive:Infinity);
  const accounts=dynamic?[]:Array.from({length:upfront},(_,i)=>makeAccount(i+1));
  // Round-robin cursor persists between days. With 50 purchased accounts and
  // 5 signals, day 1 uses #1–#5, day 2 uses #6–#10, etc.
