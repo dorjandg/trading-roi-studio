@@ -532,6 +532,7 @@ details p{margin:6px 0}
 .cash-period-detail-row>td{padding:5px!important}.cash-period-mini{font-size:10px}.cash-period-mini-head{display:flex;align-items:center;gap:8px;margin-bottom:4px}.cash-period-mini-head strong{font-size:11px}.cash-period-mini-head span{font-size:10px;color:var(--muted)}.cash-period-mini .cash-period-detail-grid{grid-template-columns:repeat(auto-fit,minmax(85px,1fr));gap:3px;margin:4px 0}.cash-period-mini .cash-period-detail-grid>div{padding:3px 5px;border-radius:4px}.cash-period-mini .cash-period-detail-grid small{font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cash-period-mini .cash-period-detail-grid strong{font-size:11px}.cash-period-subsections{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}.cash-period-subsections>details{flex:1 1 110px;min-width:0;border:1px solid var(--line);border-radius:5px}.cash-period-subsections>details[open]{flex-basis:100%}.cash-period-subsections>details>summary{font-size:10px;font-weight:600;padding:4px 6px;cursor:pointer;list-style:none;display:flex;justify-content:space-between}.cash-period-subsections>details>summary::-webkit-details-marker{display:none}.cash-period-subsections>details>.cash-period-detail-grid{padding:0 5px 5px}.cash-period-mini>.hint{font-size:9px;margin:5px 0 0}@media(max-width:600px){.cash-period-mini .cash-period-detail-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.cash-period-subsections>details{flex-basis:80px}}
 .cash-detail-filter-group{margin:6px 0;padding-top:5px;border-top:1px solid var(--line)}.cash-detail-filter-group>strong{font-size:11px}.cash-detail-filter-group .cash-columns-grid{margin-top:4px}
 .cash-totals-control{display:flex;align-items:center;gap:6px;margin:0 0 6px;font-size:11px}.cash-totals-control select{font-size:11px;padding:3px 6px;min-height:27px}.cash-total-row{font-weight:700;background:var(--panel2);border-top:2px solid var(--line)}.cash-total-row td{font-size:11px;white-space:nowrap}
+.capital-firm-item{display:grid;grid-template-columns:minmax(110px,1fr) repeat(2,minmax(110px,1fr));align-items:end;gap:5px;padding:5px;border-bottom:1px solid var(--line)}.capital-firm-item strong,.capital-firm-item label{font-size:10px}.capital-firm-item input{width:100%;font-size:11px;min-height:27px;padding:3px 5px}@media(max-width:600px){.capital-firm-item{grid-template-columns:1fr 1fr}.capital-firm-item strong{grid-column:1/-1}}#capitalAllocationPanel>summary{cursor:pointer;font-size:12px;padding:6px}
 </style>
 <link rel="stylesheet" href="studio-nav.css?v=20261105-compact-v2"><style>
 #gptResearchPanel .gpt-review-request{border:1px solid var(--line);border-radius:8px;padding:10px;margin:8px 0;background:var(--panel2)}
@@ -597,7 +598,14 @@ details p{margin:6px 0}
 <p class="muted">Uses each account’s saved risk policy from Firms: fixed R1–R4, or FTMO’s optional dynamic Funded Buffer Builder. Targets and loss limits remain specific to each firm and phase. Trade outcomes are simulated, never predicted; no orders are placed.</p>
 <div class="alert"><strong>Model scope:</strong> Risk amounts are used exactly or the trade is blocked. Minimum trading days after reaching a target are represented as <b>administrative qualification assumptions</b> (not invented W/L trades). Payout eligibility, subscriptions, trailing losses, firm allocation and checkout rules need separate verification.</div>
 <details class="sim-charts-panel numbered-panel" id="section1Panel" open><summary><strong>1 · Investment & simulation inputs</strong><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><div class="alert"><strong>Step 1 · Choose inputs</strong><p class="hint">All calculations start with the selected accounts, Firms settings, budget and assumptions. Select how phase-risk adjustments are applied before running.</p><div class="actions"><label for="simInputSource">Phase-risk source</label><select id="simInputSource" style="max-width:310px"><option value="firms">Firms only (default)</option><option value="adjusted">Firms + Simulator adjustments</option></select><button type="button" id="simInputsToggle">Verify simulation parameters ▾</button></div><div id="simInputsPreview" hidden></div><p class="hint">One place to verify the next run and the last displayed report. This panel is read-only.</p></div><p class="hint">Same-budget comparison allocates the entire budget separately to each firm. Split-budget mode divides one budget across the selected firms.</p>
- <div class="fields">
+ <details id="capitalAllocationPanel" class="cash-columns-panel" style="margin:7px 0"><summary><strong>Capital &amp; Account Allocation ▾</strong> <span class="hint">Budget, limits, firm caps</span></summary><div style="padding:7px">
+<p class="hint">Blank optional caps mean no additional personal limit. Firm rules and available cash still apply. Limits below are per account type in comparisons; split portfolios use shared cash but separate per-type account caps.</p>
+<div class="fields"><div class="field"><label for="capitalMaxAccounts">Maximum purchased accounts (per account type)</label><input id="capitalMaxAccounts" type="number" min="1" max="100" step="1" placeholder="Blank · engine safety maximum 100"></div>
+<div class="field"><label for="capitalNominalCap">Nominal account allocation cap ($, per account type)</label><input id="capitalNominalCap" type="number" min="1" step="10000" placeholder="Blank · no extra cap"></div></div>
+<div class="actions"><button type="button" id="capitalJumpBudget">Starting budget ↓</button><button type="button" id="capitalJumpCapacity">Trading capacity ↓</button></div>
+<div id="capitalFirmCaps" class="cash-columns-grid"></div><p class="hint">Evaluation and funded caps below are per firm/account size. Blank = disabled. A global nominal cap limits modeled purchased account count per type; it does not represent an aggregate multi-firm regulatory cap.</p>
+</div></details>
+<div class="fields">
   <div class="field"><label for="budget">Starting budget (USD)</label><input id="budget" type="number" min="0" step="100" value="5000"></div>
   <div class="field"><label for="netGoal">Target net profit (USD)</label><input id="netGoal" type="number" min="0" step="100" value="20000"></div>
   <div class="field"><label for="winRate">Win rate (%) — same for comparisons</label><input id="winRate" type="number" min="0" max="100" step=".5" value="40"></div>
@@ -897,9 +905,22 @@ $('theme').addEventListener('click',()=>{currentTheme=currentTheme==='light'?'da
 $('userLabel').textContent=user.toUpperCase();
 for(const id of ['section1Panel','section2Panel','discovery','section4Panel','section7Panel','section8Panel','section9Panel'])
  $(id).addEventListener('toggle',()=>saveView());
+function renderCapitalFirmCaps(){
+ const holder=$('capitalFirmCaps');if(!holder)return;
+ holder.innerHTML=rows.map(r=>{const key=r.id+':'+r.size,limits=allocationLimits[key]||{};return '<div class="capital-firm-item"><strong>'+esc(r.id)+' · '+usd(r.size)+'</strong><label>Evaluation cap ($)<input type="number" min="0" step="10000" data-cap-kind="evaluation" data-cap-key="'+esc(key)+'" placeholder="No limit" value="'+(limits.evaluation||'')+'"></label><label>Funded cap ($)<input type="number" min="0" step="10000" data-cap-kind="funded" data-cap-key="'+esc(key)+'" placeholder="No limit" value="'+(limits.funded||'')+'"></label></div>';}).join('');
+}
+$('capitalFirmCaps').addEventListener('change',event=>{
+ const el=event.target.closest('[data-cap-kind]');if(!el)return;
+ const key=el.dataset.capKey,kind=el.dataset.capKind;
+ if(!rows.some(r=>r.id+':'+r.size===key))return;
+ allocationLimits[key]={...(allocationLimits[key]||{}),[kind]:el.value.trim()===''?0:Math.max(0,Number(el.value)||0)};
+ renderRows();setStale();saveView();
+});
+$('capitalJumpBudget').addEventListener('click',()=>{$('budget').focus();$('budget').scrollIntoView({block:'center'});});
+$('capitalJumpCapacity').addEventListener('click',()=>{$('capacityMode').focus();$('capacityMode').scrollIntoView({block:'center'});});
 function saveView(){
  try{localStorage.setItem(savedViewKey,JSON.stringify({
-  budget:$('budget').value,netGoal:$('netGoal').value,winRate:$('winRate').value,simInputSource:$('simInputSource').value,
+  budget:$('budget').value,netGoal:$('netGoal').value,capitalMaxAccounts:$('capitalMaxAccounts').value,capitalNominalCap:$('capitalNominalCap').value,winRate:$('winRate').value,simInputSource:$('simInputSource').value,
   purchaseMode:$('purchaseMode').value,capacityMode:$('capacityMode').value,maxActive:$('maxActive').value,
   maxBuysPerDay:$('maxBuysPerDay').value,reinvestPayouts:$('reinvestPayouts').value,
   days:$('days').value,tradesPerDay:$('tradesPerDay').value,signalPace:$('signalPace').value,trials:$('trials').value,
@@ -916,6 +937,7 @@ function loadView(){
  const prior=readJson(savedViewKey,{});
  $('simInputSource').value=prior.simInputSource==='adjusted'?'adjusted':'firms';
  allocationLimits=prior.allocationLimits&&typeof prior.allocationLimits==='object'&&!Array.isArray(prior.allocationLimits)?prior.allocationLimits:{};
+ $('capitalMaxAccounts').value=prior.capitalMaxAccounts??'';$('capitalNominalCap').value=prior.capitalNominalCap??'';
  $('purchaseMode').value=prior.purchaseMode==='upfront'?'upfront':'recycle';
  $('capacityMode').value=prior.capacityMode==='manual'?'manual':'automatic';
  $('maxActive').value=String(Math.max(1,Math.min(100,Math.floor(Number(prior.maxActive)||1))));
@@ -1015,6 +1037,7 @@ function rowSummary(row){
   (v.errors.length?'<span class="bad">'+esc(v.errors.join(' · '))+'</span>':'');
 }
 function renderRows(){
+ renderCapitalFirmCaps();
  const mode=document.querySelector('[name="budgetMode"]:checked').value;
  $('accounts').innerHTML=rows.map((r,i)=>{
   const program=catalog.programs[r.id];
@@ -1187,7 +1210,7 @@ $('reload').addEventListener('click',()=>{
   ' cleared). Expand Fee & phase risks to verify P1, P2 and Funded.';
  $('status').style.color='var(--green)';
 });
-document.querySelectorAll('#budget,#netGoal,#winRate,#days,#signalPace,#tradesPerDay,#trials,#seed,#signalMode,#purchaseMode,#capacityMode,#maxActive,#maxBuysPerDay,#reinvestPayouts,[name="budgetMode"]').forEach(el=>{
+document.querySelectorAll('#capitalMaxAccounts,#capitalNominalCap,#budget,#netGoal,#winRate,#days,#signalPace,#tradesPerDay,#trials,#seed,#signalMode,#purchaseMode,#capacityMode,#maxActive,#maxBuysPerDay,#reinvestPayouts,[name="budgetMode"]').forEach(el=>{
  el.addEventListener('change',()=>{
   if(el.name==='budgetMode')renderRows();
   if(['purchaseMode','capacityMode','signalPace','tradesPerDay','maxActive','maxBuysPerDay'].includes(el.id))syncPurchaseMode();
@@ -2167,7 +2190,7 @@ function currentDiscoveryInputs(row){
   const schedule=mode==='split'?sharedDailyTradeSchedules()?.[rows.indexOf(row)]:
    $('signalPace').value==='weekly20'?weekly.schedule(Number($('days').value),'weekly20',4):null;
  return {
-  budget:allocated,netGoal:Math.max(0,Number($('netGoal').value)||0),
+  budget:allocated,netGoal:Math.max(0,Number($('netGoal').value)||0),capitalMaxAccounts:$('capitalMaxAccounts').value.trim()===''?null:Number($('capitalMaxAccounts').value),capitalNominalCap:$('capitalNominalCap').value.trim()===''?null:Number($('capitalNominalCap').value),
   winRate:Math.max(0,Math.min(100,Number($('winRate').value)||0)),
    days:Number($('days').value)||20,tradesPerDay:$('signalPace').value==='weekly20'?4:(Number($('tradesPerDay').value)||4),
   signalMode:$('signalMode').value,seed:Number($('seed').value)||24717,
@@ -2424,6 +2447,9 @@ function run(){
   return {p,budget,validation,index:i,tradeSchedule:schedules?.[i]||null,
     allocation:allocationLimits[p.id+':'+p.size]||{}};
  });
+ if(inputs.capitalMaxAccounts!=null&&(!Number.isInteger(inputs.capitalMaxAccounts)||inputs.capitalMaxAccounts<1||inputs.capitalMaxAccounts>100)){showSimulationError('Maximum purchased accounts must be 1–100 or blank.');return;}
+ if(inputs.capitalNominalCap!=null&&(!Number.isFinite(inputs.capitalNominalCap)||inputs.capitalNominalCap<=0)){showSimulationError('Nominal account allocation cap must be positive or blank.');return;}
+ if(inputs.capitalNominalCap!=null&&jobs.some(j=>inputs.capitalNominalCap<j.p.size)){showSimulationError('Nominal cap is below the selected account size. Increase it or leave blank.');return;}
  const bad=jobs.filter(j=>j.validation.errors.length);
  if(bad.length){
   showSimulationError('Cannot run: '+bad.map(j=>j.p.firm+' '+j.p.programName+': '+j.validation.errors.join(' · ')).join(' | '));
@@ -2434,7 +2460,7 @@ function run(){
  requestAnimationFrame(()=>{
   try{
    const results=jobs.map(j=>E.simulatePortfolio(j.p,{
-    ...inputs,budget:j.budget,seed:inputs.seed+j.index*120011,maxAccounts:100,
+    ...inputs,budget:j.budget,seed:inputs.seed+j.index*120011,maxAccounts:Math.max(1,Math.min(100,Math.floor(inputs.capitalMaxAccounts||100),inputs.capitalNominalCap?Math.floor(inputs.capitalNominalCap/j.p.size):100)),
      tradeSchedule:j.tradeSchedule||inputs.tradeSchedule,trackCharts:true,
      evaluationAllocationCap:j.allocation.evaluation||0,
      fundedAllocationCap:j.allocation.funded||0}));
