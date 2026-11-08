@@ -27,6 +27,24 @@ css.textContent=`
 #jj-live-compare .jj-heading{font-size:12px;font-weight:700;margin:9px 0 4px}
 #jj-live-compare .jj-note{font-size:10px;color:var(--muted);margin:7px 0 0;line-height:1.4}
 #jj-live-compare .jj-tabpanel[hidden]{display:none}
+@media(max-width:600px){
+#jj-live-compare{margin:4px 0;padding:5px;border-radius:7px}
+#jj-live-compare .jj-compact-inputs,#jj-live-compare .jj-kpis{gap:3px}
+#jj-live-compare .jj-compact-inputs{grid-auto-rows:minmax(55px,auto)}
+#jj-live-compare .jj-field{min-height:55px;padding:3px 4px;gap:2px;border-radius:5px}
+#jj-live-compare .jj-field-head{grid-template-columns:minmax(0,1fr) 54px;gap:3px;min-height:26px;font-size:9px;line-height:1.1}
+#jj-live-compare .jj-field-head>.jj-number{width:54px}
+#jj-live-compare .jj-number{min-height:23px;padding:2px 3px;font-size:11px}
+#jj-live-compare input[type=range]{height:14px;min-height:14px}
+#jj-live-compare .jj-tabs{margin:4px 0 5px;gap:3px}
+#jj-live-compare .jj-tabs button{padding:4px 5px;font-size:11px}
+#jj-live-compare .jj-kpis{margin-top:4px}
+#jj-live-compare .jj-kpi{min-height:43px;padding:4px 5px;border-radius:5px}
+#jj-live-compare .jj-kpi small{font-size:9px;line-height:1.15}
+#jj-live-compare .jj-kpi strong{font-size:12px;margin-top:1px}
+#jj-live-compare .jj-heading{font-size:11px;margin:6px 0 3px}
+#jj-live-compare .jj-note{font-size:9px;margin-top:5px;line-height:1.3}
+}
 @media(min-width:850px){#jj-live-compare .jj-compact-inputs,#jj-live-compare .jj-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}}
 `;document.head.appendChild(css);
 const key='jj-same-budget-compare-v2';
