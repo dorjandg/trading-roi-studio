@@ -110,9 +110,36 @@ function run(p,stage){
  const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  out.innerHTML='<div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap;margin:4px 0 6px"><label style="font-size:11px">Rows <select data-page-size aria-label="Scenario rows per page" style="font-size:11px;padding:2px 4px">'+[5,10,20,'all'].map(x=>'<option value="'+x+'"'+(pageSize===x?' selected':'')+'>'+ (x==='all'?'All':x)+'</option>').join('')+'</select></label><button type="button" data-prev aria-label="Previous scenario page" style="padding:2px 8px">‹</button><span data-page-status style="font-size:11px;white-space:nowrap"></span><button type="button" data-next aria-label="Next scenario page" style="padding:2px 8px">›</button></div><div style="overflow-x:auto"><table style="width:100%;font-size:11px;border-collapse:collapse"><!--compact--><thead><tr>'+[['Keep','Save for later comparison'],['Scenario','Candidate daily trading sequence'],['Risks','Risk amounts in trade order'],['Hit %','Chance of hitting daily goal within allowed trades'],['Cap %','Chance of hitting the modeled risk cap'],['Neg %','Chance of ending negative but above cap'],['Trades','Expected attempted trades']].map((x,i)=>'<th title="'+esc(x[1])+'" style="padding:4px 5px;white-space:nowrap"><button type="button" data-head-help="'+i+'" aria-label="Explain '+esc(x[0])+'" title="'+esc(x[1])+'" style="font:inherit;color:inherit;background:none;border:0;padding:1px 2px;cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px">'+esc(x[0])+' <span aria-hidden="true" style="opacity:.7">ⓘ</span></button></th>').join('')+'</tr></thead><tbody>'+ranked.map((c,i)=>'<tr data-scenario-row style="height:29px"><td style="padding:3px 5px"><input type="checkbox" data-keep="'+i+'" '+(saved.includes(c.r.join('/'))?'checked':'')+' aria-label="Keep '+esc(c.name)+'"></td><td style="padding:3px 5px"><details><summary style="cursor:pointer;white-space:nowrap">'+esc(c.name)+'</summary><div>'+c.paths.sort((a,b)=>b.prob-a.prob).map(x=>esc(x.steps)+' = '+money(x.pnl)+' ('+pct(x.prob)+')').join('<div style="border-top:1px solid #344257;margin:3px 0"></div>')+'</div></details></td><td style="padding:3px 5px;white-space:nowrap">'+c.r.slice(0,max).filter(Boolean).join(' / ')+'</td><td style="padding:3px 5px">'+pct(c.hit)+'</td><td style="padding:3px 5px">'+pct(c.breach)+'</td><td style="padding:3px 5px">'+pct(c.negative)+'</td><td style="padding:3px 5px">'+c.trades.toFixed(2)+'</td></tr>').join('')+'</tbody></table></div><small>Ranking: daily-goal hit chance first, then cap risk, then trades. Click a scenario name to see win/loss paths. This is NOT a multi-day pass probability or a firm-approved risk plan.</small>'; out.querySelectorAll('[data-keep]').forEach(el=>el.addEventListener('change',()=>{const picks=[...out.querySelectorAll('[data-keep]:checked')].map(x=>ranked[Number(x.dataset.keep)].r.join('/'));try{localStorage.setItem(key,JSON.stringify(picks))}catch(e){}}));
  const help=[['Keep','Check to remember a risk scenario for comparison. This does not apply it to the main simulation.'],['Scenario','Name of the candidate. Open its row to inspect the possible win/loss paths.'],['Risks','Dollar amount risked on each successive trade, in order. Later trades are skipped if the daily target has already been reached.'],['Hit %','Estimated probability of reaching the DAILY profit goal within the selected maximum number of trades; not the probability of passing the evaluation.'],['Cap %','Estimated probability of reaching the manually entered loss cap in this simplified daily model; not a verified firm-rule breach rate.'],['Neg %','Estimated probability of ending the tested daily sequence below starting balance but above the modeled loss cap.'],['Trades','Expected number of trades attempted per simulated daily sequence, including early stops.']];
- const explanation=document.createElement('div');explanation.setAttribute('data-head-explanation','');explanation.setAttribute('role','status');explanation.style.cssText='display:none;margin:5px 0;padding:7px 9px;border:1px solid #506078;border-radius:7px;font-size:12px;line-height:1.45';
- out.querySelector('table').before(explanation);
- out.querySelectorAll('[data-head-help]').forEach(btn=>btn.addEventListener('click',()=>{const h=help[Number(btn.dataset.headHelp)];const same=explanation.dataset.active===btn.dataset.headHelp&&explanation.style.display!=='none';explanation.style.display=same?'none':'block';explanation.dataset.active=btn.dataset.headHelp;explanation.textContent=same?'':h[0]+' — '+h[1];}));
+ // Portfolio SIM-style floating tooltip: overlays the table without affecting row layout.
+ const explanation=document.createElement('div');
+ explanation.setAttribute('data-head-explanation','');
+ explanation.setAttribute('role','tooltip');
+ explanation.hidden=true;
+ explanation.style.cssText='position:fixed;z-index:2147483000;width:max-content;min-width:190px;max-width:min(330px,76vw);white-space:normal;overflow-wrap:anywhere;padding:10px 12px;text-align:left;background:#202f41;color:#f3f8ff;border:1px solid #6284a9;border-radius:8px;box-shadow:0 7px 22px rgba(0,0,0,.48);font-size:12px;font-weight:400;line-height:1.5;pointer-events:none';
+ document.body.appendChild(explanation);
+ let activeHelp=null;
+ const hideHelp=()=>{explanation.hidden=true;activeHelp=null};
+ const showHelp=btn=>{
+  const h=help[Number(btn.dataset.headHelp)];if(!h)return;
+  explanation.textContent=h[0]+' — '+h[1];
+  explanation.hidden=false;
+  const r=btn.getBoundingClientRect(),w=explanation.getBoundingClientRect().width,hgt=explanation.getBoundingClientRect().height;
+  const left=Math.max(8,Math.min(r.left,window.innerWidth-w-8));
+  const top=r.bottom+hgt+8<=window.innerHeight?r.bottom+7:Math.max(8,r.top-hgt-7);
+  explanation.style.left=left+'px';explanation.style.top=top+'px';activeHelp=btn;
+ };
+ out.querySelectorAll('[data-head-help]').forEach(btn=>{
+  btn.addEventListener('click',e=>{e.stopPropagation();if(activeHelp===btn&&!explanation.hidden)hideHelp();else showHelp(btn)});
+  btn.addEventListener('mouseenter',()=>showHelp(btn));
+  btn.addEventListener('mouseleave',()=>{if(activeHelp===btn)hideHelp()});
+  btn.addEventListener('focus',()=>showHelp(btn));
+  btn.addEventListener('blur',()=>{if(activeHelp===btn)hideHelp()});
+ });
+ document.addEventListener('pointerdown',e=>{if(activeHelp&&!activeHelp.contains(e.target))hideHelp()},true);
+ document.addEventListener('keydown',e=>{if(e.key==='Escape')hideHelp()});
+ window.addEventListener('scroll',hideHelp,true);
+ window.addEventListener('resize',hideHelp);
+
  const table=out.querySelector('table'),tbody=table.tBodies[0];
  // Stable row identities make sorting compatible with saved checkboxes and pagination.
  [...tbody.rows].forEach((tr,i)=>{tr.dataset.riskKey=ranked[i].r.join('/');tr.querySelector('[data-keep]').dataset.riskKey=tr.dataset.riskKey});
