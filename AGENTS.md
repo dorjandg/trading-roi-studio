@@ -26,3 +26,7 @@
 - Treat each table's last user-selected visible/hidden columns, column order, filters, and page size as durable user preferences. Persist changes immediately and restore them after refresh, rerender, and simulation runs; never silently reset preferences when changing a header label.
 - Store by stable table/column IDs, not human-readable display labels. Migrate legacy saved keys when renaming labels, retaining old preferences. Keep tables independent, and avoid overwriting saved preferences with defaults during initialization.
 - Browser localStorage persistence is per browser/device/profile; do not promise cross-device synchronization unless the connected cloud profile explicitly saves and restores these preferences.
+
+## Compact table headings (strict)
+- Every displayed table column heading is limited to 12 characters, preferably shorter. Use clear semantic abbreviations, e.g. Failed (failed accounts), Bought, Executed, Qual., Signals, P1 pass, P2 pass, P3 ready, P4 paid. Preserve the full explanation in a tooltip/title and accessible description.
+- Apply this to dynamic tables and filter menus too; keep stable underlying data/column identifiers and migrate saved column presets and order when labels change. Do not change simulation calculations to shorten display labels.
