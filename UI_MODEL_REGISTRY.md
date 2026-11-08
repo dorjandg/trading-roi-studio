@@ -46,3 +46,6 @@ For every newly approved model add: `MODEL-NNN`, user-approved name, canonical p
 
 ### Phase target extension (2026-11-08)
 - Scenario Optimizer now distinguishes daily objective, cumulative phase target, and minimum successful daily-objective days. Multi-day pass probability is a seeded 3,000-trial, maximum-12-day approximation, not a verified Topstep consistency evaluation. Losses and modeled drawdown carry forward; successful days are counted only when their daily objective is reached. Expanded path tables remain single-attempt outcomes. Do not conflate these two metrics.
+
+### Scenario input autosave (2026-11-08)
+- `studio-scenario-discovery.js` stores the six editable inputs (`goal`, `phase`, `days`, `wr`, `rr`, `cap`) on input/change in browser `localStorage` under `studio:scenario-discovery:inputs:v1:<stage>`; restores separately for p1/p2/funded. A compact Saved ✓ status confirms local write, or an error label reports unavailable storage. Find paths remains an explicit calculation action. Browser-local saving does not sync between devices, modify firm defaults, or apply a scenario to Portfolio SIM.
