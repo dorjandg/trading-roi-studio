@@ -95,6 +95,11 @@ function buildPlan(programId,size,program,profile={},snapshots={},audit=null){
   maxFundedPerCycle:isTopstep?5:Infinity
  };
  if(isTopstep){result.refund=0;result.split=.5;result.fundedWaitDays=0;
+  // Custom Studio model: lock the funded target immediately and pay 14 calendar
+  // days later (~10 simulated trading days). Not Topstep's official policy.
+  result.payoutWaitCalendarDays=0;
+  result.payoutProcessingCalendarDays=14;
+  result.payoutProcessingTradingDays=10;
   result.fundedTarget=pos(dynamic(state,'topstepFirstPayoutBalance',4000));}
  // A stored profile's funded goal is a planning target, not an official firm payout guarantee.
  for(const key of stages){
@@ -210,7 +215,7 @@ function chooseTradeRisk(p,ac,stage,c,dayProfit=0){
   return {slot:'buffer-'+q.phase,risk:q.risk,rr:c.rr,bufferPhase:q.phase};
  }
  const smart=mode==='smart-sequence';
- const forceTopstepR3=!smart&&p.id==='topstep'&&stage==='funded'&&ac.fundedTargetDay!==null&&ac.funded150Days<5;
+ const forceTopstepR3=false; // Custom funded model stops on target; no qualification R3.
  const topstepCombine=!smart&&p.id==='topstep'&&stage==='p1';
  let slot=smart?(ac.smartNext||'r1'):topstepCombine?'r1':forceTopstepR3?'r3':plannedSlot(ac.history,c.policy);
  if(mode==='repair-r2'&&!topstepCombine&&!forceTopstepR3)slot=ac.repairSlot||'r1';
@@ -332,7 +337,7 @@ function runAccountDay(p,ac,day,rand,config,record){
  const out={stagePass:false,paid:false,activation:false};
  if(stage==='funded')ac.fundedDays++;
  const eligiblePayout=()=>ac.fundedFirstTradeDay!==null &&
-  (p.id==='topstep'?ac.funded150Days>=5:day-ac.fundedFirstTradeDay+1>=p.fundedWaitDays);
+  (p.id==='topstep'?true:day-ac.fundedFirstTradeDay+1>=p.fundedWaitDays);
  const requestPayout=()=>{
   ac.firstPaid=firstPayout(p,ac);
   ac.payoutRequestedDay=day;ac.everPayoutRequested=true;
@@ -365,7 +370,7 @@ function runAccountDay(p,ac,day,rand,config,record){
   // FTMO/Hola: profit is locked at the COMPLETED winning trade even when
   // it overshoots the target. Topstep may need additional winning days for
   // its separate payout eligibility rule.
-  if(p.id!=='topstep'||ac.funded150Days>=5){
+  if(true){ // Funded target always freezes trading; no Topstep winning-day requirement.
    if(record)ac.trace.push({day,stage,type:'waiting',
     label:'Funded target locked; no more trades until payout eligibility'});
    return out;
@@ -378,10 +383,9 @@ function runAccountDay(p,ac,day,rand,config,record){
   // Topstep needs enough winning days and may need additional profits to meet
   // the 55% evaluation best-day test. Do not stop only at the dollar goal.
   const bestDayOk=!c.consistency||ac.bestDay<=Math.max(0,ac.stagePnl)*c.consistency+1e-7;
-  const payoutDaysOk=stage!=='funded'||p.id==='topstep'&&ac.funded150Days<5;
+  const payoutDaysOk=stage!=='funded';
   if(ac.stagePnl>=c.target-.005&&bestDayOk&&!payoutDaysOk)break;
-  const qualificationTopstep=stage==='funded'&&p.id==='topstep'&&
-   ac.fundedTargetDay!==null&&ac.funded150Days<5;
+  const qualificationTopstep=false;
   // Combine uses the one Challenge R1. XFA uses R3 once the target is
   // reached, while further eligible $150 winning days are required.
   const {slot,risk,rr:tradeRR,allIn=false}=chooseTradeRisk(p,ac,stage,c,dayProfit);
@@ -508,7 +512,7 @@ function canAcceptSignal(p,ac){
  if(ac.stagePnl>=c.target-.005){
   const consistent=!c.consistency||ac.bestDay<=Math.max(0,ac.stagePnl)*c.consistency+1e-7;
   if(isEvaluation(stage)&&consistent)return false;
-  if(stage==='funded'&&(p.id!=='topstep'||ac.funded150Days>=5))return false;
+  if(stage==='funded')return false;
  }
  return true;
 }
@@ -518,8 +522,7 @@ function canAcceptSignal(p,ac){
 function nextRiskStatus(p,ac){
  if(!canAcceptSignal(p,ac))return null;
  const stage=stageName(p,ac),c=p.riskProfiles[stage];
- const useR3=p.id==='topstep'&&stage==='funded'&&
-  ac.fundedTargetDay!==null&&ac.funded150Days<5;
+ const useR3=false; // Never preflight a post-target funded trade.
  const {slot,risk,allIn}=chooseTradeRisk(p,ac,stage,c,0);
  if(c.policy?.mode==='smart-sequence'&&slot==='stop')return {strategyStop:true,slot,risk:0};
  // A deliberately disabled tier is a strategy stop, not a risk-floor breach.
