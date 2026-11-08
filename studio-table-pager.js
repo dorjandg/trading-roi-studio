@@ -49,7 +49,7 @@
    for(const group of groups){
     const visible=shown.has(group[0]);
     group[0].hidden=!visible;
-    if(group[1])group[1].hidden=!visible||group[1].getAttribute('aria-expanded')==='false'||!group[1].dataset.pagerDetailOpen;
+    if(group[1]&&!visible)group[1].hidden=true;
    }
    status.textContent=available.length?(start+1)+'–'+end+' / '+available.length:'0 / 0';
    prev.disabled=page<=1;next.disabled=page>=pages;
