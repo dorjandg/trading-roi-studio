@@ -588,7 +588,7 @@ details p{margin:6px 0}
 <h1>Budget → Challenges → Phases → Payout</h1>
 <p class="muted">Uses each account’s saved risk policy from Firms: fixed R1–R4, or FTMO’s optional dynamic Funded Buffer Builder. Targets and loss limits remain specific to each firm and phase. Trade outcomes are simulated, never predicted; no orders are placed.</p>
 <div class="alert"><strong>Model scope:</strong> Risk amounts are used exactly or the trade is blocked. Minimum trading days after reaching a target are represented as <b>administrative qualification assumptions</b> (not invented W/L trades). Payout eligibility, subscriptions, trailing losses, firm allocation and checkout rules need separate verification.</div>
-<details class="sim-charts-panel numbered-panel" id="section1Panel" open><summary><strong>1 · Investment & simulation inputs</strong><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><div class="alert"><strong>Step 1 · Choose inputs</strong><p class="hint">All calculations start with the selected accounts, Firms settings, budget and assumptions. Select how phase-risk adjustments are applied before running.</p><div class="actions"><label for="simInputSource">Phase-risk source</label><select id="simInputSource" style="max-width:310px"><option value="firms">Firms only (default)</option><option value="adjusted">Firms + Simulator adjustments</option></select><button type="button" id="simInputsToggle">Preview phase inputs ▾</button></div><div id="simInputsPreview" hidden></div></div><p class="hint">Same-budget comparison allocates the entire budget separately to each firm. Split-budget mode divides one budget across the selected firms.</p>
+<details class="sim-charts-panel numbered-panel" id="section1Panel" open><summary><strong>1 · Investment & simulation inputs</strong><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><div class="alert"><strong>Step 1 · Choose inputs</strong><p class="hint">All calculations start with the selected accounts, Firms settings, budget and assumptions. Select how phase-risk adjustments are applied before running.</p><div class="actions"><label for="simInputSource">Phase-risk source</label><select id="simInputSource" style="max-width:310px"><option value="firms">Firms only (default)</option><option value="adjusted">Firms + Simulator adjustments</option></select><button type="button" id="simInputsToggle">Verify simulation parameters ▾</button></div><div id="simInputsPreview" hidden></div><p class="hint">One place to verify the next run and the last displayed report. This panel is read-only.</p></div><p class="hint">Same-budget comparison allocates the entire budget separately to each firm. Split-budget mode divides one budget across the selected firms.</p>
  <div class="fields">
   <div class="field"><label for="budget">Starting budget (USD)</label><input id="budget" type="number" min="0" step="100" value="5000"></div>
   <div class="field"><label for="netGoal">Target net profit (USD)</label><input id="netGoal" type="number" min="0" step="100" value="20000"></div>
@@ -849,13 +849,33 @@ function accountPlan(row){
 function refreshSimInputsPreview(){
  const box=$('simInputsPreview');if(box.hidden)return;
  const source=$('simInputSource').value;
- box.innerHTML='<p class="hint">Next run: '+(source==='firms'?'Firms phase risks, no simulator overrides':'Firms phase risks plus simulator-only overrides')+'. Win rate, budget, trials and trade schedule come from Section 1.</p>'+
+ const rowDetails=plan=>Object.entries(plan.riskProfiles||{}).map(([stage,r])=>
+  '<div style="margin:5px 0"><strong>'+esc(stage.toUpperCase())+'</strong> · '+
+  ['r1','r2','r3','r4'].map(k=>k.toUpperCase()+' '+(r[k]==null?'—':usd(r[k]))).join(' · ')+
+  ' · RR '+esc(String(r.rr??'—'))+' · tier RR '+esc(JSON.stringify(r.rrByTier||{}))+
+  ' · policy '+esc(r.policy?.mode||'default')+' · target '+(r.target==null?'—':usd(r.target))+'</div>').join('');
+ const current='<p><strong>Next run · '+(source==='firms'?'Firms only':'Firms + simulator adjustments')+'</strong></p>'+
+ '<p class="hint">Section 1 controls: budget '+usd(Number($('budget').value)||0)+
+ ' · win rate '+esc($('winRate').value)+'% · days '+esc($('days').value)+
+ ' · trials '+esc($('trials').value)+' · signal pace '+esc($('signalPace').value)+
+ ' · trades/day '+esc($('tradesPerDay').value)+' · purchase '+esc($('purchaseMode').value)+
+ ' · allocation '+esc(document.querySelector('[name="budgetMode"]:checked')?.value||'—')+'</p>'+
  rows.map(row=>{try{
- const p=accountPlan(row),key=row.id+':'+row.size,overrides=testRisks[key]||{};
- return '<div class="hint"><strong>'+esc(p.firm+' · '+p.programName+' · '+usd(p.size))+'</strong> '+
- Object.entries(p.riskProfiles||{}).map(([stage,r])=>'<div>'+esc(stage)+': '+['r1','r2','r3','r4'].map(k=>k.toUpperCase()+' '+(r[k]==null?'—':usd(r[k]))).join(' · ')+' · RR '+esc(String(r.rr??'—'))+' · '+esc(r.policy?.mode||'default')+'</div>').join('')+
- (source==='firms'&&Object.keys(overrides).length?'<span style="color:var(--amber)">Saved simulator adjustments excluded.</span>':'')+'</div>';
+  const p=accountPlan(row),overrides=testRisks[row.id+':'+row.size]||{};
+  return '<div class="hint" style="margin:8px 0"><strong>'+esc(p.firm+' · '+p.programName+' · '+usd(p.size))+'</strong>'+
+   rowDetails(p)+(source==='firms'&&Object.keys(overrides).length?'<span style="color:var(--amber)">Simulator-only overrides excluded.</span>':'')+'</div>';
  }catch(e){return '<p class="hint">'+esc(e.message)+'</p>';}}).join('');
+ const previous=lastResults?.length&&lastInputs?
+ '<hr style="border:0;border-top:1px solid var(--line);margin:12px 0"><p><strong>Currently displayed report · '+esc(reportMode==='investment'?'Investment scenario':'Run Simulation')+'</strong> '+
+ (reportStale?'<span style="color:var(--amber)">Inputs changed · re-run needed</span>':'<span style="color:var(--green)">Completed</span>')+'</p>'+
+ '<p class="hint">Recorded assumptions: budget '+usd(lastInputs.budget)+' · win rate '+esc(String(lastInputs.winRate))+
+ '% · days '+esc(String(lastInputs.days))+' · trials '+esc(String(lastInputs.trials))+
+ ' · signal pace '+esc(String(lastInputs.signalPace||'—'))+
+ ' · risk source '+esc(lastInputs.riskInputSource||'not recorded for this result')+'</p>'+
+ lastResults.map(result=>'<div class="hint" style="margin:8px 0"><strong>'+esc(result.plan.firm+' · '+result.plan.programName+' · '+usd(result.plan.size))+'</strong>'+
+ rowDetails(result.plan)+'</div>').join(''):
+ '<p class="hint">No completed report currently displayed.</p>';
+ box.innerHTML='<p class="hint">Read-only parameter audit. Firms provides account rules and phase plans; Section 1 provides simulation assumptions. Missing values are shown as —.</p>'+current+previous;
 }
 $('simInputsToggle').addEventListener('click',()=>{$('simInputsPreview').hidden=!$('simInputsPreview').hidden;refreshSimInputsPreview();});
 $('simInputSource').addEventListener('change',()=>{setStale();saveView();refreshSimInputsPreview();});
@@ -1581,6 +1601,7 @@ function renderResults(list,inputs,source='run'){
  }
 
  $('results').hidden=false;
+ refreshSimInputsPreview();
  $('results').dataset.activeReport=reportMode;
  $('reportSourceLabel').style.color='var(--green)';
  $('reportSourceLabel').style.fontWeight='800';
