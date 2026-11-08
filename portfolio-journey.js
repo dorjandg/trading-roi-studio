@@ -139,10 +139,8 @@ function sampleMilestones(r,signalDay='1',tableOpen={}){
   '</tr></thead><tbody>'+routeRows+'</tbody></table></div>'+
   '<p class="hint">Each signal is assigned to a different eligible account. “Unused” means no eligible account could take that signal. Previously purchased accounts return to the selection pool on future days unless they have closed or are waiting for a stage/payout milestone.</p>',tableOpen['signal-routing']===true,'Trade 1 → A1, Trade 2 → A2');
  const firstDay=assignments.filter(x=>x.day===1);
- const preview=firstDay.length?'<p class="journey-routing-preview"><strong>Day 1 routing:</strong> '+
-  firstDay.map(a=>'Trade '+a.signal+' → '+(a.account==null?'unused':'A'+a.account)).join(' · ')+
-  '</p>':'';
- return preview+ledger+route;
+ // Day 1 routing is already available in the routing table; avoid a loose duplicate line.
+ return ledger+route;
 }
 function pageData(items,page,size){
  const pageSize=[5,10,20,30].includes(Number(size))?Number(size):10;
@@ -418,15 +416,19 @@ function render({results=[],inputs={},selection='',mode='trial',onlyChanges=true
   ' paid accounts. '+(samplePaid===0&&expectedPaid>0?'Zero payouts in this sample does not mean all simulations had zero payouts. ':'')+
   'Funded targets may also be reached before the payout waiting period ends.</p>';
  const capInfo=selected==='all'?'Combined nominal allocation across different firms; firm limits are separate.':'Planning limits: Evaluation '+(n(cap.evaluation)>0?usd(cap.evaluation):'not set')+' · Funded '+(n(cap.funded)>0?usd(cap.funded):'not set')+'. These caps are enforced in new simulation runs: evaluation purchases stop at the cap, and funded activations wait for a free slot. A cap below one account size permits zero accounts. Caps are per selected account type, not pooled across different account sizes of the same firm.';
- return header+(selected==='all'?results.map((item,i)=>passRateFunnel(item,tableOpen,i)).join(''):passRateFunnel(results[Number(selected)],tableOpen,Number(selected)))+
-  dailyTradeRouting(results,selected,inputs,routePage,pageSize,tableOpen)+total+
+ return header+total+
+  '<div class="journey-section-group journey-tables-group"><h4 class="journey-group-title">▦ Tables</h4>'+
+  (selected==='all'?results.map((item,i)=>passRateFunnel(item,tableOpen,i)).join(''):passRateFunnel(results[Number(selected)],tableOpen,Number(selected)))+
+  dailyTradeRouting(results,selected,inputs,routePage,pageSize,tableOpen)+
+  tablePanel('daily-summary','Day-by-day account summary',table,tableOpen['daily-summary']===true,summaryPagination.total+' days · '+(average?'trial averages':'sample trial'))+
+  (!average&&selected!=='all'?sampleMilestones(r,signalDay,tableOpen):'')+'</div>'+
+  '<div class="journey-section-group journey-charts-group"><h4 class="journey-group-title">▥ Charts</h4>'+graphs+'</div>'+
+  '<div class="journey-section-group journey-info-group"><h4 class="journey-group-title">ⓘ Information</h4>'+
   tablePanel('journey-definitions','Payout explanations & allocation rules',
    helpNotes('payout',estimateNote+'<p class="journey-explainer">'+capInfo+'</p>'),
    tableOpen['journey-definitions']===true,'Definitions and limits')+
-  tablePanel('daily-summary','Day-by-day account summary',table,tableOpen['daily-summary']===true,summaryPagination.total+' days · '+(average?'trial averages':'sample trial'))+
-  graphs+(!average&&selected!=='all'?sampleMilestones(r,signalDay,tableOpen):'')+
   tablePanel('journey-methodology','Methodology & definitions',helpNotes('summary',note),
-   tableOpen['journey-methodology']===true,'How the daily figures are calculated');
+   tableOpen['journey-methodology']===true,'How the daily figures are calculated')+'</div>';
 }
 root.StudioPortfolioJourney={render,daily,combined,sampleMilestones};
 })(typeof window!=='undefined'?window:globalThis);
