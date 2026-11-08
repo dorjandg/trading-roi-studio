@@ -1562,6 +1562,17 @@ function addJourneyColumnFilters(){
   const controls=document.createElement('div');controls.hidden=true;controls.style.cssText='position:absolute;right:0;top:100%;z-index:20;width:min(330px,90vw);max-height:360px;overflow:auto;padding:10px;border:1px solid var(--border,#354359);border-radius:8px;background:var(--panel,#182232);box-shadow:0 6px 20px #0005';
   toolbar.append(trigger,controls);
   trigger.addEventListener('click',()=>{controls.hidden=!controls.hidden;trigger.setAttribute('aria-expanded',String(!controls.hidden));});
+  // Dismiss on any outside touch/click, without interfering with table gestures.
+  document.addEventListener('pointerdown',event=>{
+   if(!controls.hidden&&!toolbar.contains(event.target)){
+    controls.hidden=true;trigger.setAttribute('aria-expanded','false');
+   }
+  },{passive:true});
+  document.addEventListener('keydown',event=>{
+   if(event.key==='Escape'&&!controls.hidden){
+    controls.hidden=true;trigger.setAttribute('aria-expanded','false');trigger.focus();
+   }
+  });
   const persist=()=>{try{localStorage.setItem(storageKey,JSON.stringify(pref));}catch(_){}};
   const apply=()=>{
    const order=['day',...pref.order];
