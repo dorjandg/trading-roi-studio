@@ -2633,12 +2633,22 @@ function sharedDailyTradeSchedules(){
  }
  return schedules;
 }
-function showSimulationError(message){
- const status=$('status');status.textContent=message;status.style.color='var(--red)';
+function showSimulationIssues(issues){
+ let panel=document.getElementById('simulationIssues');
+ if(!panel){panel=document.createElement('div');panel.id='simulationIssues';panel.style.cssText='margin:6px 0;padding:7px;border:1px solid var(--border,#354359);border-radius:7px;font-size:11px';$('status').insertAdjacentElement('afterend',panel);}
+ const escIssue=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ panel.hidden=false;
+ panel.innerHTML='<strong>Simulation not started · '+issues.length+' item(s) to check</strong><table style="width:100%;font-size:11px;margin-top:4px"><thead><tr><th style="text-align:left">Parameter</th><th style="text-align:left">What to fix</th></tr></thead><tbody>'+issues.map(i=>'<tr><td>'+escIssue(i.parameter)+'</td><td>'+escIssue(i.detail)+'</td></tr>').join('')+'</tbody></table>';
+}
+function clearSimulationIssues(){const panel=document.getElementById('simulationIssues');if(panel)panel.hidden=true;}
+function showSimulationError(message,issues){
+ const status=$('status');status.textContent='Simulation could not start';status.style.color='var(--red)';
+ showSimulationIssues(issues?.length?issues:[{parameter:'Simulation',detail:message}]);
  $('section2Panel').open=true;
  status.scrollIntoView?.({behavior:'smooth',block:'nearest'});
 }
 function run(){
+ clearSimulationIssues();
  if(!catalog){showSimulationError('Loading Firms account rules. Try again once ready.');return;}
  const mode=document.querySelector('[name="budgetMode"]:checked').value;
  const inputs={riskInputSource:$('simInputSource').value,budget:Math.max(0,Number($('budget').value)||0),netGoal:Math.max(0,Number($('netGoal').value)||0),
@@ -2651,14 +2661,14 @@ function run(){
   maxActive:Math.max(1,Math.min(100,Math.floor(Number($('maxActive').value)||1))),
   maxBuysPerDay:Math.max(1,Math.min(20,Math.floor(Number($('maxBuysPerDay').value)||1))),
   reinvestPayouts:$('reinvestPayouts').value==='yes'};
- if(!rows.length){showSimulationError('Select at least one firm');return}
+ if(!rows.length){showSimulationError('Select at least one firm',[{parameter:'Firm / account',detail:'Select at least one account in Section 2'}]);return}
  const totalWeight=rows.reduce((a,r)=>a+Math.max(0,r.weight),0);
- if(mode==='split'&&totalWeight<=0){showSimulationError('Set at least one positive budget weight');return}
+ if(mode==='split'&&totalWeight<=0){showSimulationError('Set at least one positive budget weight',[{parameter:'Budget weight',detail:'Set a positive weight for at least one account'}]);return}
  if(mode==='split'){
   const seen=new Set();
   for(const row of rows){
    const id=row.id+':'+row.size;
-   if(seen.has(id)){showSimulationError('This account appears twice in the split portfolio. Remove the duplicate to avoid bypassing its modeled allocation limits.');return}
+   if(seen.has(id)){showSimulationError('Duplicate account',[{parameter:'Account selection',detail:'Remove duplicate '+id+' from the split portfolio'}]);return}
    seen.add(id);
   }
  }
@@ -2674,7 +2684,7 @@ function run(){
  if(inputs.capitalNominalCap!=null&&jobs.some(j=>inputs.capitalNominalCap<j.p.size)){showSimulationError('Nominal cap is below the selected account size. Increase it or leave blank.');return;}
  const bad=jobs.filter(j=>j.validation.errors.length);
  if(bad.length){
-  showSimulationError('Cannot run: '+bad.map(j=>j.p.firm+' '+j.p.programName+': '+j.validation.errors.join(' · ')).join(' | '));
+  showSimulationError('Invalid account parameters',bad.flatMap(j=>j.validation.errors.map(error=>({parameter:j.p.firm+' '+j.p.programName,detail:error}))));
   return;
  }
  $('run').disabled=true;$('status').style.color='var(--muted)';$('status').textContent='Calculating option-based account paths…';
@@ -2690,7 +2700,7 @@ function run(){
    window.__studioSignalAllocationSnapshot={jobs,inputs};
    simulationHistory?.save({results,inputs,rows});
   }catch(e){
-   $('status').textContent='Simulation error: '+e.message;$('status').style.color='var(--red)';
+   showSimulationError('Simulation error: '+e.message,[{parameter:'Calculation',detail:e.message}]);
   }finally{$('run').disabled=false}
  });
 }
