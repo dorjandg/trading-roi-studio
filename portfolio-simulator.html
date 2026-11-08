@@ -1464,13 +1464,11 @@ function addJourneyColumnFilters(){
   const persist=()=>{try{localStorage.setItem(storageKey,JSON.stringify(pref));}catch(_){}};
   const apply=()=>{
    const allRows=Array.from(table.rows);
-   const original=Array.from(allRows[0].cells);
-   const source=ids.map((id,i)=>({id,i}));
-   const order=[source[0],...pref.order.map(id=>source.find(x=>x.id===id)).filter(Boolean)];
+   const order=['day',...pref.order];
    for(const row of allRows){
-    const cells=Array.from(row.cells);
-    for(const x of order)if(cells[x.i])row.appendChild(cells[x.i]);
-    Array.from(row.cells).forEach((cell,i)=>{cell.hidden=i>0&&!pref.visible.includes(order[i]?.id);});
+    Array.from(row.cells).forEach((cell,i)=>{if(!cell.dataset.journeyColumnId)cell.dataset.journeyColumnId=ids[i];});
+    const byId=new Map(Array.from(row.cells).map(cell=>[cell.dataset.journeyColumnId,cell]));
+    for(const id of order){const cell=byId.get(id);if(cell){row.appendChild(cell);cell.hidden=id!=='day'&&!pref.visible.includes(id);}}
    }
    summary.textContent='Columns · '+pref.visible.length+' / '+valid.length+' selected';
    persist();
