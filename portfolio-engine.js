@@ -619,15 +619,30 @@ function oneTrial(p,config,rng,record=false){
      label:'New challenge purchased on trading day '+day,cash:p.fee});
    }
   }
-  // Each signal goes to one DISTINCT eligible purchased account.
-  // The cursor advances between days so existing accounts keep rotating.
+  // Signal slots are unique market opportunities. In copy modes the same
+  // slot can reach multiple accounts; never treat copies as independent signals.
   const allocations=new Map();
   const eligible=accounts.filter(ac=>canAcceptSignal(p,ac));
-  for(let ix=0;ix<dailyOpportunities&&ix<eligible.length;ix++){
-   const index=(cursor+ix)%eligible.length;
-   allocations.set(eligible[index],ix);
+  if(config.allocationMode==='cross-stage'||config.allocationMode==='limited'){
+   const order=config.allocationPriority==='funded'?['funded','p2','p1']:
+    config.allocationPriority==='phase2'?['p2','funded','p1']:['p1','p2','funded'];
+   const rotated=eligible.length?eligible.slice(cursor%eligible.length).concat(eligible.slice(0,cursor%eligible.length)):[];
+   for(let ix=0;ix<dailyOpportunities;ix++){
+    const chosen=new Set();
+    for(const stage of order){
+     if(chosen.size>=Math.min(config.maxCopies||3,config.allocationMode==='limited'?2:3))break;
+     const ac=rotated.find(a=>!allocations.has(a)&&stageName(p,a)===stage);
+     if(ac){allocations.set(ac,ix);chosen.add(stage);}
+    }
+   }
+   if(eligible.length)cursor=(cursor+dailyOpportunities)%eligible.length;
+  }else{
+   for(let ix=0;ix<dailyOpportunities&&ix<eligible.length;ix++){
+    const index=(cursor+ix)%eligible.length;
+    allocations.set(eligible[index],ix);
+   }
+   if(eligible.length)cursor=(cursor+Math.min(dailyOpportunities,eligible.length))%eligible.length;
   }
-  if(eligible.length)cursor=(cursor+Math.min(dailyOpportunities,eligible.length))%eligible.length;
   // Funded positions that are paid/free at the end of a day release their
   // active-slot capacity for accounts that previously passed evaluation.
   if(Number.isFinite(fundedCap)){
@@ -680,7 +695,7 @@ function oneTrial(p,config,rng,record=false){
    const opportunities=dailyOpportunities;
    dailyCash.push({day,spent,receipts,net:receipts-spent,paid,
     bought,challengeSpent,activationSpent,live:liveCount(),
-    opportunities,tradesToday,qualificationToday,unusedToday:Math.max(0,opportunities-tradesToday),
+    opportunities,tradesToday,qualificationToday,unusedToday:Math.max(0,opportunities-new Set([...allocations.values()]).size),
     burned:accounts.filter(a=>a.status==='failed'||a.status==='exhausted'||a.status==='strategy-stopped').length,
     failed:accounts.filter(a=>a.status==='failed').length,
     riskBlocked:accounts.filter(a=>a.status==='exhausted').length,
@@ -752,7 +767,10 @@ function simulatePortfolio(p,config={}){
   winRate:clamp(config.winRate==null?p.winRate*100:config.winRate,0,100)/100,
   seed:config.seed||24717,
   pairedSignals:config.pairedSignals===true,
-  signalMode:config.signalMode==='shared'?'shared':'independent',
+  signalMode:config.signalMode==='shared'||config.allocationMode==='cross-stage'||config.allocationMode==='limited'?'shared':'independent',
+  allocationMode:['cross-stage','limited'].includes(config.allocationMode)?config.allocationMode:'single',
+  maxCopies:clamp(config.maxCopies||3,1,5)|0,
+  allocationPriority:['balanced','funded','phase2'].includes(config.allocationPriority)?config.allocationPriority:'balanced',
   trackDaily:config.trackCharts===true,
   tradeSchedule:Array.isArray(config.tradeSchedule)&&config.tradeSchedule.length===
    (clamp(config.days,1,120)|0)?config.tradeSchedule.map(x=>clamp(x,0,20)|0):null,
