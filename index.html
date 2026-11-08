@@ -3153,6 +3153,8 @@ function useSelectedAccount(x,force=false){
   const btn=$('simulate');if(btn)btn.disabled=!selectedAccountSupportsSimulation;
   applyPhaseVisibility();
   renderRecoveryPlanners();
+  // A restored/automatically selected firm must refresh every dependent dashboard view.
+  syncControls();render();
   const note=$('firmStrategyStatus');if(note)note.textContent=(x.label||newKey)+(phaseModel().topstep?' · Topstep Standard first-payout estimate available; some broker restrictions remain approximate.':' · Saved settings restored for this account.');
   const badge=$('activeAccountProfile');if(badge)badge.textContent='Selected account: '+accountDisplayName(newKey);
   return;
@@ -3160,16 +3162,18 @@ function useSelectedAccount(x,force=false){
  if(isNew&&activeProgramKey)writeProfile();
  const profile=storedProfile(newKey);
  if(isNew){state=profile?{...DEFAULT,...profile.state}:{...DEFAULT};state.budget=currentInvestmentBudget;}
+ // Saved per-firm targets and day rules are authoritative; catalog defaults apply only to new profiles.
+ const preserveSavedRules=Boolean(isNew&&profile);
  if(x.programId==='topstep'&&Number(state.topstepActivationFee)===0){try{const migration='4ds:topstep-fee-default-v1:'+newKey;if(!localStorage.getItem(migration)){state.topstepActivationFee=149;localStorage.setItem(migration,'1');}}catch(e){state.topstepActivationFee=149;}}
  const n=Number(x.size);
  state.accountSize=n;
  if(Number.isFinite(Number(x.feeUSD))&&Number(x.feeUSD)>0)state.price=Number(x.feeUSD);
  if(x.programId==="topstep")state.price=topstepMonthlyFee();
- if(Array.isArray(x.targets)){
+ if(!preserveSavedRules&&Array.isArray(x.targets)){
   if(x.targets[0]!=null&&Number.isFinite(Number(x.targets[0])))state.p1Target=n*Number(x.targets[0])/100;
   if(x.targets[1]!=null&&Number.isFinite(Number(x.targets[1])))state.p2Target=n*Number(x.targets[1])/100;
  }
- if(Array.isArray(x.days)){
+ if(!preserveSavedRules&&Array.isArray(x.days)){
   if(x.days[0]!=null&&Number.isFinite(Number(x.days[0])))state.p1MinDays=Number(x.days[0]);
   if(x.days[1]!=null&&Number.isFinite(Number(x.days[1])))state.p2MinDays=Number(x.days[1]);
  }
@@ -3206,7 +3210,8 @@ function populateOverviewChoices(changed='all'){
   const previous=program.value,available=entries.filter(([,p])=>p.firm===firm.value);
   program.replaceChildren(...available.map(([id,p])=>overviewOption(id,p.name)));
   if(changed==='all'&&available.some(([id])=>id===activeId))program.value=activeId;
-  else if(available.some(([id])=>id===previous))program.value=previous;
+  else if(changed!=='firm'&&available.some(([id])=>id===previous))program.value=previous;
+  // On a firm switch, use the first valid program of the NEW firm, never the old firm's ID.
  }
  if(changed!=='size'){
   const previous=size.value,sizes=(overviewCatalog.programs[program.value]?.sizes||[]).slice().sort((x,y)=>x-y);
