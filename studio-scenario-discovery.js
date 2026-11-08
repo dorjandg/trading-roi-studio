@@ -46,6 +46,35 @@ function init(stage){
  host.dataset.discoveryReady='1';
  const p=document.createElement('details');p.className='scenario-discovery';p.style.cssText='margin:8px 0;padding:10px;border:1px solid #344257;border-radius:10px';
  p.innerHTML='<summary style="cursor:pointer;font-weight:600">Scenario Optimizer · Fast Pass + Reset</summary><div style="margin:5px 0 6px;display:flex;gap:5px;flex-wrap:wrap;align-items:center;font-size:11px"><label style="display:flex;gap:3px;align-items:center">Daily $ <input data-f="goal" title="Daily profit target. Risk sequences are derived from this target and RR." type="number" min="1" value="'+(stage==='p1'?1500:stage==='funded'?1000:500)+'" style="width:74px;padding:3px 4px;font-size:11px"></label><label style="display:flex;gap:3px;align-items:center">Phase $ <input data-f="phase" title="Total cumulative phase profit target" type="number" min="1" value="'+(stage==='p1'?3000:stage==='funded'?4000:1000)+'" style="width:74px;padding:3px 4px;font-size:11px"></label><label style="display:flex;gap:3px;align-items:center">Days <input data-f="days" title="Minimum successful daily objective days" type="number" min="1" max="10" value="'+(stage==='p1'?2:1)+'" style="width:43px;padding:3px 4px;font-size:11px"></label><label style="display:flex;gap:3px;align-items:center">Win % <input data-f="wr" title="Estimated independent probability of a winning trade" type="number" min="1" max="99" value="40" style="width:48px;padding:3px 4px;font-size:11px"></label><label style="display:flex;gap:3px;align-items:center">RR <input data-f="rr" title="Profit multiple of risk on a winning trade" type="number" min=".1" max="20" step=".1" value="3" style="width:44px;padding:3px 4px;font-size:11px"></label><span title="Simulates until the target or risk cap; four-trade attempt, then restart separately" style="opacity:.75">4-trade attempt</span><label style="display:flex;gap:3px;align-items:center">Cap $ <input data-f="cap" title="Manual maximum modeled loss, not a verified firm limit" type="number" min="1" value="2000" style="width:66px;padding:3px 4px;font-size:11px"></label><button type="button" data-run style="padding:4px 8px;font-size:11px;min-height:27px">Find paths</button></div><div data-out style="margin-top:6px;font-size:12px"></div><small>Fast Pass + Reset: first two trades attack the pass target; third can recover to breakeven; fourth uses remaining risk budget. Stop on pass, reset, or exhaustion. Four-trade attempt: first two target the pass, third targets breakeven recovery, fourth uses remaining risk budget. Recovery to breakeven is a reset, not a pass. Risks are derived from the target and RR, not fixed dollar presets. Research model only: independent wins, fixed RR, no commissions/slippage; manual cap is not a verified firm rule. Daily split is a user-defined planning assumption, not an official consistency-rule verification. Saved selections do not alter Portfolio Simulation.</small>';
+ // Stage-specific, browser-local draft persistence; never modifies firm defaults.
+ const fields=['goal','phase','days','wr','rr','cap'];
+ const storageKey='studio:scenario-discovery:inputs:v1:'+stage;
+ const bar=p.querySelector('[data-run]').parentElement;
+ const status=document.createElement('span');
+ status.setAttribute('data-save-status','');
+ status.setAttribute('role','status');
+ status.style.cssText='font-size:10px;opacity:.8;white-space:nowrap';
+ bar.appendChild(status);
+ const setStatus=value=>{status.textContent=value};
+ try{
+  const saved=JSON.parse(localStorage.getItem(storageKey)||'null');
+  if(saved&&typeof saved==='object')for(const k of fields){
+   const input=p.querySelector('[data-f="'+k+'"]');
+   const value=saved[k];
+   if(input&&value!==undefined&&value!==null&&String(value).trim()!==''&&Number.isFinite(Number(value)))input.value=String(value);
+  }
+  setStatus(saved?'Saved ✓':'Not saved yet');
+ }catch(e){setStatus('Local saving unavailable')}
+ const save=()=>{
+  const values=Object.fromEntries(fields.map(k=>[k,p.querySelector('[data-f="'+k+'"]').value]));
+  try{localStorage.setItem(storageKey,JSON.stringify(values));setStatus('Saved ✓')}
+  catch(e){setStatus('Unable to save locally')}
+ };
+ fields.forEach(k=>{
+  const input=p.querySelector('[data-f="'+k+'"]');
+  input.addEventListener('input',save);
+  input.addEventListener('change',save);
+ });
  host.before(p);p.querySelector('[data-run]').addEventListener('click',()=>run(p,stage));
 }
 function run(p,stage){
