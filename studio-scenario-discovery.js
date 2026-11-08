@@ -1,5 +1,44 @@
 /* Target-first per-phase discovery; illustrative short-horizon paths, not a full firm pass engine. */
 (()=>{'use strict';
+function enableDirectTableHeaderDrag(table,onDrop,keepFirst=false){
+ const heads=Array.from(table?.tHead?.rows[0]?.cells||[]);
+ heads.forEach((head,index)=>{
+  if((keepFirst&&index===0)||head.hidden)return;
+  head.style.touchAction='none';head.style.cursor='grab';head.style.userSelect='none';
+  // Keep the header tooltip dedicated to the metric definition; drag behavior remains available.
+  let active=null,startX=0,startY=0,lastX=0,dragging=false;
+  const clear=()=>{active=null;dragging=false;head.style.opacity='';heads.forEach(h=>h.style.outline='');};
+  const targetAt=x=>{
+   const candidates=heads.filter(h=>!h.hidden&&(!keepFirst||h!==heads[0])&&h.getBoundingClientRect().width>0);
+   return candidates.find(h=>{const r=h.getBoundingClientRect();return x>=r.left&&x<=r.right;})||
+    candidates.reduce((best,h)=>Math.abs(h.getBoundingClientRect().left+h.getBoundingClientRect().width/2-x)<Math.abs(best.getBoundingClientRect().left+best.getBoundingClientRect().width/2-x)?h:best,candidates[0]);
+  };
+  head.addEventListener('pointerdown',e=>{
+   if(e.button!==0||e.target.closest('button,input,select,a'))return;
+   active=e.pointerId;startX=e.clientX;startY=e.clientY;lastX=e.clientX;
+   head.setPointerCapture(e.pointerId);
+  });
+  head.addEventListener('pointermove',e=>{
+   if(active!==e.pointerId)return;
+   lastX=e.clientX;
+   if(!dragging&&Math.hypot(e.clientX-startX,e.clientY-startY)>7)dragging=true;
+   if(!dragging)return;
+   e.preventDefault();head.style.opacity='.6';
+   const target=targetAt(e.clientX);
+   heads.forEach(h=>h.style.outline='');
+   if(target&&target!==head)target.style.outline='2px solid var(--accent,#4aa3ff)';
+   const scroll=table.closest('.tablewrap,[style*="overflow-x:auto"]');
+   if(scroll){const r=scroll.getBoundingClientRect();if(e.clientX>r.right-25)scroll.scrollLeft+=15;else if(e.clientX<r.left+25)scroll.scrollLeft-=15;}
+  });
+  head.addEventListener('pointerup',e=>{
+   if(active!==e.pointerId)return;
+   const target=dragging?targetAt(lastX):null;
+   clear();
+   if(target&&target!==head)onDrop(head,target);
+  });
+  head.addEventListener('pointercancel',clear);
+ });
+}
 const stages=['p1','p2','funded'],money=n=>'$'+Number(n).toLocaleString('en-US',{maximumFractionDigits:0}),pct=n=>(100*n).toFixed(1)+'%';
 const templates=[{id:'recover390',name:'Recover $390',r:[500,670,390,0]},{id:'attack830',name:'Attack $830',r:[500,670,830,0]},{id:'controlled',name:'Controlled',r:[350,450,250,0]}];
 function init(stage){
@@ -80,17 +119,30 @@ function run(p,stage){
  const orderKey='studio:scenario-discovery:order:'+stage;
  const cols=['keep','name','risks','hit','breach','negative','trades'];
  let order=cols.slice();try{const v=JSON.parse(localStorage.getItem(orderKey)||'null');if(Array.isArray(v)&&v.length===cols.length&&cols.every(k=>v.includes(k)))order=v}catch(e){}
- [...table.tHead.rows[0].cells].forEach((th,i)=>{th.dataset.col=cols[i];th.draggable=true;th.title=(th.title||'')+' · Drag to reorder';});
+ [...table.tHead.rows[0].cells].forEach((th,i)=>{th.dataset.col=cols[i];th.draggable=false;th.title=(th.title||'')+' · Drag to reorder';});
  [...tbody.rows].forEach(tr=>[...tr.cells].forEach((td,i)=>td.dataset.col=cols[i]));
  const applyOrder=()=>{for(const tr of [table.tHead.rows[0],...tbody.rows]){const cells=new Map([...tr.cells].map(c=>[c.dataset.col,c]));order.forEach(k=>{if(cells.has(k))tr.appendChild(cells.get(k))})}try{localStorage.setItem(orderKey,JSON.stringify(order))}catch(e){}};
  const move=(from,to)=>{if(!cols.includes(from)||!cols.includes(to)||from===to)return;order=order.filter(k=>k!==from);order.splice(order.indexOf(to),0,from);applyOrder()};
- table.tHead.addEventListener('dragstart',e=>{const th=e.target.closest('th[data-col]');if(th)e.dataTransfer.setData('text/plain',th.dataset.col)});
- table.tHead.addEventListener('dragover',e=>{if(e.target.closest('th[data-col]'))e.preventDefault()});
- table.tHead.addEventListener('drop',e=>{const th=e.target.closest('th[data-col]');if(th){e.preventDefault();move(e.dataTransfer.getData('text/plain'),th.dataset.col)}});
- [...table.tHead.rows[0].cells].forEach(th=>{
-  const left=document.createElement('button'),right=document.createElement('button');
-  for(const [b,delta,symbol] of [[left,-1,'‹'],[right,1,'›']]){b.type='button';b.textContent=symbol;b.title='Move column '+(delta<0?'left':'right');b.setAttribute('aria-label',b.title+' '+th.dataset.col);b.style.cssText='font:inherit;background:none;border:0;color:inherit;padding:0 2px;cursor:pointer';b.addEventListener('click',()=>{const i=order.indexOf(th.dataset.col);if(i+delta>=0&&i+delta<order.length)move(th.dataset.col,order[i+delta])});th.appendChild(b)}
- });
+ enableDirectTableHeaderDrag(table,(source,target)=>move(source.dataset.col,target.dataset.col),false);
+ // Same compact upper-right filter placement as Portfolio SIM; filter choices never change saved order.
+ const filterKey='studio:scenario-discovery:visible:'+stage;
+ let visible=cols.slice();try{const v=JSON.parse(localStorage.getItem(filterKey)||'null');if(Array.isArray(v)&&v.length&&v.every(k=>cols.includes(k)))visible=v}catch(e){}
+ const toolbar=document.createElement('div');toolbar.style.cssText='display:flex;justify-content:flex-end;position:relative;margin:3px 0';
+ const trigger=document.createElement('button');trigger.type='button';trigger.textContent='☷';trigger.title='Filter visible columns';trigger.setAttribute('aria-label','Filter columns');trigger.setAttribute('aria-expanded','false');trigger.style.cssText='font-size:15px;padding:3px 9px;min-width:30px';
+ const panel=document.createElement('div');panel.hidden=true;panel.style.cssText='position:absolute;right:0;top:100%;z-index:30;width:min(300px,90vw);max-height:330px;overflow:auto;padding:9px;border:1px solid #506078;border-radius:8px;background:var(--panel,#182232);color:var(--text,#fff);box-shadow:0 6px 20px #0005';
+ const modes=document.createElement('div');modes.style.cssText='display:flex;gap:5px;margin-bottom:6px';
+ const category=document.createElement('button'),manual=document.createElement('button');category.type=manual.type='button';category.textContent='Category';manual.textContent='Manual';modes.append(category,manual);panel.append(modes);
+ const options=document.createElement('div');panel.append(options);
+ const names=Object.fromEntries(cols.map((k,i)=>[k,help[i][0]]));
+ const groups={Selection:['keep'],Strategy:['name','risks'],Results:['hit','breach','negative','trades']};
+ const applyVisible=()=>{for(const tr of [table.tHead.rows[0],...tbody.rows])for(const cell of tr.cells)cell.hidden=!visible.includes(cell.dataset.col);try{localStorage.setItem(filterKey,JSON.stringify(visible))}catch(e){}};
+ const checkbox=(name,keys)=>{const label=document.createElement('label');label.style.cssText='display:flex;gap:7px;align-items:center;margin:4px 0;font-size:12px';const input=document.createElement('input');input.type='checkbox';input.checked=keys.every(k=>visible.includes(k));input.addEventListener('change',()=>{const next=input.checked?[...new Set([...visible,...keys])]:visible.filter(k=>!keys.includes(k));if(next.length){visible=next;applyVisible()}else input.checked=true});label.append(input,document.createTextNode(name));return label};
+ const drawMode=mode=>{options.replaceChildren();const entries=mode==='category'?Object.entries(groups):cols.map(k=>[names[k],[k]]);for(const [name,keys] of entries)options.append(checkbox(name,keys));category.style.fontWeight=mode==='category'?'700':'400';manual.style.fontWeight=mode==='manual'?'700':'400'};
+ category.addEventListener('click',()=>drawMode('category'));manual.addEventListener('click',()=>drawMode('manual'));drawMode('manual');
+ trigger.addEventListener('click',()=>{panel.hidden=!panel.hidden;trigger.setAttribute('aria-expanded',String(!panel.hidden))});
+ toolbar.append(trigger,panel);table.parentElement.before(toolbar);
+ applyVisible();
+
  applyOrder();
  out.querySelector('[data-page-size]').addEventListener('change',e=>{pageSize=e.target.value==='all'?'all':Number(e.target.value);try{localStorage.setItem(pageKey,String(pageSize))}catch(err){}page=1;renderPage();});
  out.querySelector('[data-prev]').addEventListener('click',()=>{page--;renderPage()});
