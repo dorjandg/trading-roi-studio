@@ -526,6 +526,7 @@ details p{margin:6px 0}
 
 .cash-tools{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-bottom:7px}.cash-tools label{font-size:11px;color:var(--muted);font-weight:700}.cash-tools select,.cash-tools button{width:auto;min-height:28px;height:29px;padding:3px 8px;font-size:11px;border-radius:7px}.cash-columns-panel{padding:7px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);margin:5px 0}.cash-columns-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:3px 7px}.cash-columns-grid label{display:flex;align-items:center;gap:5px;font-size:10px;line-height:1.25;min-height:24px;cursor:pointer}.cash-columns-grid input{width:13px;height:13px;min-height:13px;margin:0;flex:none;accent-color:var(--green)}.cash-column-actions{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:7px}.cash-column-actions button{min-height:25px;padding:2px 7px;font-size:10px}.cash-columns-panel .hint{font-size:10px;margin:3px 0 6px}@media(max-width:600px){.cash-columns-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cash-tools{gap:4px}.cash-tools select{max-width:165px}}
 .cash-kpis{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px;margin:7px 0}.cash-kpi{min-width:0;padding:5px 6px;border:1px solid var(--line);border-radius:7px;background:var(--panel2)}.cash-kpi small{display:block;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}.cash-kpi strong{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.weekly-economics-firm table th,.weekly-economics-firm table td,#weeklyEconomicsContents table th,#weeklyEconomicsContents table td{white-space:nowrap;padding:5px 7px;font-size:11px}#weeklyEconomicsContents table th{font-size:10px}@media(max-width:800px){.cash-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}}@media(max-width:430px){.cash-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.cash-kpis{grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:3px;margin:5px 0}.cash-kpi{padding:4px 6px;border-radius:6px}.cash-kpi small{font-size:9px}.cash-kpi strong{font-size:12px}.weekly-economics-firm>.result-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:4px}.weekly-economics-firm>.result-grid>div{padding:5px 7px}.weekly-economics-firm>.result-grid small{font-size:9px}.weekly-economics-firm>.result-grid strong{font-size:12px}@media(max-width:600px){.cash-kpis{grid-template-columns:repeat(auto-fit,minmax(85px,1fr))}}
 </style>
 <link rel="stylesheet" href="studio-nav.css?v=20261105-compact-v2"><style>
 #gptResearchPanel .gpt-review-request{border:1px solid var(--line);border-radius:8px;padding:10px;margin:8px 0;background:var(--panel2)}
@@ -652,7 +653,7 @@ details p{margin:6px 0}
 <details class="sim-charts-panel numbered-panel" id="section4Panel" open><summary><strong>5 · Results across prop firms</strong><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><p id="summaryCaption" class="hint"></p><div id="totals" class="kpis"></div>
  <div class="tablewrap"><table><thead><tr><th>Firm / account</th><th>Budget</th><th>Challenges</th><th>Spent avg.</th><th>Phase 1 passes</th><th>Phase 2 passes</th><th>Funded</th><th>Paid</th><th>Payouts avg.</th><th>Net avg.</th><th>ROI</th><th>Chance ≥1 payout</th></tr></thead><tbody id="comparisonRows"></tbody></table></div>
  <p class="hint">Counts and profits are averages over simulated trials, not whole-account predictions. ROI = expected net / expected incurred costs. Starting budget is not account capital.</p>
- <div id="combined" hidden></div><details id="weeklyEconomicsPanel" class="sim-charts-panel" style="margin-top:12px"><summary><strong>Cash flow · payout economics</strong><span class="sim-charts-summary" id="weeklyEconomicsHint">Fees · payouts · net · conversion</span></summary><div class="numbered-content"><div class="cash-tools"><label for="cashPeriod">Period</label><select id="cashPeriod"><option value="5">Weekly · 5 trading days</option><option value="10">Biweekly · 10 trading days</option><option value="20">Monthly · 20 trading days</option><option value="1">Daily</option></select><button type="button" id="cashColumnsToggle">Columns ▾</button><button type="button" id="cashSourcesToggle">Model inputs ▾</button></div><div id="cashColumnsPanel" class="cash-columns-panel" hidden></div><div id="cashSourcesPanel" hidden><label for="cashInputView">Show input source</label><select id="cashInputView" style="max-width:290px"><option value="effective">Used in displayed simulation</option><option value="firms">Firms baseline (without overrides)</option><option value="overrides">Simulator-only overrides</option><option value="controls">Simulation controls</option></select><div id="cashInputDetails"></div></div></div><div id="weeklyEconomicsContents" class="numbered-content"><p class="hint">Run Simulation to see weekly results.</p></div></details>
+ <div id="combined" hidden></div><details id="weeklyEconomicsPanel" class="sim-charts-panel" style="margin-top:12px"><summary><strong>Cash flow · payout economics</strong><span class="sim-charts-summary" id="weeklyEconomicsHint">Fees · payouts · net · conversion</span></summary><div class="numbered-content"><div class="cash-tools"><label for="cashPeriod">Period</label><select id="cashPeriod"><option value="5">Weekly · 5 trading days</option><option value="10">Biweekly · 10 trading days</option><option value="20">Monthly · 20 trading days</option><option value="1">Daily</option></select><button type="button" id="cashKpisToggle">KPIs ▾</button><button type="button" id="cashColumnsToggle">Columns ▾</button><button type="button" id="cashSourcesToggle">Model inputs ▾</button></div><div id="cashKpisPanel" class="cash-columns-panel" hidden></div><div id="cashColumnsPanel" class="cash-columns-panel" hidden></div><div id="cashSourcesPanel" hidden><label for="cashInputView">Show input source</label><select id="cashInputView" style="max-width:290px"><option value="effective">Used in displayed simulation</option><option value="firms">Firms baseline (without overrides)</option><option value="overrides">Simulator-only overrides</option><option value="controls">Simulation controls</option></select><div id="cashInputDetails"></div></div></div><div id="weeklyEconomicsContents" class="numbered-content"><p class="hint">Run Simulation to see weekly results.</p></div></details>
 </div></details>
 <details id="chartsPanel" class="sim-charts-panel"><summary><strong>6 · Charts</strong><span class="sim-charts-summary">Equity · Drawdown · Distributions · Payouts</span><span class="sim-charts-hint">Show / hide</span></summary><div id="chartsContents" class="sim-charts-contents"><p class="hint">Run a simulation to load charts.</p></div></details>
 <details id="journeyPanel" class="sim-charts-panel journey-panel">
@@ -1532,11 +1533,45 @@ function cashDerivedValue(w,key,money){
  };
  return derived[key]?derived[key]():money.has(key)?usd(w[key]):dec(w[key]??0);
 }
+const cashKpiDefinitions=[
+ ['ev','EV/trade','usd','Average modeled trade P&L, before challenge fees'],
+ ['pf','PF','num','Gross trade profits divided by gross trade losses'],
+ ['ar','Avg R','num','Realized R per trade'],['aw','Avg win','usd','Average winning trade'],
+ ['al','Avg loss','usd','Average losing trade'],['net','Net','usd','Expected net after modeled costs'],
+ ['chancePayout','Payout %','pct','Chance of at least one payout'],
+ ['failed','Failed','num','Average modeled failed accounts'],
+ ['exhausted','Blocked','num','Risk-blocked accounts; not necessarily firm breaches'],
+ ['bought','Bought','num','Average purchased accounts'],['paid','Paid','num','Average completed payouts'],
+ ['spent','Fees','usd','Average challenge and activation fees'],
+ ['receipts','Receipts','usd','Average cash received'],
+ ['roi','ROI %','pct','Net divided by modeled fees; not return on account notional'],
+ ['trades','Trades','num','Average completed trades'],
+ ['wr','WR %','pct','Modeled trade win rate']
+];
+const cashKpiDefault=['ev','pf','ar','net','chancePayout','failed'];
+const cashKpiKey='4ds:cash-kpis:v1';
+let cashKpiVisible=new Set(cashKpiDefault);
+try{const stored=JSON.parse(localStorage.getItem(cashKpiKey)||'null');if(Array.isArray(stored))cashKpiVisible=new Set(stored.filter(k=>cashKpiDefinitions.some(x=>x[0]===k)));}catch(e){}
+function drawCashKpiControls(){
+ const presets={essential:cashKpiDefault,performance:['ev','pf','ar','aw','al','wr','trades'],cash:['net','spent','receipts','roi','chancePayout'],accounts:['bought','paid','failed','exhausted']};
+ $('cashKpisPanel').innerHTML='<div class="cash-column-actions">'+Object.entries({...presets,all:cashKpiDefinitions.map(x=>x[0]),none:[]}).map(([key])=>'<button type="button" data-cash-kpi-preset="'+key+'">'+esc(key==='essential'?'Default':key==='none'?'Clear':key[0].toUpperCase()+key.slice(1))+'</button>').join('')+'</div>'+
+ '<p class="hint">'+cashKpiVisible.size+' / '+cashKpiDefinitions.length+' KPIs visible · saved on this device</p><div class="cash-columns-grid">'+cashKpiDefinitions.map(([key,label,,help])=>'<label title="'+esc(help)+'"><input type="checkbox" data-cash-kpi="'+key+'" '+(cashKpiVisible.has(key)?'checked':'')+'>'+esc(label)+'</label>').join('')+'</div>';
+}
+function saveCashKpis(){try{localStorage.setItem(cashKpiKey,JSON.stringify([...cashKpiVisible]));}catch(e){}drawCashKpiControls();if(cashLastList)renderWeeklyEconomics(cashLastList,cashLastInputs);}
+$('cashKpisToggle').addEventListener('click',()=>{$('cashKpisPanel').hidden=!$('cashKpisPanel').hidden;});
+$('cashKpisPanel').addEventListener('click',e=>{
+ const btn=e.target.closest('[data-cash-kpi-preset]');if(!btn)return;
+ const presets={essential:cashKpiDefault,performance:['ev','pf','ar','aw','al','wr','trades'],cash:['net','spent','receipts','roi','chancePayout'],accounts:['bought','paid','failed','exhausted'],all:cashKpiDefinitions.map(x=>x[0]),none:[]};
+ cashKpiVisible=new Set(presets[btn.dataset.cashKpiPreset]||cashKpiDefault);saveCashKpis();
+});
+$('cashKpisPanel').addEventListener('change',e=>{const key=e.target.getAttribute('data-cash-kpi');if(!key)return;if(e.target.checked)cashKpiVisible.add(key);else cashKpiVisible.delete(key);saveCashKpis();});
+drawCashKpiControls();
 function cashKpiStrip(result){
  const k=result.tradeKpis||{},a=result.avg||{};
+ const values={...k,...a,chancePayout:result.chancePayout,roi:Number(a.spent)>0?Number(a.net)/Number(a.spent):null};
  const fmt=(v,type)=>v==null||Number.isNaN(Number(v))?'—':type==='usd'?usd(v):type==='pct'?pct(v):type==='num'?(Number.isFinite(v)?dec(v):'∞'):dec(v);
- const items=[['EV/trade',k.ev,'usd','Average modeled trade P&L; excludes purchase fees'],['PF',k.pf,'num','Gross trading profit divided by gross trading loss'],['Avg R',k.ar,'num','Average realized R per trade'],['Avg win',k.aw,'usd','Average profit per winning trade'],['Avg loss',k.al,'usd','Average loss per losing trade'],['Net',a.net,'usd','Expected net after modeled costs'],['Payout %',result.chancePayout,'pct','Probability of at least one payout'],['Failed',a.failed,'num','Average modeled failed accounts']];
- return '<div class="cash-kpis">'+items.map(([name,value,type,tip])=>'<div class="cash-kpi" title="'+esc(tip)+'"><small>'+esc(name)+'</small><strong>'+fmt(value,type)+'</strong></div>').join('')+'</div>';
+ const items=cashKpiDefinitions.filter(([key])=>cashKpiVisible.has(key));
+ return items.length?'<div class="cash-kpis">'+items.map(([key,name,type,tip])=>'<div class="cash-kpi" title="'+esc(tip)+'"><small>'+esc(name)+'</small><strong>'+fmt(values[key],type)+'</strong></div>').join('')+'</div>':'';
 }
 function renderWeeklyEconomics(list,inputs){
  cashLastList=list;cashLastInputs=inputs;
