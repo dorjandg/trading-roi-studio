@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "updated_utc": "2026-11-08T07:47:55Z",
+  "source": "Private user-owned Google Sheet caption Index and timestamped Segments; public-video research only; no transcript copied",
+  "reviewed": [
+    {
+      "video_id": "UVKVSWKFlvo",
+      "status": "reviewed_previous",
+      "evidence": "youtube-transcript-research.js Video 08",
+      "reviewed_utc": "2026-11-07T00:00:00Z"
+    },
+    {
+      "video_id": "3tKaGoydZUM",
+      "status": "reviewed_caption_only",
+      "reviewed_utc": "2026-11-08T07:47:55Z",
+      "evidence": "youtube-transcript-research.js native-caption review sections",
+      "chart_verified": false
+    },
+    {
+      "video_id": "7t-zSfuQCWU",
+      "status": "reviewed_caption_only",
+      "reviewed_utc": "2026-11-08T07:47:55Z",
+      "evidence": "youtube-transcript-research.js native-caption review sections",
+      "chart_verified": false
+    },
+    {
+      "video_id": "AcFrqRKnMRI",
+      "status": "reviewed_caption_only",
+      "reviewed_utc": "2026-11-08T07:47:55Z",
+      "evidence": "youtube-transcript-research.js native-caption review sections",
+      "chart_verified": false
+    },
+    {
+      "video_id": "KsfBGgX-CTM",
+      "status": "reviewed_caption_only",
+      "reviewed_utc": "2026-11-08T07:47:55Z",
+      "evidence": "youtube-transcript-research.js native-caption review sections",
+      "chart_verified": false
+    },
+    {
+      "video_id": "5wM0SP8AHAs",
+      "status": "reviewed_caption_only",
+      "reviewed_utc": "2026-11-08T07:47:55Z",
+      "evidence": "youtube-transcript-research.js native-caption review sections",
+      "chart_verified": false
+    },
+    {
+      "video_id": "B9VRtVrvpE8",
+      "status": "reviewed_caption_only",
+      "reviewed_utc": "2026-11-08T07:47:55Z",
+      "evidence": "youtube-transcript-research.js native-caption review sections",
+      "chart_verified": false
+    },
+    {
+      "video_id": "Thkmv50SnuA",
+      "status": "reviewed_caption_only",
+      "reviewed_utc": "2026-11-08T07:47:55Z",
+      "evidence": "youtube-transcript-research.js native-caption review sections",
+      "chart_verified": false
+    },
+    {
+      "video_id": "-RI9cgic1tM",
+      "status": "reviewed_caption_only",
+      "reviewed_utc": "2026-11-08T07:47:55Z",
+      "evidence": "youtube-transcript-research.js native-caption review sections",
+      "chart_verified": false
+    },
+    {
+      "video_id": "8Rj-1hM9mRg",
+      "status": "reviewed_caption_only",
+      "reviewed_utc": "2026-11-08T07:47:55Z",
+      "evidence": "youtube-transcript-research.js native-caption review sections",
+      "chart_verified": false
+    },
+    {
+      "video_id": "QhtIuELcMiU",
+      "status": "reviewed_caption_only",
+      "reviewed_utc": "2026-11-08T07:47:55Z",
+      "evidence": "youtube-transcript-research.js native-caption review sections",
+      "chart_verified": false
+    }
+  ]
+}
