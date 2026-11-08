@@ -1145,6 +1145,7 @@ function renderRows(){
    '<div class="field"><label>Account amount</label><select data-field="size">'+sizes+'</select></div>'+
    '<div class="field"'+(mode==='compare'?' style="display:none"':'')+'><label>Budget weight</label><input type="number" data-field="weight" min="0" step="5" value="'+r.weight+'"></div>'+
    '<div class="field"><label>Evaluation allocation cap ($)</label><input type="number" data-field="evaluationCap" min="0" step="10000" placeholder="No limit" value="'+(allocationLimits[r.id+':'+r.size]?.evaluation||'')+'"></div>'+
+    '<div class="field"><label>Max new accounts / day</label><input type="number" data-field="dailyBuyCap" min="1" max="100" step="1" placeholder="Use shared limit" value="'+(allocationLimits[r.id+':'+r.size]?.dailyBuyCap||'')+'"></div>'+
     '<div class="field"><label>Funded allocation cap ($)</label><input type="number" data-field="fundedCap" min="0" step="10000" placeholder="No limit" value="'+(allocationLimits[r.id+':'+r.size]?.funded||'')+'"></div>'+
     '<div class="field"><label>Funded payout profit target ($)</label><input type="number" data-field="fundedTarget" min="0.01" step="100" value="'+accountPlan(r).riskProfiles.funded.target+'"></div>'+
     '<div class="field"><label>Payout wait from first funded trade (calendar days)</label><input type="number" data-field="payoutWait" min="0" max="120" step="1" value="'+accountPlan(r).payoutWaitCalendarDays+'"></div>'+
@@ -1285,6 +1286,14 @@ $('accounts').addEventListener('change',event=>{
   const key=rows[index].id+':'+rows[index].size;
   if(!testRisks[key])testRisks[key]={};
   testRisks[key][field==='payoutWait'?'__payoutWaitCalendarDays':'__payoutProcessingCalendarDays']=value;
+ }
+ if(field==='dailyBuyCap'){
+  const key=rows[index].id+':'+rows[index].size;
+  const raw=input.value.trim(),value=Number(raw);
+  if(raw!==''&&(!Number.isInteger(value)||value<1||value>100)){
+   $('status').textContent='Max new accounts/day must be 1–100 or blank';renderRows();return;
+  }
+  allocationLimits[key]={...(allocationLimits[key]||{}),dailyBuyCap:raw===''?0:value};
  }
  if(field==='evaluationCap'||field==='fundedCap'){
   const key=rows[index].id+':'+rows[index].size;
@@ -2678,6 +2687,7 @@ function currentDiscoveryInputs(row){
   maxBuysPerDay:Math.max(1,Math.min(20,Math.floor(Number($('maxBuysPerDay').value)||1))),
   reinvestPayouts:$('reinvestPayouts').value==='yes',
   tradeSchedule:schedule,
+  dailyBuyCap:allocationLimits[row.id+':'+row.size]?.dailyBuyCap||0,
   evaluationAllocationCap:allocationLimits[row.id+':'+row.size]?.evaluation||0,
   fundedAllocationCap:allocationLimits[row.id+':'+row.size]?.funded||0
  };
@@ -2942,7 +2952,8 @@ function run(){
     ...inputs,budget:j.budget,seed:inputs.seed+j.index*120011,maxAccounts:Math.max(1,Math.min(100,Math.floor(inputs.capitalMaxAccounts||100),inputs.capitalNominalCap?Math.floor(inputs.capitalNominalCap/j.p.size):100)),
      tradeSchedule:j.tradeSchedule||inputs.tradeSchedule,trackCharts:true,
      evaluationAllocationCap:j.allocation.evaluation||0,
-     fundedAllocationCap:j.allocation.funded||0}));
+     fundedAllocationCap:j.allocation.funded||0,
+     dailyBuyCap:j.allocation.dailyBuyCap||0}));
    renderResults(results,inputs);
    window.__studioSignalAllocationSnapshot={jobs,inputs};
    simulationHistory?.save({results,inputs,rows});
@@ -3050,6 +3061,7 @@ window.StudioPayoutBridge={
    maxActive:bounded(sourceInputs?.maxActive,1,100,bounded(cfg.maxActive,1,100,1)),
    maxBuysPerDay:bounded(sourceInputs?.maxBuysPerDay,1,20,bounded(cfg.maxBuysPerDay,1,20,1)),
    reinvestPayouts:sourceInputs?.reinvestPayouts===true,
+   dailyBuyCap:number(sourceInputs?.dailyBuyCap,cfg.dailyBuyCap,0),
    evaluationAllocationCap:number(sourceInputs?.evaluationAllocationCap,cfg.evaluationAllocationCap,0),
    fundedAllocationCap:number(sourceInputs?.fundedAllocationCap,cfg.fundedAllocationCap,0),
    requiredPayouts:number(optimizer?.requiredPayouts,cfg.requiredPayouts,0),
@@ -3098,7 +3110,7 @@ window.StudioPayoutBridge={
    capacityMode:$('capacityMode').value,maxActive:Number($('maxActive').value),
    maxBuysPerDay:Number($('maxBuysPerDay').value),
    reinvestPayouts:$('reinvestPayouts').value==='yes',
-   evaluationAllocationCap:limit.evaluation||0,fundedAllocationCap:limit.funded||0};
+   dailyBuyCap:limit.dailyBuyCap||0,evaluationAllocationCap:limit.evaluation||0,fundedAllocationCap:limit.funded||0};
  },
  onAccountsChanged:null
 };
