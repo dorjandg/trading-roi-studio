@@ -1915,14 +1915,14 @@ const cashKpiDefinitions=[
  ['pf','PF','num','Gross trade profits divided by gross trade losses'],
  ['ar','Avg R','num','Realized R per trade'],['aw','Avg win','usd','Average winning trade'],
  ['al','Avg loss','usd','Average losing trade'],['net','Net','usd','Expected net after modeled costs'],
- ['chancePayout','Payout %','pct','Chance of at least one payout'],
+ ['chancePayout','P4 chance','pct','Chance of at least one payout'],
  ['failed','Failed','num','Average modeled failed accounts'],
  ['exhausted','Blocked','num','Risk-blocked accounts; not necessarily firm breaches'],
- ['bought','Bought','num','Average purchased accounts'],['paid','Paid','num','Average completed payouts'],
+ ['bought','Bought','num','Average purchased accounts'],['paid','P4 paid','num','Average completed payouts'],
  ['spent','Fees','usd','Average challenge and activation fees'],
  ['receipts','Receipts','usd','Average cash received'],
  ['roi','ROI %','pct','Net divided by modeled fees; not return on account notional'],
- ['trades','Trades','num','Average completed trades'],
+ ['trades','Executed','num','Average completed trades'],
  ['wr','WR %','pct','Modeled trade win rate']
 ];
 const cashKpiDefault=['ev','pf','ar','net','chancePayout','failed'];
@@ -1945,13 +1945,13 @@ $('cashKpisPanel').addEventListener('change',e=>{const key=e.target.getAttribute
 drawCashKpiControls();
 const cashSummaryDefs=[
  ['costPerPaid','Fee/Paid','usd','Average modeled fees per completed payout'],
- ['conversion','Paid/Buy','pct','First payouts divided by purchased challenges'],
+ ['conversion','P4/Buy','pct','First payouts divided by purchased challenges'],
  ['firstPayoutDay','First day','num','Average first payout day conditional on payout'],
  ['phase1Conversion','P1/Buy','pct','Phase 1 passes per purchased account'],
- ['chanceAnyPayout','Payout %','pct','Chance of at least one payout'],
+ ['chanceAnyPayout','P4 chance','pct','Chance of at least one payout'],
  ['phase2Conversion','P2/Buy','pct','Phase 2 passes per purchased account'],
  ['avgBought','Bought','num','Average purchased accounts'],
- ['avgPaid','Paid','num','Average completed payouts'],
+ ['avgPaid','P4 paid','num','Average completed payouts'],
  ['avgFailed','Failed','num','Average failed accounts'],
  ['avgNet','Net','usd','Average modeled net profit'],
  ['avgSpent','Fees','usd','Average fees spent'],
