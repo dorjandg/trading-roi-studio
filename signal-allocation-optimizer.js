@@ -19,7 +19,7 @@ for(const n of [2,3]){const option=document.createElement('option');option.value
 label.appendChild(copies);details.appendChild(label);
 const button=document.createElement('button');button.type='button';button.textContent='Compare models';button.style.margin='0 8px';details.appendChild(button);
 const result=document.createElement('div');result.className='hint';result.textContent='Run Simulation first.';details.appendChild(result);
-const target=$('weeklyEconomicsContents')||host.querySelector('.numbered-content');
+const target=host.querySelector('.numbered-content'); // Static container: weeklyEconomicsContents is re-rendered and would erase this panel.
 if(!target)return;
 target.insertBefore(details,target.firstChild);
 button.addEventListener('click',()=>{
