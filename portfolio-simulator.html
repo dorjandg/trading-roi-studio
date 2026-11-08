@@ -1622,36 +1622,45 @@ function addJourneyColumnFilters(){
    const presetsKey='studio-journey-presets-v1-'+key;
    const readPresets=()=>{try{const v=JSON.parse(localStorage.getItem(presetsKey)||'{}');return v&&typeof v==='object'&&!Array.isArray(v)?v:{};}catch(_){return {};}};
    const presets=document.createElement('div');
-   presets.style.cssText='display:flex;flex-wrap:wrap;gap:4px;margin:0 0 8px;align-items:center';
+   presets.className='journey-preset-tools';
    const picker=document.createElement('select');
-   picker.setAttribute('aria-label','Saved column presets');
-   picker.style.cssText='min-width:95px;max-width:140px;flex:1';
-   const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='Saved views';picker.append(placeholder);
-   for(const name of Object.keys(readPresets()).sort((a,b)=>a.localeCompare(b))){const option=document.createElement('option');option.value=name;option.textContent=name;picker.append(option);}
-   const nameInput=document.createElement('input');nameInput.type='text';nameInput.maxLength=32;nameInput.placeholder='View name';nameInput.setAttribute('aria-label','Column preset name');nameInput.style.cssText='width:100px;min-width:75px;flex:1';
-   const presetButton=(label,fn)=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.style.cssText='padding:3px 7px;font-size:12px';b.addEventListener('click',fn);return b;};
-   picker.addEventListener('change',()=>{if(picker.value)nameInput.value=picker.value;});
+   picker.setAttribute('aria-label','Load saved column view');
+   const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='Choose saved view';picker.append(placeholder);
+   const savedViews=readPresets();
+   for(const name of Object.keys(savedViews).sort((a,b)=>a.localeCompare(b))){const option=document.createElement('option');option.value=name;option.textContent=name;picker.append(option);}
+   const nameInput=document.createElement('input');nameInput.type='text';nameInput.maxLength=32;nameInput.placeholder='New view name';nameInput.setAttribute('aria-label','New column view name');
+   const status=document.createElement('span');status.className='journey-preset-status';status.setAttribute('role','status');
+   const presetButton=(label,fn)=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.addEventListener('click',fn);return b;};
    const loadPreset=()=>{
     const saved=readPresets()[picker.value];if(!saved)return;
     pref.visible=(Array.isArray(saved.visible)?saved.visible:[]).map(canonicalColumnLabel).filter(id=>valid.includes(id));
     pref.order=[...new Set([...(Array.isArray(saved.order)?saved.order:[]).map(canonicalColumnLabel).filter(id=>valid.includes(id)),...valid])];
-    apply();renderControls();
+    apply();status.textContent='View loaded';renderControls();
    };
    const savePreset=()=>{
-    const name=nameInput.value.trim();if(!name)return;
-    const saved=readPresets();saved[name]={visible:[...pref.visible],order:[...pref.order]};
-    try{localStorage.setItem(presetsKey,JSON.stringify(saved));}catch(_){return;}
+    const name=nameInput.value.trim();if(!name){nameInput.focus();status.textContent='Enter a view name';return;}
+    const saved=readPresets();
+    if(Object.prototype.hasOwnProperty.call(saved,name)&&!window.confirm('Replace saved view "'+name+'"?'))return;
+    saved[name]={visible:[...pref.visible],order:[...pref.order]};
+    try{localStorage.setItem(presetsKey,JSON.stringify(saved));}catch(_){status.textContent='Unable to save on this browser';return;}
     renderControls();
-    const option=[...controls.querySelectorAll('select option')].find(o=>o.value===name);
-    if(option)option.selected=true;
+    const newPicker=controls.querySelector('select[aria-label="Load saved column view"]');
+    if(newPicker)newPicker.value=name;
+    const msg=controls.querySelector('.journey-preset-status');if(msg)msg.textContent='Saved';
    };
    const deletePreset=()=>{
     const name=picker.value;if(!name)return;
+    if(!window.confirm('Delete saved view "'+name+'"?'))return;
     const saved=readPresets();delete saved[name];
-    try{localStorage.setItem(presetsKey,JSON.stringify(saved));}catch(_){return;}
+    try{localStorage.setItem(presetsKey,JSON.stringify(saved));}catch(_){status.textContent='Unable to delete';return;}
     renderControls();
    };
-   presets.append(picker,nameInput,presetButton('Save',savePreset),presetButton('Load',loadPreset),presetButton('Delete',deletePreset));
+   picker.addEventListener('change',loadPreset);
+   const pickerRow=document.createElement('div');pickerRow.className='journey-preset-row';
+   pickerRow.append(picker,presetButton('Delete',deletePreset));
+   const saveRow=document.createElement('div');saveRow.className='journey-preset-row';
+   saveRow.append(nameInput,presetButton('Save view',savePreset));
+   presets.append(pickerRow,saveRow,status);
    controls.insertBefore(presets,body);
    const setVisible=keys=>{pref.visible=keys;apply();renderControls();};
    if(mode==='category'){
