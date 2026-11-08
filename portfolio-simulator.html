@@ -607,7 +607,8 @@ details p{margin:6px 0}
 <div class="capital-compact-body">
 <div class="capital-inline-top">
 <div class="capital-limit-fields">
-<div class="field"><label for="purchasePolicy">New account purchases</label><select id="purchasePolicy" title="Replacement-only preserves slots when accounts advance stages."><option value="replacement-only">Replace closed accounts only</option><option value="fill-eligible">Fill eligible gaps (legacy)</option></select></div>
+<div class="field"><label for="recycleFundedPayouts">Funded after payout</label><label><input id="recycleFundedPayouts" type="checkbox" checked> Reuse same funded account (FTMO)</label><small class="hint">New funded cycle; same account can still fail on future trades.</small></div>
+<div class="field"><label for="purchasePolicy">New account purchases</label><select id="purchasePolicy" title="Replacement-only preserves slots when accounts advance stages."><option value="replacement-only">Replace closed accounts only</option><option value="fill-target-gaps">Fill target-locked signal gaps</option><option value="fill-eligible">Fill eligible gaps (legacy)</option></select></div>
 <div class="field"><label for="capitalMaxAccounts">Max accounts / type</label><input id="capitalMaxAccounts" type="number" min="1" max="100" step="1" placeholder="Blank = 100 max"></div>
 <div class="field"><label for="capitalNominalCap">Nominal cap / type ($)</label><input id="capitalNominalCap" type="number" min="1" step="10000" placeholder="Blank = no cap"></div>
 </div>
@@ -940,7 +941,7 @@ $('capitalJumpCapacity').addEventListener('click',()=>{$('capacityMode').focus()
 function saveView(){
  try{localStorage.setItem(savedViewKey,JSON.stringify({
   budget:$('budget').value,netGoal:$('netGoal').value,capitalMaxAccounts:$('capitalMaxAccounts').value,capitalNominalCap:$('capitalNominalCap').value,winRate:$('winRate').value,simInputSource:$('simInputSource').value,
-  purchaseMode:$('purchaseMode').value,capacityMode:$('capacityMode').value,purchasePolicy:$('purchasePolicy').value,maxActive:$('maxActive').value,
+  purchaseMode:$('purchaseMode').value,capacityMode:$('capacityMode').value,purchasePolicy:$('purchasePolicy').value,recycleFundedPayouts:$('recycleFundedPayouts').checked,maxActive:$('maxActive').value,
   maxBuysPerDay:$('maxBuysPerDay').value,reinvestPayouts:$('reinvestPayouts').value,
   days:$('days').value,tradesPerDay:$('tradesPerDay').value,signalPace:$('signalPace').value,trials:$('trials').value,
   signalMode:$('signalMode').value,seed:$('seed').value,
@@ -959,7 +960,8 @@ function loadView(){
  $('capitalMaxAccounts').value=prior.capitalMaxAccounts??'';$('capitalNominalCap').value=prior.capitalNominalCap??'';
  $('purchaseMode').value=prior.purchaseMode==='upfront'?'upfront':'recycle';
  $('capacityMode').value=prior.capacityMode==='manual'?'manual':'automatic';
- $('purchasePolicy').value=prior.purchasePolicy==='fill-eligible'?'fill-eligible':'replacement-only';
+ $('purchasePolicy').value=['fill-eligible','fill-target-gaps'].includes(prior.purchasePolicy)?prior.purchasePolicy:'fill-target-gaps';
+ $('recycleFundedPayouts').checked=prior.recycleFundedPayouts!==false;
  $('maxActive').value=String(Math.max(1,Math.min(100,Math.floor(Number(prior.maxActive)||1))));
  $('maxBuysPerDay').value=String(Math.max(1,Math.min(20,Math.floor(Number(prior.maxBuysPerDay)||1))));
  $('reinvestPayouts').value=prior.reinvestPayouts==='yes'?'yes':'no';
@@ -1180,6 +1182,7 @@ function setStale(){
  saveView();
 }
 $('purchasePolicy').addEventListener('change',setStale);
+$('recycleFundedPayouts').addEventListener('change',setStale);
 $('accounts').addEventListener('change',event=>{
  const input=event.target.closest('[data-field]'),card=event.target.closest('[data-row]');if(!input||!card)return;
  const index=Number(card.dataset.row),field=input.dataset.field;
@@ -2426,7 +2429,7 @@ function currentDiscoveryInputs(row){
   winRate:Math.max(0,Math.min(100,Number($('winRate').value)||0)),
    days:Number($('days').value)||20,tradesPerDay:$('signalPace').value==='weekly20'?4:(Number($('tradesPerDay').value)||4),
   signalMode:$('signalMode').value,seed:Number($('seed').value)||24717,
-  purchaseMode:$('purchaseMode').value,capacityMode:$('capacityMode').value,purchasePolicy:$('purchasePolicy').value,
+  purchaseMode:$('purchaseMode').value,capacityMode:$('capacityMode').value,purchasePolicy:$('purchasePolicy').value,recycleFundedPayouts:$('recycleFundedPayouts').checked,
   maxActive:Math.max(1,Math.min(100,Math.floor(Number($('maxActive').value)||1))),
   maxBuysPerDay:Math.max(1,Math.min(20,Math.floor(Number($('maxBuysPerDay').value)||1))),
   reinvestPayouts:$('reinvestPayouts').value==='yes',
@@ -2657,7 +2660,7 @@ function run(){
    tradesPerDay:$('signalPace').value==='weekly20'?4:Number($('tradesPerDay').value),
    tradeSchedule:$('signalPace').value==='weekly20'?weekly.schedule(Number($('days').value),'weekly20',4):null,
    trials:Number($('trials').value),signalMode:$('signalMode').value,seed:Number($('seed').value)||24717,budgetMode:mode,
-  purchaseMode:$('purchaseMode').value,capacityMode:$('capacityMode').value,purchasePolicy:$('purchasePolicy').value,
+  purchaseMode:$('purchaseMode').value,capacityMode:$('capacityMode').value,purchasePolicy:$('purchasePolicy').value,recycleFundedPayouts:$('recycleFundedPayouts').checked,
   maxActive:Math.max(1,Math.min(100,Math.floor(Number($('maxActive').value)||1))),
   maxBuysPerDay:Math.max(1,Math.min(20,Math.floor(Number($('maxBuysPerDay').value)||1))),
   reinvestPayouts:$('reinvestPayouts').value==='yes'};
