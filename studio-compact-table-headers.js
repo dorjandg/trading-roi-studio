@@ -1,397 +1,70 @@
-/* Trading Studio shared table labels. Visual only; preserve keys and drag handlers. */
+/* Shared compact table headers: presentation only. Never change data keys or saved order. */
 (()=>{'use strict';
-const names={
-'Challenge active':'P1','Verification active':'P2','Funded active':'P3','Payout pending':'P4',
-'Challenge':'P1','Verif.':'P2','Verification':'P2','Funded':'P3','Pending':'P4',
-'Funded allocation ($)':'Fund 
-'Qualification trades':'Qual.','Verification active':'P2','Challenges purchased':'Bought','Challenge active':'P1','Funded active':'P3','Funded activated':'Funded','Payout pending':'P4','Executed trades':'Executed','Paid accounts':'Paid','Failed accounts':'Failed','Risk blocked':'Blocked','Account events':'Events','New accounts':'New','Phase 1 passed':'P1 pass','Phase 2 passed':'P2 pass','Target reached':'P3 ready','Goal hit':'P3 ready','Paid accounts':'P4 paid','Payouts paid':'P4 paid',
-'Trading Signals':'Signals','Total Signals':'Signals','Signals available':'Signals','Trading opportunities':'Signals','Opportunities':'Opps','Unused signals':'Unused','Qualification':'Qual.','Verification':'Verif.','Evaluation':'Eval','Funded Accounts':'Funded','Accounts Purchased':'Bought','Total Purchased':'Bought','Total Spending':'Spent','Net Profit':'Net','Net P&L':'Net','Return on Investment':'ROI %','Win Rate':'WR %','Maximum Drawdown':'Max DD',
-'Firm / account':'Firm / Acc.','Phase 1 passes':'P1 pass','Phase 2 passes':'P2 pass','Chance ≥1 payout':'Payout %','Expected payouts':'Exp. payout','Expected net':'Exp. net','Expected ROI':'Exp. ROI','Chance of goal':'Goal %','Payouts avg.':'Avg payout','Average accounts':'Avg acc.','Stage / milestone':'Milestone','Trading day':'Day','Outcome / event':'Event',
-'Allocation method':'Method','Allocation policy':'Policy','Median net':'Med. net','Median payout cash':'Med. payout','P10 / P90 net':'P10/P90','Chance of ≥50% loss':'Loss ≥50%','Closing equity':'Equity','Max drawdown':'Max DD','Net trading P/L':'Net P/L','Daily usage':'Daily use','Traded days':'Days','Profit / loss':'P/L','Stage progress':'Progress','Loss headroom':'Headroom',
-'Order / risk tier':'Risk tier','Stop loss (USD)':'SL $','Winning profit (USD)':'Win $','Accounts per shared signal':'Acc./signal','Average Trades':'Avg trades','Avg. trades all attempts':'Avg trades','Avg. trades successful':'Win trades','Avg. active days successful':'Win days','Risk exhausted':'Exhausted','JJ benchmark scenario':'JJ benchmark','FTMO planning scenario':'FTMO plan','Proper interpretation':'Meaning','Difference (B − A)':'Diff.'
+const MAX=12;
+const aliases={
+ 'Challenge active':'P1','Verification active':'P2','Funded active':'P3','Payout pending':'P4',
+ 'Phase 1 passed':'P1 pass','Phase 2 passed':'P2 pass','Target reached':'P3 ready',
+ 'Funded target hit':'P3 ready','Paid accounts':'P4 paid','Payouts paid':'P4 paid',
+ 'Failed accounts':'Failed','Challenges purchased':'Bought','Executed trades':'Executed',
+ 'Qualification trades':'Qual.','Signals available':'Signals','Unused signals':'Unused',
+ 'Risk blocked':'Blocked','Account events':'Events','New accounts':'New',
+ 'Funded allocation ($)':'Fund $','Evaluation allocation ($)':'Eval $',
+ 'Purchased allocation ($)':'Buy $','Total Spending':'Spent',
+ 'Return on Investment':'ROI %','Maximum Drawdown':'Max DD',
+ 'Accounts per shared signal':'Acc/signal','Average Trades':'Avg trades',
+ 'Allocation method':'Method','Allocation policy':'Policy'
 };
-Evaluation allocation ($)':'Eval $','Purchased allocation ($)':'Buy $','Funded allocation':'Fund $','Evaluation allocation':'Eval $','Purchased allocation':'Buy $',
-'Qualification trades':'Qual.','Verification active':'P2','Challenges purchased':'Bought','Challenge active':'P1','Funded active':'P3','Funded activated':'Funded','Payout pending':'P4','Executed trades':'Executed','Paid accounts':'Paid','Failed accounts':'Failed','Risk blocked':'Blocked','Account events':'Events','New accounts':'New','Phase 1 passed':'P1 pass','Phase 2 passed':'P2 pass',
-'Trading Signals':'Signals','Total Signals':'Signals','Signals available':'Signals','Trading opportunities':'Signals','Opportunities':'Opps','Unused signals':'Unused','Qualification':'Qual.','Verification':'Verif.','Evaluation':'Eval','Funded Accounts':'Funded','Accounts Purchased':'Bought','Total Purchased':'Bought','Total Spending':'Spent','Net Profit':'Net','Net P&L':'Net','Return on Investment':'ROI %','Win Rate':'WR %','Maximum Drawdown':'Max DD',
-'Firm / account':'Firm / Acc.','Phase 1 passes':'P1 pass','Phase 2 passes':'P2 pass','Chance ≥1 payout':'Payout %','Expected payouts':'Exp. payout','Expected net':'Exp. net','Expected ROI':'Exp. ROI','Chance of goal':'Goal %','Payouts avg.':'Avg payout','Average accounts':'Avg acc.','Stage / milestone':'Milestone','Trading day':'Day','Outcome / event':'Event',
-'Allocation method':'Method','Allocation policy':'Policy','Median net':'Med. net','Median payout cash':'Med. payout','P10 / P90 net':'P10/P90','Chance of ≥50% loss':'Loss ≥50%','Closing equity':'Equity','Max drawdown':'Max DD','Net trading P/L':'Net P/L','Daily usage':'Daily use','Traded days':'Days','Profit / loss':'P/L','Stage progress':'Progress','Loss headroom':'Headroom',
-'Order / risk tier':'Risk tier','Stop loss (USD)':'SL $','Winning profit (USD)':'Win $','Accounts per shared signal':'Acc./signal','Average Trades':'Avg trades','Avg. trades all attempts':'Avg trades','Avg. trades successful':'Win trades','Avg. active days successful':'Win days','Risk exhausted':'Exhausted','JJ benchmark scenario':'JJ benchmark','FTMO planning scenario':'FTMO plan','Proper interpretation':'Meaning','Difference (B − A)':'Diff.'
-};
-const compact=value=>{
- const original=String(value||'').trim().replace(/\\s+/g,' ');
- if(names[original])return names[original];
- if(original.length<=12)return original;
- const abbreviated=original.replace(/\\bqualification\\b/gi,'Qual').replace(/\\bverification\\b/gi,'Verif').replace(/\\bevaluation\\b/gi,'Eval').replace(/\\ballocation\\b/gi,'Alloc').replace(/\\bexpected\\b/gi,'Exp').replace(/\\baverage\\b/gi,'Avg').replace(/\\bcumulative\\b/gi,'Cum').replace(/\\bmaximum\\b/gi,'Max').replace(/\\baccounts?\\b/gi,'Acc').replace(/\\btrading\\b/gi,'Trade').replace(/\\bnumber\\b/gi,'No');
- return abbreviated.length<=12?abbreviated:abbreviated.slice(0,11).replace(/[ .\\/-]+$/,'')+'…';
-};
+function compact(value){
+ const full=String(value||'').trim().replace(/\s+/g,' ');
+ if(aliases[full])return aliases[full];
+ if(full.length<=MAX)return full;
+ const short=full.replace(/qualification/gi,'Qual').replace(/verification/gi,'Verif')
+ .replace(/evaluation/gi,'Eval').replace(/allocation/gi,'Alloc')
+ .replace(/expected/gi,'Exp').replace(/average/gi,'Avg')
+ .replace(/cumulative/gi,'Cum').replace(/maximum/gi,'Max')
+ .replace(/accounts?/gi,'Acc').replace(/trading/gi,'Trade')
+ .replace(/purchased/gi,'Bought');
+ return short.length<=MAX?short:short.slice(0,MAX-1).trimEnd()+'…';
+}
 function fix(){
- for(const h of document.querySelectorAll('table thead th')){
-  const nodes=[...h.childNodes].filter(n=>n.nodeType===3&&n.textContent.trim());
-  if(nodes.length!==1)continue;const n=nodes[0],old=n.textContent.trim(),short=compact(old);
-  if(short!==old){if(!h.dataset.fullColumnTitle)h.dataset.fullColumnTitle=old;h.title=h.dataset.fullColumnTitle||old;n.textContent=n.textContent.replace(old,short);}
+ for(const th of document.querySelectorAll('table thead th')){
+  const nodes=Array.from(th.childNodes).filter(n=>n.nodeType===3&&n.textContent.trim());
+  if(nodes.length!==1)continue;
+  const node=nodes[0],original=node.textContent.trim();
+  const full=th.dataset.fullColumnTitle||th.getAttribute('title')||original;
+  const short=compact(original);
+  if(short!==original){
+   if(!th.dataset.fullColumnTitle)th.dataset.fullColumnTitle=full;
+   th.title=full;node.textContent=node.textContent.replace(original,short);
+  }
  }
- for(const p of document.querySelectorAll('#journeyContents button[aria-label="Filter columns"] + div')){
-  for(const label of p.querySelectorAll('label'))for(const n of label.childNodes){
-   if(n.nodeType!==3||!n.textContent.trim())continue;
-   const old=n.textContent.trim(),short=compact(old);
-   if(short!==old){if(!label.title)label.title=old;n.textContent=n.textContent.replace(old,short);}
+ for(const label of document.querySelectorAll('#journeyContents button[aria-label="Filter columns"] + div label')){
+  for(const node of label.childNodes){
+   if(node.nodeType!==3||!node.textContent.trim())continue;
+   const original=node.textContent.trim(),short=compact(original);
+   if(short!==original){if(!label.title)label.title=original;node.textContent=node.textContent.replace(original,short);}
   }
  }
 }
 function init(){
- fix();let pending=false;
- new MutationObserver(()=>{if(pending)return;pending=true;queueMicrotask(()=>{pending=false;fix();});}).observe(document.body,{subtree:true,childList:true});
+ fix();
+ let queued=false;
+ new MutationObserver(()=>{if(queued)return;queued=true;queueMicrotask(()=>{queued=false;fix();});})
+ .observe(document.body,{subtree:true,childList:true});
  const closeOutside=e=>{
   for(const button of document.querySelectorAll('button[aria-label="Filter columns"]')){
    const panel=button.nextElementSibling;
    if(!panel||panel.hidden)continue;
    const path=typeof e.composedPath==='function'?e.composedPath():[];
    if(button.contains(e.target)||panel.contains(e.target)||path.includes(button)||path.includes(panel))continue;
-   panel.hidden=true;panel.style.display='none';
-   button.setAttribute('aria-expanded','false');
+   panel.hidden=true;panel.style.display='none';button.setAttribute('aria-expanded','false');
   }
  };
  document.addEventListener('pointerdown',closeOutside,true);
  document.addEventListener('touchstart',closeOutside,{capture:true,passive:true});
  document.addEventListener('click',closeOutside,true);
- document.addEventListener('keydown',e=>{if(e.key==='Escape')for(const b of document.querySelectorAll('#journeyContents button[aria-label="Filter columns"]')){const p=b.nextElementSibling;if(p){p.hidden=true;b.setAttribute('aria-expanded','false');}}});
- window.StudioTableHeaderAudit={inventory:()=>[...document.querySelectorAll('table')].map((t,i)=>({table:i+1,headers:[...t.querySelectorAll('thead th')].map(h=>({shown:h.textContent.trim(),full:h.dataset.fullColumnTitle||h.textContent.trim()}))}))};
-}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-})();
-,'Evaluation allocation ($)':'Eval 
-'Qualification trades':'Qual.','Verification active':'P2','Challenges purchased':'Bought','Challenge active':'P1','Funded active':'P3','Funded activated':'Funded','Payout pending':'P4','Executed trades':'Executed','Paid accounts':'Paid','Failed accounts':'Failed','Risk blocked':'Blocked','Account events':'Events','New accounts':'New','Phase 1 passed':'P1 pass','Phase 2 passed':'P2 pass','Target reached':'P3 ready','Goal hit':'P3 ready','Paid accounts':'P4 paid','Payouts paid':'P4 paid',
-'Trading Signals':'Signals','Total Signals':'Signals','Signals available':'Signals','Trading opportunities':'Signals','Opportunities':'Opps','Unused signals':'Unused','Qualification':'Qual.','Verification':'Verif.','Evaluation':'Eval','Funded Accounts':'Funded','Accounts Purchased':'Bought','Total Purchased':'Bought','Total Spending':'Spent','Net Profit':'Net','Net P&L':'Net','Return on Investment':'ROI %','Win Rate':'WR %','Maximum Drawdown':'Max DD',
-'Firm / account':'Firm / Acc.','Phase 1 passes':'P1 pass','Phase 2 passes':'P2 pass','Chance ≥1 payout':'Payout %','Expected payouts':'Exp. payout','Expected net':'Exp. net','Expected ROI':'Exp. ROI','Chance of goal':'Goal %','Payouts avg.':'Avg payout','Average accounts':'Avg acc.','Stage / milestone':'Milestone','Trading day':'Day','Outcome / event':'Event',
-'Allocation method':'Method','Allocation policy':'Policy','Median net':'Med. net','Median payout cash':'Med. payout','P10 / P90 net':'P10/P90','Chance of ≥50% loss':'Loss ≥50%','Closing equity':'Equity','Max drawdown':'Max DD','Net trading P/L':'Net P/L','Daily usage':'Daily use','Traded days':'Days','Profit / loss':'P/L','Stage progress':'Progress','Loss headroom':'Headroom',
-'Order / risk tier':'Risk tier','Stop loss (USD)':'SL $','Winning profit (USD)':'Win $','Accounts per shared signal':'Acc./signal','Average Trades':'Avg trades','Avg. trades all attempts':'Avg trades','Avg. trades successful':'Win trades','Avg. active days successful':'Win days','Risk exhausted':'Exhausted','JJ benchmark scenario':'JJ benchmark','FTMO planning scenario':'FTMO plan','Proper interpretation':'Meaning','Difference (B − A)':'Diff.'
-};
-Evaluation allocation ($)':'Eval $','Purchased allocation ($)':'Buy $','Funded allocation':'Fund $','Evaluation allocation':'Eval $','Purchased allocation':'Buy $',
-'Qualification trades':'Qual.','Verification active':'P2','Challenges purchased':'Bought','Challenge active':'P1','Funded active':'P3','Funded activated':'Funded','Payout pending':'P4','Executed trades':'Executed','Paid accounts':'Paid','Failed accounts':'Failed','Risk blocked':'Blocked','Account events':'Events','New accounts':'New','Phase 1 passed':'P1 pass','Phase 2 passed':'P2 pass',
-'Trading Signals':'Signals','Total Signals':'Signals','Signals available':'Signals','Trading opportunities':'Signals','Opportunities':'Opps','Unused signals':'Unused','Qualification':'Qual.','Verification':'Verif.','Evaluation':'Eval','Funded Accounts':'Funded','Accounts Purchased':'Bought','Total Purchased':'Bought','Total Spending':'Spent','Net Profit':'Net','Net P&L':'Net','Return on Investment':'ROI %','Win Rate':'WR %','Maximum Drawdown':'Max DD',
-'Firm / account':'Firm / Acc.','Phase 1 passes':'P1 pass','Phase 2 passes':'P2 pass','Chance ≥1 payout':'Payout %','Expected payouts':'Exp. payout','Expected net':'Exp. net','Expected ROI':'Exp. ROI','Chance of goal':'Goal %','Payouts avg.':'Avg payout','Average accounts':'Avg acc.','Stage / milestone':'Milestone','Trading day':'Day','Outcome / event':'Event',
-'Allocation method':'Method','Allocation policy':'Policy','Median net':'Med. net','Median payout cash':'Med. payout','P10 / P90 net':'P10/P90','Chance of ≥50% loss':'Loss ≥50%','Closing equity':'Equity','Max drawdown':'Max DD','Net trading P/L':'Net P/L','Daily usage':'Daily use','Traded days':'Days','Profit / loss':'P/L','Stage progress':'Progress','Loss headroom':'Headroom',
-'Order / risk tier':'Risk tier','Stop loss (USD)':'SL $','Winning profit (USD)':'Win $','Accounts per shared signal':'Acc./signal','Average Trades':'Avg trades','Avg. trades all attempts':'Avg trades','Avg. trades successful':'Win trades','Avg. active days successful':'Win days','Risk exhausted':'Exhausted','JJ benchmark scenario':'JJ benchmark','FTMO planning scenario':'FTMO plan','Proper interpretation':'Meaning','Difference (B − A)':'Diff.'
-};
-const compact=value=>{
- const original=String(value||'').trim().replace(/\\s+/g,' ');
- if(names[original])return names[original];
- if(original.length<=12)return original;
- const abbreviated=original.replace(/\\bqualification\\b/gi,'Qual').replace(/\\bverification\\b/gi,'Verif').replace(/\\bevaluation\\b/gi,'Eval').replace(/\\ballocation\\b/gi,'Alloc').replace(/\\bexpected\\b/gi,'Exp').replace(/\\baverage\\b/gi,'Avg').replace(/\\bcumulative\\b/gi,'Cum').replace(/\\bmaximum\\b/gi,'Max').replace(/\\baccounts?\\b/gi,'Acc').replace(/\\btrading\\b/gi,'Trade').replace(/\\bnumber\\b/gi,'No');
- return abbreviated.length<=12?abbreviated:abbreviated.slice(0,11).replace(/[ .\\/-]+$/,'')+'…';
-};
-function fix(){
- for(const h of document.querySelectorAll('table thead th')){
-  const nodes=[...h.childNodes].filter(n=>n.nodeType===3&&n.textContent.trim());
-  if(nodes.length!==1)continue;const n=nodes[0],old=n.textContent.trim(),short=compact(old);
-  if(short!==old){if(!h.dataset.fullColumnTitle)h.dataset.fullColumnTitle=old;h.title=h.dataset.fullColumnTitle||old;n.textContent=n.textContent.replace(old,short);}
- }
- for(const p of document.querySelectorAll('#journeyContents button[aria-label="Filter columns"] + div')){
-  for(const label of p.querySelectorAll('label'))for(const n of label.childNodes){
-   if(n.nodeType!==3||!n.textContent.trim())continue;
-   const old=n.textContent.trim(),short=compact(old);
-   if(short!==old){if(!label.title)label.title=old;n.textContent=n.textContent.replace(old,short);}
-  }
- }
-}
-function init(){
- fix();let pending=false;
- new MutationObserver(()=>{if(pending)return;pending=true;queueMicrotask(()=>{pending=false;fix();});}).observe(document.body,{subtree:true,childList:true});
- const closeOutside=e=>{
-  for(const button of document.querySelectorAll('button[aria-label="Filter columns"]')){
-   const panel=button.nextElementSibling;
-   if(!panel||panel.hidden)continue;
-   const path=typeof e.composedPath==='function'?e.composedPath():[];
-   if(button.contains(e.target)||panel.contains(e.target)||path.includes(button)||path.includes(panel))continue;
-   panel.hidden=true;panel.style.display='none';
-   button.setAttribute('aria-expanded','false');
-  }
- };
- document.addEventListener('pointerdown',closeOutside,true);
- document.addEventListener('touchstart',closeOutside,{capture:true,passive:true});
- document.addEventListener('click',closeOutside,true);
- document.addEventListener('keydown',e=>{if(e.key==='Escape')for(const b of document.querySelectorAll('#journeyContents button[aria-label="Filter columns"]')){const p=b.nextElementSibling;if(p){p.hidden=true;b.setAttribute('aria-expanded','false');}}});
- window.StudioTableHeaderAudit={inventory:()=>[...document.querySelectorAll('table')].map((t,i)=>({table:i+1,headers:[...t.querySelectorAll('thead th')].map(h=>({shown:h.textContent.trim(),full:h.dataset.fullColumnTitle||h.textContent.trim()}))}))};
-}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-})();
-,'Purchased allocation ($)':'Buy 
-'Qualification trades':'Qual.','Verification active':'P2','Challenges purchased':'Bought','Challenge active':'P1','Funded active':'P3','Funded activated':'Funded','Payout pending':'P4','Executed trades':'Executed','Paid accounts':'Paid','Failed accounts':'Failed','Risk blocked':'Blocked','Account events':'Events','New accounts':'New','Phase 1 passed':'P1 pass','Phase 2 passed':'P2 pass','Target reached':'P3 ready','Goal hit':'P3 ready','Paid accounts':'P4 paid','Payouts paid':'P4 paid',
-'Trading Signals':'Signals','Total Signals':'Signals','Signals available':'Signals','Trading opportunities':'Signals','Opportunities':'Opps','Unused signals':'Unused','Qualification':'Qual.','Verification':'Verif.','Evaluation':'Eval','Funded Accounts':'Funded','Accounts Purchased':'Bought','Total Purchased':'Bought','Total Spending':'Spent','Net Profit':'Net','Net P&L':'Net','Return on Investment':'ROI %','Win Rate':'WR %','Maximum Drawdown':'Max DD',
-'Firm / account':'Firm / Acc.','Phase 1 passes':'P1 pass','Phase 2 passes':'P2 pass','Chance ≥1 payout':'Payout %','Expected payouts':'Exp. payout','Expected net':'Exp. net','Expected ROI':'Exp. ROI','Chance of goal':'Goal %','Payouts avg.':'Avg payout','Average accounts':'Avg acc.','Stage / milestone':'Milestone','Trading day':'Day','Outcome / event':'Event',
-'Allocation method':'Method','Allocation policy':'Policy','Median net':'Med. net','Median payout cash':'Med. payout','P10 / P90 net':'P10/P90','Chance of ≥50% loss':'Loss ≥50%','Closing equity':'Equity','Max drawdown':'Max DD','Net trading P/L':'Net P/L','Daily usage':'Daily use','Traded days':'Days','Profit / loss':'P/L','Stage progress':'Progress','Loss headroom':'Headroom',
-'Order / risk tier':'Risk tier','Stop loss (USD)':'SL $','Winning profit (USD)':'Win $','Accounts per shared signal':'Acc./signal','Average Trades':'Avg trades','Avg. trades all attempts':'Avg trades','Avg. trades successful':'Win trades','Avg. active days successful':'Win days','Risk exhausted':'Exhausted','JJ benchmark scenario':'JJ benchmark','FTMO planning scenario':'FTMO plan','Proper interpretation':'Meaning','Difference (B − A)':'Diff.'
-};
-Evaluation allocation ($)':'Eval $','Purchased allocation ($)':'Buy $','Funded allocation':'Fund $','Evaluation allocation':'Eval $','Purchased allocation':'Buy $',
-'Qualification trades':'Qual.','Verification active':'P2','Challenges purchased':'Bought','Challenge active':'P1','Funded active':'P3','Funded activated':'Funded','Payout pending':'P4','Executed trades':'Executed','Paid accounts':'Paid','Failed accounts':'Failed','Risk blocked':'Blocked','Account events':'Events','New accounts':'New','Phase 1 passed':'P1 pass','Phase 2 passed':'P2 pass',
-'Trading Signals':'Signals','Total Signals':'Signals','Signals available':'Signals','Trading opportunities':'Signals','Opportunities':'Opps','Unused signals':'Unused','Qualification':'Qual.','Verification':'Verif.','Evaluation':'Eval','Funded Accounts':'Funded','Accounts Purchased':'Bought','Total Purchased':'Bought','Total Spending':'Spent','Net Profit':'Net','Net P&L':'Net','Return on Investment':'ROI %','Win Rate':'WR %','Maximum Drawdown':'Max DD',
-'Firm / account':'Firm / Acc.','Phase 1 passes':'P1 pass','Phase 2 passes':'P2 pass','Chance ≥1 payout':'Payout %','Expected payouts':'Exp. payout','Expected net':'Exp. net','Expected ROI':'Exp. ROI','Chance of goal':'Goal %','Payouts avg.':'Avg payout','Average accounts':'Avg acc.','Stage / milestone':'Milestone','Trading day':'Day','Outcome / event':'Event',
-'Allocation method':'Method','Allocation policy':'Policy','Median net':'Med. net','Median payout cash':'Med. payout','P10 / P90 net':'P10/P90','Chance of ≥50% loss':'Loss ≥50%','Closing equity':'Equity','Max drawdown':'Max DD','Net trading P/L':'Net P/L','Daily usage':'Daily use','Traded days':'Days','Profit / loss':'P/L','Stage progress':'Progress','Loss headroom':'Headroom',
-'Order / risk tier':'Risk tier','Stop loss (USD)':'SL $','Winning profit (USD)':'Win $','Accounts per shared signal':'Acc./signal','Average Trades':'Avg trades','Avg. trades all attempts':'Avg trades','Avg. trades successful':'Win trades','Avg. active days successful':'Win days','Risk exhausted':'Exhausted','JJ benchmark scenario':'JJ benchmark','FTMO planning scenario':'FTMO plan','Proper interpretation':'Meaning','Difference (B − A)':'Diff.'
-};
-const compact=value=>{
- const original=String(value||'').trim().replace(/\\s+/g,' ');
- if(names[original])return names[original];
- if(original.length<=12)return original;
- const abbreviated=original.replace(/\\bqualification\\b/gi,'Qual').replace(/\\bverification\\b/gi,'Verif').replace(/\\bevaluation\\b/gi,'Eval').replace(/\\ballocation\\b/gi,'Alloc').replace(/\\bexpected\\b/gi,'Exp').replace(/\\baverage\\b/gi,'Avg').replace(/\\bcumulative\\b/gi,'Cum').replace(/\\bmaximum\\b/gi,'Max').replace(/\\baccounts?\\b/gi,'Acc').replace(/\\btrading\\b/gi,'Trade').replace(/\\bnumber\\b/gi,'No');
- return abbreviated.length<=12?abbreviated:abbreviated.slice(0,11).replace(/[ .\\/-]+$/,'')+'…';
-};
-function fix(){
- for(const h of document.querySelectorAll('table thead th')){
-  const nodes=[...h.childNodes].filter(n=>n.nodeType===3&&n.textContent.trim());
-  if(nodes.length!==1)continue;const n=nodes[0],old=n.textContent.trim(),short=compact(old);
-  if(short!==old){if(!h.dataset.fullColumnTitle)h.dataset.fullColumnTitle=old;h.title=h.dataset.fullColumnTitle||old;n.textContent=n.textContent.replace(old,short);}
- }
- for(const p of document.querySelectorAll('#journeyContents button[aria-label="Filter columns"] + div')){
-  for(const label of p.querySelectorAll('label'))for(const n of label.childNodes){
-   if(n.nodeType!==3||!n.textContent.trim())continue;
-   const old=n.textContent.trim(),short=compact(old);
-   if(short!==old){if(!label.title)label.title=old;n.textContent=n.textContent.replace(old,short);}
-  }
- }
-}
-function init(){
- fix();let pending=false;
- new MutationObserver(()=>{if(pending)return;pending=true;queueMicrotask(()=>{pending=false;fix();});}).observe(document.body,{subtree:true,childList:true});
- const closeOutside=e=>{
-  for(const button of document.querySelectorAll('button[aria-label="Filter columns"]')){
-   const panel=button.nextElementSibling;
-   if(!panel||panel.hidden)continue;
-   const path=typeof e.composedPath==='function'?e.composedPath():[];
-   if(button.contains(e.target)||panel.contains(e.target)||path.includes(button)||path.includes(panel))continue;
-   panel.hidden=true;panel.style.display='none';
-   button.setAttribute('aria-expanded','false');
-  }
- };
- document.addEventListener('pointerdown',closeOutside,true);
- document.addEventListener('touchstart',closeOutside,{capture:true,passive:true});
- document.addEventListener('click',closeOutside,true);
- document.addEventListener('keydown',e=>{if(e.key==='Escape')for(const b of document.querySelectorAll('#journeyContents button[aria-label="Filter columns"]')){const p=b.nextElementSibling;if(p){p.hidden=true;b.setAttribute('aria-expanded','false');}}});
- window.StudioTableHeaderAudit={inventory:()=>[...document.querySelectorAll('table')].map((t,i)=>({table:i+1,headers:[...t.querySelectorAll('thead th')].map(h=>({shown:h.textContent.trim(),full:h.dataset.fullColumnTitle||h.textContent.trim()}))}))};
-}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-})();
-,'Funded allocation':'Fund 
-'Qualification trades':'Qual.','Verification active':'P2','Challenges purchased':'Bought','Challenge active':'P1','Funded active':'P3','Funded activated':'Funded','Payout pending':'P4','Executed trades':'Executed','Paid accounts':'Paid','Failed accounts':'Failed','Risk blocked':'Blocked','Account events':'Events','New accounts':'New','Phase 1 passed':'P1 pass','Phase 2 passed':'P2 pass','Target reached':'P3 ready','Goal hit':'P3 ready','Paid accounts':'P4 paid','Payouts paid':'P4 paid',
-'Trading Signals':'Signals','Total Signals':'Signals','Signals available':'Signals','Trading opportunities':'Signals','Opportunities':'Opps','Unused signals':'Unused','Qualification':'Qual.','Verification':'Verif.','Evaluation':'Eval','Funded Accounts':'Funded','Accounts Purchased':'Bought','Total Purchased':'Bought','Total Spending':'Spent','Net Profit':'Net','Net P&L':'Net','Return on Investment':'ROI %','Win Rate':'WR %','Maximum Drawdown':'Max DD',
-'Firm / account':'Firm / Acc.','Phase 1 passes':'P1 pass','Phase 2 passes':'P2 pass','Chance ≥1 payout':'Payout %','Expected payouts':'Exp. payout','Expected net':'Exp. net','Expected ROI':'Exp. ROI','Chance of goal':'Goal %','Payouts avg.':'Avg payout','Average accounts':'Avg acc.','Stage / milestone':'Milestone','Trading day':'Day','Outcome / event':'Event',
-'Allocation method':'Method','Allocation policy':'Policy','Median net':'Med. net','Median payout cash':'Med. payout','P10 / P90 net':'P10/P90','Chance of ≥50% loss':'Loss ≥50%','Closing equity':'Equity','Max drawdown':'Max DD','Net trading P/L':'Net P/L','Daily usage':'Daily use','Traded days':'Days','Profit / loss':'P/L','Stage progress':'Progress','Loss headroom':'Headroom',
-'Order / risk tier':'Risk tier','Stop loss (USD)':'SL $','Winning profit (USD)':'Win $','Accounts per shared signal':'Acc./signal','Average Trades':'Avg trades','Avg. trades all attempts':'Avg trades','Avg. trades successful':'Win trades','Avg. active days successful':'Win days','Risk exhausted':'Exhausted','JJ benchmark scenario':'JJ benchmark','FTMO planning scenario':'FTMO plan','Proper interpretation':'Meaning','Difference (B − A)':'Diff.'
-};
-Evaluation allocation ($)':'Eval $','Purchased allocation ($)':'Buy $','Funded allocation':'Fund $','Evaluation allocation':'Eval $','Purchased allocation':'Buy $',
-'Qualification trades':'Qual.','Verification active':'P2','Challenges purchased':'Bought','Challenge active':'P1','Funded active':'P3','Funded activated':'Funded','Payout pending':'P4','Executed trades':'Executed','Paid accounts':'Paid','Failed accounts':'Failed','Risk blocked':'Blocked','Account events':'Events','New accounts':'New','Phase 1 passed':'P1 pass','Phase 2 passed':'P2 pass',
-'Trading Signals':'Signals','Total Signals':'Signals','Signals available':'Signals','Trading opportunities':'Signals','Opportunities':'Opps','Unused signals':'Unused','Qualification':'Qual.','Verification':'Verif.','Evaluation':'Eval','Funded Accounts':'Funded','Accounts Purchased':'Bought','Total Purchased':'Bought','Total Spending':'Spent','Net Profit':'Net','Net P&L':'Net','Return on Investment':'ROI %','Win Rate':'WR %','Maximum Drawdown':'Max DD',
-'Firm / account':'Firm / Acc.','Phase 1 passes':'P1 pass','Phase 2 passes':'P2 pass','Chance ≥1 payout':'Payout %','Expected payouts':'Exp. payout','Expected net':'Exp. net','Expected ROI':'Exp. ROI','Chance of goal':'Goal %','Payouts avg.':'Avg payout','Average accounts':'Avg acc.','Stage / milestone':'Milestone','Trading day':'Day','Outcome / event':'Event',
-'Allocation method':'Method','Allocation policy':'Policy','Median net':'Med. net','Median payout cash':'Med. payout','P10 / P90 net':'P10/P90','Chance of ≥50% loss':'Loss ≥50%','Closing equity':'Equity','Max drawdown':'Max DD','Net trading P/L':'Net P/L','Daily usage':'Daily use','Traded days':'Days','Profit / loss':'P/L','Stage progress':'Progress','Loss headroom':'Headroom',
-'Order / risk tier':'Risk tier','Stop loss (USD)':'SL $','Winning profit (USD)':'Win $','Accounts per shared signal':'Acc./signal','Average Trades':'Avg trades','Avg. trades all attempts':'Avg trades','Avg. trades successful':'Win trades','Avg. active days successful':'Win days','Risk exhausted':'Exhausted','JJ benchmark scenario':'JJ benchmark','FTMO planning scenario':'FTMO plan','Proper interpretation':'Meaning','Difference (B − A)':'Diff.'
-};
-const compact=value=>{
- const original=String(value||'').trim().replace(/\\s+/g,' ');
- if(names[original])return names[original];
- if(original.length<=12)return original;
- const abbreviated=original.replace(/\\bqualification\\b/gi,'Qual').replace(/\\bverification\\b/gi,'Verif').replace(/\\bevaluation\\b/gi,'Eval').replace(/\\ballocation\\b/gi,'Alloc').replace(/\\bexpected\\b/gi,'Exp').replace(/\\baverage\\b/gi,'Avg').replace(/\\bcumulative\\b/gi,'Cum').replace(/\\bmaximum\\b/gi,'Max').replace(/\\baccounts?\\b/gi,'Acc').replace(/\\btrading\\b/gi,'Trade').replace(/\\bnumber\\b/gi,'No');
- return abbreviated.length<=12?abbreviated:abbreviated.slice(0,11).replace(/[ .\\/-]+$/,'')+'…';
-};
-function fix(){
- for(const h of document.querySelectorAll('table thead th')){
-  const nodes=[...h.childNodes].filter(n=>n.nodeType===3&&n.textContent.trim());
-  if(nodes.length!==1)continue;const n=nodes[0],old=n.textContent.trim(),short=compact(old);
-  if(short!==old){if(!h.dataset.fullColumnTitle)h.dataset.fullColumnTitle=old;h.title=h.dataset.fullColumnTitle||old;n.textContent=n.textContent.replace(old,short);}
- }
- for(const p of document.querySelectorAll('#journeyContents button[aria-label="Filter columns"] + div')){
-  for(const label of p.querySelectorAll('label'))for(const n of label.childNodes){
-   if(n.nodeType!==3||!n.textContent.trim())continue;
-   const old=n.textContent.trim(),short=compact(old);
-   if(short!==old){if(!label.title)label.title=old;n.textContent=n.textContent.replace(old,short);}
-  }
- }
-}
-function init(){
- fix();let pending=false;
- new MutationObserver(()=>{if(pending)return;pending=true;queueMicrotask(()=>{pending=false;fix();});}).observe(document.body,{subtree:true,childList:true});
- const closeOutside=e=>{
-  for(const button of document.querySelectorAll('button[aria-label="Filter columns"]')){
-   const panel=button.nextElementSibling;
-   if(!panel||panel.hidden)continue;
-   const path=typeof e.composedPath==='function'?e.composedPath():[];
-   if(button.contains(e.target)||panel.contains(e.target)||path.includes(button)||path.includes(panel))continue;
-   panel.hidden=true;panel.style.display='none';
-   button.setAttribute('aria-expanded','false');
-  }
- };
- document.addEventListener('pointerdown',closeOutside,true);
- document.addEventListener('touchstart',closeOutside,{capture:true,passive:true});
- document.addEventListener('click',closeOutside,true);
- document.addEventListener('keydown',e=>{if(e.key==='Escape')for(const b of document.querySelectorAll('#journeyContents button[aria-label="Filter columns"]')){const p=b.nextElementSibling;if(p){p.hidden=true;b.setAttribute('aria-expanded','false');}}});
- window.StudioTableHeaderAudit={inventory:()=>[...document.querySelectorAll('table')].map((t,i)=>({table:i+1,headers:[...t.querySelectorAll('thead th')].map(h=>({shown:h.textContent.trim(),full:h.dataset.fullColumnTitle||h.textContent.trim()}))}))};
-}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-})();
-,'Evaluation allocation':'Eval 
-'Qualification trades':'Qual.','Verification active':'P2','Challenges purchased':'Bought','Challenge active':'P1','Funded active':'P3','Funded activated':'Funded','Payout pending':'P4','Executed trades':'Executed','Paid accounts':'Paid','Failed accounts':'Failed','Risk blocked':'Blocked','Account events':'Events','New accounts':'New','Phase 1 passed':'P1 pass','Phase 2 passed':'P2 pass','Target reached':'P3 ready','Goal hit':'P3 ready','Paid accounts':'P4 paid','Payouts paid':'P4 paid',
-'Trading Signals':'Signals','Total Signals':'Signals','Signals available':'Signals','Trading opportunities':'Signals','Opportunities':'Opps','Unused signals':'Unused','Qualification':'Qual.','Verification':'Verif.','Evaluation':'Eval','Funded Accounts':'Funded','Accounts Purchased':'Bought','Total Purchased':'Bought','Total Spending':'Spent','Net Profit':'Net','Net P&L':'Net','Return on Investment':'ROI %','Win Rate':'WR %','Maximum Drawdown':'Max DD',
-'Firm / account':'Firm / Acc.','Phase 1 passes':'P1 pass','Phase 2 passes':'P2 pass','Chance ≥1 payout':'Payout %','Expected payouts':'Exp. payout','Expected net':'Exp. net','Expected ROI':'Exp. ROI','Chance of goal':'Goal %','Payouts avg.':'Avg payout','Average accounts':'Avg acc.','Stage / milestone':'Milestone','Trading day':'Day','Outcome / event':'Event',
-'Allocation method':'Method','Allocation policy':'Policy','Median net':'Med. net','Median payout cash':'Med. payout','P10 / P90 net':'P10/P90','Chance of ≥50% loss':'Loss ≥50%','Closing equity':'Equity','Max drawdown':'Max DD','Net trading P/L':'Net P/L','Daily usage':'Daily use','Traded days':'Days','Profit / loss':'P/L','Stage progress':'Progress','Loss headroom':'Headroom',
-'Order / risk tier':'Risk tier','Stop loss (USD)':'SL $','Winning profit (USD)':'Win $','Accounts per shared signal':'Acc./signal','Average Trades':'Avg trades','Avg. trades all attempts':'Avg trades','Avg. trades successful':'Win trades','Avg. active days successful':'Win days','Risk exhausted':'Exhausted','JJ benchmark scenario':'JJ benchmark','FTMO planning scenario':'FTMO plan','Proper interpretation':'Meaning','Difference (B − A)':'Diff.'
-};
-Evaluation allocation ($)':'Eval $','Purchased allocation ($)':'Buy $','Funded allocation':'Fund $','Evaluation allocation':'Eval $','Purchased allocation':'Buy $',
-'Qualification trades':'Qual.','Verification active':'P2','Challenges purchased':'Bought','Challenge active':'P1','Funded active':'P3','Funded activated':'Funded','Payout pending':'P4','Executed trades':'Executed','Paid accounts':'Paid','Failed accounts':'Failed','Risk blocked':'Blocked','Account events':'Events','New accounts':'New','Phase 1 passed':'P1 pass','Phase 2 passed':'P2 pass',
-'Trading Signals':'Signals','Total Signals':'Signals','Signals available':'Signals','Trading opportunities':'Signals','Opportunities':'Opps','Unused signals':'Unused','Qualification':'Qual.','Verification':'Verif.','Evaluation':'Eval','Funded Accounts':'Funded','Accounts Purchased':'Bought','Total Purchased':'Bought','Total Spending':'Spent','Net Profit':'Net','Net P&L':'Net','Return on Investment':'ROI %','Win Rate':'WR %','Maximum Drawdown':'Max DD',
-'Firm / account':'Firm / Acc.','Phase 1 passes':'P1 pass','Phase 2 passes':'P2 pass','Chance ≥1 payout':'Payout %','Expected payouts':'Exp. payout','Expected net':'Exp. net','Expected ROI':'Exp. ROI','Chance of goal':'Goal %','Payouts avg.':'Avg payout','Average accounts':'Avg acc.','Stage / milestone':'Milestone','Trading day':'Day','Outcome / event':'Event',
-'Allocation method':'Method','Allocation policy':'Policy','Median net':'Med. net','Median payout cash':'Med. payout','P10 / P90 net':'P10/P90','Chance of ≥50% loss':'Loss ≥50%','Closing equity':'Equity','Max drawdown':'Max DD','Net trading P/L':'Net P/L','Daily usage':'Daily use','Traded days':'Days','Profit / loss':'P/L','Stage progress':'Progress','Loss headroom':'Headroom',
-'Order / risk tier':'Risk tier','Stop loss (USD)':'SL $','Winning profit (USD)':'Win $','Accounts per shared signal':'Acc./signal','Average Trades':'Avg trades','Avg. trades all attempts':'Avg trades','Avg. trades successful':'Win trades','Avg. active days successful':'Win days','Risk exhausted':'Exhausted','JJ benchmark scenario':'JJ benchmark','FTMO planning scenario':'FTMO plan','Proper interpretation':'Meaning','Difference (B − A)':'Diff.'
-};
-const compact=value=>{
- const original=String(value||'').trim().replace(/\\s+/g,' ');
- if(names[original])return names[original];
- if(original.length<=12)return original;
- const abbreviated=original.replace(/\\bqualification\\b/gi,'Qual').replace(/\\bverification\\b/gi,'Verif').replace(/\\bevaluation\\b/gi,'Eval').replace(/\\ballocation\\b/gi,'Alloc').replace(/\\bexpected\\b/gi,'Exp').replace(/\\baverage\\b/gi,'Avg').replace(/\\bcumulative\\b/gi,'Cum').replace(/\\bmaximum\\b/gi,'Max').replace(/\\baccounts?\\b/gi,'Acc').replace(/\\btrading\\b/gi,'Trade').replace(/\\bnumber\\b/gi,'No');
- return abbreviated.length<=12?abbreviated:abbreviated.slice(0,11).replace(/[ .\\/-]+$/,'')+'…';
-};
-function fix(){
- for(const h of document.querySelectorAll('table thead th')){
-  const nodes=[...h.childNodes].filter(n=>n.nodeType===3&&n.textContent.trim());
-  if(nodes.length!==1)continue;const n=nodes[0],old=n.textContent.trim(),short=compact(old);
-  if(short!==old){if(!h.dataset.fullColumnTitle)h.dataset.fullColumnTitle=old;h.title=h.dataset.fullColumnTitle||old;n.textContent=n.textContent.replace(old,short);}
- }
- for(const p of document.querySelectorAll('#journeyContents button[aria-label="Filter columns"] + div')){
-  for(const label of p.querySelectorAll('label'))for(const n of label.childNodes){
-   if(n.nodeType!==3||!n.textContent.trim())continue;
-   const old=n.textContent.trim(),short=compact(old);
-   if(short!==old){if(!label.title)label.title=old;n.textContent=n.textContent.replace(old,short);}
-  }
- }
-}
-function init(){
- fix();let pending=false;
- new MutationObserver(()=>{if(pending)return;pending=true;queueMicrotask(()=>{pending=false;fix();});}).observe(document.body,{subtree:true,childList:true});
- const closeOutside=e=>{
-  for(const button of document.querySelectorAll('button[aria-label="Filter columns"]')){
-   const panel=button.nextElementSibling;
-   if(!panel||panel.hidden)continue;
-   const path=typeof e.composedPath==='function'?e.composedPath():[];
-   if(button.contains(e.target)||panel.contains(e.target)||path.includes(button)||path.includes(panel))continue;
-   panel.hidden=true;panel.style.display='none';
-   button.setAttribute('aria-expanded','false');
-  }
- };
- document.addEventListener('pointerdown',closeOutside,true);
- document.addEventListener('touchstart',closeOutside,{capture:true,passive:true});
- document.addEventListener('click',closeOutside,true);
- document.addEventListener('keydown',e=>{if(e.key==='Escape')for(const b of document.querySelectorAll('#journeyContents button[aria-label="Filter columns"]')){const p=b.nextElementSibling;if(p){p.hidden=true;b.setAttribute('aria-expanded','false');}}});
- window.StudioTableHeaderAudit={inventory:()=>[...document.querySelectorAll('table')].map((t,i)=>({table:i+1,headers:[...t.querySelectorAll('thead th')].map(h=>({shown:h.textContent.trim(),full:h.dataset.fullColumnTitle||h.textContent.trim()}))}))};
-}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-})();
-,'Purchased allocation':'Buy 
-'Qualification trades':'Qual.','Verification active':'P2','Challenges purchased':'Bought','Challenge active':'P1','Funded active':'P3','Funded activated':'Funded','Payout pending':'P4','Executed trades':'Executed','Paid accounts':'Paid','Failed accounts':'Failed','Risk blocked':'Blocked','Account events':'Events','New accounts':'New','Phase 1 passed':'P1 pass','Phase 2 passed':'P2 pass','Target reached':'P3 ready','Goal hit':'P3 ready','Paid accounts':'P4 paid','Payouts paid':'P4 paid',
-'Trading Signals':'Signals','Total Signals':'Signals','Signals available':'Signals','Trading opportunities':'Signals','Opportunities':'Opps','Unused signals':'Unused','Qualification':'Qual.','Verification':'Verif.','Evaluation':'Eval','Funded Accounts':'Funded','Accounts Purchased':'Bought','Total Purchased':'Bought','Total Spending':'Spent','Net Profit':'Net','Net P&L':'Net','Return on Investment':'ROI %','Win Rate':'WR %','Maximum Drawdown':'Max DD',
-'Firm / account':'Firm / Acc.','Phase 1 passes':'P1 pass','Phase 2 passes':'P2 pass','Chance ≥1 payout':'Payout %','Expected payouts':'Exp. payout','Expected net':'Exp. net','Expected ROI':'Exp. ROI','Chance of goal':'Goal %','Payouts avg.':'Avg payout','Average accounts':'Avg acc.','Stage / milestone':'Milestone','Trading day':'Day','Outcome / event':'Event',
-'Allocation method':'Method','Allocation policy':'Policy','Median net':'Med. net','Median payout cash':'Med. payout','P10 / P90 net':'P10/P90','Chance of ≥50% loss':'Loss ≥50%','Closing equity':'Equity','Max drawdown':'Max DD','Net trading P/L':'Net P/L','Daily usage':'Daily use','Traded days':'Days','Profit / loss':'P/L','Stage progress':'Progress','Loss headroom':'Headroom',
-'Order / risk tier':'Risk tier','Stop loss (USD)':'SL $','Winning profit (USD)':'Win $','Accounts per shared signal':'Acc./signal','Average Trades':'Avg trades','Avg. trades all attempts':'Avg trades','Avg. trades successful':'Win trades','Avg. active days successful':'Win days','Risk exhausted':'Exhausted','JJ benchmark scenario':'JJ benchmark','FTMO planning scenario':'FTMO plan','Proper interpretation':'Meaning','Difference (B − A)':'Diff.'
-};
-Evaluation allocation ($)':'Eval $','Purchased allocation ($)':'Buy $','Funded allocation':'Fund $','Evaluation allocation':'Eval $','Purchased allocation':'Buy $',
-'Qualification trades':'Qual.','Verification active':'P2','Challenges purchased':'Bought','Challenge active':'P1','Funded active':'P3','Funded activated':'Funded','Payout pending':'P4','Executed trades':'Executed','Paid accounts':'Paid','Failed accounts':'Failed','Risk blocked':'Blocked','Account events':'Events','New accounts':'New','Phase 1 passed':'P1 pass','Phase 2 passed':'P2 pass',
-'Trading Signals':'Signals','Total Signals':'Signals','Signals available':'Signals','Trading opportunities':'Signals','Opportunities':'Opps','Unused signals':'Unused','Qualification':'Qual.','Verification':'Verif.','Evaluation':'Eval','Funded Accounts':'Funded','Accounts Purchased':'Bought','Total Purchased':'Bought','Total Spending':'Spent','Net Profit':'Net','Net P&L':'Net','Return on Investment':'ROI %','Win Rate':'WR %','Maximum Drawdown':'Max DD',
-'Firm / account':'Firm / Acc.','Phase 1 passes':'P1 pass','Phase 2 passes':'P2 pass','Chance ≥1 payout':'Payout %','Expected payouts':'Exp. payout','Expected net':'Exp. net','Expected ROI':'Exp. ROI','Chance of goal':'Goal %','Payouts avg.':'Avg payout','Average accounts':'Avg acc.','Stage / milestone':'Milestone','Trading day':'Day','Outcome / event':'Event',
-'Allocation method':'Method','Allocation policy':'Policy','Median net':'Med. net','Median payout cash':'Med. payout','P10 / P90 net':'P10/P90','Chance of ≥50% loss':'Loss ≥50%','Closing equity':'Equity','Max drawdown':'Max DD','Net trading P/L':'Net P/L','Daily usage':'Daily use','Traded days':'Days','Profit / loss':'P/L','Stage progress':'Progress','Loss headroom':'Headroom',
-'Order / risk tier':'Risk tier','Stop loss (USD)':'SL $','Winning profit (USD)':'Win $','Accounts per shared signal':'Acc./signal','Average Trades':'Avg trades','Avg. trades all attempts':'Avg trades','Avg. trades successful':'Win trades','Avg. active days successful':'Win days','Risk exhausted':'Exhausted','JJ benchmark scenario':'JJ benchmark','FTMO planning scenario':'FTMO plan','Proper interpretation':'Meaning','Difference (B − A)':'Diff.'
-};
-const compact=value=>{
- const original=String(value||'').trim().replace(/\\s+/g,' ');
- if(names[original])return names[original];
- if(original.length<=12)return original;
- const abbreviated=original.replace(/\\bqualification\\b/gi,'Qual').replace(/\\bverification\\b/gi,'Verif').replace(/\\bevaluation\\b/gi,'Eval').replace(/\\ballocation\\b/gi,'Alloc').replace(/\\bexpected\\b/gi,'Exp').replace(/\\baverage\\b/gi,'Avg').replace(/\\bcumulative\\b/gi,'Cum').replace(/\\bmaximum\\b/gi,'Max').replace(/\\baccounts?\\b/gi,'Acc').replace(/\\btrading\\b/gi,'Trade').replace(/\\bnumber\\b/gi,'No');
- return abbreviated.length<=12?abbreviated:abbreviated.slice(0,11).replace(/[ .\\/-]+$/,'')+'…';
-};
-function fix(){
- for(const h of document.querySelectorAll('table thead th')){
-  const nodes=[...h.childNodes].filter(n=>n.nodeType===3&&n.textContent.trim());
-  if(nodes.length!==1)continue;const n=nodes[0],old=n.textContent.trim(),short=compact(old);
-  if(short!==old){if(!h.dataset.fullColumnTitle)h.dataset.fullColumnTitle=old;h.title=h.dataset.fullColumnTitle||old;n.textContent=n.textContent.replace(old,short);}
- }
- for(const p of document.querySelectorAll('#journeyContents button[aria-label="Filter columns"] + div')){
-  for(const label of p.querySelectorAll('label'))for(const n of label.childNodes){
-   if(n.nodeType!==3||!n.textContent.trim())continue;
-   const old=n.textContent.trim(),short=compact(old);
-   if(short!==old){if(!label.title)label.title=old;n.textContent=n.textContent.replace(old,short);}
-  }
- }
-}
-function init(){
- fix();let pending=false;
- new MutationObserver(()=>{if(pending)return;pending=true;queueMicrotask(()=>{pending=false;fix();});}).observe(document.body,{subtree:true,childList:true});
- const closeOutside=e=>{
-  for(const button of document.querySelectorAll('button[aria-label="Filter columns"]')){
-   const panel=button.nextElementSibling;
-   if(!panel||panel.hidden)continue;
-   const path=typeof e.composedPath==='function'?e.composedPath():[];
-   if(button.contains(e.target)||panel.contains(e.target)||path.includes(button)||path.includes(panel))continue;
-   panel.hidden=true;panel.style.display='none';
-   button.setAttribute('aria-expanded','false');
-  }
- };
- document.addEventListener('pointerdown',closeOutside,true);
- document.addEventListener('touchstart',closeOutside,{capture:true,passive:true});
- document.addEventListener('click',closeOutside,true);
- document.addEventListener('keydown',e=>{if(e.key==='Escape')for(const b of document.querySelectorAll('#journeyContents button[aria-label="Filter columns"]')){const p=b.nextElementSibling;if(p){p.hidden=true;b.setAttribute('aria-expanded','false');}}});
- window.StudioTableHeaderAudit={inventory:()=>[...document.querySelectorAll('table')].map((t,i)=>({table:i+1,headers:[...t.querySelectorAll('thead th')].map(h=>({shown:h.textContent.trim(),full:h.dataset.fullColumnTitle||h.textContent.trim()}))}))};
-}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-})();
-,
-'Qualification trades':'Qual.','Verification active':'P2','Challenges purchased':'Bought','Challenge active':'P1','Funded active':'P3','Funded activated':'Funded','Payout pending':'P4','Executed trades':'Executed','Paid accounts':'Paid','Failed accounts':'Failed','Risk blocked':'Blocked','Account events':'Events','New accounts':'New','Phase 1 passed':'P1 pass','Phase 2 passed':'P2 pass','Target reached':'P3 ready','Goal hit':'P3 ready','Paid accounts':'P4 paid','Payouts paid':'P4 paid',
-'Trading Signals':'Signals','Total Signals':'Signals','Signals available':'Signals','Trading opportunities':'Signals','Opportunities':'Opps','Unused signals':'Unused','Qualification':'Qual.','Verification':'Verif.','Evaluation':'Eval','Funded Accounts':'Funded','Accounts Purchased':'Bought','Total Purchased':'Bought','Total Spending':'Spent','Net Profit':'Net','Net P&L':'Net','Return on Investment':'ROI %','Win Rate':'WR %','Maximum Drawdown':'Max DD',
-'Firm / account':'Firm / Acc.','Phase 1 passes':'P1 pass','Phase 2 passes':'P2 pass','Chance ≥1 payout':'Payout %','Expected payouts':'Exp. payout','Expected net':'Exp. net','Expected ROI':'Exp. ROI','Chance of goal':'Goal %','Payouts avg.':'Avg payout','Average accounts':'Avg acc.','Stage / milestone':'Milestone','Trading day':'Day','Outcome / event':'Event',
-'Allocation method':'Method','Allocation policy':'Policy','Median net':'Med. net','Median payout cash':'Med. payout','P10 / P90 net':'P10/P90','Chance of ≥50% loss':'Loss ≥50%','Closing equity':'Equity','Max drawdown':'Max DD','Net trading P/L':'Net P/L','Daily usage':'Daily use','Traded days':'Days','Profit / loss':'P/L','Stage progress':'Progress','Loss headroom':'Headroom',
-'Order / risk tier':'Risk tier','Stop loss (USD)':'SL $','Winning profit (USD)':'Win $','Accounts per shared signal':'Acc./signal','Average Trades':'Avg trades','Avg. trades all attempts':'Avg trades','Avg. trades successful':'Win trades','Avg. active days successful':'Win days','Risk exhausted':'Exhausted','JJ benchmark scenario':'JJ benchmark','FTMO planning scenario':'FTMO plan','Proper interpretation':'Meaning','Difference (B − A)':'Diff.'
-};
-Evaluation allocation ($)':'Eval $','Purchased allocation ($)':'Buy $','Funded allocation':'Fund $','Evaluation allocation':'Eval $','Purchased allocation':'Buy $',
-'Qualification trades':'Qual.','Verification active':'P2','Challenges purchased':'Bought','Challenge active':'P1','Funded active':'P3','Funded activated':'Funded','Payout pending':'P4','Executed trades':'Executed','Paid accounts':'Paid','Failed accounts':'Failed','Risk blocked':'Blocked','Account events':'Events','New accounts':'New','Phase 1 passed':'P1 pass','Phase 2 passed':'P2 pass',
-'Trading Signals':'Signals','Total Signals':'Signals','Signals available':'Signals','Trading opportunities':'Signals','Opportunities':'Opps','Unused signals':'Unused','Qualification':'Qual.','Verification':'Verif.','Evaluation':'Eval','Funded Accounts':'Funded','Accounts Purchased':'Bought','Total Purchased':'Bought','Total Spending':'Spent','Net Profit':'Net','Net P&L':'Net','Return on Investment':'ROI %','Win Rate':'WR %','Maximum Drawdown':'Max DD',
-'Firm / account':'Firm / Acc.','Phase 1 passes':'P1 pass','Phase 2 passes':'P2 pass','Chance ≥1 payout':'Payout %','Expected payouts':'Exp. payout','Expected net':'Exp. net','Expected ROI':'Exp. ROI','Chance of goal':'Goal %','Payouts avg.':'Avg payout','Average accounts':'Avg acc.','Stage / milestone':'Milestone','Trading day':'Day','Outcome / event':'Event',
-'Allocation method':'Method','Allocation policy':'Policy','Median net':'Med. net','Median payout cash':'Med. payout','P10 / P90 net':'P10/P90','Chance of ≥50% loss':'Loss ≥50%','Closing equity':'Equity','Max drawdown':'Max DD','Net trading P/L':'Net P/L','Daily usage':'Daily use','Traded days':'Days','Profit / loss':'P/L','Stage progress':'Progress','Loss headroom':'Headroom',
-'Order / risk tier':'Risk tier','Stop loss (USD)':'SL $','Winning profit (USD)':'Win $','Accounts per shared signal':'Acc./signal','Average Trades':'Avg trades','Avg. trades all attempts':'Avg trades','Avg. trades successful':'Win trades','Avg. active days successful':'Win days','Risk exhausted':'Exhausted','JJ benchmark scenario':'JJ benchmark','FTMO planning scenario':'FTMO plan','Proper interpretation':'Meaning','Difference (B − A)':'Diff.'
-};
-const compact=value=>{
- const original=String(value||'').trim().replace(/\\s+/g,' ');
- if(names[original])return names[original];
- if(original.length<=12)return original;
- const abbreviated=original.replace(/\\bqualification\\b/gi,'Qual').replace(/\\bverification\\b/gi,'Verif').replace(/\\bevaluation\\b/gi,'Eval').replace(/\\ballocation\\b/gi,'Alloc').replace(/\\bexpected\\b/gi,'Exp').replace(/\\baverage\\b/gi,'Avg').replace(/\\bcumulative\\b/gi,'Cum').replace(/\\bmaximum\\b/gi,'Max').replace(/\\baccounts?\\b/gi,'Acc').replace(/\\btrading\\b/gi,'Trade').replace(/\\bnumber\\b/gi,'No');
- return abbreviated.length<=12?abbreviated:abbreviated.slice(0,11).replace(/[ .\\/-]+$/,'')+'…';
-};
-function fix(){
- for(const h of document.querySelectorAll('table thead th')){
-  const nodes=[...h.childNodes].filter(n=>n.nodeType===3&&n.textContent.trim());
-  if(nodes.length!==1)continue;const n=nodes[0],old=n.textContent.trim(),short=compact(old);
-  if(short!==old){if(!h.dataset.fullColumnTitle)h.dataset.fullColumnTitle=old;h.title=h.dataset.fullColumnTitle||old;n.textContent=n.textContent.replace(old,short);}
- }
- for(const p of document.querySelectorAll('#journeyContents button[aria-label="Filter columns"] + div')){
-  for(const label of p.querySelectorAll('label'))for(const n of label.childNodes){
-   if(n.nodeType!==3||!n.textContent.trim())continue;
-   const old=n.textContent.trim(),short=compact(old);
-   if(short!==old){if(!label.title)label.title=old;n.textContent=n.textContent.replace(old,short);}
-  }
- }
-}
-function init(){
- fix();let pending=false;
- new MutationObserver(()=>{if(pending)return;pending=true;queueMicrotask(()=>{pending=false;fix();});}).observe(document.body,{subtree:true,childList:true});
- const closeOutside=e=>{
-  for(const button of document.querySelectorAll('button[aria-label="Filter columns"]')){
-   const panel=button.nextElementSibling;
-   if(!panel||panel.hidden)continue;
-   const path=typeof e.composedPath==='function'?e.composedPath():[];
-   if(button.contains(e.target)||panel.contains(e.target)||path.includes(button)||path.includes(panel))continue;
-   panel.hidden=true;panel.style.display='none';
-   button.setAttribute('aria-expanded','false');
-  }
- };
- document.addEventListener('pointerdown',closeOutside,true);
- document.addEventListener('touchstart',closeOutside,{capture:true,passive:true});
- document.addEventListener('click',closeOutside,true);
- document.addEventListener('keydown',e=>{if(e.key==='Escape')for(const b of document.querySelectorAll('#journeyContents button[aria-label="Filter columns"]')){const p=b.nextElementSibling;if(p){p.hidden=true;b.setAttribute('aria-expanded','false');}}});
- window.StudioTableHeaderAudit={inventory:()=>[...document.querySelectorAll('table')].map((t,i)=>({table:i+1,headers:[...t.querySelectorAll('thead th')].map(h=>({shown:h.textContent.trim(),full:h.dataset.fullColumnTitle||h.textContent.trim()}))}))};
+ document.addEventListener('keydown',e=>{if(e.key==='Escape')for(const b of document.querySelectorAll('button[aria-label="Filter columns"]')){const p=b.nextElementSibling;if(p){p.hidden=true;p.style.display='none';b.setAttribute('aria-expanded','false');}}});
+ window.StudioTableHeaderAudit={inventory:()=>Array.from(document.querySelectorAll('table')).map((t,i)=>({table:i+1,headers:Array.from(t.querySelectorAll('thead th')).map(h=>({shown:h.textContent.trim(),full:h.dataset.fullColumnTitle||h.title||h.textContent.trim()}))}))};
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
