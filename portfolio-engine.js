@@ -318,8 +318,8 @@ function nextStage(p,ac,day,record){
 }
 function firstPayout(p,ac){
  const profit=Math.max(0,ac.stagePnl);
- const payout=p.id==='topstep'?Math.min(profit*.5,5000):profit*p.split;
- return money(payout + (p.id==='topstep'?0:p.fee*p.refund));
+ const payout=p.id==='topstep'?Math.min(profit*p.split,5000):profit*p.split;
+ return money(payout + (p.id==='topstep'||ac.payoutCycles>0?0:p.fee*p.refund));
 }
 function runAccountDay(p,ac,day,rand,config,record){
  if(ac.status==='payout-pending'){
@@ -336,8 +336,8 @@ function runAccountDay(p,ac,day,rand,config,record){
  ac.stageDay++;
  const out={stagePass:false,paid:false,activation:false};
  if(stage==='funded')ac.fundedDays++;
- const eligiblePayout=()=>ac.fundedFirstTradeDay!==null &&
-  (p.id==='topstep'?true:day-ac.fundedFirstTradeDay+1>=p.fundedWaitDays);
+ const eligiblePayout=()=>ac.fundedTargetDay!==null &&
+  day-ac.fundedTargetDay>=p.fundedWaitDays;
  const requestPayout=()=>{
   ac.firstPaid=firstPayout(p,ac);
   ac.payoutRequestedDay=day;ac.everPayoutRequested=true;
