@@ -596,6 +596,7 @@ function oneTrial(p,config,rng,record=false){
     risk:blocked.risk,slot:blocked.slot,headroom:blocked.available,
     label:'Risk tier too large for remaining drawdown: account not breached'});
   }
+  let purchaseConstraint='No eligible account';
   if(dynamic){
    // Existing eligible purchased accounts get priority; only buy the gap.
    const eligible=accounts.filter(ac=>canAcceptSignal(p,ac)).length;
@@ -607,6 +608,11 @@ function oneTrial(p,config,rng,record=false){
    const dailyLimit=Math.min(needed,room,
     config.capacityMode==='manual'?config.maxBuysPerDay:dailyOpportunities,
     config.maxLifetime-accounts.length);
+   if(needed>0){
+    if(room<=0)purchaseConstraint='Active account capacity reached';
+    else if(config.maxLifetime-accounts.length<=0)purchaseConstraint='Total account purchase cap reached';
+    else if(dailyLimit<needed)purchaseConstraint='Daily purchase limit or account cap';
+   }
    for(let i=0;i<dailyLimit;i++){
     // Active Phase 1 and Phase 2 accounts share the evaluation cap.
     if(evaluationCount()>=evaluationCap)break;
@@ -618,6 +624,10 @@ function oneTrial(p,config,rng,record=false){
     if(record&&ac.id<=3)ac.trace.push({day,stage:p.stageList[0],type:'purchase',
      label:'New challenge purchased on trading day '+day,cash:p.fee});
    }
+  }
+  if(dynamic&&accounts.filter(ac=>canAcceptSignal(p,ac)).length<dailyOpportunities){
+   if(evaluationCount()>=evaluationCap)purchaseConstraint='Evaluation allocation cap reached';
+   else if(config.budget+(config.reinvestPayouts?receipts:0)-spent-reserved()+1e-8<p.fee+p.activationFee)purchaseConstraint='Insufficient available purchase budget';
   }
   // Signal slots are unique market opportunities. In copy modes the same
   // slot can reach multiple accounts; never treat copies as independent signals.
@@ -685,7 +695,7 @@ function oneTrial(p,config,rng,record=false){
    const allocatedSlots=new Set(allocations.values());
    for(let ix=0;ix<dailyOpportunities;ix++)if(!allocatedSlots.has(ix))
     tradeAssignments.push({day,signal:ix+1,account:null,stage:null,
-     outcome:'Unused',status:'No eligible account or remaining purchase budget'});
+     outcome:'Unused',status:purchaseConstraint});
   }
   if(dailyCash){
    const tradesToday=accounts.reduce((sum,ac)=>sum+ac.trades,0)-tradesBefore;
