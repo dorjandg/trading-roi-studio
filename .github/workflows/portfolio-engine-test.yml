@@ -4,6 +4,7 @@ on:
     paths:
       - 'portfolio-engine.js'
       - 'tests/portfolio-engine.test.cjs'
+      - 'tests/run-portfolio-simulation.cjs'
       - '.github/workflows/portfolio-engine-test.yml'
   workflow_dispatch:
 jobs:
@@ -17,3 +18,10 @@ jobs:
         with:
           node-version: '22'
       - run: node tests/portfolio-engine.test.cjs
+      - run: node tests/run-portfolio-simulation.cjs --fixture --assert-payout --output portfolio-test-report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: portfolio-engine-test-report
+          path: portfolio-test-report.json
+          if-no-files-found: ignore
