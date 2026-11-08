@@ -21,3 +21,8 @@
 - Standard active stages: P1 = Challenge, P2 = Verification, P3 = Funded (includes payout-pending), P4 = payout-pending subset of P3; do not double-count P4. P1 pass/P2 pass are cumulative milestones, not active counts.
 - Keep stable underlying data keys, sort/filter behavior, persisted column preferences, and drag ordering unchanged. Update the shared dictionary in `studio-compact-table-headers.js` and any dynamically generated header/filter source together. Check for duplicate dictionary keys overriding mappings.
 - Before committing UI changes, audit visible headers and filter labels for length and descriptions; verify dynamic rerenders and mobile/tablet presentation. Do not claim live verification without testing the deployed site.
+
+## Mandatory table preference persistence
+- Treat each table's last user-selected visible/hidden columns, column order, filters, and page size as durable user preferences. Persist changes immediately and restore them after refresh, rerender, and simulation runs; never silently reset preferences when changing a header label.
+- Store by stable table/column IDs, not human-readable display labels. Migrate legacy saved keys when renaming labels, retaining old preferences. Keep tables independent, and avoid overwriting saved preferences with defaults during initialization.
+- Browser localStorage persistence is per browser/device/profile; do not promise cross-device synchronization unless the connected cloud profile explicitly saves and restores these preferences.
