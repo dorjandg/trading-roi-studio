@@ -58,3 +58,7 @@ For every newly approved model add: `MODEL-NNN`, user-approved name, canonical p
 
 ### Per-platform daily account purchase limits (2026-11-08)
 - `portfolio-simulator.html` account cards now expose `dailyBuyCap` under existing `allocationLimits[program:size]`, stored through `saveView`. Blank retains the prior shared/manual or signal-based limit. `portfolio-engine.js` applies a positive dailyBuyCap in addition to existing daily opportunity, capacity and lifetime constraints, for both automatic and manual purchase modes. Limits are user planning caps, not firm-verified rules. Independent comparison rows can use different values.
+
+### Simulation history save-state visibility (2026-11-08)
+- `portfolio-history.js` `create({onStatus})` reports local write, cloud sync, and failure states. Cloud success now verifies that all proposed run IDs appear in the readback snapshot, not just a matching nonce. `save` returns null on local storage failure.
+- `portfolio-simulator.html` renders `#runSaveStatus` next to Run Simulation and displays Calculating, Saved locally, Synced to cloud or explicit failure. Calculation and persistence are independent; never call a completed calculation a cloud-saved run without readback verification.
