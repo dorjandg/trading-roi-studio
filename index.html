@@ -2823,6 +2823,12 @@ document.addEventListener('click',event=>{
  persistRecoverySnapshot('funded');save();render();
 });
 function renderRecoveryPlanners(){
+ // The visible Prop Firm Rules selector is authoritative for the Firms workspace.
+ // Never display an FTMO-only policy while its selector shows another program.
+ const frame=document.getElementById('firmsFrame');
+ const childProgram=frame?.contentDocument?.getElementById('program')?.value;
+ const visibleProgram=frame?.closest('.page')?.classList.contains('active')&&childProgram?childProgram:String(activeProgramKey||'').split(':')[0];
+ const ftmoOnly=visibleProgram==='ftmo2';
  const quickLink=document.getElementById('firmPortfolioQuickLink');
  if(quickLink){
   const selected=String(activeProgramKey||'');
@@ -2857,6 +2863,8 @@ function renderRecoveryPlanners(){
  const audit=firmHealthAudit?.programs?.[String(activeProgramKey||'').split(':')[0]];
  for(const stage of ['p1','p2','funded']){
   const host=document.querySelector('[data-recovery-stage="'+stage+'"]');if(!host)continue;
+  // Clear a stale builder immediately even if the parent profile has not caught up.
+  if(stage==='funded'&&!ftmoOnly)host.querySelectorAll('.ftmo-buffer-panel').forEach(el=>el.remove());
   if(!activeProgramKey||!selectedAccountSupportsSimulation){host.innerHTML='<p class="caption">Recovery scenarios require a supported account and confirmed stage parameters.</p>';continue}
   const setup=stageRecoverySetup(stage),snapshot=recoverySnapshot(stage);
   const pnl=Number(snapshot.pnl)||0,days=Math.max(0,Math.floor(Number(snapshot.days)||0));
@@ -3023,7 +3031,7 @@ function renderRecoveryPlanners(){
    '<details class="recovery-guide"><summary>Method, limits &amp; risk sequence</summary><p class="caption">Risk sequence: '+({saved:'Saved choices / after-loss defaults','smart-sequence':'R1 first; R2 after R1, R3 after R2 loss, R2 after R3 win, R4 after R3 loss if active. Stop when next tier disabled.',streak:'R1 → R2 after 1 loss → R3 after 2+',flat:'R1 every trade','after-win':'R2 after WIN, R3 after LOSS','protect-after-loss':'R3 after LOSS, otherwise R1'}[snapshot.policyMode||'saved']||'Saved choices')+'. You can override individual trade risks. The selected risk is used in full or the trade is blocked if modeled limits are insufficient.</p>'+
    '<p class="caption">'+setup.name+' · '+setup.rr.toFixed(2)+'R · Target '+recoveryMoney(setup.goal)+' · Starting P/L '+recoveryMoney(pnl)+
     ' · Minimum trading days '+setup.minDays+' · Saved stage trade cap '+setup.dailyCap+' · Winning-day planner cap '+winCap+'.'+(winCap>setup.dailyCap?' Planner wins may exceed the saved stage trade cap; update that setting before live use.':'')+'</p></details>'+
-   ftmoFundedBufferUI(stage,setup,snapshot)+
+   (ftmoOnly?ftmoFundedBufferUI(stage,setup,snapshot):'')+
    (bufferActive?'':smartSetupUI(stage)+
    '<details class="recovery-subfold recovery-route-block"'+(snapshot.allRoutesOpen?' open':'')+'><summary>'+routeHeadline+'</summary>'+routeScanUI(stage)+'</details>'+
    '<details class="recovery-subfold recovery-path-options"'+(snapshot.optionsOpen?' open':'')+'><summary>Trading options · '+entries.length+' paths · '+targetCount+' hit · '+readyCount+' days met · '+blockedCount+' blocked</summary>'+
