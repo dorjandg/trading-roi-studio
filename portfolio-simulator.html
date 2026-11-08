@@ -525,6 +525,7 @@ details p{margin:6px 0}
 @media(max-width:650px){#journeyContents .journey-data-panel{margin:5px 0}#journeyContents .journey-data-panel>summary{padding:8px 9px}#journeyContents .journey-data-body{padding:5px}}
 
 .cash-tools{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-bottom:7px}.cash-tools label{font-size:11px;color:var(--muted);font-weight:700}.cash-tools select,.cash-tools button{width:auto;min-height:28px;height:29px;padding:3px 8px;font-size:11px;border-radius:7px}.cash-columns-panel{padding:7px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);margin:5px 0}.cash-columns-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:3px 7px}.cash-columns-grid label{display:flex;align-items:center;gap:5px;font-size:10px;line-height:1.25;min-height:24px;cursor:pointer}.cash-columns-grid input{width:13px;height:13px;min-height:13px;margin:0;flex:none;accent-color:var(--green)}.cash-column-actions{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:7px}.cash-column-actions button{min-height:25px;padding:2px 7px;font-size:10px}.cash-columns-panel .hint{font-size:10px;margin:3px 0 6px}@media(max-width:600px){.cash-columns-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cash-tools{gap:4px}.cash-tools select{max-width:165px}}
+.cash-kpis{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px;margin:7px 0}.cash-kpi{min-width:0;padding:5px 6px;border:1px solid var(--line);border-radius:7px;background:var(--panel2)}.cash-kpi small{display:block;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}.cash-kpi strong{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.weekly-economics-firm table th,.weekly-economics-firm table td,#weeklyEconomicsContents table th,#weeklyEconomicsContents table td{white-space:nowrap;padding:5px 7px;font-size:11px}#weeklyEconomicsContents table th{font-size:10px}@media(max-width:800px){.cash-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}}@media(max-width:430px){.cash-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 <link rel="stylesheet" href="studio-nav.css?v=20261105-compact-v2"><style>
 #gptResearchPanel .gpt-review-request{border:1px solid var(--line);border-radius:8px;padding:10px;margin:8px 0;background:var(--panel2)}
@@ -1491,6 +1492,7 @@ const cashColumns=[
  ['untraded','Unused signals'],['conversionP1','P1 / bought %'],['conversionP2','P2 / P1 %'],['conversionFunded','Funded / bought %'],['conversionPaid','Paid / bought %'],['costPerBuy','Fees / bought'],['costPerPaid','Fees / payout'],['netPerTrade','Net / trade'],['roiOnFees','Net / fees %'],['cumulativeROI','Cum. net / fees %'],['cumulativeTrades','Cum. trades'],['cumulativeSignals','Cum. signals'],
  ['failedAccounts','Failed accounts'],['riskBlockedAccounts','Risk-blocked'],['strategyStoppedAccounts','Strategy-stopped'],['closedAccounts','Total closed'],['cumulativeFailed','Cum. failed'],['cumulativeRiskBlocked','Cum. risk-blocked'],['cumulativeStrategyStopped','Cum. strategy-stopped'],['cumulativeClosed','Cum. closed']
 ];
+const cashShortLabels={period:'Period',opportunities:'Signals',trades:'Trades',bought:'Bought',challengePasses:'P1+',verificationPasses:'P2+',funded:'Funded',paid:'Paid',spent:'Fees',receipts:'Cash in',net:'Net',cumulativeNet:'Σ Net',cumulativeBought:'Σ Bought',cumulativePaid:'Σ Paid',cumulativeSpent:'Σ Fees',cumulativeReceipts:'Σ Cash',cumulativeFunded:'Σ Funded',cumulativeP1:'Σ P1',cumulativeP2:'Σ P2',untraded:'Unused',conversionP1:'P1 %',conversionP2:'P2 %',conversionFunded:'Fund %',conversionPaid:'Paid %',costPerBuy:'Fee/Buy',costPerPaid:'Fee/Paid',netPerTrade:'Net/Tr',roiOnFees:'ROI %',cumulativeROI:'Σ ROI %',cumulativeTrades:'Σ Trades',cumulativeSignals:'Σ Signals',failedAccounts:'Failed',riskBlockedAccounts:'Blocked',strategyStoppedAccounts:'Stopped',closedAccounts:'Closed',cumulativeFailed:'Σ Failed',cumulativeRiskBlocked:'Σ Blocked',cumulativeStrategyStopped:'Σ Stopped',cumulativeClosed:'Σ Closed'};
 const cashDefaultKeys=cashColumns.slice(0,12).map(x=>x[0]);
 let cashVisible=new Set(cashDefaultKeys);
 let cashLastList=null,cashLastInputs=null;
@@ -1530,6 +1532,12 @@ function cashDerivedValue(w,key,money){
  };
  return derived[key]?derived[key]():money.has(key)?usd(w[key]):dec(w[key]??0);
 }
+function cashKpiStrip(result){
+ const k=result.tradeKpis||{},a=result.avg||{};
+ const fmt=(v,type)=>v==null||Number.isNaN(Number(v))?'—':type==='usd'?usd(v):type==='pct'?pct(v):type==='num'?(Number.isFinite(v)?dec(v):'∞'):dec(v);
+ const items=[['EV/trade',k.ev,'usd','Average modeled trade P&L; excludes purchase fees'],['PF',k.pf,'num','Gross trading profit divided by gross trading loss'],['Avg R',k.ar,'num','Average realized R per trade'],['Avg win',k.aw,'usd','Average profit per winning trade'],['Avg loss',k.al,'usd','Average loss per losing trade'],['Net',a.net,'usd','Expected net after modeled costs'],['Payout %',result.chancePayout,'pct','Probability of at least one payout'],['Failed',a.failed,'num','Average modeled failed accounts']];
+ return '<div class="cash-kpis">'+items.map(([name,value,type,tip])=>'<div class="cash-kpi" title="'+esc(tip)+'"><small>'+esc(name)+'</small><strong>'+fmt(value,type)+'</strong></div>').join('')+'</div>';
+}
 function renderWeeklyEconomics(list,inputs){
  cashLastList=list;cashLastInputs=inputs;
  const holder=$('weeklyEconomicsContents');
@@ -1539,7 +1547,7 @@ function renderWeeklyEconomics(list,inputs){
  const columns=cashColumns.filter(([key])=>cashVisible.has(key));
  const money=new Set(['spent','receipts','net','cumulativeNet','cumulativeSpent','cumulativeReceipts']);
  const renderRow=w=>'<tr>'+columns.map(([key])=>'<td'+(key==='net'?' class="'+(w.net>=0?'good':'bad')+'"':'')+'>'+(key==='period'?w.period+' · '+w.fromDay+'–'+w.toDay:cashDerivedValue(w,key,money))+'</td>').join('')+'</tr>';
- const table=items=>'<div class="tablewrap"><table><thead><tr>'+columns.map(([,label])=>'<th>'+esc(label)+'</th>').join('')+'</tr></thead><tbody>'+items.map(renderRow).join('')+'</tbody></table></div>';
+ const table=items=>'<div class="tablewrap"><table><thead><tr>'+columns.map(([key,label])=>'<th title="'+esc(label)+'">'+esc(cashShortLabels[key]||label)+'</th>').join('')+'</tr></thead><tbody>'+items.map(renderRow).join('')+'</tbody></table></div>';
  const periodName=span===1?'day':span===5?'week':span===10?'10 trading days':'20 trading days';
  const firmCard=({r,w})=>'<details class="weekly-economics-firm"><summary><strong>'+esc(r.plan.firm+' · '+r.plan.programName+' · '+usd(r.plan.size))+'</strong> · Horizon net / '+esc(periodName)+' '+usd(r.avg.net/(Number(inputs.days)/span))+' · Payout chance '+(w.chanceAnyPayout==null?'—':pct(w.chanceAnyPayout))+'</summary>'+
  '<div class="result-grid"><div><small>Fees / completed payout</small><strong>'+(w.costPerPaid==null?'—':usd(w.costPerPaid))+'</strong></div><div><small>First payouts / challenges</small><strong>'+(w.conversion==null?'—':pct(w.conversion))+'</strong></div><div><small>First payout day · conditional</small><strong>'+(w.firstPayoutDay==null?'—':dec(w.firstPayoutDay))+'</strong></div><div><small>Phase 1 passes / purchased</small><strong>'+(w.phase1Conversion==null?'—':pct(w.phase1Conversion))+'</strong></div></div>'+table(cashPeriodRows(r,span))+'</details>';
