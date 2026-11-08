@@ -12,7 +12,11 @@ css.textContent=`
 #jj-live-compare .jj-tabs button[aria-selected=true]{border-color:var(--accent);color:var(--accent);font-weight:700;background:var(--panel)}
 #jj-live-compare .jj-compact-inputs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
 #jj-live-compare .jj-field{display:flex;flex-direction:column;gap:3px;min-width:0;min-height:65px;justify-content:space-between;padding:5px 7px;border:1px solid var(--stroke);border-radius:7px;background:var(--bg)}
-#jj-live-compare .jj-field-head{display:flex;align-items:center;justify-content:space-between;gap:5px;flex-wrap:wrap;color:var(--muted);font-size:10px;line-height:1.2}
+#jj-live-compare .jj-field-head{display:grid;grid-template-columns:minmax(0,1fr) 68px;align-items:center;gap:5px;min-height:32px;color:var(--muted);font-size:10px;line-height:1.2}
+#jj-live-compare .jj-field-head>span{min-width:0;overflow-wrap:anywhere}
+#jj-live-compare .jj-field-head>.jj-number{width:68px;min-width:0;justify-self:end}
+#jj-live-compare .jj-compact-inputs>.jj-field{align-self:stretch}
+#jj-live-compare .jj-compact-inputs{grid-auto-rows:minmax(70px,auto)}
 #jj-live-compare .jj-number{width:68px;max-width:100%;min-height:25px;box-sizing:border-box;padding:3px 5px;border:1px solid var(--stroke);border-radius:5px;background:var(--panel);color:var(--text);font:700 12px inherit;font-variant-numeric:tabular-nums;text-align:right}#jj-live-compare .jj-number:focus{outline:1px solid var(--accent)}
 #jj-live-compare input[type=range]{width:100%;height:16px;min-height:16px;padding:0;margin:0;accent-color:var(--accent);cursor:pointer;touch-action:pan-y}
 #jj-live-compare .jj-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-top:7px}#jj-live-compare .jj-compact-inputs>.jj-field,#jj-live-compare .jj-kpis>.jj-kpi{width:100%;min-width:0;box-sizing:border-box}
