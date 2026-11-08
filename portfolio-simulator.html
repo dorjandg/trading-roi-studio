@@ -1442,6 +1442,34 @@ function makeResultCard(result,index,isInvestmentReport=false){
    '</details></article>';
 }
 
+function enableColumnPointerReorder(container,selector,getId,onMove){
+ for(const item of container.querySelectorAll(selector)){
+  const handle=item.querySelector('[data-column-drag-handle]');if(!handle)continue;
+  handle.style.cssText='touch-action:none;cursor:grab;user-select:none;display:inline-block;padding:4px 7px;border:1px dashed currentColor;border-radius:4px';
+  handle.setAttribute('role','button');handle.setAttribute('tabindex','0');
+  handle.setAttribute('aria-label','Hold and drag to reorder '+handle.textContent.trim());
+  let pointer=null,startX=0,startY=0;
+  handle.addEventListener('pointerdown',event=>{
+   if(event.button!==0||pointer!==null)return;
+   pointer=event.pointerId;startX=event.clientX;startY=event.clientY;
+   handle.setPointerCapture(pointer);item.style.opacity='.65';handle.style.cursor='grabbing';
+  });
+  handle.addEventListener('pointermove',event=>{
+   if(pointer!==event.pointerId)return;
+   const over=document.elementFromPoint(event.clientX,event.clientY)?.closest(selector);
+   if(over&&over!==item&&container.contains(over)){over.style.outline='2px solid var(--accent,#4aa3ff)';}
+   for(const other of container.querySelectorAll(selector))if(other!==over)other.style.outline='';
+  });
+  handle.addEventListener('pointerup',event=>{
+   if(pointer!==event.pointerId)return;
+   pointer=null;item.style.opacity='';handle.style.cursor='grab';
+   const over=document.elementFromPoint(event.clientX,event.clientY)?.closest(selector);
+   for(const other of container.querySelectorAll(selector))other.style.outline='';
+   if(over&&over!==item&&container.contains(over)&&Math.hypot(event.clientX-startX,event.clientY-startY)>8)onMove(getId(item),getId(over));
+  });
+  handle.addEventListener('pointercancel',()=>{pointer=null;item.style.opacity='';handle.style.cursor='grab';for(const other of container.querySelectorAll(selector))other.style.outline='';});
+ }
+}
 const journeyColumnPrefs={};
 function addJourneyColumnFilters(){
  const root=document.getElementById('journeyContents');if(!root)return;
@@ -1491,13 +1519,14 @@ function addJourneyColumnFilters(){
    const visibleOrder=pref.order.filter(id=>pref.visible.includes(id));
    visibleOrder.forEach((id,i)=>{
     const item=document.createElement('div');item.className='cash-order-item';
-    const name=document.createElement('span');name.textContent=id;item.appendChild(name);
+    const name=document.createElement('span');name.textContent='⠿ '+id;name.dataset.columnDragHandle='';item.dataset.columnId=id;item.appendChild(name);
     for(const [glyph,step] of [['◀',-1],['▶',1]]){
      const btn=document.createElement('button');btn.type='button';btn.textContent=glyph;btn.disabled=i+step<0||i+step>=visibleOrder.length;
      btn.addEventListener('click',()=>{const other=visibleOrder[i+step],x=pref.order.indexOf(id),y=pref.order.indexOf(other);[pref.order[x],pref.order[y]]=[pref.order[y],pref.order[x]];renderControls();apply();});
      item.appendChild(btn);
     }orderBox.appendChild(item);
    });controls.appendChild(orderBox);
+   enableColumnPointerReorder(orderBox,'.cash-order-item',item=>item.dataset.columnId,(from,to)=>{const x=pref.order.indexOf(from),y=pref.order.indexOf(to);if(x<0||y<0)return;pref.order.splice(x,1);pref.order.splice(y,0,from);renderControls();apply();});
    const grid=document.createElement('div');grid.className='cash-columns-grid';
    for(const id of valid){
     const label=document.createElement('label'),check=document.createElement('input');check.type='checkbox';check.checked=pref.visible.includes(id);
@@ -1889,10 +1918,20 @@ function drawCashColumnControls(){
  $('cashColumnsPanel').innerHTML=cashTotalsControl()+'<div class="cash-column-actions"><button type="button" data-cash-preset="default">Default</button><button type="button" data-cash-preset="all">All</button><button type="button" data-cash-preset="none">Clear</button><button type="button" data-cash-preset="cash">Cash only</button><button type="button" data-cash-preset="funnel">Account funnel</button></div>'+
  '<p class="hint">'+cashVisible.size+' / '+cashColumns.length+' columns selected · Failed = modeled account failure; risk-blocked and strategy-stopped are NOT confirmed firm breaches. Counts are trial averages. Scroll for extras.</p>'+
  '<p class="hint">Use ◀ ▶ to reorder selected columns. Order is saved after refresh.</p>'+
- '<div class="cash-order-grid">'+orderedCashColumns().filter(([key])=>cashVisible.has(key)).map(([key,label],i,arr)=>'<div class="cash-order-item"><span title="'+esc(label)+'">'+esc(cashShortLabels[key]||label)+'</span><button type="button" data-cash-move="'+key+'" data-cash-step="-1" aria-label="Move '+esc(label)+' left" '+(i===0?'disabled':'')+'>◀</button><button type="button" data-cash-move="'+key+'" data-cash-step="1" aria-label="Move '+esc(label)+' right" '+(i===arr.length-1?'disabled':'')+'>▶</button></div>').join('')+'</div>'+
+ '<div class="cash-order-grid">'+orderedCashColumns().filter(([key])=>cashVisible.has(key)).map(([key,label],i,arr)=>'<div class="cash-order-item" data-cash-drag="'+key+'"><span data-column-drag-handle title="Drag to reorder '+esc(label)+'">⠿ '+esc(cashShortLabels[key]||label)+'</span><button type="button" data-cash-move="'+key+'" data-cash-step="-1" aria-label="Move '+esc(label)+' left" '+(i===0?'disabled':'')+'>◀</button><button type="button" data-cash-move="'+key+'" data-cash-step="1" aria-label="Move '+esc(label)+' right" '+(i===arr.length-1?'disabled':'')+'>▶</button></div>').join('')+'</div>'+
  '<div class="cash-columns-grid">'+orderedCashColumns().map(([key,label])=>'<label><input type="checkbox" data-cash-col="'+key+'" '+(cashVisible.has(key)?'checked':'')+'>'+esc(label)+'</label>').join('')+'</div>';
 }
-drawCashColumnControls();
+function setupCashColumnDrag(){
+ const grid=$('cashColumnsPanel').querySelector('.cash-order-grid');if(!grid)return;
+ enableColumnPointerReorder(grid,'.cash-order-item',item=>item.dataset.cashDrag,(from,to)=>{
+  const i=cashColumnOrder.indexOf(from),j=cashColumnOrder.indexOf(to);if(i<0||j<0)return;
+  cashColumnOrder.splice(i,1);cashColumnOrder.splice(j,0,from);
+  drawCashColumnControls();saveCashTablePrefs();if(cashLastList)renderWeeklyEconomics(cashLastList,cashLastInputs);
+ });
+}
+const drawCashColumnControlsOriginal=drawCashColumnControls;
+drawCashColumnControls=function(){drawCashColumnControlsOriginal();setupCashColumnDrag();};
+setupCashColumnDrag();
 $('cashColumnsPanel').addEventListener('click',e=>{
  const mover=e.target.closest('[data-cash-move]');if(mover){const visible=cashColumnOrder.filter(k=>cashVisible.has(k)),i=visible.indexOf(mover.dataset.cashMove),j=i+Number(mover.dataset.cashStep);if(i>=0&&j>=0&&j<visible.length){const a=cashColumnOrder.indexOf(visible[i]),b=cashColumnOrder.indexOf(visible[j]);[cashColumnOrder[a],cashColumnOrder[b]]=[cashColumnOrder[b],cashColumnOrder[a]];drawCashColumnControls();saveCashTablePrefs();if(cashLastList)renderWeeklyEconomics(cashLastList,cashLastInputs);}return;}
  const btn=e.target.closest('[data-cash-preset]');if(!btn)return;
