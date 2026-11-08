@@ -8,11 +8,11 @@ const usd=x=>(n(x)<0?'-':'')+'$'+Math.round(Math.abs(n(x))).toLocaleString('en-U
 const fmt=(v,average)=>average?n(v).toFixed(1):String(Math.round(n(v)));
 const columns=[
  ['opportunities','Opp','Maximum trading opportunities available on this day'],
- ['tradesToday','Tr','Regular strategy trades on this trading day'],
+ ['tradesToday','Executed trades','Regular strategy trades on this trading day'],
  ['qualificationToday','Min','Illustrative minimum-size qualification orders; market P/L not modeled'],
  ['unusedToday','Unused','Daily opportunities not executed because of account or strategy restrictions'],
- ['new','New','New challenges purchased on this trading day'],
- ['bought','TOT','Total challenges purchased cumulatively through this trading day'],
+ ['new','New accounts','New challenges purchased on this trading day'],
+ ['bought','Challenges purchased','Total challenges purchased cumulatively through this trading day'],
  ['purchasedAllocation','Buy $','Cumulative nominal value of purchased accounts'],
  ['evaluationAllocation','Eval $','Current Challenge plus Verification nominal allocation'],
  ['fundedAllocation','FD $','Current active Funded nominal allocation'],
@@ -20,16 +20,16 @@ const columns=[
  ['passed1','P1P','Cumulative accounts that passed Phase 1 / Challenge'],
  ['verification','VR','Verification / Phase 2 at end of day'],
  ['passed2','P2P','Cumulative accounts that passed Phase 2 / Verification'],
- ['fundedActive','FD','Active funded accounts at end of day'],
+ ['fundedActive','Funded active','Active funded accounts at end of day'],
  ['activated','FA','Cumulative accounts activated as Funded'],
  ['fundingWait','FW','Passed but waiting for funded activation capacity'],
  ['payoutPending','PP','Funded accounts with payout requested and processing'],
  ['targetHit','TG','Cumulative funded accounts that have reached the modeled profit goal'],
- ['paid','PD','Cumulative accounts with first modeled payout received'],
- ['failed','Fail','Actual loss-limit breaches'],
- ['riskBlocked','Block','Configured risk no longer fits; not a firm failure'],
- ['dailySpend','Fees','Challenge and activation spending on this day'],
- ['dailyReceipts','Cash in','First-payout receipts on this day']
+ ['paid','Paid accounts','Cumulative accounts with first modeled payout received'],
+ ['failed','Failed accounts','Actual loss-limit breaches'],
+ ['riskBlocked','Risk blocked','Configured risk no longer fits; not a firm failure'],
+ ['dailySpend','Fees spent','Challenge and activation spending on this day'],
+ ['dailyReceipts','Payouts received','First-payout receipts on this day']
 ];
 const diff=(row,prev,key)=>n(row?.[key])-n(prev?.[key]);
 function daily(rows,averages=false,onlyChanges=true){
@@ -289,9 +289,9 @@ function dailyTradeRouting(results,selected,inputs,routePage=1,pageSize=10,table
  const explain='<p class="journey-explainer">Breached means a genuine loss-limit failure; Risk blocked means the selected risk is too large, not a rule breach. Payouts may happen without a trade that day. Min = modeled minimum-size qualification orders; their market P/L is not simulated. Pending = payout requests processing. Paid today is daily; Paid total is cumulative. A1, A2, etc. are permanent, unique account IDs across this displayed portfolio. New challenges always receive new numbers. CH → VR → FD → Payout/closed is forward-only: an account that passed CH can never be displayed in CH again. CH = Challenge, VR = Verification, FD = Funded; W/L = the modeled result of that assigned trade. '+(selected==='all'?'In split mode, the same trade number may appear for separate firms because signals are allocated by firm.':'')+'</p>';
  return tablePanel('daily-routing','Daily trades by account',heading+warning+helpNotes('trades',explain)+'<div class="tablewrap journey-ledger-table" style="max-height:650px"><table class="journey-table" style="min-width:970px"><thead><tr>'+routeTh('Day','day')+
   Array.from({length:maxCells},(_,i)=>routeTh('Trade '+(i+1),'trade')).join('')+
-  [['Executed','executed'],['Min','min'],['Bought','bought'],['CH','ch'],['VR','vr'],['FD','fd'],
-   ['Pending','pending'],['Breached','breached'],['Risk blocked','blocked'],
-   ['Paid today','paidToday'],['Paid total','paidTotal'],['Account events','events']]
+  [['Executed trades','executed'],['Min','min'],['Challenges purchased','bought'],['Challenge','ch'],['Verification','vr'],['Funded active','fd'],
+   ['Pending','pending'],['Failed accounts','breached'],['Risk blocked','blocked'],
+   ['Paid today','paidToday'],['Paid accounts','paidTotal'],['Account events','events']]
    .map(([label,key])=>routeTh(label,key)).join('')+
   '</tr></thead><tbody>'+rows+'</tbody></table></div>'+pageNav(routePagination,'routePage'),tableOpen['daily-routing']===true,days.length+' trading days');
 }
