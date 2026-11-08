@@ -1470,16 +1470,43 @@ function enableColumnPointerReorder(container,selector,getId,onMove){
   handle.addEventListener('pointercancel',()=>{pointer=null;item.style.opacity='';handle.style.cursor='grab';for(const other of container.querySelectorAll(selector))other.style.outline='';});
  }
 }
-function enableDirectTableHeaderDrag(table,onDrop){
+function enableDirectTableHeaderDrag(table,onDrop,keepFirst=false){
  const heads=Array.from(table?.tHead?.rows[0]?.cells||[]);
  heads.forEach((head,index)=>{
-  if(index===0||head.hidden)return;
-  head.style.touchAction='none';head.style.cursor='grab';
-  let active=null,x=0,y=0;
-  head.addEventListener('pointerdown',e=>{if(e.button!==0||e.target.closest('button,input,select,a'))return;active=e.pointerId;x=e.clientX;y=e.clientY;head.setPointerCapture(active);head.style.opacity='.6';});
-  head.addEventListener('pointermove',e=>{if(active!==e.pointerId)return;const target=document.elementFromPoint(e.clientX,e.clientY)?.closest('th');heads.forEach(h=>h.style.outline='');if(target&&heads.includes(target)&&target!==head&&!target.hidden)target.style.outline='2px solid var(--accent,#4aa3ff)';});
-  head.addEventListener('pointerup',e=>{if(active!==e.pointerId)return;active=null;head.style.opacity='';const target=document.elementFromPoint(e.clientX,e.clientY)?.closest('th');heads.forEach(h=>h.style.outline='');if(target&&target!==head&&heads.includes(target)&&!target.hidden&&Math.hypot(e.clientX-x,e.clientY-y)>10)onDrop(head,target);});
-  head.addEventListener('pointercancel',()=>{active=null;head.style.opacity='';heads.forEach(h=>h.style.outline='');});
+  if((keepFirst&&index===0)||head.hidden)return;
+  head.style.touchAction='none';head.style.cursor='grab';head.style.userSelect='none';
+  head.setAttribute('title',(head.getAttribute('title')||'')+' · Hold and drag left/right to reorder');
+  let active=null,startX=0,startY=0,lastX=0,dragging=false;
+  const clear=()=>{active=null;dragging=false;head.style.opacity='';heads.forEach(h=>h.style.outline='');};
+  const targetAt=x=>{
+   const candidates=heads.filter(h=>!h.hidden&&(!keepFirst||h!==heads[0])&&h.getBoundingClientRect().width>0);
+   return candidates.find(h=>{const r=h.getBoundingClientRect();return x>=r.left&&x<=r.right;})||
+    candidates.reduce((best,h)=>Math.abs(h.getBoundingClientRect().left+h.getBoundingClientRect().width/2-x)<Math.abs(best.getBoundingClientRect().left+best.getBoundingClientRect().width/2-x)?h:best,candidates[0]);
+  };
+  head.addEventListener('pointerdown',e=>{
+   if(e.button!==0||e.target.closest('button,input,select,a'))return;
+   active=e.pointerId;startX=e.clientX;startY=e.clientY;lastX=e.clientX;
+   head.setPointerCapture(e.pointerId);
+  });
+  head.addEventListener('pointermove',e=>{
+   if(active!==e.pointerId)return;
+   lastX=e.clientX;
+   if(!dragging&&Math.hypot(e.clientX-startX,e.clientY-startY)>7)dragging=true;
+   if(!dragging)return;
+   e.preventDefault();head.style.opacity='.6';
+   const target=targetAt(e.clientX);
+   heads.forEach(h=>h.style.outline='');
+   if(target&&target!==head)target.style.outline='2px solid var(--accent,#4aa3ff)';
+   const scroll=table.closest('.tablewrap');
+   if(scroll){const r=scroll.getBoundingClientRect();if(e.clientX>r.right-25)scroll.scrollLeft+=15;else if(e.clientX<r.left+25)scroll.scrollLeft-=15;}
+  });
+  head.addEventListener('pointerup',e=>{
+   if(active!==e.pointerId)return;
+   const target=dragging?targetAt(lastX):null;
+   clear();
+   if(target&&target!==head)onDrop(head,target);
+  });
+  head.addEventListener('pointercancel',clear);
  });
 }
 const journeyColumnPrefs={};
@@ -1552,7 +1579,7 @@ function addJourneyColumnFilters(){
    if(!a||!b||a==='day'||b==='day')return;
    const i=pref.order.indexOf(a),j=pref.order.indexOf(b);if(i<0||j<0)return;
    pref.order.splice(i,1);pref.order.splice(j,0,a);apply();renderControls();
-  });
+  },true);
  }
 }
 function renderJourney(){
@@ -1920,10 +1947,10 @@ drawCashDetailsControls();
   const visible=columns.map(x=>x[0]);
   enableDirectTableHeaderDrag(table,(from,to)=>{
    const i=headers.indexOf(from),j=headers.indexOf(to);
-   if(i<=0||j<=0||i>visible.length||j>visible.length)return;
-   const a=cashColumnOrder.indexOf(visible[i-1]),b=cashColumnOrder.indexOf(visible[j-1]);
+   if(i<0||j<0||i>=visible.length||j>=visible.length)return;
+   const a=cashColumnOrder.indexOf(visible[i]),b=cashColumnOrder.indexOf(visible[j]);
    if(a<0||b<0)return;
-   cashColumnOrder.splice(a,1);cashColumnOrder.splice(b,0,visible[i-1]);
+   cashColumnOrder.splice(a,1);cashColumnOrder.splice(b,0,visible[i]);
    drawCashColumnControls();saveCashTablePrefs();renderWeeklyEconomics(cashLastList,cashLastInputs);
   });
  }
