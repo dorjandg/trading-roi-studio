@@ -513,6 +513,19 @@ details p{margin:6px 0}
 .sim-workflow-links span{font-size:11px;font-weight:700;color:var(--muted);margin-right:4px}
 .sim-workflow-links button{font-size:11px;min-height:28px;padding:4px 9px;border-radius:5px}
 @media(max-width:650px){.sim-workflow-links button{flex:1 1 145px}.sim-workflow-links span{flex:1 1 100%}}
+/* Section 7 visual hierarchy: distinct tables, charts, and explanatory panels. */
+#journeyContents .journey-data-panel{border-left:3px solid transparent}
+#journeyContents .journey-panel-table{border-left-color:var(--blue,#4b93da)}
+#journeyContents .journey-panel-chart{border-left-color:var(--green,#3ba98d)}
+#journeyContents .journey-panel-guide{border-left-color:var(--muted,#8794a6)}
+#journeyContents .journey-data-panel>summary{gap:7px}
+#journeyContents .journey-kind{display:inline-flex;align-items:center;justify-content:center;min-width:44px;padding:3px 5px;border-radius:4px;font-size:9px;font-weight:800;letter-spacing:.04em;line-height:1.2;flex-shrink:0;border:1px solid currentColor}
+#journeyContents .journey-panel-table .journey-kind{color:var(--blue,#4b93da)}
+#journeyContents .journey-panel-chart .journey-kind{color:var(--green,#3ba98d)}
+#journeyContents .journey-panel-guide .journey-kind{color:var(--muted,#8794a6)}
+#journeyContents .journey-panel-chart>summary{background:color-mix(in srgb,var(--green,#3ba98d) 8%,var(--panel2))}
+#journeyContents .journey-panel-guide>summary{background:var(--panel)}
+@media(max-width:650px){#journeyContents .journey-kind{min-width:38px;font-size:8px;padding:3px 4px}}
 /* Section 7 Account Journey: independent collapsible table headers. */
 #journeyContents .journey-data-panel{margin:7px 0;border:1px solid var(--line);border-radius:7px;overflow:hidden}
 #journeyContents .journey-data-panel>summary{display:flex;align-items:center;gap:7px;flex-wrap:wrap;cursor:pointer;padding:9px 11px;font-size:12px;line-height:1.35;background:var(--panel2)}
