@@ -54,6 +54,7 @@ function run(p,stage){
  // Scale candidate risks to the daily target: a full-target win requires goal/RR.
  // After losses, the next risk is derived from remaining profit needed (goal - current P&L).
  const roundRisk=x=>Math.max(0.01,Math.round((x+Number.EPSILON)*100)/100);
+ const roundMoney=x=>Math.round((x+Number.EPSILON)*100)/100;
  const candidates=[];
  const add=(name,weights)=>{
   const risks=[];let losses=0;
@@ -86,16 +87,16 @@ function run(p,stage){
     expected+=prob*pnl;paths.push({steps:steps.join(' → ')||'Stop',pnl,prob});return;
    }
    const desired=roundRisk(remaining/rr*c.weights[i]);
-   const available=roundRisk(cap+pnl);
+   const available=roundMoney(cap+pnl);
    if(desired>available||available<0.01){
     if(pnl<=-cap)breach+=prob;else if(pnl<0)negative+=prob;
     expected+=prob*pnl;paths.push({steps:steps.join(' → ')||'Cap prevents next trade',pnl,prob});return;
    }
    const risk=desired;
    trades+=prob;
-   const winPnl=Math.min(goal,roundRisk(pnl+risk*rr));
+   const winPnl=Math.min(goal,roundMoney(pnl+risk*rr));
    walk(i+1,winPnl,prob*wr,[...steps,'W '+money(risk)]);
-   walk(i+1,roundRisk(pnl-risk),prob*(1-wr),[...steps,'L '+money(risk)]);
+   walk(i+1,roundMoney(pnl-risk),prob*(1-wr),[...steps,'L '+money(risk)]);
   }
   walk(0,0,1,[]);
   return {...c,hit,breach,negative,trades,expected,paths};
