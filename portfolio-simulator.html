@@ -1504,7 +1504,7 @@ function enableColumnPointerReorder(container,selector,getId,onMove){
   const handle=item.querySelector('[data-column-drag-handle]');if(!handle)continue;
   handle.style.cssText='touch-action:none;cursor:grab;user-select:none;display:inline-block;padding:4px 7px;border:1px dashed currentColor;border-radius:4px';
   handle.setAttribute('role','button');handle.setAttribute('tabindex','0');
-  handle.setAttribute('aria-label','Hold and drag to reorder '+handle.textContent.trim());
+  handle.setAttribute('aria-label',handle.textContent.trim());
   let pointer=null,startX=0,startY=0;
   handle.addEventListener('pointerdown',event=>{
    if(event.button!==0||pointer!==null)return;
@@ -1532,7 +1532,7 @@ function enableDirectTableHeaderDrag(table,onDrop,keepFirst=false){
  heads.forEach((head,index)=>{
   if((keepFirst&&index===0)||head.hidden)return;
   head.style.touchAction='none';head.style.cursor='grab';head.style.userSelect='none';
-  head.setAttribute('title',(head.getAttribute('title')||'')+' · Hold and drag left/right to reorder');
+  // Keep the header tooltip dedicated to the metric definition; drag behavior remains available.
   let active=null,startX=0,startY=0,lastX=0,dragging=false;
   const clear=()=>{active=null;dragging=false;head.style.opacity='';heads.forEach(h=>h.style.outline='');};
   const targetAt=x=>{
