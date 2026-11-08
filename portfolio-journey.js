@@ -25,11 +25,11 @@ const columns=[
  ['fundingWait','Funding wait','Passed but waiting for funded activation capacity'],
  ['payoutPending','Payout pending','Funded accounts with payout requested and processing'],
  ['targetHit','Target reached','Cumulative funded accounts that have reached the modeled profit goal'],
- ['paid','Paid accounts','Cumulative accounts with first modeled payout received'],
+ ['paid','P4 total','Cumulative payout events received, including repeat payouts from the same P3 account'],
  ['failed','Failed accounts','Actual loss-limit breaches'],
  ['riskBlocked','Risk blocked','Configured risk no longer fits; not a firm failure'],
  ['dailySpend','Fees spent','Challenge and activation spending on this day'],
- ['dailyReceipts','Payouts received','First-payout receipts on this day']
+ ['dailyReceipts','P4 receipts','Cash received from payout events on this day, including repeat payouts']
 ];
 const diff=(row,prev,key)=>n(row?.[key])-n(prev?.[key]);
 function daily(rows,averages=false,onlyChanges=true){
@@ -170,8 +170,8 @@ const routeHeaderHelp={
  pending:'CURRENT at END of day: funded accounts whose payout request is in processing. These are included in FD, so do not add them to FD.',
  breached:'CUMULATIVE: accounts that actually hit the modeled loss limit. A loss by itself does not mean an account breached. The Topstep drawdown limit trails at end of day.',
  blocked:'CUMULATIVE: accounts removed from normal trade routing because the selected risk is larger than their remaining allowed loss room. They have NOT breached the prop-firm drawdown limit. The model does not lower their risk automatically.',
- paidToday:'DAILY: number of accounts whose first modeled payout was received on this day. Requesting a payout and receiving it can happen on different days.',
- paidTotal:'CUMULATIVE: total distinct accounts with a first modeled payout received by this day. These are included in Paid today only on the payment day.',
+ paidToday:'DAILY P4 NEW: number of payout events received today, including repeat payouts by the same P3 account.',
+ paidTotal:'CUMULATIVE P4 TOTAL: number of payout events received by this day, including multiple payouts from one P3 account.',
  events:'Account-specific milestones, including target achieved, payout requested, payout received, and modeled minimum-size qualification days.',
  trade:'DAILY SIGNAL SLOT: identifies which unique account received this numbered strategy signal. A# is the permanent account ID; CH = Challenge, VR = Verification, FD = Funded, W = win, L = loss, Skipped = no trade executed.'
 };
@@ -205,10 +205,18 @@ function dailyTradeRouting(results,selected,inputs,routePage=1,pageSize=10,table
     if(!qualificationByDay.has(t.day))qualificationByDay.set(t.day,[]);
     qualificationByDay.get(t.day).push({id,lot:t.lot});
    }
-   if(ac.paidDay!=null){
+   // The same P3 account may produce multiple P4 events after recycling.
+   // The recorded payout trace is the event source; paidDay is only the latest cycle.
+   const payoutEvents=(ac.trace||[]).filter(t=>t.type==='paid');
+   for(const event of payoutEvents){
+    if(!payoutsByDay.has(event.day))payoutsByDay.set(event.day,[]);
+    payoutsByDay.get(event.day).push({id,amount:n(event.cash)});
+   }
+   if(!payoutEvents.length&&ac.paidDay!=null){
     if(!payoutsByDay.has(ac.paidDay))payoutsByDay.set(ac.paidDay,[]);
     payoutsByDay.get(ac.paidDay).push({id,amount:n(ac.firstPaid)});
-   }else if(ac.fundedTargetDay!=null){
+   }
+   if(ac.fundedTargetDay!=null){
     if(!targetsByDay.has(ac.fundedTargetDay))targetsByDay.set(ac.fundedTargetDay,[]);
     targetsByDay.get(ac.fundedTargetDay).push({id});
    }
@@ -297,7 +305,7 @@ function dailyTradeRouting(results,selected,inputs,routePage=1,pageSize=10,table
   Array.from({length:maxCells},(_,i)=>routeTh('Trade '+(i+1),'trade')).join('')+
   [['Executed trades','executed'],['Qualification trades','min'],['Challenges purchased','bought'],['Challenge active','ch'],['Verification active','vr'],['Funded active','fd'],
    ['Payout pending','pending'],['Phase 1 passed','p1pass'],['Phase 2 passed','p2pass'],['Target reached','p3ready'],['Failed accounts','breached'],['Risk blocked','blocked'],
-   ['Paid today','paidToday'],['Paid accounts','paidTotal'],['Account events','events']]
+   ['P4 new','paidToday'],['P4 total','paidTotal'],['Account events','events']]
    .map(([label,key])=>routeTh(label,key)).join('')+
   '</tr></thead><tbody>'+rows+'</tbody></table></div>'+pageNav(routePagination,'routePage'),tableOpen['daily-routing']===true,days.length+' trading days');
 }
