@@ -1002,15 +1002,16 @@ function applyPhaseVisibility(){
  if(topstepPlan){
   topstepPlan.hidden=!m.topstep;
   if(m.topstep){
-   const evalGoal=Number(state.p1Target)||0, fundedGoal=Number(state.topstepFirstPayoutBalance)||4000;
+   const evalGoal=Number(state.p1Target)||0;
+   const fundedGoal=Number(state.topstepFirstPayoutBalance)||4000;
    const dailyExample=evalGoal/2;
-   topstepPlan.innerHTML='<strong>Topstep · P1 → P3 (no P2)</strong><div style="display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:5px">'+
-    '<span title="Evaluation profit target; the best profitable day must not exceed 55% of cumulative evaluation profit.">P1 target <b>'+healthDollar(evalGoal)+'</b></span>'+
-    '<span title="Illustrative equal-profit split across two different trading days; this is not a separate phase or mandatory exact daily profit.">2-day plan <b>'+healthDollar(dailyExample)+' + '+healthDollar(dailyExample)+'</b></span>'+
-    '<span title="Maximum share of cumulative evaluation profit from the largest winning day.">Consistency <b>55%</b></span>'+
-    '<span title="Funded profit goal for the selected payout planning model; funded payout eligibility is separate.">P3 target <b>'+healthDollar(fundedGoal)+'</b></span>'+
-    '<span title="Maximum loss limit trails using end-of-day balance, with intraday breach checks.">Drawdown <b>EOD trailing</b></span></div>'+
-    '<small>Two 
+   topstepPlan.textContent='Topstep P1 target: '+healthDollar(evalGoal)+
+    ' | Two-day example: '+healthDollar(dailyExample)+' + '+healthDollar(dailyExample)+
+    ' | Consistency: 55% | P3 target: '+healthDollar(fundedGoal)+
+    ' | Drawdown: EOD trailing. Risk settings remain editable below.';
+  }
+ }
+ const note=$('phaseStructureNote');
  if(note)note.textContent=m.topstep?'Topstep: Evaluation → Express Funded, no Phase 2. Check trailing loss and payout rules separately.'
  :m.instant?'Instant: funded stage only. Check its payout requirements.'
  :m.phase2?'Two evaluation phases → Funded. Compare options inside each stage.'
