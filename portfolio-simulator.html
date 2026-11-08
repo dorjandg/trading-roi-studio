@@ -826,6 +826,13 @@ function accountPlan(row){
   if(!Number.isFinite(value)||value<0||value>120)continue;
   plan[target]=value;plan[derived]=Math.ceil(value*5/7);
  }
+ if(row.id==='ftmo2'){
+  for(const [field,stage] of [['__p1TransitionDays','p1'],['__p2TransitionDays','p2']]){
+   const value=Number(experiment[field]);
+   if(Object.prototype.hasOwnProperty.call(experiment,field)&&Number.isInteger(value)&&value>=1&&value<=30&&plan.riskProfiles[stage])
+    plan.riskProfiles[stage].minDays=value;
+  }
+ }
  if(Object.prototype.hasOwnProperty.call(experiment,'__fundedTarget')){
   const value=Number(experiment.__fundedTarget);
   if(Number.isFinite(value)&&value>0){
@@ -1064,6 +1071,7 @@ function renderRows(){
     '<div class="field"><label>Funded allocation cap ($)</label><input type="number" data-field="fundedCap" min="0" step="10000" placeholder="No limit" value="'+(allocationLimits[r.id+':'+r.size]?.funded||'')+'"></div>'+
     '<div class="field"><label>Funded payout profit target ($)</label><input type="number" data-field="fundedTarget" min="0.01" step="100" value="'+accountPlan(r).riskProfiles.funded.target+'"></div>'+
     '<div class="field"><label>Payout wait from first funded trade (calendar days)</label><input type="number" data-field="payoutWait" min="0" max="120" step="1" value="'+accountPlan(r).payoutWaitCalendarDays+'"></div>'+
+    (r.id==='ftmo2'?'<div class="field"><label title="Trading days in Phase 1 before Phase 2 becomes available the following trading day. Default 3: new account on day 4.">P1 → P2 · trading days</label><input type="number" data-field="p1TransitionDays" min="1" max="30" step="1" value="'+accountPlan(r).riskProfiles.p1.minDays+'"></div><div class="field"><label title="Trading days in Phase 2 before Funded becomes available the following trading day. Default 3: funded account on day 4.">P2 → Funded · trading days</label><input type="number" data-field="p2TransitionDays" min="1" max="30" step="1" value="'+accountPlan(r).riskProfiles.p2.minDays+'"></div>':'')+
     '<div class="field"><label>Modeled payout processing (calendar days)</label><input type="number" data-field="payoutProcessing" min="0" max="120" step="1" value="'+accountPlan(r).payoutProcessingCalendarDays+'"></div>'+
     '<details class="account-risk-details"><summary>Fee &amp; phase risks · '+
      esc(accountPlan(r).stageList.map(stage=>stage.toUpperCase()+' '+(savedStageInfo(r.id,r.size,stage).source==='Profile fallback'?'fallback':'saved')).join(' · '))+
@@ -1181,6 +1189,14 @@ $('accounts').addEventListener('change',event=>{
    if(!testRisks[key])testRisks[key]={};
    testRisks[key].__fundedTarget=value;
   }else{$('status').textContent='Enter a positive funded payout target';renderRows();return;}
+ }
+ if(field==='p1TransitionDays'||field==='p2TransitionDays'){
+  if(rows[index].id!=='ftmo2')return;
+  const value=Number(input.value);
+  if(!Number.isInteger(value)||value<1||value>30){$('status').textContent='FTMO phase timing must be 1–30 trading days';renderRows();return;}
+  const key=rows[index].id+':'+rows[index].size;
+  if(!testRisks[key])testRisks[key]={};
+  testRisks[key][field==='p1TransitionDays'?'__p1TransitionDays':'__p2TransitionDays']=value;
  }
  if(field==='payoutWait'||field==='payoutProcessing'){
   const value=Number(input.value);
