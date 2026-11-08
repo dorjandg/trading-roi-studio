@@ -42,6 +42,10 @@ function run(p,stage){
  const key='studio:scenario-discovery:v2:'+stage;let saved=[];try{saved=JSON.parse(localStorage.getItem(key)||'[]')}catch(e){}
  const pageKey='studio:scenario-discovery:pagesize:'+stage;
  let pageSize=5;try{const stored=localStorage.getItem(pageKey);if(['5','10','20','all'].includes(stored))pageSize=stored==='all'?'all':Number(stored)}catch(e){}
+ const sortKey='studio:scenario-discovery:sort:'+stage;let sort={field:'hit',dir:'desc'};try{const v=JSON.parse(localStorage.getItem(sortKey)||'null');if(v&&['name','risks','hit','breach','negative','trades'].includes(v.field)&&['asc','desc'].includes(v.dir))sort=v}catch(e){}
+ const value=(c,k)=>k==='name'?c.name.toLowerCase():k==='risks'?c.r[0]:c[k];
+ const sortRows=()=>{ranked.sort((a,b)=>{const x=value(a,sort.field),y=value(b,sort.field);const diff=typeof x==='string'?x.localeCompare(y):x-y;return (sort.dir==='asc'?1:-1)*diff});};
+ sortRows();
  const perPage=()=>pageSize==='all'?ranked.length:pageSize;
  let page=1;
  const renderPage=()=>{
@@ -57,6 +61,37 @@ function run(p,stage){
  const explanation=document.createElement('div');explanation.setAttribute('data-head-explanation','');explanation.setAttribute('role','status');explanation.style.cssText='display:none;margin:5px 0;padding:7px 9px;border:1px solid #506078;border-radius:7px;font-size:12px;line-height:1.45';
  out.querySelector('table').before(explanation);
  out.querySelectorAll('[data-head-help]').forEach(btn=>btn.addEventListener('click',()=>{const h=help[Number(btn.dataset.headHelp)];const same=explanation.dataset.active===btn.dataset.headHelp&&explanation.style.display!=='none';explanation.style.display=same?'none':'block';explanation.dataset.active=btn.dataset.headHelp;explanation.textContent=same?'':h[0]+' — '+h[1];}));
+ const table=out.querySelector('table'),tbody=table.tBodies[0];
+ // Stable row identities make sorting compatible with saved checkboxes and pagination.
+ [...tbody.rows].forEach((tr,i)=>{tr.dataset.riskKey=ranked[i].r.join('/');tr.querySelector('[data-keep]').dataset.riskKey=tr.dataset.riskKey});
+ const keepByRisk=()=>{const keys=[...out.querySelectorAll('[data-keep]:checked')].map(x=>x.dataset.riskKey);try{localStorage.setItem(key,JSON.stringify(keys))}catch(e){}};
+ out.querySelectorAll('[data-keep]').forEach(x=>x.addEventListener('change',keepByRisk));
+ const reorderRows=()=>{sortRows();const rows=new Map([...tbody.rows].map(tr=>[tr.dataset.riskKey,tr]));ranked.forEach(c=>{const tr=rows.get(c.r.join('/'));if(tr)tbody.appendChild(tr)});page=1;renderPage()};
+ const sortable={1:'name',2:'risks',3:'hit',4:'breach',5:'negative',6:'trades'};
+ [...table.tHead.rows[0].cells].forEach((th,i)=>{
+  if(!(i in sortable))return;
+  const b=document.createElement('button');b.type='button';b.textContent='↕';b.title='Sort ascending or descending';b.setAttribute('aria-label','Sort '+help[i][0]);b.style.cssText='font:inherit;background:none;border:0;color:inherit;cursor:pointer;padding:0 2px';
+  th.appendChild(b);
+  b.addEventListener('click',()=>{const field=sortable[i];sort={field,dir:sort.field===field&&sort.dir==='desc'?'asc':'desc'};try{localStorage.setItem(sortKey,JSON.stringify(sort))}catch(e){};[...table.tHead.querySelectorAll('[data-sort-indicator]')].forEach(x=>x.textContent='↕');b.textContent=sort.dir==='asc'?'↑':'↓';reorderRows()});
+  if(sort.field===sortable[i])b.textContent=sort.dir==='asc'?'↑':'↓';
+  b.dataset.sortIndicator='1';
+ });
+ // Drag headers on desktop, or use accessible left/right buttons on touch.
+ const orderKey='studio:scenario-discovery:order:'+stage;
+ const cols=['keep','name','risks','hit','breach','negative','trades'];
+ let order=cols.slice();try{const v=JSON.parse(localStorage.getItem(orderKey)||'null');if(Array.isArray(v)&&v.length===cols.length&&cols.every(k=>v.includes(k)))order=v}catch(e){}
+ [...table.tHead.rows[0].cells].forEach((th,i)=>{th.dataset.col=cols[i];th.draggable=true;th.title=(th.title||'')+' · Drag to reorder';});
+ [...tbody.rows].forEach(tr=>[...tr.cells].forEach((td,i)=>td.dataset.col=cols[i]));
+ const applyOrder=()=>{for(const tr of [table.tHead.rows[0],...tbody.rows]){const cells=new Map([...tr.cells].map(c=>[c.dataset.col,c]));order.forEach(k=>{if(cells.has(k))tr.appendChild(cells.get(k))})}try{localStorage.setItem(orderKey,JSON.stringify(order))}catch(e){}};
+ const move=(from,to)=>{if(!cols.includes(from)||!cols.includes(to)||from===to)return;order=order.filter(k=>k!==from);order.splice(order.indexOf(to),0,from);applyOrder()};
+ table.tHead.addEventListener('dragstart',e=>{const th=e.target.closest('th[data-col]');if(th)e.dataTransfer.setData('text/plain',th.dataset.col)});
+ table.tHead.addEventListener('dragover',e=>{if(e.target.closest('th[data-col]'))e.preventDefault()});
+ table.tHead.addEventListener('drop',e=>{const th=e.target.closest('th[data-col]');if(th){e.preventDefault();move(e.dataTransfer.getData('text/plain'),th.dataset.col)}});
+ [...table.tHead.rows[0].cells].forEach(th=>{
+  const left=document.createElement('button'),right=document.createElement('button');
+  for(const [b,delta,symbol] of [[left,-1,'‹'],[right,1,'›']]){b.type='button';b.textContent=symbol;b.title='Move column '+(delta<0?'left':'right');b.setAttribute('aria-label',b.title+' '+th.dataset.col);b.style.cssText='font:inherit;background:none;border:0;color:inherit;padding:0 2px;cursor:pointer';b.addEventListener('click',()=>{const i=order.indexOf(th.dataset.col);if(i+delta>=0&&i+delta<order.length)move(th.dataset.col,order[i+delta])});th.appendChild(b)}
+ });
+ applyOrder();
  out.querySelector('[data-page-size]').addEventListener('change',e=>{pageSize=e.target.value==='all'?'all':Number(e.target.value);try{localStorage.setItem(pageKey,String(pageSize))}catch(err){}page=1;renderPage();});
  out.querySelector('[data-prev]').addEventListener('click',()=>{page--;renderPage()});
  out.querySelector('[data-next]').addEventListener('click',()=>{page++;renderPage()});
