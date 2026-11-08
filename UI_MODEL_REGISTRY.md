@@ -37,3 +37,9 @@ For every newly approved model add: `MODEL-NNN`, user-approved name, canonical p
 - A page may implement a different model only when the user explicitly approves an exception and it is registered here.
 
 **Created:** 2026-11-08. **Owner-approved direction:** use the existing Portfolio SIM as the canonical model; record each newly approved model for reuse.
+
+## MODEL-005 — Fast Pass + Reset scenario decision engine (experimental, 2026-11-08)
+- Canonical implementation: `studio-scenario-discovery.js` in Firms → Scenario Optimizer. Preserve Portfolio SIM table interaction model (MODEL-001).
+- Per-attempt state: profit target, RR, win probability, overall modeled risk cap. Trade 1 attempts the pass; trade 2 attempts the pass after loss; trade 3 targets a breakeven reset (or explicitly labeled alternative pass); trade 4 uses remaining capacity (or half-reserve variant). Stops at pass, reset or exhausted four-trade attempt. A reset is NOT a pass and multi-day restart is NOT modeled.
+- Output: probability of pass, reset, risk-cap exhaustion, expected executed trades, and all terminal win/loss paths. The model is illustrative; no firm compliance, fees, execution costs or live trade data are implied.
+- Approval status: user requested testing this model; results and parameters remain experimental pending validation. Do not silently change live risk strategies.
