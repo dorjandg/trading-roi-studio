@@ -1,8 +1,30 @@
 {
   "schema": "4ds-gpt-research-v1",
-  "updatedAt": "2026-11-07T18:21:00.000Z",
+  "updatedAt": "2026-11-08T18:24:36.000Z",
   "visibility": "public-generic",
   "reviews": [
+    {
+      "id": "review-paid-count-recycled-payouts-20261108-v1",
+      "date": "2026-11-08",
+      "category": "Simulation integrity",
+      "status": "updated",
+      "priority": "high",
+      "title": "Paid-count audit now distinguishes payout cycles from unique funded accounts",
+      "finding": "The formula health audit compared cumulative payout events with funded activations. With permitted funded-account recycling, one funded account may generate multiple payout events, so this comparison can falsely flag a paid-count invariant. The engine separately records distinct first-paid accounts. The corrected audit compares that distinct count with funded activations. Newer retained cloud simulation summaries show the two measures can differ; this does not prove live payouts or validate firm eligibility.",
+      "suggestion": "In Section 11 rerun the formula audit on a new FTMO recycling simulation and a Topstep non-recycling control. Show payout events and distinct paid accounts as different metrics; investigate only if distinct paid accounts exceed funded activations.",
+      "measurements": [
+        "Cumulative payout events versus distinct first-paid accounts versus funded activations",
+        "Paid-count audit alerts before and after the correction on recycling and non-recycling fixtures",
+        "Risk-blocked accounts versus actual loss-limit failures; sampled traces are partial"
+      ],
+      "action": "Fixed studio-formula-audit.js paid-count invariant; no strategy, phase-risk, payout eligibility, or engine parameters changed.",
+      "source": "GitHub portfolio-engine.js and studio-formula-audit.js; read-only connected cloud history shape and anonymized aggregate comparison.",
+      "codeCommit": "ee5ce70f59d094a4bcd99c993371f7ef0f04063c",
+      "reviewedRequestIds": [
+        "studio-cue-mw7s66p6-c3adkq"
+      ],
+      "verified": "Three deterministic audit fixtures: recycled FTMO payout count no longer falsely alerts; non-recycled Topstep control passes; deliberately invalid distinct-paid count still alerts. Actual broker/prop-firm payouts, deployed browser and complete account-level trace replay not verified."
+    },
     {
       "id": "review-cloud-trace-risk-block-evidence-20261107-v1",
       "date": "2026-11-07",
