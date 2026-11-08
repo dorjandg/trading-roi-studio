@@ -694,7 +694,7 @@ details p{margin:6px 0}
 </div></details>
 </div>
 <script src="ftmo-funded-buffer.js?v=20261107-ftmo-funded-buffer-v1"></script>
-<script src="portfolio-engine.js?v=20261107-weekly-timing-v2"></script><script src="portfolio-weekly.js?v=20261107-weekly-cashflow-v2"></script>
+<script src="portfolio-engine.js?v=20261108-failure-cash-v1"></script><script src="portfolio-weekly.js?v=20261107-weekly-cashflow-v2"></script>
 <script src="portfolio-payout-optimizer.js?v=20261107-weekly-optimizer-v2"></script>
 <script src="portfolio-discovery.js?v=20261107-target-exact-v1"></script>
 <script src="portfolio-recovery-ladder.js?v=20261107-recovery-ladder-v1"></script>
@@ -1488,7 +1488,8 @@ let regularReport=null,investmentReport=null,reportMode='run';
 const cashColumns=[
  ['period','Period · days'],['opportunities','Signals'],['trades','Traded'],['bought','Bought'],['challengePasses','P1 passed'],['verificationPasses','P2 passed'],['funded','Funded'],['paid','Paid'],['spent','Fees spent'],['receipts','Cash receipts'],['net','Net this period'],['cumulativeNet','Cumulative net'],
  ['cumulativeBought','Cumulative bought'],['cumulativePaid','Cumulative paid'],['cumulativeSpent','Cumulative fees'],['cumulativeReceipts','Cumulative receipts'],['cumulativeFunded','Cumulative funded'],['cumulativeP1','Cumulative P1'],['cumulativeP2','Cumulative P2'],
- ['untraded','Unused signals'],['conversionP1','P1 / bought %'],['conversionP2','P2 / P1 %'],['conversionFunded','Funded / bought %'],['conversionPaid','Paid / bought %'],['costPerBuy','Fees / bought'],['costPerPaid','Fees / payout'],['netPerTrade','Net / trade'],['roiOnFees','Net / fees %'],['cumulativeROI','Cum. net / fees %'],['cumulativeTrades','Cum. trades'],['cumulativeSignals','Cum. signals']
+ ['untraded','Unused signals'],['conversionP1','P1 / bought %'],['conversionP2','P2 / P1 %'],['conversionFunded','Funded / bought %'],['conversionPaid','Paid / bought %'],['costPerBuy','Fees / bought'],['costPerPaid','Fees / payout'],['netPerTrade','Net / trade'],['roiOnFees','Net / fees %'],['cumulativeROI','Cum. net / fees %'],['cumulativeTrades','Cum. trades'],['cumulativeSignals','Cum. signals'],
+ ['failedAccounts','Failed accounts'],['riskBlockedAccounts','Risk-blocked'],['strategyStoppedAccounts','Strategy-stopped'],['closedAccounts','Total closed'],['cumulativeFailed','Cum. failed'],['cumulativeRiskBlocked','Cum. risk-blocked'],['cumulativeStrategyStopped','Cum. strategy-stopped'],['cumulativeClosed','Cum. closed']
 ];
 const cashDefaultKeys=cashColumns.slice(0,12).map(x=>x[0]);
 let cashVisible=new Set(cashDefaultKeys);
@@ -1497,7 +1498,7 @@ function cashPeriodRows(result,span){
  const curve=result.cashCurve||[],days=Math.max(0,Math.floor(Number(result.config?.days)||0)),out=[];
  for(let start=0;start<days;start+=span){
   const end=Math.min(days,start+span);
-  const before=start===0?{spent:0,receipts:0,net:0,bought:0,paid:0,passed1:0,passed2:0,activated:0}:curve[start],after=curve[end];
+  const before=start===0?{spent:0,receipts:0,net:0,bought:0,paid:0,passed1:0,passed2:0,activated:0,failed:0,riskBlocked:0,strategyStopped:0,burned:0}:curve[start],after=curve[end];
   if(!before||!after)continue;
   const delta=(key)=>Number(after[key]||0)-Number(before[key]||0);
   const daily=curve.slice(start+1,end+1);
@@ -1511,7 +1512,9 @@ function cashPeriodRows(result,span){
    cumulativeFunded:Number(after.activated||0),cumulativeP1:Number(after.passed1||0),cumulativeP2:Number(after.passed2||0),
    untraded:daily.reduce((s,x)=>s+Number(x.opportunities||0)-Number(x.tradesToday||0),0),
    cumulativeTrades:curve.slice(1,end+1).reduce((s,x)=>s+Number(x.tradesToday||0),0),
-   cumulativeSignals:curve.slice(1,end+1).reduce((s,x)=>s+Number(x.opportunities||0),0)});
+   cumulativeSignals:curve.slice(1,end+1).reduce((s,x)=>s+Number(x.opportunities||0),0),
+   failedAccounts:delta('failed'),riskBlockedAccounts:delta('riskBlocked'),strategyStoppedAccounts:delta('strategyStopped'),closedAccounts:delta('burned'),
+   cumulativeFailed:Number(after.failed||0),cumulativeRiskBlocked:Number(after.riskBlocked||0),cumulativeStrategyStopped:Number(after.strategyStopped||0),cumulativeClosed:Number(after.burned||0)});
  }
  return out;
 }
@@ -1599,14 +1602,14 @@ $('cashColumnsToggle').addEventListener('click',()=>{$('cashColumnsPanel').hidde
 $('cashSourcesToggle').addEventListener('click',()=>{$('cashSourcesPanel').hidden=!$('cashSourcesPanel').hidden;});
 function drawCashColumnControls(){
  $('cashColumnsPanel').innerHTML='<div class="cash-column-actions"><button type="button" data-cash-preset="default">Default</button><button type="button" data-cash-preset="all">All</button><button type="button" data-cash-preset="none">Clear</button><button type="button" data-cash-preset="cash">Cash only</button><button type="button" data-cash-preset="funnel">Account funnel</button></div>'+
- '<p class="hint">'+cashVisible.size+' / '+cashColumns.length+' columns selected · scroll table horizontally to see extras</p>'+
+ '<p class="hint">'+cashVisible.size+' / '+cashColumns.length+' columns selected · Failed = modeled account failure; risk-blocked and strategy-stopped are NOT confirmed firm breaches. Counts are trial averages. Scroll for extras.</p>'+
  '<div class="cash-columns-grid">'+cashColumns.map(([key,label])=>'<label><input type="checkbox" data-cash-col="'+key+'" '+(cashVisible.has(key)?'checked':'')+'>'+esc(label)+'</label>').join('')+'</div>';
 }
 drawCashColumnControls();
 $('cashColumnsPanel').addEventListener('click',e=>{
  const btn=e.target.closest('[data-cash-preset]');if(!btn)return;
  const preset=btn.dataset.cashPreset;
- const groups={cash:['period','spent','receipts','net','cumulativeNet','cumulativeSpent','cumulativeReceipts','roiOnFees','cumulativeROI'],funnel:['period','opportunities','trades','bought','challengePasses','verificationPasses','funded','paid','conversionP1','conversionP2','conversionFunded','conversionPaid']};
+ const groups={cash:['period','spent','receipts','net','cumulativeNet','cumulativeSpent','cumulativeReceipts','roiOnFees','cumulativeROI'],funnel:['period','opportunities','trades','bought','challengePasses','verificationPasses','funded','paid','failedAccounts','riskBlockedAccounts','strategyStoppedAccounts','conversionP1','conversionP2','conversionFunded','conversionPaid']};
  cashVisible=new Set(preset==='all'?cashColumns.map(x=>x[0]):preset==='none'?[]:preset==='default'?cashDefaultKeys:groups[preset]||cashDefaultKeys);
  drawCashColumnControls();if(cashLastList)renderWeeklyEconomics(cashLastList,cashLastInputs);
 });
