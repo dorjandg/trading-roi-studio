@@ -1525,53 +1525,57 @@ function addJourneyColumnFilters(){
   const pref=journeyColumnPrefs[key],valid=ids.slice(1);
   pref.visible=pref.visible.filter(x=>valid.includes(x));
   pref.order=[...pref.order.filter(x=>valid.includes(x)),...valid.filter(x=>!pref.order.includes(x))];
-  const toolbar=document.createElement('details');toolbar.className='cash-columns-panel';toolbar.style.cssText='margin:8px 0;padding:8px;border:1px solid var(--border,#354359);border-radius:8px';
-  const summary=document.createElement('summary');summary.textContent='Columns · '+pref.visible.length+' / '+valid.length+' selected';toolbar.appendChild(summary);
-  const controls=document.createElement('div');toolbar.appendChild(controls);
+  const toolbar=document.createElement('div');toolbar.style.cssText='display:flex;justify-content:flex-end;position:relative;margin:4px 0';
+  const trigger=document.createElement('button');trigger.type='button';trigger.textContent='☷';trigger.title='Filter visible columns';trigger.setAttribute('aria-label','Filter columns');trigger.setAttribute('aria-expanded','false');trigger.style.cssText='font-size:15px;padding:3px 9px;min-width:30px';
+  const controls=document.createElement('div');controls.hidden=true;controls.style.cssText='position:absolute;right:0;top:100%;z-index:20;width:min(330px,90vw);max-height:360px;overflow:auto;padding:10px;border:1px solid var(--border,#354359);border-radius:8px;background:var(--panel,#182232);box-shadow:0 6px 20px #0005';
+  toolbar.append(trigger,controls);
+  trigger.addEventListener('click',()=>{controls.hidden=!controls.hidden;trigger.setAttribute('aria-expanded',String(!controls.hidden));});
   const persist=()=>{try{localStorage.setItem(storageKey,JSON.stringify(pref));}catch(_){}};
   const apply=()=>{
-   const allRows=Array.from(table.rows);
    const order=['day',...pref.order];
-   for(const row of allRows){
+   for(const row of Array.from(table.rows)){
     Array.from(row.cells).forEach((cell,i)=>{if(!cell.dataset.journeyColumnId)cell.dataset.journeyColumnId=ids[i];});
     const byId=new Map(Array.from(row.cells).map(cell=>[cell.dataset.journeyColumnId,cell]));
     for(const id of order){const cell=byId.get(id);if(cell){row.appendChild(cell);cell.hidden=id!=='day'&&!pref.visible.includes(id);}}
    }
-   summary.textContent='Columns · '+pref.visible.length+' / '+valid.length+' selected';
    persist();
   };
   const renderControls=()=>{
    controls.replaceChildren();
-   const actions=document.createElement('div');actions.className='cash-column-actions';
-   for(const [name,mode] of [['Default','default'],['All','all'],['Clear','none'],['Cash only','cash'],['Account funnel','funnel']]){
-    const btn=document.createElement('button');btn.type='button';btn.textContent=name;
-    btn.addEventListener('click',()=>{
-     const isCash=id=>/fees|spent|payout|receipt|cash|net|allocation|budget/i.test(id);
-     const isFunnel=id=>/account|challenge|verification|funded|paid|failed|blocked|bought|breach|pending|CH|VR|FD|TOT/i.test(id);
-     pref.visible=mode==='all'?valid.slice():mode==='none'?[]:mode==='cash'?valid.filter(isCash):mode==='funnel'?valid.filter(isFunnel):valid.filter((id,i)=>i<Math.min(12,valid.length));
-     renderControls();apply();
-    });actions.appendChild(btn);
+   const tabs=document.createElement('div');tabs.style.cssText='display:flex;gap:6px;margin-bottom:8px';
+   const body=document.createElement('div');
+   let mode=controls.dataset.mode||'category';
+   for(const [value,label] of [['category','By category'],['manual','Manual']]){
+    const button=document.createElement('button');button.type='button';button.textContent=label;
+    button.style.fontWeight=mode===value?'700':'400';
+    button.addEventListener('click',()=>{controls.dataset.mode=value;renderControls();});
+    tabs.appendChild(button);
    }
-   controls.appendChild(actions);
-   const hint=document.createElement('p');hint.className='hint';hint.textContent='Select columns and use ◀ ▶ to reorder. Preferences are saved for this table.';controls.appendChild(hint);
-   const orderBox=document.createElement('div');orderBox.className='cash-order-grid';
-   const visibleOrder=pref.order.filter(id=>pref.visible.includes(id));
-   visibleOrder.forEach((id,i)=>{
-    const item=document.createElement('div');item.className='cash-order-item';
-    const name=document.createElement('span');name.textContent='⠿ '+id;name.dataset.columnDragHandle='';item.dataset.columnId=id;item.appendChild(name);
-    for(const [glyph,step] of [['◀',-1],['▶',1]]){
-     const btn=document.createElement('button');btn.type='button';btn.textContent=glyph;btn.disabled=i+step<0||i+step>=visibleOrder.length;
-     btn.addEventListener('click',()=>{const other=visibleOrder[i+step],x=pref.order.indexOf(id),y=pref.order.indexOf(other);[pref.order[x],pref.order[y]]=[pref.order[y],pref.order[x]];renderControls();apply();});
-     item.appendChild(btn);
-    }orderBox.appendChild(item);
-   });controls.appendChild(orderBox);
-   enableColumnPointerReorder(orderBox,'.cash-order-item',item=>item.dataset.columnId,(from,to)=>{const x=pref.order.indexOf(from),y=pref.order.indexOf(to);if(x<0||y<0)return;pref.order.splice(x,1);pref.order.splice(y,0,from);renderControls();apply();});
-   const grid=document.createElement('div');grid.className='cash-columns-grid';
-   for(const id of valid){
-    const label=document.createElement('label'),check=document.createElement('input');check.type='checkbox';check.checked=pref.visible.includes(id);
-    check.addEventListener('change',()=>{if(check.checked&&!pref.visible.includes(id))pref.visible.push(id);else if(!check.checked)pref.visible=pref.visible.filter(x=>x!==id);renderControls();apply();});
-    label.append(check,document.createTextNode(id));grid.appendChild(label);
-   }controls.appendChild(grid);
+   controls.append(tabs,body);
+   const setVisible=keys=>{pref.visible=keys;apply();renderControls();};
+   if(mode==='category'){
+    const categories=[
+     ['All columns',valid],['Trading',valid.filter(id=>/trade|executed|unused|opportunit|signal|minimum|min/i.test(id))],
+     ['Account funnel',valid.filter(id=>/account|challenge|verification|funded|paid|failed|blocked|bought|breach|pending|CH|VR|FD/i.test(id))],
+     ['Cash flow',valid.filter(id=>/fee|spent|payout|receipt|cash|net|allocation|budget/i.test(id))]
+    ];
+    for(const [label,keys] of categories){
+     const button=document.createElement('button');button.type='button';button.textContent=label+' ('+keys.length+')';
+     button.style.cssText='display:block;width:100%;text-align:left;margin:4px 0';
+     button.addEventListener('click',()=>setVisible(keys.slice()));body.appendChild(button);
+    }
+   }else{
+    const actions=document.createElement('div');actions.style.cssText='display:flex;gap:6px;margin-bottom:8px';
+    for(const [label,keys] of [['All',valid],['Clear',[]]]){
+     const button=document.createElement('button');button.type='button';button.textContent=label;button.addEventListener('click',()=>setVisible(keys.slice()));actions.appendChild(button);
+    }body.appendChild(actions);
+    const grid=document.createElement('div');grid.className='cash-columns-grid';
+    for(const id of valid){
+     const label=document.createElement('label'),check=document.createElement('input');check.type='checkbox';check.checked=pref.visible.includes(id);
+     check.addEventListener('change',()=>{if(check.checked&&!pref.visible.includes(id))pref.visible.push(id);else if(!check.checked)pref.visible=pref.visible.filter(x=>x!==id);apply();});
+     label.append(check,document.createTextNode(id));grid.appendChild(label);
+    }body.appendChild(grid);
+   }
   };
   renderControls();table.closest('.tablewrap')?.before(toolbar);apply();
   enableDirectTableHeaderDrag(table,(from,to)=>{
