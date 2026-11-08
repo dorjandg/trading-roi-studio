@@ -674,7 +674,7 @@ details p{margin:6px 0}
 <section id="results" hidden>
 <div id="reportSourceBar" class="report-source-bar" role="group" aria-label="Detailed report source"><strong>Detailed reports · Sections 5–9</strong><span id="reportSourceLabel">Run Simulation</span><div class="report-source-actions"><button type="button" data-report-source="run" disabled>Run Simulation</button><button type="button" data-report-source="investment" disabled>Investment scenario</button></div><nav class="report-jump-links" aria-label="Detailed reports"><a href="#section4Panel" data-report-jump="section4Panel">5 · Results</a><a href="#chartsPanel" data-report-jump="chartsPanel">6 · Charts</a><a href="#journeyPanel" data-report-jump="journeyPanel">7 · Journey</a><a href="#section7Panel" data-report-jump="section7Panel">8 · Trades</a><a href="#section9Panel" data-report-jump="section9Panel">9 · Spending</a></nav></div>
 <details class="sim-charts-panel numbered-panel" id="section4Panel" open><summary><strong>5 · Results across prop firms</strong><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><p id="summaryCaption" class="hint"></p><div id="totals" class="kpis"></div>
- <div class="tablewrap"><table><thead><tr><th>Firm / account</th><th>Budget</th><th>Challenges</th><th>Spent avg.</th><th>Phase 1 passes</th><th>Phase 2 passes</th><th>Funded</th><th>Paid</th><th>Payouts avg.</th><th>Net avg.</th><th>ROI</th><th>Chance ≥1 payout</th></tr></thead><tbody id="comparisonRows"></tbody></table></div>
+ <div class="cash-tools"><label for="resultsAccountView">Compare account</label><select id="resultsAccountView" style="width:auto;max-width:270px"><option value="all">All accounts</option></select><span class="hint">Filters comparison rows only · overall KPIs stay unchanged</span></div><div class="tablewrap"><table><thead><tr><th>Firm / account</th><th>Budget</th><th>Challenges</th><th>Spent avg.</th><th>Phase 1 passes</th><th>Phase 2 passes</th><th>Funded</th><th>Paid</th><th>Payouts avg.</th><th>Net avg.</th><th>ROI</th><th>Chance ≥1 payout</th></tr></thead><tbody id="comparisonRows"></tbody></table></div>
  <p class="hint">Counts and profits are averages over simulated trials, not whole-account predictions. ROI = expected net / expected incurred costs. Starting budget is not account capital.</p>
  <div id="combined" hidden></div><details id="weeklyEconomicsPanel" class="sim-charts-panel" style="margin-top:12px"><summary><strong>Cash flow · payout economics</strong><span class="sim-charts-summary" id="weeklyEconomicsHint">Fees · payouts · net · conversion</span></summary><div class="numbered-content"><div class="cash-tools"><button type="button" id="cashPeriodToggle" aria-expanded="false" aria-controls="cashPeriodPanel">Period · Weekly ▾</button><button type="button" id="cashSummaryToggle">Summary ▾</button><button type="button" id="cashKpisToggle">KPIs ▾</button><button type="button" id="cashColumnsToggle">Columns ▾</button><button type="button" id="cashDetailsToggle">Period details ▾</button><button type="button" id="cashSourcesToggle">Model inputs ▾</button></div><div id="cashPeriodPanel" class="cash-columns-panel" hidden><label for="cashPeriod">Grouping</label><select id="cashPeriod" style="width:100%;max-width:230px"><option value="1">Daily · 1 trading day</option><option value="5" selected>Weekly · 5 trading days</option><option value="10">Biweekly · 10 trading days</option><option value="20">Monthly · 20 trading days</option></select><p class="hint">Periods use trading days, not calendar weeks or months. Touch any period row below to expand its details without adding table columns.</p></div><div id="cashSummaryPanel" class="cash-columns-panel" hidden></div><div id="cashKpisPanel" class="cash-columns-panel" hidden></div><div id="cashColumnsPanel" class="cash-columns-panel" hidden></div><div id="cashDetailsPanel" class="cash-columns-panel" hidden></div><div id="cashSourcesPanel" hidden><label for="cashInputView">Show input source</label><select id="cashInputView" style="max-width:290px"><option value="effective">Used in displayed simulation</option><option value="firms">Firms baseline (without overrides)</option><option value="overrides">Simulator-only overrides</option><option value="controls">Simulation controls</option></select><div id="cashInputDetails"></div></div></div><div id="weeklyEconomicsContents" class="numbered-content"><p class="hint">Run Simulation to see weekly results.</p></div></details>
 </div></details>
@@ -1840,6 +1840,9 @@ $('cashColumnsPanel').addEventListener('change',e=>{
  drawCashColumnControls();saveCashTablePrefs();if(cashLastList)renderWeeklyEconomics(cashLastList,cashLastInputs);
 });
 
+$('resultsAccountView').addEventListener('change',()=>{
+ for(const row of $('comparisonRows').rows)row.hidden=$('resultsAccountView').value!=='all'&&row.dataset.accountIndex!==$('resultsAccountView').value;
+});
 function renderResults(list,inputs,source='run'){
  reportMode=source==='investment'?'investment':'run';
  if(source==='run')regularReport={list,inputs};
@@ -1893,9 +1896,16 @@ function renderResults(list,inputs,source='run'){
    ['Chance net goal',pct(combinedStats.chanceGoal),'Across all selected accounts']
   ];
  $('totals').innerHTML=totalHtml.map(([k,v,n])=>'<div class="kpi" title="'+esc(k+': '+n)+'" tabindex="0"><small>'+esc(k)+'</small><strong>'+esc(v)+'</strong></div>').join('');
- $('comparisonRows').innerHTML=list.map(r=>{
+ const accountView=$('resultsAccountView');
+ if(accountView){
+  const prior=accountView.value;
+  accountView.replaceChildren(new Option('All accounts','all'));
+  list.forEach((r,i)=>accountView.add(new Option(r.plan.firm+' · '+r.plan.programName+' · '+usd(r.plan.size),String(i))));
+  accountView.value=prior==='all'||(Number.isInteger(Number(prior))&&Number(prior)>=0&&Number(prior)<list.length)?prior:'all';
+ }
+ $('comparisonRows').innerHTML=list.map((r,i)=>{
   const p=r.plan,c=r.avg;
-  return '<tr><td>'+esc(p.firm+' · '+p.programName)+' <small class="hint">'+usd(p.size)+'</small></td>'+
+  return '<tr data-account-index="'+i+'"><td>'+esc(p.firm+' · '+p.programName)+' <small class="hint">'+usd(p.size)+'</small></td>'+
    '<td>'+usd(r.budget)+'</td><td>'+dec(c.bought)+'</td><td>'+usd(c.spent)+'</td>'+
    '<td>'+dec(r.stages[0]||0)+'</td>'+
    '<td>'+(p.stageList.includes('p2')?dec(r.stages[1]||0):'—')+'</td>'+
@@ -1903,6 +1913,9 @@ function renderResults(list,inputs,source='run'){
    '<td class="'+(c.net>=0?'good':'bad')+'">'+usd(c.net)+'</td>'+
    '<td class="'+(r.roi>=0?'good':'bad')+'">'+pct(r.roi)+'</td><td>'+pct(r.chancePayout)+'</td></tr>';
  }).join('');
+ if(accountView){
+  for(const row of $('comparisonRows').rows)row.hidden=accountView.value!=='all'&&row.dataset.accountIndex!==accountView.value;
+ }
  $('combined').hidden=!mixed;
  if(mixed){
   $('combined').innerHTML='<div class="result-card"><h3>Combined split-budget portfolio</h3>'+
