@@ -127,19 +127,23 @@ function run(p,stage){
  // Same compact upper-right filter placement as Portfolio SIM; filter choices never change saved order.
  const filterKey='studio:scenario-discovery:visible:'+stage;
  let visible=cols.slice();try{const v=JSON.parse(localStorage.getItem(filterKey)||'null');if(Array.isArray(v)&&v.length&&v.every(k=>cols.includes(k)))visible=v}catch(e){}
- const toolbar=document.createElement('div');toolbar.style.cssText='display:flex;justify-content:flex-end;position:relative;margin:3px 0';
+ const toolbar=document.createElement('div');toolbar.style.cssText='display:flex;justify-content:flex-end;position:relative;margin:4px 0';
  const trigger=document.createElement('button');trigger.type='button';trigger.textContent='☷';trigger.title='Filter visible columns';trigger.setAttribute('aria-label','Filter columns');trigger.setAttribute('aria-expanded','false');trigger.style.cssText='font-size:15px;padding:3px 9px;min-width:30px';
- const panel=document.createElement('div');panel.hidden=true;panel.style.cssText='position:absolute;right:0;top:100%;z-index:30;width:min(300px,90vw);max-height:330px;overflow:auto;padding:9px;border:1px solid #506078;border-radius:8px;background:var(--panel,#182232);color:var(--text,#fff);box-shadow:0 6px 20px #0005';
+ const panel=document.createElement('div');panel.hidden=true;panel.style.cssText='position:absolute;right:0;top:100%;z-index:30;width:min(330px,90vw);max-height:360px;overflow:auto;padding:10px;border:1px solid var(--border,#354359);border-radius:8px;background:var(--panel,#182232);color:var(--text,#fff);box-shadow:0 6px 20px #0005';
  const modes=document.createElement('div');modes.style.cssText='display:flex;gap:5px;margin-bottom:6px';
- const category=document.createElement('button'),manual=document.createElement('button');category.type=manual.type='button';category.textContent='Category';manual.textContent='Manual';modes.append(category,manual);panel.append(modes);
+ const category=document.createElement('button'),manual=document.createElement('button');category.type=manual.type='button';category.textContent='By category';manual.textContent='Manual';modes.append(category,manual);panel.append(modes);
  const options=document.createElement('div');panel.append(options);
  const names=Object.fromEntries(cols.map((k,i)=>[k,help[i][0]]));
  const groups={Selection:['keep'],Strategy:['name','risks'],Results:['hit','breach','negative','trades']};
  const applyVisible=()=>{for(const tr of [table.tHead.rows[0],...tbody.rows])for(const cell of tr.cells)cell.hidden=!visible.includes(cell.dataset.col);try{localStorage.setItem(filterKey,JSON.stringify(visible))}catch(e){}};
  const checkbox=(name,keys)=>{const label=document.createElement('label');label.style.cssText='display:flex;gap:7px;align-items:center;margin:4px 0;font-size:12px';const input=document.createElement('input');input.type='checkbox';input.checked=keys.every(k=>visible.includes(k));input.addEventListener('change',()=>{const next=input.checked?[...new Set([...visible,...keys])]:visible.filter(k=>!keys.includes(k));if(next.length){visible=next;applyVisible()}else input.checked=true});label.append(input,document.createTextNode(name));return label};
  const drawMode=mode=>{options.replaceChildren();const entries=mode==='category'?Object.entries(groups):cols.map(k=>[names[k],[k]]);for(const [name,keys] of entries)options.append(checkbox(name,keys));category.style.fontWeight=mode==='category'?'700':'400';manual.style.fontWeight=mode==='manual'?'700':'400'};
- category.addEventListener('click',()=>drawMode('category'));manual.addEventListener('click',()=>drawMode('manual'));drawMode('manual');
- trigger.addEventListener('click',()=>{panel.hidden=!panel.hidden;trigger.setAttribute('aria-expanded',String(!panel.hidden))});
+ category.addEventListener('click',()=>drawMode('category'));manual.addEventListener('click',()=>drawMode('manual'));drawMode('category');
+ const closePanel=()=>{panel.hidden=true;panel.style.display='none';trigger.setAttribute('aria-expanded','false')};
+ trigger.addEventListener('click',()=>{panel.hidden=!panel.hidden;panel.style.display=panel.hidden?'none':'';trigger.setAttribute('aria-expanded',String(!panel.hidden))});
+ document.addEventListener('pointerdown',e=>{if(!panel.hidden&&!toolbar.contains(e.target))closePanel()},true);
+ document.addEventListener('touchstart',e=>{if(!panel.hidden&&!toolbar.contains(e.target))closePanel()},{capture:true,passive:true});
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!panel.hidden){closePanel();trigger.focus()}});
  toolbar.append(trigger,panel);table.parentElement.before(toolbar);
  applyVisible();
 
