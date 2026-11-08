@@ -28,3 +28,10 @@ Do not commit personal saved configurations or raw cloud profiles to the public 
 `averages` includes funded, targetHit, payoutRequested, paid, receipts, spent, net, strategyStopped and exhausted. `firstTrial` contains counts and bounded payout-related traces. The harness runs the actual `oneTrial` engine, not a replacement mathematical model.
 
 A GitHub commit is not proof of a passing workflow or a deployed Cloudflare site; inspect the Actions run and deployed site separately.
+
+## Export exact inputs from the website
+After **Run Simulation**, select **Export test input** in Section 2. This downloads `4ds-private-simulation-input.json` containing all currently reported firms as a `4ds-offline-simulation-bundle-v1` envelope. The export is local to the browser and never uploaded to GitHub. Each plan contains the normalized engine configuration; `__INFINITY__` represents an unbounded numeric limit.
+
+Run privately: `node tests/run-portfolio-simulation.cjs --input /private/4ds-private-simulation-input.json --output /private/result.json`.
+
+**Privacy limitation:** GitHub Actions uses only synthetic fixtures. It cannot access private browser data or Google Drive profiles automatically. An actual private run requires supplying the exported file to an authorized execution environment. Do not commit it to GitHub. Reports are reproducible only if the same engine revision and input snapshot are used.
