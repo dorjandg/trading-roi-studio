@@ -1512,7 +1512,13 @@ function enableDirectTableHeaderDrag(table,onDrop,keepFirst=false){
 const canonicalColumnLabels={
  'Opp':'Signals available','Opportunities':'Signals available','Signals':'Signals available',
  'Unused':'Unused signals','Unused trades':'Unused signals',
- 'Min':'Qualification trades','Buy 
+ 'Min':'Qualification trades','Buy $':'Purchased allocation ($)','Eval $':'Evaluation allocation ($)','FD $':'Funded allocation ($)',
+ 'CH':'Challenge active','VR':'Verification active','P1P':'Phase 1 passed','P2P':'Phase 2 passed',
+ 'FA':'Funded activated','FW':'Funding wait','PP':'Payout pending','TG':'Target reached',
+ 'Pending':'Payout pending','Paid total':'Paid accounts','Breached':'Failed accounts'
+};
+function canonicalColumnLabel(label){return canonicalColumnLabels[label]||label;}
+const journeyColumnPrefs={};
 function addJourneyColumnFilters(){
  const root=document.getElementById('journeyContents');if(!root)return;
  for(const panel of root.querySelectorAll('[data-journey-table="daily-routing"],[data-journey-table="daily-summary"]')){
