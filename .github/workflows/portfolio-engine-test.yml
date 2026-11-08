@@ -1,0 +1,19 @@
+name: Portfolio engine regression
+on:
+  push:
+    paths:
+      - 'portfolio-engine.js'
+      - 'tests/portfolio-engine.test.cjs'
+      - '.github/workflows/portfolio-engine-test.yml'
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tests/portfolio-engine.test.cjs
