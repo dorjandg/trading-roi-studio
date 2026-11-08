@@ -256,7 +256,7 @@ function dailyTradeRouting(results,selected,inputs,routePage=1,pageSize=10,table
   };
  };
  const tradeText=a=>{
-  if(!a||a.account==null)return '<span style="color:var(--muted)">Unused</span>';
+  if(!a||a.account==null)return '<span style="color:var(--muted)" title="'+esc(a?.status||'No eligible account')+'">Unused <small>ⓘ</small></span>';
   const name='A'+a.globalAccount+(selected==='all'?' · '+esc(a.firm):'');
   const result=a.outcome==='W'?'W':a.outcome==='L'?'L':esc(a.outcome||'—');
   const stage=a.stage==='p1'?'CH':a.stage==='p2'?'VR':a.stage==='funded'?'FD':'—';
