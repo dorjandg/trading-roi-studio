@@ -617,6 +617,7 @@ function oneTrial(p,config,rng,record=false){
     Math.max(0,config.maxActive-liveCount()):needed;
    const dailyLimit=Math.min(needed,room,
     config.capacityMode==='manual'?config.maxBuysPerDay:dailyOpportunities,
+    config.dailyBuyCap>0?config.dailyBuyCap:Infinity,
     config.maxLifetime-accounts.length);
    if(needed>0){
     if(room<=0)purchaseConstraint='Active account capacity reached';
@@ -809,6 +810,7 @@ function simulatePortfolio(p,config={}){
   capacityMode:config.capacityMode==='manual'?'manual':'automatic',
   maxActive:clamp(Math.floor(config.maxActive||1),1,100)|0,
   maxBuysPerDay:clamp(Math.floor(config.maxBuysPerDay||1),1,20)|0,
+  dailyBuyCap:Number(config.dailyBuyCap)>0?clamp(Math.floor(config.dailyBuyCap),1,100):0,
   maxLifetime:clamp(Math.floor(config.maxAccounts||100),1,100)|0,
   budget,requiredPayouts:Math.max(0,Math.floor(config.requiredPayouts||0)),netGoal:pos(config.netGoal),
   reinvestPayouts:config.reinvestPayouts===true
