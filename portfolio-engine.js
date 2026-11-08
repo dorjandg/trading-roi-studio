@@ -605,7 +605,14 @@ function oneTrial(p,config,rng,record=false){
    const replacementOnly=config.purchasePolicy!=='fill-eligible';
    const target=config.capacityMode==='manual'?
     Math.min(config.maxActive,dailyOpportunities):dailyOpportunities;
-   const needed=Math.max(0,target-(replacementOnly?liveCount():eligible));
+   const targetLocked=accounts.filter(ac=>ac.status==='active'&&
+    ((isEvaluation(stageName(p,ac))&&ac.stagePnl>=p.riskProfiles[stageName(p,ac)].target-.005)||
+     (stageName(p,ac)==='funded'&&ac.stagePnl>=p.riskProfiles.funded.target-.005))).length;
+   // Target-locked accounts still occupy capacity but can trigger new purchases
+   // while spare capacity remains. Other ineligible accounts do not.
+   const occupiedForDemand=config.purchasePolicy==='fill-target-gaps'?
+    liveCount()-targetLocked:(replacementOnly?liveCount():eligible);
+   const needed=Math.max(0,target-occupiedForDemand);
    const room=config.capacityMode==='manual'?
     Math.max(0,config.maxActive-liveCount()):needed;
    const dailyLimit=Math.min(needed,room,
@@ -692,7 +699,16 @@ function oneTrial(p,config,rng,record=false){
      spent+=p.activationFee;activationSpent+=p.activationFee;activations++;
     }
    }
-   if(res.paid){paid++;receipts+=ac.firstPaid;}
+   if(res.paid){paid++;receipts+=ac.firstPaid;
+    if(config.recycleFundedPayouts&&p.id==='ftmo2'){
+     // Reuse the same funded account on the NEXT trading day. Keep its
+     // historical trade/loss statistics; future funded trades can still fail.
+     ac.status='active';newStage(ac);ac.fundedFirstTradeDay=null;
+     ac.fundedTargetDay=null;ac.payoutRequestedDay=null;
+     ac.fundedDays=0;ac.fundedPositiveDays=0;ac.funded150Days=0;
+     if(record)ac.trace.push({day,stage:'funded',type:'recycle',label:'Funded account eligible for a new payout cycle from next trading day'});
+    }
+   }
   }
   if(record){
    const allocatedSlots=new Set(allocations.values());
@@ -788,7 +804,8 @@ function simulatePortfolio(p,config={}){
   tradeSchedule:Array.isArray(config.tradeSchedule)&&config.tradeSchedule.length===
    (clamp(config.days,1,120)|0)?config.tradeSchedule.map(x=>clamp(x,0,20)|0):null,
   purchaseMode:config.purchaseMode==='recycle'?'recycle':'upfront',
-  purchasePolicy:config.purchasePolicy==='fill-eligible'?'fill-eligible':'replacement-only',
+  purchasePolicy:['fill-eligible','fill-target-gaps'].includes(config.purchasePolicy)?config.purchasePolicy:'replacement-only',
+  recycleFundedPayouts:config.recycleFundedPayouts===true,
   capacityMode:config.capacityMode==='manual'?'manual':'automatic',
   maxActive:clamp(Math.floor(config.maxActive||1),1,100)|0,
   maxBuysPerDay:clamp(Math.floor(config.maxBuysPerDay||1),1,20)|0,
