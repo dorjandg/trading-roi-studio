@@ -2126,6 +2126,7 @@ drawCashDetailsControls();
  if(reportStale)modelInfo+='<p style="color:var(--amber)">Inputs changed since the displayed result. Run Simulation again to update cash flows.</p>';
  $('cashInputDetails').innerHTML=modelInfo;
 
+ if($('cashColumnsPanel').parentElement!==$('cashColumnsToggle').parentElement){$('cashColumnsPanel').hidden=true;$('cashColumnsToggle').parentElement.insertBefore($('cashColumnsPanel'),holder);}
  holder.innerHTML=combined+summaries.map(firmCard).join('');
  for(const table of holder.querySelectorAll('table')){
   const headers=Array.from(table.tHead?.rows[0]?.cells||[]);
