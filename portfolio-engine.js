@@ -110,8 +110,13 @@ function buildPlan(programId,size,program,profile={},snapshots={},audit=null){
   const target=(appliedSmart||appliedFtmoBuffer)&&Number.isFinite(requestedTarget)&&requestedTarget>=.01?
    requestedTarget:officialTarget;
   if(key==='funded'&&(appliedSmart||appliedFtmoBuffer))result.fundedTarget=pos(target);
-  const minDays=key==='p1'?dynamic(state,'p1MinDays',pos(program.days?.[0])):
+  // FTMO two-step: four distinct trading days in EACH evaluation phase.
+  // The target-hit trading day counts; if the target takes longer, completion
+  // occurs on the later day. This is a qualification floor, not a time cap.
+  const configuredMinDays=key==='p1'?dynamic(state,'p1MinDays',pos(program.days?.[0])):
    key==='p2'?dynamic(state,'p2MinDays',pos(program.days?.[1])):0;
+  const minDays=programId==='ftmo2'&&(key==='p1'||key==='p2')?
+   Math.max(4,configuredMinDays):configuredMinDays;
   const base=defaultRisk(programId,size,key);
   const r1=dynamic(lev,'r1',dynamic(state,root+'Base',base));
   const r2=dynamic(lev,'r2',dynamic(state,root+'Recovery',Math.round(base*.72)));
