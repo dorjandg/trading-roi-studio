@@ -8,7 +8,7 @@ const compact=x=>JSON.parse(JSON.stringify(x));
 const number=x=>Number.isFinite(+x)?+x:0;
 const USD=x=>(number(x)<0?'-':'')+'$'+Math.round(Math.abs(number(x))).toLocaleString('en-US');
 const capRecords=(records,limit=15)=>records.filter(x=>x&&x.id&&x.timestamp).sort((a,b)=>String(b.timestamp).localeCompare(String(a.timestamp))).filter((x,i,all)=>all.findIndex(y=>y.id===x.id)===i).slice(0,limit);
-function create({user,element,endpoint}){
+function create({user,element,endpoint,onStatus}){
  const key='4ds:v1:'+user+':portfolio-simulation-history:v1';
  const remoteValid=/^https:\/\/script\.google\.com\/macros\/s\/[^/?]+\/exec(?:\?.*)?$/.test(endpoint||'');
  let runs=[],syncing=false,syncQueued=false,lastCloudStatus='not verified';
@@ -20,14 +20,14 @@ function create({user,element,endpoint}){
  function savePaging(){try{localStorage.setItem(pagingKey,JSON.stringify({pageSize}))}catch(_){}}
 
  const now=()=>new Date().toISOString();
- const status=(message)=>{lastCloudStatus=message;const target=element.querySelector('[data-history-status]');if(target)target.textContent=message;};
+ const status=(message,level='info')=>{lastCloudStatus=message;const target=element.querySelector('[data-history-status]');if(target)target.textContent=message;if(typeof onStatus==='function')onStatus({message,level});};
  function readLocal(){
   try{const parsed=JSON.parse(localStorage.getItem(key)||'[]');return Array.isArray(parsed)?capRecords(parsed):[]}catch(_){return []}
  }
  function writeLocal(items){
   runs=capRecords(items);
   try{localStorage.setItem(key,JSON.stringify(runs));return true}catch(e){
-   status('Local history save failed: '+e.message);return false;
+   status('Local history save failed: '+e.message,'error');return false;
   }
  }
  function simpleAccount(a){
@@ -168,7 +168,7 @@ function create({user,element,endpoint}){
  }
  async function cloudSync(){
   if(syncing){syncQueued=true;return;}
-  if(!remoteValid){status('Saved in browser · cloud endpoint not configured');return;}
+  if(!remoteValid){status('Saved locally · cloud endpoint not configured','warning');return;}
   syncing=true;
   try{
    status('Saved locally · syncing history to cloud…');
@@ -201,9 +201,11 @@ function create({user,element,endpoint}){
    finally{clearTimeout(timeout)}
    const verified=await getRemote();
    if(verified.snapshot?.nonce!==snap.nonce)throw new Error('Cloud write could not be verified (profile may have changed)');
+   const online=JSON.parse(verified.snapshot?.entries?.[key]||'[]');
+   if(!Array.isArray(online)||proposed.some(item=>!online.some(x=>x.id===item.id)))throw new Error('Cloud readback does not contain the saved run IDs');
    localStorage.setItem('4ds:cloud:last-revision:'+user,verified.revision||'');
-   status('Cloud verified · '+new Date().toLocaleTimeString()+' · '+proposed.length+' recent runs online');
-  }catch(err){status('Saved in this browser · cloud sync unavailable: '+err.message);}
+   status('Synced to cloud ✓ · '+new Date().toLocaleTimeString()+' · '+proposed.length+' recent runs online','success');
+  }catch(err){status('Saved locally · cloud sync failed: '+err.message,'warning');}
   finally{syncing=false;if(syncQueued){syncQueued=false;cloudSync()}}
  }
  async function loadCloud(){
@@ -248,8 +250,8 @@ function create({user,element,endpoint}){
     id:Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,9),
     timestamp:now(),user,inputs:compact(inputs),
     accounts:compact(rows),firms:results.map(summarize)};
-   if(writeLocal([record,...runs])){page=1;render();cloudSync()}
-   return record;
+   if(writeLocal([record,...runs])){page=1;render();status('Saved locally ✓ · syncing to cloud…','local');cloudSync();return record;}
+   return null;
   },
   saveOptimizer(data){
    const record=makeOptimizerRecord(data);
