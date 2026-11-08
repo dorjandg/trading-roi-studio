@@ -1557,6 +1557,21 @@ function addJourneyColumnFilters(){
    journeyColumnPrefs[key]={visible:Array.isArray(saved?.visible)?saved.visible:ids.slice(1),order:Array.isArray(saved?.order)?saved.order:ids.slice(1)};
   }
   const pref=journeyColumnPrefs[key],valid=ids.slice(1);
+  // Display filter choices in semantic workflow order; do not overwrite
+  // the user's separately persisted physical column order.
+  const filterRank=id=>{
+   const v=id.toLowerCase();
+   const phase=/^p([1-4])(?:\\s|$)/i.exec(id);
+   if(phase)return 20+Number(phase[1])*10+(/pass|ready|paid/i.test(id)?1:0);
+   if(/^(day|signals|opportunit|trade [1-9]|executed|unused|qual)/i.test(id))return 1;
+   if(/bought|purchased|new acc/i.test(id))return 12;
+   if(/funded activated|funding wait/i.test(id))return 65;
+   if(/target|paid|payout/i.test(id))return 75;
+   if(/failed|blocked|breach|burned/i.test(id))return 85;
+   if(/fee|spent|cash|receipt|net|allocation/i.test(id))return 95;
+   return 90;
+  };
+  const sortedFilterIds=[...valid].sort((a,b)=>filterRank(a)-filterRank(b)||a.localeCompare(b,undefined,{numeric:true}));
   pref.visible=pref.visible.map(canonicalColumnLabel).filter(x=>valid.includes(x));
   pref.order=[...new Set([...pref.order.map(canonicalColumnLabel).filter(x=>valid.includes(x)),...valid])];
   const toolbar=document.createElement('div');toolbar.style.cssText='display:flex;justify-content:flex-end;position:relative;margin:4px 0';
@@ -1607,9 +1622,9 @@ function addJourneyColumnFilters(){
    const setVisible=keys=>{pref.visible=keys;apply();renderControls();};
    if(mode==='category'){
     const categories=[
-     ['All columns',valid],['Trading',valid.filter(id=>/trade|executed|unused|opportunit|signal|minimum|min/i.test(id))],
-     ['Account funnel',valid.filter(id=>/account|challenge|verification|funded|paid|failed|blocked|bought|breach|pending|CH|VR|FD/i.test(id))],
-     ['Cash flow',valid.filter(id=>/fee|spent|payout|receipt|cash|net|allocation|budget/i.test(id))]
+     ['All columns',sortedFilterIds],['Trading',sortedFilterIds.filter(id=>/trade|executed|unused|opportunit|signal|minimum|min/i.test(id))],
+     ['Account funnel',sortedFilterIds.filter(id=>/account|challenge|verification|funded|paid|failed|blocked|bought|breach|pending|CH|VR|FD/i.test(id))],
+     ['Cash flow',sortedFilterIds.filter(id=>/fee|spent|payout|receipt|cash|net|allocation|budget/i.test(id))]
     ];
     for(const [label,keys] of categories){
      const button=document.createElement('button');button.type='button';button.textContent=label+' ('+keys.length+')';
@@ -1622,7 +1637,7 @@ function addJourneyColumnFilters(){
      const button=document.createElement('button');button.type='button';button.textContent=label;button.addEventListener('click',()=>setVisible(keys.slice()));actions.appendChild(button);
     }body.appendChild(actions);
     const grid=document.createElement('div');grid.className='cash-columns-grid';
-    for(const id of valid){
+    for(const id of sortedFilterIds){
      const label=document.createElement('label'),check=document.createElement('input');check.type='checkbox';check.checked=pref.visible.includes(id);
      check.addEventListener('change',()=>{if(check.checked&&!pref.visible.includes(id))pref.visible.push(id);else if(!check.checked)pref.visible=pref.visible.filter(x=>x!==id);apply();});
      label.append(check,document.createTextNode(id));grid.appendChild(label);
