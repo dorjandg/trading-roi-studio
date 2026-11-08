@@ -52,3 +52,6 @@ For every newly approved model add: `MODEL-NNN`, user-approved name, canonical p
 
 ### Firms R1–R4 / Fast Pass navigation (2026-11-08)
 - `index.html` `renderRecoveryPlanners` adds read-only daily objective and successful-day context to `Target & risk values`, with `data-open-fast-reset` button. Clicking opens the stage-matched `studio-scenario-discovery.js` optimizer, copies the stage planning target to the optimizer phase target, persists via input event and runs `Find paths`. The older `risk-route-explorer.js` remains a separate fixed-tier scanner and is NOT replaced by the multi-day model. Do not claim Portfolio SIM adopts this policy.
+
+### Portfolio SIM allocation relocation (2026-11-08)
+- In `portfolio-simulator.html`, `placeAllocationWithAccounts()` moves the existing `#capitalAllocationPanel` DOM node from Section 1 into `#accountAllocationHome` in Section 2 above `#accounts`, preserving IDs, current values, event handlers, and persistence. The panel remains collapsed by default. Per-account evaluation/funded caps already exist on each comparison card; shared purchase policies remain shared. No underlying allocation calculations were changed and no Section 1 fields were deleted in this migration.
