@@ -67,9 +67,9 @@ function audit(results){
    if(Math.abs(roi-expected)>1e-6)add('roi','Expected ROI differs from net/spending beyond numerical tolerance.');
   }
   if(r.chancePayout!==undefined&&r.chancePayout!==null&&(n(r.chancePayout)===null||r.chancePayout<0||r.chancePayout>1))add('payout-probability','Payout probability falls outside [0, 1].');
-  const bought=n(avg.bought),funded=n(avg.funded),paid=n(avg.paid);
+  const bought=n(avg.bought),funded=n(avg.funded),paid=n(avg.paidAccounts);
   if(bought!==null&&funded!==null&&funded>bought+.02)add('funded-count','Average funded exceeds average purchased.');
-  if(funded!==null&&paid!==null&&paid>funded+.02)add('paid-count','Average first-paid exceeds average funded.');
+  if(funded!==null&&paid!==null&&paid>funded+.02)add('paid-count','Average distinct first-paid accounts exceeds average funded activations.');
  }
  return findings;
 }
