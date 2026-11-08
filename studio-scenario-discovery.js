@@ -68,9 +68,9 @@ function run(p,stage){
  add('Target recovery',[1,1,1,1]);
  add('Conservative',[0.65,0.75,0.9,1]);
  add('Balanced',[0.8,1,1,1]);
- add('Fast target',[1.1,1,1,1]);
+ add('Low first risk',[0.5,1,1,1]);
  add('Single win',[1,0,0,0]);
- for(const factor of [0.5,0.7,0.9,1,1.2,1.4]){
+ for(const factor of [0.35,0.5,0.65,0.8,0.9,1]){
   add('Target '+Math.round(factor*100)+'%',[factor,1,1,1]);
  }
  const unique=[...new Map(candidates.map(x=>[x.r.join('/'),x])).values()];
