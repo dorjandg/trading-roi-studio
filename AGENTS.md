@@ -1,3 +1,5 @@
+**Mandatory table UI reference:** Read [TABLE_UI_STANDARD.md](TABLE_UI_STANDARD.md) before editing any table, filter, column drag, header help, sorting, or pagination. The Portfolio Simulator's pointer-drag and compact upper-right filter are the canonical model. Do not invent another interaction pattern.
+
 ## Mandatory universal table interaction contract (Nov 8, 2026)
 - Every table header MUST provide accurate, concise full-column help through hover and keyboard focus and a tap-accessible explanation on phones/tablets. Preserve short visible labels (maximum 12 characters). Help must explain formula/units and distinguish estimated probability from firm rules.
 - Every table column MUST support reordering left/right, by drag on pointer devices and accessible move-left/move-right controls for touch/keyboard. Persist order per stable table/column identifiers across rerenders and refresh; never reset unrelated user preferences.
