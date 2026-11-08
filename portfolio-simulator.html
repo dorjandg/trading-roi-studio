@@ -2509,6 +2509,7 @@ function run(){
      evaluationAllocationCap:j.allocation.evaluation||0,
      fundedAllocationCap:j.allocation.funded||0}));
    renderResults(results,inputs);
+   window.__studioSignalAllocationSnapshot={jobs,inputs};
    simulationHistory?.save({results,inputs,rows});
   }catch(e){
    $('status').textContent='Simulation error: '+e.message;$('status').style.color='var(--red)';
@@ -2681,4 +2682,5 @@ init();
 <script src="gpt-research-reports.js?v=20261107-status-values-v5"></script>
 <script src="portfolio-payout-ui.js?v=20261107-weekly-pacing-v2"></script>
 <script src="studio-header.js"></script>
-<script src="portfolio-help.js?v=20261107-context-help-v1"></script></body></html>
+<script src="portfolio-help.js?v=20261107-context-help-v1"></script>
+<script src="signal-allocation-optimizer.js?v=20261108-v1"></script></body></html>
