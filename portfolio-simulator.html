@@ -868,7 +868,7 @@ window.StudioAdvisorReadOnly={getRuns:()=>simulationHistory?.getRuns()||[],getTe
 window.StudioOfflineSimulation={
  getCases:()=>lastResults.map(r=>({schema:'4ds-offline-simulation-v1',
   label:'Private user-exported simulation '+new Date().toISOString(),
-  plan:JSON.parse(JSON.stringify(r.plan)),
+  plan:JSON.parse(JSON.stringify(r.plan,(key,value)=>value===Infinity?'__INFINITY__':value)),
   config:{...(lastInputs||{}),budget:r.budget,
    evaluationAllocationCap:r.config?.evaluationAllocationCap||0,
    fundedAllocationCap:r.config?.fundedAllocationCap||0,
