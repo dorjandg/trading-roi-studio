@@ -45,20 +45,33 @@ function init(stage){
  const host=document.querySelector('[data-recovery-stage="'+stage+'"]');if(!host||host.dataset.discoveryReady)return;
  host.dataset.discoveryReady='1';
  const p=document.createElement('details');p.className='scenario-discovery';p.style.cssText='margin:8px 0;padding:10px;border:1px solid #344257;border-radius:10px';
- p.innerHTML='<summary style="cursor:pointer;font-weight:600">Scenario Optimizer · find daily target paths</summary><div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:end"><label>Daily goal $ <input data-f="goal" type="number" min="1" value="'+(stage==='p1'?1500:stage==='funded'?1000:500)+'" style="width:86px"></label><label>Win % <input data-f="wr" type="number" min="1" max="99" value="40" style="width:62px"></label><label>RR <input data-f="rr" type="number" min=".1" max="20" step=".1" value="3" style="width:62px"></label><label>Max/day <select data-f="max"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></label><label>Risk cap $ <input data-f="cap" type="number" min="1" value="2000" style="width:84px"></label><button type="button" data-run>Find best paths</button></div><div data-out style="margin-top:10px;font-size:12px"></div><small>Research model only: independent wins, fixed RR, no commissions or slippage. Risk cap is a manual scenario constraint, not a verified firm rule. The model stops on reaching the daily goal; it does not establish account passing or Topstep trailing/consistency compliance. Saved selections do not alter Portfolio Simulation.</small>';
+ p.innerHTML='<summary style="cursor:pointer;font-weight:600">Scenario Optimizer · find daily target paths</summary><div style="margin:5px 0 6px;display:flex;gap:5px;flex-wrap:wrap;align-items:center;font-size:11px"><label style="display:flex;gap:3px;align-items:center">Goal $ <input data-f="goal" title="Daily profit target. Risk sequences are derived from this target and RR." type="number" min="1" value="'+(stage==='p1'?1500:stage==='funded'?1000:500)+'" style="width:74px;padding:3px 4px;font-size:11px"></label><label style="display:flex;gap:3px;align-items:center">Win % <input data-f="wr" title="Estimated independent probability of a winning trade" type="number" min="1" max="99" value="40" style="width:48px;padding:3px 4px;font-size:11px"></label><label style="display:flex;gap:3px;align-items:center">RR <input data-f="rr" title="Profit multiple of risk on a winning trade" type="number" min=".1" max="20" step=".1" value="3" style="width:44px;padding:3px 4px;font-size:11px"></label><label style="display:flex;gap:3px;align-items:center">Trades <select data-f="max" title="Maximum trades per day; stop early at target" style="padding:3px;font-size:11px"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></label><label style="display:flex;gap:3px;align-items:center">Cap $ <input data-f="cap" title="Manual maximum modeled loss, not a verified firm limit" type="number" min="1" value="2000" style="width:66px;padding:3px 4px;font-size:11px"></label><button type="button" data-run style="padding:4px 8px;font-size:11px;min-height:27px">Find paths</button></div><div data-out style="margin-top:6px;font-size:12px"></div><small>Risks are derived from the remaining daily target and RR, not fixed dollar presets. Research model only: independent wins, fixed RR, no commissions/slippage; manual cap is not a verified firm rule. Not a Topstep pass or consistency simulation. Saved selections do not alter Portfolio Simulation.</small>';
  host.before(p);p.querySelector('[data-run]').addEventListener('click',()=>run(p,stage));
 }
 function run(p,stage){
  const n=k=>Number(p.querySelector('[data-f="'+k+'"]').value),goal=n('goal'),wr=n('wr')/100,rr=n('rr'),max=n('max'),cap=n('cap'),out=p.querySelector('[data-out]');
  if(!(goal>0&&wr>0&&wr<1&&rr>0&&max>=1&&max<=4&&cap>0)){out.textContent='Check goal, win rate, RR, trades/day and risk cap.';return;}
- const candidates=[...templates];
- // Search for first trades that can achieve the daily objective in one win.
- for(const first of [250,350,400,450,500,Math.ceil(goal/rr/10)*10]){
-  if(first>cap)continue;
-  const second=Math.ceil((goal+first)/rr/10)*10;
-  const thirdRecovery=Math.ceil((first+second)/rr/10)*10;
-  candidates.push({id:'g'+first,name:'Target-first '+money(first),r:[first,second,thirdRecovery,0]});
-  candidates.push({id:'s'+first,name:'Single-win '+money(first),r:[first,0,0,0]});
+ // Scale candidate risks to the daily target: a full-target win requires goal/RR.
+ // After losses, the next risk is derived from remaining profit needed (goal - current P&L).
+ const roundRisk=x=>Math.max(1,Math.ceil(x/10)*10);
+ const candidates=[];
+ const add=(name,weights)=>{
+  const risks=[];let losses=0;
+  for(let i=0;i<4;i++){
+   const weight=weights[i]||0;
+   const risk=weight?roundRisk((goal+losses)/rr*weight):0;
+   risks.push(risk);
+   if(risk)losses+=risk;
+  }
+  candidates.push({id:'target-'+weights.join('-'),name,r:risks});
+ };
+ add('Target recovery',[1,1,1,1]);
+ add('Conservative',[0.65,0.75,0.9,1]);
+ add('Balanced',[0.8,1,1,1]);
+ add('Fast target',[1.1,1,1,1]);
+ add('Single win',[1,0,0,0]);
+ for(const factor of [0.5,0.7,0.9,1,1.2,1.4]){
+  add('Target '+Math.round(factor*100)+'%',[factor,1,1,1]);
  }
  const unique=[...new Map(candidates.map(x=>[x.r.join('/'),x])).values()];
  function evaluate(c){
