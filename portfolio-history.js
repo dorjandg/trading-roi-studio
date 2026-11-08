@@ -249,7 +249,8 @@ function create({user,element,endpoint,onStatus}){
    const record={schema:'4ds-portfolio-simulation-v1',
     id:Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,9),
     timestamp:now(),user,inputs:compact(inputs),
-    accounts:compact(rows),firms:results.map(summarize)};
+    accounts:compact(rows),firms:results.map(summarize),
+    diagnostics:root.__studioLastSimulationDiagnostics?compact(root.__studioLastSimulationDiagnostics):null};
    if(writeLocal([record,...runs])){page=1;render();status('Saved locally ✓ · syncing to cloud…','local');cloudSync();return record;}
    return null;
   },
