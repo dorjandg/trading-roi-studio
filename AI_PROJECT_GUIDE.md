@@ -1,3 +1,10 @@
+## GPT review — paid-count invariant correction (Nov 8, 2026)
+
+- Inspected the latest connected 4Ds cloud profile files, including a new Section 11 formula-alert queue record. The request was reviewed as a queued instruction during the scheduled review, not executed by the website. The public report links its exact request ID in `reviewedRequestIds`; private note and profile values remain out of the public feed.
+- Fixed `studio-formula-audit.js` paid-count invariant: compare `avg.paidAccounts` (distinct accounts ever receiving a first payout) against `avg.funded` (funded activations), not `avg.paid` (payout cycles). FTMO funded-account recycling can produce more payout cycles than unique funded accounts. Source `portfolio-engine.js` maintains all three measures.
+- Deterministic formula-audit fixtures checked recycled FTMO (no false alert), non-recycled Topstep (no alert), and an invalid unique-paid case (alert). This is an audit/UI diagnostic correction only, not an engine or risk-policy change. The newest cloud run includes a limited diagnostics sample; it is not a complete replayable portfolio history. Production browser, official payout eligibility and cloud writeback remain unverified.
+- Public report: `review-paid-count-recycled-payouts-20261108-v1`, with source-grounded findings and sanitized provenance. No private account amounts or user notes were published.
+
 ## Canonical table UI standard (Nov 8, 2026)
 
 See [TABLE_UI_STANDARD.md](TABLE_UI_STANDARD.md) for the required base model and Portfolio Simulator implementation references. All table work must inspect the existing implementation and reuse pointer-based drag, compact upper-right filters, tap-accessible header help, sort, pagination, and stable saved preferences. Scenario Optimizer currently differs in drag/filter behavior and is listed for alignment; full-site migration is not yet complete.
