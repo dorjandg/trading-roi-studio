@@ -43,3 +43,6 @@ For every newly approved model add: `MODEL-NNN`, user-approved name, canonical p
 - Per-attempt state: profit target, RR, win probability, overall modeled risk cap. Trade 1 attempts the pass; trade 2 attempts the pass after loss; trade 3 targets a breakeven reset (or explicitly labeled alternative pass); trade 4 uses remaining capacity (or half-reserve variant). Stops at pass, reset or exhausted four-trade attempt. A reset is NOT a pass and multi-day restart is NOT modeled.
 - Output: probability of pass, reset, risk-cap exhaustion, expected executed trades, and all terminal win/loss paths. The model is illustrative; no firm compliance, fees, execution costs or live trade data are implied.
 - Approval status: user requested testing this model; results and parameters remain experimental pending validation. Do not silently change live risk strategies.
+
+### Phase target extension (2026-11-08)
+- Scenario Optimizer now distinguishes daily objective, cumulative phase target, and minimum successful daily-objective days. Multi-day pass probability is a seeded 3,000-trial, maximum-12-day approximation, not a verified Topstep consistency evaluation. Losses and modeled drawdown carry forward; successful days are counted only when their daily objective is reached. Expanded path tables remain single-attempt outcomes. Do not conflate these two metrics.
