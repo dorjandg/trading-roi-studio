@@ -600,9 +600,12 @@ function oneTrial(p,config,rng,record=false){
   if(dynamic){
    // Existing eligible purchased accounts get priority; only buy the gap.
    const eligible=accounts.filter(ac=>canAcceptSignal(p,ac)).length;
+   // Replacement-only: stage transitions retain their account slot.
+   // The alternate fill-eligible policy preserves the previous behavior.
+   const replacementOnly=config.purchasePolicy!=='fill-eligible';
    const target=config.capacityMode==='manual'?
     Math.min(config.maxActive,dailyOpportunities):dailyOpportunities;
-   const needed=Math.max(0,target-eligible);
+   const needed=Math.max(0,target-(replacementOnly?liveCount():eligible));
    const room=config.capacityMode==='manual'?
     Math.max(0,config.maxActive-liveCount()):needed;
    const dailyLimit=Math.min(needed,room,
