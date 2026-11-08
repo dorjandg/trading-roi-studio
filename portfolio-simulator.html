@@ -1522,7 +1522,9 @@ const canonicalColumnLabels={
  'Min':'Qualification trades','Buy $':'Purchased allocation ($)','Eval $':'Evaluation allocation ($)','FD $':'Funded allocation ($)',
  'CH':'Challenge active','VR':'Verification active','P1P':'Phase 1 passed','P2P':'Phase 2 passed',
  'FA':'Funded activated','FW':'Funding wait','PP':'Payout pending','TG':'P3 ready',
- 'Pending':'Payout pending','Paid total':'P4 paid','Breached':'Failed accounts'
+ 'Pending':'Payout pending','Paid total':'P4 paid','Breached':'Failed','Failed accounts':'Failed',
+ 'Executed trades':'Executed','Qualification trades':'Qual.','Challenges purchased':'Bought',
+ 'Signals available':'Signals','Unused signals':'Unused','Risk blocked':'Blocked','Account events':'Events'
 };
 const phaseColumnNames={
  'Challenge active':'P1','Verification active':'P2','Funded active':'P3',
@@ -1540,7 +1542,8 @@ const phaseColumnDescriptions={
 };
 function canonicalColumnLabel(label){
  const normalized=canonicalColumnLabels[label]||label;
- return phaseColumnNames[normalized]||normalized;
+ const named=phaseColumnNames[normalized]||normalized;
+ return named.length<=12?named:named.slice(0,11).trimEnd()+'…';
 }
 const journeyColumnPrefs={};
 function addJourneyColumnFilters(){
@@ -2968,5 +2971,5 @@ init();
 <script src="studio-table-pager.js?v=20261108-v1"></script>
 <script src="studio-header.js"></script>
 <script src="portfolio-help.js?v=20261107-context-help-v1"></script>
-<script src="signal-allocation-optimizer.js?v=20261108-v4-subtitle"></script><script defer src="studio-compact-table-headers.js?v=20261108-phase-consistency-v5"></script><script defer src="studio-combined-active-cap.js?v=20261108-v1"></script>
+<script src="signal-allocation-optimizer.js?v=20261108-v4-subtitle"></script><script defer src="studio-compact-table-headers.js?v=20261108-headers12-v6"></script><script defer src="studio-combined-active-cap.js?v=20261108-v1"></script>
 </body></html>
