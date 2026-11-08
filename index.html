@@ -3301,13 +3301,9 @@ window.addEventListener('message',event=>{
  if(msg.type==='studio-open-trading-workspace'){$('firmTradingWorkspace').scrollIntoView({behavior:'smooth',block:'start'});return;}
  if(msg.type==='studio-rules-ready'){
  $('firmsFrame').dataset.accountFrameReady='yes';
- // Parent selection wins over a stale saved selection restored inside the rules iframe.
- if(activeProgramKey){const [programId,size]=String(activeProgramKey).split(':');pendingOverviewAccount={programId,size:Number(size)};}
- sendPendingOverviewAccount();
- if($('page-firms')?.classList.contains('active')){
-  const [programId,size]=String(activeProgramKey||'').split(':');
-  if(programId&&Number(size)>0)$('firmsFrame')?.contentWindow?.postMessage({type:'studio-select-account',programId,size:Number(size)},window.location.origin);
- }
+ // Do not overwrite the visible Firms selector with a stale parent profile on iframe load.
+ // Only an explicit Overview selection is allowed to command the child selector.
+ if(pendingOverviewAccount)sendPendingOverviewAccount();
  return;
 }
  if(msg.type==='studio-program-change'){
