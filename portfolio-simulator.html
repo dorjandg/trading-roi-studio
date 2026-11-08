@@ -720,7 +720,7 @@ details p{margin:6px 0}
  </div>
  <p class="hint" id="budgetModeNote">In compare mode each firm uses its own hypothetical budget and trade schedule. In split-budget mode the dynamic daily trade opportunities are shared among firms. Do not sum independent comparisons.</p>
 </div></details>
-<details class="sim-charts-panel numbered-panel" id="section2Panel" open><summary><strong>2 · Run &amp; calculate · choose one</strong><button id="run" type="button" class="primary section-run-btn" title="Run simulation with current account and strategy settings">Run Simulation</button><button id="loadVerifiedTopstep" type="button" title="Compare Topstep 50K and FTMO 10K using the same simulation assumptions, with separate hypothetical budgets. Firms risk settings remain unchanged.">Compare Topstep + FTMO</button><button id="exportSimulationInput" type="button" title="Download a private, read-only reproduction of the last Run Simulation configuration. No cloud upload.">Export test input</button><span id="runSaveStatus" role="status" aria-live="polite" style="font-size:10px;white-space:nowrap;opacity:.9">Not run yet</span><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><div class="alert"><strong>Step 2 · Choose an action</strong><div class="actions"><button type="button" class="primary" data-action-run="run" title="Run a new Monte Carlo simulation from Section 1 inputs">1 · Run Simulation</button><button type="button" data-action-run="investment" title="Open investment scenario comparison controls">2 · Calculate Investment</button><button type="button" data-action-run="discover" title="Explore alternative risk plans without changing Firms">3 · Find Better Models</button></div><p class="hint">Start with Run Simulation. Calculate Investment compares capital and model scenarios. Find Better Models explores risk alternatives. Each action is separate; reports below show which result is active.</p><div id="workflowFeedback" class="hint" role="status" aria-live="polite">Choose an action above. No calculation starts until you select one.</div></div><p class="hint">Saved profiles and phase-risk options are read from this browser's selected 4Ds user (<b id="userLabel">—</b>). Press Apply on a Smart Setup or FTMO Funded Buffer Builder in Firms to use that account’s strategy and phase targets here. Click Reload saved stage settings if Firms changed in another tab. Global win rate, signal count and trial assumptions remain editable here.</p>
+<details class="sim-charts-panel numbered-panel" id="section2Panel" open><summary><strong>2 · Run &amp; calculate · choose one</strong><button id="run" type="button" class="primary section-run-btn" title="Run simulation with current account and strategy settings">Run Simulation</button><button id="exportSimulationInput" type="button" title="Download a private, read-only reproduction of the last Run Simulation configuration. No cloud upload.">Export test input</button><span id="runSaveStatus" role="status" aria-live="polite" style="font-size:10px;white-space:nowrap;opacity:.9">Not run yet</span><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><details id="simPresetPanel" class="sim-preset-panel" style="margin:0 0 8px;padding:5px 8px;border:1px solid var(--line);border-radius:8px"><summary style="cursor:pointer;font-size:12px"><strong>Saved simulation setups</strong> <span id="simPresetCount" style="opacity:.65;font-size:11px"></span></summary><div style="display:flex;flex-wrap:wrap;align-items:center;gap:5px;padding:7px 0 2px"><select id="simPresetSelect" aria-label="Choose saved simulation" style="flex:1 1 190px;min-width:130px;max-width:310px;font-size:12px"></select><button type="button" id="simPresetLoad" title="Apply this setup to simulation inputs">Load</button><button type="button" id="simPresetSave" title="Save current simulator inputs under a name">Save current</button><button type="button" id="simPresetDelete" title="Delete selected saved setup">Delete</button></div><p id="simPresetNote" class="hint" style="margin:3px 0;font-size:11px">Presets change simulator inputs only, not Firms strategies. Load a setup, then Run Simulation.</p></details><div class="alert"><strong>Step 2 · Choose an action</strong><div class="actions"><button type="button" class="primary" data-action-run="run" title="Run a new Monte Carlo simulation from Section 1 inputs">1 · Run Simulation</button><button type="button" data-action-run="investment" title="Open investment scenario comparison controls">2 · Calculate Investment</button><button type="button" data-action-run="discover" title="Explore alternative risk plans without changing Firms">3 · Find Better Models</button></div><p class="hint">Start with Run Simulation. Calculate Investment compares capital and model scenarios. Find Better Models explores risk alternatives. Each action is separate; reports below show which result is active.</p><div id="workflowFeedback" class="hint" role="status" aria-live="polite">Choose an action above. No calculation starts until you select one.</div></div><p class="hint">Saved profiles and phase-risk options are read from this browser's selected 4Ds user (<b id="userLabel">—</b>). Press Apply on a Smart Setup or FTMO Funded Buffer Builder in Firms to use that account’s strategy and phase targets here. Click Reload saved stage settings if Firms changed in another tab. Global win rate, signal count and trial assumptions remain editable here.</p>
  <div id="accountAllocationHome" class="account-allocation-home"></div>
  <p class="hint" id="accountAllocationExplanation">Allocation settings are shown here with the selected account types. Each account card has independent evaluation and funded caps; shared purchase controls remain common assumptions.</p>
  <div id="accounts"></div>
@@ -3024,23 +3024,79 @@ $('reportSourceBar').addEventListener('click',event=>{
  chartState.selection='0';journeyState.selection='0';spendingLedgerState.selection='0';
  renderResults(stored.list,stored.inputs,source==='investment'?'investment':'restore');
 });
-// Explicit manual preset from the independently checked 300-trial Topstep
-// historical reconstruction. This updates only the simulator view, not Firms.
-$('loadVerifiedTopstep').addEventListener('click',event=>{
- event.preventDefault();event.stopPropagation();
- if(!catalog?.programs?.topstep||!catalog?.programs?.ftmo2){setRunSaveStatus('Topstep / FTMO catalog not ready','warning');return;}
- rows=[{id:'topstep',size:50000,weight:50},{id:'ftmo2',size:10000,weight:50}];
- const values={budget:'20000',netGoal:'0',winRate:'35',days:'90',
-  tradesPerDay:'7',trials:'300',seed:'24717',
-  simInputSource:'firms',purchaseMode:'recycle',capacityMode:'manual',
-  purchasePolicy:'fill-target-gaps',maxActive:'20',maxBuysPerDay:'5',
-  reinvestPayouts:'no',signalMode:'independent',signalPace:'daily'};
- for(const [id,value] of Object.entries(values))if($(id))$(id).value=value;
- $('recycleFundedPayouts').checked=true;
- const compare=document.querySelector('[name="budgetMode"][value="compare"]');
- if(compare)compare.checked=true;
- renderRows();syncPurchaseMode();saveView();
- setRunSaveStatus('Topstep 50K + FTMO 10K loaded · separate $20k budgets · press Run Simulation','success');
+// Compact, named simulator input presets. These are distinct from simulation
+// results/history and do not write to Firms or change any account risk profile.
+const simPresetKey=rootKey+'portfolio-simulation-presets:v1';
+const presetFields=['budget','netGoal','capitalMaxAccounts','capitalNominalCap','winRate',
+ 'simInputSource','purchaseMode','capacityMode','purchasePolicy','maxActive',
+ 'maxBuysPerDay','reinvestPayouts','days','tradesPerDay','signalPace',
+ 'trials','signalMode','seed'];
+const builtInSimPresets=[{id:'builtin-topstep-ftmo-01',name:'01 · Topstep 50K vs FTMO 10K · 35% WR',description:'Separate $20k budgets · 90 days · 300 trials · 7 signals/day',
+ snapshot:{values:{budget:'20000',netGoal:'0',winRate:'35',days:'90',tradesPerDay:'7',trials:'300',seed:'24717',
+ simInputSource:'firms',purchaseMode:'recycle',capacityMode:'manual',purchasePolicy:'fill-target-gaps',
+ maxActive:'20',maxBuysPerDay:'5',reinvestPayouts:'no',signalMode:'independent',signalPace:'daily'},
+ rows:[{id:'topstep',size:50000,weight:50},{id:'ftmo2',size:10000,weight:50}],
+ budgetMode:'compare',recycleFundedPayouts:true,allocationLimits:{},testRisks:{}}}];
+const readSimPresets=()=>{
+ const value=readJson(simPresetKey,[]);
+ return Array.isArray(value)?value.filter(p=>p&&typeof p.id==='string'&&typeof p.name==='string'&&p.snapshot).slice(0,50):[];
+};
+function captureSimPreset(){
+ return {values:Object.fromEntries(presetFields.map(id=>[id,$(id)?.value??''])),
+  rows:JSON.parse(JSON.stringify(rows)),
+  budgetMode:document.querySelector('[name="budgetMode"]:checked')?.value||'compare',
+  recycleFundedPayouts:$('recycleFundedPayouts').checked,
+  allocationLimits:JSON.parse(JSON.stringify(allocationLimits)),
+  testRisks:JSON.parse(JSON.stringify(testRisks))};
+}
+function renderSimPresets(selected){
+ const presets=[...builtInSimPresets,...readSimPresets()];
+ $('simPresetSelect').innerHTML=presets.map(p=>'<option value="'+esc(p.id)+'"'+(p.id===selected?' selected':'')+'>'+esc(p.name)+'</option>').join('');
+ $('simPresetCount').textContent='· '+presets.length+' available';
+ $('simPresetDelete').disabled=$('simPresetSelect').value.startsWith('builtin-');
+}
+function applySimPreset(p){
+ if(!p?.snapshot||!catalog)return;
+ const snap=p.snapshot;
+ if(!Array.isArray(snap.rows)||!snap.rows.length||snap.rows.some(r=>!catalog.programs[r.id]?.sizes?.includes(Number(r.size)))){
+  $('simPresetNote').textContent='Saved setup contains an unavailable account; no changes applied.';return;
+ }
+ for(const [id,value] of Object.entries(snap.values||{}))if(presetFields.includes(id)&&$(id))$(id).value=String(value);
+ rows=JSON.parse(JSON.stringify(snap.rows));
+ allocationLimits=JSON.parse(JSON.stringify(snap.allocationLimits||{}));
+ testRisks=JSON.parse(JSON.stringify(snap.testRisks||{}));
+ $('recycleFundedPayouts').checked=snap.recycleFundedPayouts===true;
+ const mode=document.querySelector('[name="budgetMode"][value="'+(snap.budgetMode==='split'?'split':'compare')+'"]');
+ if(mode)mode.checked=true;
+ renderRows();syncPurchaseMode();setStale();
+ $('simPresetNote').textContent=p.name+' loaded · review inputs and press Run Simulation.';
+}
+$('simPresetSelect').addEventListener('change',()=>{
+ $('simPresetDelete').disabled=$('simPresetSelect').value.startsWith('builtin-');
+ const p=[...builtInSimPresets,...readSimPresets()].find(x=>x.id===$('simPresetSelect').value);
+ $('simPresetNote').textContent=p?.description||'Load to apply these parameters.';
+});
+$('simPresetLoad').addEventListener('click',()=>{
+ const p=[...builtInSimPresets,...readSimPresets()].find(x=>x.id===$('simPresetSelect').value);
+ applySimPreset(p);
+});
+$('simPresetSave').addEventListener('click',()=>{
+ const name=window.prompt('Name this simulation setup (for example: 02 · FTMO conservative)');
+ if(name===null)return;
+ const clean=name.trim().slice(0,90);if(!clean){$('simPresetNote').textContent='Enter a setup name to save.';return;}
+ const presets=readSimPresets();if(presets.length>=50){$('simPresetNote').textContent='Maximum 50 saved setups. Delete an older one first.';return;}
+ const id='user-'+Date.now()+'-'+Math.floor(Math.random()*10000);
+ presets.push({id,name:clean,description:'Custom saved simulation inputs',snapshot:captureSimPreset()});
+ try{localStorage.setItem(simPresetKey,JSON.stringify(presets));renderSimPresets(id);
+  $('simPresetNote').textContent='Saved locally · '+clean+' · Firms unchanged.';
+ }catch(e){$('simPresetNote').textContent='Could not save this setup in browser storage.';}
+});
+$('simPresetDelete').addEventListener('click',()=>{
+ const id=$('simPresetSelect').value;if(id.startsWith('builtin-'))return;
+ const presets=readSimPresets(),p=presets.find(x=>x.id===id);
+ if(!p||!window.confirm('Delete saved setup "'+p.name+'"?'))return;
+ localStorage.setItem(simPresetKey,JSON.stringify(presets.filter(x=>x.id!==id)));
+ renderSimPresets();$('simPresetNote').textContent='Saved setup deleted; current simulation inputs unchanged.';
 });
 $('run').addEventListener('click',event=>{event.preventDefault();event.stopPropagation();run();});
 async function init(){
@@ -3058,7 +3114,7 @@ async function init(){
   if(!rulesRes.ok)throw Error('Rule catalog unavailable ('+rulesRes.status+')');
   catalog=await rulesRes.json();
   audit=auditRes.ok?await auditRes.json():null;
-  loadView();renderRows();
+  loadView();renderRows();renderSimPresets();
    syncPurchaseMode();
    $('status').textContent='Ready · choose budget and Run simulation';
   $('status').style.color='var(--green)';
