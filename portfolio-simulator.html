@@ -530,6 +530,7 @@ details p{margin:6px 0}
 .cash-tools{gap:4px}.cash-tools button{font-size:11px;font-weight:600;padding:3px 8px;min-height:28px}.cash-tools button[aria-expanded="true"]{border-color:var(--accent);background:var(--panel2)}#cashPeriodPanel label{font-size:11px;margin-right:8px}#cashPeriodPanel select{font-size:12px;padding:5px 7px;min-height:30px}
 .cash-period-row{cursor:pointer}.cash-period-row:hover{background:var(--panel2)}.cash-period-row:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}.cash-period-detail-row:not([hidden]){display:table-row}.cash-period-detail-row>td{padding:8px!important;white-space:normal!important;background:var(--panel2)}.cash-period-detail{max-width:100%;min-width:0}.cash-period-detail>strong{font-size:12px}.cash-period-detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:4px;margin:7px 0}.cash-period-detail-grid>div{padding:5px 7px;border:1px solid var(--line);border-radius:6px;min-width:0}.cash-period-detail-grid small{display:block;font-size:10px;color:var(--muted);white-space:normal}.cash-period-detail-grid strong{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}@media(max-width:600px){.cash-period-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .cash-period-detail-row>td{padding:5px!important}.cash-period-mini{font-size:10px}.cash-period-mini-head{display:flex;align-items:center;gap:8px;margin-bottom:4px}.cash-period-mini-head strong{font-size:11px}.cash-period-mini-head span{font-size:10px;color:var(--muted)}.cash-period-mini .cash-period-detail-grid{grid-template-columns:repeat(auto-fit,minmax(85px,1fr));gap:3px;margin:4px 0}.cash-period-mini .cash-period-detail-grid>div{padding:3px 5px;border-radius:4px}.cash-period-mini .cash-period-detail-grid small{font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cash-period-mini .cash-period-detail-grid strong{font-size:11px}.cash-period-subsections{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}.cash-period-subsections>details{flex:1 1 110px;min-width:0;border:1px solid var(--line);border-radius:5px}.cash-period-subsections>details[open]{flex-basis:100%}.cash-period-subsections>details>summary{font-size:10px;font-weight:600;padding:4px 6px;cursor:pointer;list-style:none;display:flex;justify-content:space-between}.cash-period-subsections>details>summary::-webkit-details-marker{display:none}.cash-period-subsections>details>.cash-period-detail-grid{padding:0 5px 5px}.cash-period-mini>.hint{font-size:9px;margin:5px 0 0}@media(max-width:600px){.cash-period-mini .cash-period-detail-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.cash-period-subsections>details{flex-basis:80px}}
+.cash-detail-filter-group{margin:6px 0;padding-top:5px;border-top:1px solid var(--line)}.cash-detail-filter-group>strong{font-size:11px}.cash-detail-filter-group .cash-columns-grid{margin-top:4px}
 </style>
 <link rel="stylesheet" href="studio-nav.css?v=20261105-compact-v2"><style>
 #gptResearchPanel .gpt-review-request{border:1px solid var(--line);border-radius:8px;padding:10px;margin:8px 0;background:var(--panel2)}
@@ -656,7 +657,7 @@ details p{margin:6px 0}
 <details class="sim-charts-panel numbered-panel" id="section4Panel" open><summary><strong>5 · Results across prop firms</strong><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><p id="summaryCaption" class="hint"></p><div id="totals" class="kpis"></div>
  <div class="tablewrap"><table><thead><tr><th>Firm / account</th><th>Budget</th><th>Challenges</th><th>Spent avg.</th><th>Phase 1 passes</th><th>Phase 2 passes</th><th>Funded</th><th>Paid</th><th>Payouts avg.</th><th>Net avg.</th><th>ROI</th><th>Chance ≥1 payout</th></tr></thead><tbody id="comparisonRows"></tbody></table></div>
  <p class="hint">Counts and profits are averages over simulated trials, not whole-account predictions. ROI = expected net / expected incurred costs. Starting budget is not account capital.</p>
- <div id="combined" hidden></div><details id="weeklyEconomicsPanel" class="sim-charts-panel" style="margin-top:12px"><summary><strong>Cash flow · payout economics</strong><span class="sim-charts-summary" id="weeklyEconomicsHint">Fees · payouts · net · conversion</span></summary><div class="numbered-content"><div class="cash-tools"><button type="button" id="cashPeriodToggle" aria-expanded="false" aria-controls="cashPeriodPanel">Period · Weekly ▾</button><button type="button" id="cashSummaryToggle">Summary ▾</button><button type="button" id="cashKpisToggle">KPIs ▾</button><button type="button" id="cashColumnsToggle">Columns ▾</button><button type="button" id="cashSourcesToggle">Model inputs ▾</button></div><div id="cashPeriodPanel" class="cash-columns-panel" hidden><label for="cashPeriod">Grouping</label><select id="cashPeriod" style="width:100%;max-width:230px"><option value="1">Daily · 1 trading day</option><option value="5" selected>Weekly · 5 trading days</option><option value="10">Biweekly · 10 trading days</option><option value="20">Monthly · 20 trading days</option></select><p class="hint">Periods use trading days, not calendar weeks or months. Touch any period row below to expand its details without adding table columns.</p></div><div id="cashSummaryPanel" class="cash-columns-panel" hidden></div><div id="cashKpisPanel" class="cash-columns-panel" hidden></div><div id="cashColumnsPanel" class="cash-columns-panel" hidden></div><div id="cashSourcesPanel" hidden><label for="cashInputView">Show input source</label><select id="cashInputView" style="max-width:290px"><option value="effective">Used in displayed simulation</option><option value="firms">Firms baseline (without overrides)</option><option value="overrides">Simulator-only overrides</option><option value="controls">Simulation controls</option></select><div id="cashInputDetails"></div></div></div><div id="weeklyEconomicsContents" class="numbered-content"><p class="hint">Run Simulation to see weekly results.</p></div></details>
+ <div id="combined" hidden></div><details id="weeklyEconomicsPanel" class="sim-charts-panel" style="margin-top:12px"><summary><strong>Cash flow · payout economics</strong><span class="sim-charts-summary" id="weeklyEconomicsHint">Fees · payouts · net · conversion</span></summary><div class="numbered-content"><div class="cash-tools"><button type="button" id="cashPeriodToggle" aria-expanded="false" aria-controls="cashPeriodPanel">Period · Weekly ▾</button><button type="button" id="cashSummaryToggle">Summary ▾</button><button type="button" id="cashKpisToggle">KPIs ▾</button><button type="button" id="cashColumnsToggle">Columns ▾</button><button type="button" id="cashDetailsToggle">Period details ▾</button><button type="button" id="cashSourcesToggle">Model inputs ▾</button></div><div id="cashPeriodPanel" class="cash-columns-panel" hidden><label for="cashPeriod">Grouping</label><select id="cashPeriod" style="width:100%;max-width:230px"><option value="1">Daily · 1 trading day</option><option value="5" selected>Weekly · 5 trading days</option><option value="10">Biweekly · 10 trading days</option><option value="20">Monthly · 20 trading days</option></select><p class="hint">Periods use trading days, not calendar weeks or months. Touch any period row below to expand its details without adding table columns.</p></div><div id="cashSummaryPanel" class="cash-columns-panel" hidden></div><div id="cashKpisPanel" class="cash-columns-panel" hidden></div><div id="cashColumnsPanel" class="cash-columns-panel" hidden></div><div id="cashDetailsPanel" class="cash-columns-panel" hidden></div><div id="cashSourcesPanel" hidden><label for="cashInputView">Show input source</label><select id="cashInputView" style="max-width:290px"><option value="effective">Used in displayed simulation</option><option value="firms">Firms baseline (without overrides)</option><option value="overrides">Simulator-only overrides</option><option value="controls">Simulation controls</option></select><div id="cashInputDetails"></div></div></div><div id="weeklyEconomicsContents" class="numbered-content"><p class="hint">Run Simulation to see weekly results.</p></div></details>
 </div></details>
 <details id="chartsPanel" class="sim-charts-panel"><summary><strong>6 · Charts</strong><span class="sim-charts-summary">Equity · Drawdown · Distributions · Payouts</span><span class="sim-charts-hint">Show / hide</span></summary><div id="chartsContents" class="sim-charts-contents"><p class="hint">Run a simulation to load charts.</p></div></details>
 <details id="journeyPanel" class="sim-charts-panel journey-panel">
@@ -1631,20 +1632,51 @@ function renderWeeklyEconomics(list,inputs){
  const summaries=list.map(r=>({r,w:weekly.summarize(r)})).filter(x=>x.w);
  const columns=cashColumns.filter(([key])=>cashVisible.has(key));
  const money=new Set(['spent','receipts','net','cumulativeNet','cumulativeSpent','cumulativeReceipts']);
- const detailGroups=[
-  ['Overview',['net','paid','failedAccounts','bought','spent','receipts']],
-  ['Accounts',['opportunities','trades','untraded','bought','challengePasses','verificationPasses','funded','paid','failedAccounts','riskBlockedAccounts','strategyStoppedAccounts','closedAccounts']],
-  ['Cash',['spent','receipts','net','roiOnFees','costPerBuy','costPerPaid','netPerTrade']],
-  ['Cumulative',['cumulativeNet','cumulativeBought','cumulativePaid','cumulativeSpent','cumulativeReceipts','cumulativeFunded','cumulativeP1','cumulativeP2','cumulativeFailed','cumulativeRiskBlocked','cumulativeStrategyStopped','cumulativeClosed','cumulativeTrades','cumulativeSignals']]
- ];
+const cashDetailGroups=[
+ ['Overview',['net','paid','failedAccounts','bought','spent','receipts']],
+ ['Accounts',['opportunities','trades','untraded','bought','challengePasses','verificationPasses','funded','paid','failedAccounts','riskBlockedAccounts','strategyStoppedAccounts','closedAccounts']],
+ ['Cash',['spent','receipts','net','roiOnFees','costPerBuy','costPerPaid','netPerTrade']],
+ ['Cumulative',['cumulativeNet','cumulativeBought','cumulativePaid','cumulativeSpent','cumulativeReceipts','cumulativeFunded','cumulativeP1','cumulativeP2','cumulativeFailed','cumulativeRiskBlocked','cumulativeStrategyStopped','cumulativeClosed','cumulativeTrades','cumulativeSignals']]
+];
+const cashDetailsKey='4ds:cash-period-details:v1';
+const cashDetailDefault={Overview:['net','paid','failedAccounts','bought','spent','receipts'],Accounts:['bought','challengePasses','verificationPasses','funded','paid','failedAccounts','riskBlockedAccounts'],Cash:['spent','receipts','net','roiOnFees'],Cumulative:['cumulativeNet','cumulativeBought','cumulativePaid','cumulativeFailed']};
+let cashDetailVisible=Object.fromEntries(Object.entries(cashDetailDefault).map(([k,v])=>[k,new Set(v)]));
+try{const saved=JSON.parse(localStorage.getItem(cashDetailsKey)||'null');if(saved&&typeof saved==='object')for(const [group,keys] of cashDetailGroups){if(Array.isArray(saved[group]))cashDetailVisible[group]=new Set(saved[group].filter(x=>keys.includes(x)));}}catch(e){}
+function drawCashDetailsControls(){
+ $('cashDetailsPanel').innerHTML='<div class="cash-column-actions"><button type="button" data-cash-details-preset="default">Default</button><button type="button" data-cash-details-preset="all">All</button><button type="button" data-cash-details-preset="none">Clear</button><button type="button" data-cash-details-preset="essential">Essential</button></div>'+
+ '<p class="hint">Choose the metrics shown when you touch a period. Empty groups are hidden. Saved on this device.</p>'+
+ cashDetailGroups.map(([group,keys])=>'<div class="cash-detail-filter-group"><strong>'+esc(group)+'</strong><div class="cash-columns-grid">'+keys.map(key=>{
+  const entry=cashColumns.find(x=>x[0]===key);return entry?'<label title="'+esc(entry[1])+'"><input type="checkbox" data-cash-detail-group="'+group+'" data-cash-detail-key="'+key+'" '+(cashDetailVisible[group]?.has(key)?'checked':'')+'>'+esc(cashShortLabels[key]||entry[1])+'</label>':'';
+ }).join('')+'</div></div>').join('');
+}
+function saveCashDetails(){
+ try{localStorage.setItem(cashDetailsKey,JSON.stringify(Object.fromEntries(Object.entries(cashDetailVisible).map(([k,v])=>[k,[...v]]))));}catch(e){}
+ drawCashDetailsControls();if(cashLastList)renderWeeklyEconomics(cashLastList,cashLastInputs);
+}
+$('cashDetailsPanel').addEventListener('click',e=>{
+ const btn=e.target.closest('[data-cash-details-preset]');if(!btn)return;
+ const preset=btn.dataset.cashDetailsPreset;
+ cashDetailVisible=Object.fromEntries(cashDetailGroups.map(([group,keys])=>[group,new Set(preset==='all'?keys:preset==='none'?[]:preset==='essential'?(group==='Overview'?['net','paid','failedAccounts']:[]):cashDetailDefault[group]||[])]));
+ saveCashDetails();
+});
+$('cashDetailsPanel').addEventListener('change',e=>{
+ const group=e.target.getAttribute('data-cash-detail-group'),key=e.target.getAttribute('data-cash-detail-key');if(!group||!key)return;
+ if(e.target.checked)cashDetailVisible[group].add(key);else cashDetailVisible[group].delete(key);saveCashDetails();
+});
+drawCashDetailsControls();
  const detailCells=(w,keys)=>'<div class="cash-period-detail-grid">'+keys.map(key=>{
   const entry=cashColumns.find(x=>x[0]===key);if(!entry)return '';
   return '<div title="'+esc(entry[1])+'"><small>'+esc(cashShortLabels[key]||entry[1])+'</small><strong>'+cashDerivedValue(w,key,money)+'</strong></div>';
  }).join('')+'</div>';
- const detailFor=w=>'<div class="cash-period-mini"><div class="cash-period-mini-head"><strong>Period '+w.period+'</strong><span>Days '+w.fromDay+'–'+w.toDay+' · trial averages</span></div>'+
- detailCells(w,detailGroups[0][1])+
- '<div class="cash-period-subsections">'+detailGroups.slice(1).map(([title,keys])=>'<details><summary>'+esc(title)+' <span>▾</span></summary>'+detailCells(w,keys)+'</details>').join('')+'</div>'+
- '<p class="hint">Risk-blocked and strategy-stopped are not necessarily firm breaches. Cumulative values include earlier periods.</p></div>';
+ const detailFor=w=>{
+  const overview=[...(cashDetailVisible.Overview||[])];
+  const groups=cashDetailGroups.slice(1).filter(([title])=>cashDetailVisible[title]?.size);
+  return '<div class="cash-period-mini"><div class="cash-period-mini-head"><strong>Period '+w.period+'</strong><span>Days '+w.fromDay+'–'+w.toDay+' · trial averages</span></div>'+
+   (overview.length?detailCells(w,overview):'')+
+   (groups.length?'<div class="cash-period-subsections">'+groups.map(([title])=>'<details><summary>'+esc(title)+' <span>▾</span></summary>'+detailCells(w,[...cashDetailVisible[title]])+'</details>').join('')+'</div>':'')+
+   (!overview.length&&!groups.length?'<p class="hint">No period details selected. Use Period details ▾ above to choose metrics.</p>':'')+
+   '<p class="hint">Blocked/stopped do not necessarily indicate firm breaches. Cumulative totals include prior periods.</p></div>';
+ };
  const renderRow=w=>'<tr class="cash-period-row" data-cash-period-row tabindex="0" role="button" aria-expanded="false" title="Touch to see period details">'+columns.map(([key])=>'<td'+(key==='net'?' class="'+(w.net>=0?'good':'bad')+'"':'')+'>'+(key==='period'?'▸ '+w.period+' · '+w.fromDay+'–'+w.toDay:cashDerivedValue(w,key,money))+'</td>').join('')+'</tr>'+
  '<tr class="cash-period-detail-row" hidden><td colspan="'+Math.max(1,columns.length)+'"><div class="cash-period-detail"><strong>Period '+w.period+' · trading days '+w.fromDay+'–'+w.toDay+'</strong>'+detailFor(w)+'</div></td></tr>';
  const table=items=>'<div class="tablewrap"><table><thead><tr>'+columns.map(([key,label])=>'<th title="'+esc(label)+'">'+esc(cashShortLabels[key]||label)+'</th>').join('')+'</tr></thead><tbody>'+items.map(renderRow).join('')+'</tbody></table></div>';
@@ -1705,7 +1737,7 @@ function renderWeeklyEconomics(list,inputs){
  holder.innerHTML='<p class="hint">Monte Carlo mean cash flows. Net = first-payout receipts − incurred challenge/activation fees. Day-zero purchases are included in the first period. Cumulative columns show totals through each period. Horizon net/period is not a recurring income forecast. Independent comparison alternatives must not be added together.</p>'+combined+summaries.map(firmCard).join('');
 }
 $('cashInputView').addEventListener('change',()=>{if(cashLastList)renderWeeklyEconomics(cashLastList,cashLastInputs);});
-const cashToolPanels={cashPeriodToggle:'cashPeriodPanel',cashSummaryToggle:'cashSummaryPanel',cashKpisToggle:'cashKpisPanel',cashColumnsToggle:'cashColumnsPanel',cashSourcesToggle:'cashSourcesPanel'};
+const cashToolPanels={cashPeriodToggle:'cashPeriodPanel',cashSummaryToggle:'cashSummaryPanel',cashKpisToggle:'cashKpisPanel',cashColumnsToggle:'cashColumnsPanel',cashDetailsToggle:'cashDetailsPanel',cashSourcesToggle:'cashSourcesPanel'};
 function toggleCashTool(buttonId){
  const panelId=cashToolPanels[buttonId],panel=$(panelId),opening=panel.hidden;
  for(const [id,pid] of Object.entries(cashToolPanels)){const active=id===buttonId&&opening;$(pid).hidden=!active;$(id).setAttribute('aria-expanded',String(active));}
