@@ -1,0 +1,4 @@
+/* Shared compact table headers — presentation only. */
+:where(table) :where(thead th){font-size:10px!important;line-height:1.25!important;letter-spacing:0!important;padding:6px 7px!important;vertical-align:middle;}
+:where(table) :where(thead th) :where(button,select){font-size:10px;}
+@media(max-width:600px){:where(table) :where(thead th){font-size:10px!important;padding:5px 6px!important;}}
