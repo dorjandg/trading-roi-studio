@@ -32,22 +32,17 @@ function run(data){
  if(!p||!c||!Array.isArray(p.stageList)||!p.riskProfiles?.funded)throw Error('Missing complete plan or funded risk');
  if(!['topstep','ftmo2','hola','holaPrime'].includes(p.id))throw Error('Unknown firm id');
  if(!(c.days>=1&&c.days<=120&&c.count>=1&&c.count<=100&&c.tradesPerDay>=1&&c.tradesPerDay<=20))throw Error('Simulation dimensions out of range');
- const trials=Math.min(300,Math.max(1,Math.floor(c.trials||1)));
- const sums={bought:0,funded:0,targetHit:0,payoutRequested:0,paid:0,receipts:0,spent:0,net:0,strategyStopped:0,exhausted:0};
- let sample=null;
- for(let i=0;i<trials;i++){
-  const seed=(Math.floor(c.seed||24717)+i)>>>0;
-  const rand=engine.rngFactory(seed);
-  const result=engine.oneTrial(p,{...c,trialIndex:i},rand,i===0);
-  if(i===0)sample=result;
-  for(const k of Object.keys(sums))sums[k]+=Number(result[k]||0)/trials;
- }
+ const trials=Math.min(3000,Math.max(50,Math.floor(c.trials||300)));
+ // Run through the same normalization and Monte Carlo path as the website.
+ const result=engine.simulatePortfolio(p,{...c,trials,trackCharts:true});
+ const avg=result.avg||{};
+ const keys=['bought','funded','targetHit','payoutRequested','paid','receipts','spent','net','strategyStopped','exhausted'];
+ const averages=Object.fromEntries(keys.map(k=>[k,Number(avg[k]||0)]));
  const report={schema:'4ds-offline-simulation-report-v1',source:data.label||'Authorized offline input',
   firm:p.id,trials,config:{days:c.days,tradesPerDay:c.tradesPerDay,seed:c.seed||24717},
-  averages:sums,firstTrial:{funded:sample.funded,targetHit:sample.targetHit,
-   payoutRequested:sample.payoutRequested,paid:sample.paid,
-   fundedTrades:sample.tradeAssignments?.filter(t=>t.stage==='funded'&&['W','L'].includes(t.outcome)).length||0,
-   payoutEvents:sample.accounts?.flatMap(a=>a.trace.filter(t=>['payout-request','paid','strategy-stop'].includes(t.type)).map(t=>({account:a.id,...t}))).slice(0,30)}};
+  averages,firstTrial:{funded:result.sample?.funded||0,targetHit:result.sample?.targetHit||0,
+   payoutRequested:result.sample?.payoutRequested||0,paid:result.sample?.paid||0,
+   payoutEvents:result.sample?.accounts?.flatMap(a=>(a.trace||[]).filter(t=>['payout-request','paid','strategy-stop'].includes(t.type)).map(t=>({account:a.id,...t}))).slice(0,30)||[]}};
  return report;
 }
 function fromSavedHistory(history){
@@ -70,11 +65,11 @@ function fromSavedHistory(history){
   }
   const row=record.accounts?.find(x=>x.id===f.programId&&Number(x.size)===Number(f.accountSize));
   const allocation=inputs.budgetMode==='split'?Number(row?.weight||0)/100:1;
-  const config={...inputs,count:Math.max(1,Math.floor(row?.weight||20)),
+  const config={...inputs,maxAccounts:100,
    budget:Number(f.budget??inputs.budget*allocation),
    seed:Number(inputs.seed||24717)+index*120011,
    trials:inputs.trials||300,days:inputs.days||90,
-   winRate:Number(inputs.winRate||35)/100,
+   winRate:Number(inputs.winRate||35),
    maxLifetime:100,tradeSlots:null,trackDaily:true,
    maxActive:inputs.maxActive||20,maxBuysPerDay:inputs.maxBuysPerDay||5};
   return {schema:'4ds-offline-simulation-v1',label:'Private saved history '+record.timestamp+' '+f.programId,plan,config};
