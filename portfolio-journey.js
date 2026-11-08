@@ -68,9 +68,10 @@ function options(list,chosen){
 }
 function tablePanel(id,title,content,open=false,subtitle=''){
  const kind=id==='journey-charts'?'chart':id==='journey-definitions'||id==='journey-methodology'?'guide':'table';
- const label=kind==='chart'?'CHART':kind==='guide'?'INFO':'TABLE';
+ const label=kind==='chart'?'Chart':kind==='guide'?'Info':'Table';
+ const symbol=kind==='chart'?'▥':kind==='guide'?'ⓘ':'▦';
  return '<details class="journey-data-panel journey-panel-'+kind+'" data-journey-table="'+esc(id)+'"'+(open?' open':'')+'>'+
-  '<summary><span class="journey-kind" aria-label="'+label.toLowerCase()+' section">'+label+'</span><strong>'+esc(title)+'</strong>'+(subtitle?'<small>'+esc(subtitle)+'</small>':'')+'</summary>'+
+  '<summary><span class="journey-kind" role="img" aria-label="'+label+'" title="'+label+'">'+symbol+'</span><strong>'+esc(title)+'</strong>'+(subtitle?'<small>'+esc(subtitle)+'</small>':'')+'</summary>'+
   '<div class="journey-data-body">'+content+'</div></details>';
 }
 function sampleMilestones(r,signalDay='1',tableOpen={}){
