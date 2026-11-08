@@ -27,7 +27,11 @@ input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{ou
 button{border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:9px;padding:10px 13px;font-weight:750;cursor:pointer}
 button:hover{border-color:var(--blue)}button:disabled{opacity:.5;cursor:not-allowed}.primary{background:var(--green);color:#05231e;border-color:transparent}
 .actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:13px 0}
-.status{padding:10px 12px;border-radius:10px;background:var(--panel2);color:var(--muted);font-size:12px}
+.status{padding:10px 12px;border-radius:10px;background:var(--panel2);color:var(--muted);font-size:12px;border:1px solid var(--line);font-weight:700}
+.status[data-signal="pending"],.status[data-signal="error"]{color:var(--red)!important;border-color:var(--red);background:color-mix(in srgb,var(--red) 9%,var(--panel))}
+.status[data-signal="success"]{color:var(--green)!important;border-color:var(--green);background:color-mix(in srgb,var(--green) 9%,var(--panel))}
+.status[data-signal="working"],.status[data-signal="stale"]{color:var(--amber)!important;border-color:var(--amber);background:color-mix(in srgb,var(--amber) 9%,var(--panel))}
+.status[data-signal="info"]{color:var(--blue)!important;border-color:var(--blue);background:var(--panel2)}
 .alert{padding:12px 14px;border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:9px;background:var(--panel2);margin:12px 0;font-size:12px}
 .error{border-left-color:var(--red)}
 .account-card{padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);margin:9px 0}
@@ -716,6 +720,28 @@ const charts=window.StudioPortfolioCharts;
 const journey=window.StudioPortfolioJourney;
 const reportSource=window.StudioReportSource;
 const $=id=>document.getElementById(id);
+/* Visual signals only; never infer that a simulation has run from catalog readiness. */
+function classifyStudioSignal(message){
+ const s=String(message||'').toLowerCase();
+ if(/error|failed|invalid|unavailable|cannot|unable|maximum 8|keep at least|select at least|set at least/.test(s))return 'error';
+ if(/completed|complete ·|viewing selected investment scenario|successfully|saved/.test(s))return 'success';
+ if(/inputs changed|re-run|rerun|outdated|stale/.test(s))return 'stale';
+ if(/running|calculating|loading|comparing|searching|restoring|syncing/.test(s))return 'working';
+ if(/ready|choose budget|run simulation|select .*run|reload/.test(s))return 'pending';
+ return 'info';
+}
+function attachStudioSignals(){
+ for(const id of ['status','ideaStatus']){
+  const el=$(id);if(!el)continue;
+  const refresh=()=>{const signal=classifyStudioSignal(el.textContent);el.dataset.signal=signal;
+   if(id==='ideaStatus')el.style.color='';};
+  const observer=new MutationObserver(refresh);
+  observer.observe(el,{childList:true,characterData:true,subtree:true});
+  refresh();
+ }
+}
+attachStudioSignals();
+
 const esc=x=>String(x==null?'':x).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const usd=n=>(Number(n)||0).toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0});
 const usdExact=n=>(Number(n)||0).toLocaleString('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2});
