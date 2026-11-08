@@ -35,3 +35,13 @@ After **Run Simulation**, select **Export test input** in Section 2. This downlo
 Run privately: `node tests/run-portfolio-simulation.cjs --input /private/4ds-private-simulation-input.json --output /private/result.json`.
 
 **Privacy limitation:** GitHub Actions uses only synthetic fixtures. It cannot access private browser data or Google Drive profiles automatically. An actual private run requires supplying the exported file to an authorized execution environment. Do not commit it to GitHub. Reports are reproducible only if the same engine revision and input snapshot are used.
+
+## Connected-assistant independent execution (verified 2026-11-08)
+
+An authorized assistant with connected GitHub and Google Drive tools can fetch the current `portfolio-engine.js` source and the private 4Ds profile, evaluate the engine in its isolated JavaScript tool runtime, and call `StudioPortfolioEngine.simulatePortfolio(plan,config)` directly. **No browser action, public API, GitHub Actions secret, or cloud mutation is needed.** The private profile is read-only; never publish its raw JSON, settings, or account data.
+
+The history record `4ds:v1:<user>:portfolio-simulation-history:v1` contains `inputs`, `firms[].risk`, `firms[].caps`, and `firms[].budget`, but does **not** preserve all original normalized plan fields. Reconstructing plans from history is a **historical approximation**, not a bit-for-bit reproduction. For exact reproduction use the browser's private normalized plan export or an explicitly authorized source of all normalized plan fields. Never call an approximate run exact.
+
+Verified example: 300-trial reconstructed Topstep run from the November 8 saved history using the current engine: mean funded 39.4467, target hit 13.64, payout requested 13.64, paid 12.35, receipts $24,700. A sample account requested on day 6 and was marked paid on day 16. These are **synthetic model outputs**, not actual firm payments or a fresh website run. The historical source run was from 2026-11-08T13:49:29.936Z. Do not copy these figures as current results after later updates.
+
+For every independent run report the engine revision, source timestamp, trial count, plan reconstruction assumptions, and whether target/request/paid invariants passed. A run in an assistant's isolated tool runtime does not automatically publish to the website or GitHub Actions.
