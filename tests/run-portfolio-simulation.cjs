@@ -20,7 +20,7 @@ function fixture(){
   riskProfiles:{
    p1:{target:3000,minDays:2,maxWinsPerDay:2,maxDays:24,rr:3,r1:500,r2:667,r3:389,r4:0,policy:{mode:'flat'},consistency:.55},
    funded:{target:4000,minDays:0,maxWinsPerDay:2,maxDays:20,rr:4,r1:1000,r2:1000,r3:0,r4:0,policy:{mode:'flat'},consistency:0}}},
- config:{count:5,days:45,tradesPerDay:5,winRate:1,seed:24717,
+ config:{count:5,budget:245,days:45,tradesPerDay:5,winRate:100,seed:24717,
   purchaseMode:'upfront',capacityMode:'manual',maxActive:5,maxBuysPerDay:5,
   evaluationAllocationCap:0,fundedAllocationCap:0,trackDaily:true,
   signalMode:'independent',allocationMode:'single',maxCopies:1,
@@ -31,7 +31,7 @@ function run(data){
  const p=JSON.parse(JSON.stringify(data.plan),(key,value)=>value==='__INFINITY__'?Infinity:value),c=data.config;
  if(!p||!c||!Array.isArray(p.stageList)||!p.riskProfiles?.funded)throw Error('Missing complete plan or funded risk');
  if(!['topstep','ftmo2','hola','holaPrime'].includes(p.id))throw Error('Unknown firm id');
- if(!(c.days>=1&&c.days<=120&&c.count>=1&&c.count<=100&&c.tradesPerDay>=1&&c.tradesPerDay<=20))throw Error('Simulation dimensions out of range');
+ if(!(c.days>=1&&c.days<=120&&c.tradesPerDay>=1&&c.tradesPerDay<=20&&Number(c.budget)>0))throw Error('Simulation dimensions out of range');
  const trials=Math.min(3000,Math.max(50,Math.floor(c.trials||300)));
  // Run through the same normalization and Monte Carlo path as the website.
  const result=engine.simulatePortfolio(p,{...c,trials,trackCharts:true});
