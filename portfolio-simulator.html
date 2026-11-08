@@ -516,6 +516,11 @@ details p{margin:6px 0}
 .cash-flow-explanation{margin:4px 0 7px;font-size:11px;color:var(--muted)}
 .cash-flow-explanation>summary{cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:3px 0;font-size:11px}
 .cash-flow-explanation>p{margin:4px 0 8px;line-height:1.5;max-width:900px}
+.cash-table-shell>#cashColumnsPanel:not([hidden]){padding:8px;max-height:min(350px,60dvh)}
+.cash-table-shell .cash-columns-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 5px}
+.cash-table-shell .cash-columns-grid label{font-size:10px;min-height:21px}
+.cash-table-shell .cash-column-actions{gap:3px}
+.cash-table-shell .cash-column-actions button{min-height:25px;font-size:10px;padding:2px 5px}
 .cash-saved-views{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px;margin-bottom:9px;padding-bottom:8px;border-bottom:1px solid var(--line)}
 .cash-saved-views select,.cash-saved-views input{min-width:0;width:100%;font-size:11px;min-height:30px}
 .cash-saved-views button{font-size:11px;min-height:30px;padding:4px 8px}
@@ -2106,6 +2111,7 @@ drawCashDetailsControls();
 $('cashInputView').addEventListener('change',()=>{saveCashTablePrefs();if(cashLastList)renderWeeklyEconomics(cashLastList,cashLastInputs);});
 const cashToolPanels={cashPeriodToggle:'cashPeriodPanel',cashSummaryToggle:'cashSummaryPanel',cashKpisToggle:'cashKpisPanel',cashColumnsToggle:'cashColumnsPanel',cashDetailsToggle:'cashDetailsPanel',cashSourcesToggle:'cashSourcesPanel'};
 function toggleCashTool(buttonId){
+ if(buttonId!=='cashColumnsToggle')closeCashColumnPopover();
  const panelId=cashToolPanels[buttonId],panel=$(panelId),opening=panel.hidden;
  for(const [id,pid] of Object.entries(cashToolPanels)){const active=id===buttonId&&opening;$(pid).hidden=!active;$(id).setAttribute('aria-expanded',String(active));}
 }
@@ -2130,6 +2136,16 @@ function applyCashNamedPreset(name){
  for(const key of cashAllKeys)if(!cashColumnOrder.includes(key))cashColumnOrder.push(key);
  drawCashColumnControls();saveCashTablePrefs();if(cashLastList)renderWeeklyEconomics(cashLastList,cashLastInputs);
 }
+// Shared popover behavior: close on outside tap, Escape, or when another tool opens.
+function closeCashColumnPopover(){
+ const panel=$('cashColumnsPanel'),button=$('cashColumnsToggle');
+ if(!panel.hidden){panel.hidden=true;button.setAttribute('aria-expanded','false');}
+}
+document.addEventListener('pointerdown',event=>{
+ const panel=$('cashColumnsPanel'),button=$('cashColumnsToggle');
+ if(!panel.hidden&&!panel.contains(event.target)&&!button.contains(event.target))closeCashColumnPopover();
+});
+document.addEventListener('keydown',event=>{if(event.key==='Escape')closeCashColumnPopover();});
 let cashColumnFilterMode='category';
 function drawCashColumnControls(){
  const panel=$('cashColumnsPanel');
