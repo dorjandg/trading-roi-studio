@@ -1524,7 +1524,22 @@ const canonicalColumnLabels={
  'FA':'Funded activated','FW':'Funding wait','PP':'Payout pending','TG':'Target reached',
  'Pending':'Payout pending','Paid total':'Paid accounts','Breached':'Failed accounts'
 };
-function canonicalColumnLabel(label){return canonicalColumnLabels[label]||label;}
+const phaseColumnNames={
+ 'Challenge active':'P1','Verification active':'P2','Funded active':'P3',
+ 'Payout pending':'P4','Phase 1 passed':'P1 pass','Phase 2 passed':'P2 pass'
+};
+const phaseColumnDescriptions={
+ 'P1':'P1 — Challenge: accounts currently in phase 1',
+ 'P2':'P2 — Verification: accounts currently in phase 2',
+ 'P3':'P3 — Funded: active funded accounts, including payout-pending',
+ 'P4':'P4 — Payout pending: subset of P3, not additional allocation',
+ 'P1 pass':'Cumulative accounts that passed Challenge; not current P1 count',
+ 'P2 pass':'Cumulative accounts that passed Verification; not current P2 count'
+};
+function canonicalColumnLabel(label){
+ const normalized=canonicalColumnLabels[label]||label;
+ return phaseColumnNames[normalized]||normalized;
+}
 const journeyColumnPrefs={};
 function addJourneyColumnFilters(){
  const root=document.getElementById('journeyContents');if(!root)return;
@@ -1533,7 +1548,7 @@ function addJourneyColumnFilters(){
   if(!table||!table.tHead?.rows[0])continue;
   const heads=Array.from(table.tHead.rows[0].cells);
   const ids=heads.map((h,i)=>i===0?'day':(canonicalColumnLabel(h.textContent.trim())||'column-'+i));
-  heads.forEach((h,i)=>{if(i>0)h.textContent=ids[i];});
+  heads.forEach((h,i)=>{if(i>0){h.textContent=ids[i];h.title=phaseColumnDescriptions[ids[i]]||ids[i];}});
   const storageKey='studio-journey-columns-v2-'+key;
   if(!journeyColumnPrefs[key]){
    let saved=null;try{saved=JSON.parse(localStorage.getItem(storageKey)||'null');}catch(_){}
