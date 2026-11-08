@@ -513,6 +513,11 @@ details p{margin:6px 0}
 .sim-workflow-links span{font-size:11px;font-weight:700;color:var(--muted);margin-right:4px}
 .sim-workflow-links button{font-size:11px;min-height:28px;padding:4px 9px;border-radius:5px}
 @media(max-width:650px){.sim-workflow-links button{flex:1 1 145px}.sim-workflow-links span{flex:1 1 100%}}
+/* Group like content in Section 7, without altering the table IDs or saved layouts. */
+#journeyContents .journey-section-group{margin:9px 0 12px;display:grid;gap:4px;min-width:0}
+#journeyContents .journey-group-title{margin:0 0 3px;padding:5px 2px;font-size:11px;font-weight:750;color:var(--muted);border-bottom:1px solid var(--line)}
+#journeyContents .journey-section-group .journey-data-panel{margin:2px 0}
+#journeyContents .journey-status-line{font-size:11px;line-height:1.45;margin:5px 0 8px}
 /* Section 7 visual hierarchy: distinct tables, charts, and explanatory panels. */
 #journeyContents .journey-data-panel{border-left:3px solid transparent}
 #journeyContents .journey-panel-table{border-left-color:var(--blue,#4b93da)}
