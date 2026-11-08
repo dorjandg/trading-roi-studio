@@ -1,3 +1,9 @@
+## Scenario Optimizer target-first discovery (Nov 8, 2026)
+
+- Updated studio-scenario-discovery.js (commit dc8eff1) in the Firms phase panels (p1/p2/funded). It is a *read-only, short-horizon daily-goal candidate explorer*, not a Topstep-compliant multi-day evaluation optimizer. It accepts daily goal, win probability, RR, max trades/day, and manually entered illustrative loss cap. It generates fixed and target-derived risk sequences, stops a path when daily goal is reached, shows expandable W/L paths and probabilities, and stores checkbox selections locally per phase.
+- Ranking currently prioritizes daily-goal hit chance, then modeled cap breach chance, then expected trades. It does not compute days-to-pass, official trailing drawdown, consistency rules, or overall account passing probability. Selected scenarios are NOT integrated with Portfolio Simulation and must not be represented as executable trading policies. Risk cap is not verified against current Topstep rules. Do not silently change saved user strategies.
+- JavaScript syntax verified using parser; Cloudflare live deployment and browser UX not verified. Next step: shared firm-rule-compliant multi-day scenario engine and explicit approved handoff to Portfolio Simulator.
+
 ## Final Studio AI verification record (Nov 7, 2026)
 
 - All eight current Studio entrypoint HTML pages reference eight local AI scripts in correct load order; all eight scripts pass JavaScript parser checks at readback. Independent source-grounded formula smoke tests covered Trade Lab and Comparison Lab; existing Portfolio Simulator arithmetic audits were exercised on FTMO and Topstep fixtures.
