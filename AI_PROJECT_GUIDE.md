@@ -1,3 +1,7 @@
+## Canonical table UI standard (Nov 8, 2026)
+
+See [TABLE_UI_STANDARD.md](TABLE_UI_STANDARD.md) for the required base model and Portfolio Simulator implementation references. All table work must inspect the existing implementation and reuse pointer-based drag, compact upper-right filters, tap-accessible header help, sort, pagination, and stable saved preferences. Scenario Optimizer currently differs in drag/filter behavior and is listed for alignment; full-site migration is not yet complete.
+
 ## Scenario Optimizer target-first discovery (Nov 8, 2026)
 
 - Updated studio-scenario-discovery.js (commit dc8eff1) in the Firms phase panels (p1/p2/funded). It is a *read-only, short-horizon daily-goal candidate explorer*, not a Topstep-compliant multi-day evaluation optimizer. It accepts daily goal, win probability, RR, max trades/day, and manually entered illustrative loss cap. It generates fixed and target-derived risk sequences, stops a path when daily goal is reached, shows expandable W/L paths and probabilities, and stores checkbox selections locally per phase.
