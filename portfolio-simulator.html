@@ -720,7 +720,7 @@ details p{margin:6px 0}
  </div>
  <p class="hint" id="budgetModeNote">In compare mode each firm uses its own hypothetical budget and trade schedule. In split-budget mode the dynamic daily trade opportunities are shared among firms. Do not sum independent comparisons.</p>
 </div></details>
-<details class="sim-charts-panel numbered-panel" id="section2Panel" open><summary><strong>2 · Run &amp; calculate · choose one</strong><button id="run" type="button" class="primary section-run-btn" title="Run simulation with current account and strategy settings">Run Simulation</button><span id="runSaveStatus" role="status" aria-live="polite" style="font-size:10px;white-space:nowrap;opacity:.9">Not run yet</span><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><div class="alert"><strong>Step 2 · Choose an action</strong><div class="actions"><button type="button" class="primary" data-action-run="run" title="Run a new Monte Carlo simulation from Section 1 inputs">1 · Run Simulation</button><button type="button" data-action-run="investment" title="Open investment scenario comparison controls">2 · Calculate Investment</button><button type="button" data-action-run="discover" title="Explore alternative risk plans without changing Firms">3 · Find Better Models</button></div><p class="hint">Start with Run Simulation. Calculate Investment compares capital and model scenarios. Find Better Models explores risk alternatives. Each action is separate; reports below show which result is active.</p><div id="workflowFeedback" class="hint" role="status" aria-live="polite">Choose an action above. No calculation starts until you select one.</div></div><p class="hint">Saved profiles and phase-risk options are read from this browser's selected 4Ds user (<b id="userLabel">—</b>). Press Apply on a Smart Setup or FTMO Funded Buffer Builder in Firms to use that account’s strategy and phase targets here. Click Reload saved stage settings if Firms changed in another tab. Global win rate, signal count and trial assumptions remain editable here.</p>
+<details class="sim-charts-panel numbered-panel" id="section2Panel" open><summary><strong>2 · Run &amp; calculate · choose one</strong><button id="run" type="button" class="primary section-run-btn" title="Run simulation with current account and strategy settings">Run Simulation</button><button id="exportSimulationInput" type="button" title="Download a private, read-only reproduction of the last Run Simulation configuration. No cloud upload.">Export test input</button><span id="runSaveStatus" role="status" aria-live="polite" style="font-size:10px;white-space:nowrap;opacity:.9">Not run yet</span><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><div class="alert"><strong>Step 2 · Choose an action</strong><div class="actions"><button type="button" class="primary" data-action-run="run" title="Run a new Monte Carlo simulation from Section 1 inputs">1 · Run Simulation</button><button type="button" data-action-run="investment" title="Open investment scenario comparison controls">2 · Calculate Investment</button><button type="button" data-action-run="discover" title="Explore alternative risk plans without changing Firms">3 · Find Better Models</button></div><p class="hint">Start with Run Simulation. Calculate Investment compares capital and model scenarios. Find Better Models explores risk alternatives. Each action is separate; reports below show which result is active.</p><div id="workflowFeedback" class="hint" role="status" aria-live="polite">Choose an action above. No calculation starts until you select one.</div></div><p class="hint">Saved profiles and phase-risk options are read from this browser's selected 4Ds user (<b id="userLabel">—</b>). Press Apply on a Smart Setup or FTMO Funded Buffer Builder in Firms to use that account’s strategy and phase targets here. Click Reload saved stage settings if Firms changed in another tab. Global win rate, signal count and trial assumptions remain editable here.</p>
  <div id="accountAllocationHome" class="account-allocation-home"></div>
  <p class="hint" id="accountAllocationExplanation">Allocation settings are shown here with the selected account types. Each account card has independent evaluation and funded caps; shared purchase controls remain common assumptions.</p>
  <div id="accounts"></div>
@@ -863,6 +863,27 @@ let catalog=null,audit=null,rows=[],lastResults=[],lastInputs=null;
 let reportStale=false,reportUpdatedAt=null;
 // Read-only bridge: exposes already-loaded history and current report to the local advisor.
 window.StudioAdvisorReadOnly={getRuns:()=>simulationHistory?.getRuns()||[],getTestCases:()=>lastResults.slice(0,2).map(r=>({plan:JSON.parse(JSON.stringify(r.plan)),config:{...(lastInputs||{}),budget:r.budget,evaluationAllocationCap:r.config?.evaluationAllocationCap||0,fundedAllocationCap:r.config?.fundedAllocationCap||0}})),getCurrent:()=>({stale:reportStale,updatedAt:reportUpdatedAt,results:lastResults.map(r=>({programId:r.plan?.id,firm:r.plan?.firm,accountSize:r.plan?.size,avg:{...r.avg},stages:[...(r.stages||[])],roi:r.roi,chancePayout:r.chancePayout,budget:r.budget})),inputs:lastInputs?{...lastInputs}:null,visible:!document.getElementById('results')?.hidden})};
+// Private reproducibility bridge: export the normalized engine plan already
+// used by Run Simulation. Never send account settings to public GitHub.
+window.StudioOfflineSimulation={
+ getCases:()=>lastResults.map(r=>({schema:'4ds-offline-simulation-v1',
+  label:'Private user-exported simulation '+new Date().toISOString(),
+  plan:JSON.parse(JSON.stringify(r.plan)),
+  config:{...(lastInputs||{}),budget:r.budget,
+   evaluationAllocationCap:r.config?.evaluationAllocationCap||0,
+   fundedAllocationCap:r.config?.fundedAllocationCap||0,
+   dailyBuyCap:r.config?.dailyBuyCap||0,
+   tradeSchedule:r.config?.tradeSchedule||lastInputs?.tradeSchedule||null}}))
+};
+document.getElementById('exportSimulationInput')?.addEventListener('click',()=>{
+ const cases=window.StudioOfflineSimulation.getCases();
+ if(!cases.length){setRunSaveStatus('Run a simulation before exporting its test input','warning');return;}
+ const blob=new Blob([JSON.stringify({schema:'4ds-offline-simulation-bundle-v1',cases},null,2)],{type:'application/json'});
+ const url=URL.createObjectURL(blob),link=document.createElement('a');
+ link.href=url;link.download='4ds-private-simulation-input.json';document.body.appendChild(link);link.click();link.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),30000);
+ setRunSaveStatus('Private simulation input downloaded; not uploaded to cloud','success');
+});
 let testRisks={}; // simulator-only risk/strategy experiments, never written to Firms
 let discovered=null; // exploration candidates (not saved as Firms profile)
 let discoveryTableOpen=true;
