@@ -588,7 +588,7 @@ details p{margin:6px 0}
 <h1>Budget → Challenges → Phases → Payout</h1>
 <p class="muted">Uses each account’s saved risk policy from Firms: fixed R1–R4, or FTMO’s optional dynamic Funded Buffer Builder. Targets and loss limits remain specific to each firm and phase. Trade outcomes are simulated, never predicted; no orders are placed.</p>
 <div class="alert"><strong>Model scope:</strong> Risk amounts are used exactly or the trade is blocked. Minimum trading days after reaching a target are represented as <b>administrative qualification assumptions</b> (not invented W/L trades). Payout eligibility, subscriptions, trailing losses, firm allocation and checkout rules need separate verification.</div>
-<details class="sim-charts-panel numbered-panel" id="section1Panel" open><summary><strong>1 · Investment & simulation inputs</strong><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><p class="hint">Same-budget comparison allocates the entire budget separately to each firm. Split-budget mode divides one budget across the selected firms.</p>
+<details class="sim-charts-panel numbered-panel" id="section1Panel" open><summary><strong>1 · Investment & simulation inputs</strong><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><div class="alert"><strong>Step 1 · Choose inputs</strong><p class="hint">All calculations start with the selected accounts, Firms settings, budget and assumptions. Select how phase-risk adjustments are applied before running.</p><div class="actions"><label for="simInputSource">Phase-risk source</label><select id="simInputSource" style="max-width:310px"><option value="firms">Firms only (default)</option><option value="adjusted">Firms + Simulator adjustments</option></select><button type="button" id="simInputsToggle">Preview phase inputs ▾</button></div><div id="simInputsPreview" hidden></div></div><p class="hint">Same-budget comparison allocates the entire budget separately to each firm. Split-budget mode divides one budget across the selected firms.</p>
  <div class="fields">
   <div class="field"><label for="budget">Starting budget (USD)</label><input id="budget" type="number" min="0" step="100" value="5000"></div>
   <div class="field"><label for="netGoal">Target net profit (USD)</label><input id="netGoal" type="number" min="0" step="100" value="20000"></div>
@@ -619,7 +619,7 @@ details p{margin:6px 0}
  </div>
  <p class="hint" id="budgetModeNote">In compare mode each firm uses its own hypothetical budget and trade schedule. In split-budget mode the dynamic daily trade opportunities are shared among firms. Do not sum independent comparisons.</p>
 </div></details>
-<details class="sim-charts-panel numbered-panel" id="section2Panel" open><summary><strong>2 · Prop-firm accounts</strong><button id="run" type="button" class="primary section-run-btn" title="Run simulation with current account and strategy settings">Run Simulation</button><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><p class="hint">Saved profiles and phase-risk options are read from this browser's selected 4Ds user (<b id="userLabel">—</b>). Press Apply on a Smart Setup or FTMO Funded Buffer Builder in Firms to use that account’s strategy and phase targets here. Click Reload saved stage settings if Firms changed in another tab. Global win rate, signal count and trial assumptions remain editable here.</p>
+<details class="sim-charts-panel numbered-panel" id="section2Panel" open><summary><strong>2 · Run &amp; calculate</strong><button id="run" type="button" class="primary section-run-btn" title="Run simulation with current account and strategy settings">Run Simulation</button><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><div class="alert"><strong>Step 2 · Choose an action</strong><div class="actions"><button type="button" class="primary" data-action-run="run">Run Simulation</button><button type="button" data-action-run="investment">Calculate Investment</button><button type="button" data-action-run="discover">Find Better Models</button></div><p class="hint">Run Simulation uses the current inputs. Calculate Investment opens the investment scenario controls. Find Better Models opens model research. Results below identify the active report.</p></div><p class="hint">Saved profiles and phase-risk options are read from this browser's selected 4Ds user (<b id="userLabel">—</b>). Press Apply on a Smart Setup or FTMO Funded Buffer Builder in Firms to use that account’s strategy and phase targets here. Click Reload saved stage settings if Firms changed in another tab. Global win rate, signal count and trial assumptions remain editable here.</p>
  <div id="accounts"></div>
  <div id="stageSourceAlert" class="sim-stage-source-alert" role="status" hidden></div>
  <div class="actions"><button id="addAccount" type="button">+ Add account to comparison</button><button id="reload" type="button">Reload saved stage settings</button><span id="profileStatus" class="hint"></span></div>
@@ -798,7 +798,7 @@ function accountPlan(row){
  const profile=profileFor(row.id,size);
  const snapshots={p1:snapFor(row.id,size,'p1'),p2:snapFor(row.id,size,'p2'),funded:snapFor(row.id,size,'funded')};
  const plan=E.buildPlan(row.id,size,program,profile,snapshots,audit?.programs?.[row.id]);
- const experiment=testRisks[row.id+':'+size]||{};
+ const experiment=$('simInputSource').value==='firms'?{}:(testRisks[row.id+':'+size]||{});
  for(const [field,target,derived] of [['__payoutWaitCalendarDays','payoutWaitCalendarDays','fundedWaitDays'],['__payoutProcessingCalendarDays','payoutProcessingCalendarDays','payoutProcessingTradingDays']]){
   if(!Object.prototype.hasOwnProperty.call(experiment,field))continue;
   const value=Number(experiment[field]);
@@ -846,6 +846,27 @@ function accountPlan(row){
  }
  return plan;
 }
+function refreshSimInputsPreview(){
+ const box=$('simInputsPreview');if(box.hidden)return;
+ const source=$('simInputSource').value;
+ box.innerHTML='<p class="hint">Next run: '+(source==='firms'?'Firms phase risks, no simulator overrides':'Firms phase risks plus simulator-only overrides')+'. Win rate, budget, trials and trade schedule come from Section 1.</p>'+
+ rows.map(row=>{try{
+ const p=accountPlan(row),key=row.id+':'+row.size,overrides=testRisks[key]||{};
+ return '<div class="hint"><strong>'+esc(p.firm+' · '+p.programName+' · '+usd(p.size))+'</strong> '+
+ Object.entries(p.riskProfiles||{}).map(([stage,r])=>'<div>'+esc(stage)+': '+['r1','r2','r3','r4'].map(k=>k.toUpperCase()+' '+(r[k]==null?'—':usd(r[k]))).join(' · ')+' · RR '+esc(String(r.rr??'—'))+' · '+esc(r.policy?.mode||'default')+'</div>').join('')+
+ (source==='firms'&&Object.keys(overrides).length?'<span style="color:var(--amber)">Saved simulator adjustments excluded.</span>':'')+'</div>';
+ }catch(e){return '<p class="hint">'+esc(e.message)+'</p>';}}).join('');
+}
+$('simInputsToggle').addEventListener('click',()=>{$('simInputsPreview').hidden=!$('simInputsPreview').hidden;refreshSimInputsPreview();});
+$('simInputSource').addEventListener('change',()=>{setStale();saveView();refreshSimInputsPreview();});
+document.addEventListener('change',()=>refreshSimInputsPreview());
+document.addEventListener('click',event=>{
+ const btn=event.target.closest?.('[data-action-run]');if(!btn)return;
+ const action=btn.dataset.actionRun;
+ if(action==='run'){run();return;}
+ const panel=$(action==='investment'?'payoutOptimizerPanel':'discovery');
+ if(panel){panel.open=true;panel.scrollIntoView({behavior:'smooth',block:'start'});}
+});
 function theme(value){document.documentElement.setAttribute('data-theme',value==='light'?'light':'dark');$('theme').textContent=value==='light'?'☾':'☀'}
 let currentTheme=localStorage.getItem('4ds:theme:v1')||'dark';theme(currentTheme);
 $('theme').addEventListener('click',()=>{currentTheme=currentTheme==='light'?'dark':'light';localStorage.setItem('4ds:theme:v1',currentTheme);theme(currentTheme)});
@@ -854,7 +875,7 @@ for(const id of ['section1Panel','section2Panel','discovery','section4Panel','se
  $(id).addEventListener('toggle',()=>saveView());
 function saveView(){
  try{localStorage.setItem(savedViewKey,JSON.stringify({
-  budget:$('budget').value,netGoal:$('netGoal').value,winRate:$('winRate').value,
+  budget:$('budget').value,netGoal:$('netGoal').value,winRate:$('winRate').value,simInputSource:$('simInputSource').value,
   purchaseMode:$('purchaseMode').value,capacityMode:$('capacityMode').value,maxActive:$('maxActive').value,
   maxBuysPerDay:$('maxBuysPerDay').value,reinvestPayouts:$('reinvestPayouts').value,
   days:$('days').value,tradesPerDay:$('tradesPerDay').value,signalPace:$('signalPace').value,trials:$('trials').value,
@@ -869,6 +890,7 @@ function saveView(){
 function loadView(){
  const main=readJson(rootKey+'ftmo-roi-studio-v1',{});
  const prior=readJson(savedViewKey,{});
+ $('simInputSource').value=prior.simInputSource==='adjusted'?'adjusted':'firms';
  allocationLimits=prior.allocationLimits&&typeof prior.allocationLimits==='object'&&!Array.isArray(prior.allocationLimits)?prior.allocationLimits:{};
  $('purchaseMode').value=prior.purchaseMode==='upfront'?'upfront':'recycle';
  $('capacityMode').value=prior.capacityMode==='manual'?'manual':'automatic';
@@ -1559,6 +1581,9 @@ function renderResults(list,inputs,source='run'){
  }
 
  $('results').hidden=false;
+ $('results').dataset.activeReport=reportMode;
+ $('reportSourceLabel').style.color='var(--green)';
+ $('reportSourceLabel').style.fontWeight='800';
  if($('chartsPanel').open)renderCharts();
  if($('journeyPanel').open)renderJourney();
  if($('section9Panel').open)renderSpendingLedger();
@@ -2162,7 +2187,7 @@ function showSimulationError(message){
 function run(){
  if(!catalog){showSimulationError('Loading Firms account rules. Try again once ready.');return;}
  const mode=document.querySelector('[name="budgetMode"]:checked').value;
- const inputs={budget:Math.max(0,Number($('budget').value)||0),netGoal:Math.max(0,Number($('netGoal').value)||0),
+ const inputs={riskInputSource:$('simInputSource').value,budget:Math.max(0,Number($('budget').value)||0),netGoal:Math.max(0,Number($('netGoal').value)||0),
   winRate:Math.max(0,Math.min(100,Number($('winRate').value)||0)),
    days:Number($('days').value),signalPace:$('signalPace').value,
    tradesPerDay:$('signalPace').value==='weekly20'?4:Number($('tradesPerDay').value),
