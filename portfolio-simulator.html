@@ -655,7 +655,7 @@ details p{margin:6px 0}
 <details class="sim-charts-panel numbered-panel" id="section4Panel" open><summary><strong>5 · Results across prop firms</strong><span class="sim-charts-hint">Show / hide</span></summary><div class="numbered-content"><p id="summaryCaption" class="hint"></p><div id="totals" class="kpis"></div>
  <div class="tablewrap"><table><thead><tr><th>Firm / account</th><th>Budget</th><th>Challenges</th><th>Spent avg.</th><th>Phase 1 passes</th><th>Phase 2 passes</th><th>Funded</th><th>Paid</th><th>Payouts avg.</th><th>Net avg.</th><th>ROI</th><th>Chance ≥1 payout</th></tr></thead><tbody id="comparisonRows"></tbody></table></div>
  <p class="hint">Counts and profits are averages over simulated trials, not whole-account predictions. ROI = expected net / expected incurred costs. Starting budget is not account capital.</p>
- <div id="combined" hidden></div><details id="weeklyEconomicsPanel" class="sim-charts-panel" style="margin-top:12px"><summary><strong>Cash flow · payout economics</strong><span class="sim-charts-summary" id="weeklyEconomicsHint">Fees · payouts · net · conversion</span></summary><div class="numbered-content"><div class="row" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px"><label for="cashPeriod">Period</label><select id="cashPeriod"><option value="5">Weekly · 5 trading days</option><option value="10">Biweekly · 10 trading days</option><option value="20">Monthly · 20 trading days</option><option value="1">Daily</option></select><button type="button" id="cashColumnsToggle">Columns ▾</button><button type="button" id="cashSourcesToggle">Model inputs ▾</button></div><div id="cashColumnsPanel" hidden></div><div id="cashSourcesPanel" hidden></div></div><div id="weeklyEconomicsContents" class="numbered-content"><p class="hint">Run Simulation to see weekly results.</p></div></details>
+ <div id="combined" hidden></div><details id="weeklyEconomicsPanel" class="sim-charts-panel" style="margin-top:12px"><summary><strong>Cash flow · payout economics</strong><span class="sim-charts-summary" id="weeklyEconomicsHint">Fees · payouts · net · conversion</span></summary><div class="numbered-content"><div class="row" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px"><label for="cashPeriod">Period</label><select id="cashPeriod"><option value="5">Weekly · 5 trading days</option><option value="10">Biweekly · 10 trading days</option><option value="20">Monthly · 20 trading days</option><option value="1">Daily</option></select><button type="button" id="cashColumnsToggle">Columns ▾</button><button type="button" id="cashSourcesToggle">Model inputs ▾</button></div><div id="cashColumnsPanel" hidden></div><div id="cashSourcesPanel" hidden><label for="cashInputView">Show input source</label><select id="cashInputView" style="max-width:290px"><option value="effective">Used in displayed simulation</option><option value="firms">Firms baseline (without overrides)</option><option value="overrides">Simulator-only overrides</option><option value="controls">Simulation controls</option></select><div id="cashInputDetails"></div></div></div><div id="weeklyEconomicsContents" class="numbered-content"><p class="hint">Run Simulation to see weekly results.</p></div></details>
 </div></details>
 <details id="chartsPanel" class="sim-charts-panel"><summary><strong>6 · Charts</strong><span class="sim-charts-summary">Equity · Drawdown · Distributions · Payouts</span><span class="sim-charts-hint">Show / hide</span></summary><div id="chartsContents" class="sim-charts-contents"><p class="hint">Run a simulation to load charts.</p></div></details>
 <details id="journeyPanel" class="sim-charts-panel journey-panel">
@@ -1497,13 +1497,47 @@ function renderWeeklyEconomics(list,inputs){
  }
  $('weeklyEconomicsHint').textContent=span+' trading-day periods · '+summaries.length+' account type(s)';
  const plans=summaries.map(({r})=>r.plan);
- const modelInfo='<p class="hint">Source: current '+(reportMode==='investment'?'selected investment scenario':'Run Simulation')+' result and its daily cashCurve. '+esc(String(inputs.days))+' trading days · '+esc(String(inputs.trials))+' Monte Carlo trials · win rate '+esc(String(inputs.winRate))+'% · '+esc(inputs.signalPace==='weekly20'?'20 signals/week (3,4,5,4,4)':'fixed '+inputs.tradesPerDay+' signals/day')+'.</p>'+
- '<p class="hint">The risk and reward settings come from the saved/selected account plans and phase policies, not from this table. Account plans: '+plans.map(p=>esc([p.firm,p.programName,usd(p.size)].join(' · '))).join('; ')+'.</p>'+
- '<p class="hint">Active phase settings (read-only):</p>'+summaries.map(({r})=>'<div class="hint"><strong>'+esc(r.plan.firm+' · '+r.plan.programName)+'</strong>'+Object.entries(r.plan.riskProfiles||{}).map(([stage,p])=>'<div>'+esc(stage)+': '+['r1','r2','r3','r4'].map(k=>k.toUpperCase()+' '+(Number.isFinite(Number(p[k]))?usd(Number(p[k])):'—')).join(' · ')+' · RR '+(p.rr==null?'—':esc(String(p.rr)))+' · RR by tier '+esc(JSON.stringify(p.rrByTier||{}))+' · policy '+esc(p.policy?.mode||'default')+'</div>').join('')+'</div>').join('')+
- '<p class="hint">Values shown are the phase risk profiles embedded in this displayed result; missing tiers show —. The panel does not modify inputs. Monthly = 20 trading days, not calendar months.</p>';
- $('cashSourcesPanel').innerHTML=modelInfo;
+
+ const sourceRows=summaries.map(({r})=>{
+  const key=r.plan.id+':'+r.plan.size;
+  const baselineRow=rows.find(x=>x.id===r.plan.id&&Number(x.size)===Number(r.plan.size));
+  let baseline=null;
+  if(baselineRow&&catalog?.programs?.[baselineRow.id]){
+   try{baseline=E.buildPlan(baselineRow.id,Number(baselineRow.size),catalog.programs[baselineRow.id],
+    profileFor(baselineRow.id,Number(baselineRow.size)),
+    {p1:snapFor(baselineRow.id,Number(baselineRow.size),'p1'),p2:snapFor(baselineRow.id,Number(baselineRow.size),'p2'),funded:snapFor(baselineRow.id,Number(baselineRow.size),'funded')},
+    audit?.programs?.[baselineRow.id]);}catch(e){baseline=null;}
+  }
+  return {r,key,baseline,override:testRisks[key]||{}};
+ });
+ const stageHtml=plan=>!plan?'<p class="hint">Baseline unavailable for this result (account selection may have changed).</p>':
+ Object.entries(plan.riskProfiles||{}).map(([stage,p])=>'<div class="hint"><strong>'+esc(stage)+'</strong> · '+
+ ['r1','r2','r3','r4'].map(k=>k.toUpperCase()+': '+(p[k]==null?'—':usd(p[k]))).join(' · ')+
+ ' · RR: '+(p.rr==null?'—':esc(String(p.rr)))+
+ ' · RR by tier: '+esc(JSON.stringify(p.rrByTier||{}))+
+ ' · Policy: '+esc(p.policy?.mode||'default')+'</div>').join('');
+ const view=$('cashInputView')?.value||'effective';
+ let modelInfo='<p class="hint">Displayed cash flow always comes from the last '+(reportMode==='investment'?'selected investment scenario':'Run Simulation')+
+ ' result. Switching this dropdown explains inputs; it does NOT recalculate the report.</p>';
+ if(view==='controls'){
+  modelInfo+='<p class="hint">From Portfolio Simulator controls: budget '+usd(inputs.budget)+' · '+esc(String(inputs.days))+
+   ' trading days · '+esc(String(inputs.trials))+' trials · win rate '+esc(String(inputs.winRate))+
+   '% · '+esc(inputs.signalPace==='weekly20'?'20 signals/week (3,4,5,4,4)':'fixed '+inputs.tradesPerDay+' signals/day')+
+   ' · purchase mode '+esc(inputs.purchaseMode||'—')+' · allocation '+esc(inputs.budgetMode||'—')+'.</p>';
+ }else{
+  modelInfo+=sourceRows.map(({r,key,baseline,override})=>'<div class="hint" style="margin:9px 0"><strong>'+esc(r.plan.firm+' · '+r.plan.programName+' · '+usd(r.plan.size))+'</strong>'+
+   (view==='effective'?'<p class="hint">Effective plan stored in this simulation result (Firms baseline plus any simulator-only overrides active when calculated):</p>'+stageHtml(r.plan):
+    view==='firms'?'<p class="hint">Current Firms-derived baseline, reconstructed from the currently loaded Firms profile and phase snapshots. May differ from the saved result if Firms changed since the run.</p>'+stageHtml(baseline):
+    '<p class="hint">Current simulator-only override values (not necessarily the same as when the displayed report ran):</p><code>'+esc(JSON.stringify(override))+'</code>')+
+   '</div>').join('');
+  if(view==='overrides')modelInfo+='<p class="hint">Empty {} means no simulator-only overrides for that account. Overrides are applied on top of Firms when the simulation is run.</p>';
+ }
+ if(reportStale)modelInfo+='<p style="color:var(--amber)">Inputs changed since the displayed result. Run Simulation again to update cash flows.</p>';
+ $('cashInputDetails').innerHTML=modelInfo;
+
  holder.innerHTML='<p class="hint">Monte Carlo mean cash flows. Net = first-payout receipts − incurred challenge/activation fees. Day-zero purchases are included in the first period. Cumulative columns show totals through each period. Horizon net/period is not a recurring income forecast. Independent comparison alternatives must not be added together.</p>'+combined+summaries.map(firmCard).join('');
 }
+$('cashInputView').addEventListener('change',()=>{if(cashLastList)renderWeeklyEconomics(cashLastList,cashLastInputs);});
 $('cashPeriod').addEventListener('change',()=>{if(cashLastList)renderWeeklyEconomics(cashLastList,cashLastInputs);});
 $('cashColumnsToggle').addEventListener('click',()=>{$('cashColumnsPanel').hidden=!$('cashColumnsPanel').hidden;});
 $('cashSourcesToggle').addEventListener('click',()=>{$('cashSourcesPanel').hidden=!$('cashSourcesPanel').hidden;});
