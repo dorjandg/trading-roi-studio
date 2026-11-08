@@ -47,6 +47,18 @@ css.textContent=`
 #jj-live-compare .jj-heading{font-size:11px;margin:6px 0 3px}
 #jj-live-compare .jj-note{font-size:9px;margin-top:5px;line-height:1.3}
 }
+@media(max-width:600px){
+#jj-live-compare .jj-compact-inputs{grid-auto-rows:minmax(55px,auto);gap:3px}
+#jj-live-compare .jj-field{min-height:55px;padding:3px 5px;gap:2px;justify-content:center}
+#jj-live-compare .jj-field-head{display:grid;grid-template-columns:minmax(0,1fr) 58px;grid-template-rows:auto;gap:3px;align-items:center;min-height:24px;font-size:9px;line-height:1.15}
+#jj-live-compare .jj-field-head>span{grid-column:1;grid-row:1;overflow-wrap:normal;word-break:normal;min-height:0}
+#jj-live-compare .jj-field-head>.jj-number{grid-column:2;grid-row:1;justify-self:end;width:58px;min-height:22px;font-size:11px;padding:2px 3px}
+#jj-live-compare input[type=range]{height:10px;min-height:10px;margin:0;max-width:100%}
+#jj-live-compare .jj-kpi{min-height:39px;padding:3px 5px}
+#jj-live-compare .jj-kpi small{font-size:9px;line-height:1.15}
+#jj-live-compare .jj-kpi strong{font-size:12px}
+#jj-live-compare .jj-tabs button{padding:4px 5px;font-size:11px}
+}
 @media(min-width:850px){#jj-live-compare .jj-compact-inputs,#jj-live-compare .jj-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}}
 `;document.head.appendChild(css);
 const key='jj-same-budget-compare-v2';
