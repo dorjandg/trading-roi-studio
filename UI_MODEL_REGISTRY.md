@@ -49,3 +49,6 @@ For every newly approved model add: `MODEL-NNN`, user-approved name, canonical p
 
 ### Scenario input autosave (2026-11-08)
 - `studio-scenario-discovery.js` stores the six editable inputs (`goal`, `phase`, `days`, `wr`, `rr`, `cap`) on input/change in browser `localStorage` under `studio:scenario-discovery:inputs:v1:<stage>`; restores separately for p1/p2/funded. A compact Saved ✓ status confirms local write, or an error label reports unavailable storage. Find paths remains an explicit calculation action. Browser-local saving does not sync between devices, modify firm defaults, or apply a scenario to Portfolio SIM.
+
+### Firms R1–R4 / Fast Pass navigation (2026-11-08)
+- `index.html` `renderRecoveryPlanners` adds read-only daily objective and successful-day context to `Target & risk values`, with `data-open-fast-reset` button. Clicking opens the stage-matched `studio-scenario-discovery.js` optimizer, copies the stage planning target to the optimizer phase target, persists via input event and runs `Find paths`. The older `risk-route-explorer.js` remains a separate fixed-tier scanner and is NOT replaced by the multi-day model. Do not claim Portfolio SIM adopts this policy.
