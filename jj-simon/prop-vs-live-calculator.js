@@ -30,9 +30,11 @@ css.textContent=`
 @media(max-width:600px){
 #jj-live-compare{margin:4px 0;padding:5px;border-radius:7px}
 #jj-live-compare .jj-compact-inputs,#jj-live-compare .jj-kpis{gap:3px}
-#jj-live-compare .jj-compact-inputs{grid-auto-rows:minmax(55px,auto)}
-#jj-live-compare .jj-field{min-height:55px;padding:3px 4px;gap:2px;border-radius:5px}
-#jj-live-compare .jj-field-head{grid-template-columns:minmax(0,1fr) 54px;gap:3px;min-height:26px;font-size:9px;line-height:1.1}
+#jj-live-compare .jj-compact-inputs{grid-auto-rows:minmax(77px,auto)}
+#jj-live-compare .jj-field{min-height:77px;padding:4px 5px;gap:3px;border-radius:5px}
+#jj-live-compare .jj-field-head{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto;gap:2px;min-height:0;font-size:10px;line-height:1.15}
+#jj-live-compare .jj-field-head>span{grid-column:1;white-space:normal;overflow-wrap:normal;word-break:normal;min-height:12px}
+#jj-live-compare .jj-field-head>.jj-number{grid-column:1;justify-self:stretch;width:100%;max-width:100%;text-align:right}
 #jj-live-compare .jj-field-head>.jj-number{width:54px}
 #jj-live-compare .jj-number{min-height:23px;padding:2px 3px;font-size:11px}
 #jj-live-compare input[type=range]{height:14px;min-height:14px}
@@ -54,16 +56,16 @@ let values={...defaults};
 try{const old=JSON.parse(localStorage.getItem(legacy)||'null');if(old&&typeof old==='object')for(const k of ['budget','fee','trades','risk','wr','rr','extra'])if(Number.isFinite(Number(old[k])))values[k]=Number(old[k])}catch(_){}
 try{const saved=JSON.parse(localStorage.getItem(key)||'null');if(saved&&typeof saved==='object')for(const k in defaults)if(Number.isFinite(Number(saved[k])))values[k]=Number(saved[k])}catch(_){}
 const fields={
-budget:['Cash budget ($)',100,10000,100],
-fee:['Evaluation fee ($)',25,500,5],
-trades:['Trade signals',10,500,5],
+budget:['Budget ($)',100,10000,100],
+fee:['Eval fee ($)',25,500,5],
+trades:['Signals',10,500,5],
 risk:['Risk / trade (%)',0.5,20,0.5],
-wr:['Trade win rate (%)',0,100,1],
+wr:['Win rate (%)',0,100,1],
 rr:['Reward / risk',0.5,10,0.5],
-pass:['Evaluation pass rate (%)',0,100,1],
-success:['Funded accounts reaching payout (%)',0,100,1],
-payoutPer:['Payout per success ($)',0,10000,100],
-extra:['Additional fees ($)',0,5000,25]
+pass:['Eval pass (%)',0,100,1],
+success:['Funded payout (%)',0,100,1],
+payoutPer:['Payout / success ($)',0,10000,100],
+extra:['Extra fees ($)',0,5000,25]
 };
 const money=n=>Number.isFinite(n)?new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(n):'—';
 const fmt=(id,n)=>['budget','fee','payoutPer','extra'].includes(id)?money(n):['risk','wr','pass','success'].includes(id)?n+'%':id==='rr'?n+'R':String(n);
