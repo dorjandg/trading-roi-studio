@@ -1470,6 +1470,18 @@ function enableColumnPointerReorder(container,selector,getId,onMove){
   handle.addEventListener('pointercancel',()=>{pointer=null;item.style.opacity='';handle.style.cursor='grab';for(const other of container.querySelectorAll(selector))other.style.outline='';});
  }
 }
+function enableDirectTableHeaderDrag(table,onDrop){
+ const heads=Array.from(table?.tHead?.rows[0]?.cells||[]);
+ heads.forEach((head,index)=>{
+  if(index===0||head.hidden)return;
+  head.style.touchAction='none';head.style.cursor='grab';
+  let active=null,x=0,y=0;
+  head.addEventListener('pointerdown',e=>{if(e.button!==0||e.target.closest('button,input,select,a'))return;active=e.pointerId;x=e.clientX;y=e.clientY;head.setPointerCapture(active);head.style.opacity='.6';});
+  head.addEventListener('pointermove',e=>{if(active!==e.pointerId)return;const target=document.elementFromPoint(e.clientX,e.clientY)?.closest('th');heads.forEach(h=>h.style.outline='');if(target&&heads.includes(target)&&target!==head&&!target.hidden)target.style.outline='2px solid var(--accent,#4aa3ff)';});
+  head.addEventListener('pointerup',e=>{if(active!==e.pointerId)return;active=null;head.style.opacity='';const target=document.elementFromPoint(e.clientX,e.clientY)?.closest('th');heads.forEach(h=>h.style.outline='');if(target&&target!==head&&heads.includes(target)&&!target.hidden&&Math.hypot(e.clientX-x,e.clientY-y)>10)onDrop(head,target);});
+  head.addEventListener('pointercancel',()=>{active=null;head.style.opacity='';heads.forEach(h=>h.style.outline='');});
+ });
+}
 const journeyColumnPrefs={};
 function addJourneyColumnFilters(){
  const root=document.getElementById('journeyContents');if(!root)return;
@@ -1535,6 +1547,12 @@ function addJourneyColumnFilters(){
    }controls.appendChild(grid);
   };
   renderControls();table.closest('.tablewrap')?.before(toolbar);apply();
+  enableDirectTableHeaderDrag(table,(from,to)=>{
+   const a=from.dataset.journeyColumnId,b=to.dataset.journeyColumnId;
+   if(!a||!b||a==='day'||b==='day')return;
+   const i=pref.order.indexOf(a),j=pref.order.indexOf(b);if(i<0||j<0)return;
+   pref.order.splice(i,1);pref.order.splice(j,0,a);apply();renderControls();
+  });
  }
 }
 function renderJourney(){
@@ -1897,6 +1915,18 @@ drawCashDetailsControls();
  $('cashInputDetails').innerHTML=modelInfo;
 
  holder.innerHTML='<p class="hint">Monte Carlo mean cash flows. Net = first-payout receipts − incurred challenge/activation fees. Day-zero purchases are included in the first period. Cumulative columns show totals through each period. Horizon net/period is not a recurring income forecast. Independent comparison alternatives must not be added together.</p>'+combined+summaries.map(firmCard).join('');
+ for(const table of holder.querySelectorAll('table')){
+  const headers=Array.from(table.tHead?.rows[0]?.cells||[]);
+  const visible=columns.map(x=>x[0]);
+  enableDirectTableHeaderDrag(table,(from,to)=>{
+   const i=headers.indexOf(from),j=headers.indexOf(to);
+   if(i<=0||j<=0||i>visible.length||j>visible.length)return;
+   const a=cashColumnOrder.indexOf(visible[i-1]),b=cashColumnOrder.indexOf(visible[j-1]);
+   if(a<0||b<0)return;
+   cashColumnOrder.splice(a,1);cashColumnOrder.splice(b,0,visible[i-1]);
+   drawCashColumnControls();saveCashTablePrefs();renderWeeklyEconomics(cashLastList,cashLastInputs);
+  });
+ }
 }
 $('cashInputView').addEventListener('change',()=>{saveCashTablePrefs();if(cashLastList)renderWeeklyEconomics(cashLastList,cashLastInputs);});
 const cashToolPanels={cashPeriodToggle:'cashPeriodPanel',cashSummaryToggle:'cashSummaryPanel',cashKpisToggle:'cashKpisPanel',cashColumnsToggle:'cashColumnsPanel',cashDetailsToggle:'cashDetailsPanel',cashSourcesToggle:'cashSourcesPanel'};
