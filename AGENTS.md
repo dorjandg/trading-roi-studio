@@ -1,3 +1,9 @@
+## Mandatory universal table interaction contract (Nov 8, 2026)
+- Every table header MUST provide accurate, concise full-column help through hover and keyboard focus and a tap-accessible explanation on phones/tablets. Preserve short visible labels (maximum 12 characters). Help must explain formula/units and distinguish estimated probability from firm rules.
+- Every table column MUST support reordering left/right, by drag on pointer devices and accessible move-left/move-right controls for touch/keyboard. Persist order per stable table/column identifiers across rerenders and refresh; never reset unrelated user preferences.
+- Where sorting is meaningful, header taps/clicks MUST toggle ascending/descending, show an explicit direction indicator, sort the entire dataset before pagination, and retain checked rows, selection and pagination. Persist sort per table. Do not treat categorical controls or action columns as numeric sorts.
+- Audit existing table frameworks before changing them; avoid adding generic DOM sort/reorder that corrupts tables with dynamic rendering, colspan, virtualization, or existing handlers. Document which tables have actually been upgraded; do not claim full-site compliance without an audit and tests.
+
 # AI collaborator instructions — 4Ds Trading Studio
 
 **Read [AI_PROJECT_GUIDE.md](AI_PROJECT_GUIDE.md) before changing this repository.** The guide contains the product intent, simulation semantics, module map, history/cloud details, unresolved issues, and user-approved UI patterns. Keep it current whenever changing important functionality.
