@@ -1687,7 +1687,7 @@ function applyPortfolioReportToOverview(){
  setLegacyVisible(false);
 }
 
-function render(){renderFirmHealth();renderRecoveryPlanners();syncOverviewProgressMode();if(phaseModel().topstep)state.topstepActivationFee=topstepReserveFee();deriveBudgetAccounts();applyPhaseVisibility();
+function render(){applyPhaseVisibility();renderFirmHealth();renderRecoveryPlanners();syncOverviewProgressMode();if(phaseModel().topstep)state.topstepActivationFee=topstepReserveFee();deriveBudgetAccounts();applyPhaseVisibility();
  const p1=document.querySelector('[data-phase-meta="p1"]'),p2=document.querySelector('[data-phase-meta="p2"]'),fund=document.querySelector('[data-phase-meta="funded"]');
  if(p1)p1.textContent='Profit target: '+money(state.p1Target)+' · Minimum trading days: '+state.p1MinDays+' · Set by selected firm rules above.';
  if(p2)p2.textContent='Profit target: '+money(state.p2Target)+' · Minimum trading days: '+state.p2MinDays+' · Set by selected firm rules above.';
@@ -3152,6 +3152,7 @@ function useSelectedAccount(x,force=false){
   selectedAccountSupportsSimulation=x.compatible===true||x.programId==='topstep';
   const btn=$('simulate');if(btn)btn.disabled=!selectedAccountSupportsSimulation;
   applyPhaseVisibility();
+  renderRecoveryPlanners();
   const note=$('firmStrategyStatus');if(note)note.textContent=(x.label||newKey)+(phaseModel().topstep?' · Topstep Standard first-payout estimate available; some broker restrictions remain approximate.':' · Saved settings restored for this account.');
   const badge=$('activeAccountProfile');if(badge)badge.textContent='Selected account: '+accountDisplayName(newKey);
   return;
@@ -3303,10 +3304,14 @@ window.addEventListener('message',event=>{
 }
  if(msg.type==='studio-program-change'){
   $('firmsFrame').dataset.accountFrameReady='yes';
-  if(!$('page-firms')?.classList.contains('active'))return;
+  const payload=msg.payload||{};
+  if(!payload.programId||!Number(payload.size))return;
+  // The visible Prop Firm Rules account is authoritative, even when the iframe
+  // restored its selection automatically or the parent tab was not yet active.
   overviewRequestedKey=null;
-  if(profileKey(msg.payload?.programId,msg.payload?.size)!==activeProgramKey)useSelectedAccount(msg.payload);
-  updateOverviewFromActive();return;
+  useSelectedAccount(payload);
+  updateOverviewFromActive();
+  return;
  }
  if(msg.type==='studio-program-preferences-updated'){
   const payload=msg.payload||{},key=profileKey(payload.programId,payload.size);
