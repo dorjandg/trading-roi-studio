@@ -28,9 +28,9 @@ function fixture(){
 }
 function run(data){
  if(data?.schema!=='4ds-offline-simulation-v1')throw Error('Expected 4ds-offline-simulation-v1 input');
- const p=data.plan,c=data.config;
+ const p=JSON.parse(JSON.stringify(data.plan),(key,value)=>value==='__INFINITY__'?Infinity:value),c=data.config;
  if(!p||!c||!Array.isArray(p.stageList)||!p.riskProfiles?.funded)throw Error('Missing complete plan or funded risk');
- if(!['topstep','ftmo2','hola'].includes(p.id))throw Error('Unknown firm id');
+ if(!['topstep','ftmo2','hola','holaPrime'].includes(p.id))throw Error('Unknown firm id');
  if(!(c.days>=1&&c.days<=120&&c.count>=1&&c.count<=100&&c.tradesPerDay>=1&&c.tradesPerDay<=20))throw Error('Simulation dimensions out of range');
  const trials=Math.min(300,Math.max(1,Math.floor(c.trials||1)));
  const sums={bought:0,funded:0,targetHit:0,payoutRequested:0,paid:0,receipts:0,spent:0,net:0,strategyStopped:0,exhausted:0};
@@ -53,8 +53,10 @@ function run(data){
 const ix=args.indexOf('--input');
 if(!args.includes('--fixture')&&ix<0)throw Error('Use --fixture or --input path; nothing is read from private cloud automatically');
 const data=ix>=0?JSON.parse(fs.readFileSync(args[ix+1],'utf8')):fixture();
-const report=run(data);
+const reports=data?.schema==='4ds-offline-simulation-bundle-v1'?
+ data.cases.map(run):[run(data)];
+const report=reports.length===1?reports[0]:{schema:'4ds-offline-simulation-bundle-report-v1',reports};
 const output=JSON.stringify(report,null,2);
 if(args.includes('--output')){const p=args[args.indexOf('--output')+1];fs.writeFileSync(p,output+'\n');}
 process.stdout.write(output+'\n');
-if(args.includes('--assert-payout')&&!(report.averages.targetHit>0&&report.averages.payoutRequested>0&&report.averages.paid>0))process.exitCode=1;
+if(args.includes('--assert-payout')&&reports.some(r=>!(r.averages.targetHit>0&&r.averages.payoutRequested>0&&r.averages.paid>0)))process.exitCode=1;
