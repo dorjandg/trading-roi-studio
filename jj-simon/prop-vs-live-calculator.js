@@ -15,14 +15,14 @@ css.textContent=`
 #jj-live-compare .jj-field-head{display:flex;align-items:center;justify-content:space-between;gap:5px;flex-wrap:wrap;color:var(--muted);font-size:10px;line-height:1.2}
 #jj-live-compare .jj-number{width:68px;max-width:100%;min-height:25px;box-sizing:border-box;padding:3px 5px;border:1px solid var(--stroke);border-radius:5px;background:var(--panel);color:var(--text);font:700 12px inherit;font-variant-numeric:tabular-nums;text-align:right}#jj-live-compare .jj-number:focus{outline:1px solid var(--accent)}
 #jj-live-compare input[type=range]{width:100%;height:16px;min-height:16px;padding:0;margin:0;accent-color:var(--accent);cursor:pointer;touch-action:pan-y}
-#jj-live-compare .jj-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-top:7px}
+#jj-live-compare .jj-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-top:7px}#jj-live-compare .jj-compact-inputs>.jj-field,#jj-live-compare .jj-kpis>.jj-kpi{width:100%;min-width:0;box-sizing:border-box}
 #jj-live-compare .jj-kpi{min-width:0;border:1px solid var(--stroke);border-radius:7px;padding:5px 7px;background:var(--bg)}
 #jj-live-compare .jj-kpi small{display:block;color:var(--muted);font-size:10px;line-height:1.3}
 #jj-live-compare .jj-kpi strong{display:block;font-size:14px;margin-top:1px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 #jj-live-compare .jj-heading{font-size:12px;font-weight:700;margin:9px 0 4px}
 #jj-live-compare .jj-note{font-size:10px;color:var(--muted);margin:7px 0 0;line-height:1.4}
 #jj-live-compare .jj-tabpanel[hidden]{display:none}
-@media(min-width:850px){#jj-live-compare .jj-compact-inputs{grid-template-columns:repeat(4,minmax(0,1fr))}#jj-live-compare .jj-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(min-width:850px){#jj-live-compare .jj-compact-inputs,#jj-live-compare .jj-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}}
 `;document.head.appendChild(css);
 const key='jj-same-budget-compare-v2';
 const legacy='jj-same-budget-compare-v1';
