@@ -118,12 +118,18 @@ function run(p,stage){
   const prev=out.querySelector('[data-prev]'),next=out.querySelector('[data-next]');if(prev)prev.disabled=page===1;if(next)next.disabled=page===total;
  };
  const renderPaths=c=>{
- const paths=[...c.paths].sort((a,b)=>b.prob-a.prob||b.pnl-a.pnl);
- return '<div style="font-size:9px;line-height:1.3;max-width:min(530px,75vw);white-space:normal"><div style="opacity:.65">'+paths.length+' complete paths</div>'+paths.map(x=>{
- const color=x.pnl>=goal?'#80d6a6':x.pnl<0?'#f3a3a3':'#c5d2e2';
- const seq=String(x.steps).split(' → ').map(t=>'<span style="color:'+(t.startsWith('W ')?'#80d6a6':t.startsWith('L ')?'#f3a3a3':'#c5d2e2')+'">'+esc(t)+'</span>').join(' → ');
- return '<div style="padding:2px 3px;border-bottom:1px solid #34425766">'+seq+' <span style="color:'+color+'">= '+money(x.pnl)+' ('+pct(x.prob)+')</span></div>';
- }).join('')+'</div>';
+ const paths=[...c.paths].map((x,i)=>({...x,original:i,stepsCount:x.steps==='Stop'?0:x.steps.split(' → ').length})).sort((a,b)=>b.prob-a.prob||b.pnl-a.pnl);
+ const riskKey=c.r.join('/');
+ const row=x=>{
+  const color=x.pnl>=goal?'#80d6a6':x.pnl<0?'#f3a3a3':'#c5d2e2';
+  const sequence=String(x.steps).split(' → ').map(t=>'<span style="color:'+(t.startsWith('W ')?'#80d6a6':t.startsWith('L ')?'#f3a3a3':'#c5d2e2')+'">'+esc(t)+'</span>').join(' <span style="opacity:.5">→</span> ');
+  return '<tr data-path-row data-pnl="'+x.pnl+'" data-prob="'+x.prob+'" data-trades="'+x.stepsCount+'" data-result="'+(x.pnl>=goal?'hit':x.pnl<0?'loss':'other')+'" style="border-bottom:1px solid #34425766"><td style="padding:2px 4px;white-space:normal">'+sequence+'</td><td style="padding:2px 4px;color:'+color+';white-space:nowrap;text-align:right">'+money(x.pnl)+'</td><td style="padding:2px 4px;text-align:right;white-space:nowrap">'+pct(x.prob)+'</td><td style="padding:2px 4px;text-align:right">'+x.stepsCount+'</td></tr>';
+ };
+ return '<div data-path-mini data-risk-key="'+esc(riskKey)+'" style="font-size:9px;line-height:1.35;width:min(550px,76vw);max-width:100%;white-space:normal">'+
+ '<div style="display:flex;gap:5px;align-items:center;justify-content:space-between;margin:3px 0"><span data-path-count>'+paths.length+' paths</span><div style="display:flex;gap:4px;align-items:center">'+
+ '<select data-path-filter aria-label="Filter scenario paths" style="font-size:9px;padding:1px 2px"><option value="all">All paths</option><option value="hit">Target hit</option><option value="loss">Negative P&L</option><option value="other">Other</option></select>'+
+ '<select data-path-sort aria-label="Sort scenario paths" style="font-size:9px;padding:1px 2px"><option value="prob-desc">Probability ↓</option><option value="prob-asc">Probability ↑</option><option value="pnl-desc">P&L ↓</option><option value="pnl-asc">P&L ↑</option><option value="trades-asc">Trades ↑</option><option value="trades-desc">Trades ↓</option></select></div></div>'+
+ '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:9px"><thead><tr style="text-align:left;opacity:.8"><th style="padding:2px 4px">Win/loss sequence</th><th style="text-align:right">Net P&L</th><th style="text-align:right">Chance</th><th style="text-align:right">Trades</th></tr></thead><tbody>'+paths.map(row).join('')+'</tbody></table></div></div>';
  };
  const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  out.innerHTML='<div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin:4px 0;font-size:11px"><label>Show first <select data-priority aria-label="Rank scenarios by priority" style="font-size:11px;padding:2px 4px"><option value="hit-trades">Highest hit % → fewest trades</option><option value="trades-hit">Fewest trades → highest hit %</option><option value="safe">Lowest cap risk → highest hit %</option><option value="profit">Highest expected profit → hit %</option><option value="manual">Manual column sorting</option></select></label><span title="Days to full phase target are not modeled by this daily optimizer" style="opacity:.7">Days: not modeled</span></div><div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap;margin:4px 0 6px"><label style="font-size:11px">Rows <select data-page-size aria-label="Scenario rows per page" style="font-size:11px;padding:2px 4px">'+['all',5,10,20].map(x=>'<option value="'+x+'"'+(pageSize===x?' selected':'')+'>'+ (x==='all'?'All':x)+'</option>').join('')+'</select></label><button type="button" data-prev aria-label="Previous scenario page" style="padding:2px 8px">‹</button><span data-page-status style="font-size:11px;white-space:nowrap"></span><button type="button" data-next aria-label="Next scenario page" style="padding:2px 8px">›</button></div><div style="overflow-x:auto"><table style="width:100%;font-size:10px;border-collapse:collapse"><!--compact--><thead><tr>'+[['Keep','Save for later comparison'],['Scenario','Candidate daily trading sequence'],['Risks','Risk amounts in trade order'],['Hit %','Chance of hitting daily goal within allowed trades'],['Cap %','Chance of hitting the modeled risk cap'],['Neg %','Chance of ending negative but above cap'],['Trades','Expected attempted trades']].map((x,i)=>'<th title="'+esc(x[1])+'" style="padding:2px 4px;white-space:nowrap"><button type="button" data-head-help="'+i+'" aria-label="Explain '+esc(x[0])+'" title="'+esc(x[1])+'" style="font:inherit;color:inherit;background:none;border:0;padding:1px 2px;cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px">'+esc(x[0])+' <span aria-hidden="true" style="opacity:.7">ⓘ</span></button></th>').join('')+'</tr></thead><tbody>'+ranked.map((c,i)=>'<tr data-scenario-row style="height:23px"><td style="padding:3px 5px"><input type="checkbox" data-keep="'+i+'" '+(saved.includes(c.r.join('/'))?'checked':'')+' aria-label="Keep '+esc(c.name)+'"></td><td style="padding:3px 5px"><details><summary style="cursor:pointer;white-space:nowrap">'+esc(c.name)+'</summary>'+renderPaths(c)+'</details></td><td style="padding:3px 5px;white-space:nowrap">'+c.r.slice(0,max).filter(Boolean).join(' / ')+'</td><td style="padding:3px 5px">'+pct(c.hit)+'</td><td style="padding:3px 5px">'+pct(c.breach)+'</td><td style="padding:3px 5px">'+pct(c.negative)+'</td><td style="padding:3px 5px">'+c.trades.toFixed(2)+'</td></tr>').join('')+'</tbody></table></div><small>Ranking: daily-goal hit chance first, then cap risk, then trades. Click a scenario name to see win/loss paths. This is NOT a multi-day pass probability or a firm-approved risk plan.</small>'; out.querySelectorAll('[data-keep]').forEach(el=>el.addEventListener('change',()=>{const picks=[...out.querySelectorAll('[data-keep]:checked')].map(x=>ranked[Number(x.dataset.keep)].r.join('/'));try{localStorage.setItem(key,JSON.stringify(picks))}catch(e){}}));
@@ -158,6 +164,22 @@ function run(p,stage){
  window.addEventListener('scroll',hideHelp,true);
  window.addEventListener('resize',hideHelp);
 
+ // Independent sorting/filtering within each expanded scenario; never reorder outer table rows.
+ out.querySelectorAll('[data-path-mini]').forEach(mini=>{
+  const filter=mini.querySelector('[data-path-filter]'),sorter=mini.querySelector('[data-path-sort]'),body=mini.querySelector('tbody'),rows=[...body.querySelectorAll('[data-path-row]')],counter=mini.querySelector('[data-path-count]');
+  const key='studio:scenario-discovery:pathprefs:'+stage+':'+mini.dataset.riskKey;
+  try{const pref=JSON.parse(localStorage.getItem(key)||'null');if(pref){if([...filter.options].some(x=>x.value===pref.filter))filter.value=pref.filter;if([...sorter.options].some(x=>x.value===pref.sort))sorter.value=pref.sort}}catch(e){}
+  const update=()=>{
+   const [field,dir]=sorter.value.split('-');
+   const attr=field==='pnl'?'pnl':field==='trades'?'trades':'prob';
+   rows.sort((a,b)=>(Number(a.dataset[attr])-Number(b.dataset[attr]))*(dir==='asc'?1:-1));
+   rows.forEach(tr=>{tr.hidden=filter.value!=='all'&&tr.dataset.result!==filter.value;body.appendChild(tr)});
+   const count=rows.filter(tr=>!tr.hidden).length;
+   counter.textContent=count+' / '+rows.length+' paths';
+   try{localStorage.setItem(key,JSON.stringify({filter:filter.value,sort:sorter.value}))}catch(e){}
+  };
+  filter.addEventListener('change',update);sorter.addEventListener('change',update);update();
+ });
  const table=out.querySelector('table'),tbody=table.tBodies[0];
  // Stable row identities make sorting compatible with saved checkboxes and pagination.
  [...tbody.rows].forEach((tr,i)=>{tr.dataset.riskKey=ranked[i].r.join('/');tr.querySelector('[data-keep]').dataset.riskKey=tr.dataset.riskKey});
