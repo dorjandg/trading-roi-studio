@@ -1561,13 +1561,20 @@ function addJourneyColumnFilters(){
   const trigger=document.createElement('button');trigger.type='button';trigger.textContent='☷';trigger.title='Filter visible columns';trigger.setAttribute('aria-label','Filter columns');trigger.setAttribute('aria-expanded','false');trigger.style.cssText='font-size:15px;padding:3px 9px;min-width:30px';
   const controls=document.createElement('div');controls.hidden=true;controls.style.cssText='position:absolute;right:0;top:100%;z-index:20;width:min(330px,90vw);max-height:360px;overflow:auto;padding:10px;border:1px solid var(--border,#354359);border-radius:8px;background:var(--panel,#182232);box-shadow:0 6px 20px #0005';
   toolbar.append(trigger,controls);
-  trigger.addEventListener('click',()=>{controls.hidden=!controls.hidden;trigger.setAttribute('aria-expanded',String(!controls.hidden));});
+  trigger.addEventListener('click',()=>{controls.hidden=!controls.hidden;controls.style.display=controls.hidden?'none':'';trigger.setAttribute('aria-expanded',String(!controls.hidden));});
   // Dismiss on any outside touch/click, without interfering with table gestures.
-  document.addEventListener('pointerdown',event=>{
-   if(!controls.hidden&&!toolbar.contains(event.target)){
-    controls.hidden=true;trigger.setAttribute('aria-expanded','false');
-   }
-  },{passive:true});
+  const dismissColumnMenu=event=>{
+   if(controls.hidden)return;
+   const path=typeof event.composedPath==='function'?event.composedPath():[];
+   if(toolbar.contains(event.target)||path.includes(toolbar))return;
+   controls.hidden=true;
+   controls.style.display='none';
+   trigger.setAttribute('aria-expanded','false');
+  };
+  // Capture phase ensures outside taps close the menu even when another
+  // widget stops bubbling; touchstart covers tablet browser differences.
+  document.addEventListener('pointerdown',dismissColumnMenu,true);
+  document.addEventListener('touchstart',dismissColumnMenu,{capture:true,passive:true});
   document.addEventListener('keydown',event=>{
    if(event.key==='Escape'&&!controls.hidden){
     controls.hidden=true;trigger.setAttribute('aria-expanded','false');trigger.focus();
