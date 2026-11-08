@@ -23,6 +23,7 @@ css.textContent=`
 #jj-live-compare .jj-kpi{min-width:0;min-height:54px;box-sizing:border-box;border:1px solid var(--stroke);border-radius:7px;padding:5px 7px;background:var(--bg)}
 #jj-live-compare .jj-kpi small{display:block;color:var(--muted);font-size:10px;line-height:1.3}
 #jj-live-compare .jj-kpi strong{display:block;font-size:14px;margin-top:1px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+#jj-live-compare .jj-kpi.is-negative,#jj-live-compare .jj-kpi.is-negative small,#jj-live-compare .jj-kpi.is-negative strong{color:#ef646b}
 #jj-live-compare .jj-heading{font-size:12px;font-weight:700;margin:9px 0 4px}
 #jj-live-compare .jj-note{font-size:10px;color:var(--muted);margin:7px 0 0;line-height:1.4}
 #jj-live-compare .jj-tabpanel[hidden]{display:none}
@@ -51,7 +52,7 @@ const fmt=(id,n)=>['budget','fee','payoutPer','extra'].includes(id)?money(n):['r
 for(const id in fields){const [,min,max]=fields[id];values[id]=Math.max(min,Math.min(max,values[id]))}
 let selected='live';try{if(localStorage.getItem(key+'-tab')==='prop')selected='prop'}catch(_){}
 function field(id){const [label,min,max,step]=fields[id];return '<div class="jj-field"><div class="jj-field-head"><span>'+label+'</span><input class="jj-number" type="number" inputmode="decimal" data-number="'+id+'" aria-label="Edit '+label+'" min="'+min+'" max="'+max+'" step="any" value="'+values[id]+'"></div><input type="range" data-k="'+id+'" aria-label="Slide '+label+'" min="'+min+'" max="'+max+'" step="'+step+'" value="'+values[id]+'"></div>'}
-function cards(items){return items.map(([name,val])=>'<div class="jj-kpi"><small>'+name+'</small><strong>'+val+'</strong></div>').join('')}
+function cards(items){return items.map(([name,val])=>{const negative=typeof val==='string'&&/^\s*(?:-\$|\$-|−\$|-\d|−\d)/.test(val);return '<div class="jj-kpi'+(negative?' is-negative':'')+'"><small>'+name+'</small><strong>'+val+'</strong></div>'}).join('')}
 function mount(){
 if(active!==slug)return;
 const article=document.getElementById(slug);if(!article||article.querySelector('#jj-live-compare'))return;
