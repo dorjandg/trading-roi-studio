@@ -7,7 +7,7 @@ const details=document.createElement('details');
 details.id='signalAllocationOptimizer';
 details.style.cssText='margin:8px 0 12px;padding:10px;border:1px solid #435064;border-radius:8px';
 const summary=document.createElement('summary');
-summary.textContent='Signal allocation optimizer · optional comparison';
+summary.textContent='Signal allocation optimizer · comparison';summary.style.cssText='font-size:12px;font-weight:600;line-height:1.35;color:var(--muted,#aebbd0);padding:2px 0';
 details.appendChild(summary);
 const intro=document.createElement('p');
 intro.className='hint';
