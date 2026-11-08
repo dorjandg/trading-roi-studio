@@ -55,3 +55,6 @@ For every newly approved model add: `MODEL-NNN`, user-approved name, canonical p
 
 ### Portfolio SIM allocation relocation (2026-11-08)
 - In `portfolio-simulator.html`, `placeAllocationWithAccounts()` moves the existing `#capitalAllocationPanel` DOM node from Section 1 into `#accountAllocationHome` in Section 2 above `#accounts`, preserving IDs, current values, event handlers, and persistence. The panel remains collapsed by default. Per-account evaluation/funded caps already exist on each comparison card; shared purchase policies remain shared. No underlying allocation calculations were changed and no Section 1 fields were deleted in this migration.
+
+### Per-platform daily account purchase limits (2026-11-08)
+- `portfolio-simulator.html` account cards now expose `dailyBuyCap` under existing `allocationLimits[program:size]`, stored through `saveView`. Blank retains the prior shared/manual or signal-based limit. `portfolio-engine.js` applies a positive dailyBuyCap in addition to existing daily opportunity, capacity and lifetime constraints, for both automatic and manual purchase modes. Limits are user planning caps, not firm-verified rules. Independent comparison rows can use different values.
