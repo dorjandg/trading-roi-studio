@@ -516,6 +516,9 @@ details p{margin:6px 0}
 .cash-flow-explanation{margin:4px 0 7px;font-size:11px;color:var(--muted)}
 .cash-flow-explanation>summary{cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:3px 0;font-size:11px}
 .cash-flow-explanation>p{margin:4px 0 8px;line-height:1.5;max-width:900px}
+.cash-saved-views{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px;margin-bottom:9px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.cash-saved-views select,.cash-saved-views input{min-width:0;width:100%;font-size:11px;min-height:30px}
+.cash-saved-views button{font-size:11px;min-height:30px;padding:4px 8px}
 /* Cash-flow table: column filter belongs to the table's upper-right corner. */
 .cash-table-shell{position:relative;min-width:0}
 .cash-table-columns-trigger{position:absolute;right:9px;top:5px;z-index:3;display:flex;align-items:center;justify-content:center;width:29px;height:28px;min-height:28px;padding:0;border:1px solid var(--line);border-radius:6px;background:var(--panel2);color:var(--text);cursor:pointer;font-size:16px}
@@ -1833,7 +1836,7 @@ const cashColumns=[
  ['untraded','Unused signals'],['conversionP1','P1 / bought %'],['conversionP2','P2 / P1 %'],['conversionFunded','Funded / bought %'],['conversionPaid','Paid / bought %'],['costPerBuy','Fees / bought'],['costPerPaid','Fees / payout'],['netPerTrade','Net / trade'],['roiOnFees','Net / fees %'],['cumulativeROI','Cum. net / fees %'],['cumulativeTrades','Cum. trades'],['cumulativeSignals','Cum. signals'],
  ['failedAccounts','Failed accounts'],['riskBlockedAccounts','Risk-blocked'],['strategyStoppedAccounts','Strategy-stopped'],['closedAccounts','Total closed'],['cumulativeFailed','Cum. failed'],['cumulativeRiskBlocked','Cum. risk-blocked'],['cumulativeStrategyStopped','Cum. strategy-stopped'],['cumulativeClosed','Cum. closed']
 ];
-const cashShortLabels={period:'Period',opportunities:'Signals',trades:'Trades',bought:'Bought',challengePasses:'P1+',verificationPasses:'P2+',funded:'Funded',paid:'Paid',spent:'Fees',receipts:'Cash in',net:'Net',cumulativeNet:'Σ Net',cumulativeBought:'Σ Bought',cumulativePaid:'Σ Paid',cumulativeSpent:'Σ Fees',cumulativeReceipts:'Σ Cash',cumulativeFunded:'Σ Funded',cumulativeP1:'Σ P1',cumulativeP2:'Σ P2',untraded:'Unused',conversionP1:'P1 %',conversionP2:'P2 %',conversionFunded:'Fund %',conversionPaid:'Paid %',costPerBuy:'Fee/Buy',costPerPaid:'Fee/Paid',netPerTrade:'Net/Tr',roiOnFees:'ROI %',cumulativeROI:'Σ ROI %',cumulativeTrades:'Σ Trades',cumulativeSignals:'Σ Signals',failedAccounts:'Failed',riskBlockedAccounts:'Blocked',strategyStoppedAccounts:'Stopped',closedAccounts:'Closed',cumulativeFailed:'Σ Failed',cumulativeRiskBlocked:'Σ Blocked',cumulativeStrategyStopped:'Σ Stopped',cumulativeClosed:'Σ Closed'};
+const cashShortLabels={period:'Period',opportunities:'Signals',trades:'Trades',bought:'Bought',challengePasses:'P1 pass',verificationPasses:'P2 pass',funded:'Funded',paid:'Paid',spent:'Fees',receipts:'Cash in',net:'Net',cumulativeNet:'Σ Net',cumulativeBought:'Σ Bought',cumulativePaid:'Σ Paid',cumulativeSpent:'Σ Fees',cumulativeReceipts:'Σ Cash',cumulativeFunded:'Σ Funded',cumulativeP1:'Σ P1 pass',cumulativeP2:'Σ P2 pass',untraded:'Unused',conversionP1:'P1 %',conversionP2:'P2 %',conversionFunded:'Fund %',conversionPaid:'Paid %',costPerBuy:'Fee/Buy',costPerPaid:'Fee/Paid',netPerTrade:'Net/Tr',roiOnFees:'ROI %',cumulativeROI:'Σ ROI %',cumulativeTrades:'Σ Trades',cumulativeSignals:'Σ Signals',failedAccounts:'Failed',riskBlockedAccounts:'Blocked',strategyStoppedAccounts:'Stopped',closedAccounts:'Closed',cumulativeFailed:'Σ Failed',cumulativeRiskBlocked:'Σ Blocked',cumulativeStrategyStopped:'Σ Stopped',cumulativeClosed:'Σ Closed'};
 const cashDefaultKeys=cashColumns.slice(0,12).map(x=>x[0]);
 const cashTablePrefsKey=rootKey+'portfolio-cash-table-preferences:v1';
 const cashTablePrefs=readJson(cashTablePrefsKey,{});
@@ -2116,17 +2119,48 @@ if(['1','5','10','20'].includes(String(cashTablePrefs.period)))$('cashPeriod').v
 if(['effective','firms','overrides','controls'].includes(cashTablePrefs.inputView))$('cashInputView').value=cashTablePrefs.inputView;
 if(cashTablePrefs.openPanel&&cashToolPanels[cashTablePrefs.openPanel])toggleCashTool(cashTablePrefs.openPanel);
 updateCashPeriodLabel();
+const cashNamedPresetKey=rootKey+'portfolio-cash-column-presets:v1';
+let cashNamedPresets={};
+try{const saved=JSON.parse(localStorage.getItem(cashNamedPresetKey)||'{}');if(saved&&typeof saved==='object'&&!Array.isArray(saved))cashNamedPresets=saved;}catch(e){}
+function saveCashNamedPresets(){try{localStorage.setItem(cashNamedPresetKey,JSON.stringify(cashNamedPresets));}catch(e){}}
+function applyCashNamedPreset(name){
+ const preset=cashNamedPresets[name];if(!preset)return;
+ cashVisible=new Set((preset.visible||[]).filter(k=>cashAllKeys.includes(k)));
+ cashColumnOrder=[...new Set((preset.order||[]).filter(k=>cashAllKeys.includes(k)))];
+ for(const key of cashAllKeys)if(!cashColumnOrder.includes(key))cashColumnOrder.push(key);
+ drawCashColumnControls();saveCashTablePrefs();if(cashLastList)renderWeeklyEconomics(cashLastList,cashLastInputs);
+}
 let cashColumnFilterMode='category';
 function drawCashColumnControls(){
  const panel=$('cashColumnsPanel');
  const presets=[['All','all'],['Default','default'],['Cash flow','cash'],['Account funnel','funnel']];
- panel.innerHTML='<div style="display:flex;gap:6px;margin-bottom:8px"><button type="button" data-cash-filter-mode="category" '+(cashColumnFilterMode==='category'?'style="font-weight:700"':'')+'>By category</button><button type="button" data-cash-filter-mode="manual" '+(cashColumnFilterMode==='manual'?'style="font-weight:700"':'')+'>Manual</button></div>'+
+ const names=Object.keys(cashNamedPresets).sort();
+ const savedViews='<div class="cash-saved-views"><select data-cash-saved-select aria-label="Saved column view"><option value="">Saved views…</option>'+names.map(name=>'<option value="'+esc(name)+'">'+esc(name)+'</option>').join('')+'</select><button type="button" data-cash-saved-delete title="Delete selected view">Delete</button><input data-cash-saved-name maxlength="48" placeholder="View name" aria-label="New view name"><button type="button" data-cash-saved-save>Save view</button></div>';
+ panel.innerHTML=savedViews+'<div style="display:flex;gap:6px;margin-bottom:8px"><button type="button" data-cash-filter-mode="category" '+(cashColumnFilterMode==='category'?'style="font-weight:700"':'')+'>By category</button><button type="button" data-cash-filter-mode="manual" '+(cashColumnFilterMode==='manual'?'style="font-weight:700"':'')+'>Manual</button></div>'+
  (cashColumnFilterMode==='category'?'<div class="cash-column-actions">'+presets.map(([label,key])=>'<button type="button" data-cash-preset="'+key+'">'+label+'</button>').join('')+'</div>':
  '<div class="cash-column-actions"><button type="button" data-cash-preset="all">All</button><button type="button" data-cash-preset="none">Clear</button></div><div class="cash-columns-grid">'+orderedCashColumns().map(([key,label])=>'<label><input type="checkbox" data-cash-col="'+key+'" '+(cashVisible.has(key)?'checked':'')+'>'+esc(label)+'</label>').join('')+'</div>')+
  '<p class="hint">'+cashVisible.size+' / '+cashColumns.length+' columns selected · Drag table headers directly to reorder.</p>';
 }
 drawCashColumnControls();
+$('cashColumnsPanel').addEventListener('change',e=>{
+ if(e.target.matches('[data-cash-saved-select]')&&e.target.value)applyCashNamedPreset(e.target.value);
+});
 $('cashColumnsPanel').addEventListener('click',e=>{
+ const save=e.target.closest('[data-cash-saved-save]');
+ if(save){
+  const name=$('cashColumnsPanel').querySelector('[data-cash-saved-name]').value.trim();
+  if(!name)return;
+  if(cashNamedPresets[name]&&!confirm('Replace saved view "'+name+'"?'))return;
+  cashNamedPresets[name]={visible:[...cashVisible],order:[...cashColumnOrder]};
+  saveCashNamedPresets();drawCashColumnControls();
+  $('cashColumnsPanel').querySelector('[data-cash-saved-select]').value=name;return;
+ }
+ if(e.target.closest('[data-cash-saved-delete]')){
+  const name=$('cashColumnsPanel').querySelector('[data-cash-saved-select]').value;
+  if(!name||!cashNamedPresets[name]||!confirm('Delete saved view "'+name+'"?'))return;
+  delete cashNamedPresets[name];saveCashNamedPresets();drawCashColumnControls();return;
+ }
+
  const mode=e.target.closest('[data-cash-filter-mode]');if(mode){cashColumnFilterMode=mode.dataset.cashFilterMode;drawCashColumnControls();return;}
 
  const mover=e.target.closest('[data-cash-move]');if(mover){const visible=cashColumnOrder.filter(k=>cashVisible.has(k)),i=visible.indexOf(mover.dataset.cashMove),j=i+Number(mover.dataset.cashStep);if(i>=0&&j>=0&&j<visible.length){const a=cashColumnOrder.indexOf(visible[i]),b=cashColumnOrder.indexOf(visible[j]);[cashColumnOrder[a],cashColumnOrder[b]]=[cashColumnOrder[b],cashColumnOrder[a]];drawCashColumnControls();saveCashTablePrefs();if(cashLastList)renderWeeklyEconomics(cashLastList,cashLastInputs);}return;}
