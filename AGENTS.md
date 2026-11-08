@@ -1,3 +1,7 @@
+# READ FIRST — 4Ds canonical UI models
+
+**Every AI editing this website MUST first read [UI_MODEL_REGISTRY.md](UI_MODEL_REGISTRY.md), then [TABLE_UI_STANDARD.md](TABLE_UI_STANDARD.md) for table work, and inspect the actual approved implementation under Accounts → Portfolio SIM in [portfolio-simulator.html](portfolio-simulator.html).** Every HTML entry page repeats this contract immediately after its doctype. For sections, icons, cards, filters, drag, headers and other UI work, look up the registered model first. When the user approves a new model, document it in the registry with exact source landmarks and behavior. Never introduce a competing model without approval. Reading the instructions is mandatory even in a new chat or scheduled automation.
+
 **Mandatory table UI reference:** Read [TABLE_UI_STANDARD.md](TABLE_UI_STANDARD.md) before editing any table, filter, column drag, header help, sorting, or pagination. The Portfolio Simulator's pointer-drag and compact upper-right filter are the canonical model. Do not invent another interaction pattern.
 
 ## Mandatory universal table interaction contract (Nov 8, 2026)
