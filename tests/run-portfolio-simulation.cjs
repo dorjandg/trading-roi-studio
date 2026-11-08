@@ -46,12 +46,12 @@ function run(data){
  return report;
 }
 function fromSavedHistory(history){
- const record=Array.isArray(history)?history[0]:history;
+ const record=Array.isArray(history)?history.slice().sort((a,b)=>String(b.timestamp||'').localeCompare(String(a.timestamp||'')))[0]:history;
  if(record?.schema!=='4ds-portfolio-simulation-v1'||!Array.isArray(record.firms))throw Error('Expected saved 4Ds simulation history record');
  return {schema:'4ds-offline-simulation-bundle-v1',cases:record.firms.map((f,index)=>{
   const caps=f.caps||{},inputs=record.inputs||{};
   const plan={id:f.programId,firm:f.firm,programName:f.programName,size:f.accountSize,
-   fee:caps.fee||0,refund:0,split:caps.split??.5,activationFee:0,
+   fee:caps.fee||0,refund:0,split:caps.split??.5,activationFee:Number(caps.activationFee||0),
    tradeCost:caps.tradeCost||0,riskReserve:caps.reserve??50,
    dailyLoss:caps.dailyLoss??Infinity,overallLoss:caps.overallLoss,
    drawdownKind:caps.drawdownKind,fundedMaxActive:caps.fundedMaxActive??Infinity,
@@ -72,13 +72,16 @@ function fromSavedHistory(history){
    winRate:Number(inputs.winRate||35),
    maxLifetime:100,tradeSlots:null,trackDaily:true,
    maxActive:inputs.maxActive||20,maxBuysPerDay:inputs.maxBuysPerDay||5};
-  return {schema:'4ds-offline-simulation-v1',label:'Private saved history '+record.timestamp+' '+f.programId,plan,config};
+  return {schema:'4ds-offline-simulation-v1',label:'Reconstructed historical approximation '+record.timestamp+' '+f.programId,plan,config};
  })};
 }
 const ix=args.indexOf('--input');
 if(!args.includes('--fixture')&&ix<0)throw Error('Use --fixture or --input path; nothing is read from private cloud automatically');
 let data=ix>=0?JSON.parse(fs.readFileSync(args[ix+1],'utf8')):fixture();
-if(args.includes('--history'))data=fromSavedHistory(data);
+if(args.includes('--history')){
+ console.error('WARNING: Historical summaries omit some original engine inputs; reconstructed runs are approximate, not exact reproductions.');
+ data=fromSavedHistory(data);
+}
 const reports=data?.schema==='4ds-offline-simulation-bundle-v1'?
  data.cases.map(run):[run(data)];
 const report=reports.length===1?reports[0]:{schema:'4ds-offline-simulation-bundle-report-v1',reports};
