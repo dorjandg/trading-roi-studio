@@ -30,7 +30,7 @@ css.textContent=`
 `;document.head.appendChild(css);
 const key='jj-same-budget-compare-v2';
 const legacy='jj-same-budget-compare-v1';
-const defaults={budget:1500,fee:100,trades:100,risk:5,wr:30,rr:4,pass:33,success:50,payoutPer:2000,extra:0};
+const defaults={budget:1500,fee:100,trades:100,risk:5,wr:30,rr:4,pass:33,success:50,payoutPer:2000,fundedCost:0,extra:0};
 let values={...defaults};
 try{const old=JSON.parse(localStorage.getItem(legacy)||'null');if(old&&typeof old==='object')for(const k of ['budget','fee','trades','risk','wr','rr','extra'])if(Number.isFinite(Number(old[k])))values[k]=Number(old[k])}catch(_){}
 try{const saved=JSON.parse(localStorage.getItem(key)||'null');if(saved&&typeof saved==='object')for(const k in defaults)if(Number.isFinite(Number(saved[k])))values[k]=Number(saved[k])}catch(_){}
@@ -44,10 +44,11 @@ rr:['Reward / risk',0.5,10,0.5],
 pass:['Evaluation pass rate (%)',0,100,1],
 success:['Funded accounts reaching payout (%)',0,100,1],
 payoutPer:['Payout per success ($)',0,10000,100],
+fundedCost:['Cost per funded account ($)',0,1000,10],
 extra:['Additional fees ($)',0,5000,25]
 };
 const money=n=>Number.isFinite(n)?new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(n):'—';
-const fmt=(id,n)=>['budget','fee','payoutPer','extra'].includes(id)?money(n):['risk','wr','pass','success'].includes(id)?n+'%':id==='rr'?n+'R':String(n);
+const fmt=(id,n)=>['budget','fee','payoutPer','fundedCost','extra'].includes(id)?money(n):['risk','wr','pass','success'].includes(id)?n+'%':id==='rr'?n+'R':String(n);
 for(const id in fields){const [,min,max]=fields[id];values[id]=Math.max(min,Math.min(max,values[id]))}
 let selected='live';try{if(localStorage.getItem(key+'-tab')==='prop')selected='prop'}catch(_){}
 function field(id){const [label,min,max,step]=fields[id];return '<div class="jj-field"><div class="jj-field-head"><span>'+label+'</span><input class="jj-number" type="number" inputmode="decimal" data-number="'+id+'" aria-label="Edit '+label+'" min="'+min+'" max="'+max+'" step="any" value="'+values[id]+'"></div><input type="range" data-k="'+id+'" aria-label="Slide '+label+'" min="'+min+'" max="'+max+'" step="'+step+'" value="'+values[id]+'"></div>'}
@@ -56,19 +57,21 @@ function mount(){
 if(active!==slug)return;
 const article=document.getElementById(slug);if(!article||article.querySelector('#jj-live-compare'))return;
 const root=document.createElement('section');root.id='jj-live-compare';
-root.innerHTML='<div class="jj-compact-inputs">'+['budget','trades','wr'].map(field).join('')+'</div><div class="jj-tabs" role="tablist" aria-label="Calculator scenario"><button type="button" role="tab" data-tab="live">Live Account</button><button type="button" role="tab" data-tab="prop">Prop Firm</button></div><section class="jj-tabpanel" data-panel="live" role="tabpanel"><div class="jj-compact-inputs">'+['risk','rr'].map(field).join('')+'</div><div class="jj-kpis" data-result="live"></div></section><section class="jj-tabpanel" data-panel="prop" role="tabpanel"><div class="jj-compact-inputs">'+['fee','pass','success','payoutPer','extra'].map(field).join('')+'</div><div class="jj-kpis" data-result="prop"></div></section><div class="jj-heading">Same-budget comparison</div><div class="jj-kpis" data-result="compare"></div><p class="jj-note">Expected-value illustration, not a simulated equity curve. Prop probabilities assume independent evaluation attempts. A payout is not guaranteed; live losses can exceed available capital in this simple linear model. Firm rules, account drawdowns, fees beyond those entered and copied-account correlation are not simulated.</p>';
+root.innerHTML='<div class="jj-compact-inputs">'+['budget','trades','wr'].map(field).join('')+'</div><div class="jj-tabs" role="tablist" aria-label="Calculator scenario"><button type="button" role="tab" data-tab="live">Live Account</button><button type="button" role="tab" data-tab="prop">Prop Firm</button></div><section class="jj-tabpanel" data-panel="live" role="tabpanel"><div class="jj-compact-inputs">'+['risk','rr'].map(field).join('')+'</div><div class="jj-kpis" data-result="live"></div></section><section class="jj-tabpanel" data-panel="prop" role="tabpanel"><div class="jj-compact-inputs">'+['fee','pass','fundedCost','success','payoutPer','extra'].map(field).join('')+'</div><div class="jj-kpis" data-result="prop"></div></section><div class="jj-heading">Same-budget comparison</div><div class="jj-kpis" data-result="compare"></div><p class="jj-note">Expected-value illustration, not a simulated equity curve. Prop probabilities assume independent evaluation attempts. Expected activation fees are charged per funded account; evaluation purchases are limited by the shared budget after estimated activation costs and additional fees. A payout is not guaranteed; live losses can exceed available capital in this simple linear model. Firm rules, account drawdowns, fees beyond those entered and copied-account correlation are not simulated.</p>';
 const update=()=>{
 const v=values;
-const attempts=Math.floor(v.budget/v.fee);
-const cost=attempts*v.fee+v.extra;
+const expectedCostPerAttempt=v.fee+(v.pass/100)*v.fundedCost;
+const attempts=Math.max(0,Math.floor((v.budget-v.extra)/expectedCostPerAttempt));
 const funded=attempts*v.pass/100;
+const activationCost=funded*v.fundedCost;
+const cost=attempts*v.fee+activationCost+v.extra;
 const payouts=funded*v.success/100;
 const gross=payouts*v.payoutPer;
 const propNet=gross-cost;
 const riskD=v.budget*v.risk/100;
 const liveNet=v.trades*riskD*((v.wr/100)*v.rr-(1-v.wr/100));
 root.querySelector('[data-result="live"]').innerHTML=cards([['Risk per trade',money(riskD)],['Expected P&L',money(liveNet)],['Ending balance*',money(v.budget+liveNet)],['Expected ROI',(100*liveNet/v.budget).toFixed(1)+'%']]);
-root.querySelector('[data-result="prop"]').innerHTML=cards([['Evaluations',String(attempts)],['Expected funded',funded.toFixed(2)],['Expected payouts',payouts.toFixed(2)],['Expected gross',money(gross)],['Modeled cash spent',money(cost)],['Expected net',money(propNet)],['Expected ROI',(100*propNet/v.budget).toFixed(1)+'%']]);
+root.querySelector('[data-result="prop"]').innerHTML=cards([['Evaluations',String(attempts)],['Expected funded',funded.toFixed(2)],['Expected payouts',payouts.toFixed(2)],['Expected gross',money(gross)],['Expected activation fees',money(activationCost)],['Modeled cash spent',money(cost)],['Expected net',money(propNet)],['Expected ROI',(100*propNet/v.budget).toFixed(1)+'%']]);
 root.querySelector('[data-result="compare"]').innerHTML=cards([['Live expected net',money(liveNet)],['Prop expected net',money(propNet)],['Prop minus live',money(propNet-liveNet)],['Shared cash budget',money(v.budget)]]);
 };
 const switchTab=tab=>{selected=tab;for(const b of root.querySelectorAll('[data-tab]'))b.setAttribute('aria-selected',String(b.dataset.tab===tab));for(const panel of root.querySelectorAll('[data-panel]'))panel.hidden=panel.dataset.panel!==tab;try{localStorage.setItem(key+'-tab',tab)}catch(_){}};
