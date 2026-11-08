@@ -13,10 +13,10 @@ const intro=document.createElement('p');
 intro.className='hint';
 intro.textContent='Explore alternative routing without changing the existing cash-flow table or saved trading strategies.';
 details.appendChild(intro);
-const label=document.createElement('label');label.textContent='Cross-stage copies ';
+const label=document.createElement('label');label.textContent='Maximum copies per signal: ';label.style.cssText='display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0';
 const copies=document.createElement('select');
 for(const n of [2,3]){const option=document.createElement('option');option.value=String(n);option.textContent=String(n);if(n===3)option.selected=true;copies.appendChild(option);}
-label.appendChild(copies);details.appendChild(label);
+copies.style.cssText='width:auto;max-width:100px';label.appendChild(copies);details.appendChild(label);
 const button=document.createElement('button');button.type='button';button.textContent='Compare models';button.style.margin='0 8px';details.appendChild(button);
 const result=document.createElement('div');result.className='hint';result.textContent='Run Simulation first.';details.appendChild(result);
 const target=host.querySelector('.numbered-content'); // Static container: weeklyEconomicsContents is re-rendered and would erase this panel.
@@ -38,7 +38,7 @@ maxAccounts:Math.max(1,Math.min(100,Math.floor(inputs.capitalMaxAccounts||100),i
 tradeSchedule:j.tradeSchedule||inputs.tradeSchedule,trackCharts:false,
 trials:Math.min(300,Math.max(50,inputs.trials)),
 evaluationAllocationCap:j.allocation.evaluation||0,fundedAllocationCap:j.allocation.funded||0,
-allocationMode,maxCopies,pairedSignals:true,signalMode:'shared'
+allocationMode,maxCopies,pairedSignals:true,signalMode:allocationMode==='single'?inputs.signalMode:'shared'
 }));
 return {name,net:reports.reduce((v,r)=>v+r.avg.net,0),paid:reports.reduce((v,r)=>v+r.avg.paid,0),spent:reports.reduce((v,r)=>v+r.avg.spent,0),p10:reports.reduce((v,r)=>v+r.p10,0)};
 });
