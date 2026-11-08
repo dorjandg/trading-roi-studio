@@ -252,7 +252,10 @@ function dailyTradeRouting(results,selected,inputs,routePage=1,pageSize=10,table
    paid:data.reduce((v,d)=>v+n(d.paid),0),
    executed:data.reduce((v,d)=>v+n(d.tradesToday),0),
    minimum:data.reduce((v,d)=>v+n(d.qualificationToday),0),
-   pending:data.reduce((v,d)=>v+n(d.payoutPending),0)
+   pending:data.reduce((v,d)=>v+n(d.payoutPending),0),
+   passed1:data.reduce((v,d)=>v+n(d.passed1),0),
+   passed2:data.reduce((v,d)=>v+n(d.passed2),0),
+   targetHit:data.reduce((v,d)=>v+n(d.targetHit),0)
   };
  };
  const tradeText=a=>{
@@ -275,7 +278,9 @@ function dailyTradeRouting(results,selected,inputs,routePage=1,pageSize=10,table
   return '<tr><th scope="row">D'+day+'</th>'+cells+
    '<td class="num">'+counts.executed+'</td><td class="num">'+counts.minimum+'</td><td class="num">'+counts.bought+'</td>'+
    '<td class="num">'+counts.challenge+'</td><td class="num">'+counts.verification+'</td>'+
-   '<td class="num">'+counts.funded+'</td><td class="num">'+counts.pending+'</td><td class="num">'+counts.failed+'</td><td class="num">'+counts.blocked+'</td>'+
+   '<td class="num">'+counts.funded+'</td><td class="num">'+counts.pending+'</td>'+ 
+   '<td class="num">'+counts.passed1+'</td><td class="num">'+counts.passed2+'</td>'+ 
+   '<td class="num">'+counts.targetHit+'</td><td class="num">'+counts.failed+'</td><td class="num">'+counts.blocked+'</td>'+
    '<td class="num">'+payouts.length+'</td><td class="num">'+counts.paid+'</td>'+ 
    '<td style="min-width:180px">'+([
      ...payouts.map(a=>'A'+a.id+' PAID '+usd(a.amount)),
@@ -290,7 +295,7 @@ function dailyTradeRouting(results,selected,inputs,routePage=1,pageSize=10,table
  return tablePanel('daily-routing','Daily trades by account',heading+warning+helpNotes('trades',explain)+'<div class="tablewrap journey-ledger-table" style="max-height:650px"><table class="journey-table" style="min-width:970px"><thead><tr>'+routeTh('Day','day')+
   Array.from({length:maxCells},(_,i)=>routeTh('Trade '+(i+1),'trade')).join('')+
   [['Executed trades','executed'],['Qualification trades','min'],['Challenges purchased','bought'],['Challenge active','ch'],['Verification active','vr'],['Funded active','fd'],
-   ['Payout pending','pending'],['Failed accounts','breached'],['Risk blocked','blocked'],
+   ['Payout pending','pending'],['Phase 1 passed','p1pass'],['Phase 2 passed','p2pass'],['Target reached','p3ready'],['Failed accounts','breached'],['Risk blocked','blocked'],
    ['Paid today','paidToday'],['Paid accounts','paidTotal'],['Account events','events']]
    .map(([label,key])=>routeTh(label,key)).join('')+
   '</tr></thead><tbody>'+rows+'</tbody></table></div>'+pageNav(routePagination,'routePage'),tableOpen['daily-routing']===true,days.length+' trading days');
