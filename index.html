@@ -956,7 +956,7 @@ profitTarget:3750,split:80,payoutPct:0,payoutFixed:0,refund:100,daysBeforeReques
 winRate:40,rr:3,simulations:4000,randomSeed:24717,weeklySignals:22,tradeCost:0,
 accountSize:10000,dailyLoss:500,overallLoss:1000,buffer:50,leverage:50,goldPrice:4400,stopDist:5,marginCeiling:90,minRisk:25,
 p1Target:1000,p1Base:350,p1Recovery:250,p1RecoverAfter:2,p1DailyCap:1,p1Days:24,p1MinDays:4,
-p2Target:500,p2Base:200,p2Recovery:200,p2DailyCap:2,p2Days:24,p2MinDays:4,
+p2Target:500,p2Base:200,p2Recovery:200,p2DailyCap:2,p2Days:24,p2MinDays:4,ftmoP1TransitionDays:3,ftmoP2TransitionDays:3,
 topstepDLL:false,topstepPath:"standard",topstepFirstPayoutBalance:4000,topstepActivationFee:149,fundedBase:250,fundedRecovery:200,fundedBoost:500,boostUnlock:750,fundedDailyCap:3,fundedDays:20,
  symbolId:'XAUUSD',customSymbol:'',symbolSpecs:{},rrByTier:{}};
 const FIELDS={
@@ -968,7 +968,7 @@ const FIELDS={
  phase2Fields:[['p2DailyCap','Maximum trades / day','count',1],['p2Days','Maximum trading days to pass','days',1]],
  fundedFields:[['profitTarget','Payout planning target (not a firm rule)','USD',250],['fundedDailyCap','Maximum trades / day','count',1],['fundedDays','Funded trading-day horizon','days',1]],
  scalingFields:[['mirror','Accounts sharing each signal','count',1]],
- payoutFields:[['split','Reward/profit split','%',1],['payoutPct','Processing fee on reward','%',.1],['payoutFixed','Fixed cost per payment','USD',1],['refund','Challenge fee refunded','%',5],['daysBeforeRequest','Funded reward eligibility wait','calendar days',1],['reviewDays','Review between evaluation stages','days',1],['payoutProcessingDays','Reward processing assumption','days',1]]
+ payoutFields:[['ftmoP1TransitionDays','FTMO model: P1 → P2 transition','trading days; next phase starts following day',1],['ftmoP2TransitionDays','FTMO model: P2 → Funded transition','trading days; funded starts following day',1],['split','Reward/profit split','%',1],['payoutPct','Processing fee on reward','%',.1],['payoutFixed','Fixed cost per payment','USD',1],['refund','Challenge fee refunded','%',5],['daysBeforeRequest','Funded reward eligibility wait','calendar days',1],['reviewDays','Review between evaluation stages','days',1],['payoutProcessingDays','Reward processing assumption','days',1]]
 };
 let state={...DEFAULT};try{const stored=JSON.parse(localStorage.getItem(STORAGE)||'null');if(stored&&typeof stored==='object')state={...DEFAULT,...stored};}catch(e){}
 const PROFILE_ACTIVE=userStoreKey('studio-active-profile-v1');const PROFILE_PREFIX=userStoreKey('studio-account-profile-v1:');let activeProgramKey=null;
