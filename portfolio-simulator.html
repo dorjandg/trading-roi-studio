@@ -608,7 +608,7 @@ details p{margin:6px 0}
 <div class="capital-inline-top">
 <div class="capital-limit-fields">
 <div class="field"><label for="recycleFundedPayouts">Funded after payout</label><label><input id="recycleFundedPayouts" type="checkbox" checked> Reuse same funded account (FTMO)</label><small class="hint">New funded cycle; same account can still fail on future trades.</small></div>
-<div class="field"><label for="purchasePolicy">New account purchases</label><select id="purchasePolicy" title="Replacement-only preserves slots when accounts advance stages."><option value="replacement-only">Replace closed accounts only</option><option value="fill-target-gaps">Fill target-locked signal gaps</option><option value="fill-eligible">Fill eligible gaps (legacy)</option></select></div>
+<div class="field"><label for="purchasePolicy">New account purchases</label><select id="purchasePolicy" title="Replacement-only preserves slots when accounts advance stages."><option value="fill-target-gaps">Fill target-locked signal gaps</option><option value="replacement-only">Replace closed accounts only</option><option value="fill-eligible">Fill eligible gaps (legacy)</option></select></div>
 <div class="field"><label for="capitalMaxAccounts">Max accounts / type</label><input id="capitalMaxAccounts" type="number" min="1" max="100" step="1" placeholder="Blank = 100 max"></div>
 <div class="field"><label for="capitalNominalCap">Nominal cap / type ($)</label><input id="capitalNominalCap" type="number" min="1" step="10000" placeholder="Blank = no cap"></div>
 </div>
