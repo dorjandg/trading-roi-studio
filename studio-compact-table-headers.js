@@ -41,7 +41,19 @@ function fix(){
 function init(){
  fix();let pending=false;
  new MutationObserver(()=>{if(pending)return;pending=true;queueMicrotask(()=>{pending=false;fix();});}).observe(document.body,{subtree:true,childList:true});
- document.addEventListener('pointerdown',e=>{for(const b of document.querySelectorAll('#journeyContents button[aria-label="Filter columns"]')){const p=b.nextElementSibling;if(p&&!p.hidden&&!b.contains(e.target)&&!p.contains(e.target)){p.hidden=true;b.setAttribute('aria-expanded','false');}}},true);
+ const closeOutside=e=>{
+  for(const button of document.querySelectorAll('button[aria-label="Filter columns"]')){
+   const panel=button.nextElementSibling;
+   if(!panel||panel.hidden)continue;
+   const path=typeof e.composedPath==='function'?e.composedPath():[];
+   if(button.contains(e.target)||panel.contains(e.target)||path.includes(button)||path.includes(panel))continue;
+   panel.hidden=true;panel.style.display='none';
+   button.setAttribute('aria-expanded','false');
+  }
+ };
+ document.addEventListener('pointerdown',closeOutside,true);
+ document.addEventListener('touchstart',closeOutside,{capture:true,passive:true});
+ document.addEventListener('click',closeOutside,true);
  document.addEventListener('keydown',e=>{if(e.key==='Escape')for(const b of document.querySelectorAll('#journeyContents button[aria-label="Filter columns"]')){const p=b.nextElementSibling;if(p){p.hidden=true;b.setAttribute('aria-expanded','false');}}});
  window.StudioTableHeaderAudit={inventory:()=>[...document.querySelectorAll('table')].map((t,i)=>({table:i+1,headers:[...t.querySelectorAll('thead th')].map(h=>({shown:h.textContent.trim(),full:h.dataset.fullColumnTitle||h.textContent.trim()}))}))};
 }
