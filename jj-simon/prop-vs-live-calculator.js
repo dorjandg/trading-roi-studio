@@ -13,7 +13,7 @@ css.textContent=`
 #jj-live-compare .jj-compact-inputs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
 #jj-live-compare .jj-field{display:flex;flex-direction:column;gap:3px;min-width:0;padding:5px 7px;border:1px solid var(--stroke);border-radius:7px;background:var(--bg)}
 #jj-live-compare .jj-field-head{display:flex;align-items:center;justify-content:space-between;gap:5px;flex-wrap:wrap;color:var(--muted);font-size:10px;line-height:1.2}
-#jj-live-compare output{font-size:11px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+#jj-live-compare .jj-number{width:68px;max-width:100%;min-height:25px;box-sizing:border-box;padding:3px 5px;border:1px solid var(--stroke);border-radius:5px;background:var(--panel);color:var(--text);font:700 12px inherit;font-variant-numeric:tabular-nums;text-align:right}#jj-live-compare .jj-number:focus{outline:1px solid var(--accent)}
 #jj-live-compare input[type=range]{width:100%;height:16px;min-height:16px;padding:0;margin:0;accent-color:var(--accent);cursor:pointer;touch-action:pan-y}
 #jj-live-compare .jj-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-top:7px}
 #jj-live-compare .jj-kpi{min-width:0;border:1px solid var(--stroke);border-radius:7px;padding:5px 7px;background:var(--bg)}
@@ -38,7 +38,7 @@ risk:['Risk / trade (%)',0.5,20,0.5],
 wr:['Trade win rate (%)',0,100,1],
 rr:['Reward / risk',0.5,10,0.5],
 pass:['Evaluation pass rate (%)',0,100,1],
-success:['Funded payout success (%)',0,100,1],
+success:['Funded accounts reaching payout (%)',0,100,1],
 payoutPer:['Payout per success ($)',0,10000,100],
 extra:['Additional fees ($)',0,5000,25]
 };
@@ -46,7 +46,7 @@ const money=n=>Number.isFinite(n)?new Intl.NumberFormat('en-US',{style:'currency
 const fmt=(id,n)=>['budget','fee','payoutPer','extra'].includes(id)?money(n):['risk','wr','pass','success'].includes(id)?n+'%':id==='rr'?n+'R':String(n);
 for(const id in fields){const [,min,max]=fields[id];values[id]=Math.max(min,Math.min(max,values[id]))}
 let selected='live';try{if(localStorage.getItem(key+'-tab')==='prop')selected='prop'}catch(_){}
-function field(id){const [label,min,max,step]=fields[id];return '<label class="jj-field"><span class="jj-field-head"><span>'+label+'</span><output data-value="'+id+'">'+fmt(id,values[id])+'</output></span><input type="range" data-k="'+id+'" aria-label="'+label+'" min="'+min+'" max="'+max+'" step="'+step+'" value="'+values[id]+'"></label>'}
+function field(id){const [label,min,max,step]=fields[id];return '<div class="jj-field"><div class="jj-field-head"><span>'+label+'</span><input class="jj-number" type="number" inputmode="decimal" data-number="'+id+'" aria-label="Edit '+label+'" min="'+min+'" max="'+max+'" step="any" value="'+values[id]+'"></div><input type="range" data-k="'+id+'" aria-label="Slide '+label+'" min="'+min+'" max="'+max+'" step="'+step+'" value="'+values[id]+'"></div>'}
 function cards(items){return items.map(([name,val])=>'<div class="jj-kpi"><small>'+name+'</small><strong>'+val+'</strong></div>').join('')}
 function mount(){
 if(active!==slug)return;
@@ -69,7 +69,9 @@ root.querySelector('[data-result="compare"]').innerHTML=cards([['Live expected n
 };
 const switchTab=tab=>{selected=tab;for(const b of root.querySelectorAll('[data-tab]'))b.setAttribute('aria-selected',String(b.dataset.tab===tab));for(const panel of root.querySelectorAll('[data-panel]'))panel.hidden=panel.dataset.panel!==tab;try{localStorage.setItem(key+'-tab',tab)}catch(_){}};
 root.addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b)switchTab(b.dataset.tab)});
-root.addEventListener('input',e=>{const id=e.target.dataset.k;if(!Object.prototype.hasOwnProperty.call(fields,id))return;const n=Number(e.target.value);if(!Number.isFinite(n))return;const [,min,max]=fields[id];values[id]=Math.max(min,Math.min(max,n));const out=root.querySelector('[data-value="'+id+'"]');if(out)out.textContent=fmt(id,values[id]);try{localStorage.setItem(key,JSON.stringify(values))}catch(_){}update()});
+function applyValue(id,n,fromNumber){if(!Object.prototype.hasOwnProperty.call(fields,id)||!Number.isFinite(n))return;const [,min,max]=fields[id];values[id]=Math.max(min,Math.min(max,n));const slider=root.querySelector('[data-k="'+id+'"]');if(slider)slider.value=String(values[id]);const number=root.querySelector('[data-number="'+id+'"]');if(number&&!fromNumber)number.value=String(values[id]);try{localStorage.setItem(key,JSON.stringify(values))}catch(_){}update()}
+root.addEventListener('input',e=>{const id=e.target.dataset.k;if(id){applyValue(id,Number(e.target.value),false);return}const numberId=e.target.dataset.number;if(numberId&&e.target.value.trim()!==''&&Number.isFinite(e.target.valueAsNumber))applyValue(numberId,e.target.valueAsNumber,true)});
+root.addEventListener('change',e=>{const id=e.target.dataset.number;if(!id)return;const n=e.target.valueAsNumber;if(Number.isFinite(n))applyValue(id,n,false);else e.target.value=String(values[id])});
 const inside=article.querySelector('.chapter-inside');if(inside)inside.after(root);else article.append(root);
 switchTab(selected);update();
 }
