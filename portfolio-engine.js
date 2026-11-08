@@ -116,8 +116,10 @@ function buildPlan(programId,size,program,profile={},snapshots={},audit=null){
   // the next stage on day 4. A later target hit advances at that day's end.
   const configuredMinDays=key==='p1'?dynamic(state,'p1MinDays',pos(program.days?.[0])):
    key==='p2'?dynamic(state,'p2MinDays',pos(program.days?.[1])):0;
-  const minDays=programId==='ftmo2'&&(key==='p1'||key==='p2')?
-   3:configuredMinDays;
+  const minDays=programId==='ftmo2'&&key==='p1'?
+   clamp(dynamic(state,'ftmoP1TransitionDays',3),1,30):
+   programId==='ftmo2'&&key==='p2'?
+   clamp(dynamic(state,'ftmoP2TransitionDays',3),1,30):configuredMinDays;
   const base=defaultRisk(programId,size,key);
   const r1=dynamic(lev,'r1',dynamic(state,root+'Base',base));
   const r2=dynamic(lev,'r2',dynamic(state,root+'Recovery',Math.round(base*.72)));
