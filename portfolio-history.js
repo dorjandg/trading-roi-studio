@@ -200,7 +200,26 @@ function create({user,element,endpoint,onStatus}){
    try{await fetch(endpoint,{method:'POST',mode:'no-cors',body:post,cache:'no-store',signal:controller.signal})}
    finally{clearTimeout(timeout)}
    const verified=await getRemote();
-   if(verified.snapshot?.nonce!==snap.nonce)throw new Error('Cloud write could not be verified (profile may have changed)');
+   if(verified.snapshot?.nonce!==snap.nonce){
+    // The Apps Script endpoint uses no-cors and can return before Drive is
+    // readable. Check again before declaring a failed save; never overwrite
+    // a different revision blindly.
+    let confirmed=false;
+    for(let attempt=0;attempt<3;attempt++){
+     await new Promise(resolve=>setTimeout(resolve,900*(attempt+1)));
+     const retry=await getRemote();
+     if(retry.snapshot?.nonce===snap.nonce){
+      verified.snapshot=retry.snapshot;verified.revision=retry.revision;
+      confirmed=true;break;
+     }
+     const recent=JSON.parse(retry.snapshot?.entries?.[key]||'[]');
+     if(Array.isArray(recent)&&proposed.every(item=>recent.some(x=>x.id===item.id))){
+      verified.snapshot=retry.snapshot;verified.revision=retry.revision;
+      confirmed=true;break;
+     }
+    }
+    if(!confirmed)throw new Error('Cloud write unverified after retries; local history retained');
+   }
    const online=JSON.parse(verified.snapshot?.entries?.[key]||'[]');
    if(!Array.isArray(online)||proposed.some(item=>!online.some(x=>x.id===item.id)))throw new Error('Cloud readback does not contain the saved run IDs');
    localStorage.setItem('4ds:cloud:last-revision:'+user,verified.revision||'');
