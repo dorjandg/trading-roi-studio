@@ -1687,20 +1687,7 @@ function applyPortfolioReportToOverview(){
  setLegacyVisible(false);
 }
 
-function render(){
- // Reconcile with the actual visible Firms selector before calculating stage content.
- // The iframe may restore a different program than the parent's persisted profile.
- const firmFrame=document.getElementById('firmsFrame');
- if(firmFrame?.closest('.page')?.classList.contains('active')){
-  try{
-   const doc=firmFrame.contentDocument,programId=doc?.getElementById('program')?.value;
-   const size=Number(doc?.getElementById('size')?.value);
-   if(programId&&size>0&&profileKey(programId,size)!==activeProgramKey&&!window.__firmReconcileBusy){
-    window.__firmReconcileBusy=true;
-    try{
-     const p=overviewCatalog?.programs?.[programId];
-     const fee=Number(p?.pricesUSD?.[size]);
-     useSelectedAccount({v:1,programId,size,label:(p?.firm||programId)+' '+(p?.name||'')+' syncOverviewProgressMode();if(phaseModel().topstep)state.topstepActivationFee=topstepReserveFee();deriveBudgetAccounts();applyPhaseVisibility();
+function render(){applyPhaseVisibility();renderFirmHealth();renderRecoveryPlanners();syncOverviewProgressMode();if(phaseModel().topstep)state.topstepActivationFee=topstepReserveFee();deriveBudgetAccounts();applyPhaseVisibility();
  const p1=document.querySelector('[data-phase-meta="p1"]'),p2=document.querySelector('[data-phase-meta="p2"]'),fund=document.querySelector('[data-phase-meta="funded"]');
  if(p1)p1.textContent='Profit target: '+money(state.p1Target)+' · Minimum trading days: '+state.p1MinDays+' · Set by selected firm rules above.';
  if(p2)p2.textContent='Profit target: '+money(state.p2Target)+' · Minimum trading days: '+state.p2MinDays+' · Set by selected firm rules above.';
