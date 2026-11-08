@@ -283,7 +283,7 @@ function chooseTradeRisk(p,ac,stage,c,dayProfit=0){
 function makeAccount(i){return {
  id:i,stageIndex:0,stageDay:0,stageTrades:0,activeDays:0,adminDays:0,totalAdminDays:0,
  stagePnl:0,history:'',dailyProfit:0,dayProfits:[],peakEod:0,bestDay:0,
- status:'active',trades:0,qualificationTrades:0,wins:0,losses:0,firstPaid:0,
+ status:'active',trades:0,qualificationTrades:0,wins:0,losses:0,firstPaid:0,everTargetHit:false,everPayoutRequested:false,everPaid:false,payoutCycles:0,
  purchaseDay:0,fundedActivatedDay:null,fundedFirstTradeDay:null,fundedTargetDay:null,payoutRequestedDay:null,paidDay:null,closedDay:null,
  grossProfit:0,grossLoss:0,winPnl:0,lossPnl:0,riskTotal:0,plannedReward:0,tradePnl:0,
  passes:[],totalR:0,realizedDD:0,peakPnl:0,blocked:0,
@@ -335,7 +335,7 @@ function runAccountDay(p,ac,day,rand,config,record){
   (p.id==='topstep'?ac.funded150Days>=5:day-ac.fundedFirstTradeDay+1>=p.fundedWaitDays);
  const requestPayout=()=>{
   ac.firstPaid=firstPayout(p,ac);
-  ac.payoutRequestedDay=day;
+  ac.payoutRequestedDay=day;ac.everPayoutRequested=true;
   if(record)ac.trace.push({day,stage:'funded',type:'payout-request',label:'Payout requested; funded trading frozen',cash:ac.firstPaid});
   if(p.payoutProcessingTradingDays<=0){
    ac.status='paid';ac.paidDay=day;
@@ -344,7 +344,7 @@ function runAccountDay(p,ac,day,rand,config,record){
   }else ac.status='payout-pending';
  };
  const alreadyTarget=ac.stagePnl>=c.target-.005;
- if(stage==='funded'&&alreadyTarget&&ac.fundedTargetDay===null)ac.fundedTargetDay=day;
+ if(stage==='funded'&&alreadyTarget&&ac.fundedTargetDay===null){ac.fundedTargetDay=day;ac.everTargetHit=true;}
  const consistentNow=!c.consistency||ac.bestDay<=Math.max(0,ac.stagePnl)*c.consistency+1e-7;
  if(isEvaluation(stage)&&alreadyTarget&&consistentNow && ac.activeDays<c.minDays){
   ac.adminDays++;ac.totalAdminDays++;ac.qualificationTrades++;
@@ -425,7 +425,7 @@ function runAccountDay(p,ac,day,rand,config,record){
   const prior=ac.stagePnl;
   ac.stagePnl=money(ac.stagePnl+delta);dayProfit=money(dayProfit+delta);
   if(stage==='funded'&&ac.stagePnl>=c.target-.005&&ac.fundedTargetDay===null)
-   ac.fundedTargetDay=day;
+   {ac.fundedTargetDay=day;ac.everTargetHit=true;}
   ac.trades++;ac.stageTrades=(ac.stageTrades||0)+1;hadTrade=true;ac.totalR+=delta/risk;
   ac.grossProfit+=Math.max(0,delta);ac.grossLoss+=Math.max(0,-delta);
   ac.tradePnl+=delta;ac.riskTotal+=risk;ac.plannedReward+=risk*tradeRR;
@@ -468,7 +468,7 @@ function runAccountDay(p,ac,day,rand,config,record){
   ac.dayProfits.push(dayProfit);
   ac.bestDay=Math.max(ac.bestDay,dayProfit);
   if(stage==='funded'){
-   if(ac.stagePnl>=c.target-.005&&ac.fundedTargetDay===null)ac.fundedTargetDay=day;
+   if(ac.stagePnl>=c.target-.005&&ac.fundedTargetDay===null){ac.fundedTargetDay=day;ac.everTargetHit=true;}
    if(dayProfit>0)ac.fundedPositiveDays++;
    if(dayProfit>=150)ac.funded150Days++;
   }
@@ -700,7 +700,7 @@ function oneTrial(p,config,rng,record=false){
      spent+=p.activationFee;activationSpent+=p.activationFee;activations++;
     }
    }
-   if(res.paid){paid++;receipts+=ac.firstPaid;
+   if(res.paid){paid++;ac.everPaid=true;ac.payoutCycles++;receipts+=ac.firstPaid;
     if(config.recycleFundedPayouts&&p.id==='ftmo2'){
      // Reuse the same funded account on the NEXT trading day. Keep its
      // historical trade/loss statistics; future funded trades can still fail.
@@ -751,8 +751,9 @@ function oneTrial(p,config,rng,record=false){
  }
  const net=receipts-spent;
  return {bought,paid,passes,funded,failed,exhausted,strategyStopped,pending,spent,receipts,net,activations,
-    targetHit:accounts.filter(a=>a.fundedTargetDay!==null).length,
-    payoutRequested:accounts.filter(a=>a.payoutRequestedDay!==null).length,
+    targetHit:accounts.filter(a=>a.everTargetHit).length,
+    payoutRequested:accounts.filter(a=>a.everPayoutRequested).length,
+    paidAccounts:accounts.filter(a=>a.everPaid).length,
    trades:accounts.reduce((sum,a)=>sum+a.trades,0),
    qualificationTrades:accounts.reduce((sum,a)=>sum+a.qualificationTrades,0),
    wins:accounts.reduce((sum,a)=>sum+a.wins,0),
@@ -816,7 +817,7 @@ function simulatePortfolio(p,config={}){
   reinvestPayouts:config.reinvestPayouts===true
  };
  const results=[],stageTotals=p.stageList.filter(x=>x!=='funded').map(()=>0);
- const total={bought:0,paid:0,funded:0,targetHit:0,payoutRequested:0,failed:0,exhausted:0,strategyStopped:0,pending:0,spent:0,receipts:0,net:0,activations:0,trades:0,qualifying:0,qualificationTrades:0,
+ const total={bought:0,paid:0,paidAccounts:0,funded:0,targetHit:0,payoutRequested:0,failed:0,exhausted:0,strategyStopped:0,pending:0,spent:0,receipts:0,net:0,activations:0,trades:0,qualifying:0,qualificationTrades:0,
   wins:0,losses:0,grossProfit:0,grossLoss:0,winPnl:0,lossPnl:0,riskTotal:0,plannedReward:0,totalR:0,tradePnl:0};
  const rand=rngFactory(settings.seed);
  const chartTrials=settings.trackDaily?[]:null;
@@ -912,7 +913,7 @@ function stageFunnel(result,useSample=false){
  stages.push({label:p.id==='topstep'?'Express Funded activated':'Funded activated',count:pos(source.funded)});
  stages.push({label:'Funded profit target reached',count:pos(source.targetHit)});
  stages.push({label:'Payout requested',count:pos(source.payoutRequested)});
- stages.push({label:'First payout received',count:pos(source.paid)});
+ stages.push({label:'First payout received',count:pos(source.paidAccounts??source.paid)});
  return stages.map((stage,i)=>{
   const previous=i?stages[i-1].count:null;
   return {...stage,previousRate:i?(previous>0?stage.count/previous:null):null,
