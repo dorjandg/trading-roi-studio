@@ -184,6 +184,15 @@ const accountBar=box.querySelector('[data-account-mode="single"]').parentElement
 const feeBar=box.querySelector('[data-k="accountCost"]').closest('div');
 group('challenge-settings','01 · Challenge · Parameters',[targetModeBar,box.querySelector('[data-target-mode]'),box.querySelector('[data-risk-fields]'),accountBar,box.querySelector('[data-multi-controls]'),feeBar]);
 group('funded-settings','02 · Funded · Parameters',[box.querySelector('[data-funded-fields]')]);
+const manualRiskKey='jj-risk-manual-phase-risks-v1';
+const manualPanel=document.createElement('div');
+manualPanel.style.cssText='margin:8px 0;font-size:11px';
+manualPanel.innerHTML='<details><summary style="cursor:pointer;font-weight:600">Manual R1 / R2 / R3 by phase</summary><p style="opacity:.75;margin:5px 0">R1 first trade; R2 after one consecutive loss; R3 after two or more consecutive losses. A win resets to R1 unless the phase target is reached. Automatic leaves existing strategy unchanged.</p><div style="overflow-x:auto"><table style="font-size:11px"><thead><tr><th>Phase</th><th>Mode</th><th>R1 $</th><th>R2 $</th><th>R3 $</th></tr></thead><tbody>'+[1,2,3].map(n=>'<tr><td>P'+n+'</td><td><select data-manual-mode="'+n+'"><option value="auto">Auto</option><option value="manual">Manual</option></select></td>'+[1,2,3].map(k=>'<td><input data-manual-risk="'+n+'-'+k+'" type="number" min="0.01" step="0.01" value="100" style="width:70px;padding:4px"></td>').join('')+'</tr>').join('')+'</tbody></table></div></details>';
+box.querySelector('[data-section="challenge-settings"] .jj-risk-section-body').append(manualPanel);
+try{const stored=JSON.parse(localStorage.getItem(manualRiskKey)||'{}');manualPanel.querySelectorAll('[data-manual-mode]').forEach(el=>{if(stored['m'+el.dataset.manualMode])el.value=stored['m'+el.dataset.manualMode]});manualPanel.querySelectorAll('[data-manual-risk]').forEach(el=>{const val=stored['r'+el.dataset.manualRisk];if(Number(val)>0)el.value=val})}catch(e){}
+const manualConfig=()=>{const result={};for(let n=1;n<=3;n++){const mode=manualPanel.querySelector('[data-manual-mode="'+n+'"]').value;if(mode==='manual')result[n]=[1,2,3].map(k=>Math.max(.01,Number(manualPanel.querySelector('[data-manual-risk="'+n+'-'+k+'"]').value)||.01))}return result};
+manualPanel.addEventListener('change',()=>{const stored={};manualPanel.querySelectorAll('[data-manual-mode]').forEach(el=>stored['m'+el.dataset.manualMode]=el.value);manualPanel.querySelectorAll('[data-manual-risk]').forEach(el=>stored['r'+el.dataset.manualRisk]=el.value);try{localStorage.setItem(manualRiskKey,JSON.stringify(stored))}catch(e){}renderRisk()});
+
 group('funded-results','04 · Funded · Results',[box.querySelector('[data-funded-results]')]);
 group('challenge-results','03 · Challenge · Results',[box.querySelector('[data-kpis]'),box.querySelector('[data-multi-results]'),box.querySelector('[data-prob-results]'),box.querySelector('[data-prob]')]);
 // Results order: Challenge, Funded, Combined (preserve existing nodes and saved disclosure states).
@@ -275,7 +284,7 @@ for(const c of path){
  const left=v.limit+stagePnl,goal=stage===1?(v.topstepConsistency?Math.max(v.target,bestDay/(v.consistencyRate/100)):v.target):v.target2;
  const dailyLeft=Math.max(0,Math.min(v.dailyLimit,v.dailyLimit+dayPnl));
  if(left<v.floor-1e-7||left<=1e-7){status='closed';break}
- const plannedRisk=v.riskModel==='adaptive'?Math.max(0,Math.min(v.baseRisk,((goal-stagePnl)/v.rr)*v.targetFactor,Math.max(0,left-v.reserve))):v.riskModel==='fixed'?v.baseRisk:v.riskModel==='half'?Math.max(0,(goal-stagePnl)/v.rr/2):v.riskModel==='recovery'?Math.min(450,250*(1+.5*steps.filter(t=>t.stage===stage&&t.c==='L').length)):v.riskModel==='buffer'?(steps.some(t=>t.c==='W')?450:150):v.fixedRisk?v.fixedRisk:v.ftmoFundedBuilder?(steps.some(x=>x.c==='W')?450:150):Math.max(0,(goal-stagePnl)/v.rr);const topstepDayProfitLeft=v.topstepConsistency?Math.max(0,(v.target/2-dayPnl)/v.rr):Infinity;const remainingGoalRisk=Math.max(0,(goal-stagePnl)/v.rr);const risk=Math.min(plannedRisk,left,dailyLeft,topstepDayProfitLeft,remainingGoalRisk);
+ const stageManual=v.manualRisks?.[v.manualStage||stage];const consecutiveLosses=steps.slice().reverse().findIndex(t=>t.stage===stage&&t.c==='W');const streak=consecutiveLosses<0?steps.filter(t=>t.stage===stage&&t.c==='L').length:steps.slice(-(consecutiveLosses)).filter(t=>t.stage===stage&&t.c==='L').length;const plannedRisk=stageManual?stageManual[Math.min(2,streak)]:v.riskModel==='adaptive'?Math.max(0,Math.min(v.baseRisk,((goal-stagePnl)/v.rr)*v.targetFactor,Math.max(0,left-v.reserve))):v.riskModel==='fixed'?v.baseRisk:v.riskModel==='half'?Math.max(0,(goal-stagePnl)/v.rr/2):v.riskModel==='recovery'?Math.min(450,250*(1+.5*steps.filter(t=>t.stage===stage&&t.c==='L').length)):v.riskModel==='buffer'?(steps.some(t=>t.c==='W')?450:150):v.fixedRisk?v.fixedRisk:v.ftmoFundedBuilder?(steps.some(x=>x.c==='W')?450:150):Math.max(0,(goal-stagePnl)/v.rr);const topstepDayProfitLeft=v.topstepConsistency?Math.max(0,(v.target/2-dayPnl)/v.rr):Infinity;const remainingGoalRisk=Math.max(0,(goal-stagePnl)/v.rr);const risk=Math.min(plannedRisk,left,dailyLeft,topstepDayProfitLeft,remainingGoalRisk);
  if(risk<=1e-7){status='closed';break}
  const delta=c==='W'?risk*v.rr:-risk,tradeDay=day,tradeStage=stage;
  stagePnl+=delta;total+=delta;dayPnl+=delta;dailyTotals[day]=(dailyTotals[day]||0)+delta;bestDay=Math.max(0,...Object.values(dailyTotals));
@@ -296,7 +305,7 @@ steps,prob,day:day+(nextDay?1:0),dailyLeft:nextDailyLeft,dayPnl:nextDay?0:dayPnl
 }
 function renderRisk(){
 const firmForPhases=firmBar.querySelector('[data-firm-type]').value;const expectedPhases=firmForPhases==='ftmo'?'2':'1';if($('[data-target-mode]').value!==expectedPhases)$('[data-target-mode]').value=expectedPhases;
-const v=vals(),leaves=[],allPaths=[];Object.assign(v,STRATEGIES[activeStrategy].eval);if(firmForPhases==='topstep'){v.topstepConsistency=true;if(activeStrategy==='current')v.fixedRisk=1000;v.consistencyRate=Math.max(1,Math.min(100,Number(box.querySelector('[data-consistency-limit]')?.value)||55));}
+const v=vals(),leaves=[],allPaths=[];Object.assign(v,STRATEGIES[activeStrategy].eval);v.manualRisks=manualConfig();if(firmForPhases==='topstep'){v.topstepConsistency=true;if(activeStrategy==='current')v.fixedRisk=1000;v.consistencyRate=Math.max(1,Math.min(100,Number(box.querySelector('[data-consistency-limit]')?.value)||55));}
 function walk(path){const x=calc(path,v);if(path)allPaths.push(x);if(x.status!=='active'||x.steps.length>=v.depth){leaves.push(x);return}walk(path+'W');walk(path+'L')}
 walk('');
 const counts={target:0,closed:0,active:0,'daily-blocked':0};leaves.forEach(x=>counts[x.status]++);
@@ -330,7 +339,7 @@ const kpiTooltip=(label,value,help)=>'<div class="jj-kpi-help" tabindex="0" aria
 const mostLikely=leaves.reduce((best,x)=>!best||x.prob>best.prob?x:best,null);
 const fn=(k,d)=>{const x=Number(box.querySelector('[data-funded="'+k+'"]').value);return Number.isFinite(x)?x:d};
 const fv={targetMode:1,target:Math.max(.01,fn('target',4000)),target2:1,limit:Math.max(.01,fn('limit',2000)),dailyLimit:Math.max(.01,fn('dailyLimit',1000)),tradesPerDay:Math.max(1,Math.min(100,Math.floor(fn('tradesPerDay',3)))),rr:Math.max(.01,fn('rr',3)),floor:Math.max(0,fn('floor',100)),winRate:Math.max(0,Math.min(100,fn('winRate',50))),depth:Math.max(1,Math.min(12,Math.floor(fn('depth',6))))};
-if(firmForPhases==='topstep'&&activeStrategy==='current')fv.fixedRisk=1000;else if(activeStrategy==='current')fv.ftmoFundedBuilder=true;Object.assign(fv,STRATEGIES[activeStrategy].fund);let fp=0,fr=0;const fundedLeaves=[];
+if(firmForPhases==='topstep'&&activeStrategy==='current')fv.fixedRisk=1000;else if(activeStrategy==='current')fv.ftmoFundedBuilder=true;Object.assign(fv,STRATEGIES[activeStrategy].fund);fv.manualRisks=manualConfig();fv.manualStage=3;let fp=0,fr=0;const fundedLeaves=[];
 if(phaseMode!=='evaluation'){function fw(path){const x=calc(path,fv);if(x.status!=='active'||x.steps.length>=fv.depth){fundedLeaves.push(x);if(x.status==='target')fp+=x.prob;if(x.status==='closed')fr+=x.prob;return}fw(path+'W');fw(path+'L')}fw('')}
 const nn=Math.max(1,Math.min(100,Math.floor(Number($('[data-account-count]').value)||10)));
 const totalFees=nn*v.accountCost,expectedFunded=nn*probability,activationFee=Math.max(0,fn('activation',0)),splitPct=Math.max(0,Math.min(1,fn('split',80)/100));
