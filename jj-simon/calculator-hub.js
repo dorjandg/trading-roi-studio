@@ -326,6 +326,39 @@ const nn=Math.max(1,Math.min(100,Math.floor(Number($('[data-account-count]').val
 const totalFees=nn*v.accountCost,expectedFunded=nn*probability,activationFee=Math.max(0,fn('activation',0)),splitPct=Math.max(0,Math.min(1,fn('split',80)/100));
 const grossPayout=expectedFunded*fp*fv.target*splitPct,activationFees=expectedFunded*activationFee,netCash=grossPayout-totalFees-activationFees;
 const cash=x=>'$'+x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+let mathPanel=box.querySelector('[data-ch09-math]');
+if(!mathPanel){
+ mathPanel=document.createElement('details');mathPanel.dataset.ch09Math='';
+ mathPanel.className='jj-risk-section';
+ mathPanel.innerHTML='<summary>12 · Math &amp; Bankroll KPIs</summary><div data-math-cards class="jj-risk-results-grid"></div><small style="opacity:.75">Calculated from Chapter 09 settings. Probabilities use finite simulation depth; historical confidence intervals require observed trade/account records.</small>';
+ box.appendChild(mathPanel);
+}
+const fmtMathPct=x=>Number.isFinite(x)?(100*x).toFixed(2)+'%':'—';
+const evalP=Math.max(0,Math.min(1,v.winRate/100)),fundP=Math.max(0,Math.min(1,fv.winRate/100));
+const evalEV=evalP*v.rr-(1-evalP),fundEV=fundP*fv.rr-(1-fundP);
+const evalVariance=evalP*(v.rr-evalEV)**2+(1-evalP)*(-1-evalEV)**2;
+const successChance=probability*fp;
+const mathRows=[
+['Evaluation EV',evalEV.toFixed(3)+'R','Expected evaluation trade return in risk units.'],
+['Funded EV',fundEV.toFixed(3)+'R','Expected funded trade return in risk units.'],
+['Variance',evalVariance.toFixed(3)+' R²','Dispersion of evaluation trade returns.'],
+['Std deviation',Math.sqrt(evalVariance).toFixed(3)+'R','Square root of evaluation variance.'],
+['Breakeven WR',fmtMathPct(1/(1+v.rr)),'Win rate needed for zero expectancy.'],
+['Evaluation pass',fmtMathPct(probability),'Probability of passing evaluation within trade depth.'],
+['Evaluation ruin',fmtMathPct(failProbability),'Probability of hitting evaluation loss limit within trade depth.'],
+['Funded pass',fmtMathPct(fp),'Probability of reaching funded target within trade depth.'],
+['Funded ruin',fmtMathPct(fr),'Probability of hitting funded loss limit within trade depth.'],
+['Cost / passed eval',probability?cash(v.accountCost/probability):'—','Expected evaluation fees per passed evaluation; excludes verification.'],
+['Cost / funded success',successChance?cash((v.accountCost+probability*activationFee)/successChance):'—','Expected fees per modeled funded success; assumes independent phases.'],
+['No payout',fmtMathPct(Math.pow(1-successChance,nn)),'Chance of zero modeled successes across purchases, assuming independence.'],
+['Buys for 90%',successChance>=1?'1':successChance>0?String(Math.ceil(Math.log(.1)/Math.log(1-successChance))):'—','Purchases for 90% probability of one modeled success.'],
+['Expected fees',cash(totalFees+activationFees),'Purchase fees plus expected activation fees.'],
+['Expected payout',cash(grossPayout),'Probability-weighted funded target payout proxy.'],
+['Expected net',cash(netCash),'Expected payout less fees.'],
+['Expected net ROI',totalFees+activationFees>0?fmtMathPct(netCash/(totalFees+activationFees)):'—','Net divided by modeled spending, not reserved budget.']
+];
+mathPanel.querySelector('[data-math-cards]').innerHTML=mathRows.map(row=>kpiTooltip(row[0],row[1],row[2])).join('');
+
 box.querySelectorAll('[data-phase]').forEach(btn=>{const on=btn.dataset.phase===phaseMode;btn.setAttribute('aria-pressed',String(on));btn.style.fontWeight=on?'700':'400';btn.style.background=on?'var(--accent-soft,rgba(85,137,201,.15))':''});
 $('[data-funded-fields]').style.display=phaseMode==='evaluation'?'none':'';
 $('[data-funded-results]').style.display=phaseMode==='evaluation'?'none':'';
