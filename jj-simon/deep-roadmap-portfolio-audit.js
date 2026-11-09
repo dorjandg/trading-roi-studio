@@ -104,3 +104,16 @@ c.sections.push({title:"0-to-10K roadmap: capped attempts, profit split and conf
 ],src:[["0 -_ 10k_m Roadmap","00:46–01:40; 01:46–04:17; 05:02–07:38; 08:57–09:10","1ckmp-lBqjugMPTsGshIi-rAbQVnnjo0m"],["The Optimal Number of Accounts To Manage","00:05–00:20; 02:42–02:57; 03:13–04:18","11nOzXqPVWcTMHX6cpQivsM7StZVrtbZM"]]});
 renderNav();render();
 })();
+
+/* 2026-11-09 Module 15 source audit: fair-price reanchoring and overnight BOS. */
+(()=>{
+const c=chapters.find(x=>x.slug==="funded")||chapters.find(x=>x.slug==="case-studies");
+if(!c||c.sections.some(s=>s.title==="Volume can invalidate a fair-price anchor before an overnight BOS entry"))return;
+c.sections.push({title:"Volume can invalidate a fair-price anchor before an overnight BOS entry",points:[
+"JJ treats 6 PM and 9:30 opening prices as provisional fair-price references, not permanent targets. In the volume lesson, an 8 PM Asian-session extension away from 6 PM or a 9:45 continuation away from 9:30 can invalidate the older anchor; a 2 PM move toward the reference may instead preserve it.",
+"The overnight lesson discusses a five-minute break of structure, typically near a spoken 10–11 session window, targeting an opening reference or gap. Extended chop can justify no trade; a clean break without a large five-minute wick is preferred in one example.",
+"Historical one-NQ examples: 50-point stop equals $1,000 gross risk; 100- and 200-point targets equal $2,000 and $4,000 gross, respectively. Another example uses a 30-point stop. These are alternative cases, not one fixed stop/TP prescription.",
+"The combined rule to recheck the anchor before entry is an analytical reconciliation, not a formally specified JJ algorithm. Video chart locations, volume measurement, time zone, overlapping captions and actual outcomes remain unverified."
+],src:[["How Does Volume Change Fair Price","00:28–02:36; 02:37–04:39","1miR0iSYdOTWrShLV9UfT-uDJUVmY8qeG"],["Overnight Trades","00:39–01:39; 03:49–04:16; 05:15–05:27; 08:24–08:49","1Ye5f_tmATyBYcAhwSWdMtZTzdvVh1Igg"]]});
+renderNav();render();
+})();
