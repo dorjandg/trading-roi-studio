@@ -456,20 +456,15 @@ const optimizeRiskStrategies=()=>{
  const eligible=results.filter(x=>x.roi>=200&&x.net>0&&x.e.unresolved<.1&&x.u.unresolved<.1).sort((a,b)=>b.roi-a.roi);
  const money=n=>'$'+n.toLocaleString('en-US',{maximumFractionDigits:0});
  const explain=(base,candidate)=>{
- const cfg={...base,...candidate.rule};
- const fmt=x=>money(Number(x)||0);
- const node=(path,level)=>{
-  const x=calc(path,cfg),last=x.steps[x.steps.length-1];
-  const status=x.status==='target'?'TARGET REACHED':x.status==='closed'?'ACCOUNT CLOSED':x.steps.length>=cfg.depth?'TRADE LIMIT':'CONTINUE';
-  const nextW=calc(path+'W',cfg),nextL=calc(path+'L',cfg);
-  const wTrade=nextW.steps[path.length],lTrade=nextL.steps[path.length];
-  const nextRisk=wTrade?.risk??lTrade?.risk??0;
-  const outcome=last?'<div>Trade '+x.steps.length+' · '+(last.c==='W'?'WIN':'LOSS')+' · risk '+fmt(last.risk)+' · phase P&L '+fmt(last.stagePnl)+' · day '+last.day+'</div>':'<div>START · phase P&L $0</div>';
-  const done=x.status!=='active'||x.steps.length>=cfg.depth||!nextRisk;
-  return '<div data-opt-node style="margin:5px 0 5px '+Math.min(level,8)*8+'px;padding:6px;border-left:2px solid #8885;border-radius:4px">'+outcome+'<small>Drawdown allowance '+fmt(cfg.limit+x.stagePnl)+' · '+status+'</small>'+(done?'':'<div style="margin-top:5px"><b>Next risk '+fmt(nextRisk)+'</b> · Win +'+fmt(nextRisk*cfg.rr)+' / Loss −'+fmt(nextRisk)+'</div><div style="display:flex;gap:5px;margin-top:4px"><button type="button" data-opt-path="'+path+'W" style="padding:4px 8px;font-size:10px">If WIN</button><button type="button" data-opt-path="'+path+'L" style="padding:4px 8px;font-size:10px">If LOSS</button></div><div data-opt-children></div>')+'</div>';
- };
- const encoded=encodeURIComponent(JSON.stringify(cfg));
- return '<div data-opt-tree data-opt-cfg="'+encoded+'" style="font-size:11px"><p style="font-size:10px;opacity:.8">Rule: '+candidate.name+'. Follow WIN or LOSS to see the exact next trade. Dynamic risk recalculates after each outcome. Drawdown shown is a simplified allowance, not full trailing DD.</p>'+node('',0)+'</div>';
+ const cfg={...base,...candidate.rule},paths=['','W','L','LW','LL','WL','LLW','LWL','LLL','WW','LWW'];
+ const decisions=paths.map(path=>calc(path,cfg)).filter(x=>x.status==='active'&&x.steps.length<cfg.depth);
+ const rows=decisions.map(x=>{
+  const win=calc(x.path+'W',cfg),loss=calc(x.path+'L',cfg);
+  const risk=win.steps[x.steps.length]?.risk??loss.steps[x.steps.length]?.risk??0;
+  const history=x.steps.map((t,i)=>'<tr><td>'+(i+1)+' '+(t.c==='W'?'WIN':'LOSS')+'</td><td>'+t.day+'</td><td>'+money(t.risk)+'</td><td>'+money(t.stagePnl)+'</td><td>'+(t.passed?'TARGET HIT':'')+'</td></tr>').join('');
+  return '<tr><td>'+(x.path||'Start')+'</td><td>'+(x.prob*100).toFixed(2)+'%</td><td>'+money(risk)+'</td><td>'+money(win.pnl)+'</td><td>'+money(loss.pnl)+'</td><td><details><summary style="cursor:pointer">View</summary><div style="overflow-x:auto"><table style="font-size:10px"><thead><tr><th>Trade</th><th>Day</th><th>Risk</th><th>P&L</th><th>Result</th></tr></thead><tbody>'+(history||'<tr><td colspan="5">First trade: '+money(risk)+'</td></tr>')+'</tbody></table></div><small>Next WIN: '+win.status+' · Next LOSS: '+loss.status+'</small></details></td></tr>';
+ }).join('');
+ return '<p style="font-size:10px;opacity:.8">Rule: '+candidate.name+'. Decision points use the same calculation as the optimizer. Representative prefixes shown; not all possible paths. Simplified drawdown model.</p><div style="overflow-x:auto"><table style="font-size:10px"><thead><tr><th>Path</th><th>Chance</th><th>Risk</th><th>WIN P&L</th><th>LOSS P&L</th><th>Details</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
  };
  const rows=eligible.slice(0,10).map((x,i)=>'<tr><td colspan="7"><details style="margin:2px 0"><summary style="cursor:pointer;display:flex;gap:7px;flex-wrap:wrap;align-items:center"><b>#'+(i+1)+'</b><span>'+x.e.name+' / '+x.u.name+'</span><b>ROI '+x.roi.toFixed(1)+'%</b><span>Net '+money(x.net)+'</span></summary><div style="padding:6px 3px"><p style="font-size:11px">Eval pass '+(x.e.pass*100).toFixed(1)+'% · Fund pass '+(x.u.pass*100).toFixed(1)+'% · Expected fees '+money(x.fees)+'</p><details><summary style="cursor:pointer;font-weight:600">Challenge · Trade-by-trade</summary>'+explain(evalBase,x.e)+'</details><details><summary style="cursor:pointer;font-weight:600">Funded · Trade-by-trade</summary>'+explain(fundBase,x.u)+'</details></div></details></td></tr>').join('');
  return '<div style="font-size:11px;margin:7px 0"><b>Advanced scenarios · '+eligible.length+' qualifying / '+results.length+' tested pairs</b><p style="margin:4px 0;opacity:.8">Current edited parameters. Dynamic models recalculate target-based risk after each win/loss, subject to a cap and remaining drawdown reserve. Fixed models included for comparison. Saved presets unchanged.</p><div style="overflow-x:auto"><table style="font-size:11px"><thead><tr><th>#</th><th>Challenge</th><th>Funded</th><th>Eval pass</th><th>Fund pass</th><th>Net</th><th>ROI</th></tr></thead><tbody>'+(rows||'<tr><td colspan="7">No qualifying strategies. Review RR, trade depth and limits.</td></tr>')+'</tbody></table></div><small style="opacity:.75">Exploratory model, max 12 trades/stage. No payout calendar, correlated trades, concurrency or complete trailing drawdown simulation. Unresolved paths are not counted as passes.</small></div>';
