@@ -331,7 +331,7 @@ if(!mathPanel){
  mathPanel=document.createElement('details');mathPanel.dataset.ch09Math='';
  mathPanel.className='jj-risk-section';
  mathPanel.innerHTML='<summary>12 · Math &amp; Bankroll KPIs</summary><div data-math-cards class="jj-risk-results-grid"></div><small style="opacity:.75">Calculated from Chapter 09 settings. Probabilities use finite simulation depth; historical confidence intervals require observed trade/account records.</small>';
- box.appendChild(mathPanel);
+ (box.querySelector('[data-section="funded-paths"]')||box.lastElementChild).after(mathPanel);
 }
 const fmtMathPct=x=>Number.isFinite(x)?(100*x).toFixed(2)+'%':'—';
 const evalP=Math.max(0,Math.min(1,v.winRate/100)),fundP=Math.max(0,Math.min(1,fv.winRate/100));
