@@ -76,3 +76,19 @@ chapter.sections.push({title:"Overnight BOS: 30-point stop exception and fair-pr
 "Research audit: source timestamps cross-compared; original chart frames and machine-audio ambiguities still need verification. The full private dossier preserves variant branches and worked contract arithmetic."
 ],src:[["Overnight Trades","00:17–00:23; 01:19–01:39; 03:48–04:14; 05:13–05:29; 08:24–09:17; 09:48–10:54","1Ye5f_tmATyBYcAhwSWdMtZTzdvVh1Igg"],["How Does Volume Change Fair Price","00:28–01:36; 01:39–03:01; 03:30–03:47","1miR0iSYdOTWrShLV9UfT-uDJUVmY8qeG"]]});renderNav();render();
 })();
+
+(function(){
+const chapter=chapters.find(c=>c.slug==="funded-plan");
+if(!chapter||chapter.sections.some(s=>s.title==="Winning days: three tactics, micro-contract threshold and live-transition caveats"))return;
+chapter.sections.push({title:"Winning days: three tactics, micro-contract threshold and live-transition caveats",points:[
+"Module 15 Winning Days distinguishes three alternative qualifying-day methods: rapid New York momentum or news/tweet continuation; a session fair-price reversal after structure breaks; and a slower two-MNQ 40-point move. The instructor asks students to test which suits them rather than presenting all three as mandatory.",
+"For the rapid NQ approach, the transcript describes roughly ±10 points with one NQ contract and preconfigured stop/target orders. One NQ at $20 per point implies ±$200 gross before costs. Fast fills can slip, and provider scalping/news rules must be checked.",
+"For the structure-confirmation approach, a candle closing below the referenced wick is preferred over a weak break in a chart example. This is discretionary visual evidence, not a quantified universal BOS rule; the chart itself remains unverified.",
+"Two MNQ at $2 per point each moving 40 points yields $160 gross. With the lesson's illustrative $3 execution cost, the result is $157 net, potentially enough for a $150 winning-day threshold but not a $200 threshold. Neither fee nor provider threshold is verified current policy.",
+"The companion lesson How To Avoid Live Accounts And Why To contains historical provider-specific claims about live migration, salaries, bonuses and withdrawals. Its suggestions about avoiding migration or aggressive loss recovery are not verified as permitted, safe or financially sound. A live account balance is not automatically fully withdrawable cash.",
+"JJ suggests multiple funded accounts could stagger payouts, but five accounts needing five winning days does not guarantee a daily approved or settled payout. Original chart frames, ASR wording, firm policies and actual trading win rates remain pending verification."
+],src:[
+["Winning Days","00:00–00:46; 00:46–02:28; 02:28–04:26; 04:26–06:28","19DLGJ-t74Q0AOhVpKgtuE4P2uhVp1TPp"],
+["How To Avoid Live Accounts And Why To","00:08–01:17; 01:18–02:37; 03:13–05:41","1yNHQ7HYo2v3sd1CT5RhSMHIWeDMIVOKo"]
+]});renderNav();render();
+})();
