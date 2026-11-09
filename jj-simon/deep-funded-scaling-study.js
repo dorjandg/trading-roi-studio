@@ -64,3 +64,15 @@ chapter.sections.push({title:"Signal count versus account executions: when copyi
 ["Managing Risk Across Multiple Accounts","00:27–01:07; 01:23–01:41","1Gr90n0aSePquj1jp9nCkvx29BiUyJj2c"]
 ]});renderNav();render();
 })();
+
+(function(){
+const chapter=chapters.find(c=>c.slug==="funded-plan");if(!chapter||chapter.sections.some(x=>x.title==="Overnight BOS: 30-point stop exception and fair-price anchor changes"))return;
+chapter.sections.push({title:"Overnight BOS: 30-point stop exception and fair-price anchor changes",points:[
+"Module 15 Overnight Trades describes 10–11 EST as an overnight search window, but explicitly shows choppy no-trade examples and a later 12:15 structure-break example. These are contextual alternatives, not a hard universal 11:00 entry cutoff.",
+"The overnight illustration generally uses a 50-point NQ stop, with 100-point (2R) or 200-point (4R) targets. A separate example at 05:13–05:29 explicitly uses a 30-point stop and 200-point target (about 6.67R gross). Do not erase this exception or infer its win rate.",
+"JJ prefers a five-minute BOS without a large wick in one example because the wick can conceal a one-minute reversal. No objective wick percentage or swing-definition algorithm is specified in the course transcript.",
+"In How Does Volume Change Fair Price, fresh Asian-session volume moving farther from the 6 p.m. anchor can invalidate that earlier fair-price estimate. A 09:45 continuation can likewise invalidate the 09:30 anchor, while a different 2 p.m. move supports retaining an earlier reference. New volume does not automatically imply reanchoring.",
+"An overnight reversion target can therefore become questionable if the underlying fair-price anchor is revised. The transcript does not say exactly how to manage an already-open position in that case. News/tweets, discretionary re-entry after a stop, chart swing locations, provider conditions and measured profitability remain unverified.",
+"Research audit: source timestamps cross-compared; original chart frames and machine-audio ambiguities still need verification. The full private dossier preserves variant branches and worked contract arithmetic."
+],src:[["Overnight Trades","00:17–00:23; 01:19–01:39; 03:48–04:14; 05:13–05:29; 08:24–09:17; 09:48–10:54","1Ye5f_tmATyBYcAhwSWdMtZTzdvVh1Igg"],["How Does Volume Change Fair Price","00:28–01:36; 01:39–03:01; 03:30–03:47","1miR0iSYdOTWrShLV9UfT-uDJUVmY8qeG"]]});renderNav();render();
+})();
