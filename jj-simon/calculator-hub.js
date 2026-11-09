@@ -167,7 +167,7 @@ const money=x=>(x<0?'−':x>0?'+':'')+'$'+Math.abs(x).toLocaleString('en-US',{mi
 const tableNumber=x=>(x<0?'-':'')+Math.abs(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 function mount(){
 const root=document.querySelector('#'+slug);if(!root||root.querySelector('.jj-risk-workbench'))return;
-const box=document.createElement('div');box.className='jj-risk-workbench';box.innerHTML='<h3>Dynamic Risk · Scenario Explorer</h3><div class="jj-risk-mode" role="group" aria-label="Target mode" style="display:flex;gap:6px;margin:8px 0 12px"><button type="button" data-mode-button="1" aria-pressed="true" style="flex:1">1 Target</button><button type="button" data-mode-button="2" aria-pressed="false" style="flex:1">2 Targets</button></div><input type="hidden" data-target-mode value="1"><div class="jj-risk-fields" data-risk-fields><label data-target1-field>Target 1 ($)<input data-k="target" type="number" min=".01" step="any" value="1000"></label><label data-target2-field>Target 2 ($)<input data-k="target2" type="number" min=".01" step="any" value="500"></label><label>Loss allowance per stage ($)<input data-k="limit" type="number" min=".01" step="any" value="1000"></label><label>Maximum daily loss ($)<input data-k="dailyLimit" type="number" min=".01" step="any" value="500"></label><label>Trades per day<input data-k="tradesPerDay" type="number" min="1" max="100" step="1" value="3"></label><label>Risk reward (1:R)<input data-k="rr" type="number" min=".01" step="any" value="3"></label><label>Close if allowance below ($)<input data-k="floor" type="number" min="0" step="any" value="100"></label><label>Win rate (%)<input data-k="winRate" type="number" min="0" max="100" value="50"></label><label>Scenario depth (1–12)<input data-k="depth" type="number" min="1" max="12" value="6"></label></div><div class="jj-risk-kpis" data-kpis></div><div class="jj-risk-muted" data-prob></div><h4>All scenario paths</h4><select data-filter><option value="all">All paths</option><option value="target">Pass</option><option value="closed">Fail</option><option value="active">Active</option><option value="daily-blocked">Day Block</option></select><div data-table></div><div class="jj-risk-page"><button data-prev>Previous</button><span data-count></span><button data-next>Next</button></div><p class="jj-risk-muted">Illustrative only. Full remaining allowance can breach prop-firm equity limits once spreads, commissions or slippage are included. No order placement.</p>';
+const box=document.createElement('div');box.className='jj-risk-workbench';box.innerHTML='<h3>Dynamic Risk · Scenario Explorer</h3><div class="jj-risk-mode" role="group" aria-label="Target mode" style="display:flex;gap:6px;margin:8px 0 12px"><button type="button" data-mode-button="1" aria-pressed="true" style="flex:1">1 Target</button><button type="button" data-mode-button="2" aria-pressed="false" style="flex:1">2 Targets</button></div><input type="hidden" data-target-mode value="1"><div class="jj-risk-fields" data-risk-fields><label data-target1-field>Target 1 ($)<input data-k="target" type="number" min=".01" step="any" value="1000"></label><label data-target2-field>Target 2 ($)<input data-k="target2" type="number" min=".01" step="any" value="500"></label><label>Loss allowance per stage ($)<input data-k="limit" type="number" min=".01" step="any" value="1000"></label><label>Maximum daily loss ($)<input data-k="dailyLimit" type="number" min=".01" step="any" value="500"></label><label>Losses per day<input data-k="tradesPerDay" type="number" min="1" max="100" step="1" value="3"></label><label>Risk reward (1:R)<input data-k="rr" type="number" min=".01" step="any" value="3"></label><label>Close if allowance below ($)<input data-k="floor" type="number" min="0" step="any" value="100"></label><label>Win rate (%)<input data-k="winRate" type="number" min="0" max="100" value="50"></label><label>Scenario depth (1–12)<input data-k="depth" type="number" min="1" max="12" value="6"></label></div><div class="jj-risk-kpis" data-kpis></div><div class="jj-risk-muted" data-prob></div><h4>All scenario paths</h4><select data-filter><option value="all">All paths</option><option value="target">Pass</option><option value="closed">Fail</option><option value="active">Active</option><option value="daily-blocked">Day Block</option></select><div data-table></div><div class="jj-risk-page"><button data-prev>Previous</button><span data-count></span><button data-next>Next</button></div><p class="jj-risk-muted">Illustrative only. Full remaining allowance can breach prop-firm equity limits once spreads, commissions or slippage are included. No order placement.</p>';
 const section=root.querySelector('.chapter-content')||root.querySelector('.sections')||root;section.prepend(box);
 const $=q=>box.querySelector(q);let page=0;const expandedPaths=new Set();
 const settingsKey='jj-risk-calculator09-settings-v1';
@@ -176,33 +176,33 @@ function restoreSettings(){try{const data=JSON.parse(localStorage.getItem(settin
 restoreSettings();
 const vals=()=>{const num=(k,f)=>{const x=Number(box.querySelector('[data-k="'+k+'"]').value);return Number.isFinite(x)?x:f};return {targetMode:box.querySelector('[data-target-mode]').value==='1'?1:2,target:Math.max(.01,num('target',1000)),target2:Math.max(.01,num('target2',500)),limit:Math.max(.01,num('limit',1000)),dailyLimit:Math.max(.01,num('dailyLimit',500)),tradesPerDay:Math.max(1,Math.min(100,Math.floor(num('tradesPerDay',3)))),rr:Math.max(.01,num('rr',3)),floor:Math.max(0,num('floor',100)),winRate:Math.min(100,Math.max(0,num('winRate',50))),depth:Math.max(1,Math.min(12,Math.floor(num('depth',6))))}};
 function calc(path,v){
-let stage=1,stagePnl=0,total=0,prob=1,steps=[],status='active',day=1,dayPnl=0,tradesToday=0;
+let stage=1,stagePnl=0,total=0,prob=1,steps=[],status='active',day=1,dayPnl=0,lossesToday=0;
 for(const c of path){
  if(status!=='active')break;
- if(tradesToday>=v.tradesPerDay){day++;dayPnl=0;tradesToday=0}
+ // A negative day, exhausted daily drawdown, or the loss-count cap closes that day.
+ // The next simulated trade belongs to the following day, not the stopped day.
+ if(dayPnl<-1e-7||lossesToday>=v.tradesPerDay||v.dailyLimit+dayPnl<=1e-7){day++;dayPnl=0;lossesToday=0}
  const left=v.limit+stagePnl,goal=stage===1?v.target:v.target2;
  const dailyLeft=Math.max(0,Math.min(v.dailyLimit,v.dailyLimit+dayPnl));
  if(left<v.floor-1e-7||left<=1e-7){status='closed';break}
- if(dailyLeft<=1e-7){status='daily-blocked';break}
  const risk=Math.min((goal-stagePnl)/v.rr,left,dailyLeft);
- if(risk<=1e-7){status='daily-blocked';break}
- const delta=c==='W'?risk*v.rr:-risk;
- const tradeDay=day,tradeStage=stage;
- stagePnl+=delta;total+=delta;dayPnl+=delta;tradesToday++;
+ if(risk<=1e-7){status='closed';break}
+ const delta=c==='W'?risk*v.rr:-risk,tradeDay=day,tradeStage=stage;
+ stagePnl+=delta;total+=delta;dayPnl+=delta;
+ if(c==='L')lossesToday++;
  prob*=c==='W'?v.winRate/100:1-v.winRate/100;
  let passed=false;
  if(stagePnl>=goal-1e-7){passed=true;if(stage===1&&v.targetMode===2){stage=2;stagePnl=0}else status='target'}
  else if(v.limit+stagePnl<v.floor-1e-7||v.limit+stagePnl<=1e-7)status='closed';
- steps.push({c,risk,pnl:total,stage:tradeStage,stagePnl:passed?goal:stagePnl,passed,day:tradeDay,dayPnl,dailyLeft:Math.max(0,v.dailyLimit+dayPnl)});
+ steps.push({c,risk,pnl:total,stage:tradeStage,stagePnl:passed?goal:stagePnl,passed,day:tradeDay,dayPnl,lossesToday,dailyLeft:Math.max(0,Math.min(v.dailyLimit,v.dailyLimit+dayPnl))});
 }
 const left=v.limit+stagePnl,goal=stage===1?v.target:v.target2;
 if(status==='active'&&(left<v.floor-1e-7||left<=1e-7))status='closed';
-const nextDay=tradesToday>=v.tradesPerDay;
-const nextDailyLeft=nextDay?v.dailyLimit:Math.max(0,v.dailyLimit+dayPnl);
-if(status==='active'&&nextDailyLeft<=1e-7)status='daily-blocked';
+const nextDay=dayPnl<-1e-7||lossesToday>=v.tradesPerDay||v.dailyLimit+dayPnl<=1e-7;
+const nextDailyLeft=nextDay?v.dailyLimit:Math.max(0,Math.min(v.dailyLimit,v.dailyLimit+dayPnl));
 return {path:steps.map(x=>x.c).join(''),pnl:total,stage,stagePnl,left,status,
 risk:status==='active'?Math.max(0,Math.min((goal-stagePnl)/v.rr,left,nextDailyLeft)):0,
-steps,prob,day:day+(nextDay?1:0),dailyLeft:nextDailyLeft,dayPnl:nextDay?0:dayPnl,tradesToday:nextDay?0:tradesToday};
+steps,prob,day:day+(nextDay?1:0),dailyLeft:nextDailyLeft,dayPnl:nextDay?0:dayPnl,lossesToday:nextDay?0:lossesToday};
 }
 function renderRisk(){
 const v=vals(),leaves=[],allPaths=[];
@@ -215,7 +215,7 @@ $('[data-target2-field]').style.display=v.targetMode===1?'none':'';
 $('[data-target1-field]').firstChild.textContent=v.targetMode===1?'Profit target ($)':'Target 1 ($)';
 box.querySelectorAll('[data-mode-button]').forEach(btn=>{const active=btn.dataset.modeButton===String(v.targetMode);btn.setAttribute('aria-pressed',String(active));btn.style.fontWeight=active?'700':'400';btn.style.borderColor=active?'var(--accent,#5589c9)':'';btn.style.background=active?'var(--accent-soft,rgba(85,137,201,.15))':''});
 $('[data-kpis]').innerHTML=['target','closed','active','daily-blocked'].map(k=>'<div>'+(k==='target'?(v.targetMode===1?'PASS T1':'PASS BOTH'):k==='closed'?'FAIL':k==='daily-blocked'?'DAY BLOCK':'ACTIVE')+'<strong>'+counts[k]+'</strong></div>').join('');
-$('[data-prob]').textContent=(v.targetMode===1?'T1 reached within '+v.depth+' trades: '+(probability*100).toFixed(2)+'%.': 'T1 reached: '+(t1Probability*100).toFixed(2)+'% · Both targets reached within '+v.depth+' trades: '+(probability*100).toFixed(2)+'%. T2 starts at stage P&L 0 with a fresh '+tableNumber(v.limit)+' stage allowance; T1 profit remains banked.')+' Independent trades, '+v.winRate+'% win rate. Daily loss cap '+tableNumber(v.dailyLimit)+' with '+v.tradesPerDay+' trades/day; exhausted daily allowance blocks additional trades that day.';
+$('[data-prob]').textContent=(v.targetMode===1?'T1 reached within '+v.depth+' trades: '+(probability*100).toFixed(2)+'%.': 'T1 reached: '+(t1Probability*100).toFixed(2)+'% · Both targets reached within '+v.depth+' trades: '+(probability*100).toFixed(2)+'%. T2 starts at stage P&L 0 with a fresh '+tableNumber(v.limit)+' stage allowance; T1 profit remains banked.')+' Independent trades, '+v.winRate+'% win rate. Daily loss cap '+tableNumber(v.dailyLimit)+' with '+v.tradesPerDay+' losses/day maximum. A negative daily P&L or exhausted daily allowance stops that day; the next simulated trade begins a new day.';
 const filter=$('[data-filter]').value;
 const decisions=[calc('',v),...allPaths].filter(x=>x.status==='active').map(x=>({...x,win:calc(x.path+'W',v),loss:calc(x.path+'L',v)}));
 const shown=decisions.filter(x=>filter==='all'||filter==='active'||x.win.status===filter||x.loss.status===filter).sort((a,b)=>a.steps.length-b.steps.length||a.path.localeCompare(b.path));
