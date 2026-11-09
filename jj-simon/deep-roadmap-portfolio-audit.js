@@ -21,3 +21,17 @@ chapter.sections.push({title:"Fixed acquisition budget versus ten funded account
 ],src:[["0 -_ 10k_m Roadmap","00:46–01:40; 02:02–04:17","1ckmp-lBqjugMPTsGshIi-rAbQVnnjo0m"],["When To Take Payouts","00:07–01:35; 02:53–03:37","1xVDQxTxneJ0EG2AOPgbB0Yp16xc2BCSn"]]});
 renderNav();render();
 })();
+
+// 2026-11-09 cross-lesson source audit. Mathematical illustrations, not measured JJ performance.
+(function(){
+const c=chapters.find(x=>x.slug==="portfolio-risk");
+if(!c||c.sections.some(s=>s.title==="Copy-trading correlation: five accounts are not five independent signals"))return;
+c.sections.push({title:"Copy-trading correlation: five accounts are not five independent signals",points:[
+"JJ distinguishes account executions from opportunities: one market move may be used on both an evaluation and a funded account, with different target distances and even opposite outcomes. Count the market signal, account execution and eventual payout separately.",
+"With five identical copied accounts and an illustrative 60% probability that the shared trade loses, the probability that all five lose together is 60%, not 0.6^5. Five genuinely independent losses would have 7.776% probability of occurring together. The independence case is a comparison, not a description of copying.",
+"Under equal account probabilities and pairwise correlation rho, the variance of the count of wins is n×p×(1−p)×[1+(n−1)rho]. At n=5 and p=40%, variance is 1.2 if independent and 6.0 if perfectly correlated. This changes tail risk; it does not by itself prove lower expected returns.",
+"JJ advises avoiding cross-provider copying without matching balances and payout rules and suggests staggering five newly funded accounts 2/2/1 across three days. These are historical risk heuristics, not validated provider permissions or guaranteed diversification.",
+"His statement that copying increases variance and reduces returns is not a universal mathematical identity. Profit expectations also depend on signal selection, execution costs, size, account-specific targets and payout eligibility. Original chart frames, dashboard settings, historical provider rules and empirical correlations remain unverified."
+],src:[["Managing Risk Across Multiple Accounts","00:27–01:41","1Gr90n0aSePquj1jp9nCkvx29BiUyJj2c"],["How Multi-Account Management Works","00:36–02:40; 08:08–08:20","1VNt39wTnRGpkGLalH-iBi3GHk75hIIUC"],["Position Sizing Strategy Across Your Portfolio","00:05–00:41; 01:47–02:36","1o_XRhHFgmWg_wu4aXL3OR-F6O6e4POFu"],["Expected Value Variance","04:35–06:55","1MPxCD1UKr76oqPKB_0Hxwc1WSmX_K_w1"]]});
+renderNav();render();
+})();
