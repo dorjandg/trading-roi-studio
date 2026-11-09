@@ -178,6 +178,8 @@ group('challenge-settings','01 · Challenge · Parameters',[targetModeBar,box.qu
 group('funded-settings','02 · Funded · Parameters',[box.querySelector('[data-funded-fields]')]);
 group('funded-results','04 · Funded · Results',[box.querySelector('[data-funded-results]')]);
 group('challenge-results','03 · Challenge · Results',[box.querySelector('[data-kpis]'),box.querySelector('[data-multi-results]'),box.querySelector('[data-prob-results]'),box.querySelector('[data-prob]')]);
+// Results order: Challenge, Funded, Combined (preserve existing nodes and saved disclosure states).
+box.querySelector('[data-section="funded-results"]').before(box.querySelector('[data-section="challenge-results"]'));
 const combined=document.createElement('div');combined.dataset.combinedResults='';
 box.querySelector('[data-section="funded-results"]').after(combined);
 group('combined-results','05 · Combined · Final Results',[combined]);
