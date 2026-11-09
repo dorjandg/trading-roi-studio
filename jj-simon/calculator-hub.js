@@ -456,14 +456,20 @@ const optimizeRiskStrategies=()=>{
  const eligible=results.filter(x=>x.roi>=200&&x.net>0&&x.e.unresolved<.1&&x.u.unresolved<.1).sort((a,b)=>b.roi-a.roi);
  const money=n=>'$'+n.toLocaleString('en-US',{maximumFractionDigits:0});
  const explain=(base,candidate)=>{
-  const cfg={...base,...candidate.rule};
-  const paths=['W','LW','LLW','LWL','WW','LLLW','WLW'];
-  const shown=paths.map(path=>({path,x:calc(path,cfg)}));
-  const table=shown.map(({path,x})=>{
-   const trades=x.steps.map((t,i)=>'<tr><td>'+(i+1)+'</td><td>'+t.c+'</td><td>'+money(t.risk)+'</td><td>'+money(t.stagePnl)+'</td><td>'+money(Math.max(0,cfg.limit+t.stagePnl))+'</td><td>'+t.day+'</td></tr>').join('');
-   return '<details style="margin:4px 0"><summary style="cursor:pointer">'+path+' · '+(x.status==='target'?'Target':x.status==='closed'?'Closed':'Still active')+'</summary><div style="overflow-x:auto"><table style="font-size:10px"><thead><tr><th>Trade</th><th>W/L</th><th>Risk</th><th>Phase P&L</th><th>DD left*</th><th>Day</th></tr></thead><tbody>'+trades+'</tbody></table></div></details>';
-  }).join('');
-  return '<p style="font-size:10px;opacity:.8">Rule: '+candidate.name+'. After each outcome, dynamic risk = min(cap, remaining target ÷ RR × factor, remaining drawdown − reserve). Fixed risk stays constant, subject to account limits. *DD left is the simplified static allowance, not a live trailing threshold.</p>'+table;
+ const cfg={...base,...candidate.rule};
+ const fmt=x=>money(Number(x)||0);
+ const node=(path,level)=>{
+  const x=calc(path,cfg),last=x.steps[x.steps.length-1];
+  const status=x.status==='target'?'TARGET REACHED':x.status==='closed'?'ACCOUNT CLOSED':x.steps.length>=cfg.depth?'TRADE LIMIT':'CONTINUE';
+  const nextW=calc(path+'W',cfg),nextL=calc(path+'L',cfg);
+  const wTrade=nextW.steps[path.length],lTrade=nextL.steps[path.length];
+  const nextRisk=wTrade?.risk??lTrade?.risk??0;
+  const outcome=last?'<div>Trade '+x.steps.length+' · '+(last.c==='W'?'WIN':'LOSS')+' · risk '+fmt(last.risk)+' · phase P&L '+fmt(last.stagePnl)+' · day '+last.day+'</div>':'<div>START · phase P&L $0</div>';
+  const done=x.status!=='active'||x.steps.length>=cfg.depth||!nextRisk;
+  return '<div data-opt-node style="margin:5px 0 5px '+Math.min(level,8)*8+'px;padding:6px;border-left:2px solid #8885;border-radius:4px">'+outcome+'<small>Drawdown allowance '+fmt(cfg.limit+x.stagePnl)+' · '+status+'</small>'+(done?'':'<div style="margin-top:5px"><b>Next risk '+fmt(nextRisk)+'</b> · Win +'+fmt(nextRisk*cfg.rr)+' / Loss −'+fmt(nextRisk)+'</div><div style="display:flex;gap:5px;margin-top:4px"><button type="button" data-opt-path="'+path+'W" style="padding:4px 8px;font-size:10px">If WIN</button><button type="button" data-opt-path="'+path+'L" style="padding:4px 8px;font-size:10px">If LOSS</button></div><div data-opt-children></div>')+'</div>';
+ };
+ const encoded=encodeURIComponent(JSON.stringify(cfg));
+ return '<div data-opt-tree data-opt-cfg="'+encoded+'" style="font-size:11px"><p style="font-size:10px;opacity:.8">Rule: '+candidate.name+'. Follow WIN or LOSS to see the exact next trade. Dynamic risk recalculates after each outcome. Drawdown shown is a simplified allowance, not full trailing DD.</p>'+node('',0)+'</div>';
  };
  const rows=eligible.slice(0,10).map((x,i)=>'<tr><td colspan="7"><details style="margin:2px 0"><summary style="cursor:pointer;display:flex;gap:7px;flex-wrap:wrap;align-items:center"><b>#'+(i+1)+'</b><span>'+x.e.name+' / '+x.u.name+'</span><b>ROI '+x.roi.toFixed(1)+'%</b><span>Net '+money(x.net)+'</span></summary><div style="padding:6px 3px"><p style="font-size:11px">Eval pass '+(x.e.pass*100).toFixed(1)+'% · Fund pass '+(x.u.pass*100).toFixed(1)+'% · Expected fees '+money(x.fees)+'</p><details><summary style="cursor:pointer;font-weight:600">Challenge · Trade-by-trade</summary>'+explain(evalBase,x.e)+'</details><details><summary style="cursor:pointer;font-weight:600">Funded · Trade-by-trade</summary>'+explain(fundBase,x.u)+'</details></div></details></td></tr>').join('');
  return '<div style="font-size:11px;margin:7px 0"><b>Advanced scenarios · '+eligible.length+' qualifying / '+results.length+' tested pairs</b><p style="margin:4px 0;opacity:.8">Current edited parameters. Dynamic models recalculate target-based risk after each win/loss, subject to a cap and remaining drawdown reserve. Fixed models included for comparison. Saved presets unchanged.</p><div style="overflow-x:auto"><table style="font-size:11px"><thead><tr><th>#</th><th>Challenge</th><th>Funded</th><th>Eval pass</th><th>Fund pass</th><th>Net</th><th>ROI</th></tr></thead><tbody>'+(rows||'<tr><td colspan="7">No qualifying strategies. Review RR, trade depth and limits.</td></tr>')+'</tbody></table></div><small style="opacity:.75">Exploratory model, max 12 trades/stage. No payout calendar, correlated trades, concurrency or complete trailing drawdown simulation. Unresolved paths are not counted as passes.</small></div>';
@@ -498,6 +504,17 @@ const strategyComparison=()=>{
 
 if(!box.dataset.riskActivationBound){box.dataset.riskActivationBound='1';box.addEventListener('toggle',event=>{const row=event.target;if(!row.matches?.('[data-risk-row]'))return;const id=row.dataset.riskRow;if(!Object.prototype.hasOwnProperty.call(STRATEGIES,id))return;if(row.open)openStrategyRows.add(id);else openStrategyRows.delete(id);try{localStorage.setItem(OPEN_ROWS_KEY,JSON.stringify([...openStrategyRows]))}catch(e){}},true);box.addEventListener('click',event=>{const button=event.target.closest('[data-risk-activate]');if(!button||!box.contains(button))return;event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();const id=button.dataset.riskActivate;if(!Object.prototype.hasOwnProperty.call(STRATEGIES,id))return;activeStrategy=id;try{localStorage.setItem(ACTIVE_KEY,id)}catch(e){}box.querySelectorAll('[data-risk-activate]').forEach(el=>{const on=el.dataset.riskActivate===id;el.textContent=on?'ON':'OFF';el.setAttribute('aria-pressed',String(on));el.style.background=on?'#176c55':'transparent';el.style.borderColor=on?'#36a785':'#667487'});renderRisk();},true);}
 $('[data-strategy-panel]').innerHTML=phaseMode==='combined'?'<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:5px 0"><button type="button" data-optimize-risk style="font-size:11px;padding:6px 10px;border-radius:6px;cursor:pointer">Find Better Strategies</button><small style="opacity:.7">Uses current edited parameters</small></div><div data-optimizer-results></div>'+strategyComparison():'<p style="font-size:11px">Select Combined to compare risk strategies.</p>';
+box.addEventListener('click',event=>{
+ const btn=event.target.closest('[data-opt-path]');if(!btn||!box.contains(btn))return;
+ event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();
+ const tree=btn.closest('[data-opt-tree]'),parent=btn.closest('[data-opt-node]')||btn.parentElement.parentElement;
+ const child=parent.querySelector('[data-opt-children]');if(!tree||!child)return;
+ const cfg=JSON.parse(decodeURIComponent(tree.dataset.optCfg)),path=btn.dataset.optPath;
+ const x=calc(path,cfg),last=x.steps[x.steps.length-1],next=calc(path+'W',cfg).steps[path.length];
+ const risk=next?.risk||0,done=x.status!=='active'||x.steps.length>=cfg.depth||risk<=0;
+ const fmt=n=>'$'+Number(n||0).toLocaleString('en-US',{maximumFractionDigits:2});
+ child.innerHTML='<div data-opt-node style="margin:5px 0 5px 8px;padding:6px;border-left:2px solid #8885"><b>Trade '+x.steps.length+' · '+(last?.c==='W'?'WIN':'LOSS')+'</b> · Risk '+fmt(last?.risk)+' · P&L '+fmt(last?.stagePnl)+' · DD left '+fmt(cfg.limit+x.stagePnl)+' · Day '+(last?.day||1)+'<div>'+(x.status==='target'?'TARGET REACHED':x.status==='closed'?'ACCOUNT CLOSED':x.steps.length>=cfg.depth?'TRADE LIMIT': 'CONTINUE')+'</div>'+(done?'':'<div>Next risk '+fmt(risk)+' · Win +'+fmt(risk*cfg.rr)+' / Loss −'+fmt(risk)+'</div><div style="display:flex;gap:5px;margin-top:4px"><button type="button" data-opt-path="'+path+'W">If WIN</button><button type="button" data-opt-path="'+path+'L">If LOSS</button></div><div data-opt-children></div>')+'</div>';
+},true);
 const optimizerButton=box.querySelector('[data-optimize-risk]');if(optimizerButton)optimizerButton.addEventListener('click',()=>{box.querySelector('[data-optimizer-results]').innerHTML=optimizeRiskStrategies()});
 
 const riskPathDetails=(x,kind)=>'<div style="overflow-x:auto"><table style="width:100%;font-size:11px"><thead><tr><th>#</th><th>Phase</th><th>Day</th><th>Trade</th><th>Risk $</th><th>Trade P&L $</th><th>Phase P&L $</th><th>Target</th></tr></thead><tbody>'+x.steps.map((t,i)=>'<tr><td>'+(i+1)+'</td><td>P'+t.stage+'</td><td>'+t.day+'</td><td>'+(t.c==='W'?'Win':'Loss')+'</td><td>'+tableNumber(t.risk)+'</td><td>'+tableNumber(t.c==='W'?t.risk*(kind==='funded'?fv.rr:v.rr):-t.risk)+'</td><td>'+tableNumber(t.stagePnl)+'</td><td>'+(t.passed?'Hit':'—')+'</td></tr>').join('')+'</tbody></table></div>';
