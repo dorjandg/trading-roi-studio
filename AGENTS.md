@@ -14,3 +14,10 @@
 - If reading the user's last run, prefer connected Google Drive `4Ds Trading Studio Cloud Data` / `4ds-dori.json`, checking `snapshot.entries['4ds:v1:dori:portfolio-simulation-history:v1']`. Confirm timestamps and run kind. Browser-only data is not remotely accessible.
 - Never confuse `Calculate Investment` with `Run Simulation`: they produce different outputs. They share Section 8 history and cloud-saving logic when deployed.
 - New changes can be documented here and in `AI_PROJECT_GUIDE.md`, but avoid putting non-public personal data, API secrets, or sensitive financial account details in repository docs.
+
+## JJ Academy calculator navigation regression rule (2026-11-09)
+- Chapters 08, 09 and 10 are permanent: `calc-prop-vs-live`, `calc-risk-scenarios`, `calc-math-bankroll`. Never remove or rename their slugs.
+- Maintain their membership and order in `jj-simon/academy-organization.js` under `Calculators & Simulations`. Registration in calculator scripts alone is insufficient.
+- Keep the early registration in `jj-simon/index.html` and the end-of-page `jj-calculator-navigation-guard` invariant/recovery check.
+- Before every JJ Academy deployment or index/navigation edit, verify the three slugs are present in curriculum, chapters, desktop navigation and mobile picker. Syntax-check edited JavaScript and verify `index.html` script URLs exist.
+- Never report a GitHub commit as proof that Cloudflare Pages deployed successfully; verify the live site independently when available.
