@@ -274,7 +274,7 @@ for(const c of path){
  const left=v.limit+stagePnl,goal=stage===1?(v.topstepConsistency?Math.max(v.target,bestDay/(v.consistencyRate/100)):v.target):v.target2;
  const dailyLeft=Math.max(0,Math.min(v.dailyLimit,v.dailyLimit+dayPnl));
  if(left<v.floor-1e-7||left<=1e-7){status='closed';break}
- const plannedRisk=v.riskModel==='fixed'?v.baseRisk:v.riskModel==='half'?Math.max(0,(goal-stagePnl)/v.rr/2):v.riskModel==='recovery'?Math.min(450,250*(1+.5*steps.filter(t=>t.stage===stage&&t.c==='L').length)):v.riskModel==='buffer'?(steps.some(t=>t.c==='W')?450:150):v.fixedRisk?v.fixedRisk:v.ftmoFundedBuilder?(steps.some(x=>x.c==='W')?450:150):Math.max(0,(goal-stagePnl)/v.rr);const risk=Math.min(plannedRisk,left,dailyLeft);
+ const plannedRisk=v.riskModel==='adaptive'?Math.max(0,Math.min(v.baseRisk,((goal-stagePnl)/v.rr)*v.targetFactor,Math.max(0,left-v.reserve))):v.riskModel==='fixed'?v.baseRisk:v.riskModel==='half'?Math.max(0,(goal-stagePnl)/v.rr/2):v.riskModel==='recovery'?Math.min(450,250*(1+.5*steps.filter(t=>t.stage===stage&&t.c==='L').length)):v.riskModel==='buffer'?(steps.some(t=>t.c==='W')?450:150):v.fixedRisk?v.fixedRisk:v.ftmoFundedBuilder?(steps.some(x=>x.c==='W')?450:150):Math.max(0,(goal-stagePnl)/v.rr);const risk=Math.min(plannedRisk,left,dailyLeft);
  if(risk<=1e-7){status='closed';break}
  const delta=c==='W'?risk*v.rr:-risk,tradeDay=day,tradeStage=stage;
  stagePnl+=delta;total+=delta;dayPnl+=delta;dailyTotals[day]=(dailyTotals[day]||0)+delta;bestDay=Math.max(0,...Object.values(dailyTotals));
@@ -425,23 +425,38 @@ resultGroup('03 · Spending',
 resultGroup('04 · Profit & ROI',
  metricFund('Expected net profit',modelCash(modelNet),'Expected payout cash minus expected total fees.')+
  metricFund('Net ROI',modelRoi===null?'—':modelRoi.toFixed(1)+'%','Expected net profit divided by expected total fees.'));
+
 const optimizeRiskStrategies=()=>{
- const evalRisks=[600,700,800,900,1000,1100,1200,1300],fundRisks=[500,600,700,800,900,1000,1100,1200];
  const test=cfg=>{let pass=0,unresolved=0;const walk=p=>{const x=calc(p,cfg);if(x.status!=='active'||x.steps.length>=cfg.depth){if(x.status==='target')pass+=x.prob;else if(x.status==='active')unresolved+=x.prob;return}walk(p+'W');walk(p+'L')};walk('');return {pass,unresolved}};
- const baseEval={...v,topstepConsistency:firmType==='topstep',consistencyRate:firmType==='topstep'?Math.max(1,Math.min(100,Number(box.querySelector('[data-consistency-limit]')?.value)||55)):undefined};
- const baseFund={...fv,topstepConsistency:false};
- const eTests=evalRisks.map(risk=>({risk,...test({...baseEval,riskModel:'fixed',baseRisk:risk,fixedRisk:undefined})}));
- const fTests=fundRisks.map(risk=>({risk,...test({...baseFund,riskModel:'fixed',baseRisk:risk,fixedRisk:undefined,ftmoFundedBuilder:undefined})}));
- const results=[];for(const e of eTests)for(const u of fTests){if(e.pass<=0||u.pass<=0)continue;
- const buys=replacementMode?allocationTarget/e.pass:nn,funded=replacementMode?allocationTarget:nn*e.pass;
- const fees=buys*v.accountCost+funded*activationFee,payout=funded*u.pass*fv.target*splitPct,net=payout-fees,roi=fees>0?net/fees*100:null;
- if(Number.isFinite(roi))results.push({e,u,net,roi,fees,payout});
+ const consistency=firmType==='topstep'?Math.max(1,Math.min(100,Number(box.querySelector('[data-consistency-limit]')?.value)||55)):undefined;
+ const evalBase={...v,topstepConsistency:firmType==='topstep',consistencyRate:consistency,fixedRisk:undefined};
+ const fundBase={...fv,topstepConsistency:false,fixedRisk:undefined,ftmoFundedBuilder:undefined};
+ const makeCandidates=base=>{
+  const max=Math.max(50,base.limit-base.floor),out=[];
+  const caps=[.35,.5,.65,.8,1].map(x=>Math.max(50,Math.round(max*x/50)*50));
+  for(const cap of [...new Set(caps)]){
+   out.push({name:'Fixed $'+cap,rule:{riskModel:'fixed',baseRisk:cap}});
+   for(const factor of [.75,1,1.25])for(const reservePart of [0,.15,.3]){
+    const reserve=Math.round(base.limit*reservePart/50)*50;
+    out.push({name:'Dynamic $'+cap+' cap · '+factor+'× target risk · $'+reserve+' reserve',rule:{riskModel:'adaptive',baseRisk:cap,targetFactor:factor,reserve}});
+   }
+  }
+  return out.map(o=>({...o,...test({...base,...o.rule})})).filter(o=>o.pass>0);
+ };
+ const evals=makeCandidates(evalBase),funds=makeCandidates(fundBase);
+ const results=[];
+ for(const e of evals)for(const u of funds){
+  const buys=replacementMode?allocationTarget/e.pass:nn;
+  const funded=replacementMode?allocationTarget:nn*e.pass;
+  const fees=buys*v.accountCost+funded*activationFee;
+  const payout=funded*u.pass*fv.target*splitPct;
+  const net=payout-fees,roi=fees>0?net/fees*100:null;
+  if(Number.isFinite(roi))results.push({e,u,fees,payout,net,roi});
  }
- results.sort((a,b)=>b.roi-a.roi);
- const eligible=results.filter(x=>x.roi>=200&&x.net>0&&x.e.unresolved<.1&&x.u.unresolved<.1);
+ const eligible=results.filter(x=>x.roi>=200&&x.net>0&&x.e.unresolved<.1&&x.u.unresolved<.1).sort((a,b)=>b.roi-a.roi);
  const money=n=>'$'+n.toLocaleString('en-US',{maximumFractionDigits:0});
- const rows=eligible.slice(0,8).map((x,i)=>'<tr><td>'+(i+1)+'</td><td>'+money(x.e.risk)+'</td><td>'+money(x.u.risk)+'</td><td>'+(100*x.e.pass).toFixed(1)+'%</td><td>'+(100*x.u.pass).toFixed(1)+'%</td><td>'+money(x.net)+'</td><td>'+x.roi.toFixed(1)+'%</td></tr>').join('');
- return '<div style="font-size:11px;margin:7px 0"><b>Optimizer · '+eligible.length+' qualifying of '+results.length+' completed combinations</b><p style="opacity:.8;margin:4px 0">Uses current unsaved edits, including both RRs, targets, fees and trade depth. Fixed risk grid: evaluation $600–$1,300; funded $500–$1,200. Filters: ROI ≥200%, positive expected net, unresolved probability below 10% in each stage. No settings changed.</p><div style="overflow-x:auto"><table style="font-size:11px"><thead><tr><th>#</th><th>Eval risk</th><th>Fund risk</th><th>Eval pass</th><th>Fund pass</th><th>Net</th><th>ROI</th></tr></thead><tbody>'+(rows||'<tr><td colspan="7">No qualifying strategy with these parameters.</td></tr>')+'</tbody></table></div><small style="opacity:.75">Screening only: no account concurrency, payout delays or correlated trades. Unresolved paths excluded from pass rate.</small></div>';
+ const rows=eligible.slice(0,10).map((x,i)=>'<tr><td>'+(i+1)+'</td><td>'+x.e.name+'</td><td>'+x.u.name+'</td><td>'+(x.e.pass*100).toFixed(1)+'%</td><td>'+(x.u.pass*100).toFixed(1)+'%</td><td>'+money(x.net)+'</td><td>'+x.roi.toFixed(1)+'%</td></tr>').join('');
+ return '<div style="font-size:11px;margin:7px 0"><b>Advanced scenarios · '+eligible.length+' qualifying / '+results.length+' tested pairs</b><p style="margin:4px 0;opacity:.8">Current edited parameters. Dynamic models recalculate target-based risk after each win/loss, subject to a cap and remaining drawdown reserve. Fixed models included for comparison. Saved presets unchanged.</p><div style="overflow-x:auto"><table style="font-size:11px"><thead><tr><th>#</th><th>Challenge</th><th>Funded</th><th>Eval pass</th><th>Fund pass</th><th>Net</th><th>ROI</th></tr></thead><tbody>'+(rows||'<tr><td colspan="7">No qualifying strategies. Review RR, trade depth and limits.</td></tr>')+'</tbody></table></div><small style="opacity:.75">Exploratory model, max 12 trades/stage. No payout calendar, correlated trades, concurrency or complete trailing drawdown simulation. Unresolved paths are not counted as passes.</small></div>';
 };
 const strategyComparison=()=>{
  const candidates=[['current','Dynamic + buffer','Target ÷ RR','150 until first win, then 450',{},{}],['fixedlow','Fixed low','250 every trade','150 every trade',{riskModel:'fixed',baseRisk:250},{riskModel:'fixed',baseRisk:150}],['half','Half-target','Half remaining target ÷ RR','150 every trade',{riskModel:'half'},{riskModel:'fixed',baseRisk:150}],['recovery','Recovery + buffer','250 + 50% per phase loss; cap 450','150 until first win, then 450',{riskModel:'recovery'},{riskModel:'buffer'}],['fixedhigh','Fixed high','350 every trade','450 every trade',{riskModel:'fixed',baseRisk:350},{riskModel:'fixed',baseRisk:450}]];
