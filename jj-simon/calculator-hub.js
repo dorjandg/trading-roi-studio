@@ -206,7 +206,7 @@ const consistencyKey='jj-risk-calculator09-topstep-consistency-v1';
 let accountMode='single',phaseMode='evaluation',currentFirm='ftmo';
 const firmSelect=firmBar.querySelector('[data-firm-type]');
 const captureProfile=()=>{const data={mode:$('[data-target-mode]').value,fields:{},accountMode,accountCount:$('[data-account-count]').value,parallelAccounts:parallelInput.value,signalsPerDay:signalsInput.value,phaseMode,purchaseStrategy:purchaseStrategyMode,funded:{}};box.querySelectorAll('[data-funded]').forEach(el=>data.funded[el.dataset.funded]=el.value);box.querySelectorAll('[data-k]').forEach(el=>data.fields[el.dataset.k]=el.value);return data};
-const firmDefaults=firm=>firm==='ftmo'?{mode:'2',accountMode:'multi',accountCount:20,parallelAccounts:20,signalsPerDay:7,fields:{target:1000,target2:500,limit:1000,dailyLimit:500},funded:{target:1000,limit:1000,dailyLimit:500,split:80}}:{mode:'1',accountMode:'multi',accountCount:5,parallelAccounts:5,signalsPerDay:7,fields:{target:3000,limit:2000},funded:{target:4000,limit:2000,split:75}};
+const firmDefaults=firm=>firm==='ftmo'?{mode:'2',accountMode:'multi',accountCount:20,parallelAccounts:20,signalsPerDay:7,fields:{target:1000,target2:500,limit:1000,dailyLimit:500},funded:{target:1800,limit:1000,dailyLimit:500,split:80}}:{mode:'1',accountMode:'multi',accountCount:5,parallelAccounts:5,signalsPerDay:7,fields:{target:3000,limit:2000},funded:{target:4000,limit:2000,split:75}};
 const readProfiles=()=>{try{const p=JSON.parse(localStorage.getItem(firmSettingsKey)||'{}');return p&&typeof p==='object'?p:{}}catch(e){return {}}};
 const writeProfile=(firm,data)=>{try{const p=readProfiles();p[firm]=data;localStorage.setItem(firmSettingsKey,JSON.stringify(p))}catch(e){}};
 const applyProfile=data=>{if(!data||typeof data!=='object')return;
@@ -224,7 +224,7 @@ function restoreSettings(){try{const legacy=JSON.parse(localStorage.getItem(sett
 if(legacy&&!profiles[firm])writeProfile(firm,legacy);
 applyProfile({...firmDefaults(firm),...(readProfiles()[firm]||legacy||{}),fields:{...firmDefaults(firm).fields,...((readProfiles()[firm]||legacy||{}).fields||{})},funded:{...firmDefaults(firm).funded,...((readProfiles()[firm]||legacy||{}).funded||{})}});
 }catch(e){}}
-restoreSettings();strategySelect.value=purchaseStrategyMode;strategySelect.addEventListener('change',()=>{purchaseStrategyMode=strategySelect.value;saveSettings();renderRisk()});
+restoreSettings();try{if(!localStorage.getItem('jj-risk-calculator09-ftmo-target1800-v1')){const profile=readProfiles().ftmo;if(profile){profile.funded={...(profile.funded||{}),target:1800};writeProfile('ftmo',profile)}if(currentFirm==='ftmo'){const el=box.querySelector('[data-funded="target"]');if(el)el.value='1800';saveSettings()}localStorage.setItem('jj-risk-calculator09-ftmo-target1800-v1','1')}}catch(e){}strategySelect.value=purchaseStrategyMode;strategySelect.addEventListener('change',()=>{purchaseStrategyMode=strategySelect.value;saveSettings();renderRisk()});
 firmSelect.addEventListener('change',()=>{const next=firmSelect.value;if(next===currentFirm)return;writeProfile(currentFirm,captureProfile());currentFirm=next;const profile=readProfiles()[next];if(profile)applyProfile(profile);else{applyProfile(firmDefaults(next))}saveSettings();page=0;expandedPaths.clear();renderRisk()});
 signalsInput.addEventListener('change',()=>{saveSettings();renderRisk()});parallelInput.addEventListener('change',()=>{saveSettings();renderRisk()});
 
