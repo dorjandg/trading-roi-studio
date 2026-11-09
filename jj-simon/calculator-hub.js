@@ -199,6 +199,7 @@ const firmSettingsKey='jj-risk-calculator09-firm-profiles-v1';
 let accountMode='single',phaseMode='evaluation',currentFirm='ftmo';
 const firmSelect=firmBar.querySelector('[data-firm-type]');
 const captureProfile=()=>{const data={mode:$('[data-target-mode]').value,fields:{},accountMode,accountCount:$('[data-account-count]').value,parallelAccounts:parallelInput.value,signalsPerDay:signalsInput.value,phaseMode,funded:{}};box.querySelectorAll('[data-funded]').forEach(el=>data.funded[el.dataset.funded]=el.value);box.querySelectorAll('[data-k]').forEach(el=>data.fields[el.dataset.k]=el.value);return data};
+const firmDefaults=firm=>firm==='ftmo'?{mode:'2',accountMode:'multi',accountCount:20,parallelAccounts:20,signalsPerDay:7,fields:{target:1000,target2:500,limit:1000,dailyLimit:500},funded:{target:1000,limit:1000,dailyLimit:500,split:80}}:{mode:'1',accountMode:'multi',accountCount:5,parallelAccounts:5,signalsPerDay:7,fields:{target:3000,limit:2000},funded:{target:4000,limit:2000,split:75}};
 const readProfiles=()=>{try{const p=JSON.parse(localStorage.getItem(firmSettingsKey)||'{}');return p&&typeof p==='object'?p:{}}catch(e){return {}}};
 const writeProfile=(firm,data)=>{try{const p=readProfiles();p[firm]=data;localStorage.setItem(firmSettingsKey,JSON.stringify(p))}catch(e){}};
 const applyProfile=data=>{if(!data||typeof data!=='object')return;
@@ -214,10 +215,10 @@ if(data.fields)box.querySelectorAll('[data-k]').forEach(el=>{const value=data.fi
 function saveSettings(){try{const data=captureProfile();writeProfile(currentFirm,data);localStorage.setItem(settingsKey,JSON.stringify({...data,firmType:currentFirm}))}catch(e){}}
 function restoreSettings(){try{const legacy=JSON.parse(localStorage.getItem(settingsKey)||'null');const profiles=readProfiles();const firm=['ftmo','topstep'].includes(legacy?.firmType)?legacy.firmType:'ftmo';currentFirm=firm;firmSelect.value=firm;
 if(legacy&&!profiles[firm])writeProfile(firm,legacy);
-applyProfile(readProfiles()[firm]||legacy);
+applyProfile({...firmDefaults(firm),...(readProfiles()[firm]||legacy||{}),fields:{...firmDefaults(firm).fields,...((readProfiles()[firm]||legacy||{}).fields||{})},funded:{...firmDefaults(firm).funded,...((readProfiles()[firm]||legacy||{}).funded||{})}});
 }catch(e){}}
 restoreSettings();
-firmSelect.addEventListener('change',()=>{const next=firmSelect.value;if(next===currentFirm)return;writeProfile(currentFirm,captureProfile());currentFirm=next;const profile=readProfiles()[next];if(profile)applyProfile(profile);else{applyProfile({mode:next==='ftmo'?'2':'1',accountMode:'multi',accountCount:next==='ftmo'?20:5,fields:{target:next==='ftmo'?1000:3000,target2:500},funded:{}})}saveSettings();page=0;expandedPaths.clear();renderRisk()});
+firmSelect.addEventListener('change',()=>{const next=firmSelect.value;if(next===currentFirm)return;writeProfile(currentFirm,captureProfile());currentFirm=next;const profile=readProfiles()[next];if(profile)applyProfile(profile);else{applyProfile(firmDefaults(next))}saveSettings();page=0;expandedPaths.clear();renderRisk()});
 signalsInput.addEventListener('change',()=>{saveSettings();renderRisk()});parallelInput.addEventListener('change',()=>{saveSettings();renderRisk()});
 
 const vals=()=>{const num=(k,f)=>{const x=Number(box.querySelector('[data-k="'+k+'"]').value);return Number.isFinite(x)?x:f};return {targetMode:box.querySelector('[data-target-mode]').value==='1'?1:2,target:Math.max(.01,num('target',1000)),target2:Math.max(.01,num('target2',500)),limit:Math.max(.01,num('limit',1000)),dailyLimit:Math.max(.01,num('dailyLimit',500)),tradesPerDay:Math.max(1,Math.min(100,Math.floor(num('tradesPerDay',3)))),rr:Math.max(.01,num('rr',3)),floor:Math.max(0,num('floor',100)),winRate:Math.min(100,Math.max(0,num('winRate',50))),accountCost:Math.max(0,num('accountCost',100)),depth:Math.max(1,Math.min(12,Math.floor(num('depth',6))))}};
@@ -301,7 +302,7 @@ $('[data-funded-results]').innerHTML='<div class="jj-risk-results-grid">'+funded
 
 $('[data-combined-results]').innerHTML=phaseMode==='combined'?'<div class="jj-risk-results-grid">'+combinedCards+'</div>':'';box.querySelector('[data-section="combined-results"]').style.display=phaseMode==='combined'?'':'none';box.querySelector('[data-section="funded-settings"]').style.display=phaseMode==='evaluation'?'none':'';box.querySelector('[data-section="funded-results"]').style.display=phaseMode==='evaluation'?'none':'';box.querySelector('[data-section="challenge-results"]').style.display=phaseMode==='funded'?'none':'';box.querySelector('[data-section="paths"]').style.display=phaseMode==='funded'?'none':'';
 
-const firmType=firmBar.querySelector('[data-firm-type]').value;firmBar.querySelector('[data-firm-rule]').textContent=firmType==='ftmo'?'Shared active cap: challenges + funded':'Funded cap only; replace evaluations until funded target';
+const firmType=firmBar.querySelector('[data-firm-type]').value;firmBar.querySelector('[data-firm-rule]').textContent=firmType==='ftmo'?'Shared active cap: challenges + funded':'Funded cap only; replace evaluations until funded target';firmBar.querySelector('[data-firm-rule]').title='Firm defaults are applied to new profiles only. Your saved values are preserved.';
 const allocationPanel=box.querySelector('[data-allocation-preview]');if(allocationPanel)allocationPanel.style.display=phaseMode==='combined'?'':'none';const stagesPanel=box.querySelector('[data-section="stages-preview"]');if(stagesPanel)stagesPanel.style.display='';
 const funnelSection=box.querySelector('[data-section="funnel"]');
 funnelSection.style.display=phaseMode==='combined'?'':'none';
