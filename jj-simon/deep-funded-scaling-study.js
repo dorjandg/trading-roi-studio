@@ -47,3 +47,20 @@ chapter.sections.push({title,points:[
 ],src:[["30k_month -_ 100k_month Scaling","03:24–03:35; 05:30–05:44; 07:19–11:05; 11:49–13:40","1gKSrmr2naboKQWfZmHCF7OBrArdhf0s0"],["How To Manage Different Drawdown Rules","00:12–00:42; 01:11–01:28","1PMHg2wWs7Vr-x9YbQ-cSVE_RAf-rq3tC"]]});
 renderNav();render();
 })();
+
+
+(function(){
+const chapter=chapters.find(c=>c.slug==="account-management");
+if(!chapter||chapter.sections.some(s=>s.title==="Signal count versus account executions: when copying changes portfolio risk"))return;
+chapter.sections.push({title:"Signal count versus account executions: when copying changes portfolio risk",points:[
+"Module 17 distinguishes an independent trading signal from an execution in each account. A single setup copied to five accounts is five account executions but only one market outcome; it does not create five independent opportunities.",
+"How Many Trades Per Day? describes three main new-funded opportunity types (overnight, New York AM 100-point, and a paired 50-point route), generally one main trade per account per day. The paired 50-point route is an explicit exception, so 'three trades' must not be treated as a universal portfolio-wide cap.",
+"Evaluation accounts may take repeated fair-price-directed displacement attempts, with a suggested ceiling of three attempts at the same reversion thesis. The course prefers BOS confirmation for scarce funded accounts, while permitting more displacement exposure as account inventory grows. These win-rate rankings were asserted, not empirically verified.",
+"Managing Risk Across Multiple Accounts recommends staggering five newly funded accounts across three days (2, 2, 1) rather than copying all five immediately. It cautions that firm rules, balances and payout stages may differ, and recommends copying only when independent opportunities cannot cover available accounts.",
+"Copying five accounts each risking $1,000 on one losing setup produces a simultaneous $5,000 portfolio loss. This is exposure concentration, not five independent trials. Original charts, dashboard settings, provider copying rules, session timezone and historical profitability remain unverified."
+],src:[
+["How Many Trades Per Day?","00:05–00:24; 00:42–01:18; 02:27–03:25; 03:50–04:21","1cdESUiP_6dF8s8VZjVKBmVa2a8ey4kve"],
+["How Multi-Account Management Works","04:40–05:07; 07:47–08:20; 13:22–13:55; 15:42–15:59","1VNt39wTnRGpkGLalH-iBi3GHk75hIIUC"],
+["Managing Risk Across Multiple Accounts","00:27–01:07; 01:23–01:41","1Gr90n0aSePquj1jp9nCkvx29BiUyJj2c"]
+]});renderNav();render();
+})();
