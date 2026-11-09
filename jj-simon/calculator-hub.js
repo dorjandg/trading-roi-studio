@@ -243,10 +243,10 @@ for(const c of path){
  if(risk<=1e-7){status='closed';break}
  const delta=c==='W'?risk*v.rr:-risk,tradeDay=day,tradeStage=stage;
  stagePnl+=delta;total+=delta;dayPnl+=delta;dailyTotals[day]=(dailyTotals[day]||0)+delta;bestDay=Math.max(0,...Object.values(dailyTotals));
- if(c==='L')lossesToday++;if(v.topstepConsistency&&dayPnl>=1500-1e-7){day++;dayPnl=0;lossesToday=0}
+ if(c==='L')lossesToday++;if(v.topstepConsistency&&dayPnl>=v.target*(v.consistencyRate/100)-1e-7){day++;dayPnl=0;lossesToday=0}
  prob*=c==='W'?v.winRate/100:1-v.winRate/100;
  let passed=false;
- if(stagePnl>=goal-1e-7&&(!v.topstepConsistency||(Object.values(dailyTotals).filter(n=>n>=1500-1e-7).length>=2&&bestDay<=stagePnl*(v.consistencyRate/100)+1e-7))){passed=true;if(stage===1&&v.targetMode===2){stage=2;stagePnl=0}else status='target'}
+ if(stagePnl>=goal-1e-7&&(!v.topstepConsistency||(Object.values(dailyTotals).filter(n=>n>1e-7).length>=2&&bestDay<=stagePnl*(v.consistencyRate/100)+1e-7))){passed=true;if(stage===1&&v.targetMode===2){stage=2;stagePnl=0}else status='target'}
  else if(v.limit+stagePnl<v.floor-1e-7||v.limit+stagePnl<=1e-7)status='closed';
  steps.push({c,risk,pnl:total,stage:tradeStage,stagePnl:passed?goal:stagePnl,passed,day:tradeDay,dayPnl,lossesToday,dailyLeft:Math.max(0,Math.min(v.dailyLimit,v.dailyLimit+dayPnl))});
 }
