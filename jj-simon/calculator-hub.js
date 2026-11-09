@@ -194,11 +194,30 @@ box.addEventListener('toggle',e=>{if(!e.target.matches||!e.target.matches('.jj-r
 const $=q=>box.querySelector(q);let page=0;const expandedPaths=new Set();
 const parallelInput=document.createElement('input');parallelInput.type='number';parallelInput.min='1';parallelInput.max='100';parallelInput.step='1';parallelInput.value='1';parallelInput.dataset.parallelAccounts='';parallelInput.style.cssText='width:64px;padding:4px;border:1px solid #8886;border-radius:5px;background:transparent;color:inherit';
 const signalsInput=document.createElement('input');signalsInput.type='number';signalsInput.min='1';signalsInput.max='100';signalsInput.step='1';signalsInput.value='5';signalsInput.dataset.signalsPerDay='';signalsInput.style.cssText='width:64px;padding:4px;border:1px solid #8886;border-radius:5px;background:transparent;color:inherit';
-const settingsKey='jj-risk-calculator09-settings-v1';let accountMode='single';let phaseMode='evaluation';
-function saveSettings(){try{const data={mode:$('[data-target-mode]').value,fields:{},accountMode,accountCount:$('[data-account-count]').value,parallelAccounts:parallelInput.value,signalsPerDay:signalsInput.value,firmType:firmBar.querySelector('[data-firm-type]').value,phaseMode,funded:{}};box.querySelectorAll('[data-funded]').forEach(el=>data.funded[el.dataset.funded]=el.value);box.querySelectorAll('[data-k]').forEach(el=>{data.fields[el.dataset.k]=el.value});localStorage.setItem(settingsKey,JSON.stringify(data))}catch(err){}}
-function restoreSettings(){try{const data=JSON.parse(localStorage.getItem(settingsKey)||'null');if(!data||typeof data!=='object')return;if(data.accountMode==='multi')accountMode='multi';if(['ftmo','topstep'].includes(data.firmType))firmBar.querySelector('[data-firm-type]').value=data.firmType;if(Number.isFinite(Number(data.signalsPerDay))&&Number(data.signalsPerDay)>=1)signalsInput.value=String(Math.max(1,Math.min(100,Math.floor(Number(data.signalsPerDay)))));if(Number.isFinite(Number(data.parallelAccounts))&&Number(data.parallelAccounts)>=1)parallelInput.value=String(Math.max(1,Math.min(100,Math.floor(Number(data.parallelAccounts)))));if(['evaluation','funded','combined'].includes(data.phaseMode))phaseMode=data.phaseMode;if(data.funded)box.querySelectorAll('[data-funded]').forEach(el=>{const x=data.funded[el.dataset.funded];if(x!==undefined&&Number.isFinite(Number(x)))el.value=String(x)});if(Number.isFinite(Number(data.accountCount)))$('[data-account-count]').value=String(Math.max(2,Math.min(100,Math.floor(Number(data.accountCount)))));if(data.mode==='1'||data.mode==='2')$('[data-target-mode]').value=data.mode;if(data.fields&&typeof data.fields==='object'){box.querySelectorAll('[data-k]').forEach(el=>{const value=data.fields[el.dataset.k];if(value!==undefined&&value!==null&&value!==''&&Number.isFinite(Number(value)))el.value=String(value)})}}catch(err){}}
+const settingsKey='jj-risk-calculator09-settings-v1';
+const firmSettingsKey='jj-risk-calculator09-firm-profiles-v1';
+let accountMode='single',phaseMode='evaluation',currentFirm='ftmo';
+const firmSelect=firmBar.querySelector('[data-firm-type]');
+const captureProfile=()=>{const data={mode:$('[data-target-mode]').value,fields:{},accountMode,accountCount:$('[data-account-count]').value,parallelAccounts:parallelInput.value,signalsPerDay:signalsInput.value,phaseMode,funded:{}};box.querySelectorAll('[data-funded]').forEach(el=>data.funded[el.dataset.funded]=el.value);box.querySelectorAll('[data-k]').forEach(el=>data.fields[el.dataset.k]=el.value);return data};
+const readProfiles=()=>{try{const p=JSON.parse(localStorage.getItem(firmSettingsKey)||'{}');return p&&typeof p==='object'?p:{}}catch(e){return {}}};
+const writeProfile=(firm,data)=>{try{const p=readProfiles();p[firm]=data;localStorage.setItem(firmSettingsKey,JSON.stringify(p))}catch(e){}};
+const applyProfile=data=>{if(!data||typeof data!=='object')return;
+accountMode=data.accountMode==='multi'?'multi':'single';
+if(['evaluation','funded','combined'].includes(data.phaseMode))phaseMode=data.phaseMode;
+const applyNum=(el,value,min,max)=>{if(el&&value!==undefined&&value!==null&&value!==''&&Number.isFinite(Number(value)))el.value=String(Math.max(min,Math.min(max,Math.floor(Number(value)))))};
+applyNum(signalsInput,data.signalsPerDay,1,100);applyNum(parallelInput,data.parallelAccounts,1,100);
+applyNum($('[data-account-count]'),data.accountCount,2,100);
+if(data.mode==='1'||data.mode==='2')$('[data-target-mode]').value=data.mode;
+if(data.funded)box.querySelectorAll('[data-funded]').forEach(el=>{const value=data.funded[el.dataset.funded];if(value!==undefined&&value!==null&&value!==''&&Number.isFinite(Number(value)))el.value=String(value)});
+if(data.fields)box.querySelectorAll('[data-k]').forEach(el=>{const value=data.fields[el.dataset.k];if(value!==undefined&&value!==null&&value!==''&&Number.isFinite(Number(value)))el.value=String(value)});
+};
+function saveSettings(){try{const data=captureProfile();writeProfile(currentFirm,data);localStorage.setItem(settingsKey,JSON.stringify({...data,firmType:currentFirm}))}catch(e){}}
+function restoreSettings(){try{const legacy=JSON.parse(localStorage.getItem(settingsKey)||'null');const profiles=readProfiles();const firm=['ftmo','topstep'].includes(legacy?.firmType)?legacy.firmType:'ftmo';currentFirm=firm;firmSelect.value=firm;
+if(legacy&&!profiles[firm])writeProfile(firm,legacy);
+applyProfile(readProfiles()[firm]||legacy);
+}catch(e){}}
 restoreSettings();
-firmBar.querySelector('[data-firm-type]').addEventListener('change',()=>{saveSettings();renderRisk()});
+firmSelect.addEventListener('change',()=>{const next=firmSelect.value;if(next===currentFirm)return;writeProfile(currentFirm,captureProfile());currentFirm=next;const profile=readProfiles()[next];if(profile)applyProfile(profile);else{applyProfile({mode:next==='ftmo'?'2':'1',accountMode:'multi',accountCount:next==='ftmo'?20:5,fields:{target:next==='ftmo'?1000:3000,target2:500},funded:{}})}saveSettings();page=0;expandedPaths.clear();renderRisk()});
 signalsInput.addEventListener('change',()=>{saveSettings();renderRisk()});parallelInput.addEventListener('change',()=>{saveSettings();renderRisk()});
 
 const vals=()=>{const num=(k,f)=>{const x=Number(box.querySelector('[data-k="'+k+'"]').value);return Number.isFinite(x)?x:f};return {targetMode:box.querySelector('[data-target-mode]').value==='1'?1:2,target:Math.max(.01,num('target',1000)),target2:Math.max(.01,num('target2',500)),limit:Math.max(.01,num('limit',1000)),dailyLimit:Math.max(.01,num('dailyLimit',500)),tradesPerDay:Math.max(1,Math.min(100,Math.floor(num('tradesPerDay',3)))),rr:Math.max(.01,num('rr',3)),floor:Math.max(0,num('floor',100)),winRate:Math.min(100,Math.max(0,num('winRate',50))),accountCost:Math.max(0,num('accountCost',100)),depth:Math.max(1,Math.min(12,Math.floor(num('depth',6))))}};
