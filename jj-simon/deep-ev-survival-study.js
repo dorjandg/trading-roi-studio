@@ -12,5 +12,19 @@ if(jjRuinChapter && !jjRuinChapter.sections.some(s=>s.title==='First payout is n
 const jjConditional=jjDeepStudy.find(x=>x.slug==='risk-math')||jjDeepStudy[0];
 if(jjConditional&&!jjConditional.sections.some(s=>s.title==='Four qualifying days: success probability is not ruin probability')) jjConditional.sections.push({title:'Four qualifying days: success probability is not ruin probability',points:["In How To Trade Funded Accounts (04:11–05:52), JJ uses 0.85^4≈52.2% but calls it the probability of losing the account. Under the stated independent 85%-success assumption, 52.2% is the chance all four attempts succeed; 47.8% is the chance at least one attempt fails. Neither is automatically the account-ruin probability.","The lesson's eight trades for four wins at 50% is an expected count, not a worst-case limit. Loss streaks remain possible and a finite drawdown cushion can be exhausted. Reattempt rules, qualifying-day thresholds and current provider requirements must be checked.","The separate How To Calculate YOUR EV lesson (03:00–07:58) gives a conditional two-attempt model: P(success)=p1+(1−p1)×p2. At p1=20% and p2=16.5%, success is 33.2%; after a first −$1,000 trade and a second +$4,000 trade, cumulative P&L is +$3,000, not +$4,000. Those probabilities are course assumptions, not audited performance.","JJ's recommendation to buy replacement evaluations before payout settlement depends on anticipated cash and is not a guaranteed financing source. Keep expected payout, approved withdrawal and settled cash separate."],src:[["How To Trade Funded Accounts","03:00–08:30","17fchw1QnO1uG_FxO5QDL-p6-2fB35R49"],["How To Calculate YOUR EV","03:00–10:40","1CgVsc-Ej-ybGC6UxSbz8wBDvgYa2c0Da"]]});
 
+
+// Module 7, Prop Firm Math Stats, 2026-11-09: source-grounded original paraphrase, not verified audio/chart or current provider policy.
+jjDeepStudy.push({slug:"risk-math",sections:[{
+ title:"Prop Firm Math Stats — 0.5% no-payout threshold requires 24 independent attempts",
+ points:[
+ "In JJ's Prop Firm Math Stats lesson, the illustrative evaluation pass probability is 50% and the conditional funded payout probability is 40%. Their product is a 20% payout probability per purchased evaluation; this is not an account-ruin probability.",
+ "Under independent identical attempts, the probability of no payout from n purchases is (1 − 0.20)^n. Five attempts: 32.768%; fifteen attempts: 3.518%; twenty-four attempts: approximately 0.472%. Therefore the lesson's preferred threshold below 0.5% requires at least 24 attempts in this model, not fifteen.",
+ "At $100 per evaluation, 24 purchases cost $2,400 before activation, resets, subscriptions or other charges. A payout is not necessarily portfolio breakeven; net cash return depends on the actual payout amount and all realized fees.",
+ "The lesson also describes a 30% chance of a $2,000 outcome as $1,000 expected value. The direct multiplication is $600; the original chart or audio needs checking before assigning the discrepancy to JJ rather than transcription.",
+ "JJ's proposed $3,000 funded-account value after an initial $4,000 profit assumes future qualifying days and withdrawals. Treat later payouts as contingent until approved and settled; shared signals can invalidate the independence assumption."
+ ],
+ src:[["Prop Firm Math Stats","01:31–02:55; 04:55–07:31","1bzGIqxU1BCDPqKblORKaCUsjRFMsMBVs"],["How To Trade Funded Accounts","03:18–07:46","17fchw1QnO1uG_FxO5QDL-p6-2fB35R49"]]
+}]});
+
 for(const block of jjDeepStudy){const chapter=chapters.find(x=>x.slug===block.slug);if(!chapter)continue;for(const section of block.sections){if(!chapter.sections.some(s=>s.title===section.title))chapter.sections.push(section)}}
 renderNav();render();
