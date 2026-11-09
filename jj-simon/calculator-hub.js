@@ -179,6 +179,7 @@ group('funded-settings','02 · Funded · Parameters',[box.querySelector('[data-f
 group('funded-results','04 · Funded · Results',[box.querySelector('[data-funded-results]')]);
 group('challenge-results','03 · Challenge · Results',[box.querySelector('[data-kpis]'),box.querySelector('[data-multi-results]'),box.querySelector('[data-prob-results]'),box.querySelector('[data-prob]')]);
 const combined=document.createElement('div');combined.dataset.combinedResults='';
+box.querySelector('[data-section="funded-results"]').after(combined);
 group('combined-results','05 · Combined · Final Results',[combined]);
 const title=Array.from(box.querySelectorAll('h4')).find(x=>x.textContent.includes('All scenario paths'));
 if(title){const nodes=[];let n=title;while(n&&n.tagName!=='P'){nodes.push(n);n=n.nextElementSibling}group('paths','06 · Challenge · Scenario Paths',nodes)}
