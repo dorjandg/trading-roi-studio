@@ -193,7 +193,7 @@ const fundedManualPanel=document.createElement('div');
 fundedManualPanel.style.cssText='margin:8px 0;font-size:11px';
 fundedManualPanel.innerHTML='<details><summary style="cursor:pointer;font-weight:600">P3 · Manual R1 / R2 / R3</summary><p style="font-size:11px;opacity:.75">R2 after one consecutive loss; R3 after two or more. A win resets to R1. Auto uses the selected funded strategy.</p><div data-manual-funded-slot></div></details>';
 const fundedManualRow=manualPanel.querySelector('[data-manual-mode="3"]').closest('tr');
-fundedManualPanel.querySelector('[data-manual-funded-slot]').append(fundedManualRow);
+const fundedManualTable=document.createElement('table');fundedManualTable.style.fontSize='11px';const fundedManualBody=document.createElement('tbody');fundedManualBody.append(fundedManualRow);fundedManualTable.append(fundedManualBody);fundedManualPanel.querySelector('[data-manual-funded-slot]').append(fundedManualTable);
 box.querySelector('[data-section="funded-settings"] .jj-risk-section-body').append(fundedManualPanel);
 
 try{const stored=JSON.parse(localStorage.getItem(manualRiskKey)||'{}');manualPanel.querySelectorAll('[data-manual-mode]').forEach(el=>{if(stored['m'+el.dataset.manualMode])el.value=stored['m'+el.dataset.manualMode]});manualPanel.querySelectorAll('[data-manual-risk]').forEach(el=>{const val=stored['r'+el.dataset.manualRisk];if(Number(val)>0)el.value=val})}catch(e){}
