@@ -65,3 +65,17 @@ c.sections.push({title:"150K qualifying days: four wins and the 36-to-1 loss asy
 ],src:[["30k_month -_ 100k_month Scaling","03:21–03:35; 05:30–05:44; 07:11–10:48","1gKSrmr2naboKQWfZmHCF7OBrArdhf0s0"]]});
 renderNav();render();
 })();
+
+/* 2026-11-09: source-grounded Module 18 cash-flow reconciliation; historical examples, not provider advice. */
+(()=>{
+const c=chapters.find(x=>x.slug==="portfolio-risk");
+if(!c||c.sections.some(s=>s.title==="150K scaling: monthly purchase throughput is not liquid bankroll"))return;
+c.sections.push({title:"150K scaling: monthly purchase throughput is not liquid bankroll",points:[
+"JJ's historical scaling lesson targets $50,000 of evaluation purchases for $150,000 of payouts, while later mentioning about $20,000 liquid bankroll to start larger-account scaling. Monthly spending capacity and cash available today are not the same quantity.",
+"At an illustrative $250 evaluation fee, $50,000 buys 200 attempts. The stated 50/week and 10/day pace assumes four five-day trading weeks; the 15-trades-per-day estimate is not a verified consequence of that arithmetic.",
+"Without settled payouts or other financing, spending $2,500 per day exhausts $20,000 starting cash after eight trading days. Fees, resets, renewals and payout delays can increase the interim funding requirement.",
+"If $150,000 is actually received and $50,000 is actually spent, the gross payout/spend multiple is 3x but net ROI is 200%, not 300%, before additional costs. Projected or requested payouts are not settled cash.",
+"JJ's billing lesson emphasizes purchase dates, recurring charges, and withdrawals. Provider prices, automatic renewals, live transitions and claimed returns are historical and unverified; preserve distinct cash-flow dates and account stages."
+],src:[["30k_month -_ 100k_month Scaling","00:18–00:43; 02:41–03:40; 18:24–18:45","1gKSrmr2naboKQWfZmHCF7OBrArdhf0s0"],["Managing Resets Billing Cycles Across Multiple Futures Funded Accounts","00:18–01:15; 01:43–02:27","1pdmFifqByLbI75-XtX0C53vMiCGR4-i-"],["The Optimal Number of Accounts To Manage","00:05–00:42; 01:36–01:47","11nOzXqPVWcTMHX6cpQivsM7StZVrtbZM"]]});
+renderNav();render();
+})();
