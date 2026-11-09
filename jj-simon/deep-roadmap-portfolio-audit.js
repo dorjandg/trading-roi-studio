@@ -107,7 +107,7 @@ renderNav();render();
 
 /* 2026-11-09 Module 15 source audit: fair-price reanchoring and overnight BOS. */
 (()=>{
-const c=chapters.find(x=>x.slug==="funded")||chapters.find(x=>x.slug==="case-studies");
+const c=chapters.find(x=>x.slug==="portfolio-risk")||chapters.find(x=>x.slug==="scaling");
 if(!c||c.sections.some(s=>s.title==="Volume can invalidate a fair-price anchor before an overnight BOS entry"))return;
 c.sections.push({title:"Volume can invalidate a fair-price anchor before an overnight BOS entry",points:[
 "JJ treats 6 PM and 9:30 opening prices as provisional fair-price references, not permanent targets. In the volume lesson, an 8 PM Asian-session extension away from 6 PM or a 9:45 continuation away from 9:30 can invalidate the older anchor; a 2 PM move toward the reference may instead preserve it.",
