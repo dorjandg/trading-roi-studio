@@ -455,7 +455,17 @@ const optimizeRiskStrategies=()=>{
  }
  const eligible=results.filter(x=>x.roi>=200&&x.net>0&&x.e.unresolved<.1&&x.u.unresolved<.1).sort((a,b)=>b.roi-a.roi);
  const money=n=>'$'+n.toLocaleString('en-US',{maximumFractionDigits:0});
- const rows=eligible.slice(0,10).map((x,i)=>'<tr><td>'+(i+1)+'</td><td>'+x.e.name+'</td><td>'+x.u.name+'</td><td>'+(x.e.pass*100).toFixed(1)+'%</td><td>'+(x.u.pass*100).toFixed(1)+'%</td><td>'+money(x.net)+'</td><td>'+x.roi.toFixed(1)+'%</td></tr>').join('');
+ const explain=(base,candidate)=>{
+  const cfg={...base,...candidate.rule};
+  const paths=['W','LW','LLW','LWL','WW','LLLW','WLW'];
+  const shown=paths.map(path=>({path,x:calc(path,cfg)}));
+  const table=shown.map(({path,x})=>{
+   const trades=x.steps.map((t,i)=>'<tr><td>'+(i+1)+'</td><td>'+t.c+'</td><td>'+money(t.risk)+'</td><td>'+money(t.stagePnl)+'</td><td>'+money(Math.max(0,cfg.limit+t.stagePnl))+'</td><td>'+t.day+'</td></tr>').join('');
+   return '<details style="margin:4px 0"><summary style="cursor:pointer">'+path+' · '+(x.status==='target'?'Target':x.status==='closed'?'Closed':'Still active')+'</summary><div style="overflow-x:auto"><table style="font-size:10px"><thead><tr><th>Trade</th><th>W/L</th><th>Risk</th><th>Phase P&L</th><th>DD left*</th><th>Day</th></tr></thead><tbody>'+trades+'</tbody></table></div></details>';
+  }).join('');
+  return '<p style="font-size:10px;opacity:.8">Rule: '+candidate.name+'. After each outcome, dynamic risk = min(cap, remaining target ÷ RR × factor, remaining drawdown − reserve). Fixed risk stays constant, subject to account limits. *DD left is the simplified static allowance, not a live trailing threshold.</p>'+table;
+ };
+ const rows=eligible.slice(0,10).map((x,i)=>'<tr><td colspan="7"><details style="margin:2px 0"><summary style="cursor:pointer;display:flex;gap:7px;flex-wrap:wrap;align-items:center"><b>#'+(i+1)+'</b><span>'+x.e.name+' / '+x.u.name+'</span><b>ROI '+x.roi.toFixed(1)+'%</b><span>Net '+money(x.net)+'</span></summary><div style="padding:6px 3px"><p style="font-size:11px">Eval pass '+(x.e.pass*100).toFixed(1)+'% · Fund pass '+(x.u.pass*100).toFixed(1)+'% · Expected fees '+money(x.fees)+'</p><details><summary style="cursor:pointer;font-weight:600">Challenge · Trade-by-trade</summary>'+explain(evalBase,x.e)+'</details><details><summary style="cursor:pointer;font-weight:600">Funded · Trade-by-trade</summary>'+explain(fundBase,x.u)+'</details></div></details></td></tr>').join('');
  return '<div style="font-size:11px;margin:7px 0"><b>Advanced scenarios · '+eligible.length+' qualifying / '+results.length+' tested pairs</b><p style="margin:4px 0;opacity:.8">Current edited parameters. Dynamic models recalculate target-based risk after each win/loss, subject to a cap and remaining drawdown reserve. Fixed models included for comparison. Saved presets unchanged.</p><div style="overflow-x:auto"><table style="font-size:11px"><thead><tr><th>#</th><th>Challenge</th><th>Funded</th><th>Eval pass</th><th>Fund pass</th><th>Net</th><th>ROI</th></tr></thead><tbody>'+(rows||'<tr><td colspan="7">No qualifying strategies. Review RR, trade depth and limits.</td></tr>')+'</tbody></table></div><small style="opacity:.75">Exploratory model, max 12 trades/stage. No payout calendar, correlated trades, concurrency or complete trailing drawdown simulation. Unresolved paths are not counted as passes.</small></div>';
 };
 const strategyComparison=()=>{
