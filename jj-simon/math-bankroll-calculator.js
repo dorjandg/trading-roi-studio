@@ -13,6 +13,16 @@ const data={...defaults,...saved};const labels={wr:'Evaluation win rate %',rr:'E
 const host=document.createElement('div');host.dataset.mathCh10='';host.style.cssText='padding:10px;border:1px solid #8885;border-radius:9px;margin:12px 0;font-size:12px';
 host.innerHTML='<details open><summary style="font-size:14px;font-weight:700">10 · Important Math Statistics & Bankroll</summary><p>Uses saved Chapter 09 '+firm.toUpperCase()+' settings where available. Editable scenario assumptions, not verified performance.</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:7px">'+Object.keys(labels).map(k=>'<label style="display:grid;gap:3px">'+labels[k]+'<input data-math="'+k+'" type="number" step="any" value="'+Number(data[k])+'" style="width:100%;box-sizing:border-box;padding:5px;background:transparent;color:inherit;border:1px solid #8886;border-radius:5px"></label>').join('')+'</div><div data-math-results style="margin-top:12px"></div><details><summary>Formulas and source lessons</summary><p>EV = p × RR − (1−p). Variance = p × (RR−EV)² + (1−p) × (−1−EV)². Breakeven WR = 1/(1+RR). Cost/funded = fee/pass rate + activation. Success/purchase = pass rate × funded payout success × settlement. No payout = (1−success)^purchases. Expected ROI = (expected cash−expected fees)/expected fees.</p><p>Lessons: Expected Value Variance; Risk Of Ruin Bankroll Management; Prop Firm Math Stats; How To Calculate YOUR EV. Independent purchase statistics are not full path-dependent risk of ruin.</p></details></details>';
 root.appendChild(host);
+const ch09Keys=new Set(['wr','rr','fwr','frr','fee','activation','target','split']);
+host.querySelectorAll('[data-math]').forEach(input=>{
+ if(ch09Keys.has(input.dataset.math))return;
+ input.style.border='2px solid #d97706';
+ input.style.borderRadius='5px';
+ input.title='Chapter 10 only · not imported from Chapter 09';
+ const label=input.closest('label');
+ if(label){label.title='Chapter 10 only · not imported from Chapter 09';const note=document.createElement('small');note.textContent='Ch10 only';note.style.cssText='color:#d97706;font-size:10px;line-height:1';label.appendChild(note)}
+});
+
 const controls=document.createElement('div');controls.style.cssText='display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin:6px 0;font-size:11px';
 controls.innerHTML='<select data-source-firm aria-label="Chapter 09 firm" style="max-width:100px;padding:4px;font-size:11px"><option value="ftmo">FTMO</option><option value="topstep">Topstep</option></select><select data-source-preset aria-label="Chapter 09 preset" style="min-width:110px;max-width:180px;flex:1;padding:4px;font-size:11px"></select><button type="button" data-import-ch09 style="padding:5px 7px;font-size:11px">Use Chapter 09</button><button type="button" data-manual-ch10 style="padding:5px 7px;font-size:11px">Manual</button><small data-source-status style="width:100%;opacity:.7;font-size:10px">Manual · choose firm and preset</small>';
 host.querySelector('details').insertBefore(controls,host.querySelector('details').children[2]);
