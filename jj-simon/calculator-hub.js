@@ -167,46 +167,56 @@ const money=x=>(x<0?'−':x>0?'+':'')+'$'+Math.abs(x).toLocaleString('en-US',{mi
 const tableNumber=x=>(x<0?'-':'')+Math.abs(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 function mount(){
 const root=document.querySelector('#'+slug);if(!root||root.querySelector('.jj-risk-workbench'))return;
-const box=document.createElement('div');box.className='jj-risk-workbench';box.innerHTML='<h3>Dynamic Risk · Scenario Explorer</h3><div class="jj-risk-fields"><label>Target 1 ($)<input data-k="target" type="number" min=".01" step="any" value="1000"></label><label>Target 2 ($)<input data-k="target2" type="number" min=".01" step="any" value="500"></label><label>Loss allowance per stage ($)<input data-k="limit" type="number" min=".01" step="any" value="1000"></label><label>Risk reward (1:R)<input data-k="rr" type="number" min=".01" step="any" value="3"></label><label>Close if allowance below ($)<input data-k="floor" type="number" min="0" step="any" value="100"></label><label>Win rate (%)<input data-k="winRate" type="number" min="0" max="100" value="50"></label><label>Scenario depth (1–12)<input data-k="depth" type="number" min="1" max="12" value="6"></label></div><div class="jj-risk-kpis" data-kpis></div><div class="jj-risk-muted" data-prob></div><h4>All scenario paths</h4><select data-filter><option value="all">All paths</option><option value="target">Pass</option><option value="closed">Fail</option><option value="active">Active</option></select><div data-table></div><div class="jj-risk-page"><button data-prev>Previous</button><span data-count></span><button data-next>Next</button></div><p class="jj-risk-muted">Illustrative only. Full remaining allowance can breach prop-firm equity limits once spreads, commissions or slippage are included. No order placement.</p>';
+const box=document.createElement('div');box.className='jj-risk-workbench';box.innerHTML='<h3>Dynamic Risk · Scenario Explorer</h3><div class="jj-risk-fields"><label>Target 1 ($)<input data-k="target" type="number" min=".01" step="any" value="1000"></label><label>Target 2 ($)<input data-k="target2" type="number" min=".01" step="any" value="500"></label><label>Loss allowance per stage ($)<input data-k="limit" type="number" min=".01" step="any" value="1000"></label><label>Maximum daily loss ($)<input data-k="dailyLimit" type="number" min=".01" step="any" value="500"></label><label>Trades per day<input data-k="tradesPerDay" type="number" min="1" max="100" step="1" value="3"></label><label>Risk reward (1:R)<input data-k="rr" type="number" min=".01" step="any" value="3"></label><label>Close if allowance below ($)<input data-k="floor" type="number" min="0" step="any" value="100"></label><label>Win rate (%)<input data-k="winRate" type="number" min="0" max="100" value="50"></label><label>Scenario depth (1–12)<input data-k="depth" type="number" min="1" max="12" value="6"></label></div><div class="jj-risk-kpis" data-kpis></div><div class="jj-risk-muted" data-prob></div><h4>All scenario paths</h4><select data-filter><option value="all">All paths</option><option value="target">Pass</option><option value="closed">Fail</option><option value="active">Active</option><option value="daily-blocked">Day Block</option></select><div data-table></div><div class="jj-risk-page"><button data-prev>Previous</button><span data-count></span><button data-next>Next</button></div><p class="jj-risk-muted">Illustrative only. Full remaining allowance can breach prop-firm equity limits once spreads, commissions or slippage are included. No order placement.</p>';
 const section=root.querySelector('.chapter-content')||root.querySelector('.sections')||root;section.prepend(box);
 const $=q=>box.querySelector(q);let page=0;const expandedPaths=new Set();
-const vals=()=>{const num=(k,f)=>{const x=Number(box.querySelector('[data-k="'+k+'"]').value);return Number.isFinite(x)?x:f};return {target:Math.max(.01,num('target',1000)),target2:Math.max(.01,num('target2',500)),limit:Math.max(.01,num('limit',1000)),rr:Math.max(.01,num('rr',3)),floor:Math.max(0,num('floor',100)),winRate:Math.min(100,Math.max(0,num('winRate',50))),depth:Math.max(1,Math.min(12,Math.floor(num('depth',6))))}};
+const vals=()=>{const num=(k,f)=>{const x=Number(box.querySelector('[data-k="'+k+'"]').value);return Number.isFinite(x)?x:f};return {target:Math.max(.01,num('target',1000)),target2:Math.max(.01,num('target2',500)),limit:Math.max(.01,num('limit',1000)),dailyLimit:Math.max(.01,num('dailyLimit',500)),tradesPerDay:Math.max(1,Math.min(100,Math.floor(num('tradesPerDay',3)))),rr:Math.max(.01,num('rr',3)),floor:Math.max(0,num('floor',100)),winRate:Math.min(100,Math.max(0,num('winRate',50))),depth:Math.max(1,Math.min(12,Math.floor(num('depth',6))))}};
 function calc(path,v){
-let stage=1,stagePnl=0,total=0,prob=1,steps=[],status='active';
+let stage=1,stagePnl=0,total=0,prob=1,steps=[],status='active',day=1,dayPnl=0,tradesToday=0;
 for(const c of path){
  if(status!=='active')break;
+ if(tradesToday>=v.tradesPerDay){day++;dayPnl=0;tradesToday=0}
  const left=v.limit+stagePnl,goal=stage===1?v.target:v.target2;
+ const dailyLeft=Math.max(0,v.dailyLimit+dayPnl);
  if(left<v.floor-1e-7||left<=1e-7){status='closed';break}
- const risk=Math.min((goal-stagePnl)/v.rr,left);
+ if(dailyLeft<=1e-7){status='daily-blocked';break}
+ const risk=Math.min((goal-stagePnl)/v.rr,left,dailyLeft);
+ if(risk<=1e-7){status='daily-blocked';break}
  const delta=c==='W'?risk*v.rr:-risk;
- stagePnl+=delta;total+=delta;prob*=c==='W'?v.winRate/100:1-v.winRate/100;
- const completedStage=stage;
+ const tradeDay=day,tradeStage=stage;
+ stagePnl+=delta;total+=delta;dayPnl+=delta;tradesToday++;
+ prob*=c==='W'?v.winRate/100:1-v.winRate/100;
  let passed=false;
  if(stagePnl>=goal-1e-7){passed=true;if(stage===1){stage=2;stagePnl=0}else status='target'}
  else if(v.limit+stagePnl<v.floor-1e-7||v.limit+stagePnl<=1e-7)status='closed';
- steps.push({c,risk,pnl:total,stage:completedStage,stagePnl:passed?goal:stagePnl,passed});
+ steps.push({c,risk,pnl:total,stage:tradeStage,stagePnl:passed?goal:stagePnl,passed,day:tradeDay,dayPnl,dailyLeft:Math.max(0,v.dailyLimit+dayPnl)});
 }
 const left=v.limit+stagePnl,goal=stage===1?v.target:v.target2;
 if(status==='active'&&(left<v.floor-1e-7||left<=1e-7))status='closed';
-return {path:steps.map(x=>x.c).join(''),pnl:total,stage,stagePnl,left,status,risk:status==='active'?Math.min((goal-stagePnl)/v.rr,left):0,steps,prob};
+const nextDay=tradesToday>=v.tradesPerDay;
+const nextDailyLeft=nextDay?v.dailyLimit:Math.max(0,v.dailyLimit+dayPnl);
+if(status==='active'&&nextDailyLeft<=1e-7)status='daily-blocked';
+return {path:steps.map(x=>x.c).join(''),pnl:total,stage,stagePnl,left,status,
+risk:status==='active'?Math.max(0,Math.min((goal-stagePnl)/v.rr,left,nextDailyLeft)):0,
+steps,prob,day:day+(nextDay?1:0),dailyLeft:nextDailyLeft,dayPnl:nextDay?0:dayPnl,tradesToday:nextDay?0:tradesToday};
 }
 function renderRisk(){
 const v=vals(),leaves=[],allPaths=[];
 function walk(path){const x=calc(path,v);if(path)allPaths.push(x);if(x.status!=='active'||x.steps.length>=v.depth){leaves.push(x);return}walk(path+'W');walk(path+'L')}
 walk('');
-const counts={target:0,closed:0,active:0};leaves.forEach(x=>counts[x.status]++);
+const counts={target:0,closed:0,active:0,'daily-blocked':0};leaves.forEach(x=>counts[x.status]++);
 const probability=leaves.filter(x=>x.status==='target').reduce((sum,x)=>sum+x.prob,0);
 const t1Probability=leaves.filter(x=>x.stage===2).reduce((sum,x)=>sum+x.prob,0);
-$('[data-kpis]').innerHTML=['target','closed','active'].map(k=>'<div>'+(k==='target'?'PASS BOTH':k==='closed'?'FAIL':'ACTIVE')+'<strong>'+counts[k]+'</strong></div>').join('');
-$('[data-prob]').textContent='T1 reached: '+(t1Probability*100).toFixed(2)+'% · Both targets reached within '+v.depth+' trades: '+(probability*100).toFixed(2)+'% · Independent trades, '+v.winRate+'% win rate. T2 starts at stage P&L 0 with a fresh '+tableNumber(v.limit)+' loss allowance; T1 profit remains banked.';
+$('[data-kpis]').innerHTML=['target','closed','active','daily-blocked'].map(k=>'<div>'+(k==='target'?'PASS BOTH':k==='closed'?'FAIL':k==='daily-blocked'?'DAY BLOCK':'ACTIVE')+'<strong>'+counts[k]+'</strong></div>').join('');
+$('[data-prob]').textContent='T1 reached: '+(t1Probability*100).toFixed(2)+'% · Both targets reached within '+v.depth+' trades: '+(probability*100).toFixed(2)+'% · Independent trades, '+v.winRate+'% win rate. T2 starts at stage P&L 0 with a fresh '+tableNumber(v.limit)+' stage allowance; T1 profit remains banked. Daily loss cap '+tableNumber(v.dailyLimit)+' with '+v.tradesPerDay+' trades/day; exhausted daily allowance blocks additional trades that day.';
 const filter=$('[data-filter]').value;
 const decisions=[calc('',v),...allPaths].filter(x=>x.status==='active').map(x=>({...x,win:calc(x.path+'W',v),loss:calc(x.path+'L',v)}));
 const shown=decisions.filter(x=>filter==='all'||filter==='active'||x.win.status===filter||x.loss.status===filter).sort((a,b)=>a.steps.length-b.steps.length||a.path.localeCompare(b.path));
 page=Math.min(page,Math.max(0,Math.ceil(shown.length/10)-1));
 $('[data-table]').innerHTML='<div style="overflow-x:auto"><table><thead><tr><th>Path</th><th>Stage</th><th>Risk</th><th>Win</th><th>Loss</th><th>P&L</th><th>Details</th></tr></thead><tbody>'+shown.slice(page*10,page*10+10).map(x=>{
  const isOpen=expandedPaths.has(x.path);
- const history=x.steps.map((step,i)=>'<tr><td class="'+(step.c==='W'?'jj-risk-win':'jj-risk-loss')+'">'+(i+1)+' '+(step.c==='W'?'Win':'Loss')+'</td><td>T'+step.stage+'</td><td>'+tableNumber(step.risk)+'</td><td>'+tableNumber(step.pnl)+'</td><td>'+(step.passed?'T'+step.stage+' PASS':'')+'</td></tr>').join('');
- const detail='<div style="padding:6px 0"><strong>Path '+(x.path||'Start')+'</strong> · Stage T'+x.stage+' · Total P&L '+tableNumber(x.pnl)+' · Stage P&L '+tableNumber(x.stagePnl)+' · Next risk '+tableNumber(x.risk)+' · Fresh-stage allowance '+tableNumber(x.left)+'</div><table><thead><tr><th>Trade</th><th>Stage</th><th>Risk</th><th>Total P&L</th><th>Milestone</th></tr></thead><tbody>'+(history||'<tr><td colspan="5">No trades yet</td></tr>')+'</tbody></table><div style="padding-top:6px">Next Win: '+tableNumber(x.win.pnl)+' (T'+x.win.stage+') · Next Loss: '+tableNumber(x.loss.pnl)+' (T'+x.loss.stage+')</div>';
+ const history=x.steps.map((step,i)=>'<tr><td class="'+(step.c==='W'?'jj-risk-win':'jj-risk-loss')+'">'+(i+1)+' '+(step.c==='W'?'Win':'Loss')+'</td><td>'+step.day+'</td><td>T'+step.stage+'</td><td>'+tableNumber(step.risk)+'</td><td>'+tableNumber(step.pnl)+'</td><td>'+tableNumber(step.dailyLeft)+'</td><td>'+(step.passed?'T'+step.stage+' PASS':'')+'</td></tr>').join('');
+ const detail='<div style="padding:6px 0"><strong>Path '+(x.path||'Start')+'</strong> · Stage T'+x.stage+' · Total P&L '+tableNumber(x.pnl)+' · Stage P&L '+tableNumber(x.stagePnl)+' · Next risk '+tableNumber(x.risk)+' · Stage allowance '+tableNumber(x.left)+' · Day '+x.day+' daily loss remaining '+tableNumber(x.dailyLeft)+'</div><table><thead><tr><th>Trade</th><th>Day</th><th>Stage</th><th>Risk</th><th>Total P&L</th><th>Daily left</th><th>Milestone</th></tr></thead><tbody>'+(history||'<tr><td colspan="7">No trades yet</td></tr>')+'</tbody></table><div style="padding-top:6px">Next Win: '+tableNumber(x.win.pnl)+' (T'+x.win.stage+') · Next Loss: '+tableNumber(x.loss.pnl)+' (T'+x.loss.stage+')</div>';
  return '<tr><td><button class="jj-risk-path" data-path="'+x.path+'">'+(x.path||'Start')+'</button></td><td>T'+x.stage+'</td><td>'+tableNumber(x.risk)+'</td><td class="'+(x.win.status==='target'?'jj-risk-win':'')+'">'+tableNumber(x.win.pnl)+'</td><td class="'+(x.loss.status==='closed'?'jj-risk-loss':'')+'">'+tableNumber(x.loss.pnl)+'</td><td>'+tableNumber(x.pnl)+'</td><td><button data-expand-path="'+x.path+'" aria-expanded="'+isOpen+'">'+(isOpen?'Hide':'Show')+'</button></td></tr>'+(isOpen?'<tr><td colspan="7" class="jj-risk-muted" style="text-align:left;white-space:normal;padding:8px">'+detail+'</td></tr>':'');
 }).join('')+'</tbody></table></div>';
 $('[data-count]').textContent=shown.length?(page*10+1)+'–'+Math.min((page+1)*10,shown.length)+' / '+shown.length:'0 paths';
