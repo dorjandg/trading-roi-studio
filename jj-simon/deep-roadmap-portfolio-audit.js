@@ -35,3 +35,18 @@ c.sections.push({title:"Copy-trading correlation: five accounts are not five ind
 ],src:[["Managing Risk Across Multiple Accounts","00:27–01:41","1Gr90n0aSePquj1jp9nCkvx29BiUyJj2c"],["How Multi-Account Management Works","00:36–02:40; 08:08–08:20","1VNt39wTnRGpkGLalH-iBi3GHk75hIIUC"],["Position Sizing Strategy Across Your Portfolio","00:05–00:41; 01:47–02:36","1o_XRhHFgmWg_wu4aXL3OR-F6O6e4POFu"],["Expected Value Variance","04:35–06:55","1MPxCD1UKr76oqPKB_0Hxwc1WSmX_K_w1"]]});
 renderNav();render();
 })();
+
+
+// 2026-11-09 Module 18 audit: linked renewal liabilities and drawdown cushion; course claims remain unverified.
+(function(){
+const c=chapters.find(x=>x.slug==="portfolio-risk");
+if(!c||c.sections.some(s=>s.title==="Copied account failures can cluster renewal bills"))return;
+c.sections.push({title:"Copied account failures can cluster renewal bills",points:[
+"JJ describes copied small-account losses happening together, and separately recommends tracking purchase dates, resets, renewals and payouts by firm. A shared trading loss can therefore create simultaneous replacement spending; a subscription charge is not proof of a new funded account.",
+"Illustration only: five copied accounts each with a $100 renewal charge can expose $500 at once. If their shared loss event has a hypothetical 40% probability, the $500 cluster occurs with 40% probability. Independent account losses would have the same $200 expected total renewal spending but a different distribution.",
+"For 5, 10 and 20 perfectly copied accounts at $100 each, the corresponding all-at-once exposure is $500, $1,000 and $2,000. Budget available settled cash for due charges, not anticipated payout requests. Historical subscriptions, resets and one-time-purchase exceptions must be checked individually.",
+"JJ warns that even nominally equal $50K accounts with different balances should not automatically be copied. Document equity, applicable drawdown floor, remaining cushion, pending exposure, fees and stage before treating accounts as compatible; the dashboard's alleged optimality is not independently validated.",
+"The source distinguishes typical monthly rebilling from one-time purchase models. Original spreadsheet frames, provider billing terms, actual correlations and student Q&A remain unverified; this chapter does not establish any current provider rule."
+],src:[["Managing Resets Billing Cycles Across Multiple Futures Funded Accounts","00:29–00:41; 01:43–02:33; 02:53–03:06","1pdmFifqByLbI75-XtX0C53vMiCGR4-i-"],["How To Manage Different Drawdown Rules","00:12–00:57; 01:28–01:42","1PMHg2wWs7Vr-x9YbQ-cSVE_RAf-rq3tC"]]});
+renderNav();render();
+})();
