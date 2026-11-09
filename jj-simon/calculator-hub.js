@@ -213,8 +213,8 @@ box.querySelectorAll('[data-mode-button]').forEach(btn=>{const active=btn.datase
 $('[data-kpis]').innerHTML=['target','closed','active','daily-blocked'].map(k=>'<div>'+(k==='target'?(v.targetMode===1?'PASS T1':'PASS BOTH'):k==='closed'?'FAIL':k==='daily-blocked'?'DAY BLOCK':'ACTIVE')+'<strong>'+counts[k]+'</strong></div>').join('');
 $('[data-prob]').textContent=(v.targetMode===1?'T1 reached within '+v.depth+' trades: '+(probability*100).toFixed(2)+'%.': 'T1 reached: '+(t1Probability*100).toFixed(2)+'% · Both targets reached within '+v.depth+' trades: '+(probability*100).toFixed(2)+'%. T2 starts at stage P&L 0 with a fresh '+tableNumber(v.limit)+' stage allowance; T1 profit remains banked.')+' Independent trades, '+v.winRate+'% win rate. Daily loss cap '+tableNumber(v.dailyLimit)+' with '+v.tradesPerDay+' trades/day; exhausted daily allowance blocks additional trades that day.';
 const filter=$('[data-filter]').value;
-const decisions=[calc('',v),...allPaths].map(x=>x.status==='active'?({...x,win:calc(x.path+'W',v),loss:calc(x.path+'L',v)}):({...x,win:null,loss:null}));
-const shown=decisions.filter(x=>filter==='all'||(filter==='active'&&x.status==='active')||x.status===filter||(x.win&&x.win.status===filter)||(x.loss&&x.loss.status===filter)).sort((a,b)=>a.steps.length-b.steps.length||a.path.localeCompare(b.path));
+const decisions=[calc('',v),...allPaths].filter(x=>x.status==='active').map(x=>({...x,win:calc(x.path+'W',v),loss:calc(x.path+'L',v)}));
+const shown=decisions.filter(x=>filter==='all'||filter==='active'||x.win.status===filter||x.loss.status===filter).sort((a,b)=>a.steps.length-b.steps.length||a.path.localeCompare(b.path));
 page=Math.min(page,Math.max(0,Math.ceil(shown.length/10)-1));
 $('[data-table]').innerHTML='<div style="overflow-x:auto"><table><thead><tr><th>Path</th><th>Stage</th><th>Risk</th><th>Win</th><th>Loss</th><th>P&L</th><th>Details</th></tr></thead><tbody>'+shown.slice(page*10,page*10+10).map(x=>{
  const isOpen=expandedPaths.has(x.path),terminal=x.status!=='active';
