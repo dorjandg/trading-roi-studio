@@ -18,19 +18,27 @@ controls.innerHTML='<select data-source-firm aria-label="Chapter 09 firm" style=
 host.querySelector('details').insertBefore(controls,host.querySelector('details').children[2]);
 const firmInput=controls.querySelector('[data-source-firm]'),presetInput=controls.querySelector('[data-source-preset]');
 function refreshFirms(){const profiles=read('jj-risk-calculator09-firm-profiles-v1'),named=read('jj-risk-calculator09-named-presets-v1'),current=firmInput.value;const firms=[...new Set(['ftmo','topstep',...Object.keys(profiles),...Object.keys(named)])];firmInput.innerHTML='';firms.forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=k.toUpperCase();firmInput.appendChild(o)});firmInput.value=firms.includes(current)?current:(firms.includes(firm)?firm:'ftmo')}
-function refreshPresets(){const chosen=firmInput.value,named=read('jj-risk-calculator09-named-presets-v1')[chosen]||{};presetInput.innerHTML='';const base=document.createElement('option');base.value='current';base.textContent='Current saved settings';presetInput.appendChild(base);Object.keys(named).sort().forEach(name=>{const o=document.createElement('option');o.value='user:'+name;o.textContent=name;presetInput.appendChild(o)});const last=read('jj-risk-calculator09-loaded-preset-v1')[chosen];if(last&&[...presetInput.options].some(o=>o.value===last))presetInput.value=last;else presetInput.value='current'}
+function refreshPresets(){const chosen=firmInput.value,named=read('jj-risk-calculator09-named-presets-v1')[chosen]||{};presetInput.innerHTML='';const choices=[['current','Current saved settings'],['builtin:default','Built-in · Firm defaults'],['builtin:gpt','GPT · Audited 12-trade test'],['builtin:fixedlow','Strategy · Fixed low risk'],['builtin:half','Strategy · Half allowance'],['builtin:recovery','Strategy · Recovery / buffer'],['builtin:fixedhigh','Strategy · Fixed high risk']];choices.forEach(([value,label])=>{const o=document.createElement('option');o.value=value;o.textContent=label;presetInput.appendChild(o)});Object.keys(named).sort().forEach(name=>{const o=document.createElement('option');o.value='user:'+name;o.textContent=name;presetInput.appendChild(o)});const last=read('jj-risk-calculator09-loaded-preset-v1')[chosen];if(last&&[...presetInput.options].some(o=>o.value===last))presetInput.value=last;else presetInput.value='current'}
 refreshFirms();refreshPresets();firmInput.addEventListener('change',refreshPresets);
 function setSource(mode,message){controls.querySelector('[data-source-status]').textContent=message;controls.querySelector('[data-import-ch09]').style.fontWeight=mode==='chapter09'?'800':'400';controls.querySelector('[data-manual-ch10]').style.fontWeight=mode==='manual'?'800':'400'}
 function persist(){const d={};host.querySelectorAll('[data-math]').forEach(x=>d[x.dataset.math]=x.value);try{localStorage.setItem('jj-math-bankroll-v1',JSON.stringify(d))}catch(e){}}
 controls.querySelector('[data-import-ch09]').addEventListener('click',()=>{
  const chosen=firmInput.value,preset=presetInput.value,profiles=read('jj-risk-calculator09-firm-profiles-v1'),latest=read('jj-risk-calculator09-settings-v1');
  const named=read('jj-risk-calculator09-named-presets-v1')[chosen]||{};
- const selected=preset.startsWith('user:')?named[preset.slice(5)]:(profiles[chosen]||(latest.firmType===chosen?latest:null));
+ const base=profiles[chosen]||(latest.firmType===chosen?latest:null);
+ const builtin=chosen==='ftmo'?{fields:{target:1000,target2:500,limit:1000,dailyLimit:500,rr:3,winRate:35,accountCost:100},funded:{target:1800,limit:1000,dailyLimit:500,rr:3,winRate:35,split:80,activation:0}}:{fields:{target:3000,limit:2000,rr:1.5,winRate:35,accountCost:100},funded:{target:4000,limit:2000,rr:4,winRate:35,split:75,activation:0}};
+ let selected=preset.startsWith('user:')?named[preset.slice(5)]:(preset==='current'?base:null);
+ if(preset==='builtin:default')selected=builtin;
+ if(preset==='builtin:gpt')selected={fields:{...builtin.fields,depth:12},funded:{...builtin.funded,depth:12}};
+ if(['builtin:fixedlow','builtin:half','builtin:recovery','builtin:fixedhigh'].includes(preset)){
+  selected={fields:{...builtin.fields,...(base?.fields||{})},funded:{...builtin.funded,...(base?.funded||{})}};
+ }
+ 
  if(!selected||(!selected.fields&&!selected.funded)){setSource('manual','No saved data for this selection · nothing changed');return}
  const mapping={wr:selected.fields?.winRate,rr:selected.fields?.rr,fwr:selected.funded?.winRate,frr:selected.funded?.rr,fee:selected.fields?.accountCost,activation:selected.funded?.activation,target:selected.funded?.target,split:selected.funded?.split};
  let count=0;Object.entries(mapping).forEach(([k,v])=>{const input=host.querySelector('[data-math="'+k+'"]');if(input&&v!==undefined&&v!==null&&v!==''&&Number.isFinite(Number(v))){input.value=String(v);count++}});
  if(!count){setSource('manual','Selected preset has no transferable inputs · nothing changed');return}
- persist();update();setSource('chapter09','Imported '+count+' values · '+chosen.toUpperCase()+' / '+presetInput.selectedOptions[0].textContent);
+ persist();update();setSource('chapter09','Imported '+count+' values · '+chosen.toUpperCase()+' / '+presetInput.selectedOptions[0].textContent+(preset.startsWith('builtin:fixed')||preset==='builtin:half'||preset==='builtin:recovery'?' · strategy risk paths remain in Chapter 09':''));
 });
 controls.querySelector('[data-manual-ch10]').addEventListener('click',()=>setSource('manual','Manual · values retained and editable'));
 function update(){const n=k=>Number(host.querySelector('[data-math="'+k+'"]').value),pct=x=>Number.isFinite(x)?(x*100).toFixed(2)+'%':'—',usd=x=>'$'+x.toFixed(2);
