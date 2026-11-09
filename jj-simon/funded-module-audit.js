@@ -22,5 +22,14 @@ jjFundedAudit.sections.push({
  ],
  src:[["How To Trade Fundeds For 50 Points","01:01–08:08","13vOa_M7FBB3KK9L0wSP206x3I9eDwaBR"]]
 });
+jjFundedAudit.sections.push({
+ title:"40-point MNQ winning day: $150 versus $200 qualification",
+ points:[
+  "In Winning Days (04:26–04:54), JJ describes 2 MNQ × 40 NQ points = $160 gross, or approximately $157 after an illustrative $3 cost. The same passage distinguishes historical qualifying-day thresholds of $150 and $200 by firm. A $157 net trade cannot meet a $200 net threshold; it may meet $150 only if all provider conditions are satisfied.",
+  "At 2 MNQ ($4 per NQ point), $200 net after a $3 charge requires at least 50.75 NQ points, before slippage. A symmetric ±40-point bracket with $3 charged to each outcome produces +$157 or −$163; its break-even win probability is 163/320 = 50.9375%, not a measured JJ win rate.",
+  "When To Take Payouts (00:58–01:11) instead describes a firm-dependent ±$200 winning-day trade. Keep this separate from the 40-point micro example. Verify historical minimum-day net/gross criteria, scalping restrictions, actual fees, and the original chart/order types before using either as a rule. Neither course transcript proves a guaranteed payout."
+ ],
+ src:[[ "Winning Days","04:26–06:16","19DLGJ-t74Q0AOhVpKgtuE4P2uhVp1TPp"],["When To Take Payouts","00:58–01:36","1xVDQxTxneJ0EG2AOPgbB0Yp16xc2BCSn"]]
+});
 if(!chapters.some(c=>c.slug===jjFundedAudit.slug)){chapters.push(jjFundedAudit);const item={slug:jjFundedAudit.slug,title:'18 · Eight-Lesson Funded Accounts Audit',status:'review',reason:'Eight course recordings reviewed; original visuals and firm rules pending.'};curriculum.push(item);const o=document.createElement('option');o.value=item.slug;o.textContent=item.title;$('mobile').appendChild(o)}
 const requestedFunded=new URLSearchParams(location.search).get('topic');if(requestedFunded===jjFundedAudit.slug){active=requestedFunded;$('mobile').value=active}renderNav();render();
