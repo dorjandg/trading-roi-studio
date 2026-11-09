@@ -223,6 +223,15 @@ presetBar.querySelectorAll('button').forEach(el=>el.style.cssText='font-size:10p
 firmBar.appendChild(presetBar);
 const presetSelect=presetBar.querySelector('[data-named-presets]'),presetNote=presetBar.querySelector('[data-preset-note]');
 const readNamedPresets=()=>{try{const x=JSON.parse(localStorage.getItem(presetKey)||'{}');return x&&typeof x==='object'?x:{}}catch(e){return {}}};
+const exportPresetButton=document.createElement('button');exportPresetButton.type='button';exportPresetButton.textContent='Copy';exportPresetButton.title='Copy selected saved preset or current parameters as JSON for simulation';exportPresetButton.style.cssText='font-size:10px;line-height:1.1;padding:4px 6px;border:1px solid #8886;border-radius:5px;background:transparent;color:inherit;cursor:pointer;min-height:25px';presetBar.insertBefore(exportPresetButton,presetNote);
+exportPresetButton.addEventListener('click',async()=>{
+ const selected=presetSelect.value,all=readNamedPresets()[currentFirm]||{},name=selected.startsWith('user:')?selected.slice(5):'Current settings';
+ const profile=selected.startsWith('user:')?all[name]:captureProfile();
+ if(!profile){presetNote.textContent='Select a saved preset';return}
+ const payload=JSON.stringify({source:'Chapter 09',firm:currentFirm,preset:name,settings:profile},null,2);
+ try{if(!navigator.clipboard?.writeText)throw Error('Clipboard unavailable');await navigator.clipboard.writeText(payload);presetNote.textContent='Copied · paste in ChatGPT'}catch(e){window.prompt('Copy these preset settings and paste in ChatGPT:',payload);presetNote.textContent='Copy JSON from popup'}
+});
+
 const refreshNamedPresets=()=>{const selected=presetSelect.value;const data=readNamedPresets()[currentFirm]||{};presetSelect.innerHTML='<option value="">Presets…</option><option value="gpt">GPT · Audited 12-trade test</option>';Object.keys(data).sort().forEach(name=>{const opt=document.createElement('option');opt.value='user:'+name;opt.textContent=name;presetSelect.appendChild(opt)});if([...presetSelect.options].some(o=>o.value===selected))presetSelect.value=selected};
 const captureProfile=()=>{const data={mode:$('[data-target-mode]').value,fields:{},accountMode,accountCount:$('[data-account-count]').value,parallelAccounts:parallelInput.value,signalsPerDay:signalsInput.value,phaseMode,purchaseStrategy:purchaseStrategyMode,funded:{}};box.querySelectorAll('[data-funded]').forEach(el=>data.funded[el.dataset.funded]=el.value);box.querySelectorAll('[data-k]').forEach(el=>data.fields[el.dataset.k]=el.value);return data};
 const firmDefaults=firm=>firm==='ftmo'?{mode:'2',accountMode:'multi',accountCount:20,parallelAccounts:20,signalsPerDay:7,fields:{target:1000,target2:500,limit:1000,dailyLimit:500},funded:{target:1800,limit:1000,dailyLimit:500,split:80}}:{mode:'1',accountMode:'multi',accountCount:5,parallelAccounts:5,signalsPerDay:7,fields:{target:3000,limit:2000},funded:{target:4000,limit:2000,split:75}};
