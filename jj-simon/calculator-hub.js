@@ -230,23 +230,23 @@ signalsInput.addEventListener('change',()=>{saveSettings();renderRisk()});parall
 
 const vals=()=>{const num=(k,f)=>{const x=Number(box.querySelector('[data-k="'+k+'"]').value);return Number.isFinite(x)?x:f};return {targetMode:box.querySelector('[data-target-mode]').value==='1'?1:2,target:Math.max(.01,num('target',1000)),target2:Math.max(.01,num('target2',500)),limit:Math.max(.01,num('limit',1000)),dailyLimit:Math.max(.01,num('dailyLimit',500)),tradesPerDay:Math.max(1,Math.min(100,Math.floor(num('tradesPerDay',3)))),rr:Math.max(.01,num('rr',3)),floor:Math.max(0,num('floor',100)),winRate:Math.min(100,Math.max(0,num('winRate',50))),accountCost:Math.max(0,num('accountCost',100)),depth:Math.max(1,Math.min(12,Math.floor(num('depth',6))))}};
 function calc(path,v){
-let stage=1,stagePnl=0,total=0,prob=1,steps=[],status='active',day=1,dayPnl=0,lossesToday=0;
+let stage=1,stagePnl=0,total=0,prob=1,steps=[],status='active',day=1,dayPnl=0,lossesToday=0;const dailyTotals={};let bestDay=0;
 for(const c of path){
  if(status!=='active')break;
  // A negative day, exhausted daily drawdown, or the loss-count cap closes that day.
  // The next simulated trade belongs to the following day, not the stopped day.
  if(dayPnl<-1e-7||lossesToday>=v.tradesPerDay||v.dailyLimit+dayPnl<=1e-7){day++;dayPnl=0;lossesToday=0}
- const left=v.limit+stagePnl,goal=stage===1?v.target:v.target2;
+ const left=v.limit+stagePnl,goal=stage===1?(v.topstepConsistency?Math.max(v.target,bestDay/(v.consistencyRate/100)):v.target):v.target2;
  const dailyLeft=Math.max(0,Math.min(v.dailyLimit,v.dailyLimit+dayPnl));
  if(left<v.floor-1e-7||left<=1e-7){status='closed';break}
  const risk=Math.min((goal-stagePnl)/v.rr,left,dailyLeft);
  if(risk<=1e-7){status='closed';break}
  const delta=c==='W'?risk*v.rr:-risk,tradeDay=day,tradeStage=stage;
- stagePnl+=delta;total+=delta;dayPnl+=delta;
- if(c==='L')lossesToday++;
+ stagePnl+=delta;total+=delta;dayPnl+=delta;dailyTotals[day]=(dailyTotals[day]||0)+delta;bestDay=Math.max(0,...Object.values(dailyTotals));
+ if(c==='L')lossesToday++;if(v.topstepConsistency&&dayPnl>=1500-1e-7){day++;dayPnl=0;lossesToday=0}
  prob*=c==='W'?v.winRate/100:1-v.winRate/100;
  let passed=false;
- if(stagePnl>=goal-1e-7){passed=true;if(stage===1&&v.targetMode===2){stage=2;stagePnl=0}else status='target'}
+ if(stagePnl>=goal-1e-7&&(!v.topstepConsistency||(Object.values(dailyTotals).filter(n=>n>=1500-1e-7).length>=2&&bestDay<=stagePnl*(v.consistencyRate/100)+1e-7))){passed=true;if(stage===1&&v.targetMode===2){stage=2;stagePnl=0}else status='target'}
  else if(v.limit+stagePnl<v.floor-1e-7||v.limit+stagePnl<=1e-7)status='closed';
  steps.push({c,risk,pnl:total,stage:tradeStage,stagePnl:passed?goal:stagePnl,passed,day:tradeDay,dayPnl,lossesToday,dailyLeft:Math.max(0,Math.min(v.dailyLimit,v.dailyLimit+dayPnl))});
 }
@@ -260,7 +260,7 @@ steps,prob,day:day+(nextDay?1:0),dailyLeft:nextDailyLeft,dayPnl:nextDay?0:dayPnl
 }
 function renderRisk(){
 const firmForPhases=firmBar.querySelector('[data-firm-type]').value;const expectedPhases=firmForPhases==='ftmo'?'2':'1';if($('[data-target-mode]').value!==expectedPhases)$('[data-target-mode]').value=expectedPhases;
-const v=vals(),leaves=[],allPaths=[];
+const v=vals(),leaves=[],allPaths=[];if(firmForPhases==='topstep'){v.topstepConsistency=true;v.consistencyRate=55;}
 function walk(path){const x=calc(path,v);if(path)allPaths.push(x);if(x.status!=='active'||x.steps.length>=v.depth){leaves.push(x);return}walk(path+'W');walk(path+'L')}
 walk('');
 const counts={target:0,closed:0,active:0,'daily-blocked':0};leaves.forEach(x=>counts[x.status]++);
