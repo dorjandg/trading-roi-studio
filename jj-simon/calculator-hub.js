@@ -239,11 +239,11 @@ for(const c of path){
  const left=v.limit+stagePnl,goal=stage===1?(v.topstepConsistency?Math.max(v.target,bestDay/(v.consistencyRate/100)):v.target):v.target2;
  const dailyLeft=Math.max(0,Math.min(v.dailyLimit,v.dailyLimit+dayPnl));
  if(left<v.floor-1e-7||left<=1e-7){status='closed';break}
- const plannedRisk=v.fixedRisk?Math.min(v.fixedRisk,Math.max(0,(goal-stagePnl)/v.rr)):v.ftmoFundedBuilder?(steps.some(x=>x.c==='W')?450:150):Math.max(0,(goal-stagePnl)/v.rr);const risk=Math.min(plannedRisk,left,dailyLeft);
+ const plannedRisk=v.fixedRisk?v.fixedRisk:v.ftmoFundedBuilder?(steps.some(x=>x.c==='W')?450:150):Math.max(0,(goal-stagePnl)/v.rr);const risk=Math.min(plannedRisk,left,dailyLeft);
  if(risk<=1e-7){status='closed';break}
  const delta=c==='W'?risk*v.rr:-risk,tradeDay=day,tradeStage=stage;
  stagePnl+=delta;total+=delta;dayPnl+=delta;dailyTotals[day]=(dailyTotals[day]||0)+delta;bestDay=Math.max(0,...Object.values(dailyTotals));
- if(c==='L')lossesToday++;if(v.topstepConsistency&&dayPnl>=v.target*(v.consistencyRate/100)-1e-7){day++;dayPnl=0;lossesToday=0}
+ if(c==='L')lossesToday++;if(v.topstepConsistency&&dayPnl>=v.target/2-1e-7){day++;dayPnl=0;lossesToday=0}
  prob*=c==='W'?v.winRate/100:1-v.winRate/100;
  let passed=false;
  if(stagePnl>=goal-1e-7&&(!v.topstepConsistency||(Object.values(dailyTotals).filter(n=>n>1e-7).length>=2&&bestDay<=stagePnl*(v.consistencyRate/100)+1e-7))){passed=true;if(stage===1&&v.targetMode===2){stage=2;stagePnl=0}else status='target'}
