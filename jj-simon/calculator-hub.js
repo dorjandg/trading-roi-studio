@@ -177,7 +177,7 @@ for(const c of path){
  if(status!=='active')break;
  if(tradesToday>=v.tradesPerDay){day++;dayPnl=0;tradesToday=0}
  const left=v.limit+stagePnl,goal=stage===1?v.target:v.target2;
- const dailyLeft=Math.max(0,v.dailyLimit+dayPnl);
+ const dailyLeft=Math.max(0,Math.min(v.dailyLimit,v.dailyLimit+dayPnl));
  if(left<v.floor-1e-7||left<=1e-7){status='closed';break}
  if(dailyLeft<=1e-7){status='daily-blocked';break}
  const risk=Math.min((goal-stagePnl)/v.rr,left,dailyLeft);
@@ -217,11 +217,16 @@ const decisions=[calc('',v),...allPaths].map(x=>x.status==='active'?({...x,win:c
 const shown=decisions.filter(x=>filter==='all'||(filter==='active'&&x.status==='active')||x.status===filter||(x.win&&x.win.status===filter)||(x.loss&&x.loss.status===filter)).sort((a,b)=>a.steps.length-b.steps.length||a.path.localeCompare(b.path));
 page=Math.min(page,Math.max(0,Math.ceil(shown.length/10)-1));
 $('[data-table]').innerHTML='<div style="overflow-x:auto"><table><thead><tr><th>Path</th><th>Stage</th><th>Risk</th><th>Win</th><th>Loss</th><th>P&L</th><th>Details</th></tr></thead><tbody>'+shown.slice(page*10,page*10+10).map(x=>{
- const isOpen=expandedPaths.has(x.path);
- const history=x.steps.map((step,i)=>'<tr><td class="'+(step.c==='W'?'jj-risk-win':'jj-risk-loss')+'">'+(i+1)+' '+(step.c==='W'?'Win':'Loss')+'</td><td>'+step.day+'</td><td>T'+step.stage+'</td><td>'+tableNumber(step.risk)+'</td><td>'+tableNumber(step.pnl)+'</td><td>'+tableNumber(step.dailyLeft)+'</td><td>'+(step.passed?'T'+step.stage+' PASS':'')+'</td></tr>').join('');
- const terminal=x.status!=='active';
- const detail='<div style="padding:6px 0"><strong>Path '+(x.path||'Start')+'</strong> · Stage T'+x.stage+' · Total P&L '+tableNumber(x.pnl)+' · Stage P&L '+tableNumber(x.stagePnl)+' · '+(terminal?'Path stopped ('+(x.status==='target'?'target reached':x.status)+')':'Next risk '+tableNumber(x.risk))+' · Stage allowance '+tableNumber(x.left)+' · Day '+x.day+' daily loss remaining '+tableNumber(x.dailyLeft)+'</div><table><thead><tr><th>Trade</th><th>Day</th><th>Stage</th><th>Risk</th><th>Total P&L</th><th>Daily left</th><th>Milestone</th></tr></thead><tbody>'+(history||'<tr><td colspan="7">No trades yet</td></tr>')+'</tbody></table><div style="padding-top:6px">Next Win: '+tableNumber(x.win.pnl)+' (T'+x.win.stage+') · Next Loss: '+tableNumber(x.loss.pnl)+' (T'+x.loss.stage+')</div>';
- return '<tr><td><button class="jj-risk-path" data-path="'+x.path+'">'+(x.path||'Start')+'</button></td><td>T'+x.stage+'</td><td>'+tableNumber(x.risk)+'</td><td class="'+(x.win.status==='target'?'jj-risk-win':'')+'">'+tableNumber(x.win.pnl)+'</td><td class="'+(x.loss.status==='closed'?'jj-risk-loss':'')+'">'+tableNumber(x.loss.pnl)+'</td><td>'+tableNumber(x.pnl)+'</td><td><button data-expand-path="'+x.path+'" aria-expanded="'+isOpen+'">'+(isOpen?'Hide':'Show')+'</button></td></tr>'+(isOpen?'<tr><td colspan="7" class="jj-risk-muted" style="text-align:left;white-space:normal;padding:8px">'+detail+'</td></tr>':'');
+ const isOpen=expandedPaths.has(x.path),terminal=x.status!=='active';
+const stageRows=[1,2].filter(n=>n===1||v.targetMode===2).map(n=>{
+ const stageSteps=x.steps.filter(step=>step.stage===n);
+ if(!stageSteps.length&&n!==x.stage)return '';
+ const history=stageSteps.map((step,i)=>'<tr><td class="'+(step.c==='W'?'jj-risk-win':'jj-risk-loss')+'">'+(i+1)+' '+(step.c==='W'?'Win':'Loss')+'</td><td>'+step.day+'</td><td>'+tableNumber(step.risk)+'</td><td>'+tableNumber(step.stagePnl)+'</td><td>'+tableNumber(step.dailyLeft)+'</td><td>'+(step.passed?'TARGET HIT':'')+'</td></tr>').join('');
+ const passed=stageSteps.some(step=>step.passed);
+ return '<div style="margin-top:10px"><strong>T'+n+' · '+(passed?'TARGET HIT':n===x.stage?(terminal?'STOPPED':'IN PROGRESS'):'NOT STARTED')+'</strong></div><table><thead><tr><th>Trade</th><th>Day</th><th>Risk</th><th>Stage P&L</th><th>Daily left</th><th>Result</th></tr></thead><tbody>'+(history||'<tr><td colspan="6">No trades in this stage</td></tr>')+'</tbody></table>';
+}).join('');
+const detail='<div style="padding:6px 0"><strong>Path '+(x.path||'Start')+'</strong> · Total P&L '+tableNumber(x.pnl)+' · Stage T'+x.stage+' · '+(terminal?'Stopped: '+(x.status==='target'?'target reached':x.status):'Next risk '+tableNumber(x.risk))+' · Day '+x.day+' · Daily loss remaining '+tableNumber(x.dailyLeft)+'</div>'+stageRows+(terminal?'<div style="padding-top:6px"><strong>No further trades in this path.</strong></div>':'<div style="padding-top:6px">Next Win: '+tableNumber(x.win.pnl)+' · Next Loss: '+tableNumber(x.loss.pnl)+'</div>');
+return '<tr><td><button class="jj-risk-path" data-path="'+x.path+'">'+(x.path||'Start')+'</button></td><td>T'+x.stage+'</td><td>'+(terminal?'Stopped':tableNumber(x.risk))+'</td><td class="'+(!terminal&&x.win.status==='target'?'jj-risk-win':'')+'">'+(terminal?'—':tableNumber(x.win.pnl))+'</td><td class="'+(!terminal&&x.loss.status==='closed'?'jj-risk-loss':'')+'">'+(terminal?'—':tableNumber(x.loss.pnl))+'</td><td>'+tableNumber(x.pnl)+(terminal?' · '+(x.status==='target'?'PASS':x.status==='closed'?'FAIL':'DAY BLOCK'):'')+'</td><td><button data-expand-path="'+x.path+'" aria-expanded="'+isOpen+'">'+(isOpen?'Hide':'Show')+'</button></td></tr>'+(isOpen?'<tr><td colspan="7" class="jj-risk-muted" style="text-align:left;white-space:normal;padding:8px">'+detail+'</td></tr>':'');
 }).join('')+'</tbody></table></div>';
 $('[data-count]').textContent=shown.length?(page*10+1)+'–'+Math.min((page+1)*10,shown.length)+' / '+shown.length:'0 paths';
 $('[data-prev]').disabled=page===0;$('[data-next]').disabled=(page+1)*10>=shown.length;
