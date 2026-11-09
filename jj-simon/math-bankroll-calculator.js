@@ -13,6 +13,36 @@ const data={...defaults,...saved};const labels={wr:'Evaluation win rate %',rr:'E
 const host=document.createElement('div');host.dataset.mathCh10='';host.style.cssText='padding:10px;border:1px solid #8885;border-radius:9px;margin:12px 0;font-size:12px';
 host.innerHTML='<details open><summary style="font-size:14px;font-weight:700">10 · Important Math Statistics & Bankroll</summary><p>Uses saved Chapter 09 '+firm.toUpperCase()+' settings where available. Editable scenario assumptions, not verified performance.</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:7px">'+Object.keys(labels).map(k=>'<label style="display:grid;gap:3px">'+labels[k]+'<input data-math="'+k+'" type="number" step="any" value="'+Number(data[k])+'" style="width:100%;box-sizing:border-box;padding:5px;background:transparent;color:inherit;border:1px solid #8886;border-radius:5px"></label>').join('')+'</div><div data-math-results style="margin-top:12px"></div><details><summary>Formulas and source lessons</summary><p>EV = p × RR − (1−p). Variance = p × (RR−EV)² + (1−p) × (−1−EV)². Breakeven WR = 1/(1+RR). Cost/funded = fee/pass rate + activation. Success/purchase = pass rate × funded payout success × settlement. No payout = (1−success)^purchases. Expected ROI = (expected cash−expected fees)/expected fees.</p><p>Lessons: Expected Value Variance; Risk Of Ruin Bankroll Management; Prop Firm Math Stats; How To Calculate YOUR EV. Independent purchase statistics are not full path-dependent risk of ruin.</p></details></details>';
 root.appendChild(host);
+const help={
+ wr:'Evaluation win rate: expected winning trades out of 100. Example: 35 means 35%. Imported from Chapter 09.',
+ rr:'Evaluation reward-to-risk ratio. Example: 3 means a win gains 3 times the amount risked. Imported from Chapter 09.',
+ fwr:'Funded account win rate, in percent. Imported from Chapter 09.',
+ frr:'Funded account reward-to-risk ratio. Example: 4 means a winning trade earns 4R. Imported from Chapter 09.',
+ fee:'Cost to buy one evaluation or challenge. Used to calculate actual acquisition spending. Imported from Chapter 09.',
+ activation:'Additional fee charged after passing an evaluation to activate funded trading. Imported from Chapter 09.',
+ target:'Funded profit target used as a proxy for potential payout. This is not necessarily withdrawable cash. Imported from Chapter 09.',
+ split:'Percentage of eligible funded profit paid to the trader. Example: 75 means 75%. Imported from Chapter 09.',
+ attempts:'Number of historical evaluations observed. Together with evaluations passed, estimates the evaluation pass rate. Chapter 10 only.',
+ passes:'Number of those observed evaluations that passed. Cannot exceed observed evaluations. Chapter 10 only.',
+ fundedSuccess:'Estimated percentage of funded accounts that reach an eligible payout, conditional on passing evaluation. Chapter 10 only.',
+ settlement:'Estimated percentage of eligible payouts that are actually received. 100 means all eligible payouts settle. Chapter 10 only.',
+ purchases:'Number of new evaluation purchases planned for this scenario. Used for expected costs and payout probabilities. Chapter 10 only.',
+ budget:'Amount available to spend on evaluations and activation fees. Used only for the affordability check, not as the ROI denominator. Chapter 10 only.'
+};
+host.querySelectorAll('[data-math]').forEach(input=>{
+ const key=input.dataset.math,label=input.closest('label'),description=help[key];
+ if(!label||!description)return;
+ const header=document.createElement('span');header.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:3px';
+ const name=document.createElement('span');name.textContent=labels[key];header.appendChild(name);
+ const info=document.createElement('button');info.type='button';info.textContent='ⓘ';info.setAttribute('aria-label','Explain '+labels[key]);info.setAttribute('aria-expanded','false');info.style.cssText='border:0;background:transparent;color:inherit;cursor:pointer;font-size:14px;padding:0 3px;line-height:1.2';
+ info.title=description;
+ const explanation=document.createElement('small');explanation.hidden=true;explanation.textContent=description;explanation.style.cssText='font-size:10px;line-height:1.35;opacity:.85;max-width:230px';
+ info.addEventListener('click',()=>{explanation.hidden=!explanation.hidden;info.setAttribute('aria-expanded',String(!explanation.hidden))});
+ header.appendChild(info);label.insertBefore(header,input);label.appendChild(explanation);
+ for(const node of Array.from(label.childNodes))if(node.nodeType===3&&node.textContent.trim()===labels[key])node.remove();
+ label.title=description;
+});
+
 const ch09Keys=new Set(['wr','rr','fwr','frr','fee','activation','target','split']);
 host.querySelectorAll('[data-math]').forEach(input=>{
  if(ch09Keys.has(input.dataset.math))return;
