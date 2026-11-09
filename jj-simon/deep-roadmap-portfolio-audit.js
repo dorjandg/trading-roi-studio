@@ -89,3 +89,18 @@ let changed=false;
 for(const a of additions){const c=chapters.find(x=>x.slug===a.slug);if(c&&!c.sections.some(s=>s.title===a.title)){c.sections.push({title:a.title,points:a.points,src:a.src});changed=true;}}
 if(changed){renderNav();render();}
 })();
+
+
+/* 2026-11-09 Module 15 + Module 18 cross-video cash reconciliation. Historical, not current provider rules. */
+(()=>{
+const c=chapters.find(x=>x.slug==="scaling");
+if(!c||c.sections.some(s=>s.title==="0-to-10K roadmap: capped attempts, profit split and conflicting funded slots"))return;
+c.sections.push({title:"0-to-10K roadmap: capped attempts, profit split and conflicting funded slots",points:[
+"JJ's historical roadmap describes ten funded accounts, each allowed up to two $1,000-risk attempts at a $4,000 target. At an illustrative independent 20% win rate, an account that wins first does not take its second attempt: the ten accounts generate 18 expected attempts, not a fixed twenty.",
+"The three per-account branches are +$4,000 (20%), +$3,000 after a loss then win (16%), and −$2,000 after two losses (64%). Their expected gross trading P&L is $0 per account before fees; counting only 20% × 20 × $4,000 as income omits losses and the stop-after-win rule.",
+"The lesson initially treats $8,000 as half of $16,000 trading wins, but later mentions a historical 90% profit split. An illustrative $8,000 gross approved payout would become $7,200 settled cash at that split; after $3,000 actual evaluation spending, net is $4,200 before other fees, not $5,000. Gross requests, settled receipts and net ROI must be tracked separately.",
+"The roadmap later describes $8,000, $4,000 and $2,000 payout rounds but also refers to $11,000 total. The amounts do not reconcile without additional unstated assumptions; original video and provider terms require review.",
+"Module 15 proposes ten funded Topstep accounts, while Module 18 describes five funded slots per site. Treat these as conflicting historical course versions, not a current confirmed cap. Winning-day eligibility, payout approval and settlement remain conditional."
+],src:[["0 -_ 10k_m Roadmap","00:46–01:40; 01:46–04:17; 05:02–07:38; 08:57–09:10","1ckmp-lBqjugMPTsGshIi-rAbQVnnjo0m"],["The Optimal Number of Accounts To Manage","00:05–00:20; 02:42–02:57; 03:13–04:18","11nOzXqPVWcTMHX6cpQivsM7StZVrtbZM"]]});
+renderNav();render();
+})();
