@@ -51,3 +51,17 @@ c.sections.push({title:"Copied account failures can cluster renewal bills",point
 ],src:[["Managing Resets Billing Cycles Across Multiple Futures Funded Accounts","00:29–00:41; 01:43–02:33; 02:53–03:06","1pdmFifqByLbI75-XtX0C53vMiCGR4-i-"],["How To Manage Different Drawdown Rules","00:12–00:57; 01:28–01:42","1PMHg2wWs7Vr-x9YbQ-cSVE_RAf-rq3tC"]]});
 renderNav();render();
 })();
+
+// Module 18 150K funded qualifying-day mathematics; educational audit, not current firm guidance.
+(function(){
+const c=chapters.find(x=>x.slug==="portfolio-risk");
+if(!c||c.sections.some(s=>s.title==="150K qualifying days: four wins and the 36-to-1 loss asymmetry"))return;
+c.sections.push({title:"150K qualifying days: four wins and the 36-to-1 loss asymmetry",points:[
+"JJ's historical 150K illustration starts with +$9,000 funded profit, then seeks four separate +$250 winning days: 9,000 + 4×250 = $10,000, followed by a proposed $5,000 withdrawal. Qualifying-day requirements, payout eligibility, approval, profit splits and settlement were not independently checked.",
+"He also describes risking as much as $9,000 of accrued profit to earn a $250 qualifying day, sometimes through several trades. A single -$9,000/+250 trade has 36:1 loss-to-gain and requires a win rate above 97.297% merely for zero gross expected value. At 95% wins, expected value is -$212.50 per attempt before costs.",
+"If four days each independently succeed with probability p, the probability of completing all four is p⁴: 81.45% at p=95%, 65.61% at p=90%. These are illustrative assumptions, not JJ's observed performance; retries and correlated market regimes change the model.",
+"After an initial -$2,000 loss, +$2,250 is needed to end that day at +$250. Two NQ contracts at $20 per point require 56.25 points for $2,250, not exactly the approximately 50 points narrated. A subsequent recovery sequence is partly garbled and requires original video/audio review.",
+"Do not confuse this small-target winning-day method with the separate 150K evaluation -$4,500/+4,500 route or initial funded -$2,250/+9,000 trade. Provider rules, chart context, execution and payout records remain unverified."
+],src:[["30k_month -_ 100k_month Scaling","03:21–03:35; 05:30–05:44; 07:11–10:48","1gKSrmr2naboKQWfZmHCF7OBrArdhf0s0"]]});
+renderNav();render();
+})();
