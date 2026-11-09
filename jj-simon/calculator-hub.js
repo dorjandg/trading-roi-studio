@@ -495,7 +495,7 @@ const costFunded=phat>0?v.accountCost/phat+activation:null;
 const target90=success>0&&success<1?Math.ceil(Math.log(.1)/Math.log(1-success)):success===1?1:null;
 const metric=(name,value,description)=>'<div title="'+description+'" style="padding:7px;border-radius:6px;background:var(--card,#8881)"><div style="opacity:.75;font-size:10px">'+name+'</div><strong style="font-size:14px">'+value+'</strong></div>';
 const mathInputs=[['observed','Evaluations observed',observed,1,10000],['passed','Evaluations passed',passed,0,10000],['eligible','Funded → eligible %',eligible*100,0,100],['settled','Eligible → settled %',settled*100,0,100],['purchases','Evaluation purchases',purchases,1,500]];
-const wasOpen=mathBox.querySelector('details[data-math-main]')?.open??false;
+const wasOpen=mathBox.querySelector('details[data-math-main]')?.open??true;
 mathBox.innerHTML='<details data-math-main '+(wasOpen?'open':'')+'><summary style="cursor:pointer;font-size:13px;font-weight:750">10 · Important Math Statistics & Bankroll</summary><p style="opacity:.8">Linked to the '+currentFirm.toUpperCase()+' preset and active risk strategy. Course illustrations are not verified trading results.</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:6px">'+
 metric('Evaluation EV',evR.toFixed(3)+'R','p × RR − (1 − p), before fees')+
 metric('Funded EV',fundedEV.toFixed(3)+'R','Funded win rate × funded RR minus loss probability')+
