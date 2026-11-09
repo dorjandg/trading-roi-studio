@@ -267,7 +267,8 @@ const vals=()=>{const num=(k,f)=>{const x=Number(box.querySelector('[data-k="'+k
 function calc(path,v){
 let stage=1,stagePnl=0,total=0,prob=1,steps=[],status='active',day=1,dayPnl=0,lossesToday=0;const dailyTotals={};let bestDay=0;
 for(const c of path){
- if(status!=='active')break;
+ // Terminal guard: never execute a trade after the final target or account closure.
+ if(status==='target'||status==='closed')break;
  // A negative day, exhausted daily drawdown, or the loss-count cap closes that day.
  // The next simulated trade belongs to the following day, not the stopped day.
  if(dayPnl<-1e-7||lossesToday>=v.tradesPerDay||v.dailyLimit+dayPnl<=1e-7){day++;dayPnl=0;lossesToday=0}
@@ -281,7 +282,7 @@ for(const c of path){
  if(c==='L')lossesToday++;if(v.topstepConsistency&&dayPnl>=v.target/2-1e-7){day++;dayPnl=0;lossesToday=0}
  prob*=c==='W'?v.winRate/100:1-v.winRate/100;
  let passed=false;
- if(stagePnl>=goal-1e-7&&(!v.topstepConsistency||(Object.values(dailyTotals).filter(n=>n>1e-7).length>=2&&bestDay<=stagePnl*(v.consistencyRate/100)+1e-7))){passed=true;if(stage===1&&v.targetMode===2){stage=2;stagePnl=0}else status='target'}
+ if(stagePnl>=goal-1e-7&&(!v.topstepConsistency||(Object.values(dailyTotals).filter(n=>n>1e-7).length>=2&&bestDay<=stagePnl*(v.consistencyRate/100)+1e-7))){passed=true;if(stage===1&&v.targetMode===2){stage=2;stagePnl=0}else {status='target';/* Final target is terminal: no further trades on this path. */}}
  else if(v.limit+stagePnl<v.floor-1e-7||v.limit+stagePnl<=1e-7)status='closed';
  steps.push({c,risk,pnl:total,stage:tradeStage,stagePnl:passed?goal:stagePnl,passed,day:tradeDay,dayPnl,lossesToday,dailyLeft:Math.max(0,Math.min(v.dailyLimit,v.dailyLimit+dayPnl))});
 }
