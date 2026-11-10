@@ -345,11 +345,31 @@ const captureManualPreset=()=>{
 };
 const restoreManualPreset=settings=>{
  if(!settings||typeof settings!=='object'||Array.isArray(settings))return false;
- box.querySelectorAll('[data-manual-mode]').forEach(el=>{const value=settings['m'+el.dataset.manualMode];if(value==='manual'||value==='auto')el.value=value});
- box.querySelectorAll('[data-manual-risk]').forEach(el=>{const value=settings['r'+el.dataset.manualRisk];if(value!==undefined&&value!==null&&value!==''&&Number.isFinite(Number(value))&&Number(value)>0)el.value=String(value)});
- box.querySelectorAll('[data-manual-rr]').forEach(el=>{const value=settings['rr'+el.dataset.manualRr];if(value===null||value==='')el.value='';else if(value!==undefined&&Number.isFinite(Number(value))&&Number(value)>0)el.value=String(value)});
+ /* Restore all 3 phase modes + 4 risk and RR tiers, including blank RR overrides. */
+ for(const phase of [1,2,3]){
+  const mode=box.querySelector('[data-manual-mode="'+phase+'"]');
+  const m=settings['m'+phase];if(mode&&(m==='manual'||m==='auto'))mode.value=m;
+  for(const tier of [1,2,3,4]){
+   const suffix=phase+'-'+tier;
+   const risk=box.querySelector('[data-manual-risk="'+suffix+'"]');
+   const rr=box.querySelector('[data-manual-rr="'+suffix+'"]');
+   const riskValue=settings['r'+suffix],rrValue=settings['rr'+suffix];
+   if(risk&&riskValue!==undefined&&riskValue!==null&&riskValue!==''&&Number.isFinite(Number(riskValue))&&Number(riskValue)>0)risk.value=String(riskValue);
+   if(rr&&Object.prototype.hasOwnProperty.call(settings,'rr'+suffix)){
+    rr.value=rrValue===null||rrValue===''?'':Number.isFinite(Number(rrValue))&&Number(rrValue)>0?String(rrValue):'';
+   }
+  }
+ }
  try{localStorage.setItem(manualRiskKey,JSON.stringify(captureManualPreset()))}catch(e){}
  return true;
+};
+const manualPresetComplete=settings=>!!settings&&[1,2,3].every(phase=>
+ ['m'+phase,...[1,2,3,4].flatMap(t=>['r'+phase+'-'+t,'rr'+phase+'-'+t])]
+ .every(key=>Object.prototype.hasOwnProperty.call(settings,key)));
+const verifyManualPreset=settings=>{
+ const actual=captureManualPreset();
+ if(!manualPresetComplete(settings))return false;
+ return Object.keys(actual).every(k=>String(actual[k])===String(settings[k]));
 };
 /* A preset captures the complete editable scenario and its visible page choices.
    Results/history are recalculated, not copied as stale outputs. */
@@ -405,9 +425,9 @@ const restorePageSettings=pageSettings=>{
  }
 };
 const presetSnapshot=()=>({...captureProfile(),fundedTarget:fundedTargets[currentFirm],manualPhases:captureManualPreset(),pageSettings:capturePageSettings()});
-const applyNamedPreset=data=>{if(!data)return;applyProfile(data);restoreManualPreset(data.manualPhases);if(Number.isFinite(Number(data.fundedTarget))){fundedTargets[currentFirm]=Math.max(1,Math.floor(Number(data.fundedTarget)));try{localStorage.setItem('jj-risk-calculator09-funded-targets-v1',JSON.stringify(fundedTargets))}catch(e){}}restorePageSettings(data.pageSettings);saveSettings();page=0;expandedPaths.clear();renderRisk()};
-presetBar.querySelector('[data-preset-load]').addEventListener('click',()=>{const key=presetSelect.value;if(!key)return;if(key==='gpt'){auditedPresetButton.click();rememberLoadedPreset('gpt');presetNote.textContent='GPT preset loaded';return}const data=(readNamedPresets()[currentFirm]||{})[key.slice(5)];if(data){applyNamedPreset(data);rememberLoadedPreset(key);presetNote.textContent='Loaded '+key.slice(5)+(data.manualPhases?' · manual phases restored':' · legacy preset (no manual phases saved)')}});
-presetBar.querySelector('[data-preset-save]').addEventListener('click',()=>{const name=(window.prompt('Name this preset (saved for '+currentFirm.toUpperCase()+'):', '')||'').trim().slice(0,60);if(!name)return;if(name.toLowerCase().startsWith('gpt')){presetNote.textContent='GPT names are reserved';return}const all=readNamedPresets();all[currentFirm]=all[currentFirm]||{};if(all[currentFirm][name]&&!window.confirm('Replace preset "'+name+'"?'))return;all[currentFirm][name]=presetSnapshot();try{localStorage.setItem(presetKey,JSON.stringify(all));refreshNamedPresets();presetSelect.value='user:'+name;rememberLoadedPreset('user:'+name);presetNote.textContent='Saved '+name;pushSyncedPresets().catch(e=>{presetNote.textContent='Not synced: '+e.message})}catch(e){presetNote.textContent='Browser storage unavailable'}});
+const applyNamedPreset=data=>{if(!data)return false;applyProfile(data);if(Number.isFinite(Number(data.fundedTarget))){fundedTargets[currentFirm]=Math.max(1,Math.floor(Number(data.fundedTarget)));try{localStorage.setItem('jj-risk-calculator09-funded-targets-v1',JSON.stringify(fundedTargets))}catch(e){}}restorePageSettings(data.pageSettings);restoreManualPreset(data.manualPhases);saveSettings();page=0;expandedPaths.clear();renderRisk();return verifyManualPreset(data.manualPhases)};
+presetBar.querySelector('[data-preset-load]').addEventListener('click',()=>{const key=presetSelect.value;if(!key)return;if(key==='gpt'){auditedPresetButton.click();rememberLoadedPreset('gpt');presetNote.textContent='GPT preset loaded';return}const data=(readNamedPresets()[currentFirm]||{})[key.slice(5)];if(data){const verified=applyNamedPreset(data);rememberLoadedPreset(key);presetNote.textContent=verified?'Loaded '+key.slice(5)+' · all 24 manual values verified':!manualPresetComplete(data.manualPhases)?'Old preset has no complete R1–R4 values · save it again':'Manual R1–R4 mismatch · please report this'}});
+presetBar.querySelector('[data-preset-save]').addEventListener('click',()=>{const name=(window.prompt('Name this preset (saved for '+currentFirm.toUpperCase()+'):', '')||'').trim().slice(0,60);if(!name)return;if(name.toLowerCase().startsWith('gpt')){presetNote.textContent='GPT names are reserved';return}const all=readNamedPresets();all[currentFirm]=all[currentFirm]||{};if(all[currentFirm][name]&&!window.confirm('Replace preset "'+name+'"?'))return;all[currentFirm][name]=presetSnapshot();if(!manualPresetComplete(all[currentFirm][name].manualPhases)){presetNote.textContent='Could not capture manual R1–R4 settings';return}try{localStorage.setItem(presetKey,JSON.stringify(all));refreshNamedPresets();presetSelect.value='user:'+name;rememberLoadedPreset('user:'+name);presetNote.textContent='Saved '+name;pushSyncedPresets().catch(e=>{presetNote.textContent='Not synced: '+e.message})}catch(e){presetNote.textContent='Browser storage unavailable'}});
 presetBar.querySelector('[data-preset-delete]').addEventListener('click',()=>{const key=presetSelect.value;if(!key||key==='gpt'){presetNote.textContent='GPT preset cannot be deleted';return}const name=key.slice(5);if(!window.confirm('Delete preset "'+name+'"?'))return;const all=readNamedPresets();if(all[currentFirm])delete all[currentFirm][name];try{localStorage.setItem(presetKey,JSON.stringify(all));refreshNamedPresets();presetSelect.value='';if(getLoadedPreset()===key)rememberLoadedPreset('');presetNote.textContent='Deleted '+name;pushSyncedPresets().catch(e=>{presetNote.textContent='Delete not synced: '+e.message})}catch(e){presetNote.textContent='Unable to delete'}});
 refreshNamedPresets();const restoredPreset=getLoadedPreset();if(restoredPreset&&[...presetSelect.options].some(o=>o.value===restoredPreset)){presetSelect.value=restoredPreset;presetNote.textContent='Loaded '+(restoredPreset==='gpt'?'GPT preset':restoredPreset.slice(5))}
 strategySelect.value=purchaseStrategyMode;strategySelect.addEventListener('change',()=>{purchaseStrategyMode=strategySelect.value;saveSettings();renderRisk()});
