@@ -240,6 +240,7 @@ presetBar.innerHTML='<select data-named-presets aria-label="Presets" style="widt
 presetBar.querySelectorAll('button').forEach(el=>el.style.cssText='font-size:10px;line-height:1.1;padding:4px 6px;border:1px solid #8886;border-radius:5px;background:transparent;color:inherit;cursor:pointer;min-height:25px');
 firmBar.appendChild(presetBar);
 const presetSelect=presetBar.querySelector('[data-named-presets]'),presetNote=presetBar.querySelector('[data-preset-note]');
+const presetVersion=document.createElement('small');presetVersion.textContent='Presets v44';presetVersion.style.cssText='opacity:.5;font-size:9px';presetBar.append(presetVersion);
 const readNamedPresets=()=>{try{const x=JSON.parse(localStorage.getItem(presetKey)||'{}');return x&&typeof x==='object'?x:{}}catch(e){return {}}};
 /* Cloudflare KV is the shared source of truth for the single-user Academy.
    No Google login, sync button, clipboard, or device-specific account required. */
@@ -444,7 +445,16 @@ presetBar.querySelector('[data-preset-load]').addEventListener('click',async()=>
   if(firm!==currentFirm)return;
   const verified=applyNamedPreset(data);
   rememberLoadedPreset(key);
-  presetNote.textContent=verified?'Loaded from cloud · R1–R4 verified for P1, P2, P3':!manualPresetComplete(data.manualPhases)?'Cloud preset missing manual R1–R4 · replace it using Save':'Manual fields did not match cloud preset';
+  if(verified){presetNote.textContent='Cloud loaded · all R1–R4 values match';}
+  else if(!manualPresetComplete(data.manualPhases)){
+   const keys=data.manualPhases?Object.keys(data.manualPhases):[];
+   presetNote.textContent='Cloud preset incomplete ('+keys.length+'/27 phase entries). Re-save this preset.';
+  }else{
+   const actual=captureManualPreset();
+   const differences=Object.keys(data.manualPhases).filter(k=>String(data.manualPhases[k])!==String(actual[k]));
+   const key=differences[0];
+   presetNote.textContent='Manual mismatch: '+key+' cloud='+String(data.manualPhases[key])+' page='+String(actual[key]);
+  }
  }catch(e){presetNote.textContent='Cloud Load failed: '+e.message}
  finally{button.disabled=false}
 });
