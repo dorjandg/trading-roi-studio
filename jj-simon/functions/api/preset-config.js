@@ -1,0 +1,1 @@
+export function onRequestGet({env}){return new Response(JSON.stringify({clientId:env.GOOGLE_CLIENT_ID||'',storageReady:!!env.PRESET_KV}),{headers:{'content-type':'application/json','cache-control':'no-store'}})}
