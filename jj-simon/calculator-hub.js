@@ -214,8 +214,20 @@ const funnel=document.createElement('div');funnel.dataset.funnel='';box.querySel
 const title=Array.from(box.querySelectorAll('h4')).find(x=>x.textContent.includes('All scenario paths'));
 if(title){const nodes=[];let n=title;while(n&&n.tagName!=='P'){nodes.push(n);n=n.nextElementSibling}group('paths','10 · Challenge · Scenario Paths',nodes)}
 const fundedScenario=document.createElement('div');fundedScenario.innerHTML='<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px"><label style="font-size:12px">Filter <select data-funded-path-filter><option value="all">All paths</option><option value="target">Target hit</option><option value="closed">Failed</option><option value="active">Unresolved</option></select></label><span data-funded-path-count style="font-size:11px;opacity:.7"></span></div><div data-funded-path-table></div><div style="display:flex;align-items:center;gap:8px;margin-top:8px"><button data-funded-prev type="button">Previous</button><span data-funded-page style="font-size:11px"></span><button data-funded-next type="button">Next</button></div><p style="font-size:11px;opacity:.7">Illustrative funded paths from the existing funded engine; no payout waiting period or firm-specific day rules are enforced here.</p>';box.querySelector('[data-section="paths"]').after(fundedScenario);group('funded-paths','11 · P3 Funded · Scenario Paths',[fundedScenario]);let fundedPage=0;const expandedFunded=new Set();
-const purchaseStrategy=document.createElement('div');purchaseStrategy.style.cssText='display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;margin:0 0 10px';purchaseStrategy.innerHTML='<strong>Purchase strategy</strong><select data-purchase-strategy aria-label="Account purchase strategy"><option value="fixed">Fixed purchases</option><option value="target">Reach funded limit</option></select><span data-purchase-strategy-help style="opacity:.75"></span>';box.querySelector('[data-section="funnel"] .jj-risk-section-body').prepend(purchaseStrategy);const strategySelect=purchaseStrategy.querySelector('[data-purchase-strategy]');let purchaseStrategyMode='target';
-const purchaseCountControls=document.createElement('div');purchaseCountControls.style.cssText='display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:7px 0';purchaseCountControls.innerHTML='<label data-fixed-count-wrap style="font-size:12px">Evaluations to buy </label><label data-funded-count-wrap style="font-size:12px">Funded account target <input data-funded-count type="number" min="1" step="1" value="20" style="width:68px;padding:5px;margin-left:5px"></label>';purchaseStrategy.after(purchaseCountControls);const fundedCountInput=purchaseCountControls.querySelector('[data-funded-count]');purchaseCountControls.querySelector('[data-fixed-count-wrap]').append(box.querySelector('[data-account-count]'));const oldMulti=box.querySelector('[data-multi-controls]');oldMulti.style.display='none';oldMulti.querySelector('div').style.display='none';accountBar.style.display='none';let fundedTargets={ftmo:20,topstep:5};try{const savedTargets=JSON.parse(localStorage.getItem('jj-risk-calculator09-funded-targets-v1')||'{}');for(const k of ['ftmo','topstep'])if(Number.isFinite(+savedTargets[k]))fundedTargets[k]=Math.max(1,Math.floor(+savedTargets[k]))}catch(e){}fundedCountInput.title='Unrestricted cumulative planning target. Firm simultaneous active-account limits remain separate and are not overridden by this input.';fundedCountInput.addEventListener('change',()=>{fundedTargets[currentFirm]=Math.max(1,Math.floor(Number(fundedCountInput.value)||fundedTargets[currentFirm]||1));fundedCountInput.value=String(fundedTargets[currentFirm]);try{localStorage.setItem('jj-risk-calculator09-funded-targets-v1',JSON.stringify(fundedTargets))}catch(e){}renderRisk()});
+const purchaseStrategy=document.createElement('div');purchaseStrategy.style.cssText='display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;margin:0 0 10px';purchaseStrategy.innerHTML='<strong>Purchase strategy</strong><select data-purchase-strategy aria-label="Account purchase strategy"><option value="fixed">Fixed purchases</option><option value="target">Reach Funded Limit</option><option value="payout">Maximum Funded Limit Payout</option></select><span data-purchase-strategy-help style="opacity:.75"></span>';box.querySelector('[data-section="funnel"] .jj-risk-section-body').prepend(purchaseStrategy);const strategySelect=purchaseStrategy.querySelector('[data-purchase-strategy]');let purchaseStrategyMode='target';
+const purchaseCountControls=document.createElement('div');purchaseCountControls.style.cssText='display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:7px 0';purchaseCountControls.innerHTML='<label data-fixed-count-wrap style="font-size:12px">Evaluations to buy </label><label data-funded-count-wrap style="font-size:12px">Funded account target <input data-funded-count type="number" min="1" step="1" value="20" style="width:68px;padding:5px;margin-left:5px"></label>';purchaseStrategy.after(purchaseCountControls);const fundedCountInput=purchaseCountControls.querySelector('[data-funded-count]');
+const payoutCountWrap=document.createElement('label');payoutCountWrap.dataset.payoutCountWrap='';payoutCountWrap.style.fontSize='12px';
+payoutCountWrap.innerHTML='Payout target <input data-payout-count type="number" min="1" max="5" step="1" value="5" style="width:62px;padding:5px;margin-left:5px">';
+purchaseCountControls.append(payoutCountWrap);
+const payoutCountInput=payoutCountWrap.querySelector('[data-payout-count]');
+const payoutTargets={ftmo:5,topstep:5};
+try{const stored=JSON.parse(localStorage.getItem('jj-risk-calculator09-payout-targets-v1')||'{}');for(const firm of ['ftmo','topstep'])if(Number.isFinite(+stored[firm]))payoutTargets[firm]=Math.max(1,Math.floor(+stored[firm]));}catch(e){}
+payoutCountInput.addEventListener('change',()=>{
+ payoutTargets[currentFirm]=Math.max(1,Math.min(currentFirm==='topstep'?5:100,Math.floor(Number(payoutCountInput.value)||5)));
+ payoutCountInput.value=String(payoutTargets[currentFirm]);
+ try{localStorage.setItem('jj-risk-calculator09-payout-targets-v1',JSON.stringify(payoutTargets))}catch(e){}
+ saveSettings();renderRisk();
+});purchaseCountControls.querySelector('[data-fixed-count-wrap]').append(box.querySelector('[data-account-count]'));const oldMulti=box.querySelector('[data-multi-controls]');oldMulti.style.display='none';oldMulti.querySelector('div').style.display='none';accountBar.style.display='none';let fundedTargets={ftmo:20,topstep:5};try{const savedTargets=JSON.parse(localStorage.getItem('jj-risk-calculator09-funded-targets-v1')||'{}');for(const k of ['ftmo','topstep'])if(Number.isFinite(+savedTargets[k]))fundedTargets[k]=Math.max(1,Math.floor(+savedTargets[k]))}catch(e){}fundedCountInput.title='Unrestricted cumulative planning target. Firm simultaneous active-account limits remain separate and are not overridden by this input.';fundedCountInput.addEventListener('change',()=>{fundedTargets[currentFirm]=Math.max(1,Math.floor(Number(fundedCountInput.value)||fundedTargets[currentFirm]||1));fundedCountInput.value=String(fundedTargets[currentFirm]);try{localStorage.setItem('jj-risk-calculator09-funded-targets-v1',JSON.stringify(fundedTargets))}catch(e){}renderRisk()});
 const allocationPreview=document.createElement('div');allocationPreview.dataset.allocationPreview='';box.querySelector('[data-section="funnel"]').after(allocationPreview);group('allocation-preview','08 · Replacement Until Funded Target · Preview',[allocationPreview]);
 const stagesPreview=document.createElement('div');stagesPreview.dataset.stagesPreview='';box.querySelector('[data-section="allocation-preview"]').after(stagesPreview);group('stages-preview','09 · Firm Stages · Rules Preview',[stagesPreview]);
 const consistencyPanel=document.createElement('div');consistencyPanel.dataset.consistencyPanel='';const consistencyToggle=document.createElement('label');consistencyToggle.style.cssText='display:flex;align-items:center;gap:7px;font-size:12px;margin:10px 0 5px';consistencyToggle.innerHTML='<input type="checkbox" data-consistency-enabled style="width:15px;height:15px"> Enable consistency rule';const challengeBody=box.querySelector('[data-section="challenge-settings"] .jj-risk-section-body');const challengeFields=challengeBody.querySelector('[data-risk-fields]');challengeFields.before(phaseGuide);challengeFields.after(consistencyToggle,consistencyPanel);
@@ -338,7 +350,7 @@ const firmDefaults=firm=>firm==='ftmo'?{mode:'2',accountMode:'multi',accountCoun
 const readProfiles=()=>{try{const p=JSON.parse(localStorage.getItem(firmSettingsKey)||'{}');return p&&typeof p==='object'?p:{}}catch(e){return {}}};
 const writeProfile=(firm,data)=>{try{const p=readProfiles();p[firm]=data;localStorage.setItem(firmSettingsKey,JSON.stringify(p))}catch(e){}};
 const applyProfile=data=>{if(!data||typeof data!=='object')return;
-accountMode=data.accountMode==='multi'?'multi':'single';purchaseStrategyMode=data.purchaseStrategy==='fixed'?'fixed':'target';strategySelect.value=purchaseStrategyMode;
+accountMode=data.accountMode==='multi'?'multi':'single';purchaseStrategyMode=['fixed','target','payout'].includes(data.purchaseStrategy)?data.purchaseStrategy:'target';strategySelect.value=purchaseStrategyMode;
 if(['evaluation','funded','combined'].includes(data.phaseMode))phaseMode=data.phaseMode;
 const applyNum=(el,value,min,max)=>{if(el&&value!==undefined&&value!==null&&value!==''&&Number.isFinite(Number(value)))el.value=String(Math.max(min,Math.min(max,Math.floor(Number(value)))))};
 applyNum(signalsInput,data.signalsPerDay,1,100);applyNum(parallelInput,data.parallelAccounts,1,100);
@@ -393,7 +405,7 @@ const verifyManualPreset=settings=>{
 const capturePageSettings=()=>{
  const controls={};
  const selectors=['[data-k]','[data-funded]','[data-manual-mode]','[data-manual-risk]','[data-manual-rr]',
-  '[data-consistency-enabled]','[data-consistency-limit]','[data-account-count]','[data-funded-count]',
+  '[data-consistency-enabled]','[data-consistency-limit]','[data-account-count]','[data-funded-count]','[data-payout-count]',
   '[data-parallel-accounts]','[data-signals-per-day]','[data-purchase-strategy]','[data-target-mode]'];
  for(const selector of selectors){
   box.querySelectorAll(selector).forEach(el=>{
@@ -407,7 +419,7 @@ const capturePageSettings=()=>{
 const restorePageSettings=pageSettings=>{
  if(!pageSettings||pageSettings.version!==2||!pageSettings.controls)return;
  const controls=pageSettings.controls;
- box.querySelectorAll('input[data-k],input[data-funded],input[data-manual-risk],input[data-manual-rr],select[data-manual-mode],input[data-consistency-enabled],input[data-consistency-limit],input[data-account-count],input[data-funded-count],input[data-parallel-accounts],input[data-signals-per-day],select[data-purchase-strategy],input[data-target-mode]').forEach(el=>{
+ box.querySelectorAll('input[data-k],input[data-funded],input[data-manual-risk],input[data-manual-rr],select[data-manual-mode],input[data-consistency-enabled],input[data-consistency-limit],input[data-account-count],input[data-funded-count],input[data-payout-count],input[data-parallel-accounts],input[data-signals-per-day],select[data-purchase-strategy],input[data-target-mode]').forEach(el=>{
   const key=Object.keys(el.dataset).sort().map(k=>k+':'+el.dataset[k]).join('|');
   if(!Object.prototype.hasOwnProperty.call(controls,key))return;
   const value=controls[key];
@@ -421,7 +433,7 @@ const restorePageSettings=pageSettings=>{
  }
  if(['evaluation','funded','combined'].includes(pageSettings.phaseMode))phaseMode=pageSettings.phaseMode;
  if(['single','multi'].includes(pageSettings.accountMode))accountMode=pageSettings.accountMode;
- if(['fixed','target'].includes(pageSettings.purchaseStrategyMode)){
+ if(['fixed','target','payout'].includes(pageSettings.purchaseStrategyMode)){
   purchaseStrategyMode=pageSettings.purchaseStrategyMode;strategySelect.value=purchaseStrategyMode;
  }
  const count=Number(fundedCountInput.value);
@@ -441,8 +453,8 @@ const restorePageSettings=pageSettings=>{
   });
  }
 };
-const presetSnapshot=()=>({...captureProfile(),fundedTarget:fundedTargets[currentFirm],manualPhases:captureManualPreset(),pageSettings:capturePageSettings()});
-const applyNamedPreset=data=>{if(!data)return false;applyProfile(data);if(Number.isFinite(Number(data.fundedTarget))){fundedTargets[currentFirm]=Math.max(1,Math.floor(Number(data.fundedTarget)));try{localStorage.setItem('jj-risk-calculator09-funded-targets-v1',JSON.stringify(fundedTargets))}catch(e){}}restorePageSettings(data.pageSettings);restoreManualPreset(data.manualPhases);saveSettings();page=0;expandedPaths.clear();renderRisk();return verifyManualPreset(data.manualPhases)};
+const presetSnapshot=()=>({...captureProfile(),fundedTarget:fundedTargets[currentFirm],payoutTarget:payoutTargets[currentFirm],manualPhases:captureManualPreset(),pageSettings:capturePageSettings()});
+const applyNamedPreset=data=>{if(!data)return false;applyProfile(data);if(Number.isFinite(Number(data.payoutTarget))){payoutTargets[currentFirm]=Math.max(1,Math.min(currentFirm==='topstep'?5:100,Math.floor(Number(data.payoutTarget))));try{localStorage.setItem('jj-risk-calculator09-payout-targets-v1',JSON.stringify(payoutTargets))}catch(e){}}if(Number.isFinite(Number(data.fundedTarget))){fundedTargets[currentFirm]=Math.max(1,Math.floor(Number(data.fundedTarget)));try{localStorage.setItem('jj-risk-calculator09-funded-targets-v1',JSON.stringify(fundedTargets))}catch(e){}}restorePageSettings(data.pageSettings);restoreManualPreset(data.manualPhases);saveSettings();page=0;expandedPaths.clear();renderRisk();return verifyManualPreset(data.manualPhases)};
 /* LOAD deliberately reads cloud first, never silently preferring old browser storage. */
 presetBar.querySelector('[data-preset-load]').addEventListener('click',async()=>{
  const key=presetSelect.value;if(!key)return;
@@ -618,17 +630,32 @@ const portfolioTrades=portfolioChallengeTrades+portfolioFundedTrades,portfolioDa
 const parallelCount=Math.max(1,Math.min(nn,Math.floor(Number(parallelInput.value)||1)));parallelInput.value=String(parallelCount);
 const signalsPerDay=Math.max(1,Math.min(100,Math.floor(Number(signalsInput.value)||1)));signalsInput.value=String(signalsPerDay);
 const capacityDays=Math.max(Math.ceil(portfolioDays/parallelCount),Math.ceil(portfolioTrades/signalsPerDay));
-const allocationTarget=Math.max(1,Math.floor(fundedTargets[firmType]||1));fundedCountInput.removeAttribute('max');if(document.activeElement!==fundedCountInput)fundedCountInput.value=String(allocationTarget);purchaseCountControls.querySelector('[data-funded-count-wrap]').style.display=purchaseStrategyMode==='target'?'':'none';purchaseCountControls.querySelector('[data-fixed-count-wrap]').style.display=purchaseStrategyMode==='fixed'?'':'none';const replacementMode=purchaseStrategyMode==='target';strategySelect.value=purchaseStrategyMode;purchaseStrategy.querySelector('[data-purchase-strategy-help]').textContent=replacementMode?'Replace failed evaluations until '+allocationTarget+' funded accounts (expected values)':'Purchase '+nn+' evaluations only; no replacements';
+const fundedGoal=Math.max(1,Math.floor(fundedTargets[firmType]||1));
+const payoutMode=purchaseStrategyMode==='payout';
+const payoutGoal=Math.max(1,Math.min(firmType==='topstep'?5:100,Math.floor(payoutTargets[firmType]||5)));
+payoutCountInput.max=firmType==='topstep'?'5':'100';
+if(document.activeElement!==fundedCountInput)fundedCountInput.value=String(fundedGoal);
+if(document.activeElement!==payoutCountInput)payoutCountInput.value=String(payoutGoal);
+purchaseCountControls.querySelector('[data-funded-count-wrap]').style.display=purchaseStrategyMode==='target'?'':'none';
+purchaseCountControls.querySelector('[data-fixed-count-wrap]').style.display=purchaseStrategyMode==='fixed'?'':'none';
+payoutCountWrap.style.display=payoutMode?'':'none';
+const replacementMode=purchaseStrategyMode!=='fixed';
+const allocationTarget=payoutMode?(fp>0?payoutGoal/fp:0):fundedGoal;
+strategySelect.value=purchaseStrategyMode;
+purchaseStrategy.querySelector('[data-purchase-strategy-help]').textContent=payoutMode?
+ 'Target '+payoutGoal+' funded payout successes; replace failed evaluations and funded accounts (expected values). Five Topstep funded slots are a simultaneous limit; timing is not modeled.':
+ replacementMode?'Replace failed evaluations until '+fundedGoal+' funded accounts (expected values)':
+ 'Purchase '+nn+' evaluations only; no replacements';
 const allocationCap=firmType==='ftmo'?nn:Infinity;
 const evalPass=probability;
-const replacementPurchases=evalPass>0?allocationTarget/evalPass:null;
+const replacementPurchases=evalPass>0&&(!payoutMode||fp>0)?allocationTarget/evalPass:null;
 const replacementFailures=replacementPurchases===null?null:replacementPurchases-allocationTarget;
 const replacementEvalFees=replacementPurchases===null?null:replacementPurchases*v.accountCost;
 const replacementActivationFees=allocationTarget*activationFee;
 const replacementExpectedPayout=allocationTarget*fp*fv.target*splitPct;
 const replacementTotalFees=replacementEvalFees===null?null:replacementEvalFees+replacementActivationFees;
 const replacementNet=replacementTotalFees===null?null:replacementExpectedPayout-replacementTotalFees;
-const modelBuys=replacementMode?replacementPurchases:nn;const modelPassed=replacementMode?(replacementPurchases===null?0:allocationTarget):expectedFunded;const modelFailed=modelBuys===null?null:Math.max(0,modelBuys-modelPassed);const modelFees=modelBuys===null?null:modelBuys*v.accountCost+modelPassed*activationFee;const modelPayout=modelPassed*fp*fv.target*splitPct;const modelNet=modelFees===null?null:modelPayout-modelFees;const modelRoi=modelFees>0?100*modelNet/modelFees:null;const modelSuccess=modelPassed*fp;const modelPct=modelBuys>0?100*modelPassed/modelBuys:0;const modelCash=x=>x===null?'—':cash(x);const modelPossible=modelBuys!==null;const resultGroup=(heading,cards)=>'<div style="min-width:0;margin:5px 0 9px"><div style="font-size:11px;font-weight:700;opacity:.8;margin:0 0 5px">'+heading+'</div><div class="jj-risk-results-grid">'+cards+'</div></div>';
+const modelBuys=replacementMode?replacementPurchases:nn;const modelPassed=replacementMode?(replacementPurchases===null?0:allocationTarget):expectedFunded;const modelFailed=modelBuys===null?null:Math.max(0,modelBuys-modelPassed);const modelFees=modelBuys===null?null:modelBuys*v.accountCost+modelPassed*activationFee;const modelPayout=modelPassed*fp*fv.target*splitPct;const modelNet=modelFees===null?null:modelPayout-modelFees;const modelRoi=modelFees>0?100*modelNet/modelFees:null;const modelSuccess=modelBuys===null?0:modelPassed*fp;const modelPct=modelBuys>0?100*modelPassed/modelBuys:0;const modelCash=x=>x===null?'—':cash(x);const modelPossible=modelBuys!==null;const resultGroup=(heading,cards)=>'<div style="min-width:0;margin:5px 0 9px"><div style="font-size:11px;font-weight:700;opacity:.8;margin:0 0 5px">'+heading+'</div><div class="jj-risk-results-grid">'+cards+'</div></div>';
 const combinedCards=
 resultGroup('01 · Results',
  metricFund('Evaluation pass',(probability*100).toFixed(2)+'%','Probability of passing the evaluation within its modeled trade depth.')+
@@ -777,7 +804,7 @@ const rows=funnelData.map(x=>'<tr><td style="text-align:left;white-space:nowrap"
  '<td style="text-align:right;font-variant-numeric:tabular-nums" title="New fees incurred at this stage for the modeled cohort">'+modelCash(x.newCost)+'</td>'+
  '<td style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums" title="Cumulative fees spent divided by expected accounts achieving this stage">'+x.unitCost+'</td></tr>').join('');
 $('[data-funnel]').innerHTML='<div class="jj-funnel-wrap">'+
- '<div class="jj-funnel-note"><strong>'+(replacementMode?'Target funded accounts':'Fixed cohort')+
+ '<div class="jj-funnel-note"><strong>'+(payoutMode?'Target funded payouts':replacementMode?'Target funded accounts':'Fixed cohort')+
  '</strong> · Start: '+funnelCount(modelBuys)+' evaluations · Fee: '+modelCash(modelBuys===null?null:modelBuys*v.accountCost)+'</div>'+
  '<div style="width:100%;overflow-x:auto"><table style="width:100%;font-size:11px;table-layout:auto"><thead><tr><th style="text-align:left">Phase</th><th style="text-align:right">Accounts</th><th style="text-align:right">Pass %</th><th style="text-align:right">Total %</th><th style="text-align:right" title="New expected fees incurred at this stage">Stage $</th><th style="text-align:right" title="Cumulative fees per expected successful account at this stage">Cost / result</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
  (replacementMode?'':portfolioSummary)+
