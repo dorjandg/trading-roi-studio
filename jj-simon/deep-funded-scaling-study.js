@@ -92,3 +92,17 @@ chapter.sections.push({title:"Winning days: three tactics, micro-contract thresh
 ["How To Avoid Live Accounts And Why To","00:08–01:17; 01:18–02:37; 03:13–05:41","1yNHQ7HYo2v3sd1CT5RhSMHIWeDMIVOKo"]
 ]});renderNav();render();
 })();
+
+(function(){
+const chapter=chapters.find(c=>c.slug==="scaling-risk"||c.slug==="portfolio-risk"||c.slug==="funded-plan");
+if(!chapter||chapter.sections.some(s=>s.title==="Contract sizing invariant: NQ/MNQ, continuation and mismatched drawdowns"))return;
+chapter.sections.push({title:"Contract sizing invariant: NQ/MNQ, continuation and mismatched drawdowns",points:[
+"Historical course distinction: JJ permits discretionary contract adjustments to fit available points and account inventory, but separately says not to change the dashboard's dollar-risk allowance except for an unspecified lesson exception. These claims are compatible only when stop distance, instrument or exposure is recalculated; doubling contracts with the same stop doubles nominal loss.",
+"Risk check (independent arithmetic): contracts × stop points × dollars per point + estimated costs must not exceed account-specific allowed loss. For example, 2 NQ × 25 points × $20 = $1,000 gross risk; 5 MNQ × 50 points × $2 = $500. Five MNQ equal half of one NQ's point exposure, not a fractional futures contract.",
+"JJ's evaluation example allows four contracts when only 15–19 points of movement are anticipated, but this passage does not supply the corresponding stop. A shorter target alone cannot justify higher contracts without verifying dollar risk and provider contract limits.",
+"For continuations he describes a normal target no greater than about 50 points, with a 75-point volatile-day exception and deliberately halved contracts. This is not a universal fair-price reversion target or verified profitability claim.",
+"He discourages copying accounts with different firms, drawdown states or balances (illustratively $49K, $50K and $50.5K), and warns against copying 50K and 150K accounts together. Identical nominal account size alone does not prove identical remaining drawdown.",
+"Evidence status: complete timestamped machine transcripts audited; dashboard logic, charts, provider rules, original audio and claimed statistical optimality remain unverified. Private cross-video chapter records all variants and calculations."
+],src:[["Position Sizing Strategy Across Your Portfolio","00:05–01:32; 02:19–02:36","1o_XRhHFgmWg_wu4aXL3OR-F6O6e4POFu"],["How To Manage Different Drawdown Rules","00:12–00:48; 00:57–01:43","1PMHg2wWs7Vr-x9YbQ-cSVE_RAf-rq3tC"]]});
+renderNav();render();
+})();
