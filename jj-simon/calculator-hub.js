@@ -730,30 +730,31 @@ const hasVerification=firmType==='ftmo';
 const p1Pass=hasVerification?
  leaves.reduce((sum,path)=>sum+(path.steps.some(step=>step.stage===1&&step.passed)?path.prob:0),0):
  pEval;
-const funnelPct=count=>modelBuys>0?100*count/modelBuys:0;
-const countText=count=>modelBuys===null?'—':count.toFixed(2);
-const pctText=count=>modelBuys===null?'—':funnelPct(count).toFixed(1)+'% of purchases';
+const funnelCount=count=>modelBuys===null?'—':count.toFixed(2);
+const percent=value=>Number.isFinite(value)?(100*Math.max(0,Math.min(1,value))).toFixed(1)+'%':'—';
+const p2Conditional=hasVerification&&p1Pass>0?pEval/p1Pass:null;
 const funnelP1=modelBuys===null?null:modelBuys*p1Pass;
 const funnelP2=modelBuys===null?null:modelBuys*pEval;
 const funnelP3=modelBuys===null?null:modelPassed;
 const funnelP4=modelBuys===null?null:modelSuccess;
-const funnelStages=[
- stageRow('01 · Purchased evaluations (P1)',countText(modelBuys),'100%',modelCash(modelBuys===null?null:modelBuys*v.accountCost)+' evaluation fees',100),
- stageRow('02 · P1 · Challenge passed',countText(funnelP1),pctText(funnelP1),hasVerification?'Qualified to enter P2':'Evaluation completed · proceeds to funded',funnelP1===null?0:funnelPct(funnelP1))
-];
-if(hasVerification){
- funnelStages.push(stageRow('03 · P2 · Verification passed',countText(funnelP2),pctText(funnelP2),
-   'P1 → P2 pass probability '+(p1Pass>0?(100*pEval/p1Pass).toFixed(1)+'%':'—')+' (conditional)',funnelP2===null?0:funnelPct(funnelP2)));
-}
-funnelStages.push(stageRow((hasVerification?'04':'03')+' · P3 · Funded accounts',countText(funnelP3),pctText(funnelP3),
- modelCash(funnelP3===null?null:funnelP3*activationFee)+' activation fees · '+timeText(challengeTiming),funnelP3===null?0:funnelPct(funnelP3)));
-funnelStages.push(stageRow((hasVerification?'05':'04')+' · P4 · Funded target / payout path',countText(funnelP4),pctText(funnelP4),
- modelCash(modelBuys===null?null:modelPayout)+' modeled payout cash · '+timeText(fundedTiming),funnelP4===null?0:funnelPct(funnelP4)));
-$('[data-funnel]').innerHTML='<div class="jj-funnel-wrap"><div class="jj-funnel-note"><strong>'+(replacementMode?'Reach funded target':'Fixed purchases')+':</strong> '+(replacementMode?'Expected purchases to reach '+allocationTarget+' funded accounts through the full phase sequence.':'Buy '+nn+' evaluations with no replacements.')+' Counts are expected values, not guaranteed whole accounts.</div>'+funnelStages.join('')+
- '<div class="jj-funnel-summary"><span>Successful journey · '+timeText(combinedTiming)+'</span></div>'+
+/* Conditional stage pass rates and cumulative per-start probabilities are
+   conceptually distinct. P3 admission is modeled as automatic after verification
+   (or evaluation for Topstep). P4 is funded target success, not cash settlement. */
+const funnelData=[{phase:'P1 · Challenge',count:funnelP1,rate:p1Pass,total:p1Pass}];
+if(hasVerification)funnelData.push({phase:'P2 · Verification',count:funnelP2,rate:p2Conditional,total:pEval});
+funnelData.push({phase:'P3 · Funded',count:funnelP3,rate:1,total:pEval});
+funnelData.push({phase:'P4 · Payout path',count:funnelP4,rate:pFund,total:pEval*pFund});
+const rows=funnelData.map(x=>'<tr><td style="text-align:left;white-space:nowrap">'+x.phase+'</td>'+
+ '<td style="text-align:right;font-variant-numeric:tabular-nums">'+funnelCount(x.count)+'</td>'+
+ '<td style="text-align:right;font-variant-numeric:tabular-nums">'+percent(x.rate)+'</td>'+
+ '<td style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums">'+percent(x.total)+'</td></tr>').join('');
+$('[data-funnel]').innerHTML='<div class="jj-funnel-wrap">'+
+ '<div class="jj-funnel-note"><strong>'+(replacementMode?'Target funded accounts':'Fixed cohort')+
+ '</strong> · Start: '+funnelCount(modelBuys)+' evaluations · Fee: '+modelCash(modelBuys===null?null:modelBuys*v.accountCost)+'</div>'+
+ '<div style="width:100%;overflow-x:auto"><table style="width:100%;font-size:11px;table-layout:auto"><thead><tr><th style="text-align:left">Phase</th><th style="text-align:right">Accounts</th><th style="text-align:right">Pass %</th><th style="text-align:right">Total %</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
  (replacementMode?'':portfolioSummary)+
- '<div class="jj-funnel-summary"><span>Expected net <strong>'+modelCash(modelNet)+'</strong></span><span>ROI <strong>'+(modelRoi===null?'—':modelRoi.toFixed(1)+'%')+'</strong></span></div>'+
- '<div class="jj-funnel-note">P1 and P2 are estimated from the same finite-depth challenge paths. P3 funded counts follow evaluation completion. P4 is a modeled funded profit-target success, not a confirmed withdrawal; payout eligibility, processing time and repeat payouts are not simulated. Unresolved paths are not counted as passes. No firm active-cap scheduling is enforced.</div></div>';
+ '<div class="jj-funnel-summary"><span>Expected payout <strong>'+modelCash(modelPayout)+'</strong></span><span>Net <strong>'+modelCash(modelNet)+'</strong></span><span>ROI <strong>'+(modelRoi===null?'—':modelRoi.toFixed(1)+'%')+'</strong></span></div>'+
+ '<div class="jj-funnel-note">Pass % = conditional success at that phase; Total % = cumulative success from P1. P3 entry is automatic in this model after preceding stages. P4 is reaching the funded target, not confirmed payout. Expected account counts may be fractional; unresolved paths and waiting periods are not fully modeled.</div></div>';
 if(!replacementMode)$('[data-funnel]').querySelector('.jj-funnel-parallel').append(Object.assign(document.createElement('label'),{textContent:'Parallel active accounts  '}),parallelInput);
 const funnelControls=$('[data-funnel]').querySelector('.jj-funnel-parallel');if(funnelControls)funnelControls.style.cssText='display:flex;gap:10px;flex-wrap:wrap;align-items:center';const signalLabel=document.createElement('label');signalLabel.textContent='Signals / day  ';signalLabel.append(signalsInput);if(funnelControls)funnelControls.append(signalLabel);
 const consistencyHost=$('[data-consistency-panel]');if(consistencyHost){const topstep=firmType==='topstep';const toggle=$('[data-consistency-enabled]');consistencyToggle.style.display=topstep?'flex':'none';let consistencySettings={};try{consistencySettings=JSON.parse(localStorage.getItem(consistencyKey)||'{}')||{}}catch(e){}toggle.checked=consistencySettings.enabled!==false;consistencyHost.style.display=topstep&&toggle.checked?'':'none';if(topstep&&toggle.checked){const safeText=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));let state={limit:55,days:'1500,1500'};try{state={...state,...JSON.parse(localStorage.getItem(consistencyKey)||'{}')}}catch(e){}const rate=Math.max(1,Math.min(100,Number(state.limit)||55));const days=String(state.days||'').split(/[;,\\s]+/).map(Number).filter(Number.isFinite);const total=days.reduce((a,b)=>a+b,0);const best=Math.max(0,...days);const actual=total>0?100*best/total:0;const adjusted=Math.max(v.target,best/(rate/100));const extra=Math.max(0,adjusted-total);const pass=total>=v.target-1e-7&&total>0&&actual<=rate+1e-7;const status=pass?'Passed':total<=0?'No positive profit yet':'Needs more profit';consistencyHost.innerHTML='<div class="jj-funnel-portfolio"><strong>Topstep · Daily profit consistency</strong><div class="jj-risk-fields"><label>Consistency max (%)<input data-consistency-limit type="number" min="1" max="100" step="0.1" value="'+rate+'"></label><label>Daily net P&L ($, comma separated)<input data-consistency-days type="text" value="'+safeText(state.days)+'" placeholder="1500, 1500"></label></div><div class="jj-funnel-portfolio-grid"><div><small>Evaluation target</small><strong>'+cash(v.target)+'</strong></div><div><small>Total net profit</small><strong>'+cash(total)+'</strong></div><div><small>Best profitable day</small><strong>'+cash(best)+'</strong></div><div><small>Current consistency</small><strong>'+actual.toFixed(1)+'%</strong></div><div><small>Adjusted profit target</small><strong>'+cash(adjusted)+'</strong></div><div><small>Additional profit needed</small><strong>'+cash(extra)+'</strong></div><div><small>Result</small><strong>'+status+'</strong></div></div><div class="jj-funnel-note">Daily net P&L may include losses. Pass requires total profit at least the base target and best profitable day / total profit no more than the consistency limit. This independent calculator does not yet change the existing scenario-path pass probability or model drawdown.</div></div>'}}
