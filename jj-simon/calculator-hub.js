@@ -426,7 +426,28 @@ const restorePageSettings=pageSettings=>{
 };
 const presetSnapshot=()=>({...captureProfile(),fundedTarget:fundedTargets[currentFirm],manualPhases:captureManualPreset(),pageSettings:capturePageSettings()});
 const applyNamedPreset=data=>{if(!data)return false;applyProfile(data);if(Number.isFinite(Number(data.fundedTarget))){fundedTargets[currentFirm]=Math.max(1,Math.floor(Number(data.fundedTarget)));try{localStorage.setItem('jj-risk-calculator09-funded-targets-v1',JSON.stringify(fundedTargets))}catch(e){}}restorePageSettings(data.pageSettings);restoreManualPreset(data.manualPhases);saveSettings();page=0;expandedPaths.clear();renderRisk();return verifyManualPreset(data.manualPhases)};
-presetBar.querySelector('[data-preset-load]').addEventListener('click',()=>{const key=presetSelect.value;if(!key)return;if(key==='gpt'){auditedPresetButton.click();rememberLoadedPreset('gpt');presetNote.textContent='GPT preset loaded';return}const data=(readNamedPresets()[currentFirm]||{})[key.slice(5)];if(data){const verified=applyNamedPreset(data);rememberLoadedPreset(key);presetNote.textContent=verified?'Loaded '+key.slice(5)+' · all 24 manual values verified':!manualPresetComplete(data.manualPhases)?'Old preset has no complete R1–R4 values · save it again':'Manual R1–R4 mismatch · please report this'}});
+/* LOAD deliberately reads cloud first, never silently preferring old browser storage. */
+presetBar.querySelector('[data-preset-load]').addEventListener('click',async()=>{
+ const key=presetSelect.value;if(!key)return;
+ if(key==='gpt'){auditedPresetButton.click();rememberLoadedPreset('gpt');presetNote.textContent='GPT preset loaded';return}
+ const name=key.slice(5),firm=currentFirm;
+ const button=presetBar.querySelector('[data-preset-load]');button.disabled=true;
+ presetNote.textContent='Loading saved preset from cloud…';
+ try{
+  const remote=await cloudRequest('GET');
+  if(!remote.ready||!remote.data||!remote.data.presets)throw Error('Preset cloud data unavailable');
+  const data=remote.data.presets[firm]?.[name];
+  if(!data){presetNote.textContent='Preset not found in cloud · save it again';return}
+  const all=readNamedPresets();
+  all[firm]={...(all[firm]||{}),[name]:data};
+  try{localStorage.setItem(presetKey,JSON.stringify(all))}catch(e){}
+  if(firm!==currentFirm)return;
+  const verified=applyNamedPreset(data);
+  rememberLoadedPreset(key);
+  presetNote.textContent=verified?'Loaded from cloud · R1–R4 verified for P1, P2, P3':!manualPresetComplete(data.manualPhases)?'Cloud preset missing manual R1–R4 · replace it using Save':'Manual fields did not match cloud preset';
+ }catch(e){presetNote.textContent='Cloud Load failed: '+e.message}
+ finally{button.disabled=false}
+});
 presetBar.querySelector('[data-preset-save]').addEventListener('click',()=>{const name=(window.prompt('Name this preset (saved for '+currentFirm.toUpperCase()+'):', '')||'').trim().slice(0,60);if(!name)return;if(name.toLowerCase().startsWith('gpt')){presetNote.textContent='GPT names are reserved';return}const all=readNamedPresets();all[currentFirm]=all[currentFirm]||{};if(all[currentFirm][name]&&!window.confirm('Replace preset "'+name+'"?'))return;all[currentFirm][name]=presetSnapshot();if(!manualPresetComplete(all[currentFirm][name].manualPhases)){presetNote.textContent='Could not capture manual R1–R4 settings';return}try{localStorage.setItem(presetKey,JSON.stringify(all));refreshNamedPresets();presetSelect.value='user:'+name;rememberLoadedPreset('user:'+name);presetNote.textContent='Saved '+name;pushSyncedPresets().catch(e=>{presetNote.textContent='Not synced: '+e.message})}catch(e){presetNote.textContent='Browser storage unavailable'}});
 presetBar.querySelector('[data-preset-delete]').addEventListener('click',()=>{const key=presetSelect.value;if(!key||key==='gpt'){presetNote.textContent='GPT preset cannot be deleted';return}const name=key.slice(5);if(!window.confirm('Delete preset "'+name+'"?'))return;const all=readNamedPresets();if(all[currentFirm])delete all[currentFirm][name];try{localStorage.setItem(presetKey,JSON.stringify(all));refreshNamedPresets();presetSelect.value='';if(getLoadedPreset()===key)rememberLoadedPreset('');presetNote.textContent='Deleted '+name;pushSyncedPresets().catch(e=>{presetNote.textContent='Delete not synced: '+e.message})}catch(e){presetNote.textContent='Unable to delete'}});
 refreshNamedPresets();const restoredPreset=getLoadedPreset();if(restoredPreset&&[...presetSelect.options].some(o=>o.value===restoredPreset)){presetSelect.value=restoredPreset;presetNote.textContent='Loaded '+(restoredPreset==='gpt'?'GPT preset':restoredPreset.slice(5))}
