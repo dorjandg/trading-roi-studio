@@ -185,21 +185,73 @@ const feeBar=box.querySelector('[data-k="accountCost"]').closest('div');
 group('challenge-settings','01 · Challenge · Parameters',[targetModeBar,box.querySelector('[data-target-mode]'),box.querySelector('[data-risk-fields]'),accountBar,box.querySelector('[data-multi-controls]'),feeBar]);
 group('funded-settings','02 · Funded · Parameters',[box.querySelector('[data-funded-fields]')]);
 const manualRiskKey='jj-risk-manual-phase-risks-v1';
+/* Compact separate R cards preserve the original phase/tier selectors used by the engine. */
+const contractKey='jj-risk-contract-sizing-v1';
+const stepCard=(phase,tier)=>'<div class="jj-contract-step" style="border:1px solid #8883;border-radius:7px;padding:6px;min-width:0">'+
+ '<div style="font-size:11px;font-weight:700;margin-bottom:5px">R'+tier+' <span style="font-size:10px;font-weight:400;opacity:.7">'+(tier===1?'First trade':'After '+(tier-1)+' loss'+(tier===2?'':'es'))+'</span></div>'+
+ '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px">'+
+ '<label style="min-width:0;font-size:10px">Risk $<input data-manual-risk="'+phase+'-'+tier+'" type="number" min="0.01" step="0.01" value="100" style="box-sizing:border-box;width:100%;min-width:0;padding:3px 4px;font-size:11px"></label>'+
+ '<label style="min-width:0;font-size:10px">RR<input data-manual-rr="'+phase+'-'+tier+'" type="number" min="0.1" max="100" step="0.1" placeholder="Auto" style="box-sizing:border-box;width:100%;min-width:0;padding:3px 4px;font-size:11px"></label>'+
+ '<label style="min-width:0;font-size:10px">Stop $ move<input data-contract-stop="'+phase+'-'+tier+'" type="number" min="0.1" step="0.1" value="5" style="box-sizing:border-box;width:100%;min-width:0;padding:3px 4px;font-size:11px" title="Gold price movement from entry to stop, in $ per ounce"></label>'+
+ '<div style="min-width:0"><span style="font-size:10px">Contracts</span><div data-contract-result="'+phase+'-'+tier+'" style="font-size:14px;font-weight:700;line-height:23px">—</div></div>'+
+ '</div><div data-contract-detail="'+phase+'-'+tier+'" style="font-size:10px;opacity:.7;margin-top:3px;line-height:1.35"></div></div>';
+const phaseCards=phase=>'<div style="margin-top:7px"><div style="display:flex;gap:6px;align-items:center;justify-content:space-between;flex-wrap:wrap">'+
+ '<strong style="font-size:12px">P'+phase+' · '+(phase===1?'First checkpoint':phase===2?'Second checkpoint':'Funded')+'</strong>'+
+ '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><label style="font-size:10px">Mode <select data-manual-mode="'+phase+'" style="padding:3px;font-size:11px"><option value="auto">Auto</option><option value="manual">Manual</option></select></label>'+
+ '<label style="font-size:10px">Symbol <select data-contract-symbol="'+phase+'" style="padding:3px;font-size:11px"><option value="MGC">MGC</option><option value="GC">GC</option></select></label></div></div>'+
+ '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:6px">'+[1,2,3,4].map(t=>stepCard(phase,t)).join('')+'</div></div>';
 const manualPanel=document.createElement('div');
-manualPanel.style.cssText='margin:8px 0;font-size:11px';
-manualPanel.innerHTML='<details><summary style="cursor:pointer;font-weight:600">Manual R1 / R2 / R3 / R4 by phase</summary><p style="opacity:.75;margin:5px 0">R1 first trade; R2 after one consecutive loss; R3 after two consecutive losses; R4 after three or more consecutive losses. A win resets to R1 unless the phase target is reached. Automatic leaves existing strategy unchanged.</p><div style="overflow-x:auto"><table style="font-size:11px"><thead><tr><th>Phase</th><th>Mode</th><th>R1 $</th><th>RR1</th><th>R2 $</th><th>RR2</th><th>R3 $</th><th>RR3</th><th>R4 $</th><th>RR4</th></tr></thead><tbody>'+[1,2,3].map(n=>'<tr><td>P'+n+'</td><td><select data-manual-mode="'+n+'"><option value="auto">Auto</option><option value="manual">Manual</option></select></td>'+[1,2,3,4].map(k=>'<td><input data-manual-risk="'+n+'-'+k+'" type="number" min="0.01" step="0.01" value="100" style="width:70px;padding:4px"></td><td><input data-manual-rr="'+n+'-'+k+'" type="number" min="0.1" max="100" step="0.1" placeholder="Auto" style="width:55px;padding:4px"></td>').join('')+'</tr>').join('')+'</tbody></table></div></details>';
+manualPanel.style.cssText='margin:8px 0;font-size:11px;min-width:0';
+manualPanel.innerHTML='<details><summary style="cursor:pointer;font-weight:600">P1 / P2 · Manual Risk & Contracts</summary>'+
+ '<p style="font-size:10px;opacity:.75;margin:5px 0">Each R step has its own risk, RR and stop movement. A win resets the R sequence. MGC: $10 per $1 price move per contract; GC: $100. Contracts are whole numbers rounded DOWN so gross risk does not exceed the entered budget.</p>'+
+ phaseCards(1)+phaseCards(2)+'</details>';
 box.querySelector('[data-section="challenge-settings"] .jj-risk-section-body').append(manualPanel);
 const fundedManualPanel=document.createElement('div');
 fundedManualPanel.style.cssText='margin:8px 0;font-size:11px;min-width:0;max-width:100%';
-fundedManualPanel.innerHTML='<details><summary style="cursor:pointer;font-weight:600">P3 · Manual R1 / R2 / R3 / R4</summary><p style="font-size:11px;opacity:.75">R2 after one consecutive loss; R3 after two; R4 after three or more. A win resets to R1. Auto uses the selected funded strategy.</p><div data-manual-funded-slot></div></details>';
-const fundedManualRow=box.querySelector('[data-manual-mode="3"]').closest('tr');
-const fundedManualTable=document.createElement('table');fundedManualTable.style.fontSize='11px';const fundedManualBody=document.createElement('tbody');fundedManualBody.append(fundedManualRow);fundedManualTable.append(fundedManualBody);const fundedScroll=fundedManualPanel.querySelector('[data-manual-funded-slot]');fundedScroll.style.cssText='display:block;width:100%;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y';fundedManualTable.style.width='max-content';fundedManualTable.style.minWidth='740px';fundedScroll.append(fundedManualTable);
+fundedManualPanel.innerHTML='<details><summary style="cursor:pointer;font-weight:600">P3 · Manual Risk & Contracts</summary>'+phaseCards(3)+'</details>';
 box.querySelector('[data-section="funded-settings"] .jj-risk-section-body').append(fundedManualPanel);
+const contractSizing=()=>{for(const phase of [1,2,3]){
+ const sym=box.querySelector('[data-contract-symbol="'+phase+'"]')?.value||'MGC';
+ const dollarsPerPoint=sym==='GC'?100:10;
+ for(const tier of [1,2,3,4]){
+  const key=phase+'-'+tier;
+  const budget=Number(box.querySelector('[data-manual-risk="'+key+'"]')?.value);
+  const move=Number(box.querySelector('[data-contract-stop="'+key+'"]')?.value);
+  const out=box.querySelector('[data-contract-result="'+key+'"]');
+  const detail=box.querySelector('[data-contract-detail="'+key+'"]');
+  if(!out||!detail)continue;
+  if(!(budget>0)||!(move>0)){out.textContent='—';detail.textContent='Enter risk and stop movement';continue}
+  const riskPerContract=move*dollarsPerPoint;
+  const contracts=Math.max(0,Math.floor((budget+1e-8)/riskPerContract));
+  const actual=contracts*riskPerContract;
+  out.textContent=String(contracts)+' '+sym;
+  detail.textContent=contracts===0?'Minimum 1 contract risks $'+riskPerContract.toFixed(2):
+   '$'+actual.toFixed(2)+' gross risk · $'+riskPerContract.toFixed(2)+'/contract';
+ }
+}};
+try{const stored=JSON.parse(localStorage.getItem(contractKey)||'{}');
+ for(const el of box.querySelectorAll('[data-contract-symbol],[data-contract-stop]')){
+  const id=el.dataset.contractSymbol!==undefined?'s'+el.dataset.contractSymbol:'d'+el.dataset.contractStop;
+  if(Object.prototype.hasOwnProperty.call(stored,id)&&
+   (el.tagName==='SELECT'||Number(stored[id])>0))el.value=String(stored[id]);
+ }
+}catch(e){}
+const persistContracts=()=>{
+ const stored={};
+ box.querySelectorAll('[data-contract-symbol]').forEach(el=>stored['s'+el.dataset.contractSymbol]=el.value);
+ box.querySelectorAll('[data-contract-stop]').forEach(el=>stored['d'+el.dataset.contractStop]=el.value);
+ try{localStorage.setItem(contractKey,JSON.stringify(stored))}catch(e){}
+ contractSizing();
+};
+manualPanel.addEventListener('input',persistContracts);
+fundedManualPanel.addEventListener('input',persistContracts);
+manualPanel.addEventListener('change',persistContracts);
+fundedManualPanel.addEventListener('change',persistContracts);
 
 try{const stored=JSON.parse(localStorage.getItem(manualRiskKey)||'{}');box.querySelectorAll('[data-manual-mode]').forEach(el=>{if(stored['m'+el.dataset.manualMode])el.value=stored['m'+el.dataset.manualMode]});box.querySelectorAll('[data-manual-risk]').forEach(el=>{const val=stored['r'+el.dataset.manualRisk];if(Number(val)>0)el.value=val});box.querySelectorAll('[data-manual-rr]').forEach(el=>{const val=stored['rr'+el.dataset.manualRr];if(Number(val)>0)el.value=val})}catch(e){}
 const comparePanel=document.createElement('div');comparePanel.innerHTML='<div data-compare style="min-width:0"></div>';
 const manualConfig=()=>{const result={};for(let n=1;n<=3;n++){const mode=box.querySelector('[data-manual-mode="'+n+'"]').value;if(mode==='manual')result[n]=[1,2,3,4].map(k=>Math.max(.01,Number(box.querySelector('[data-manual-risk="'+n+'-'+k+'"]').value)||.01))}return result};const manualRRConfig=()=>{const result={};for(let n=1;n<=3;n++)result[n]=[1,2,3,4].map(k=>{const el=box.querySelector('[data-manual-rr="'+n+'-'+k+'"]');return el.value!==''&&Number(el.value)>0?Number(el.value):null});return result};
-const persistManualRisks=()=>{const stored={};box.querySelectorAll('[data-manual-mode]').forEach(el=>stored['m'+el.dataset.manualMode]=el.value);box.querySelectorAll('[data-manual-risk]').forEach(el=>stored['r'+el.dataset.manualRisk]=el.value);box.querySelectorAll('[data-manual-rr]').forEach(el=>stored['rr'+el.dataset.manualRr]=el.value);try{localStorage.setItem(manualRiskKey,JSON.stringify(stored))}catch(e){}renderRisk()};manualPanel.addEventListener('change',persistManualRisks);fundedManualPanel.addEventListener('change',persistManualRisks);
+const persistManualRisks=()=>{contractSizing();const stored={};box.querySelectorAll('[data-manual-mode]').forEach(el=>stored['m'+el.dataset.manualMode]=el.value);box.querySelectorAll('[data-manual-risk]').forEach(el=>stored['r'+el.dataset.manualRisk]=el.value);box.querySelectorAll('[data-manual-rr]').forEach(el=>stored['rr'+el.dataset.manualRr]=el.value);try{localStorage.setItem(manualRiskKey,JSON.stringify(stored))}catch(e){}renderRisk()};manualPanel.addEventListener('change',persistManualRisks);fundedManualPanel.addEventListener('change',persistManualRisks);
 
 group('funded-results','04 · Funded · Results',[box.querySelector('[data-funded-results]')]);
 group('challenge-results','03 · Challenge · Results',[box.querySelector('[data-kpis]'),box.querySelector('[data-multi-results]'),box.querySelector('[data-prob-results]'),box.querySelector('[data-prob]')]);
@@ -374,6 +426,8 @@ applyProfile({...firmDefaults(firm),...(readProfiles()[firm]||legacy||{}),fields
 restoreSettings();try{if(!localStorage.getItem('jj-risk-calculator09-ftmo-target1800-v1')){const profile=readProfiles().ftmo;if(profile){profile.funded={...(profile.funded||{}),target:1800};writeProfile('ftmo',profile)}if(currentFirm==='ftmo'){const el=box.querySelector('[data-funded="target"]');if(el)el.value='1800';saveSettings()}localStorage.setItem('jj-risk-calculator09-ftmo-target1800-v1','1')}}catch(e){}auditedPresetButton.addEventListener('click',()=>{const firm=currentFirm,ft=firm==='ftmo';const put=(selector,value)=>{const el=box.querySelector(selector);if(el)el.value=String(value)};phaseMode='combined';purchaseStrategyMode='target';strategySelect.value='target';accountMode='multi';put('[data-target-mode]',ft?2:1);const ev={target:ft?1000:3000,target2:500,limit:ft?1000:2000,dailyLimit:ft?500:1000,rr:ft?3:1.5,winRate:35,depth:12,accountCost:100,tradesPerDay:3,floor:100};const funded={target:ft?1800:4000,limit:ft?1000:2000,dailyLimit:ft?500:1000,rr:ft?3:4,winRate:35,depth:12,split:ft?80:75,activation:0,tradesPerDay:3,floor:100};Object.entries(ev).forEach(([k,val])=>put('[data-k="'+k+'"]',val));Object.entries(funded).forEach(([k,val])=>put('[data-funded="'+k+'"]',val));put('[data-account-count]',ft?20:5);put('[data-funded-count]',ft?20:5);fundedTargets[firm]=ft?20:5;try{localStorage.setItem('jj-risk-calculator09-funded-targets-v1',JSON.stringify(fundedTargets))}catch(e){}if(!ft){try{const settings=JSON.parse(localStorage.getItem(consistencyKey)||'{}');settings.limit=55;settings.enabled=true;localStorage.setItem(consistencyKey,JSON.stringify(settings))}catch(e){}}saveSettings();page=0;expandedPaths.clear();renderRisk()});
 const captureManualPreset=()=>{
  const settings={};
+ box.querySelectorAll('[data-contract-symbol]').forEach(el=>settings['s'+el.dataset.contractSymbol]=el.value);
+ box.querySelectorAll('[data-contract-stop]').forEach(el=>settings['d'+el.dataset.contractStop]=el.value);
  box.querySelectorAll('[data-manual-mode]').forEach(el=>settings['m'+el.dataset.manualMode]=el.value);
  box.querySelectorAll('[data-manual-risk]').forEach(el=>settings['r'+el.dataset.manualRisk]=el.value);
  box.querySelectorAll('[data-manual-rr]').forEach(el=>settings['rr'+el.dataset.manualRr]=el.value);
@@ -396,6 +450,12 @@ const restoreManualPreset=settings=>{
    }
   }
  }
+ for(const el of box.querySelectorAll('[data-contract-symbol],[data-contract-stop]')){
+  const id=el.dataset.contractSymbol!==undefined?'s'+el.dataset.contractSymbol:'d'+el.dataset.contractStop;
+  const value=settings[id];
+  if(value!==undefined&&value!==null&&(el.tagName==='SELECT'||Number(value)>0))el.value=String(value);
+ }
+ persistContracts();
  try{localStorage.setItem(manualRiskKey,JSON.stringify(captureManualPreset()))}catch(e){}
  return true;
 };
@@ -411,7 +471,7 @@ const verifyManualPreset=settings=>{
    Results/history are recalculated, not copied as stale outputs. */
 const capturePageSettings=()=>{
  const controls={};
- const selectors=['[data-k]','[data-funded]','[data-manual-mode]','[data-manual-risk]','[data-manual-rr]',
+ const selectors=['[data-k]','[data-funded]','[data-manual-mode]','[data-manual-risk]','[data-manual-rr]','[data-contract-symbol]','[data-contract-stop]',
   '[data-consistency-enabled]','[data-consistency-limit]','[data-account-count]','[data-funded-count]','[data-payout-count]',
   '[data-parallel-accounts]','[data-signals-per-day]','[data-purchase-strategy]','[data-target-mode]'];
  for(const selector of selectors){
@@ -426,7 +486,7 @@ const capturePageSettings=()=>{
 const restorePageSettings=pageSettings=>{
  if(!pageSettings||pageSettings.version!==2||!pageSettings.controls)return;
  const controls=pageSettings.controls;
- box.querySelectorAll('input[data-k],input[data-funded],input[data-manual-risk],input[data-manual-rr],select[data-manual-mode],input[data-consistency-enabled],input[data-consistency-limit],input[data-account-count],input[data-funded-count],input[data-payout-count],input[data-parallel-accounts],input[data-signals-per-day],select[data-purchase-strategy],input[data-target-mode]').forEach(el=>{
+ box.querySelectorAll('input[data-k],input[data-funded],input[data-manual-risk],input[data-manual-rr],input[data-contract-stop],select[data-contract-symbol],select[data-manual-mode],input[data-consistency-enabled],input[data-consistency-limit],input[data-account-count],input[data-funded-count],input[data-payout-count],input[data-parallel-accounts],input[data-signals-per-day],select[data-purchase-strategy],input[data-target-mode]').forEach(el=>{
   const key=Object.keys(el.dataset).sort().map(k=>k+':'+el.dataset[k]).join('|');
   if(!Object.prototype.hasOwnProperty.call(controls,key))return;
   const value=controls[key];
@@ -533,6 +593,7 @@ risk:status==='active'?Math.max(0,Math.min((goal-stagePnl)/v.rr,left,nextDailyLe
 steps,prob,day:day+(nextDay?1:0),dailyLeft:nextDailyLeft,dayPnl:nextDay?0:dayPnl,lossesToday:nextDay?0:lossesToday};
 }
 function renderRisk(){
+contractSizing();
 const firmForPhases=firmBar.querySelector('[data-firm-type]').value;const expectedPhases=firmForPhases==='ftmo'?'2':'1';if($('[data-target-mode]').value!==expectedPhases)$('[data-target-mode]').value=expectedPhases;
 const v=vals(),leaves=[],allPaths=[];Object.assign(v,STRATEGIES[activeStrategy].eval);v.manualRisks=manualConfig();v.manualRRs=manualRRConfig();if(firmForPhases==='topstep'){v.topstepConsistency=true;if(activeStrategy==='current')v.fixedRisk=1000;v.consistencyRate=Math.max(1,Math.min(100,Number(box.querySelector('[data-consistency-limit]')?.value)||55));}
 function walk(path){const x=calc(path,v);if(path)allPaths.push(x);if(x.status!=='active'||x.steps.length>=v.depth){leaves.push(x);return}walk(path+'W');walk(path+'L')}
