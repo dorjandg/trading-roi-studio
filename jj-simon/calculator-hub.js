@@ -571,6 +571,7 @@ const fv={targetMode:1,target:Math.max(.01,fn('target',4000)),target2:1,limit:Ma
 if(firmForPhases==='topstep'&&activeStrategy==='current')fv.fixedRisk=1000;else if(activeStrategy==='current')fv.ftmoFundedBuilder=true;Object.assign(fv,STRATEGIES[activeStrategy].fund);fv.manualRisks=manualConfig();fv.manualRRs=manualRRConfig();fv.manualStage=3;let fp=0,fr=0;const fundedLeaves=[];
 if(phaseMode!=='evaluation'){function fw(path){const x=calc(path,fv);if(x.status!=='active'||x.steps.length>=fv.depth){fundedLeaves.push(x);if(x.status==='target')fp+=x.prob;if(x.status==='closed')fr+=x.prob;return}fw(path+'W');fw(path+'L')}fw('')}
 
+const cash=x=>'$'+x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 /* Statistics are calculated from terminal/censored path probabilities, not
    actual trade history. Do not confuse an observed maximum in enumerated paths
    with a guaranteed future maximum. */
@@ -637,7 +638,7 @@ if(compareSection.open){const sim=cfg=>{let hit=0,fail=0,ev=0;function go(p){con
 const nn=Math.max(1,Math.min(100,Math.floor(Number($('[data-account-count]').value)||10)));
 const totalFees=nn*v.accountCost,expectedFunded=nn*probability,activationFee=Math.max(0,fn('activation',0)),splitPct=Math.max(0,Math.min(1,fn('split',80)/100));
 const grossPayout=expectedFunded*fp*fv.target*splitPct,activationFees=expectedFunded*activationFee,netCash=grossPayout-totalFees-activationFees;
-const cash=x=>'$'+x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+
 let mathPanel=box.querySelector('[data-ch09-math]');
 if(!mathPanel){
  mathPanel=document.createElement('details');mathPanel.dataset.ch09Math='';
