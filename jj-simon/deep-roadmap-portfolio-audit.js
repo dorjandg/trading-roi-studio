@@ -128,3 +128,25 @@ c.sections.push({title:"Volume can invalidate a fair-price anchor before an over
 ],src:[["How Does Volume Change Fair Price","00:28–02:36; 02:37–04:39","1miR0iSYdOTWrShLV9UfT-uDJUVmY8qeG"],["Overnight Trades","00:39–01:39; 03:49–04:16; 05:15–05:27; 08:24–08:49","1Ye5f_tmATyBYcAhwSWdMtZTzdvVh1Igg"]]});
 renderNav();render();
 })();
+
+/* 2026-11-10 Module 18 transcript audit: original paraphrase; charts and audio unverified. */
+(function(){
+if(typeof chapters==='undefined')return;
+const chapter=chapters.find(c=>c.slug==='scaling');
+if(!chapter||!Array.isArray(chapter.sections))return;
+const additions=[
+{title:'150K scaling: 3× payout multiple is 200% net ROI before other fees',points:[
+'JJ illustrates spending $50,000 on evaluations to receive $150,000 in payouts (00:18–00:47). This is a 3× gross payout-to-spend multiple, not 300% net ROI: (150,000−50,000)/50,000 = 200%, before activation, resets, renewals and other costs.',
+'At $250 per evaluation, $50,000 buys 200 attempts. His 50 per week and 10 per day figures assume four buying weeks and five buying days per week. Purchases are not funded accounts or independent market signals.',
+'These are historical aspirations, not independently observed payouts or evidence that the acquisition throughput is sustainable.'
+],src:[['30k_month -_ 100k_month Scaling','00:18–00:47; 02:41–03:40','1gKSrmr2naboKQWfZmHCF7OBrArdhf0s0']]},
+{title:'150K qualifying-day recovery: two-NQ target mismatch and conditional probability',points:[
+'After a hypothetical $2,000 daily loss, JJ seeks $2,250 to finish +$250 (08:34–09:04). However, two NQ contracts over 50 index points would produce $2,000 gross, not $2,250; 56.25 points would be needed before fees. Verify the original chart and audio.',
+'The transcript later describes recovery after further losses, but the spoken $5,250/$7,250 targets and a 5% conditional branch are ambiguous. Do not treat those numbers as validated account rules or an established probability of payout.',
+'JJ also distinguishes a usual continuation objective around 50 points (75 on exceptional volatile days with smaller contracts) from the separate higher-timeframe 150-point funded example. Both are context-specific historical variants.'
+],src:[['30k_month -_ 100k_month Scaling','05:30–06:35; 08:34–11:05','1gKSrmr2naboKQWfZmHCF7OBrArdhf0s0'],['How To Manage Different Drawdown Rules','00:12–00:48; 01:11–01:45','1PMHg2wWs7Vr-x9YbQ-cSVE_RAf-rq3tC']]}
+];
+for(const item of additions)if(!chapter.sections.some(s=>s.title===item.title))chapter.sections.push(item);
+if(typeof renderNav==='function')renderNav();
+if(typeof render==='function')render();
+})();
