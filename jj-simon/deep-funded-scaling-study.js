@@ -131,7 +131,7 @@ if(typeof render==="function")render();
 
 /* 2026-11-10 source-audited extension: multi-account allocation versus common-signal risk. */
 (function(){
-const chapter=chapters.find(c=>c.slug==='scaling-portfolio'||c.slug==='funded-plan');
+const chapter=chapters.find(c=>c.slug==='account-management');
 if(!chapter)return;
 const additions=[
 {title:"Cross-video audit — One signal, multiple account executions, and correlated drawdown",points:[
