@@ -128,3 +128,26 @@ for(const section of additions)if(!chapter.sections.some(s=>s.title===section.ti
 if(typeof renderNav==="function")renderNav();
 if(typeof render==="function")render();
 })();
+
+/* 2026-11-10 source-audited extension: multi-account allocation versus common-signal risk. */
+(function(){
+const chapter=chapters.find(c=>c.slug==='scaling-portfolio'||c.slug==='funded-plan');
+if(!chapter)return;
+const additions=[
+{title:"Cross-video audit — One signal, multiple account executions, and correlated drawdown",points:[
+"JJ's Thursday-to-Friday walkthrough illustrates many account-level executions from fewer market setups. Count signals, individual account executions, and qualifying winning days separately; his retrospective 9–10 evaluation executions, roughly 5–6 funded 50-point opportunities, and winning-day examples are overlapping categories, not independent signal counts.",
+"His risk lesson prefers staggering five new funded accounts 2/2/1 across days rather than copying one signal across all five. Copying makes outcomes dependent: with five equal-risk accounts, a perfectly common binary signal has five times the aggregate P&L variance of five genuinely independent equal-marginal trades. Independence is an illustrative benchmark, not an assumption about real market regimes.",
+"JJ cautions against copying between firms with different balances or payout rules, and generally prefers funded BOS confirmation over earlier displacement entries. Elsewhere he allows copying smaller funded winning-day scalps; these are stage-specific exceptions rather than one universal rule.",
+"Evidence is from full timestamped COURSE transcripts; the historical risk dashboard, fills, provider limits and original charts remain unverified."
+],src:[["How Multi-Account Management Works","04:40–05:05; 13:20–15:58","1VNt39wTnRGpkGLalH-iBi3GHk75hIIUC"],["Managing Risk Across Multiple Accounts","00:27–01:37; 02:02–02:19","1Gr90n0aSePquj1jp9nCkvx29BiUyJj2c"]]},
+{title:"Cross-video audit — BOS quality versus displacement throughput",points:[
+"JJ labels displacement an A setup and BOS an A+ setup, claiming BOS is more selective and slightly higher win-rate. He proposes displacement when account inventory cannot be served by BOS signals alone, but does not provide independently verified comparative performance.",
+"In the narrated 10 a.m. news example, JJ revises a proposed new fair-price anchor after noticing news, instead referencing the pre-news price. A wick through structure is not necessarily a confirmed BOS close.",
+"An evaluation 38-point objective is narrated as roughly $1,500, whereas 50-point funded and 10-point qualifying-day examples are described as roughly $2,000 and $200. Contract quantities and net costs must be verified from video; do not infer current payout eligibility from those figures.",
+"The walkthrough is retrospective and hypothetical ('would take'), not evidence of live fills. Chart levels, market-date metadata, audio transcription and provider rules remain open verification tasks."
+],src:[["How Multi-Account Management Works","00:36–01:25; 09:52–11:12; 13:20–14:18","1VNt39wTnRGpkGLalH-iBi3GHk75hIIUC"],["Managing Risk Across Multiple Accounts","01:41–02:19","1Gr90n0aSePquj1jp9nCkvx29BiUyJj2c"]]}
+];
+for(const s of additions)if(!chapter.sections.some(x=>x.title===s.title))chapter.sections.push(s);
+if(typeof renderNav==='function')renderNav();
+if(typeof render==='function')render();
+})();
