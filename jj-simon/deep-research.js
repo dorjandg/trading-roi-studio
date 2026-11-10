@@ -23,4 +23,16 @@ if(firmChapter){
  for(const x of jjFirmDetails)firmChapter.sections.push({title:x[0],points:x[1],src:x[2]});
 }
 
+
+/* 2026-11-10 Module 17 cross-video mathematical audit: retain prior study IDs and collapsed rows. */
+const jjPortfolioChapter=chapters.find(c=>c.slug==='portfolio-management'||/portfolio|multiple.account|scal/i.test(c.title||''));
+if(jjPortfolioChapter && !jjPortfolioChapter.sections.some(x=>x.title==='Stage-weighted accounts are not independent accounts')){
+ jjPortfolioChapter.sections.push({title:'Stage-weighted accounts are not independent accounts',points:[
+ 'JJ describes four profitable funded accounts plus one new account as approximately 13 new-account equivalents. This is arithmetic only under a hypothetical three-to-one valuation: 4 × 3 + 1 = 13. If the valuation were two-to-one, the total would be nine.',
+ 'The 13 figure is not 13 actual accounts, independent trade signals or proof that losing the new account costs exactly 1/13 of personal cash. Account-count loss (one of five = 20%) and hypothetical stage-weighted value loss (one of 13) measure different things.',
+ 'JJ also says trading half the accounts makes money in half the time. With fixed per-account opportunity and unchanged target, half the throughput would instead take approximately twice as long. Audio and assumptions require verification.',
+ 'Contract count can change with stop distance, but the course separately cautions against changing dashboard dollar risk. NQ has ten times MNQ dollar exposure per contract; verify firm limits and original video before using these examples.'
+ ],src:[['The Mindset Shift To Trading Multiple Accounts','01:20–01:38; 02:02–02:39','1SNtLcgSoTCDabD81yPA9-GLWJtrw77jt'],['Position Sizing Strategy Across Your Portfolio','00:05–00:41; 02:19–02:36','1o_XRhHFgmWg_wu4aXL3OR-F6O6e4POFu']]});
+}
+
 render();
