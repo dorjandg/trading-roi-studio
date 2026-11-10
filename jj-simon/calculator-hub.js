@@ -227,7 +227,7 @@ payoutCountInput.addEventListener('change',()=>{
  payoutCountInput.value=String(payoutTargets[currentFirm]);
  try{localStorage.setItem('jj-risk-calculator09-payout-targets-v1',JSON.stringify(payoutTargets))}catch(e){}
  saveSettings();renderRisk();
-});purchaseCountControls.querySelector('[data-fixed-count-wrap]').append(box.querySelector('[data-account-count]'));const oldMulti=box.querySelector('[data-multi-controls]');oldMulti.style.display='none';oldMulti.querySelector('div').style.display='none';accountBar.style.display='none';let fundedTargets={ftmo:20,topstep:5};try{const savedTargets=JSON.parse(localStorage.getItem('jj-risk-calculator09-funded-targets-v1')||'{}');for(const k of ['ftmo','topstep'])if(Number.isFinite(+savedTargets[k]))fundedTargets[k]=Math.max(1,Math.floor(+savedTargets[k]))}catch(e){}fundedCountInput.title='Unrestricted cumulative planning target. Firm simultaneous active-account limits remain separate and are not overridden by this input.';fundedCountInput.addEventListener('change',()=>{fundedTargets[currentFirm]=Math.max(1,Math.floor(Number(fundedCountInput.value)||fundedTargets[currentFirm]||1));fundedCountInput.value=String(fundedTargets[currentFirm]);try{localStorage.setItem('jj-risk-calculator09-funded-targets-v1',JSON.stringify(fundedTargets))}catch(e){}renderRisk()});
+});purchaseCountControls.querySelector('[data-fixed-count-wrap]').append(box.querySelector('[data-account-count]'));const oldMulti=box.querySelector('[data-multi-controls]');oldMulti.style.display='none';oldMulti.querySelector('div').style.display='none';accountBar.style.display='none';let fundedTargets={ftmo:20,topstep:5};try{const savedTargets=JSON.parse(localStorage.getItem('jj-risk-calculator09-funded-targets-v1')||'{}');for(const k of ['ftmo','topstep'])if(Number.isFinite(+savedTargets[k]))fundedTargets[k]=Math.max(1,Math.min(k==='topstep'?5:100,Math.floor(+savedTargets[k])))}catch(e){}fundedCountInput.title='Target simultaneously funded accounts. Topstep allows at most five active funded accounts; cumulative funded attempts can exceed five in payout-target mode.';fundedCountInput.addEventListener('change',()=>{fundedTargets[currentFirm]=Math.max(1,Math.min(currentFirm==='topstep'?5:100,Math.floor(Number(fundedCountInput.value)||fundedTargets[currentFirm]||1)));fundedCountInput.value=String(fundedTargets[currentFirm]);try{localStorage.setItem('jj-risk-calculator09-funded-targets-v1',JSON.stringify(fundedTargets))}catch(e){}renderRisk()});
 const allocationPreview=document.createElement('div');allocationPreview.dataset.allocationPreview='';box.querySelector('[data-section="funnel"]').after(allocationPreview);group('allocation-preview','08 · Replacement Until Funded Target · Preview',[allocationPreview]);
 const stagesPreview=document.createElement('div');stagesPreview.dataset.stagesPreview='';box.querySelector('[data-section="allocation-preview"]').after(stagesPreview);group('stages-preview','09 · Firm Stages · Rules Preview',[stagesPreview]);
 const consistencyPanel=document.createElement('div');consistencyPanel.dataset.consistencyPanel='';const consistencyToggle=document.createElement('label');consistencyToggle.style.cssText='display:flex;align-items:center;gap:7px;font-size:12px;margin:10px 0 5px';consistencyToggle.innerHTML='<input type="checkbox" data-consistency-enabled style="width:15px;height:15px"> Enable consistency rule';const challengeBody=box.querySelector('[data-section="challenge-settings"] .jj-risk-section-body');const challengeFields=challengeBody.querySelector('[data-risk-fields]');challengeFields.before(phaseGuide);challengeFields.after(consistencyToggle,consistencyPanel);
@@ -437,7 +437,7 @@ const restorePageSettings=pageSettings=>{
   purchaseStrategyMode=pageSettings.purchaseStrategyMode;strategySelect.value=purchaseStrategyMode;
  }
  const count=Number(fundedCountInput.value);
- if(Number.isFinite(count)&&count>=1)fundedTargets[currentFirm]=Math.floor(count);
+ if(Number.isFinite(count)&&count>=1)fundedTargets[currentFirm]=Math.min(currentFirm==='topstep'?5:100,Math.floor(count));
  try{localStorage.setItem('jj-risk-calculator09-funded-targets-v1',JSON.stringify(fundedTargets))}catch(e){}
  const consistency={};
  try{Object.assign(consistency,JSON.parse(localStorage.getItem(consistencyKey)||'{}'))}catch(e){}
@@ -454,7 +454,7 @@ const restorePageSettings=pageSettings=>{
  }
 };
 const presetSnapshot=()=>({...captureProfile(),fundedTarget:fundedTargets[currentFirm],payoutTarget:payoutTargets[currentFirm],manualPhases:captureManualPreset(),pageSettings:capturePageSettings()});
-const applyNamedPreset=data=>{if(!data)return false;applyProfile(data);if(Number.isFinite(Number(data.payoutTarget))){payoutTargets[currentFirm]=Math.max(1,Math.min(currentFirm==='topstep'?5:100,Math.floor(Number(data.payoutTarget))));try{localStorage.setItem('jj-risk-calculator09-payout-targets-v1',JSON.stringify(payoutTargets))}catch(e){}}if(Number.isFinite(Number(data.fundedTarget))){fundedTargets[currentFirm]=Math.max(1,Math.floor(Number(data.fundedTarget)));try{localStorage.setItem('jj-risk-calculator09-funded-targets-v1',JSON.stringify(fundedTargets))}catch(e){}}restorePageSettings(data.pageSettings);restoreManualPreset(data.manualPhases);saveSettings();page=0;expandedPaths.clear();renderRisk();return verifyManualPreset(data.manualPhases)};
+const applyNamedPreset=data=>{if(!data)return false;applyProfile(data);if(Number.isFinite(Number(data.payoutTarget))){payoutTargets[currentFirm]=Math.max(1,Math.min(currentFirm==='topstep'?5:100,Math.floor(Number(data.payoutTarget))));try{localStorage.setItem('jj-risk-calculator09-payout-targets-v1',JSON.stringify(payoutTargets))}catch(e){}}if(Number.isFinite(Number(data.fundedTarget))){fundedTargets[currentFirm]=Math.max(1,Math.min(currentFirm==='topstep'?5:100,Math.floor(Number(data.fundedTarget))));try{localStorage.setItem('jj-risk-calculator09-funded-targets-v1',JSON.stringify(fundedTargets))}catch(e){}}restorePageSettings(data.pageSettings);restoreManualPreset(data.manualPhases);saveSettings();page=0;expandedPaths.clear();renderRisk();return verifyManualPreset(data.manualPhases)};
 /* LOAD deliberately reads cloud first, never silently preferring old browser storage. */
 presetBar.querySelector('[data-preset-load]').addEventListener('click',async()=>{
  const key=presetSelect.value;if(!key)return;
@@ -630,10 +630,11 @@ const portfolioTrades=portfolioChallengeTrades+portfolioFundedTrades,portfolioDa
 const parallelCount=Math.max(1,Math.min(nn,Math.floor(Number(parallelInput.value)||1)));parallelInput.value=String(parallelCount);
 const signalsPerDay=Math.max(1,Math.min(100,Math.floor(Number(signalsInput.value)||1)));signalsInput.value=String(signalsPerDay);
 const capacityDays=Math.max(Math.ceil(portfolioDays/parallelCount),Math.ceil(portfolioTrades/signalsPerDay));
-const fundedGoal=Math.max(1,Math.floor(fundedTargets[firmType]||1));
+const fundedGoal=Math.max(1,Math.min(firmType==='topstep'?5:100,Math.floor(fundedTargets[firmType]||1)));
 const payoutMode=purchaseStrategyMode==='payout';
 const payoutGoal=Math.max(1,Math.min(firmType==='topstep'?5:100,Math.floor(payoutTargets[firmType]||5)));
 payoutCountInput.max=firmType==='topstep'?'5':'100';
+fundedCountInput.max=firmType==='topstep'?'5':'100';
 if(document.activeElement!==fundedCountInput)fundedCountInput.value=String(fundedGoal);
 if(document.activeElement!==payoutCountInput)payoutCountInput.value=String(payoutGoal);
 purchaseCountControls.querySelector('[data-funded-count-wrap]').style.display=purchaseStrategyMode==='target'?'':'none';
@@ -643,8 +644,8 @@ const replacementMode=purchaseStrategyMode!=='fixed';
 const allocationTarget=payoutMode?(fp>0?payoutGoal/fp:0):fundedGoal;
 strategySelect.value=purchaseStrategyMode;
 purchaseStrategy.querySelector('[data-purchase-strategy-help]').textContent=payoutMode?
- 'Target '+payoutGoal+' funded payout successes; replace failed evaluations and funded accounts (expected values). Five Topstep funded slots are a simultaneous limit; timing is not modeled.':
- replacementMode?'Replace failed evaluations until '+fundedGoal+' funded accounts (expected values)':
+ 'Target '+payoutGoal+' projected payout successes; replace failed evaluations AND failed funded accounts. Expected funded attempts: '+(fp>0?(payoutGoal/fp).toFixed(2):'unreachable')+'. Max five Topstep funded accounts active simultaneously; timing is not modeled.':
+ replacementMode?'Obtain '+fundedGoal+' funded account'+(fundedGoal===1?'':'s')+' (up to five active Topstep accounts). Payouts are NOT guaranteed in this mode. Select Maximum Funded Limit Payout to replace funded failures.':
  'Purchase '+nn+' evaluations only; no replacements';
 const allocationCap=firmType==='ftmo'?nn:Infinity;
 const evalPass=probability;
