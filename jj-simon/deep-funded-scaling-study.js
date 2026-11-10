@@ -151,3 +151,20 @@ for(const s of additions)if(!chapter.sections.some(x=>x.title===s.title))chapter
 if(typeof renderNav==='function')renderNav();
 if(typeof render==='function')render();
 })();
+
+/* 2026-11-10: original mathematical audit of JJ's qualifying-day certainty claim. */
+(function(){
+const chapter=(typeof curriculum!=='undefined')?curriculum.find(x=>x.slug==='funded-plan'):null;
+if(!chapter||!Array.isArray(chapter.sections))return;
+const title="Qualifying-day survival is not a guaranteed payout — finite-buffer audit";
+if(chapter.sections.some(x=>x.title===title))return;
+chapter.sections.push({title,points:[
+"JJ advises taking payouts as soon as eligible and limiting winning-day attempts to small ±$200 trades. His statement that a payout is statistically guaranteed within about twelve days is not established by that risk limit: consecutive losses can exhaust a finite buffer, and the waiting time has no fixed maximum.",
+"Illustrative model only: start with $4,000 account profit, assume a hypothetical $3,000 failure boundary, require four additional qualifying wins, and take one independent ±$200 attempt per day at 50% win probability. Exact finite-state calculation gives 85.40% probability of four wins before the loss boundary, leaving 14.60% failure probability. These are NOT historical provider rules or JJ's observed win rate.",
+"State recurrence: S(w,b,t)=p S(w+1,b+1,t−1)+(1−p) S(w,b−1,t−1), with success at required wins and failure when the buffer is exhausted. Commissions, skipped opportunities, trailing drawdown and provider restrictions require separate states.",
+"JJ's separate two-MNQ forty-point example produces $160 gross (2 × $2 × 40), or approximately $157 net using his illustrated $3 friction. It would not meet a hypothetical $200 net winning-day requirement; confirm the actual provider threshold and qualifying-day definitions.",
+"Account profit, qualifying-day status, payout approval and settled personal cash are different stages. Neither original chart frames nor the historical firm's withdrawal and scalping rules were independently verified."
+],src:[["When To Take Payouts","00:07–00:33; 00:53–01:35; 03:13–03:35","1xVDQxTxneJ0EG2AOPgbB0Yp16xc2BCSn"],["Winning Days","00:00–00:46; 02:34–03:47; 04:26–05:45","19DLGJ-t74Q0AOhVpKgtuE4P2uhVp1TPp"]]});
+if(typeof renderNav==='function')renderNav();
+if(typeof render==='function')render();
+})();
