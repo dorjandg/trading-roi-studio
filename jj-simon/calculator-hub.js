@@ -795,8 +795,7 @@ const costPer=(spend,number)=>spend===null||number===null||number<=0?'—':cash(
 const funnelData=[
  {phase:hasVerification?'P1 · Challenge':'P1 · First profit day',count:funnelP1,rate:p1Pass,total:p1Pass,newCost:evalSpend,unitCost:costPer(evalSpend,funnelP1)},
  {phase:hasVerification?'P2 · Verification':'P2 · Consistency',count:funnelP2,rate:p2Conditional,total:pEval,newCost:0,unitCost:costPer(evalSpend,funnelP2)},
- {phase:'P3 · Funded target passed',count:funnelP4,rate:pFund,total:pEval*pFund,newCost:activationSpend,unitCost:costPer(allSpend,funnelP4)},
- {phase:'P4 · Payout cash · '+modelCash(modelBuys===null?null:modelPayout),count:funnelP4,rate:null,total:null,newCost:0,unitCost:costPer(allSpend,funnelP4)}
+ {phase:'P3 · Funded target passed',count:funnelP4,rate:pFund,total:pEval*pFund,newCost:activationSpend,unitCost:costPer(allSpend,funnelP4)}
 ];
 const reversePayoutPlan=payoutMode?'<div style="margin:8px 0;padding:8px 10px;border:1px solid #8884;border-radius:7px;font-size:11px">'+
  '<strong>Reverse plan · '+payoutGoal+' projected payouts</strong>'+
@@ -821,11 +820,11 @@ $('[data-funnel]').innerHTML='<div class="jj-funnel-wrap">'+
  '</strong> · Start: '+funnelCount(modelBuys)+' evaluations · Fee: '+modelCash(modelBuys===null?null:modelBuys*v.accountCost)+'</div>'+reversePayoutPlan+
  '<div style="width:100%;overflow-x:auto"><table style="width:100%;font-size:11px;table-layout:auto"><thead><tr><th style="text-align:left">Phase</th><th style="text-align:right">Accounts</th><th style="text-align:right">Pass %</th><th style="text-align:right">Total %</th><th style="text-align:right" title="New expected fees incurred at this stage">Stage $</th><th style="text-align:right" title="Cumulative fees per expected successful account at this stage">Cost / result</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
  (replacementMode?'':portfolioSummary)+
- '<div class="jj-funnel-summary"><span>Expected payout <strong>'+modelCash(modelPayout)+'</strong></span><span>Net <strong>'+modelCash(modelNet)+'</strong></span><span>ROI <strong>'+(modelRoi===null?'—':modelRoi.toFixed(1)+'%')+'</strong></span></div>'+
+ '<div class="jj-funnel-summary"><span>P4 · Expected payout cash <strong>'+modelCash(modelPayout)+'</strong> · '+(modelBuys===null?'—':modelSuccess.toFixed(2))+' projected successes (same P3 accounts)</span><span>Net <strong>'+modelCash(modelNet)+'</strong></span><span>ROI <strong>'+(modelRoi===null?'—':modelRoi.toFixed(1)+'%')+'</strong></span></div>'+
  '<div class="jj-funnel-note">'+
  (payoutMode?'To target '+payoutGoal+' projected payouts, funded attempts = '+payoutGoal+' / funded success probability and purchased evaluations = funded attempts / evaluation pass probability. Replace failed funded accounts with newly qualified accounts until the expected payout target is reached. ':'')+
  'Expected funded attempts entering P3: <strong>'+(modelBuys===null?'—':modelPassed.toFixed(2))+'</strong> · Estimated funded failures before reaching target: <strong>'+(modelBuys===null?'—':Math.max(0,modelPassed-modelSuccess).toFixed(2))+'</strong> · Evaluation failures: <strong>'+(modelBuys===null?'—':Math.max(0,modelBuys-modelPassed).toFixed(2))+'</strong>. '+
- 'Pass % is conditional at the stage; Total % is cumulative from each purchased evaluation. P2 completion creates funded attempts; P3 applies the ACTUAL funded target success rate, never an automatic 100% pass. P4 converts those same target successes into projected payout cash without another independent pass rate. '+
+ 'Pass % is conditional at the stage; Total % is cumulative from each purchased evaluation. P2 completion creates funded attempts; P3 applies the ACTUAL funded target success rate, never an automatic 100% pass. P4 is payout cash displayed BELOW the funnel, using the SAME P3 successful accounts; it is not an additional phase pass. '+
  'Stage $ includes only newly incurred evaluation or activation fees; Cost / result includes those fees from failed accounts. '+
  'Payouts are projections, not confirmed withdrawals. Firm capacity, payout eligibility, payment waiting times and correlated trades are not simulated.</div></div>';
 if(!replacementMode)$('[data-funnel]').querySelector('.jj-funnel-parallel').append(Object.assign(document.createElement('label'),{textContent:'Parallel active accounts  '}),parallelInput);
