@@ -214,6 +214,13 @@ const funnel=document.createElement('div');funnel.dataset.funnel='';box.querySel
 const title=Array.from(box.querySelectorAll('h4')).find(x=>x.textContent.includes('All scenario paths'));
 if(title){const nodes=[];let n=title;while(n&&n.tagName!=='P'){nodes.push(n);n=n.nextElementSibling}group('paths','10 · Challenge · Scenario Paths',nodes)}
 const fundedScenario=document.createElement('div');fundedScenario.innerHTML='<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px"><label style="font-size:12px">Filter <select data-funded-path-filter><option value="all">All paths</option><option value="target">Target hit</option><option value="closed">Failed</option><option value="active">Unresolved</option></select></label><span data-funded-path-count style="font-size:11px;opacity:.7"></span></div><div data-funded-path-table></div><div style="display:flex;align-items:center;gap:8px;margin-top:8px"><button data-funded-prev type="button">Previous</button><span data-funded-page style="font-size:11px"></span><button data-funded-next type="button">Next</button></div><p style="font-size:11px;opacity:.7">Illustrative funded paths from the existing funded engine; no payout waiting period or firm-specific day rules are enforced here.</p>';box.querySelector('[data-section="paths"]').after(fundedScenario);group('funded-paths','11 · P3 Funded · Scenario Paths',[fundedScenario]);let fundedPage=0;const expandedFunded=new Set();
+const tradeStatsPanel=document.createElement('div');
+tradeStatsPanel.dataset.tradeStatsPanel='';
+tradeStatsPanel.innerHTML='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px"><label style="font-size:11px">Trade system <select data-trade-stats-scope style="font-size:11px"><option value="evaluation">Evaluation</option><option value="funded">Funded</option></select></label><small style="opacity:.7">Probability-weighted trade paths</small></div><div data-trade-stats-content></div>';
+box.querySelector('[data-section="funded-paths"]').after(tradeStatsPanel);
+group('trade-statistics','12 · Trade Statistics · Winning & Losing Streaks',[tradeStatsPanel]);
+const tradeStatsScope=tradeStatsPanel.querySelector('[data-trade-stats-scope]');
+tradeStatsScope.addEventListener('change',()=>renderRisk());
 const purchaseStrategy=document.createElement('div');purchaseStrategy.style.cssText='display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;margin:0 0 10px';purchaseStrategy.innerHTML='<strong>Purchase strategy</strong><select data-purchase-strategy aria-label="Account purchase strategy"><option value="fixed">Fixed purchases</option><option value="target">Reach Funded Limit</option><option value="payout">Maximum Funded Limit Payout</option></select><span data-purchase-strategy-help style="opacity:.75"></span>';box.querySelector('[data-section="funnel"] .jj-risk-section-body').prepend(purchaseStrategy);const strategySelect=purchaseStrategy.querySelector('[data-purchase-strategy]');let purchaseStrategyMode='target';
 const purchaseCountControls=document.createElement('div');purchaseCountControls.style.cssText='display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:7px 0';purchaseCountControls.innerHTML='<label data-fixed-count-wrap style="font-size:12px">Evaluations to buy </label><label data-funded-count-wrap style="font-size:12px">Funded account target <input data-funded-count type="number" min="1" step="1" value="20" style="width:68px;padding:5px;margin-left:5px"></label>';purchaseStrategy.after(purchaseCountControls);const fundedCountInput=purchaseCountControls.querySelector('[data-funded-count]');
 const payoutCountWrap=document.createElement('label');payoutCountWrap.dataset.payoutCountWrap='';payoutCountWrap.style.fontSize='12px';
@@ -563,6 +570,69 @@ const fn=(k,d)=>{const x=Number(box.querySelector('[data-funded="'+k+'"]').value
 const fv={targetMode:1,target:Math.max(.01,fn('target',4000)),target2:1,limit:Math.max(.01,fn('limit',2000)),dailyLimit:Math.max(.01,fn('dailyLimit',1000)),tradesPerDay:Math.max(1,Math.min(100,Math.floor(fn('tradesPerDay',3)))),rr:Math.max(.01,fn('rr',3)),floor:Math.max(0,fn('floor',100)),winRate:Math.max(0,Math.min(100,fn('winRate',50))),depth:Math.max(1,Math.min(12,Math.floor(fn('depth',6))))};
 if(firmForPhases==='topstep'&&activeStrategy==='current')fv.fixedRisk=1000;else if(activeStrategy==='current')fv.ftmoFundedBuilder=true;Object.assign(fv,STRATEGIES[activeStrategy].fund);fv.manualRisks=manualConfig();fv.manualRRs=manualRRConfig();fv.manualStage=3;let fp=0,fr=0;const fundedLeaves=[];
 if(phaseMode!=='evaluation'){function fw(path){const x=calc(path,fv);if(x.status!=='active'||x.steps.length>=fv.depth){fundedLeaves.push(x);if(x.status==='target')fp+=x.prob;if(x.status==='closed')fr+=x.prob;return}fw(path+'W');fw(path+'L')}fw('')}
+
+/* Statistics are calculated from terminal/censored path probabilities, not
+   actual trade history. Do not confuse an observed maximum in enumerated paths
+   with a guaranteed future maximum. */
+const streakSummary=items=>{
+ const hist={W:{},L:{}};
+ let meanTrades=0,meanWins=0,meanLosses=0,meanMaxW=0,meanMaxL=0,meanCompleted=0,meanPnl=0;
+ let maxObservedW=0,maxObservedL=0;
+ let totalMass=0;
+ for(const x of items){
+  const prob=x.prob||0;
+  totalMass+=prob;
+  let wins=0,losses=0,last='',run=0,maxW=0,maxL=0;
+  for(const step of x.steps){
+   const c=step.c;
+   if(c==='W')wins++;else losses++;
+   run=c===last?run+1:1;
+   last=c;
+   if(c==='W')maxW=Math.max(maxW,run);else maxL=Math.max(maxL,run);
+  }
+  maxObservedW=Math.max(maxObservedW,maxW);maxObservedL=Math.max(maxObservedL,maxL);
+  hist.W[maxW]=(hist.W[maxW]||0)+prob;
+  hist.L[maxL]=(hist.L[maxL]||0)+prob;
+  meanTrades+=prob*x.steps.length;
+  meanWins+=prob*wins;
+  meanLosses+=prob*losses;
+  meanMaxW+=prob*maxW;
+  meanMaxL+=prob*maxL;
+  meanPnl+=prob*x.pnl;
+  if(x.status==='target')meanCompleted+=prob;
+ }
+ const atLeast=(type,k)=>Object.entries(hist[type]).reduce((sum,[len,p])=>sum+(Number(len)>=k?p:0),0);
+ return {totalMass,meanTrades,meanWins,meanLosses,meanMaxW,meanMaxL,maxObservedW,maxObservedL,meanPnl,atLeast};
+};
+const selectedStatsFund=tradeStatsScope.value==='funded';
+const statsPaths=selectedStatsFund?fundedLeaves:leaves;
+const stats=streakSummary(statsPaths);
+const statPct=x=>(100*x).toFixed(1)+'%';
+const statCard=(name,value,help)=>kpiTooltip(name,value,help);
+const streakMax=Math.min(8,selectedStatsFund?fv.depth:v.depth);
+const streakRows=Array.from({length:streakMax},(_,i)=>{
+ const n=i+1;
+ return '<tr><td style="text-align:left">'+n+'+ consecutive</td>'+
+ '<td style="text-align:right;font-variant-numeric:tabular-nums">'+statPct(stats.atLeast('L',n))+'</td>'+
+ '<td style="text-align:right;font-variant-numeric:tabular-nums">'+statPct(stats.atLeast('W',n))+'</td></tr>';
+}).join('');
+tradeStatsPanel.querySelector('[data-trade-stats-content]').innerHTML=
+ statsPaths.length?'<div class="jj-risk-results-grid">'+
+ statCard('Avg trades / account',stats.meanTrades.toFixed(2),'Probability-weighted number of trades executed before target, closure or simulation-depth cutoff.')+
+ statCard('Avg wins / account',stats.meanWins.toFixed(2),'Expected winning trades executed per evaluation or funded attempt.')+
+ statCard('Avg losses / account',stats.meanLosses.toFixed(2),'Expected losing trades executed per attempt.')+
+ statCard('Avg max loss streak',stats.meanMaxL.toFixed(2),'Probability-weighted longest consecutive losing streak in a single attempt.')+
+ statCard('Avg max win streak',stats.meanMaxW.toFixed(2),'Probability-weighted longest consecutive winning streak in a single attempt.')+
+ statCard('Longest modeled losses',String(stats.maxObservedL),'Largest losing streak among enumerated paths at this maximum trade depth, NOT a live or guaranteed maximum.')+
+ statCard('Longest modeled wins',String(stats.maxObservedW),'Largest winning streak among enumerated paths at this maximum trade depth, NOT a live or guaranteed maximum.')+
+ statCard('Expected P&L / attempt',cash(stats.meanPnl),'Probability-weighted trading P&L per attempt before fees and profit split; unresolved scenarios are included.')+
+ '</div><div style="overflow-x:auto;margin-top:8px"><table style="width:100%;font-size:11px"><thead><tr>'+
+ '<th style="text-align:left" title="Probability at least this many trades occur consecutively within an account attempt">Streak</th>'+
+ '<th style="text-align:right" title="Probability that an account experiences at least N consecutive losing trades before termination or depth cutoff">Loss ≥ N</th>'+
+ '<th style="text-align:right" title="Probability that an account experiences at least N consecutive winning trades before termination or depth cutoff">Win ≥ N</th>'+
+ '</tr></thead><tbody>'+streakRows+'</tbody></table></div>'+
+ '<p style="font-size:11px;opacity:.75;margin-top:7px">Based on '+statsPaths.length+' enumerated terminal or unfinished paths, weighted by their probabilities (total '+statPct(stats.totalMass)+'). Stops at account target, breach, or trade-depth limit. This is a theoretical model, not historical executed trades. Longer real streaks remain possible, and shared signals may correlate accounts.</p>':
+ '<p style="font-size:11px;opacity:.75">No funded paths are currently calculated. Select Combined or Funded mode to see funded streak statistics.</p>';
 if(compareSection.open){const sim=cfg=>{let hit=0,fail=0,ev=0;function go(p){const x=calc(p,cfg);if(x.status!=='active'||x.steps.length>=cfg.depth){if(x.status==='target')hit+=x.prob;if(x.status==='closed')fail+=x.prob;ev+=x.prob*x.pnl;return}go(p+'W');go(p+'L')}go('');return [hit*100,fail*100,ev]};const phases=firmForPhases==='ftmo'?[[1,v.target],[2,v.target2],[3,fv.target]]:[[1,v.target],[3,fv.target]];let rows='';for(const item of phases){const phase=item[0],target=item[1],base=phase===3?fv:v;const common=Object.assign({},base,{targetMode:1,target:target,manualStage:phase,topstepConsistency:phase===1&&firmForPhases==='topstep'});const auto=sim(Object.assign({},common,{manualRisks:{},manualRRs:{}}));const manual=sim(Object.assign({},common,{manualRisks:manualConfig(),manualRRs:manualRRConfig()}));let phaseRows='';for(let i=0;i<3;i++){const diff=manual[i]-auto[i];phaseRows+='<tr><td>'+['Target %','Failure %','EV'][i]+'</td><td>'+manual[i].toFixed(2)+'</td><td>'+auto[i].toFixed(2)+'</td><td class="'+((i===1?diff<0:diff>0)?'jj-risk-win':(i===1?diff>0:diff<0)?'jj-risk-loss':'')+'">'+diff.toFixed(2)+'</td></tr>';;}rows+='<details style="margin:6px 0;padding:8px;border:1px solid #8884;border-radius:7px"><summary style="cursor:pointer;font-weight:700">P'+phase+' · Target '+manual[0].toFixed(1)+'% / '+auto[0].toFixed(1)+'%</summary><div style="overflow-x:auto"><table style="font-size:11px;white-space:nowrap"><thead><tr><th>Metric</th><th>Manual</th><th>Auto</th><th>Δ</th></tr></thead><tbody>'+phaseRows+'</tbody></table></div></details>'; }comparePanel.querySelector('[data-compare]').innerHTML='<div style="font-size:11px;opacity:.7">Green = better · Red = worse · Δ = Manual − Auto</div>'+rows;}
 const nn=Math.max(1,Math.min(100,Math.floor(Number($('[data-account-count]').value)||10)));
 const totalFees=nn*v.accountCost,expectedFunded=nn*probability,activationFee=Math.max(0,fn('activation',0)),splitPct=Math.max(0,Math.min(1,fn('split',80)/100));
@@ -572,7 +642,7 @@ let mathPanel=box.querySelector('[data-ch09-math]');
 if(!mathPanel){
  mathPanel=document.createElement('details');mathPanel.dataset.ch09Math='';
  mathPanel.className='jj-risk-section';
- mathPanel.innerHTML='<summary>12 · Math &amp; Bankroll KPIs</summary><div data-math-cards class="jj-risk-results-grid"></div><small style="opacity:.75">Calculated from Chapter 09 settings. Probabilities use finite simulation depth; historical confidence intervals require observed trade/account records.</small>';
+ mathPanel.innerHTML='<summary>13 · Math &amp; Bankroll KPIs</summary><div data-math-cards class="jj-risk-results-grid"></div><small style="opacity:.75">Calculated from Chapter 09 settings. Probabilities use finite simulation depth; historical confidence intervals require observed trade/account records.</small>';
  (box.querySelector('[data-section="funded-paths"]')||box.lastElementChild).after(mathPanel);
 }
 const fmtMathPct=x=>Number.isFinite(x)?(100*x).toFixed(2)+'%':'—';
