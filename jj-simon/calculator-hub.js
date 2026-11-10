@@ -241,14 +241,21 @@ presetBar.querySelectorAll('button').forEach(el=>el.style.cssText='font-size:10p
 firmBar.appendChild(presetBar);
 const presetSelect=presetBar.querySelector('[data-named-presets]'),presetNote=presetBar.querySelector('[data-preset-note]');
 const readNamedPresets=()=>{try{const x=JSON.parse(localStorage.getItem(presetKey)||'{}');return x&&typeof x==='object'?x:{}}catch(e){return {}}};
-const syncKeyStorage='jj-risk-presets-sync-key-v1';
-const syncButton=document.createElement('button');syncButton.type='button';syncButton.textContent='Sync';syncButton.title='Connect saved presets across devices using a private sync key';syncButton.style.cssText='font-size:10px;line-height:1.1;padding:4px 6px;border:1px solid #8886;border-radius:5px;background:transparent;color:inherit;cursor:pointer;min-height:25px';presetBar.insertBefore(syncButton,presetNote);
-const syncKey=()=>{try{return localStorage.getItem(syncKeyStorage)||''}catch(e){return ''}};
-const syncRequest=async(method,payload)=>{const key=syncKey();if(!key)return null;const res=await fetch('./api/presets',{method,headers:{'X-Preset-Key':key,...(payload?{'Content-Type':'application/json'}:{})},...(payload?{body:JSON.stringify(payload)}:{})});const data=await res.json();if(!res.ok)throw Error(data.error||'Sync unavailable');return data};
-const pullSyncedPresets=async()=>{if(!syncKey())return;const response=await syncRequest('GET');if(response.data&&response.data.presets){const local=readNamedPresets();for(const firm of ['ftmo','topstep'])local[firm]=Object.assign({},local[firm]||{},response.data.presets[firm]||{});localStorage.setItem(presetKey,JSON.stringify(local));refreshNamedPresets();presetNote.textContent='Synced'}else{presetNote.textContent='Cloud empty · save a preset to upload'}};
-const pushSyncedPresets=async()=>{if(!syncKey())return;await syncRequest('PUT',{version:1,presets:readNamedPresets()});presetNote.textContent='Cloud saved'};
-syncButton.addEventListener('click',async()=>{const existing=syncKey();const key=window.prompt('Private sync key (same key on every device). Keep it secret. Enter a key of at least 24 letters/numbers, or leave blank to disconnect:',existing);if(key===null)return;const value=key.trim();if(value&&!/^[A-Za-z0-9_-]{24,128}$/.test(value)){presetNote.textContent='Key needs 24–128 letters/numbers';return}try{if(value)localStorage.setItem(syncKeyStorage,value);else localStorage.removeItem(syncKeyStorage);if(value)await pullSyncedPresets();else presetNote.textContent='Sync disconnected'}catch(e){presetNote.textContent='Sync unavailable: '+e.message}});
-if(syncKey())pullSyncedPresets().catch(e=>{presetNote.textContent='Sync offline'});
+let googlePresetToken='',googlePresetReady=false,googlePresetConfigured=false;
+const googleLoginBox=document.createElement('span');googleLoginBox.style.cssText='display:inline-flex;align-items:center;max-width:190px;overflow:hidden';presetBar.insertBefore(googleLoginBox,presetNote);
+const syncKey=()=>googlePresetReady&&!!googlePresetToken;
+const syncRequest=async(method,payload)=>{if(!googlePresetToken)throw Error('Sign in with Google');const res=await fetch('./api/presets',{method,headers:{'Authorization':'Bearer '+googlePresetToken,...(payload?{'Content-Type':'application/json'}:{})},...(payload?{body:JSON.stringify(payload)}:{})});const data=await res.json();if(!res.ok){if(res.status===401)googlePresetReady=false;throw Error(data.error||'Cloud unavailable')}return data};
+const pullSyncedPresets=async()=>{if(!googlePresetToken)return;const response=await syncRequest('GET');if(response.data&&response.data.presets){const local=readNamedPresets();for(const firm of ['ftmo','topstep'])local[firm]=Object.assign({},local[firm]||{},response.data.presets[firm]||{});localStorage.setItem(presetKey,JSON.stringify(local));refreshNamedPresets();presetNote.textContent='Presets synced'}else{presetNote.textContent='Cloud ready'}googlePresetReady=true};
+const pushSyncedPresets=async()=>{if(!syncKey())return;await syncRequest('PUT',{version:1,presets:readNamedPresets()});presetNote.textContent='Saved everywhere'};
+(async()=>{try{
+ const res=await fetch('./api/preset-config',{cache:'no-store'});if(!res.ok)throw Error('Configuration unavailable');const config=await res.json();
+ if(!config.clientId||!config.storageReady){presetNote.textContent='Cloud setup pending';return}
+ googlePresetConfigured=true;
+ if(!window.google?.accounts?.id){await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='https://accounts.google.com/gsi/client';script.async=true;script.onload=resolve;script.onerror=reject;document.head.appendChild(script)})}
+ window.google.accounts.id.initialize({client_id:config.clientId,auto_select:true,callback:async credential=>{googlePresetToken=credential.credential;googlePresetReady=false;try{await pullSyncedPresets()}catch(e){presetNote.textContent='Sync failed: '+e.message}}});
+ window.google.accounts.id.renderButton(googleLoginBox,{theme:'outline',size:'small',text:'signin_with',width:170});
+ window.google.accounts.id.prompt();
+}catch(e){presetNote.textContent='Google sign-in unavailable'}})();
 const exportPresetButton=document.createElement('button');exportPresetButton.type='button';exportPresetButton.textContent='Copy';exportPresetButton.title='Copy selected saved preset or current parameters as JSON for simulation';exportPresetButton.style.cssText='font-size:10px;line-height:1.1;padding:4px 6px;border:1px solid #8886;border-radius:5px;background:transparent;color:inherit;cursor:pointer;min-height:25px';presetBar.insertBefore(exportPresetButton,presetNote);
 exportPresetButton.addEventListener('click',async()=>{
  const selected=presetSelect.value,all=readNamedPresets()[currentFirm]||{},name=selected.startsWith('user:')?selected.slice(5):'Current settings';
