@@ -241,21 +241,47 @@ presetBar.querySelectorAll('button').forEach(el=>el.style.cssText='font-size:10p
 firmBar.appendChild(presetBar);
 const presetSelect=presetBar.querySelector('[data-named-presets]'),presetNote=presetBar.querySelector('[data-preset-note]');
 const readNamedPresets=()=>{try{const x=JSON.parse(localStorage.getItem(presetKey)||'{}');return x&&typeof x==='object'?x:{}}catch(e){return {}}};
-let googlePresetToken='',googlePresetReady=false,googlePresetConfigured=false;
-const googleLoginBox=document.createElement('span');googleLoginBox.style.cssText='display:inline-flex;align-items:center;max-width:190px;overflow:hidden';presetBar.insertBefore(googleLoginBox,presetNote);
-const syncKey=()=>googlePresetReady&&!!googlePresetToken;
-const syncRequest=async(method,payload)=>{if(!googlePresetToken)throw Error('Sign in with Google');const res=await fetch('./api/presets',{method,headers:{'Authorization':'Bearer '+googlePresetToken,...(payload?{'Content-Type':'application/json'}:{})},...(payload?{body:JSON.stringify(payload)}:{})});const data=await res.json();if(!res.ok){if(res.status===401)googlePresetReady=false;throw Error(data.error||'Cloud unavailable')}return data};
-const pullSyncedPresets=async()=>{if(!googlePresetToken)return;const response=await syncRequest('GET');if(response.data&&response.data.presets){const local=readNamedPresets();for(const firm of ['ftmo','topstep'])local[firm]=Object.assign({},local[firm]||{},response.data.presets[firm]||{});localStorage.setItem(presetKey,JSON.stringify(local));refreshNamedPresets();presetNote.textContent='Presets synced'}else{presetNote.textContent='Cloud ready'}googlePresetReady=true};
-const pushSyncedPresets=async()=>{if(!syncKey())return;await syncRequest('PUT',{version:1,presets:readNamedPresets()});presetNote.textContent='Saved everywhere'};
-(async()=>{try{
- const res=await fetch('./api/preset-config',{cache:'no-store'});if(!res.ok)throw Error('Configuration unavailable');const config=await res.json();
- if(!config.clientId||!config.storageReady){presetNote.textContent='Cloud setup pending';return}
- googlePresetConfigured=true;
- if(!window.google?.accounts?.id){await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='https://accounts.google.com/gsi/client';script.async=true;script.onload=resolve;script.onerror=reject;document.head.appendChild(script)})}
- window.google.accounts.id.initialize({client_id:config.clientId,auto_select:true,callback:async credential=>{googlePresetToken=credential.credential;googlePresetReady=false;try{await pullSyncedPresets()}catch(e){presetNote.textContent='Sync failed: '+e.message}}});
- window.google.accounts.id.renderButton(googleLoginBox,{theme:'outline',size:'small',text:'signin_with',width:170});
- window.google.accounts.id.prompt();
-}catch(e){presetNote.textContent='Google sign-in unavailable'}})();
+/* Cloudflare KV is the shared source of truth for the single-user Academy.
+   No Google login, sync button, clipboard, or device-specific account required. */
+let cloudPresetReady=false,cloudWriteQueue=Promise.resolve();
+const cloudPresetUrl='./api/presets';
+const cloudRequest=async(method,payload)=>{
+ const response=await fetch(cloudPresetUrl,{method,cache:'no-store',headers:payload?{'Content-Type':'application/json'}:{},...(payload?{body:JSON.stringify(payload)}:{})});
+ const data=await response.json().catch(()=>({error:'Preset API returned non-JSON content'}));
+ if(!response.ok)throw Error(data.error||'Cloud storage unavailable');
+ return data;
+};
+const syncKey=()=>cloudPresetReady;
+const pullSyncedPresets=async()=>{
+ const response=await cloudRequest('GET');
+ if(!response||!response.ready)throw Error('Cloud storage unavailable');
+ if(response.data&&response.data.presets){
+  const remote={ftmo:{},topstep:{}};
+  for(const firm of ['ftmo','topstep'])remote[firm]=response.data.presets[firm]||{};
+  localStorage.setItem(presetKey,JSON.stringify(remote));
+ }else{
+  /* One-time migration of existing browser presets when the shared store is empty. */
+  const local=readNamedPresets();
+  if(Object.values(local).some(group=>group&&Object.keys(group).length)){
+   await cloudRequest('PUT',{version:1,presets:local});
+  }
+ }
+ cloudPresetReady=true;
+ refreshNamedPresets();
+ presetNote.textContent='Presets available on all devices';
+};
+const pushSyncedPresets=()=> {
+ /* Serialize writes to preserve the save/delete order on this device. */
+ cloudWriteQueue=cloudWriteQueue.catch(()=>{}).then(async()=>{
+  const data=await cloudRequest('PUT',{version:1,presets:readNamedPresets()});
+  presetNote.textContent='Saved everywhere';
+  return data;
+ });
+ return cloudWriteQueue;
+};
+pullSyncedPresets().catch(e=>{cloudPresetReady=false;presetNote.textContent='Cloud unavailable · changes stay on this device';console.warn('JJ preset cloud:',e.message)});
+window.addEventListener('pageshow',()=>{if(!cloudPresetReady)pullSyncedPresets().catch(()=>{});else if(document.visibilityState==='visible')pullSyncedPresets().catch(()=>{})});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')pullSyncedPresets().catch(()=>{})});
 const exportPresetButton=document.createElement('button');exportPresetButton.type='button';exportPresetButton.textContent='Copy';exportPresetButton.title='Copy selected saved preset or current parameters as JSON for simulation';exportPresetButton.style.cssText='font-size:10px;line-height:1.1;padding:4px 6px;border:1px solid #8886;border-radius:5px;background:transparent;color:inherit;cursor:pointer;min-height:25px';presetBar.insertBefore(exportPresetButton,presetNote);
 exportPresetButton.addEventListener('click',async()=>{
  const selected=presetSelect.value,all=readNamedPresets()[currentFirm]||{},name=selected.startsWith('user:')?selected.slice(5):'Current settings';
