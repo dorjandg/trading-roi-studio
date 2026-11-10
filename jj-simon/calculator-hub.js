@@ -328,8 +328,61 @@ const restoreManualPreset=settings=>{
  try{localStorage.setItem(manualRiskKey,JSON.stringify(captureManualPreset()))}catch(e){}
  return true;
 };
-const presetSnapshot=()=>({...captureProfile(),fundedTarget:fundedTargets[currentFirm],manualPhases:captureManualPreset()});
-const applyNamedPreset=data=>{if(!data)return;applyProfile(data);restoreManualPreset(data.manualPhases);if(Number.isFinite(Number(data.fundedTarget))){fundedTargets[currentFirm]=Math.max(1,Math.floor(Number(data.fundedTarget)));try{localStorage.setItem('jj-risk-calculator09-funded-targets-v1',JSON.stringify(fundedTargets))}catch(e){}}saveSettings();page=0;expandedPaths.clear();renderRisk()};
+/* A preset captures the complete editable scenario and its visible page choices.
+   Results/history are recalculated, not copied as stale outputs. */
+const capturePageSettings=()=>{
+ const controls={};
+ const selectors=['[data-k]','[data-funded]','[data-manual-mode]','[data-manual-risk]','[data-manual-rr]',
+  '[data-consistency-enabled]','[data-consistency-limit]','[data-account-count]','[data-funded-count]',
+  '[data-parallel-accounts]','[data-signals-per-day]','[data-purchase-strategy]','[data-target-mode]'];
+ for(const selector of selectors){
+  box.querySelectorAll(selector).forEach(el=>{
+   const key=Object.keys(el.dataset).sort().map(k=>k+':'+el.dataset[k]).join('|');
+   if(key)controls[key]=el.type==='checkbox'?el.checked:el.value;
+  });
+ }
+ const sections={};box.querySelectorAll('.jj-risk-section[data-section]').forEach(el=>sections[el.dataset.section]=el.open);
+ return {version:2,controls,sections,activeStrategy,phaseMode,accountMode,purchaseStrategyMode};
+};
+const restorePageSettings=pageSettings=>{
+ if(!pageSettings||pageSettings.version!==2||!pageSettings.controls)return;
+ const controls=pageSettings.controls;
+ box.querySelectorAll('input[data-k],input[data-funded],input[data-manual-risk],input[data-manual-rr],select[data-manual-mode],input[data-consistency-enabled],input[data-consistency-limit],input[data-account-count],input[data-funded-count],input[data-parallel-accounts],input[data-signals-per-day],select[data-purchase-strategy],input[data-target-mode]').forEach(el=>{
+  const key=Object.keys(el.dataset).sort().map(k=>k+':'+el.dataset[k]).join('|');
+  if(!Object.prototype.hasOwnProperty.call(controls,key))return;
+  const value=controls[key];
+  if(el.type==='checkbox')el.checked=!!value;
+  else if(el.tagName==='SELECT'){if([...el.options].some(o=>o.value===value))el.value=value}
+  else if(value!==null&&value!==undefined)el.value=String(value);
+ });
+ if(Object.prototype.hasOwnProperty.call(STRATEGIES,pageSettings.activeStrategy)){
+  activeStrategy=pageSettings.activeStrategy;
+  try{localStorage.setItem(ACTIVE_KEY,activeStrategy)}catch(e){}
+ }
+ if(['evaluation','funded','combined'].includes(pageSettings.phaseMode))phaseMode=pageSettings.phaseMode;
+ if(['single','multi'].includes(pageSettings.accountMode))accountMode=pageSettings.accountMode;
+ if(['fixed','target'].includes(pageSettings.purchaseStrategyMode)){
+  purchaseStrategyMode=pageSettings.purchaseStrategyMode;strategySelect.value=purchaseStrategyMode;
+ }
+ const count=Number(fundedCountInput.value);
+ if(Number.isFinite(count)&&count>=1)fundedTargets[currentFirm]=Math.floor(count);
+ try{localStorage.setItem('jj-risk-calculator09-funded-targets-v1',JSON.stringify(fundedTargets))}catch(e){}
+ const consistency={};
+ try{Object.assign(consistency,JSON.parse(localStorage.getItem(consistencyKey)||'{}'))}catch(e){}
+ const toggle=box.querySelector('[data-consistency-enabled]');
+ const limit=box.querySelector('[data-consistency-limit]');
+ if(toggle)consistency.enabled=toggle.checked;
+ if(limit&&Number.isFinite(Number(limit.value)))consistency.limit=Number(limit.value);
+ try{localStorage.setItem(consistencyKey,JSON.stringify(consistency))}catch(e){}
+ try{localStorage.setItem(manualRiskKey,JSON.stringify(captureManualPreset()))}catch(e){}
+ if(pageSettings.sections){
+  box.querySelectorAll('.jj-risk-section[data-section]').forEach(el=>{
+   if(typeof pageSettings.sections[el.dataset.section]==='boolean')el.open=pageSettings.sections[el.dataset.section];
+  });
+ }
+};
+const presetSnapshot=()=>({...captureProfile(),fundedTarget:fundedTargets[currentFirm],manualPhases:captureManualPreset(),pageSettings:capturePageSettings()});
+const applyNamedPreset=data=>{if(!data)return;applyProfile(data);restoreManualPreset(data.manualPhases);if(Number.isFinite(Number(data.fundedTarget))){fundedTargets[currentFirm]=Math.max(1,Math.floor(Number(data.fundedTarget)));try{localStorage.setItem('jj-risk-calculator09-funded-targets-v1',JSON.stringify(fundedTargets))}catch(e){}}restorePageSettings(data.pageSettings);saveSettings();page=0;expandedPaths.clear();renderRisk()};
 presetBar.querySelector('[data-preset-load]').addEventListener('click',()=>{const key=presetSelect.value;if(!key)return;if(key==='gpt'){auditedPresetButton.click();rememberLoadedPreset('gpt');presetNote.textContent='GPT preset loaded';return}const data=(readNamedPresets()[currentFirm]||{})[key.slice(5)];if(data){applyNamedPreset(data);rememberLoadedPreset(key);presetNote.textContent='Loaded '+key.slice(5)+(data.manualPhases?' · manual phases restored':' · legacy preset (no manual phases saved)')}});
 presetBar.querySelector('[data-preset-save]').addEventListener('click',()=>{const name=(window.prompt('Name this preset (saved for '+currentFirm.toUpperCase()+'):', '')||'').trim().slice(0,60);if(!name)return;if(name.toLowerCase().startsWith('gpt')){presetNote.textContent='GPT names are reserved';return}const all=readNamedPresets();all[currentFirm]=all[currentFirm]||{};if(all[currentFirm][name]&&!window.confirm('Replace preset "'+name+'"?'))return;all[currentFirm][name]=presetSnapshot();try{localStorage.setItem(presetKey,JSON.stringify(all));refreshNamedPresets();presetSelect.value='user:'+name;rememberLoadedPreset('user:'+name);presetNote.textContent='Saved '+name;pushSyncedPresets().catch(e=>{presetNote.textContent='Not synced: '+e.message})}catch(e){presetNote.textContent='Browser storage unavailable'}});
 presetBar.querySelector('[data-preset-delete]').addEventListener('click',()=>{const key=presetSelect.value;if(!key||key==='gpt'){presetNote.textContent='GPT preset cannot be deleted';return}const name=key.slice(5);if(!window.confirm('Delete preset "'+name+'"?'))return;const all=readNamedPresets();if(all[currentFirm])delete all[currentFirm][name];try{localStorage.setItem(presetKey,JSON.stringify(all));refreshNamedPresets();presetSelect.value='';if(getLoadedPreset()===key)rememberLoadedPreset('');presetNote.textContent='Deleted '+name;pushSyncedPresets().catch(e=>{presetNote.textContent='Delete not synced: '+e.message})}catch(e){presetNote.textContent='Unable to delete'}});
