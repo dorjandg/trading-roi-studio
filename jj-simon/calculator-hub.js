@@ -292,7 +292,30 @@ exportPresetButton.addEventListener('click',async()=>{
  try{if(!navigator.clipboard?.writeText)throw Error('Clipboard unavailable');await navigator.clipboard.writeText(payload);presetNote.textContent='Copied · paste in ChatGPT'}catch(e){window.prompt('Copy these preset settings and paste in ChatGPT:',payload);presetNote.textContent='Copy JSON from popup'}
 });
 
-const refreshNamedPresets=()=>{const selected=presetSelect.value;const data=readNamedPresets()[currentFirm]||{};presetSelect.innerHTML='<option value="">Presets…</option><option value="gpt">GPT · Audited 12-trade test</option>';Object.keys(data).sort().forEach(name=>{const opt=document.createElement('option');opt.value='user:'+name;opt.textContent=name;presetSelect.appendChild(opt)});if([...presetSelect.options].some(o=>o.value===selected))presetSelect.value=selected};
+/* Compact per-preset manager: every custom preset has its own delete X. */
+const presetManager=document.createElement('details');
+presetManager.style.cssText='position:relative;display:inline-block;font-size:11px';
+presetManager.innerHTML='<summary style="cursor:pointer;list-style:none;padding:4px 7px;border:1px solid #8886;border-radius:5px;min-height:25px;box-sizing:border-box">All presets ▾</summary><div data-preset-manager-list style="position:absolute;right:0;top:calc(100% + 4px);z-index:45;min-width:220px;max-width:min(320px,85vw);max-height:290px;overflow:auto;padding:5px;border:1px solid #8887;border-radius:8px;background:var(--card,#1e2530);box-shadow:0 5px 18px #0003"></div>';
+presetBar.insertBefore(presetManager,presetNote);
+const drawPresetManager=()=>{
+ const list=presetManager.querySelector('[data-preset-manager-list]');
+ list.replaceChildren();
+ const builtIn=document.createElement('div');builtIn.style.cssText='padding:6px 7px;font-weight:600;opacity:.7';builtIn.textContent='Built-in · GPT (protected)';list.append(builtIn);
+ const names=Object.keys(readNamedPresets()[currentFirm]||{}).sort();
+ for(const name of names){
+  const row=document.createElement('div');row.style.cssText='display:flex;gap:5px;align-items:center;padding:3px 2px;border-top:1px solid #8883';
+  const select=document.createElement('button');select.type='button';select.textContent=name;select.title='Load '+name;select.style.cssText='flex:1;min-width:0;text-align:left;overflow-wrap:anywhere;font-size:11px;border:0;background:transparent;color:inherit;cursor:pointer;padding:5px';
+  select.addEventListener('click',()=>{presetSelect.value='user:'+name;presetBar.querySelector('[data-preset-load]').click();presetManager.open=false});
+  const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.title='Delete '+name;remove.setAttribute('aria-label','Delete preset '+name);
+  remove.style.cssText='flex:none;border:1px solid #8886;border-radius:5px;font-size:15px;line-height:1;padding:4px 8px;background:transparent;color:inherit;cursor:pointer';
+  remove.addEventListener('click',()=>{presetSelect.value='user:'+name;presetBar.querySelector('[data-preset-delete]').click();drawPresetManager()});
+  row.append(select,remove);list.append(row);
+ }
+ if(!names.length){const empty=document.createElement('div');empty.textContent='No custom presets';empty.style.cssText='padding:6px;opacity:.7';list.append(empty)}
+};
+presetManager.addEventListener('toggle',()=>{if(presetManager.open)drawPresetManager()});
+document.addEventListener('click',event=>{if(presetManager.open&&!presetManager.contains(event.target))presetManager.open=false});
+const refreshNamedPresets=()=>{const selected=presetSelect.value;const data=readNamedPresets()[currentFirm]||{};presetSelect.innerHTML='<option value="">Presets…</option><option value="gpt">GPT · Audited 12-trade test</option>';Object.keys(data).sort().forEach(name=>{const opt=document.createElement('option');opt.value='user:'+name;opt.textContent=name;presetSelect.appendChild(opt)});if([...presetSelect.options].some(o=>o.value===selected))presetSelect.value=selected;if(presetManager.open)drawPresetManager()};
 const captureProfile=()=>{const data={mode:$('[data-target-mode]').value,fields:{},accountMode,accountCount:$('[data-account-count]').value,parallelAccounts:parallelInput.value,signalsPerDay:signalsInput.value,phaseMode,purchaseStrategy:purchaseStrategyMode,funded:{}};box.querySelectorAll('[data-funded]').forEach(el=>data.funded[el.dataset.funded]=el.value);box.querySelectorAll('[data-k]').forEach(el=>data.fields[el.dataset.k]=el.value);return data};
 const firmDefaults=firm=>firm==='ftmo'?{mode:'2',accountMode:'multi',accountCount:20,parallelAccounts:20,signalsPerDay:7,fields:{target:1000,target2:500,limit:1000,dailyLimit:500},funded:{target:1800,limit:1000,dailyLimit:500,split:80}}:{mode:'1',accountMode:'multi',accountCount:5,parallelAccounts:5,signalsPerDay:7,fields:{target:3000,limit:2000},funded:{target:4000,limit:2000,split:75}};
 const readProfiles=()=>{try{const p=JSON.parse(localStorage.getItem(firmSettingsKey)||'{}');return p&&typeof p==='object'?p:{}}catch(e){return {}}};
