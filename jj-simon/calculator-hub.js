@@ -795,14 +795,14 @@ const costPer=(spend,number)=>spend===null||number===null||number<=0?'—':cash(
 const funnelData=[
  {phase:hasVerification?'P1 · Challenge':'P1 · First profit day',count:funnelP1,rate:p1Pass,total:p1Pass,newCost:evalSpend,unitCost:costPer(evalSpend,funnelP1)},
  {phase:hasVerification?'P2 · Verification':'P2 · Consistency',count:funnelP2,rate:p2Conditional,total:pEval,newCost:0,unitCost:costPer(evalSpend,funnelP2)},
- {phase:'P3 · Funded attempts',count:funnelP3,rate:1,total:pEval,newCost:activationSpend,unitCost:costPer(allSpend,funnelP3)},
- {phase:'P4 · Projected payouts · '+modelCash(modelBuys===null?null:modelPayout),count:funnelP4,rate:pFund,total:pEval*pFund,newCost:0,unitCost:costPer(allSpend,funnelP4)}
+ {phase:'P3 · Funded target passed',count:funnelP4,rate:pFund,total:pEval*pFund,newCost:activationSpend,unitCost:costPer(allSpend,funnelP4)},
+ {phase:'P4 · Payout cash · '+modelCash(modelBuys===null?null:modelPayout),count:funnelP4,rate:null,total:null,newCost:0,unitCost:costPer(allSpend,funnelP4)}
 ];
 const reversePayoutPlan=payoutMode?'<div style="margin:8px 0;padding:8px 10px;border:1px solid #8884;border-radius:7px;font-size:11px">'+
  '<strong>Reverse plan · '+payoutGoal+' projected payouts</strong>'+
  '<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:7px">'+
  '<div><small>P4 · Payouts</small><div style="font-weight:700">'+(modelBuys===null?'—':modelSuccess.toFixed(2))+'</div></div>'+
- '<div><small>P3 · Funded needed</small><div style="font-weight:700">'+(modelBuys===null?'—':modelPassed.toFixed(2))+'</div></div>'+
+ '<div><small>Funded attempts required</small><div style="font-weight:700">'+(modelBuys===null?'—':modelPassed.toFixed(2))+'</div></div>'+
  '<div><small>P2 · Eval passed</small><div style="font-weight:700">'+(modelBuys===null?'—':(modelBuys*pEval).toFixed(2))+'</div></div>'+
  '<div><small>Evaluations to buy</small><div style="font-weight:700">'+funnelCount(modelBuys)+'</div></div>'+
  '</div>'+
@@ -812,8 +812,8 @@ const reversePayoutPlan=payoutMode?'<div style="margin:8px 0;padding:8px 10px;bo
  '<div style="opacity:.75;margin-top:4px">Calculated backward: payouts ÷ funded success rate = funded attempts; funded attempts ÷ evaluation pass rate = evaluations purchased. More than five cumulative funded attempts may be needed. Topstep five active slots only limits simultaneous positions; no scheduling is modeled.</div></div>':'';
 const rows=funnelData.map(x=>'<tr><td style="text-align:left;white-space:nowrap" title="'+(x.phase.startsWith('P4')?'Projected payout after funded success, not confirmed cash withdrawal':'')+'">'+x.phase+'</td>'+
  '<td style="text-align:right;font-variant-numeric:tabular-nums">'+(x.count===null?'—':funnelCount(x.count))+'</td>'+
- '<td style="text-align:right;font-variant-numeric:tabular-nums">'+percent(x.rate)+'</td>'+
- '<td style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums">'+percent(x.total)+'</td>'+
+ '<td style="text-align:right;font-variant-numeric:tabular-nums">'+(x.rate===null?'—':percent(x.rate))+'</td>'+
+ '<td style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums">'+(x.total===null?'—':percent(x.total))+'</td>'+
  '<td style="text-align:right;font-variant-numeric:tabular-nums" title="New fees incurred at this stage for the modeled cohort">'+modelCash(x.newCost)+'</td>'+
  '<td style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums" title="Cumulative fees spent divided by expected accounts achieving this stage">'+x.unitCost+'</td></tr>').join('');
 $('[data-funnel]').innerHTML='<div class="jj-funnel-wrap">'+
@@ -824,8 +824,8 @@ $('[data-funnel]').innerHTML='<div class="jj-funnel-wrap">'+
  '<div class="jj-funnel-summary"><span>Expected payout <strong>'+modelCash(modelPayout)+'</strong></span><span>Net <strong>'+modelCash(modelNet)+'</strong></span><span>ROI <strong>'+(modelRoi===null?'—':modelRoi.toFixed(1)+'%')+'</strong></span></div>'+
  '<div class="jj-funnel-note">'+
  (payoutMode?'To target '+payoutGoal+' projected payouts, funded attempts = '+payoutGoal+' / funded success probability and purchased evaluations = funded attempts / evaluation pass probability. Replace failed funded accounts with newly qualified accounts until the expected payout target is reached. ':'')+
- 'Estimated funded failures before reaching target: <strong>'+(modelBuys===null?'—':Math.max(0,modelPassed-modelSuccess).toFixed(2))+'</strong> · Evaluation failures: <strong>'+(modelBuys===null?'—':Math.max(0,modelBuys-modelPassed).toFixed(2))+'</strong>. '+
- 'Pass % is conditional at the stage; Total % is cumulative from each purchased evaluation. P3 includes ALL funded attempts, successful or unsuccessful; P4 applies the funded success percentage, so P4 cannot equal P3 unless the modeled funded pass rate is 100%. '+
+ 'Expected funded attempts entering P3: <strong>'+(modelBuys===null?'—':modelPassed.toFixed(2))+'</strong> · Estimated funded failures before reaching target: <strong>'+(modelBuys===null?'—':Math.max(0,modelPassed-modelSuccess).toFixed(2))+'</strong> · Evaluation failures: <strong>'+(modelBuys===null?'—':Math.max(0,modelBuys-modelPassed).toFixed(2))+'</strong>. '+
+ 'Pass % is conditional at the stage; Total % is cumulative from each purchased evaluation. P2 completion creates funded attempts; P3 applies the ACTUAL funded target success rate, never an automatic 100% pass. P4 converts those same target successes into projected payout cash without another independent pass rate. '+
  'Stage $ includes only newly incurred evaluation or activation fees; Cost / result includes those fees from failed accounts. '+
  'Payouts are projections, not confirmed withdrawals. Firm capacity, payout eligibility, payment waiting times and correlated trades are not simulated.</div></div>';
 if(!replacementMode)$('[data-funnel]').querySelector('.jj-funnel-parallel').append(Object.assign(document.createElement('label'),{textContent:'Parallel active accounts  '}),parallelInput);
