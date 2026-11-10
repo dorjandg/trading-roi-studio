@@ -945,14 +945,56 @@ const evalSpend=modelBuys===null?null:modelBuys*v.accountCost;
 const activationSpend=modelBuys===null?null:modelPassed*activationFee;
 const allSpend=modelBuys===null?null:evalSpend+activationSpend;
 const costPer=(spend,number)=>spend===null||number===null||number<=0?'—':cash(spend/number);
+/* Stage averages are conditional on paths completing the given checkpoint,
+   and count INCREMENTAL trades executed at that stage (not cumulative trades).
+   P1 purchases no trades. Funded P4 includes only paths hitting funded target. */
+const tradesBeforeCheckpoint=path=>{
+ if(hasVerification){
+  const at=path.steps.findIndex(t=>t.stage===1&&t.passed);
+  return at>=0?at+1:null;
+ }
+ if(!path.topstepCheckpoint)return null;
+ const totals={};
+ for(const t of path.steps)totals[t.day]=(totals[t.day]||0)+(t.c==='W'?t.risk*t.rr:-t.risk);
+ const qualifying=Object.keys(totals).map(Number).sort((a,b)=>a-b).find(day=>totals[day]>=v.target/2-1e-7);
+ if(qualifying===undefined)return null;
+ return path.steps.filter(t=>t.day<=qualifying).length;
+};
+const stageAverage=(paths,extract)=>{
+ let probabilityWeight=0,trades=0,wins=0,losses=0;
+ for(const path of paths){
+  const stageSteps=extract(path);
+  if(!stageSteps)continue;
+  const weight=path.prob;
+  probabilityWeight+=weight;
+  trades+=weight*stageSteps.length;
+  wins+=weight*stageSteps.filter(t=>t.c==='W').length;
+  losses+=weight*stageSteps.filter(t=>t.c==='L').length;
+ }
+ if(probabilityWeight<=0)return null;
+ return {trades:trades/probabilityWeight,wins:wins/probabilityWeight,losses:losses/probabilityWeight};
+};
+const checkpointSteps=path=>{
+ const count=tradesBeforeCheckpoint(path);
+ return count===null?null:path.steps.slice(0,count);
+};
+const secondStageSteps=path=>{
+ if(path.status!=='target')return null;
+ const count=tradesBeforeCheckpoint(path);
+ return count===null?null:path.steps.slice(count);
+};
+const successfulFundedSteps=path=>path.status==='target'?path.steps:null;
+const averageP2=stageAverage(leaves,checkpointSteps);
+const averageP3=stageAverage(leaves,secondStageSteps);
+const averageP4=stageAverage(fundedLeaves,successfulFundedSteps);
 /* Exactly four sequential checkpoints. Funded activation is not an
    independent 100% pass; P3 = evaluations completing all qualification,
    P4 = funded accounts reaching their modeled payout profit target. */
 const funnelData=[
- {phase:'P1 · Evaluations purchased',count:modelBuys,rate:null,total:1,newCost:evalSpend,unitCost:costPer(evalSpend,modelBuys)},
- {phase:hasVerification?'P2 · Challenge passed':'P2 · First trading day passed',count:funnelP1,rate:p1Pass,total:p1Pass,newCost:0,unitCost:costPer(evalSpend,funnelP1)},
- {phase:hasVerification?'P3 · Verification passed / funded':'P3 · Second trading day passed / funded',count:funnelP3,rate:p2Conditional,total:pEval,newCost:activationSpend,unitCost:costPer(allSpend,funnelP3)},
- {phase:'P4 · Funded payout target reached',count:funnelP4,rate:pFund,total:pEval*pFund,newCost:0,unitCost:costPer(allSpend,funnelP4)}
+ {phase:'P1 · Evaluations purchased',count:modelBuys,rate:null,total:1,newCost:evalSpend,unitCost:costPer(evalSpend,modelBuys),avg:null},
+ {phase:hasVerification?'P2 · Challenge passed':'P2 · First trading day passed',count:funnelP1,rate:p1Pass,total:p1Pass,newCost:0,unitCost:costPer(evalSpend,funnelP1),avg:averageP2},
+ {phase:hasVerification?'P3 · Verification passed / funded':'P3 · Second trading day passed / funded',count:funnelP3,rate:p2Conditional,total:pEval,newCost:activationSpend,unitCost:costPer(allSpend,funnelP3),avg:averageP3},
+ {phase:'P4 · Funded payout target reached',count:funnelP4,rate:pFund,total:pEval*pFund,newCost:0,unitCost:costPer(allSpend,funnelP4),avg:averageP4}
 ];
 const reversePayoutPlan=payoutMode?'<div style="margin:8px 0;padding:8px 10px;border:1px solid #8884;border-radius:7px;font-size:11px">'+
  '<strong>Reverse plan · '+payoutGoal+' projected full payout targets</strong>'+
@@ -970,16 +1012,18 @@ const rows=funnelData.map(x=>'<tr><td style="text-align:left;white-space:nowrap"
  '<td style="text-align:right;font-variant-numeric:tabular-nums">'+(x.count===null?'—':funnelCount(x.count))+'</td>'+
  '<td style="text-align:right;font-variant-numeric:tabular-nums">'+(x.rate===null?'—':percent(x.rate))+'</td>'+
  '<td style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums">'+(x.total===null?'—':percent(x.total))+'</td>'+
+ ['trades','wins','losses'].map(field=>'<td style="text-align:right;font-variant-numeric:tabular-nums">'+(x.avg?x.avg[field].toFixed(2):'—')+'</td>').join('')+
  '<td style="text-align:right;font-variant-numeric:tabular-nums" title="New fees incurred at this stage for the modeled cohort">'+modelCash(x.newCost)+'</td>'+
  '<td style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums" title="Cumulative fees spent divided by expected accounts achieving this stage">'+x.unitCost+'</td></tr>').join('');
 $('[data-funnel]').innerHTML='<div class="jj-funnel-wrap">'+
  '<div class="jj-funnel-note"><strong>'+(payoutMode?'Target '+payoutGoal+' projected payouts':replacementMode?'Target funded accounts':'Fixed cohort')+
  '</strong> · Start: '+funnelCount(modelBuys)+' evaluations · Fee: '+modelCash(modelBuys===null?null:modelBuys*v.accountCost)+'</div>'+reversePayoutPlan+
- '<div style="width:100%;overflow-x:auto"><table style="width:100%;font-size:11px;table-layout:auto"><thead><tr><th style="text-align:left;cursor:help" title="P1 evaluations purchased; P2 first trading checkpoint; P3 full evaluation passed and funded qualified; P4 funded profit target reached" aria-label="Phase: P1 evaluations purchased; P2 first trading checkpoint; P3 full evaluation passed and funded qualified; P4 funded profit target reached">Phase</th><th style="text-align:right;cursor:help" title="Expected accounts at this stage; P1 is purchases, P2 and P3 are checkpoint passes, P4 is funded target successes" aria-label="Accounts: Expected accounts at this stage; P1 is purchases, P2 and P3 are checkpoint passes, P4 is funded target successes">Accounts</th><th style="text-align:right;cursor:help" title="Chance to pass this stage conditional on entering it. P1 is purchases, so no pass rate applies" aria-label="Pass %: Chance to pass this stage conditional on entering it. P1 is purchases, so no pass rate applies">Pass %</th><th style="text-align:right;cursor:help" title="Cumulative chance for one purchased evaluation to reach this stage; P1 baseline is 100%" aria-label="Total %: Cumulative chance for one purchased evaluation to reach this stage; P1 baseline is 100%">Total %</th><th style="text-align:right;cursor:help" title="Incremental expected cohort fees: evaluation purchases at P1, funding activation at P3. No invented second Topstep evaluation fee" aria-label="Stage $: Incremental expected cohort fees: evaluation purchases at P1, funding activation at P3. No invented second Topstep evaluation fee">Stage $</th><th style="text-align:right;cursor:help" title="Total expected fees incurred through this stage divided by expected accounts reaching it, including failed attempts" aria-label="Cost / result: Total expected fees incurred through this stage divided by expected accounts reaching it, including failed attempts">Cost / result</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+ '<div style="width:100%;overflow-x:auto"><table style="width:100%;font-size:11px;table-layout:auto"><thead><tr><th style="text-align:left;cursor:help" title="P1 evaluations purchased; P2 first trading checkpoint; P3 full evaluation passed and funded qualified; P4 funded profit target reached" aria-label="Phase: P1 evaluations purchased; P2 first trading checkpoint; P3 full evaluation passed and funded qualified; P4 funded profit target reached">Phase</th><th style="text-align:right;cursor:help" title="Expected accounts at this stage; P1 is purchases, P2 and P3 are checkpoint passes, P4 is funded target successes" aria-label="Accounts: Expected accounts at this stage; P1 is purchases, P2 and P3 are checkpoint passes, P4 is funded target successes">Accounts</th><th style="text-align:right;cursor:help" title="Chance to pass this stage conditional on entering it. P1 is purchases, so no pass rate applies" aria-label="Pass %: Chance to pass this stage conditional on entering it. P1 is purchases, so no pass rate applies">Pass %</th><th style="text-align:right;cursor:help" title="Cumulative chance for one purchased evaluation to reach this stage; P1 baseline is 100%" aria-label="Total %: Cumulative chance for one purchased evaluation to reach this stage; P1 baseline is 100%">Total %</th><th style="text-align:right;cursor:help" title="Average trades taken IN this stage, among accounts that successfully pass it; failed attempts excluded">Avg T</th><th style="text-align:right;cursor:help" title="Average winning trades IN this stage, among accounts successfully passing it">Avg W</th><th style="text-align:right;cursor:help" title="Average losing trades IN this stage, among accounts successfully passing it">Avg L</th><th style="text-align:right;cursor:help" title="Incremental expected cohort fees: evaluation purchases at P1, funding activation at P3. No invented second Topstep evaluation fee" aria-label="Stage $: Incremental expected cohort fees: evaluation purchases at P1, funding activation at P3. No invented second Topstep evaluation fee">Stage $</th><th style="text-align:right;cursor:help" title="Total expected fees incurred through this stage divided by expected accounts reaching it, including failed attempts" aria-label="Cost / result: Total expected fees incurred through this stage divided by expected accounts reaching it, including failed attempts">Cost / result</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
  (replacementMode?'':portfolioSummary)+
  '<div class="jj-funnel-summary"><span>Projected payout cash <strong>'+modelCash(modelPayout)+'</strong> · P4 target successes '+(modelBuys===null?'—':modelSuccess.toFixed(2))+'</span><span>Net <strong>'+modelCash(modelNet)+'</strong></span><span>ROI <strong>'+(modelRoi===null?'—':modelRoi.toFixed(1)+'%')+'</strong></span></div>'+
  '<div class="jj-funnel-note">'+
  (payoutMode?'Reverse target: P4 funded profit successes ÷ funded pass rate = P3 qualified funded accounts; P3 ÷ evaluation pass = P1 purchases. ':'')+
+ 'Avg T / W / L are the average trades, wins and losses within EACH stage among successful paths. They exclude failed accounts and are not cumulative. P1 has no trades; P2 is the first checkpoint, P3 the remaining evaluation trades, and P4 funded target trades. '+
  'P1 purchases: '+funnelCount(modelBuys)+'; P2 first checkpoint passed: '+funnelCount(funnelP1)+
  '; P3 evaluation passed and funded: '+funnelCount(funnelP3)+
  '; P4 funded payout profit target: '+funnelCount(funnelP4)+'. '+
