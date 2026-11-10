@@ -106,3 +106,25 @@ chapter.sections.push({title:"Contract sizing invariant: NQ/MNQ, continuation an
 ],src:[["Position Sizing Strategy Across Your Portfolio","00:05–01:32; 02:19–02:36","1o_XRhHFgmWg_wu4aXL3OR-F6O6e4POFu"],["How To Manage Different Drawdown Rules","00:12–00:48; 00:57–01:43","1PMHg2wWs7Vr-x9YbQ-cSVE_RAf-rq3tC"]]});
 renderNav();render();
 })();
+
+/* 2026-11-10 cross-lesson verification flags; paraphrase only, no private question data. */
+(function(){
+const chapter=chapters.find(c=>c.slug==="funded-plan");
+if(!chapter)return;
+const additions=[
+{title:"Three funded trades versus copied executions: account-cap ambiguity",points:[
+"Module 17 distinguishes one trade per funded account from three recurring funded setup families: a New York AM 100-point reversion, a two-leg 50-point path, and an overnight path. It also gives examples of five accounts taking five executions and twenty accounts copying ten signals.",
+"The same lecture says no more than three funded trades/accounts per day. This conflicts with its larger-inventory examples if interpreted as a universal cap on account executions. Three independent opportunities, three account executions, and three setup types are not interchangeable. The original audio and charts must determine the intended limit.",
+"An evaluation account is described separately: repeated displacement toward fair price may be allowed, but JJ also says no more than three mean-reversion attempts and describes avoiding late funded 100-point attempts. Neither unlimited evaluation trading nor copied-account permission is independently verified.",
+"Copying one signal to several accounts increases account executions without increasing independent trade observations. A shared loss may affect all copies; do not multiply signal success probabilities by account count."
+],src:[["How Many Trades Per Day_","00:05–00:23; 01:22–02:24; 02:27–04:21","1cdESUiP_6dF8s8VZjVKBmVa2a8ey4kve"],["How To Trade Funded Accounts","01:24–02:58","17fchw1QnO1uG_FxO5QDL-p6-2fB35R49"]]},
+{title:"Four winning days: 0.85⁴ is success, not account-ruin probability",points:[
+"In Module 15, JJ illustrates 85% success at each of four winning-day stages, computes 0.85⁴≈52.20%, but then calls that a 52% probability of losing the account. Under independent stages, 52.20% is the probability all four succeed; 47.80% is the probability at least one stage fails. Neither number establishes account-ruin probability.",
+"His historical winning-funded illustration reduces trade size to roughly ±$200 while pursuing qualifying days. Four wins at a hypothetical independent 50% daily win probability require eight attempts on average, not at most eight. No finite-loss or payout guarantee follows.",
+"Purchasing evaluations against an anticipated $1,000–$1,500 payout is an upfront cash commitment against an unsettled and conditional receipt. Keep available cash, forecast payouts and actual fees separate; no provider rules, trading performance or original video chart are independently verified."
+],src:[["How To Trade Funded Accounts","03:18–04:16; 04:30–07:42","17fchw1QnO1uG_FxO5QDL-p6-2fB35R49"],["How Many Trades Per Day_","01:22–02:24","1cdESUiP_6dF8s8VZjVKBmVa2a8ey4kve"]]}
+];
+for(const section of additions)if(!chapter.sections.some(s=>s.title===section.title))chapter.sections.push(section);
+if(typeof renderNav==="function")renderNav();
+if(typeof render==="function")render();
+})();
