@@ -52,3 +52,23 @@ jjDeepStudy.find(x=>x.slug==="risk-math").sections.push({title:"Sample-size thre
  if(!c.sections.some(s=>s.title===section.title))c.sections.push(section);
  if(typeof renderNav==="function")renderNav();if(typeof render==="function")render();
 })();
+
+/* Source-grounded supplementary study: finite bankroll and reinvestment financing; not verified trading performance. */
+(function(){
+ const chapter=(typeof jjDeepStudy!=="undefined"?jjDeepStudy:[]).find(c=>c.slug==="risk-math");
+ if(!chapter)return;
+ const section={
+ title:"EV Deep Study — Why a first $2K payout cannot automatically finance 40 new $100 evaluations",
+ points:[
+ "In Risk Of Ruin Bankroll Management (04:29–04:50), JJ applies a forty-attempt no-payout exponent after describing an initial $2,000 withdrawal (01:31–01:49). Forty new evaluations at the illustrated $100 each require $4,000 in purchase cash, before activation or renewal fees; a single $2,000 settled withdrawal finances only twenty at that price.",
+ "The formula (1 − q)^40 describes forty completed, independent opportunities with unchanged per-attempt probability q. It does not demonstrate that the trader can pay for all forty. A sequential reinvestment plan must track available settled cash, purchases, renewals, waiting periods and account losses before using the exponent.",
+ "Using the lesson's rounded q = 8%, the probability of no modeled success across forty financed independent attempts is 0.92^40 ≈ 3.56%. That is not the probability of bankroll ruin or of failing to reach a $10,000 net-cash goal.",
+ "At an illustrative 33% evaluation pass rate and 25% funded target success conditional on passing, q = 8.25%. The unlimited-bankroll mean number of purchases until a first target is 1/q ≈ 12.12; a $300 bankroll cannot finance this average path without replenishment. Funded-target success is not verified settled payout success.",
+ "The account's $3,000 or $4,000 historical projected lifetime value is distinct from a $2,000 first withdrawal, and all require separate payout-eligibility and survival assumptions. This is a mathematical source audit, not an assertion of JJ's realized results or current provider rules."
+ ],
+ src:[["Risk Of Ruin Bankroll Management","00:31–01:49; 03:25–04:50; 04:54–05:16","1VOJtRPDpy9LB4UakPYfZChROyAtPLQfv"],["Prop Firm Math Stats","02:19–02:51; 05:00–07:24","1bzGIqxU1BCDPqKblORKaCUsjRFMsMBVs"]]
+ };
+ if(!chapter.sections.some(s=>s.title===section.title))chapter.sections.push(section);
+ if(typeof renderNav==="function")renderNav();
+ if(typeof render==="function")render();
+})();
