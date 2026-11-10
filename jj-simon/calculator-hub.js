@@ -604,9 +604,6 @@ mathPanel.querySelector('[data-math-cards]').innerHTML=mathRows.map(row=>kpiTool
 box.querySelectorAll('[data-phase]').forEach(btn=>{const on=btn.dataset.phase===phaseMode;btn.setAttribute('aria-pressed',String(on));btn.style.fontWeight=on?'700':'400';btn.style.background=on?'var(--accent-soft,rgba(85,137,201,.15))':''});
 $('[data-funded-fields]').style.display=phaseMode==='evaluation'?'none':'';
 $('[data-funded-results]').style.display=phaseMode==='evaluation'?'none':'';
-const metricFund=(label,value,help)=>kpiTooltip(label,value,help);
-const fundedCards=metricFund('Funded pass',(fp*100).toFixed(2)+'%','Probability of reaching funded profit target within funded trade depth.')+metricFund('Funded ruin',(fr*100).toFixed(2)+'%','Probability of breaching funded loss allowance within funded trade depth.')+metricFund('Funded unresolved',(Math.max(0,1-fp-fr)*100).toFixed(2)+'%','Probability of still being active after funded simulation depth.')+metricFund('At least 1 funded payout',((1-Math.pow(1-fp,nn))*100).toFixed(2)+'%','Chance at least one of '+nn+' already-funded independent accounts reaches the funded target within the trade depth.')+metricFund('Expected funded successes',(nn*fp).toFixed(2),'Expected number of successful funded accounts from '+nn+' already-funded accounts; this is not a count of evaluation passes.')+metricFund('Expected payout / funded',cash(fp*fv.target*splitPct),'Probability-weighted expected cash payout per funded account, excluding fees and unresolved paths.')+metricFund('Payout per success',cash(fv.target*splitPct),'Cash payout after a successful funded target, before fees.');
-$('[data-funded-results]').innerHTML='<div class="jj-risk-results-grid">'+fundedCards+''+'</div><div style="font-size:11px;opacity:.75;margin:5px 0">Finite-depth estimates. Assumes independent accounts, one evaluation stage and one funded payout target. Unresolved paths are not counted as passes. Additional qualification phases, resets and taxes excluded.</div>';
 
 box.querySelector('[data-section="combined-results"]').style.display=phaseMode==='combined'?'':'none';box.querySelector('[data-section="funded-settings"]').style.display=phaseMode==='evaluation'?'none':'';box.querySelector('[data-section="funded-results"]').style.display=phaseMode==='evaluation'?'none':'';box.querySelector('[data-section="challenge-results"]').style.display=phaseMode==='funded'?'none':'';box.querySelector('[data-section="paths"]').style.display=phaseMode==='funded'?'none':'';box.querySelector('[data-section="funded-paths"]').style.display=phaseMode==='evaluation'?'none':'';
 
@@ -657,6 +654,29 @@ const replacementExpectedPayout=allocationTarget*fp*fv.target*splitPct;
 const replacementTotalFees=replacementEvalFees===null?null:replacementEvalFees+replacementActivationFees;
 const replacementNet=replacementTotalFees===null?null:replacementExpectedPayout-replacementTotalFees;
 const modelBuys=replacementMode?replacementPurchases:nn;const modelPassed=replacementMode?(replacementPurchases===null?0:allocationTarget):expectedFunded;const modelFailed=modelBuys===null?null:Math.max(0,modelBuys-modelPassed);const modelFees=modelBuys===null?null:modelBuys*v.accountCost+modelPassed*activationFee;const modelPayout=modelPassed*fp*fv.target*splitPct;const modelNet=modelFees===null?null:modelPayout-modelFees;const modelRoi=modelFees>0?100*modelNet/modelFees:null;const modelSuccess=modelBuys===null?0:modelPassed*fp;const modelPct=modelBuys>0?100*modelPassed/modelBuys:0;const modelCash=x=>x===null?'—':cash(x);const modelPossible=modelBuys!==null;const resultGroup=(heading,cards)=>'<div style="min-width:0;margin:5px 0 9px"><div style="font-size:11px;font-weight:700;opacity:.8;margin:0 0 5px">'+heading+'</div><div class="jj-risk-results-grid">'+cards+'</div></div>';
+
+// Section 04 must consume the same purchase-strategy cohort as Sections 05/07.
+// Never use the raw fixed-purchase input as the number of funded attempts.
+const metricFund=(label,value,help)=>kpiTooltip(label,value,help);
+const fundedAttempts=modelBuys===null?null:modelPassed;
+const fundedSuccesses=modelBuys===null?null:modelSuccess;
+const fundedFailures=modelBuys===null?null:Math.max(0,fundedAttempts-fundedSuccesses);
+const fundedCards=
+ metricFund('Funded pass',(fp*100).toFixed(2)+'%','Probability one funded account reaches its profit target within the selected trading depth.')+
+ metricFund('Funded ruin',(fr*100).toFixed(2)+'%','Probability one funded account breaches the modeled loss allowance within the trade depth.')+
+ metricFund('Funded unresolved',(Math.max(0,1-fp-fr)*100).toFixed(2)+'%','Probability one funded account remains unresolved within the trade depth.')+
+ metricFund('Funded attempts',fundedAttempts===null?'—':fundedAttempts.toFixed(2),'Expected cumulative funded accounts entering P3 under the selected Section 07 purchase strategy; not the number active simultaneously.')+
+ metricFund('Expected funded successes',fundedSuccesses===null?'—':fundedSuccesses.toFixed(2),'Expected accounts reaching the funded profit target, consistent with Section 07 P4.')+
+ metricFund('Expected funded failures',fundedFailures===null?'—':fundedFailures.toFixed(2),'Expected funded attempts that do not reach the profit target within the modeled trade depth; includes both ruin and unresolved paths.')+
+ metricFund('Expected payout / funded',cash(fp*fv.target*splitPct),'Probability-weighted payout projection per funded attempt, before purchase and activation fees.')+
+ metricFund('Payout per success',cash(fv.target*splitPct),'Projected cash payout from one funded account that reaches its profit target, after profit split, before fees.');
+$('[data-funded-results]').innerHTML='<div class="jj-risk-results-grid">'+fundedCards+'</div>'+
+ '<div style="font-size:11px;opacity:.75;margin:5px 0">Using <strong>'+(
+  payoutMode?'Maximum Funded Limit Payout':replacementMode?'Reach Funded Limit':'Fixed Purchases'
+ )+'</strong>: '+(fundedAttempts===null?'—':fundedAttempts.toFixed(2))+' expected funded attempts × '+(fp*100).toFixed(2)+
+ '% funded pass = '+(fundedSuccesses===null?'—':fundedSuccesses.toFixed(2))+
+ ' expected successes. Payout eligibility and real cash withdrawal are not separately modeled. Probabilities assume independent trades; paths unresolved at the depth limit are not passes.</div>';
+
 const combinedCards=
 resultGroup('01 · Results',
  metricFund('Evaluation pass',(probability*100).toFixed(2)+'%','Probability of passing the evaluation within its modeled trade depth.')+
