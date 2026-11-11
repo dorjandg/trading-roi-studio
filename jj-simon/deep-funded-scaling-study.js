@@ -168,3 +168,20 @@ chapter.sections.push({title,points:[
 if(typeof renderNav==='function')renderNav();
 if(typeof render==='function')render();
 })();
+
+/* 2026-11-11 Module 18 course cross-video audit: conditional evaluation pipeline and cash liquidity. */
+(function(){
+const chapter=(typeof curriculum!=='undefined')?curriculum.find(x=>x.slug==='scaling-big'):null;
+const fallback=(typeof chapters!=='undefined')?chapters.find(x=>/scal/i.test(x.slug)&&/big/i.test(x.title)):null;
+const c=chapter&&Array.isArray(chapter.sections)?chapter:fallback;
+if(!c||!Array.isArray(c.sections)||c.sections.some(s=>s.title==="Five funded slots are not fifteen guaranteed evaluation passes — inventory and liquidity audit"))return;
+c.sections.push({title:"Five funded slots are not fifteen guaranteed evaluation passes — inventory and liquidity audit",points:[
+"JJ's Optimal Number of Accounts To Manage (00:05–00:42; 01:36–01:50) uses five active funded accounts for an illustrative $10K/month goal and fifteen evaluations at a 33% pass rate to replenish five funded slots. Fifteen times one-third equals five expected passes, not five guaranteed passes.",
+"Under fifteen independent evaluations each with exactly one-third pass probability, the probability of at least five passes is about 59.59%. Copying identical signals changes the joint distribution; a fixed expected pass count does not establish the same success probability.",
+"The lesson explicitly says healthy funded inventory may require no active evaluations (01:47–01:50), but advises purchasing replacements when accounts weaken or post-payout balances become low (03:58–04:18). This is a contingent replenishment pipeline, not a constant purchase quota.",
+"At 01:59–02:25, JJ treats $10K in funded profit as a near-certain $5K forthcoming payout and discusses using savings against it. Funded profit, payout eligibility, approval and settled cash are different stages; pending payouts must not be counted as immediately spendable cash.",
+"When To Start Scaling Your Futures Accounts (01:11–01:39; 04:09–04:28; 06:10–06:36) distinguishes a first $10K trading milestone from a $30K profit month before progressively replacing failed 50K funded accounts with 150K evaluations. These are historical speaker heuristics, not verified proof of sustainable profitability or current provider availability.",
+"Evaluation copying is treated more permissively than funded copying, which JJ recommends staggering 2/2/1 over three days (03:23–04:05). The claim that funded copying has exactly three times evaluation variance (Optimal Number 03:13–03:24) is not a general statistical identity; covariance, stage and risk sizes govern aggregate variance. Original charts, provider fees and payout rules remain unverified."
+],src:[[ "The Optimal Number of Accounts To Manage","00:05–00:42; 01:36–02:25; 03:13–04:18","11nOzXqPVWcTMHX6cpQivsM7StZVrtbZM"],["When To Start Scaling Your Futures Accounts","01:11–01:39; 03:23–04:28; 06:10–06:36","17EZLclVchKlDr9T6V5-rLLM1lopwb_TL"]]});
+if(typeof renderNav==='function')renderNav();if(typeof render==='function')render();
+})();
