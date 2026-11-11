@@ -276,6 +276,8 @@ tradeStatsPanel.innerHTML='<div style="display:flex;align-items:center;gap:8px;f
 box.querySelector('[data-section="funded-paths"]').after(tradeStatsPanel);
 group('trade-statistics','12 · Trade Statistics · Winning & Losing Streaks',[tradeStatsPanel]);
 const kpiFourteen=document.createElement('div');kpiFourteen.dataset.kpiFourteen='';
+/* group() inserts before its first node: attach this node first, otherwise section 14 is detached and invisible. */
+box.querySelector('[data-section="trade-statistics"]').after(kpiFourteen);
 mountKpiFourteen(kpiFourteen);
 group('financial-formulas','14 · P1–P4 Financial Formulas & KPIs',[kpiFourteen]);
 const tradeStatsScope=tradeStatsPanel.querySelector('[data-trade-stats-scope]');
