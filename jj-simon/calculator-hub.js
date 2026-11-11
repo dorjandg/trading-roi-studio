@@ -1300,6 +1300,55 @@ $('[data-funnel]').innerHTML='<div class="jj-funnel-wrap">'+
  'P4 funded failures before target: '+(modelBuys===null?'—':Math.max(0,modelPassed-modelSuccess).toFixed(2))+
  '. P4 models funded profit-target success, not verified withdrawal eligibility or received cash. Expected quantities may be fractional. Funded capacity, payout wait, scheduling and correlated trades are not simulated.</div></div>';
 
+
+/* jj9-kpi-reference-v2: compact, expandable formula glossary and example. */
+(function(){
+ const n=10,w=.25,q=1-w,pass=1-q*q*q,success=(w+q*w)/(1-q*q*w);
+ const funded=n*pass*pass,payouts=funded*success,prob=pass*pass*success;
+ const spending=500+funded*150,wallet=payouts*2000;
+ const pct=x=>(100*x).toFixed(2)+'%',usd=x=>'$'+x.toFixed(2),num=x=>x.toFixed(2);
+ const bin=(n,k)=>{let a=1;for(let j=1;j<=k;j++)a*=((n-j+1)/j);return a};
+ const exact=k=>bin(n,k)*Math.pow(prob,k)*Math.pow(1-prob,n-k);
+ const entries=[
+  ['P1 purchases','10','10 accounts at $50 each'],
+  ['P1 max trade slots','30','10 accounts × 3 possible trades'],
+  ['P1 expected trades',num(n*(1+q+q*q)),'10 × (1 + q + q²), including failures'],
+  ['P1 pass probability',pct(pass),'1 − (1 − win rate)³'],
+  ['P2 entering accounts',num(n*pass),'10 × P1 pass probability'],
+  ['P2 max trade slots',num(n*pass*3),'Expected P2 entrants × 3 slots'],
+  ['P2 expected trades',num(n*pass*(1+q+q*q)),'Expected P2 entrants × (1 + q + q²)'],
+  ['P2 pass probability',pct(pass),'Same three-attempt rule as P1'],
+  ['P3 funded accounts',num(funded),'10 × P1 pass × P2 pass'],
+  ['P3 payout-target success',pct(success),'(w + qw)/(1 − q²w). W/LW succeeds; LLW restarts; LLL fails'],
+  ['P4 expected payouts',num(payouts),'Funded accounts × P3 success probability'],
+  ['Chance of 1+ payouts',pct(1-Math.pow(1-prob,n)),'1 − (1 − per-purchase payout probability)^10'],
+  ['Chance of zero payouts',pct(exact(0)),'All 10 purchased accounts miss payout'],
+  ['Exactly 1 payout',pct(exact(1)),'$2,000 wallet cash'],
+  ['Exactly 2 payouts',pct(exact(2)),'$4,000 wallet cash'],
+  ['3+ payouts',pct(1-exact(0)-exact(1)-exact(2)),'At least $6,000 wallet cash'],
+  ['Minimum positive wallet cash','$2,000','If at least one account pays; absolute minimum is $0'],
+  ['P1 purchase cost','$500','10 × $50 paid up front'],
+  ['Expected P3 activation cost',usd(funded*150),'Expected funded entrants × $150 activation'],
+  ['Expected total spending',usd(spending),'P1 purchases plus funded activation fees'],
+  ['Expected wallet cash',usd(wallet),'Expected payouts × $2,000 actual wallet receipt'],
+  ['Expected net profit',usd(wallet-spending),'Expected wallet cash minus expected spending'],
+  ['Expected net ROI',pct((wallet-spending)/spending),'Expected net profit ÷ expected spending']
+ ];
+ const detail=document.createElement('details');detail.className='jj9-kpi-reference';
+ const summary=document.createElement('summary');summary.textContent='ⓘ P1–P4 formulas & financial KPIs · tap for explanations';detail.append(summary);
+ const intro=document.createElement('p');intro.textContent='JJ9 worked example: 10 P1 accounts, 25% trade win rate, 3 chances in P1 and P2, P3 LLW restart, $50 purchase, $150 funded activation, $2,000 wallet payout. These example values are separate from your live simulator inputs.';detail.append(intro);
+ const scroller=document.createElement('div');scroller.style.overflowX='auto';
+ const table=document.createElement('table'),thead=document.createElement('thead'),header=document.createElement('tr');
+ ['Metric','Value','Definition / formula'].forEach(label=>{const th=document.createElement('th');th.textContent=label;header.append(th)});
+ thead.append(header);table.append(thead);
+ const tbody=document.createElement('tbody');
+ entries.forEach(row=>{const tr=document.createElement('tr');row.forEach((value,i)=>{const cell=document.createElement(i===0?'th':'td');cell.textContent=value;cell.title=row[2];if(i===0)cell.scope='row';tr.append(cell)});tbody.append(tr)});
+ table.append(tbody);scroller.append(table);detail.append(scroller);
+ const note=document.createElement('p');note.textContent='Hover a row on desktop or read the explanation column on mobile. P1/P2 wins are qualifications, not wallet cash. The earlier +$480 / −$22 (22×) amounts are bookkeeping allocations, NOT cash trade payoffs. Assumes independent trades/accounts, unlimited P3 LLW resets, and full payout once the funded target is reached.';detail.append(note);
+ let style=document.getElementById('jj9-kpi-reference-style');if(!style){style=document.createElement('style');style.id='jj9-kpi-reference-style';style.textContent='.jj9-kpi-reference{margin:8px 0;border:1px solid #8885;border-radius:8px;padding:8px;font-size:11px}.jj9-kpi-reference summary{font-weight:700;cursor:pointer}.jj9-kpi-reference p{font-size:11px;line-height:1.45}.jj9-kpi-reference table{border-collapse:collapse;width:100%;font-size:11px}.jj9-kpi-reference th,.jj9-kpi-reference td{text-align:left;vertical-align:top;border-bottom:1px solid #8883;padding:6px}.jj9-kpi-reference td:nth-child(2){font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}@media(max-width:600px){.jj9-kpi-reference{padding:6px}.jj9-kpi-reference th,.jj9-kpi-reference td{padding:5px 4px;font-size:10px}.jj9-kpi-reference td:last-child{min-width:185px}}';document.head.append(style)}
+ $('[data-funnel]').append(detail);
+})();
+
 const funnelColumnLabels=Array.from($('[data-funnel-table]').querySelectorAll('thead th'),th=>th.textContent.trim());
 const funnelColumnStore='jj-funnel-columns-v1';
 let visibleColumns=funnelColumnLabels.map((_,i)=>i);
