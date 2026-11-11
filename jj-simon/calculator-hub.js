@@ -308,7 +308,7 @@ topstepDailyToggle.innerHTML='<input data-topstep-daily-cap type="checkbox" styl
 consistencyPanel.after(topstepDailyToggle);
 const topstepTpToggle=document.createElement('label');
 topstepTpToggle.style.cssText='display:flex;gap:6px;align-items:center;font-size:11px;margin:5px 0';
-topstepTpToggle.innerHTML='<input data-topstep-checkpoint-tp type="checkbox" checked style="width:15px;height:15px"> Close winning trade at checkpoint target (partial TP when needed)';
+topstepTpToggle.innerHTML='<input data-topstep-checkpoint-tp type="checkbox" checked style="width:15px;height:15px"> Allow tick-rounded partial TP at $1,500 checkpoint (may reduce RR)';
 topstepDailyToggle.after(topstepTpToggle);
 topstepTpToggle.querySelector('input').addEventListener('change',()=>{saveSettings();renderRisk()});
 
@@ -633,8 +633,15 @@ function calcTopstep(path,v){
   const fullDelta=(c==='W'?risk*rr:-risk)-fee;
   const remainingNet=stage===1?Math.max(0,checkpointTarget-stagePnl):
     Math.max(0,checkpointTarget-stagePnl,v.target-total,dailyTotals[1]/rate-total);
-  const partial=c==='W'&&v.topstepCheckpointTP&&fullDelta>=remainingNet-1e-7;
-  const delta=partial?remainingNet:fullDelta;
+  // MGC tick = $1/contract, GC tick = $10/contract.
+  // Round required gross gain UP to a tradable tick without exceeding
+  // the chosen maximum reward for this trade.
+  const tickGain=(symbol==='GC'?10:1)*units;
+  const ticksNeeded=tickGain>0?Math.ceil(Math.max(0,remainingNet+fee-1e-8)/tickGain):Infinity;
+  const tickDelta=ticksNeeded*tickGain-fee;
+  const partial=c==='W'&&v.topstepCheckpointTP&&tickGain>0&&
+   tickDelta>=remainingNet-1e-7&&tickDelta<=fullDelta+1e-7;
+  const delta=partial?tickDelta:fullDelta;
   const realizedRR=c==='W'?(delta+fee)/risk:rr;
   total+=delta;stagePnl+=delta;stageTrades++;
   dailyTotals[day]=stagePnl;
@@ -1262,7 +1269,7 @@ $('[data-funnel]').innerHTML='<div class="jj-funnel-wrap">'+
  '<div class="jj-funnel-summary"><span>Projected payout cash <strong>'+modelCash(modelPayout)+'</strong> · P4 target successes '+(modelBuys===null?'—':modelSuccess.toFixed(2))+'</span><span>Net <strong>'+modelCash(modelNet)+'</strong></span><span>ROI <strong>'+(modelRoi===null?'—':modelRoi.toFixed(1)+'%')+'</strong></span></div>'+
  '<div class="jj-funnel-note">'+
  (payoutMode?'Reverse target: P4 funded profit successes ÷ funded pass rate = P3 qualified funded accounts; P3 ÷ evaluation pass = P1 purchases. ':'')+
- 'Avg T / W / L are the average trades, wins and losses within EACH stage among successful paths. They exclude failed accounts and are not cumulative. P1 has no trades; P2 is the first checkpoint, P3 the remaining evaluation trades, and P4 funded target trades. '+
+ 'If checkpoint partial TP is enabled, a winning trade may close at a smaller realized RR, rounded up to MGC/GC tick size. '+'Avg T / W / L are the average trades, wins and losses within EACH stage among successful paths. They exclude failed accounts and are not cumulative. P1 has no trades; P2 is the first checkpoint, P3 the remaining evaluation trades, and P4 funded target trades. '+
  (firmType==='topstep'?'Topstep P1 and P2 are separate checkpoint days, each with its own R1–R4 counter and up to '+Math.min(8,v.depth)+' modeled trades (max 8 per checkpoint for performance). EOD trailing loss allowance carries into P2; equal trade setups need not have equal passes if available drawdown differs. ':'')+
  'P1 purchases: '+funnelCount(modelBuys)+'; P2 first checkpoint passed: '+funnelCount(funnelP1)+
  '; P3 evaluation passed and funded: '+funnelCount(funnelP3)+
