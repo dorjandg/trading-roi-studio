@@ -69,5 +69,22 @@ for(const [label,config,enumerate] of [
  ['Funded optional daily cap', {...fundedConfig,topstepOptionalDailyCap:true},enumerateFunded],
  ['Funded no R4', fundedConfig,enumerateFunded]
 ])near(sum(enumerate(config)),1,label);
+// Whole-contract execution with a five-dollar MGC stop must preserve mass.
+const contractEval={...evalConfig,contractSpecs:{
+ 1:Array(4).fill({symbol:'MGC',stop:5}),
+ 2:Array(4).fill({symbol:'MGC',stop:5})
+},roundTurnFee:0};
+const contractFunded={...fundedConfig,contractSpecs:{
+ 3:Array(4).fill({symbol:'MGC',stop:5})
+},roundTurnFee:0};
+const ce=enumerateEvaluation(contractEval);
+const cf=enumerateFunded(contractFunded);
+near(sum(ce),1,'Whole-contract evaluation mass');
+near(sum(cf),1,'Whole-contract funded mass');
+near(rate(ce,x=>x.topstepCheckpoint),0.606579,'Whole-contract first checkpoint');
+near(rate(ce,x=>x.status==='target'),0.1341,'Carried-state consistency-qualified pass');
+near(rate(cf,x=>x.status==='target'),0.41209220673,'Whole-contract funded pass');
+assert(calcTopstepFunded('L',contractFunded).steps[0].contracts===14,'MGC first risk contracts');
+assert(calcTopstepFunded('LL',contractFunded).steps[1].contracts===16,'MGC second risk contracts');
 console.log(JSON.stringify({evaluationMass:sum(e),checkpoint,modeledEvaluationPass:checkpoint**2,
  carriedEvaluationPass:carried,fundedMass:sum(f),fundedPass,fees,payout,roi:(payout-fees)/fees*100},null,2));
