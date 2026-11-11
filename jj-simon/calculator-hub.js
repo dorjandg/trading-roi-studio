@@ -636,6 +636,49 @@ function calcTopstep(path,v){
   dailyLeft:Math.max(0,v.dailyLimit+stagePnl),dayPnl:stagePnl,lossesToday:0,
   checkpointAttempts:stageTrades,checkpointLimit:attemptsPerStage,trailingFloor};
 }
+/* Topstep funded accounts: drawdown trails only at end of day and locks at
+   zero once the high-water mark reaches the starting balance plus allowance.
+   This differs from the static CFD drawdown in calc(). */
+function calcTopstepFunded(path,v){
+ let total=0,prob=1,day=1,dayPnl=0,lossesToday=0,status='active';
+ let peakEOD=0,trailingFloor=-v.limit,steps=[];
+ const manual=v.manualRisks?.[3];
+ for(const c of path){
+  if(status!=='active')break;
+  if(dayPnl<-1e-7||lossesToday>=v.tradesPerDay||v.dailyLimit+dayPnl<=1e-7){
+   peakEOD=Math.max(peakEOD,total);
+   trailingFloor=Math.min(0,Math.max(trailingFloor,peakEOD-v.limit));
+   if(total<=trailingFloor+1e-7){status='closed';break;}
+   day++;dayPnl=0;lossesToday=0;
+  }
+  const room=total-trailingFloor;
+  const dailyRoom=v.dailyLimit+dayPnl;
+  if(room<=v.floor+1e-7||dailyRoom<=1e-7){status='closed';break;}
+  let streak=0;
+  for(let i=steps.length-1;i>=0;i--){if(steps[i].c==='W')break;streak++;}
+  const rrOverride=v.manualRRs?.[3]?.[Math.min(3,streak)];
+  const rr=manual&&Number(rrOverride)>0?Number(rrOverride):v.rr;
+  const planned=manual?manual[Math.min(3,streak)]:
+   v.riskModel==='fixed'?v.baseRisk:
+   v.riskModel==='half'?(v.target-total)/rr/2:
+   v.riskModel==='buffer'?(steps.some(t=>t.c==='W')?450:150):
+   v.fixedRisk||v.baseRisk||(v.target-total)/rr;
+  const risk=Math.max(0,Math.min(planned,room-v.floor,dailyRoom,(v.target-total)/rr));
+  if(!(risk>1e-7)){status='closed';break;}
+  const delta=c==='W'?risk*rr:-risk;
+  total+=delta;dayPnl+=delta;
+  if(c==='L')lossesToday++;
+  prob*=c==='W'?v.winRate/100:1-v.winRate/100;
+  if(total<=trailingFloor+1e-7)status='closed';
+  if(status==='active'&&total>=v.target-1e-7)status='target';
+  steps.push({c,risk,rr,pnl:total,stage:1,checkpointStage:3,stagePnl:total,
+   passed:status==='target',day,dayPnl,lossesToday,
+   dailyLeft:Math.max(0,v.dailyLimit+dayPnl)});
+ }
+ return {path:steps.map(t=>t.c).join(''),pnl:total,stage:1,stagePnl:total,
+  left:total-trailingFloor,status,steps,prob,day,dayPnl,lossesToday,
+  dailyLeft:Math.max(0,v.dailyLimit+dayPnl),trailingFloor};
+}
 function calc(path,v){
 if(v.topstepConsistency)return calcTopstep(path,v);
 let stage=1,stagePnl=0,total=0,prob=1,steps=[],status='active',day=1,dayPnl=0,lossesToday=0;const dailyTotals={};let bestDay=0;
@@ -721,7 +764,7 @@ const mostLikely=leaves.reduce((best,x)=>!best||x.prob>best.prob?x:best,null);
 const fn=(k,d)=>{const x=Number(box.querySelector('[data-funded="'+k+'"]').value);return Number.isFinite(x)?x:d};
 const fv={targetMode:1,target:Math.max(.01,fn('target',4000)),target2:1,limit:Math.max(.01,fn('limit',2000)),dailyLimit:Math.max(.01,fn('dailyLimit',1000)),tradesPerDay:Math.max(1,Math.min(100,Math.floor(fn('tradesPerDay',3)))),rr:Math.max(.01,fn('rr',3)),floor:Math.max(0,fn('floor',100)),winRate:Math.max(0,Math.min(100,fn('winRate',50))),depth:Math.max(1,Math.min(12,Math.floor(fn('depth',6))))};
 if(firmForPhases==='topstep'&&activeStrategy==='current')fv.fixedRisk=1000;else if(activeStrategy==='current')fv.ftmoFundedBuilder=true;Object.assign(fv,STRATEGIES[activeStrategy].fund);fv.manualRisks=manualConfig();fv.manualRRs=manualRRConfig();fv.manualStage=3;let fp=0,fr=0;const fundedLeaves=[];
-if(phaseMode!=='evaluation'){function fw(path){const x=calc(path,fv);if(x.status!=='active'||x.steps.length>=fv.depth){fundedLeaves.push(x);if(x.status==='target')fp+=x.prob;if(x.status==='closed')fr+=x.prob;return}fw(path+'W');fw(path+'L')}fw('')}
+if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'?calcTopstepFunded(path,fv):calc(path,fv);if(x.status!=='active'||x.steps.length>=fv.depth){fundedLeaves.push(x);if(x.status==='target')fp+=x.prob;if(x.status==='closed')fr+=x.prob;return}fw(path+'W');fw(path+'L')}fw('')}
 
 const cash=x=>'$'+x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 /* Statistics are calculated from terminal/censored path probabilities, not
