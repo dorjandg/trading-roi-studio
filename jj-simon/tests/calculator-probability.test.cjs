@@ -87,8 +87,8 @@ near(rate(cf,x=>x.status==='target'),0.41209220673,'Whole-contract funded pass')
 assert(calcTopstepFunded('L',contractFunded).steps[0].contracts===14,'MGC first risk contracts');
 assert(calcTopstepFunded('LL',contractFunded).steps[1].contracts===16,'MGC second risk contracts');
 // Verify the website's forecast is wired to carried-state, not squared planning.
-assert(/const probability=actualEvaluationProbability;/.test(source),
- 'Financial forecast must consume actual carried-state evaluation pass');
+assert(/const probability=firmForPhases==='topstep'\?planningProbability:actualEvaluationProbability;/.test(source),
+ 'Topstep funnel and purchase forecast must use the same independent-checkpoint planning probability');
 assert(/const evalPass=probability;/.test(source),
  'Replacement purchases must consume the financial pass rate');
 assert(/const modelRoi=modelFees>0\?100\*modelNet\/modelFees:null;/.test(source),
@@ -118,8 +118,8 @@ near(rate(ce,x=>x.status==='target')+blocked+breached,1,'Exclusive evaluation ou
 near(breached,0,'No breached evaluation in current limited-attempt preset');
 assert(blocked>0.8,'Most paths remain unresolved after the configured attempts');
 // Funnel conditional rate and counts must use the SAME probability model.
-assert(/const p2Conditional=actualP2Conditional;/.test(source),
- 'Actual account funnel must not display independent planning conditional rate');
+assert(/const p2Conditional=firmType==='topstep'\?checkpointProbability:actualP2Conditional;/.test(source),
+ 'Topstep P2 and P3 must have identical checkpoint rates');
 assert(/const funnelP3=funnelP1===null\?null:funnelP1\*p2Conditional;/.test(source),
  'P3 count must equal P2 count multiplied by displayed conditional rate');
 assert(/const funnelP4=funnelP3===null\?null:funnelP3\*pFund;/.test(source),
@@ -132,5 +132,9 @@ near(carriedP1,checkpoint,'Identical first-stage settings');
 near(checkpoint*checkpoint,0.367938083241,'Separate equal-checkpoint planning result');
 assert(Math.abs(carriedConditional-checkpoint)>.1,
  'Actual conditional probability must not be misrepresented as standalone planning');
+// Verify reverse purchase plan reconciles through all four stages.
+const purchaseForFive=5/(rate(cf,x=>x.status==='target')*checkpoint*checkpoint);
+near(purchaseForFive*checkpoint*checkpoint*rate(cf,x=>x.status==='target'),5,'Five-payout reverse plan');
+near(purchaseForFive*checkpoint*checkpoint,5/rate(cf,x=>x.status==='target'),'Funded account allocation');
 console.log(JSON.stringify({evaluationMass:sum(e),checkpoint,modeledEvaluationPass:checkpoint**2,
  carriedEvaluationPass:carried,fundedMass:sum(f),fundedPass,fees,payout,roi:(payout-fees)/fees*100},null,2));
