@@ -666,7 +666,7 @@ function renderRisk(){
 contractSizing();
 const firmForPhases=firmBar.querySelector('[data-firm-type]').value;const expectedPhases=firmForPhases==='ftmo'?'2':'1';if($('[data-target-mode]').value!==expectedPhases)$('[data-target-mode]').value=expectedPhases;
 const v=vals(),leaves=[],allPaths=[];Object.assign(v,STRATEGIES[activeStrategy].eval);v.manualRisks=manualConfig();v.manualRRs=manualRRConfig();if(firmForPhases==='topstep'){v.topstepConsistency=true;if(activeStrategy==='current')v.fixedRisk=1000;v.consistencyRate=Math.max(1,Math.min(100,Number(box.querySelector('[data-consistency-limit]')?.value)||55));}
-function walk(path){const x=calc(path,v);if(path)allPaths.push(x);if(x.status!=='active'||(v.topstepConsistency?(x.checkpointAttempts>=x.checkpointLimit||x.steps.length>=2*x.checkpointLimit||x.steps.length<path.length):x.steps.length>=v.depth)){leaves.push(x);return}walk(path+'W');walk(path+'L')}
+function walk(path){const x=calc(path,v);if(path&&allPaths.length<4000)allPaths.push(x);if(x.status!=='active'||(v.topstepConsistency?(x.checkpointAttempts>=x.checkpointLimit||x.steps.length>=2*x.checkpointLimit||x.steps.length<path.length):x.steps.length>=v.depth)){leaves.push(x);return}walk(path+'W');walk(path+'L')}
 walk('');
 const counts={target:0,closed:0,active:0,'daily-blocked':0};leaves.forEach(x=>counts[x.status]++);
 const probability=leaves.filter(x=>x.status==='target').reduce((sum,x)=>sum+x.prob,0);
@@ -1163,7 +1163,7 @@ $('[data-funded-path-table]').innerHTML='<div style="overflow-x:auto"><table><th
 $('[data-funded-page]').textContent=fundedShown.length?(fundedPage*10+1)+'–'+Math.min(fundedShown.length,(fundedPage+1)*10)+' / '+fundedShown.length:'0';
 $('[data-funded-prev]').disabled=fundedPage===0;$('[data-funded-next]').disabled=(fundedPage+1)*10>=fundedShown.length;
 const filter=$('[data-filter]').value;
-const decisions=[calc('',v),...allPaths].filter(x=>x.status==='active'&&x.steps.length<v.depth).map(x=>{const win=calc(x.path+'W',v),loss=calc(x.path+'L',v);return {...x,win,loss,nextRisk:win.steps[x.steps.length]?.risk??loss.steps[x.steps.length]?.risk??0}}).filter(x=>x.nextRisk>0);
+const decisions=[calc('',v)].concat(allPaths).filter(x=>x.status==='active'&&x.steps.length<v.depth).map(x=>{const win=calc(x.path+'W',v),loss=calc(x.path+'L',v);return {...x,win,loss,nextRisk:win.steps[x.steps.length]?.risk??loss.steps[x.steps.length]?.risk??0}}).filter(x=>x.nextRisk>0);
 const shown=decisions.filter(x=>filter==='all'||filter==='active'||x.win.status===filter||x.loss.status===filter).sort((a,b)=>a.steps.length-b.steps.length||a.path.localeCompare(b.path));
 page=Math.min(page,Math.max(0,Math.ceil(shown.length/10)-1));
 $('[data-table]').innerHTML='<div style="overflow-x:auto"><table><thead><tr><th>Path</th><th>Chance %</th><th>Stage</th><th>Risk</th><th>Win</th><th>Loss</th><th>P&L</th><th>Details</th></tr></thead><tbody>'+shown.slice(page*10,page*10+10).map(x=>{
