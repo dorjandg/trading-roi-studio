@@ -147,6 +147,6 @@ assert(/const planningProbability=firmForPhases==='topstep'\?threeAttemptPass\*t
  'Evaluation pass must multiply two identical three-attempt stages');
 const neededForFive=5/(pThree*pThree*rate(cf,x=>x.status==='target'));
 near(neededForFive*pThree*pThree*rate(cf,x=>x.status==='target'),5,'Payout target from three-attempt funnel');
-const fundedRenewal=(.3+.7*.3)/(1-.7*.7*.3);near(fundedRenewal,.5978898007033998,'P3 reset renewal probability',1e-9);assert(/const fundedThreeAttemptPass=fundedCycleTarget\/(1-fundedCycleReset);/.test(source),'Funded P3 must use reset renewal formula');
+const fundedRenewal=(.3+.7*.3)/(1-.7*.7*.3);near(fundedRenewal,.5978898007033998,'P3 reset renewal probability',1e-9);assert(source.includes('const fundedThreeAttemptPass=fundedCycleTarget/(1-fundedCycleReset);'),'Funded P3 must use reset renewal formula');
 console.log(JSON.stringify({evaluationMass:sum(e),checkpoint,modeledEvaluationPass:checkpoint**2,
  carriedEvaluationPass:carried,fundedMass:sum(f),fundedPass,fees,payout,roi:(payout-fees)/fees*100},null,2));
