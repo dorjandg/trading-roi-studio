@@ -678,7 +678,7 @@ function calcTopstepFunded(path,v){
  /* A branch that cannot execute its NEXT trade must terminate now.
     Otherwise W/L children both inherit the same probability and mass > 1. */
  if(status==='active'){
-  const nextDay=dayPnl<-1e-7||lossesToday>=v.tradesPerDay||v.dailyLimit+dayPnl<=1e-7;
+  const nextDay=dayPnl<-1e-7||lossesToday>=v.tradesPerDay||(v.topstepOptionalDailyCap&&v.dailyLimit+dayPnl<=1e-7);
   const nextFloor=nextDay?Math.min(0,Math.max(trailingFloor,Math.max(peakEOD,total)-v.limit)):trailingFloor;
   const nextRoom=total-nextFloor;
   const nextDailyRoom=v.topstepOptionalDailyCap?(nextDay?v.dailyLimit:v.dailyLimit+dayPnl):Infinity;
