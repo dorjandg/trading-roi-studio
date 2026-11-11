@@ -860,7 +860,7 @@ tradeStatsPanel.querySelector('[data-trade-stats-content]').innerHTML=
 if(compareSection.open){const sim=cfg=>{let hit=0,fail=0,ev=0;function go(p){const x=calc(p,cfg);if(scenarioFinished(x,cfg,p)){if(x.status==='target')hit+=x.prob;if(x.status==='closed')fail+=x.prob;ev+=x.prob*x.pnl;return}go(p+'W');go(p+'L')}go('');return [hit*100,fail*100,ev]};const phases=firmForPhases==='ftmo'?[[1,v.target],[2,v.target2],[3,fv.target]]:[[1,v.target],[3,fv.target]];let rows='';for(const item of phases){const phase=item[0],target=item[1],base=phase===3?fv:v;const common=Object.assign({},base,{targetMode:1,target:target,manualStage:phase,topstepConsistency:phase===1&&firmForPhases==='topstep'});const auto=sim(Object.assign({},common,{manualRisks:{},manualRRs:{}}));const manual=sim(Object.assign({},common,{manualRisks:manualConfig(),manualRRs:manualRRConfig()}));let phaseRows='';for(let i=0;i<3;i++){const diff=manual[i]-auto[i];phaseRows+='<tr><td>'+['Target %','Failure %','EV'][i]+'</td><td>'+manual[i].toFixed(2)+'</td><td>'+auto[i].toFixed(2)+'</td><td class="'+((i===1?diff<0:diff>0)?'jj-risk-win':(i===1?diff>0:diff<0)?'jj-risk-loss':'')+'">'+diff.toFixed(2)+'</td></tr>';;}rows+='<details style="margin:6px 0;padding:8px;border:1px solid #8884;border-radius:7px"><summary style="cursor:pointer;font-weight:700">P'+phase+' · Target '+manual[0].toFixed(1)+'% / '+auto[0].toFixed(1)+'%</summary><div style="overflow-x:auto"><table style="font-size:11px;white-space:nowrap"><thead><tr><th>Metric</th><th>Manual</th><th>Auto</th><th>Δ</th></tr></thead><tbody>'+phaseRows+'</tbody></table></div></details>'; }comparePanel.querySelector('[data-compare]').innerHTML='<div style="font-size:11px;opacity:.7">Green = better · Red = worse · Δ = Manual − Auto</div>'+rows;}
 const nn=Math.max(1,Math.min(100,Math.floor(Number($('[data-account-count]').value)||10)));
 const totalFees=nn*v.accountCost,expectedFunded=nn*probability,activationFee=Math.max(0,fn('activation',0)),splitPct=Math.max(0,Math.min(1,fn('split',80)/100));
-const grossPayout=expectedFunded*fp*fv.target*splitPct,activationFees=expectedFunded*activationFee,netCash=grossPayout-totalFees-activationFees;
+const grossPayout=expectedFunded*fundedGrossPerAttempt*splitPct,activationFees=expectedFunded*activationFee,netCash=grossPayout-totalFees-activationFees;
 
 let mathPanel=box.querySelector('[data-ch09-math]');
 if(!mathPanel){
@@ -945,10 +945,10 @@ const replacementPurchases=evalPass>0&&(!payoutMode||fp>0)?allocationTarget/eval
 const replacementFailures=replacementPurchases===null?null:replacementPurchases-allocationTarget;
 const replacementEvalFees=replacementPurchases===null?null:replacementPurchases*v.accountCost;
 const replacementActivationFees=allocationTarget*activationFee;
-const replacementExpectedPayout=allocationTarget*fp*fv.target*splitPct;
+const replacementExpectedPayout=allocationTarget*fundedGrossPerAttempt*splitPct;
 const replacementTotalFees=replacementEvalFees===null?null:replacementEvalFees+replacementActivationFees;
 const replacementNet=replacementTotalFees===null?null:replacementExpectedPayout-replacementTotalFees;
-const modelBuys=replacementMode?replacementPurchases:nn;const modelPassed=replacementMode?(replacementPurchases===null?0:allocationTarget):expectedFunded;const modelFailed=modelBuys===null?null:Math.max(0,modelBuys-modelPassed);const modelFees=modelBuys===null?null:modelBuys*v.accountCost+modelPassed*activationFee;const modelPayout=modelPassed*fp*fv.target*splitPct;const modelNet=modelFees===null?null:modelPayout-modelFees;const modelRoi=modelFees>0?100*modelNet/modelFees:null;const modelSuccess=modelBuys===null?0:modelPassed*fp;const modelPct=modelBuys>0?100*modelPassed/modelBuys:0;const modelCash=x=>x===null?'—':cash(x);const modelPossible=modelBuys!==null;const resultGroup=(heading,cards)=>'<div style="min-width:0;margin:5px 0 9px"><div style="font-size:11px;font-weight:700;opacity:.8;margin:0 0 5px">'+heading+'</div><div class="jj-risk-results-grid">'+cards+'</div></div>';
+const modelBuys=replacementMode?replacementPurchases:nn;const modelPassed=replacementMode?(replacementPurchases===null?0:allocationTarget):expectedFunded;const modelFailed=modelBuys===null?null:Math.max(0,modelBuys-modelPassed);const modelFees=modelBuys===null?null:modelBuys*v.accountCost+modelPassed*activationFee;const modelPayout=modelPassed*fundedGrossPerAttempt*splitPct;const modelNet=modelFees===null?null:modelPayout-modelFees;const modelRoi=modelFees>0?100*modelNet/modelFees:null;const modelSuccess=modelBuys===null?0:modelPassed*fp;const modelPct=modelBuys>0?100*modelPassed/modelBuys:0;const modelCash=x=>x===null?'—':cash(x);const modelPossible=modelBuys!==null;const resultGroup=(heading,cards)=>'<div style="min-width:0;margin:5px 0 9px"><div style="font-size:11px;font-weight:700;opacity:.8;margin:0 0 5px">'+heading+'</div><div class="jj-risk-results-grid">'+cards+'</div></div>';
 
 // Section 04 must consume the same purchase-strategy cohort as Sections 05/07.
 // Never use the raw fixed-purchase input as the number of funded attempts.
@@ -957,14 +957,14 @@ const fundedAttempts=modelBuys===null?null:modelPassed;
 const fundedSuccesses=modelBuys===null?null:modelSuccess;
 const fundedFailures=modelBuys===null?null:Math.max(0,fundedAttempts-fundedSuccesses);
 const fundedCards=
- metricFund('Funded pass',(fp*100).toFixed(2)+'%','Probability one funded account reaches its profit target within the selected trading depth.')+
+ metricFund('Funded pass',(fp*100).toFixed(2)+'%','For Topstep XFA Standard: chance to meet the profit target AND qualifying winning days before loss or depth cutoff. One trade/day assumed.')+
  metricFund('Funded ruin',(fr*100).toFixed(2)+'%','Probability one funded account breaches the modeled loss allowance within the trade depth.')+
  metricFund('Funded unresolved',(Math.max(0,1-fp-fr)*100).toFixed(2)+'%','Probability one funded account remains unresolved within the trade depth.')+
  metricFund('Funded attempts',fundedAttempts===null?'—':fundedAttempts.toFixed(2),'Expected cumulative funded accounts entering P3 under the selected Section 07 purchase strategy; not the number active simultaneously.')+
  metricFund('Expected funded successes',fundedSuccesses===null?'—':fundedSuccesses.toFixed(2),'Expected accounts reaching the funded profit target, consistent with Section 07 P4.')+
  metricFund('Expected funded failures',fundedFailures===null?'—':fundedFailures.toFixed(2),'Expected funded attempts that do not reach the profit target within the modeled trade depth; includes both ruin and unresolved paths.')+
- metricFund('Expected payout / funded',cash(fp*fv.target*splitPct),'Probability-weighted payout projection per funded attempt, before purchase and activation fees.')+
- metricFund('Payout per success',cash(fv.target*splitPct),'Projected cash payout from one funded account that reaches its profit target, after profit split, before fees.');
+ metricFund('Expected payout / funded',cash(fundedGrossPerAttempt*splitPct),'Probability-weighted payout projection per funded attempt, before purchase and activation fees.')+
+ metricFund('Payout per success',cash(payoutGrossPerSuccess*splitPct),'Modeled eligible payout after 50%-balance restriction, payout cap and profit split; trading fees are deducted from path P&L.');
 $('[data-funded-results]').innerHTML='<div class="jj-risk-results-grid">'+fundedCards+'</div>'+
  '<div style="font-size:11px;opacity:.75;margin:5px 0">Using <strong>'+(
   payoutMode?'Maximum Funded Limit Payout':replacementMode?'Reach Funded Limit':'Fixed Purchases'
@@ -980,7 +980,7 @@ resultGroup('01 · Results',
  metricFund('Expected funded',modelPossible?modelPassed.toFixed(2):'—','Expected funded accounts under the selected purchase strategy.')+
  metricFund('Successful payouts',modelPossible?modelSuccess.toFixed(2):'—','Expected first payout successes.'))+
 resultGroup('02 · Payouts',
- metricFund('Payout / success',cash(fv.target*splitPct),'First payout after a successful funded target, after the configured split.')+
+ metricFund('Payout / success',cash(payoutGrossPerSuccess*splitPct),'First payout after a successful funded target, after the configured split.')+
  metricFund('Expected payout cash',modelPossible?cash(modelPayout):'—','Probability-weighted total first payout cash after the configured split.'))+
 resultGroup('03 · Spending',
  metricFund('Evaluation buys',modelPossible?modelBuys.toFixed(2):'—','Expected evaluation purchases, including replacements when enabled.')+
@@ -991,6 +991,7 @@ resultGroup('04 · Profit & ROI',
  metricFund('Net ROI',modelRoi===null?'—':modelRoi.toFixed(1)+'%','Expected net profit divided by expected total fees.'));
 
 const optimizeRiskStrategies=()=>{
+ if(firmType==='topstep')return '<p style="font-size:11px">Topstep optimization is temporarily disabled pending comparison-engine reconciliation with payout eligibility and trading costs.</p>';
  const test=cfg=>{let pass=0,unresolved=0;const walk=p=>{const x=calc(p,cfg);if(scenarioFinished(x,cfg,p)){if(x.status==='target')pass+=x.prob;else if(x.status==='active')unresolved+=x.prob;return}walk(p+'W');walk(p+'L')};walk('');return {pass,unresolved}};
  const consistency=firmType==='topstep'?Math.max(1,Math.min(100,Number(box.querySelector('[data-consistency-limit]')?.value)||55)):undefined;
  const evalBase={...v,topstepConsistency:firmType==='topstep',consistencyRate:consistency,fixedRisk:undefined};
@@ -1034,6 +1035,7 @@ const optimizeRiskStrategies=()=>{
  return '<div style="font-size:11px;margin:7px 0"><b>Advanced scenarios · '+eligible.length+' qualifying / '+results.length+' tested pairs</b><p style="margin:4px 0;opacity:.8">Current edited parameters. Dynamic models recalculate target-based risk after each win/loss, subject to a cap and remaining drawdown reserve. Fixed models included for comparison. Saved presets unchanged.</p><div style="overflow-x:auto"><table style="font-size:11px"><thead><tr><th>#</th><th>Challenge</th><th>Funded</th><th>Eval pass</th><th>Fund pass</th><th>Net</th><th>ROI</th></tr></thead><tbody>'+(rows||'<tr><td colspan="7">No qualifying strategies. Review RR, trade depth and limits.</td></tr>')+'</tbody></table></div><small style="opacity:.75">Exploratory model, max 12 trades/stage. No payout calendar, correlated trades, concurrency or complete trailing drawdown simulation. Unresolved paths are not counted as passes.</small></div>';
 };
 const strategyComparison=()=>{
+ if(firmType==='topstep')return '<p style="font-size:11px;opacity:.75">Topstep strategy rankings are paused until the candidate paths use the audited XFA winning-day and payout-cap model. Section 07 uses the corrected model.</p>';
  const candidates=[['current','Dynamic + buffer','Target ÷ RR','150 until first win, then 450',{},{}],['fixedlow','Fixed low','250 every trade','150 every trade',{riskModel:'fixed',baseRisk:250},{riskModel:'fixed',baseRisk:150}],['half','Half-target','Half remaining target ÷ RR','150 every trade',{riskModel:'half'},{riskModel:'fixed',baseRisk:150}],['recovery','Recovery + buffer','250 + 50% per phase loss; cap 450','150 until first win, then 450',{riskModel:'recovery'},{riskModel:'buffer'}],['fixedhigh','Fixed high','350 every trade','450 every trade',{riskModel:'fixed',baseRisk:350},{riskModel:'fixed',baseRisk:450}]];
  const run=cfg=>{let pass=0,fail=0,unresolved=0,success=[];const walk=p=>{const x=calc(p,cfg);if(scenarioFinished(x,cfg,p)){if(x.status==='target'){pass+=x.prob;success.push(x)}else if(x.status==='closed')fail+=x.prob;else unresolved+=x.prob;return}walk(p+'W');walk(p+'L')};walk('');success.sort((a,b)=>b.prob-a.prob);return {pass,fail,unresolved,success}};
  const rows=candidates.map(([id,name,evalRule,fundRule,ev,fu])=>{const e=run({...v,riskModel:undefined,baseRisk:undefined,fixedRisk:undefined,...ev}),u=run({...fv,riskModel:undefined,baseRisk:undefined,fixedRisk:undefined,ftmoFundedBuilder:undefined,...fu}),buys=replacementMode?(e.pass?allocationTarget/e.pass:null):nn,funded=buys===null?null:replacementMode?allocationTarget:buys*e.pass,fees=buys===null?null:buys*v.accountCost+funded*activationFee,payout=fees===null?null:funded*u.pass*fv.target*splitPct,net=fees===null?null:payout-fees;return {id,name,evalRule,fundRule,e,u,fees,payout,net,roi:fees>0?100*net/fees:null}});
