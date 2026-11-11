@@ -1150,7 +1150,10 @@ const p1Pass=hasVerification?
  checkpointProbability;
 const funnelCount=count=>modelBuys===null?'—':count.toFixed(2);
 const percent=value=>Number.isFinite(value)?(100*Math.max(0,Math.min(1,value))).toFixed(1)+'%':'—';
-const p2Conditional=p1Pass>0?Math.min(1,pEval/p1Pass):null;
+const actualP2Conditional=p1Pass>0?Math.min(1,pEval/p1Pass):null;
+// User-selected equal-checkpoint planning view: identical settings imply identical
+// standalone stage rates. Actual carried-state account outcomes remain separate.
+const p2Conditional=firmType==='topstep'?checkpointProbability:actualP2Conditional;
 /* Funnel counts use actual carried-state evaluation outcomes. The equal-checkpoint
    model remains a separate strategy-planning comparison only. */
 const funnelP1=modelBuys===null?null:modelBuys*p1Pass;
