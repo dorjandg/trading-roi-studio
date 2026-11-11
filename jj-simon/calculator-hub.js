@@ -219,7 +219,7 @@ xfaOptions.innerHTML='<details><summary style="font-weight:600;cursor:pointer">T
  '<label>Minimum net day $<input data-xfa-day-min type="number" min="0" value="150" style="width:100%;box-sizing:border-box;padding:4px"></label>'+
  '<label>Slippage $/contract<input data-xfa-slippage type="number" min="0" step="0.1" value="0" style="width:100%;box-sizing:border-box;padding:4px"></label>'+
  '<label>Payout transfer fee $<input data-xfa-transfer-fee type="number" min="0" step="1" value="0" style="width:100%;box-sizing:border-box;padding:4px"></label></div>'+
- '<p style="font-size:10px;opacity:.72">Standard 50K XFA: 5 winning days of $150+, at least 50% of the account balance stays in the account, $2,000 default maximum request, plus 90/10 published profit split. Simplifying assumption: one closed trade per trading day. Trading fees: MGC $1.92 and GC $4.32 round turn per contract. A wire/SWIFT payout may cost $30 (set transfer fee accordingly). A payout cap above $2,000 requires the applicable Topstep promotion or account-size/path entitlement. No payout is counted merely for hitting a trading profit target.</p></details>';
+ '<p style="font-size:10px;opacity:.72">Standard 50K XFA: 5 winning days of $150+, at least 50% of the account balance stays in the account, $2,000 default maximum request, plus 90/10 published profit split. Simplifying assumption: one closed trade per trading day. Trading fees: MGC $1.92 and GC $4.32 round turn per contract. 50K XFA scaling: 20/30/50 micros (or 2/3/5 minis) as the prior EOD balance crosses $1,500 and $2,000. A wire/SWIFT payout may cost $30 (set transfer fee accordingly). A payout cap above $2,000 requires the applicable Topstep promotion or account-size/path entitlement. No payout is counted merely for hitting a trading profit target.</p></details>';
 box.querySelector('[data-section="funded-settings"] .jj-risk-section-body').append(xfaOptions);
 
 const contractSizing=()=>{for(const phase of [1,2,3]){
@@ -700,7 +700,12 @@ function calcTopstepFunded(path,v){
     v.ftmoFundedBuilder?(wins?450:150):
     v.riskModel==='fixed'?(v.baseRisk||v.fixedRisk||1000):
     v.fixedRisk||Math.max(1,Math.min(v.target-pnl,1000)/rr);
-  const units=Math.min(v.symbol==='GC'?5:50,Math.max(0,Math.floor(Math.min(desired,room-v.floor)/(move*contractValue+costPerContract))));
+  // 50K XFA scaling: 2/3/5 mini equivalents at EOD balances
+  // below 1500, 1500-1999.99, and 2000+, respectively.
+  // A micro is 0.1 mini equivalent; every modeled trade is a new session.
+  const maxMinis=pnl>=2000?5:pnl>=1500?3:2;
+  const maxUnits=maxMinis*(v.symbol==='GC'?1:10);
+  const units=Math.min(maxUnits,Math.max(0,Math.floor(Math.min(desired,room-v.floor)/(move*contractValue+costPerContract))));
   if(!units){status='daily-blocked';break}
   const risk=units*move*contractValue,fee=units*costPerContract;
   const delta=(c==='W'?risk*rr:-risk)-fee;
