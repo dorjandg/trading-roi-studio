@@ -561,7 +561,69 @@ firmSelect.addEventListener('change',()=>{const next=firmSelect.value;if(next===
 signalsInput.addEventListener('change',()=>{saveSettings();renderRisk()});parallelInput.addEventListener('change',()=>{saveSettings();renderRisk()});
 
 const vals=()=>{const num=(k,f)=>{const x=Number(box.querySelector('[data-k="'+k+'"]').value);return Number.isFinite(x)?x:f};return {targetMode:box.querySelector('[data-target-mode]').value==='1'?1:2,target:Math.max(.01,num('target',1000)),target2:Math.max(.01,num('target2',500)),limit:Math.max(.01,num('limit',1000)),dailyLimit:Math.max(.01,num('dailyLimit',500)),tradesPerDay:Math.max(1,Math.min(100,Math.floor(num('tradesPerDay',3)))),rr:Math.max(.01,num('rr',3)),floor:Math.max(0,num('floor',100)),winRate:Math.min(100,Math.max(0,num('winRate',50))),accountCost:Math.max(0,num('accountCost',100)),depth:Math.max(1,Math.min(12,Math.floor(num('depth',6))))}};
+/* Topstep: two separate trading-day checkpoints with independent R1-R4
+   attempt counters, one shared account balance, and inherited EOD trailing floor.
+   Finite model: one modeled day per checkpoint, no extra recovery days. */
+function calcTopstep(path,v){
+ const checkpointTarget=v.target/2;
+ const rate=Math.max(.01,Math.min(1,(v.consistencyRate||50)/100));
+ const attemptsPerStage=Math.max(1,Math.min(8,Math.floor(v.depth)));
+ let stage=1,stagePnl=0,total=0,prob=1,status='active';
+ let stageTrades=0,steps=[],trailingFloor=-v.limit,peakEOD=0;
+ const dailyTotals={1:0,2:0};
+ for(const c of path){
+  if(status!=='active'||stageTrades>=attemptsPerStage)break;
+  const day=stage,checkpointStage=stage;
+  const required=stage===1?checkpointTarget-stagePnl:Math.max(v.target,checkpointTarget/rate)-total;
+  const room=total-trailingFloor,dailyRoom=v.dailyLimit+stagePnl;
+  if(room<=v.floor+1e-7||dailyRoom<=1e-7||required<=1e-7){status='closed';break}
+  let streak=0;
+  for(let i=steps.length-1;i>=0;i--){
+   if(steps[i].checkpointStage!==checkpointStage||steps[i].c==='W')break;
+   streak++;
+  }
+  const manual=v.manualRisks?.[checkpointStage];
+  const rrOverride=v.manualRRs?.[checkpointStage]?.[Math.min(3,streak)];
+  const rr=manual&&Number(rrOverride)>0?Number(rrOverride):v.rr;
+  const planned=manual?manual[Math.min(3,streak)]:
+   v.riskModel==='fixed'?v.baseRisk:
+   v.riskModel==='half'?Math.max(0,required/rr/2):
+   v.fixedRisk||v.baseRisk||Math.max(0,required/rr);
+  const risk=Math.max(0,Math.min(planned,room,dailyRoom,required/rr));
+  if(risk<=1e-7){status='closed';break}
+  const delta=c==='W'?risk*rr:-risk;
+  total+=delta;stagePnl+=delta;stageTrades++;
+  dailyTotals[day]=stagePnl;
+  prob*=c==='W'?v.winRate/100:1-v.winRate/100;
+  if(total<=trailingFloor+1e-7)status='closed';
+  let passed=false;
+  if(status==='active'&&c==='W'){
+   if(stage===1&&stagePnl>=checkpointTarget-1e-7)passed=true;
+   else if(stage===2&&total>=v.target-1e-7){
+    const best=Math.max(dailyTotals[1],dailyTotals[2]);
+    if(best<=total*rate+1e-7){passed=true;status='target'}
+   }
+  }
+  steps.push({c,risk,rr,pnl:total,stage:checkpointStage,checkpointStage,
+   stagePnl,passed,day,dayPnl:stagePnl,lossesToday:0,
+   dailyLeft:Math.max(0,v.dailyLimit+stagePnl)});
+  if(status==='active'&&passed&&stage===1){
+   peakEOD=Math.max(peakEOD,total);
+   trailingFloor=Math.min(0,Math.max(trailingFloor,peakEOD-v.limit));
+   stage=2;stagePnl=0;stageTrades=0;
+  }
+ }
+ const checkpoint=steps.some(t=>t.checkpointStage===1&&t.passed);
+ return {path:steps.map(t=>t.c).join(''),pnl:total,stage,stagePnl,
+  left:total-trailingFloor,status,topstepCheckpoint:checkpoint,
+  topstepBestDay:Math.max(0,dailyTotals[1],dailyTotals[2]),
+  topstepRequiredTarget:Math.max(v.target,Math.max(0,dailyTotals[1],dailyTotals[2])/rate),
+  risk:Math.max(0,total-trailingFloor),steps,prob,day:stage,
+  dailyLeft:Math.max(0,v.dailyLimit+stagePnl),dayPnl:stagePnl,lossesToday:0,
+  checkpointAttempts:stageTrades,checkpointLimit:attemptsPerStage,trailingFloor};
+}
 function calc(path,v){
+if(v.topstepConsistency)return calcTopstep(path,v);
 let stage=1,stagePnl=0,total=0,prob=1,steps=[],status='active',day=1,dayPnl=0,lossesToday=0;const dailyTotals={};let bestDay=0;
 for(const c of path){
  // Terminal guard: never execute a trade after the final target or account closure.
@@ -596,7 +658,7 @@ function renderRisk(){
 contractSizing();
 const firmForPhases=firmBar.querySelector('[data-firm-type]').value;const expectedPhases=firmForPhases==='ftmo'?'2':'1';if($('[data-target-mode]').value!==expectedPhases)$('[data-target-mode]').value=expectedPhases;
 const v=vals(),leaves=[],allPaths=[];Object.assign(v,STRATEGIES[activeStrategy].eval);v.manualRisks=manualConfig();v.manualRRs=manualRRConfig();if(firmForPhases==='topstep'){v.topstepConsistency=true;if(activeStrategy==='current')v.fixedRisk=1000;v.consistencyRate=Math.max(1,Math.min(100,Number(box.querySelector('[data-consistency-limit]')?.value)||55));}
-function walk(path){const x=calc(path,v);if(path)allPaths.push(x);if(x.status!=='active'||x.steps.length>=v.depth){leaves.push(x);return}walk(path+'W');walk(path+'L')}
+function walk(path){const x=calc(path,v);if(path)allPaths.push(x);if(x.status!=='active'||(v.topstepConsistency?(x.checkpointAttempts>=x.checkpointLimit||x.steps.length>=2*x.checkpointLimit):x.steps.length>=v.depth)){leaves.push(x);return}walk(path+'W');walk(path+'L')}
 walk('');
 const counts={target:0,closed:0,active:0,'daily-blocked':0};leaves.forEach(x=>counts[x.status]++);
 const probability=leaves.filter(x=>x.status==='target').reduce((sum,x)=>sum+x.prob,0);
@@ -927,10 +989,13 @@ const portfolioSummary='<div class="jj-funnel-portfolio"><strong>Fixed cohort ·
 const hasVerification=firmType==='ftmo';
 const p1Pass=hasVerification?
  leaves.reduce((sum,path)=>sum+(path.steps.some(step=>step.stage===1&&step.passed)?path.prob:0),0):
- leaves.reduce((sum,path)=>sum+(path.topstepCheckpoint?path.prob:0),0);
+ leaves.reduce((sum,path)=>sum+(path.steps.some(step=>step.checkpointStage===1&&step.passed)?path.prob:0),0);
 const funnelCount=count=>modelBuys===null?'—':count.toFixed(2);
 const percent=value=>Number.isFinite(value)?(100*Math.max(0,Math.min(1,value))).toFixed(1)+'%':'—';
 const p2Conditional=p1Pass>0?Math.min(1,pEval/p1Pass):null;
+/* Both stage rates are calculated from actual weighted paths. Equal manual
+   settings and remaining risk allowances can yield equal stage rates, but
+   a different inherited trailing-floor budget can yield different rates. */
 const funnelP1=modelBuys===null?null:modelBuys*p1Pass;
 const funnelP2=modelBuys===null?null:modelBuys*pEval;
 const funnelP3=modelBuys===null?null:modelPassed;
@@ -953,12 +1018,8 @@ const tradesBeforeCheckpoint=path=>{
   const at=path.steps.findIndex(t=>t.stage===1&&t.passed);
   return at>=0?at+1:null;
  }
- if(!path.topstepCheckpoint)return null;
- const totals={};
- for(const t of path.steps)totals[t.day]=(totals[t.day]||0)+(t.c==='W'?t.risk*t.rr:-t.risk);
- const qualifying=Object.keys(totals).map(Number).sort((a,b)=>a-b).find(day=>totals[day]>=v.target/2-1e-7);
- if(qualifying===undefined)return null;
- return path.steps.filter(t=>t.day<=qualifying).length;
+ const at=path.steps.findIndex(t=>t.checkpointStage===1&&t.passed);
+ return at>=0?at+1:null;
 };
 const stageAverage=(paths,extract)=>{
  let probabilityWeight=0,trades=0,wins=0,losses=0;
