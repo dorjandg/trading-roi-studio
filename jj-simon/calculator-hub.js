@@ -217,8 +217,9 @@ xfaOptions.innerHTML='<details><summary style="font-weight:600;cursor:pointer">T
  '<label>Max request $<input data-xfa-cap type="number" min="0" step="100" value="2000" style="width:100%;box-sizing:border-box;padding:4px"></label>'+
  '<label>Required winning days<input data-xfa-days type="number" min="1" max="12" value="5" style="width:100%;box-sizing:border-box;padding:4px"></label>'+
  '<label>Minimum net day $<input data-xfa-day-min type="number" min="0" value="150" style="width:100%;box-sizing:border-box;padding:4px"></label>'+
- '<label>Slippage $/contract<input data-xfa-slippage type="number" min="0" step="0.1" value="0" style="width:100%;box-sizing:border-box;padding:4px"></label></div>'+
- '<p style="font-size:10px;opacity:.72">Standard 50K XFA: 5 winning days of $150+, at least 50% of the account balance stays in the account, $2,000 default maximum request, plus 90/10 published profit split. Simplifying assumption: one closed trade per trading day. Trading fees: MGC $1.92 and GC $4.32 round turn per contract. No payout is counted merely for hitting a trading profit target.</p></details>';
+ '<label>Slippage $/contract<input data-xfa-slippage type="number" min="0" step="0.1" value="0" style="width:100%;box-sizing:border-box;padding:4px"></label>'+
+ '<label>Payout transfer fee $<input data-xfa-transfer-fee type="number" min="0" step="1" value="0" style="width:100%;box-sizing:border-box;padding:4px"></label></div>'+
+ '<p style="font-size:10px;opacity:.72">Standard 50K XFA: 5 winning days of $150+, at least 50% of the account balance stays in the account, $2,000 default maximum request, plus 90/10 published profit split. Simplifying assumption: one closed trade per trading day. Trading fees: MGC $1.92 and GC $4.32 round turn per contract. A wire/SWIFT payout may cost $30 (set transfer fee accordingly). No payout is counted merely for hitting a trading profit target.</p></details>';
 box.querySelector('[data-section="funded-settings"] .jj-risk-section-body').append(xfaOptions);
 
 const contractSizing=()=>{for(const phase of [1,2,3]){
@@ -489,7 +490,7 @@ const verifyManualPreset=settings=>{
 const capturePageSettings=()=>{
  const controls={};
  const selectors=['[data-k]','[data-funded]','[data-manual-mode]','[data-manual-risk]','[data-manual-rr]','[data-contract-symbol]','[data-contract-stop]',
-  '[data-consistency-enabled]','[data-consistency-limit]','[data-topstep-daily-cap]','[data-xfa-cap]','[data-xfa-days]','[data-xfa-day-min]','[data-xfa-slippage]','[data-account-count]','[data-funded-count]','[data-payout-count]',
+  '[data-consistency-enabled]','[data-consistency-limit]','[data-topstep-daily-cap]','[data-xfa-cap]','[data-xfa-days]','[data-xfa-day-min]','[data-xfa-slippage]','[data-xfa-transfer-fee]','[data-account-count]','[data-funded-count]','[data-payout-count]',
   '[data-parallel-accounts]','[data-signals-per-day]','[data-purchase-strategy]','[data-target-mode]'];
  for(const selector of selectors){
   box.querySelectorAll(selector).forEach(el=>{
@@ -503,7 +504,7 @@ const capturePageSettings=()=>{
 const restorePageSettings=pageSettings=>{
  if(!pageSettings||pageSettings.version!==2||!pageSettings.controls)return;
  const controls=pageSettings.controls;
- box.querySelectorAll('input[data-k],input[data-funded],input[data-manual-risk],input[data-manual-rr],input[data-contract-stop],select[data-contract-symbol],select[data-manual-mode],input[data-consistency-enabled],input[data-consistency-limit],input[data-topstep-daily-cap],input[data-xfa-cap],input[data-xfa-days],input[data-xfa-day-min],input[data-xfa-slippage],input[data-account-count],input[data-funded-count],input[data-payout-count],input[data-parallel-accounts],input[data-signals-per-day],select[data-purchase-strategy],input[data-target-mode]').forEach(el=>{
+ box.querySelectorAll('input[data-k],input[data-funded],input[data-manual-risk],input[data-manual-rr],input[data-contract-stop],select[data-contract-symbol],select[data-manual-mode],input[data-consistency-enabled],input[data-consistency-limit],input[data-topstep-daily-cap],input[data-xfa-cap],input[data-xfa-days],input[data-xfa-day-min],input[data-xfa-slippage],input[data-xfa-transfer-fee],input[data-account-count],input[data-funded-count],input[data-payout-count],input[data-parallel-accounts],input[data-signals-per-day],select[data-purchase-strategy],input[data-target-mode]').forEach(el=>{
   const key=Object.keys(el.dataset).sort().map(k=>k+':'+el.dataset[k]).join('|');
   if(!Object.prototype.hasOwnProperty.call(controls,key))return;
   const value=controls[key];
@@ -821,6 +822,7 @@ if(fv.xfaStandard){
  fv.requiredWinningDays=Math.max(1,Math.min(12,Math.floor(num('[data-xfa-days]',5))));
  fv.minWinningDay=Math.max(0,num('[data-xfa-day-min]',150));
  fv.payoutCap=Math.max(0,num('[data-xfa-cap]',2000));
+ fv.transferFee=Math.max(0,num('[data-xfa-transfer-fee]',0));
  fv.slippagePerContract=Math.max(0,num('[data-xfa-slippage]',0));
  fv.symbol=box.querySelector('[data-contract-symbol="3"]')?.value||'MGC';
  fv.stopMove=Math.max(.01,Number(box.querySelector('[data-contract-stop="3-1"]')?.value)||5);
@@ -830,6 +832,8 @@ if(phaseMode!=='evaluation'){function fw(path){const x=fv.xfaStandard?calcTopste
 
 const fundedGrossPerAttempt=fv.xfaStandard?fundedLeaves.reduce((sum,x)=>sum+x.prob*(x.eligibleGross||0),0):fp*fv.target;
 const payoutGrossPerSuccess=fp>0?fundedGrossPerAttempt/fp:0;
+const netPayoutPerFunded=fundedGrossPerAttempt*Math.max(0,Math.min(1,Number(box.querySelector('[data-funded="split"]')?.value||0)/100))-fp*(fv.xfaStandard?fv.transferFee:0);
+const netPayoutPerSuccess=fp>0?netPayoutPerFunded/fp:0;
 const cash=x=>'$'+x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 /* Statistics are calculated from terminal/censored path probabilities, not
    actual trade history. Do not confuse an observed maximum in enumerated paths
@@ -896,7 +900,7 @@ tradeStatsPanel.querySelector('[data-trade-stats-content]').innerHTML=
 if(compareSection.open){const sim=cfg=>{let hit=0,fail=0,ev=0;function go(p){const x=calc(p,cfg);if(scenarioFinished(x,cfg,p)){if(x.status==='target')hit+=x.prob;if(x.status==='closed')fail+=x.prob;ev+=x.prob*x.pnl;return}go(p+'W');go(p+'L')}go('');return [hit*100,fail*100,ev]};const phases=firmForPhases==='ftmo'?[[1,v.target],[2,v.target2],[3,fv.target]]:[[1,v.target],[3,fv.target]];let rows='';for(const item of phases){const phase=item[0],target=item[1],base=phase===3?fv:v;const common=Object.assign({},base,{targetMode:1,target:target,manualStage:phase,topstepConsistency:phase===1&&firmForPhases==='topstep'});const auto=sim(Object.assign({},common,{manualRisks:{},manualRRs:{}}));const manual=sim(Object.assign({},common,{manualRisks:manualConfig(),manualRRs:manualRRConfig()}));let phaseRows='';for(let i=0;i<3;i++){const diff=manual[i]-auto[i];phaseRows+='<tr><td>'+['Target %','Failure %','EV'][i]+'</td><td>'+manual[i].toFixed(2)+'</td><td>'+auto[i].toFixed(2)+'</td><td class="'+((i===1?diff<0:diff>0)?'jj-risk-win':(i===1?diff>0:diff<0)?'jj-risk-loss':'')+'">'+diff.toFixed(2)+'</td></tr>';;}rows+='<details style="margin:6px 0;padding:8px;border:1px solid #8884;border-radius:7px"><summary style="cursor:pointer;font-weight:700">P'+phase+' · Target '+manual[0].toFixed(1)+'% / '+auto[0].toFixed(1)+'%</summary><div style="overflow-x:auto"><table style="font-size:11px;white-space:nowrap"><thead><tr><th>Metric</th><th>Manual</th><th>Auto</th><th>Δ</th></tr></thead><tbody>'+phaseRows+'</tbody></table></div></details>'; }comparePanel.querySelector('[data-compare]').innerHTML='<div style="font-size:11px;opacity:.7">Green = better · Red = worse · Δ = Manual − Auto</div>'+rows;}
 const nn=Math.max(1,Math.min(100,Math.floor(Number($('[data-account-count]').value)||10)));
 const totalFees=nn*v.accountCost,expectedFunded=nn*probability,activationFee=Math.max(0,fn('activation',0)),splitPct=Math.max(0,Math.min(1,fn('split',80)/100));
-const grossPayout=expectedFunded*fundedGrossPerAttempt*splitPct,activationFees=expectedFunded*activationFee,netCash=grossPayout-totalFees-activationFees;
+const grossPayout=expectedFunded*netPayoutPerFunded,activationFees=expectedFunded*activationFee,netCash=grossPayout-totalFees-activationFees;
 
 let mathPanel=box.querySelector('[data-ch09-math]');
 if(!mathPanel){
@@ -981,10 +985,10 @@ const replacementPurchases=evalPass>0&&(!payoutMode||fp>0)?allocationTarget/eval
 const replacementFailures=replacementPurchases===null?null:replacementPurchases-allocationTarget;
 const replacementEvalFees=replacementPurchases===null?null:replacementPurchases*v.accountCost;
 const replacementActivationFees=allocationTarget*activationFee;
-const replacementExpectedPayout=allocationTarget*fundedGrossPerAttempt*splitPct;
+const replacementExpectedPayout=allocationTarget*netPayoutPerFunded;
 const replacementTotalFees=replacementEvalFees===null?null:replacementEvalFees+replacementActivationFees;
 const replacementNet=replacementTotalFees===null?null:replacementExpectedPayout-replacementTotalFees;
-const modelBuys=replacementMode?replacementPurchases:nn;const modelPassed=replacementMode?(replacementPurchases===null?0:allocationTarget):expectedFunded;const modelFailed=modelBuys===null?null:Math.max(0,modelBuys-modelPassed);const modelFees=modelBuys===null?null:modelBuys*v.accountCost+modelPassed*activationFee;const modelPayout=modelPassed*fundedGrossPerAttempt*splitPct;const modelNet=modelFees===null?null:modelPayout-modelFees;const modelRoi=modelFees>0?100*modelNet/modelFees:null;const modelSuccess=modelBuys===null?0:modelPassed*fp;const modelPct=modelBuys>0?100*modelPassed/modelBuys:0;const modelCash=x=>x===null?'—':cash(x);const modelPossible=modelBuys!==null;const resultGroup=(heading,cards)=>'<div style="min-width:0;margin:5px 0 9px"><div style="font-size:11px;font-weight:700;opacity:.8;margin:0 0 5px">'+heading+'</div><div class="jj-risk-results-grid">'+cards+'</div></div>';
+const modelBuys=replacementMode?replacementPurchases:nn;const modelPassed=replacementMode?(replacementPurchases===null?0:allocationTarget):expectedFunded;const modelFailed=modelBuys===null?null:Math.max(0,modelBuys-modelPassed);const modelFees=modelBuys===null?null:modelBuys*v.accountCost+modelPassed*activationFee;const modelPayout=modelPassed*netPayoutPerFunded;const modelNet=modelFees===null?null:modelPayout-modelFees;const modelRoi=modelFees>0?100*modelNet/modelFees:null;const modelSuccess=modelBuys===null?0:modelPassed*fp;const modelPct=modelBuys>0?100*modelPassed/modelBuys:0;const modelCash=x=>x===null?'—':cash(x);const modelPossible=modelBuys!==null;const resultGroup=(heading,cards)=>'<div style="min-width:0;margin:5px 0 9px"><div style="font-size:11px;font-weight:700;opacity:.8;margin:0 0 5px">'+heading+'</div><div class="jj-risk-results-grid">'+cards+'</div></div>';
 
 // Section 04 must consume the same purchase-strategy cohort as Sections 05/07.
 // Never use the raw fixed-purchase input as the number of funded attempts.
@@ -999,8 +1003,8 @@ const fundedCards=
  metricFund('Funded attempts',fundedAttempts===null?'—':fundedAttempts.toFixed(2),'Expected cumulative funded accounts entering P3 under the selected Section 07 purchase strategy; not the number active simultaneously.')+
  metricFund('Expected funded successes',fundedSuccesses===null?'—':fundedSuccesses.toFixed(2),'Expected accounts reaching the funded profit target, consistent with Section 07 P4.')+
  metricFund('Expected funded failures',fundedFailures===null?'—':fundedFailures.toFixed(2),'Expected funded attempts that do not reach the profit target within the modeled trade depth; includes both ruin and unresolved paths.')+
- metricFund('Expected payout / funded',cash(fundedGrossPerAttempt*splitPct),'Probability-weighted payout projection per funded attempt, before purchase and activation fees.')+
- metricFund('Payout per success',cash(payoutGrossPerSuccess*splitPct),'Modeled eligible payout after 50%-balance restriction, payout cap and profit split; trading fees are deducted from path P&L.');
+ metricFund('Expected payout / funded',cash(netPayoutPerFunded),'Probability-weighted payout projection per funded attempt, before purchase and activation fees.')+
+ metricFund('Payout per success',cash(netPayoutPerSuccess),'Modeled eligible payout after 50%-balance restriction, payout cap and profit split; trading fees are deducted from path P&L.');
 $('[data-funded-results]').innerHTML='<div class="jj-risk-results-grid">'+fundedCards+'</div>'+
  '<div style="font-size:11px;opacity:.75;margin:5px 0">Using <strong>'+(
   payoutMode?'Maximum Funded Limit Payout':replacementMode?'Reach Funded Limit':'Fixed Purchases'
@@ -1016,7 +1020,7 @@ resultGroup('01 · Results',
  metricFund('Expected funded',modelPossible?modelPassed.toFixed(2):'—','Expected funded accounts under the selected purchase strategy.')+
  metricFund('Successful payouts',modelPossible?modelSuccess.toFixed(2):'—','Expected first payout successes.'))+
 resultGroup('02 · Payouts',
- metricFund('Payout / success',cash(payoutGrossPerSuccess*splitPct),'First payout after a successful funded target, after the configured split.')+
+ metricFund('Payout / success',cash(netPayoutPerSuccess),'First payout after a successful funded target, after the configured split.')+
  metricFund('Expected payout cash',modelPossible?cash(modelPayout):'—','Probability-weighted total first payout cash after the configured split.'))+
 resultGroup('03 · Spending',
  metricFund('Evaluation buys',modelPossible?modelBuys.toFixed(2):'—','Expected evaluation purchases, including replacements when enabled.')+
@@ -1313,7 +1317,7 @@ $('[data-prev]').disabled=page===0;$('[data-next]').disabled=(page+1)*10>=shown.
 }
 box.addEventListener('change',e=>{if(e.target.matches('[data-consistency-enabled]')){let old={};try{old=JSON.parse(localStorage.getItem(consistencyKey)||'{}')||{}}catch(x){}old.enabled=e.target.checked;try{localStorage.setItem(consistencyKey,JSON.stringify(old))}catch(x){}renderRisk()}});
 box.addEventListener('change',e=>{if(e.target.matches('[data-consistency-limit],[data-consistency-days]')){const old=(()=>{try{return JSON.parse(localStorage.getItem(consistencyKey)||'{}')}catch(x){return {}}})();if(e.target.matches('[data-consistency-limit]'))old.limit=e.target.value;else old.days=e.target.value;try{localStorage.setItem(consistencyKey,JSON.stringify(old))}catch(x){}renderRisk()}});
-box.addEventListener('input',e=>{if(e.target.matches('[data-xfa-cap],[data-xfa-days],[data-xfa-day-min],[data-xfa-slippage]')){saveSettings();renderRisk()}});
+box.addEventListener('input',e=>{if(e.target.matches('[data-xfa-cap],[data-xfa-days],[data-xfa-day-min],[data-xfa-slippage],[data-xfa-transfer-fee]')){saveSettings();renderRisk()}});
 box.addEventListener('input',e=>{if(e.target.matches('[data-k],[data-account-count],[data-funded]')){page=0;saveSettings();renderRisk()}});
 box.addEventListener('change',e=>{if(e.target.matches('[data-funded-path-filter]')){fundedPage=0;expandedFunded.clear();renderRisk()}});
 box.addEventListener('change',e=>{if(e.target.matches('[data-filter]')){page=0;expandedPaths.clear();renderRisk()}});
