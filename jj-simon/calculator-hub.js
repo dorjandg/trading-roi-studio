@@ -1222,8 +1222,15 @@ const averageP2=stageAverage(leaves,checkpointSteps);
 /* The Topstep funnel treats both checkpoints as independent copies of the
    same strategy. Their successful-path averages must therefore also match.
    Do not mix a carried-state stage-2 average with modeled checkpoint rates. */
-const averageP3=firmType==='topstep'?averageP2:stageAverage(leaves,secondStageSteps);
-const averageP4=stageAverage(fundedLeaves,successfulFundedSteps);
+const topstepTradeLoss=1-Math.max(0,Math.min(1,v.winRate/100));
+const topstepCycleTrades=1+topstepTradeLoss+topstepTradeLoss*topstepTradeLoss;
+const topstepCyclePass=1-topstepTradeLoss**3;
+const topstepFundedReset=topstepTradeLoss**2*(1-topstepTradeLoss);
+const topstepFundedExpectedTrades=topstepCycleTrades/(1-topstepFundedReset);
+const topstepEvalAverage={trades:topstepCycleTrades,wins:topstepCyclePass,losses:topstepCycleTrades-topstepCyclePass};
+const topstepFundedAverage={trades:topstepFundedExpectedTrades,wins:(1-topstepTradeLoss)*(1+topstepTradeLoss+topstepTradeLoss**2)/(1-topstepFundedReset),losses:topstepFundedExpectedTrades-(1-topstepTradeLoss)*(1+topstepTradeLoss+topstepTradeLoss**2)/(1-topstepFundedReset)};
+const averageP3=firmType==='topstep'?topstepEvalAverage:stageAverage(leaves,secondStageSteps);
+const averageP4=firmType==='topstep'?topstepFundedAverage:stageAverage(fundedLeaves,successfulFundedSteps);
 const totalTrades=(paths,n,portion)=>n===null||!Number.isFinite(n)||!paths.length?null:n*paths.reduce((sum,path)=>sum+path.prob*portion(path).length,0);
 const cut=path=>{const n=tradesBeforeCheckpoint(path);return n===null?path.steps.length:n;};
 const totP2=totalTrades(leaves,modelBuys,path=>path.steps.slice(0,cut(path)));
@@ -1237,9 +1244,9 @@ const totP4=totalTrades(fundedLeaves,modelPassed,path=>path.steps);
    P4 = funded accounts reaching their modeled payout profit target. */
 const funnelData=[
  {phase:'P1 · Evaluations purchased',count:modelBuys,rate:null,total:1,newCost:evalSpend,unitCost:costPer(evalSpend,modelBuys),avg:null,totTrades:0},
- {phase:hasVerification?'P2 · Challenge passed':'P2 · First trading day passed',count:funnelP1,rate:p1Pass,total:p1Pass,newCost:0,unitCost:costPer(evalSpend,funnelP1),avg:averageP2,totTrades:totP2},
- {phase:hasVerification?'P3 · Verification passed / funded':'P3 · Second trading day passed / funded',count:funnelP3,rate:p2Conditional,total:pEval,newCost:activationSpend,unitCost:costPer(allSpend,funnelP3),avg:averageP3,totTrades:totP3},
- {phase:'P4 · Funded payout target reached',count:funnelP4,rate:pFund,total:pEval*pFund,newCost:0,unitCost:costPer(allSpend,funnelP4),avg:averageP4,totTrades:totP4}
+ {phase:hasVerification?'P2 · Challenge passed':'P2 · First trading day passed',count:funnelP1,rate:p1Pass,total:p1Pass,newCost:0,unitCost:costPer(evalSpend,funnelP1),avg:firmType==='topstep'?topstepEvalAverage:averageP2,totTrades:firmType==='topstep'?(modelBuys===null?null:modelBuys*topstepCycleTrades):totP2},
+ {phase:hasVerification?'P3 · Verification passed / funded':'P3 · Second trading day passed / funded',count:funnelP3,rate:p2Conditional,total:pEval,newCost:activationSpend,unitCost:costPer(allSpend,funnelP3),avg:averageP3,totTrades:firmType==='topstep'?(funnelP1===null?null:funnelP1*topstepCycleTrades):totP3},
+ {phase:'P4 · Funded payout target reached',count:funnelP4,rate:pFund,total:pEval*pFund,newCost:0,unitCost:costPer(allSpend,funnelP4),avg:averageP4,totTrades:firmType==='topstep'?(funnelP3===null?null:funnelP3*topstepFundedExpectedTrades):totP4}
 ];
 const reversePayoutPlan=payoutMode?'<div style="margin:8px 0;padding:8px 10px;border:1px solid #8884;border-radius:7px;font-size:11px">'+
  '<strong>Reverse plan · '+payoutGoal+' projected full payout targets</strong>'+
