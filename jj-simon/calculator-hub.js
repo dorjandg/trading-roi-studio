@@ -684,7 +684,13 @@ const v=vals(),leaves=[],allPaths=[];Object.assign(v,STRATEGIES[activeStrategy].
 function walk(path){const x=calc(path,v);if(path&&allPaths.length<4000)allPaths.push(x);if(scenarioFinished(x,v,path)){leaves.push(x);return}walk(path+'W');walk(path+'L')}
 walk('');
 const counts={target:0,closed:0,active:0,'daily-blocked':0};leaves.forEach(x=>counts[x.status]++);
-const probability=leaves.filter(x=>x.status==='target').reduce((sum,x)=>sum+x.prob,0);
+const actualEvaluationProbability=leaves.filter(x=>x.status==='target').reduce((sum,x)=>sum+x.prob,0);
+/* Topstep funnel uses two equivalent standalone checkpoints, as requested.
+   This is a strategy model, NOT the carried-drawdown/consistency account forecast.
+   Keep the latter available for diagnostics; never silently equate the two. */
+const checkpointProbability=leaves.reduce((sum,path)=>sum+
+ (path.steps.some(step=>step.checkpointStage===1&&step.passed)?path.prob:0),0);
+const probability=firmForPhases==='topstep'?checkpointProbability*checkpointProbability:actualEvaluationProbability;
 const t1Probability=leaves.filter(x=>x.stage===2||x.status==='target').reduce((sum,x)=>sum+x.prob,0);
 const failProbability=leaves.filter(x=>x.status==='closed').reduce((sum,x)=>sum+x.prob,0);
 const unresolvedProbability=leaves.filter(x=>x.status==='active'||x.status==='daily-blocked').reduce((sum,x)=>sum+x.prob,0);
@@ -1012,13 +1018,12 @@ const portfolioSummary='<div class="jj-funnel-portfolio"><strong>Fixed cohort ·
 const hasVerification=firmType==='ftmo';
 const p1Pass=hasVerification?
  leaves.reduce((sum,path)=>sum+(path.steps.some(step=>step.stage===1&&step.passed)?path.prob:0),0):
- leaves.reduce((sum,path)=>sum+(path.steps.some(step=>step.checkpointStage===1&&step.passed)?path.prob:0),0);
+ checkpointProbability;
 const funnelCount=count=>modelBuys===null?'—':count.toFixed(2);
 const percent=value=>Number.isFinite(value)?(100*Math.max(0,Math.min(1,value))).toFixed(1)+'%':'—';
-const p2Conditional=p1Pass>0?Math.min(1,pEval/p1Pass):null;
-/* Both stage rates are calculated from actual weighted paths. Equal manual
-   settings and remaining risk allowances can yield equal stage rates, but
-   a different inherited trailing-floor budget can yield different rates. */
+const p2Conditional=firmType==='topstep'?checkpointProbability:(p1Pass>0?Math.min(1,pEval/p1Pass):null);
+/* Topstep is explicitly the equal-checkpoint strategy model. The actual
+   carried-state evaluation remains separate in actualEvaluationProbability. */
 const funnelP1=modelBuys===null?null:modelBuys*p1Pass;
 const funnelP2=modelBuys===null?null:modelBuys*pEval;
 const funnelP3=modelBuys===null?null:modelPassed;
