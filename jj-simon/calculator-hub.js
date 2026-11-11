@@ -809,7 +809,9 @@ const actualEvaluationProbability=leaves.filter(x=>x.status==='target').reduce((
    Keep the latter available for diagnostics; never silently equate the two. */
 const checkpointProbability=leaves.reduce((sum,path)=>sum+
  (path.steps.some(step=>step.checkpointStage===1&&step.passed)?path.prob:0),0);
-const probability=firmForPhases==='topstep'?checkpointProbability*checkpointProbability:actualEvaluationProbability;
+const planningProbability=firmForPhases==='topstep'?checkpointProbability*checkpointProbability:actualEvaluationProbability;
+// Financial results and account funnel use actual carried-state outcomes.
+const probability=actualEvaluationProbability;
 const t1Probability=leaves.filter(x=>x.stage===2||x.status==='target').reduce((sum,x)=>sum+x.prob,0);
 const failProbability=leaves.filter(x=>x.status==='closed').reduce((sum,x)=>sum+x.prob,0);
 const unresolvedProbability=leaves.filter(x=>x.status==='active'||x.status==='daily-blocked').reduce((sum,x)=>sum+x.prob,0);
@@ -1145,9 +1147,9 @@ const p1Pass=hasVerification?
  checkpointProbability;
 const funnelCount=count=>modelBuys===null?'—':count.toFixed(2);
 const percent=value=>Number.isFinite(value)?(100*Math.max(0,Math.min(1,value))).toFixed(1)+'%':'—';
-const p2Conditional=firmType==='topstep'?checkpointProbability:(p1Pass>0?Math.min(1,pEval/p1Pass):null);
-/* Topstep is explicitly the equal-checkpoint strategy model. The actual
-   carried-state evaluation remains separate in actualEvaluationProbability. */
+const p2Conditional=p1Pass>0?Math.min(1,pEval/p1Pass):null;
+/* Funnel counts use actual carried-state evaluation outcomes. The equal-checkpoint
+   model remains a separate strategy-planning comparison only. */
 const funnelP1=modelBuys===null?null:modelBuys*p1Pass;
 const funnelP2=modelBuys===null?null:modelBuys*pEval;
 const funnelP3=modelBuys===null?null:modelPassed;
@@ -1250,8 +1252,8 @@ $('[data-funnel]').innerHTML='<div class="jj-funnel-wrap">'+
  '<div class="jj-funnel-note">'+
  (payoutMode?'Reverse target: P4 funded profit successes ÷ funded pass rate = P3 qualified funded accounts; P3 ÷ evaluation pass = P1 purchases. ':'')+
  'Avg T / W / L are the average trades, wins and losses within EACH stage among successful paths. They exclude failed accounts and are not cumulative. P1 has no trades; P2 is the first checkpoint, P3 the remaining evaluation trades, and P4 funded target trades. '+
- (firmType==='topstep'?'Topstep funnel uses the equal-checkpoint STRATEGY model: P1→P2 and P2→P3 have the same modeled probability; full evaluation = checkpoint probability squared. This is a planning assumption, not the actual carried-drawdown account pass forecast. Each checkpoint has its own R1–R4 counter and up to '+Math.min(8,v.depth)+' modeled trades. ':'')+
- (firmType==='topstep'?'<details open style="margin:7px 0"><summary style="cursor:pointer;font-weight:700">Evaluation probability comparison · open</summary><div style="padding:6px 0">Equal-checkpoint strategy: '+percent(checkpointProbability)+' × '+percent(checkpointProbability)+' = '+percent(pEval)+' evaluation pass. Actual carried-state evaluation engine: '+percent(actualEvaluationProbability)+'. Difference: '+((pEval-actualEvaluationProbability)*100).toFixed(2)+' percentage points. <strong>Important: financial projections use the equal-checkpoint planning assumption, NOT the carried-state account pass probability. Check the carried-state figure before treating projected ROI as executable.</strong> The carried-state calculation is diagnostic only; it includes inherited end-of-day trailing drawdown and consistency, but does not model all real contract execution costs.</div></details>':'')+
+ (firmType==='topstep'?'Topstep planning assumes equal standalone checkpoint rates, but the account funnel and financial projections use the actual carried-state probability. This is a planning assumption, not the actual carried-drawdown account pass forecast. Each checkpoint has its own R1–R4 counter and up to '+Math.min(8,v.depth)+' modeled trades. ':'')+
+ (firmType==='topstep'?'<details open style="margin:7px 0"><summary style="cursor:pointer;font-weight:700">Evaluation probability comparison · open</summary><div style="padding:6px 0">Equal-checkpoint planning model: '+percent(checkpointProbability)+' × '+percent(checkpointProbability)+' = '+percent(planningProbability)+' hypothetical evaluation pass. Actual carried-state evaluation engine: '+percent(actualEvaluationProbability)+'. Difference: '+((planningProbability-actualEvaluationProbability)*100).toFixed(2)+' percentage points. <strong>Financial projections now use the carried-state account pass probability; the equal-checkpoint figure is shown for strategy comparison only. Execution costs and payout eligibility remain unverified.</strong> The carried-state calculation includes inherited end-of-day trailing drawdown and consistency but does not model all real execution costs.</div></details>':'')+
  'P1 purchases: '+funnelCount(modelBuys)+'; P2 first checkpoint passed: '+funnelCount(funnelP1)+
  '; P3 evaluation passed and funded: '+funnelCount(funnelP3)+
  '; P4 funded payout profit target: '+funnelCount(funnelP4)+'. '+
