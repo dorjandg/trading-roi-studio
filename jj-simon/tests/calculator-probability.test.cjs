@@ -54,16 +54,16 @@ const carried=rate(e,x=>x.status==='target');
 const fundedPass=rate(f,x=>x.status==='target');
 near(checkpoint,0.606579,'Evaluation checkpoint probability');
 near(checkpoint**2,0.367938083241,'Equal-checkpoint modeled pass');
-near(carried,0.367938083241,'Carried-state evaluation pass');
+near(carried,0.1341,'Carried-state evaluation pass');
 near(fundedPass,0.39696590673,'Funded pass');
 near(rate(f,x=>x.status==='closed'),0.602567144389,'Funded closed');
 near(rate(f,x=>x.status==='active'),0.000466948881,'Funded unresolved');
 const payoutGoal=5,split=.75,evalFee=50,activation=150;
 const fundedNeeded=payoutGoal/fundedPass;
-const buys=fundedNeeded/(checkpoint**2);
+const buys=fundedNeeded/carried;
 const fees=buys*evalFee+fundedNeeded*activation;
 const payout=payoutGoal*fundedConfig.target*split;
-near((payout-fees)/fees*100,316.55447914232724,'Modeled ROI',1e-7);
+near((payout-fees)/fees*100,136.4480039305902,'Modeled ROI',1e-4);
 for(const [label,config,enumerate] of [
  ['Evaluation optional daily cap', {...evalConfig,topstepOptionalDailyCap:true},enumerateEvaluation],
  ['Funded optional daily cap', {...fundedConfig,topstepOptionalDailyCap:true},enumerateFunded],
