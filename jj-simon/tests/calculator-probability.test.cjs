@@ -117,5 +117,20 @@ const breached=rate(ce,x=>x.status==='closed');
 near(rate(ce,x=>x.status==='target')+blocked+breached,1,'Exclusive evaluation outcome partition');
 near(breached,0,'No breached evaluation in current limited-attempt preset');
 assert(blocked>0.8,'Most paths remain unresolved after the configured attempts');
+// Funnel conditional rate and counts must use the SAME probability model.
+assert(/const p2Conditional=actualP2Conditional;/.test(source),
+ 'Actual account funnel must not display independent planning conditional rate');
+assert(/const funnelP3=funnelP1===null\?null:funnelP1\*p2Conditional;/.test(source),
+ 'P3 count must equal P2 count multiplied by displayed conditional rate');
+assert(/const funnelP4=funnelP3===null\?null:funnelP3\*pFund;/.test(source),
+ 'P4 count must equal P3 count multiplied by funded pass rate');
+const carriedP1=rate(ce,x=>x.topstepCheckpoint);
+const carriedP3=rate(ce,x=>x.status==='target');
+const carriedConditional=carriedP3/carriedP1;
+near(carriedP1*carriedConditional,carriedP3,'Carried funnel conservation');
+near(carriedP1,checkpoint,'Identical first-stage settings');
+near(checkpoint*checkpoint,0.367938083241,'Separate equal-checkpoint planning result');
+assert(Math.abs(carriedConditional-checkpoint)>.1,
+ 'Actual conditional probability must not be misrepresented as standalone planning');
 console.log(JSON.stringify({evaluationMass:sum(e),checkpoint,modeledEvaluationPass:checkpoint**2,
  carriedEvaluationPass:carried,fundedMass:sum(f),fundedPass,fees,payout,roi:(payout-fees)/fees*100},null,2));
