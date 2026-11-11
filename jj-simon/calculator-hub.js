@@ -1396,53 +1396,78 @@ box.addEventListener('change',e=>{if(e.target.matches('[data-filter]')){page=0;e
 box.addEventListener('click',e=>{const btn=e.target.closest('button');if(!btn)return;if(btn.hasAttribute('data-optimize-risk'))return;if(btn.hasAttribute('data-funded-expand')){const key=btn.dataset.fundedExpand;if(expandedFunded.has(key))expandedFunded.delete(key);else expandedFunded.add(key);renderRisk();return}if(btn.hasAttribute('data-funded-prev')){fundedPage=Math.max(0,fundedPage-1);renderRisk();return}if(btn.hasAttribute('data-funded-next')){fundedPage++;renderRisk();return}if(btn.hasAttribute('data-phase')){phaseMode=btn.dataset.phase;saveSettings()}else if(btn.hasAttribute('data-account-mode')){accountMode=btn.dataset.accountMode;saveSettings()}else if(btn.hasAttribute('data-mode-button')){box.querySelector('[data-target-mode]').value=btn.dataset.modeButton;page=0;expandedPaths.clear();saveSettings()}else if(btn.hasAttribute('data-expand-path')||btn.hasAttribute('data-path')){const key=btn.hasAttribute('data-expand-path')?btn.dataset.expandPath:btn.dataset.path;if(expandedPaths.has(key))expandedPaths.delete(key);else expandedPaths.add(key)}else if(btn.hasAttribute('data-prev'))page--;else if(btn.hasAttribute('data-next'))page++;renderRisk()});
 renderRisk();
 }
-function mountKpiFourteen(target){if(target.querySelector('.jj9-kpi-reference'))return;
-/* jj9-kpi-reference-v2: compact, expandable formula glossary and example. */
-(function(){
- const n=10,w=.25,q=1-w,pass=1-q*q*q,success=(w+q*w)/(1-q*q*w);
- const funded=n*pass*pass,payouts=funded*success,prob=pass*pass*success;
- const spending=500+funded*150,wallet=payouts*2000;
- const pct=x=>(100*x).toFixed(2)+'%',usd=x=>'$'+x.toFixed(2),num=x=>x.toFixed(2);
- const bin=(n,k)=>{let a=1;for(let j=1;j<=k;j++)a*=((n-j+1)/j);return a};
- const exact=k=>bin(n,k)*Math.pow(prob,k)*Math.pow(1-prob,n-k);
- const entries=[
-  ['P1 purchases','10','10 accounts at $50 each'],
-  ['P1 max trade slots','30','10 accounts × 3 possible trades'],
-  ['P1 expected trades',num(n*(1+q+q*q)),'10 × (1 + q + q²), including failures'],
-  ['P1 pass probability',pct(pass),'1 − (1 − win rate)³'],
-  ['P2 entering accounts',num(n*pass),'10 × P1 pass probability'],
-  ['P2 max trade slots',num(n*pass*3),'Expected P2 entrants × 3 slots'],
-  ['P2 expected trades',num(n*pass*(1+q+q*q)),'Expected P2 entrants × (1 + q + q²)'],
-  ['P2 pass probability',pct(pass),'Same three-attempt rule as P1'],
-  ['P3 funded accounts',num(funded),'10 × P1 pass × P2 pass'],
-  ['P3 payout-target success',pct(success),'(w + qw)/(1 − q²w). W/LW succeeds; LLW restarts; LLL fails'],
-  ['P4 expected payouts',num(payouts),'Funded accounts × P3 success probability'],
-  ['Chance of 1+ payouts',pct(1-Math.pow(1-prob,n)),'1 − (1 − per-purchase payout probability)^10'],
-  ['Chance of zero payouts',pct(exact(0)),'All 10 purchased accounts miss payout'],
-  ['Exactly 1 payout',pct(exact(1)),'$2,000 wallet cash'],
-  ['Exactly 2 payouts',pct(exact(2)),'$4,000 wallet cash'],
-  ['3+ payouts',pct(1-exact(0)-exact(1)-exact(2)),'At least $6,000 wallet cash'],
-  ['Minimum positive wallet cash','$2,000','If at least one account pays; absolute minimum is $0'],
-  ['P1 purchase cost','$500','10 × $50 paid up front'],
-  ['Expected P3 activation cost',usd(funded*150),'Expected funded entrants × $150 activation'],
-  ['Expected total spending',usd(spending),'P1 purchases plus funded activation fees'],
-  ['Expected wallet cash',usd(wallet),'Expected payouts × $2,000 actual wallet receipt'],
-  ['Expected net profit',usd(wallet-spending),'Expected wallet cash minus expected spending'],
-  ['Expected net ROI',pct((wallet-spending)/spending),'Expected net profit ÷ expected spending']
- ];
- const detail=document.createElement('div');detail.className='jj9-kpi-reference';
- const intro=document.createElement('p');intro.textContent='JJ9 worked example: 10 P1 accounts, 25% trade win rate, 3 chances in P1 and P2, P3 LLW restart, $50 purchase, $150 funded activation, $2,000 wallet payout. These example values are separate from your live simulator inputs.';detail.append(intro);
- const scroller=document.createElement('div');scroller.style.overflowX='auto';
- const table=document.createElement('table'),thead=document.createElement('thead'),header=document.createElement('tr');
- ['Metric','Value','Definition / formula'].forEach(label=>{const th=document.createElement('th');th.textContent=label;header.append(th)});
- thead.append(header);table.append(thead);
- const tbody=document.createElement('tbody');
- entries.forEach(row=>{const tr=document.createElement('tr');row.forEach((value,i)=>{const cell=document.createElement(i===0?'th':'td');cell.textContent=value;cell.title=row[2];if(i===0)cell.scope='row';tr.append(cell)});tbody.append(tr)});
- table.append(tbody);scroller.append(table);detail.append(scroller);
- const note=document.createElement('p');note.textContent='Hover a row on desktop or read the explanation column on mobile. P1/P2 wins are qualifications, not wallet cash. The earlier +$480 / −$22 (22×) amounts are bookkeeping allocations, NOT cash trade payoffs. Assumes independent trades/accounts, unlimited P3 LLW resets, and full payout once the funded target is reached.';detail.append(note);
- let style=document.getElementById('jj9-kpi-reference-style');if(!style){style=document.createElement('style');style.id='jj9-kpi-reference-style';style.textContent='.jj9-kpi-reference{margin:8px 0;border:1px solid #8885;border-radius:8px;padding:8px;font-size:11px}.jj9-kpi-reference summary{font-weight:700;cursor:pointer}.jj9-kpi-reference p{font-size:11px;line-height:1.45}.jj9-kpi-reference table{border-collapse:collapse;width:100%;font-size:11px}.jj9-kpi-reference th,.jj9-kpi-reference td{text-align:left;vertical-align:top;border-bottom:1px solid #8883;padding:6px}.jj9-kpi-reference td:nth-child(2){font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}@media(max-width:600px){.jj9-kpi-reference{padding:6px}.jj9-kpi-reference th,.jj9-kpi-reference td{padding:5px 4px;font-size:10px}.jj9-kpi-reference td:last-child{min-width:185px}}';document.head.append(style)}
- target.append(detail);
-})();
+function mountKpiFourteen(target){
+ if(target.querySelector('.jj9-kpi-reference'))return;
+ const root=document.createElement('div');root.className='jj9-kpi-reference';
+ root.innerHTML='<p>Change the inputs to recalculate every KPI instantly. Use the goal planner to estimate purchases needed for funded accounts or payouts.</p>';
+ const fields=document.createElement('div');fields.className='jj14-inputs';root.append(fields);
+ const defaults={n:10,w:25,attempts:3,fee:50,activation:150,cash:2000,goal:1,confidence:80};
+ const values={...defaults};
+ const inputs={};
+ const specs=[['n','P1 purchases',1,100000,1],['w','Trade win rate %',0,100,.5],['attempts','P1 / P2 attempts',1,20,1],['fee','P1 fee $',0,100000,1],['activation','P3 activation $',0,100000,1],['cash','Wallet payout $',0,10000000,100],['goal','Goal accounts / payouts',1,100000,1],['confidence','Goal probability %',1,99.9,.5]];
+ specs.forEach(([key,label,min,max,step])=>{
+  const wrap=document.createElement('label');wrap.textContent=label;
+  const inp=document.createElement('input');inp.type='number';inp.min=min;inp.max=max;inp.step=step;inp.value=values[key];inp.setAttribute('aria-label',label);
+  inp.addEventListener('input',()=>{const v=Number(inp.value);if(inp.value!==''&&Number.isFinite(v)&&v>=min&&v<=max){values[key]=v;update()}});
+  wrap.append(inp);fields.append(wrap);inputs[key]=inp;
+ });
+ const modeLabel=document.createElement('label');modeLabel.textContent='Plan for';
+ const mode=document.createElement('select');[['payouts','Expected payouts'],['funded','Expected funded accounts'],['chance','Chance of ≥ goal payouts']].forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;mode.append(o)});modeLabel.append(mode);fields.append(modeLabel);
+ const reset=document.createElement('button');reset.type='button';reset.textContent='Reset';reset.addEventListener('click',()=>{Object.assign(values,defaults);specs.forEach(([k])=>inputs[k].value=values[k]);mode.value='payouts';update()});fields.append(reset);
+ const planner=document.createElement('p');planner.className='jj14-planner';root.append(planner);
+ const scroll=document.createElement('div');scroll.style.overflowX='auto';const table=document.createElement('table');
+ const head=document.createElement('tr');['Metric','Value','Definition / formula'].forEach(t=>{const th=document.createElement('th');th.textContent=t;head.append(th)});const thead=document.createElement('thead');thead.append(head);table.append(thead);
+ const tbody=document.createElement('tbody');table.append(tbody);scroll.append(table);root.append(scroll);
+ const note=document.createElement('p');note.textContent='Expected counts are averages, not guaranteed whole accounts. Goal probability uses independent purchased accounts. P3 LLW resets the funded sequence; actual payout eligibility, profit splits, trading restrictions, and fees may change results. ROI is expected net profit divided by expected actual spending (purchases plus expected activations), not reserved budget.';root.append(note);
+ const pct=x=>(100*x).toFixed(2)+'%',usd=x=>'$'+x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}),num=x=>x.toLocaleString('en-US',{maximumFractionDigits:3});
+ const binTail=(n,k,p)=>{if(k<=0)return 1;if(n<k||p<=0)return 0;if(p>=1)return 1;let term=Math.exp(n*Math.log1p(-p)),sum=term;for(let j=1;j<k;j++){term*=((n-j+1)/j)*(p/(1-p));sum+=term}return Math.max(0,Math.min(1,1-sum))};
+ const exact=(n,k,p)=>{if(k>n)return 0;if(p===0)return k===0?1:0;if(p===1)return k===n?1:0;let log=0;for(let j=1;j<=k;j++)log+=Math.log((n-j+1)/j);return Math.exp(log+k*Math.log(p)+(n-k)*Math.log1p(-p))};
+ function update(){
+  const {n,w,attempts,fee,activation,cash,goal,confidence}=values,q=1-w/100,p=1-Math.pow(q,attempts);
+  const success=(1-q*q*(w/100))>0?((w/100)*(1+q))/(1-q*q*(w/100)):0;
+  const funded=n*p*p,per=p*p*success,payouts=n*per,spending=n*fee+funded*activation,wallet=payouts*cash;
+  const trades=p>0?p/(1-q):attempts;
+  const goalRate=mode.value==='funded'?p*p:per;
+  let required=goalRate>0?Math.ceil(goal/goalRate):Infinity;
+  if(mode.value==='chance'){
+   required=Infinity;
+   if(per>0){let lo=0,hi=1;while(hi<1000000&&binTail(hi,goal,per)<confidence/100)hi*=2;if(binTail(hi,goal,per)>=confidence/100){while(lo+1<hi){const mid=Math.floor((lo+hi)/2);if(binTail(mid,goal,per)>=confidence/100)hi=mid;else lo=mid}required=hi}}
+  }
+  planner.textContent=mode.value==='chance'?'To have '+num(confidence)+'% probability of at least '+num(goal)+' payouts: '+(Number.isFinite(required)?num(required)+' P1 purchases':'Not reachable within 1,000,000 purchases')+'. Current probability: '+pct(binTail(n,goal,per))+'.':'To average '+num(goal)+' '+(mode.value==='funded'?'funded accounts':'payouts')+': '+(Number.isFinite(required)?num(required)+' P1 purchases':'Not possible at this win rate')+'. Current expected: '+num(n*goalRate)+'.';
+  const rows=[
+   ['P1 purchases',num(n),'Editable initial evaluation purchases'],
+   ['P1 max trade slots',num(n*attempts),'Purchases × allowed P1 attempts'],
+   ['P1 expected trades',num(n*trades),'Purchases × expected attempts until win or failure'],
+   ['P1 pass probability',pct(p),'1 − (1 − trade win rate)^attempts'],
+   ['P2 entering accounts',num(n*p),'P1 purchases × P1 pass probability'],
+   ['P2 max trade slots',num(n*p*attempts),'Expected P2 entrants × allowed attempts'],
+   ['P2 expected trades',num(n*p*trades),'Expected P2 entrants × expected attempts'],
+   ['P2 pass probability',pct(p),'Same win-rate and attempt rule as P1'],
+   ['P3 funded accounts',num(funded),'Purchases × P1 pass × P2 pass'],
+   ['P3 payout-target success',pct(success),'(w + qw)/(1 − q²w); funded W/LW pays, LLW restarts, LLL fails'],
+   ['P4 expected payouts',num(payouts),'Funded accounts × funded success probability'],
+   ['Chance of 1+ payouts',pct(binTail(n,1,per)),'Probability at least one payout from purchased accounts'],
+   ['Chance of zero payouts',pct(exact(n,0,per)),'Probability all purchased accounts miss payout'],
+   ['Exactly 1 payout',pct(exact(n,1,per)),'Binomial probability of exactly one payout'],
+   ['Exactly 2 payouts',pct(exact(n,2,per)),'Binomial probability of exactly two payouts'],
+   ['3+ payouts',pct(binTail(n,3,per)),'Probability of at least three payouts'],
+   ['Minimum positive wallet cash',usd(cash),'One payout; absolute minimum remains $0'],
+   ['P1 purchase cost',usd(n*fee),'Purchases × evaluation fee'],
+   ['Expected P3 activation cost',usd(funded*activation),'Expected funded entrants × activation fee'],
+   ['Expected total spending',usd(spending),'P1 purchase fees + expected funded activation fees'],
+   ['Expected wallet cash',usd(wallet),'Expected payout count × wallet cash per payout'],
+   ['Expected net profit',usd(wallet-spending),'Expected wallet cash − expected spending'],
+   ['Expected net ROI',spending>0?pct((wallet-spending)/spending):'N/A','Expected net profit ÷ expected spending; not average realized ROI'],
+   ['Per-purchase payout chance',pct(per),'P1 pass × P2 pass × P3 funded success'],
+   ['Chance of ≥ goal payouts',pct(binTail(n,goal,per)),'Binomial tail probability using goal input'],
+   ['Expected funded shortfall',num(Math.max(0,goal-funded)),'Goal minus expected funded count, floored at zero']
+  ];
+  tbody.replaceChildren();rows.forEach(row=>{const tr=document.createElement('tr');row.forEach((value,i)=>{const cell=document.createElement(i===0?'th':'td');cell.textContent=value;cell.title=row[2];if(i===0)cell.scope='row';tr.append(cell)});tbody.append(tr)});
+ }
+ mode.addEventListener('change',update);
+ let style=document.getElementById('jj9-kpi-reference-style');if(!style){style=document.createElement('style');style.id='jj9-kpi-reference-style';document.head.append(style)}
+ style.textContent='.jj9-kpi-reference{margin:8px 0;padding:8px;font-size:11px}.jj9-kpi-reference p{font-size:11px;line-height:1.45}.jj14-inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:7px;margin:10px 0}.jj14-inputs label{font-size:11px;display:grid;gap:3px}.jj14-inputs input,.jj14-inputs select,.jj14-inputs button{box-sizing:border-box;width:100%;min-width:0;padding:6px;border:1px solid #8886;border-radius:6px;background:var(--card,var(--bg,#fff));color:inherit}.jj14-planner{font-weight:700;padding:8px;border:1px solid #8885;border-radius:6px}.jj9-kpi-reference table{border-collapse:collapse;width:100%;font-size:11px}.jj9-kpi-reference th,.jj9-kpi-reference td{text-align:left;vertical-align:top;border-bottom:1px solid #8883;padding:6px}.jj9-kpi-reference td:nth-child(2){font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}@media(max-width:600px){.jj9-kpi-reference{padding:4px}.jj14-inputs{grid-template-columns:repeat(2,minmax(0,1fr))}.jj9-kpi-reference th,.jj9-kpi-reference td{padding:5px 4px;font-size:10px}.jj9-kpi-reference td:last-child{min-width:180px}}';
+ target.append(root);update();
 }
 const original=render;render=function(){original();if(active===slug)mount();};if(new URLSearchParams(location.search).get('topic')===slug||(!new URLSearchParams(location.search).get('topic')&&(()=>{try{return localStorage.getItem('jj-academy-last-page-v1')===slug}catch(e){return false}})())){active=slug;try{localStorage.setItem('jj-academy-last-page-v1',slug)}catch(e){}}if(typeof jjRebuildMobileSelector==='function')jjRebuildMobileSelector();renderNav();render();
 })();
