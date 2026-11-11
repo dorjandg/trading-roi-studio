@@ -107,5 +107,15 @@ assert(executableForecast.purchases>planningForecast.purchases,
 assert(executableForecast.roi<planningForecast.roi,
  'Carried-state forecast must not reuse optimistic planning ROI');
 near(executableForecast.cash,15000,'Executable modeled payout cash');
+// Blocked and depth-limited paths are unresolved, not breached purchases.
+assert(/const modelFailed=modelBuys===null\?null:modelBuys\*failProbability;/.test(source),
+ 'Failed evaluations must be computed from breached account probability');
+assert(/const modelUnresolved=modelBuys===null\?null:modelBuys\*unresolvedProbability;/.test(source),
+ 'Unresolved evaluations must be reported separately');
+const blocked=rate(ce,x=>x.status==='daily-blocked'||x.status==='active');
+const breached=rate(ce,x=>x.status==='closed');
+near(rate(ce,x=>x.status==='target')+blocked+breached,1,'Exclusive evaluation outcome partition');
+near(breached,0,'No breached evaluation in current limited-attempt preset');
+assert(blocked>0.8,'Most paths remain unresolved after the configured attempts');
 console.log(JSON.stringify({evaluationMass:sum(e),checkpoint,modeledEvaluationPass:checkpoint**2,
  carriedEvaluationPass:carried,fundedMass:sum(f),fundedPass,fees,payout,roi:(payout-fees)/fees*100},null,2));
