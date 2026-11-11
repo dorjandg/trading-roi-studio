@@ -1430,8 +1430,7 @@ function mountKpiFourteen(target){if(target.querySelector('.jj9-kpi-reference'))
   ['Expected net profit',usd(wallet-spending),'Expected wallet cash minus expected spending'],
   ['Expected net ROI',pct((wallet-spending)/spending),'Expected net profit ÷ expected spending']
  ];
- const detail=document.createElement('details');detail.className='jj9-kpi-reference';
- const summary=document.createElement('summary');summary.textContent='ⓘ P1–P4 formulas & financial KPIs · tap for explanations';detail.append(summary);
+ const detail=document.createElement('div');detail.className='jj9-kpi-reference';
  const intro=document.createElement('p');intro.textContent='JJ9 worked example: 10 P1 accounts, 25% trade win rate, 3 chances in P1 and P2, P3 LLW restart, $50 purchase, $150 funded activation, $2,000 wallet payout. These example values are separate from your live simulator inputs.';detail.append(intro);
  const scroller=document.createElement('div');scroller.style.overflowX='auto';
  const table=document.createElement('table'),thead=document.createElement('thead'),header=document.createElement('tr');
