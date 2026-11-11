@@ -150,3 +150,19 @@ for(const item of additions)if(!chapter.sections.some(s=>s.title===item.title))c
 if(typeof renderNav==='function')renderNav();
 if(typeof render==='function')render();
 })();
+
+/* 2026-11-11 prospective throughput versus hindsight audit, Modules 17/18. */
+(function(){
+if(typeof chapters==='undefined')return;
+const c=chapters.find(x=>x.slug==='scaling');
+if(!c||!Array.isArray(c.sections)||c.sections.some(s=>s.title==='Retrospective opportunities are not independent executable signals'))return;
+c.sections.push({title:'Retrospective opportunities are not independent executable signals',points:[
+'In How Multi-Account Management Works (00:00–00:29), JJ narrates how he WOULD allocate trades on a previously completed Thursday/Friday chart. His later counts of roughly nine evaluation opportunities, five to six 50-point funded opportunities, and one to two 100-point opportunities are retrospective candidates, not authenticated fills or independent signals.',
+'He labels break of structure A+ and displacement A (13:20–13:55), broadening entries when too few accounts receive trades. The higher win rate is asserted, not empirically measured. At 09:52–10:39 he revises a fair-price anchor after noticing news; a prospective audit must freeze the news calendar and reference price before the trade.',
+'The 150K scaling lesson (02:41–03:40) targets ten evaluation purchases or completions daily at $250 each, but purchases, independent setups, account executions and evaluation completions are different counts. With one independent signal assigned to one account, seven eligible setups/day allow at most seven account executions/day; overlapping accounts creates correlated executions rather than additional independent signals.',
+'Its illustrative $20,000 starting cash buffer (18:21–18:45) cannot fund $50,000 of purchases in the same month without $30,000 additional net funding or timely recycled receipts, before other fees. The 3× payout multiple is a historical target, not verified cash returns.',
+'Keep distinct event IDs, stage-specific risk and drawdown, minimum trading days, fees, funded payout approvals, and settled receipts. Original charts, actual fill history and historical provider conditions require verification; this chapter is an analytical reconciliation, not a tested strategy.'
+],src:[['How Multi-Account Management Works','00:00–02:22; 09:52–10:39; 13:20–15:58','1VNt39wTnRGpkGLalH-iBi3GHk75hIIUC'],['30k_month -_ 100k_month Scaling','00:18–00:47; 02:41–03:40; 18:21–18:45','1gKSrmr2naboKQWfZmHCF7OBrArdhf0s0']]});
+if(typeof renderNav==='function')renderNav();
+if(typeof render==='function')render();
+})();
