@@ -210,6 +210,17 @@ const fundedManualPanel=document.createElement('div');
 fundedManualPanel.style.cssText='margin:8px 0;font-size:11px;min-width:0;max-width:100%';
 fundedManualPanel.innerHTML='<details><summary style="cursor:pointer;font-weight:600">P3 · Manual Risk & Contracts</summary>'+phaseCards(3)+'</details>';
 box.querySelector('[data-section="funded-settings"] .jj-risk-section-body').append(fundedManualPanel);
+const xfaOptions=document.createElement('div');
+xfaOptions.style.cssText='font-size:11px;margin:8px 0;min-width:0';
+xfaOptions.innerHTML='<details><summary style="font-weight:600;cursor:pointer">Topstep XFA · Payout Rules & Trading Costs</summary>'+
+ '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:6px">'+
+ '<label>Max request $<input data-xfa-cap type="number" min="0" step="100" value="2000" style="width:100%;box-sizing:border-box;padding:4px"></label>'+
+ '<label>Required winning days<input data-xfa-days type="number" min="1" max="12" value="5" style="width:100%;box-sizing:border-box;padding:4px"></label>'+
+ '<label>Minimum net day $<input data-xfa-day-min type="number" min="0" value="150" style="width:100%;box-sizing:border-box;padding:4px"></label>'+
+ '<label>Slippage $/contract<input data-xfa-slippage type="number" min="0" step="0.1" value="0" style="width:100%;box-sizing:border-box;padding:4px"></label></div>'+
+ '<p style="font-size:10px;opacity:.72">Standard 50K XFA: 5 winning days of $150+, at least 50% of the account balance stays in the account, $2,000 default maximum request, plus 90/10 published profit split. Simplifying assumption: one closed trade per trading day. Trading fees: MGC $1.92 and GC $4.32 round turn per contract. No payout is counted merely for hitting a trading profit target.</p></details>';
+box.querySelector('[data-section="funded-settings"] .jj-risk-section-body').append(xfaOptions);
+
 const contractSizing=()=>{for(const phase of [1,2,3]){
  const sym=box.querySelector('[data-contract-symbol="'+phase+'"]')?.value||'MGC';
  const dollarsPerPoint=sym==='GC'?100:10;
@@ -478,7 +489,7 @@ const verifyManualPreset=settings=>{
 const capturePageSettings=()=>{
  const controls={};
  const selectors=['[data-k]','[data-funded]','[data-manual-mode]','[data-manual-risk]','[data-manual-rr]','[data-contract-symbol]','[data-contract-stop]',
-  '[data-consistency-enabled]','[data-consistency-limit]','[data-topstep-daily-cap]','[data-account-count]','[data-funded-count]','[data-payout-count]',
+  '[data-consistency-enabled]','[data-consistency-limit]','[data-topstep-daily-cap]','[data-xfa-cap]','[data-xfa-days]','[data-xfa-day-min]','[data-xfa-slippage]','[data-account-count]','[data-funded-count]','[data-payout-count]',
   '[data-parallel-accounts]','[data-signals-per-day]','[data-purchase-strategy]','[data-target-mode]'];
  for(const selector of selectors){
   box.querySelectorAll(selector).forEach(el=>{
@@ -492,7 +503,7 @@ const capturePageSettings=()=>{
 const restorePageSettings=pageSettings=>{
  if(!pageSettings||pageSettings.version!==2||!pageSettings.controls)return;
  const controls=pageSettings.controls;
- box.querySelectorAll('input[data-k],input[data-funded],input[data-manual-risk],input[data-manual-rr],input[data-contract-stop],select[data-contract-symbol],select[data-manual-mode],input[data-consistency-enabled],input[data-consistency-limit],input[data-topstep-daily-cap],input[data-account-count],input[data-funded-count],input[data-payout-count],input[data-parallel-accounts],input[data-signals-per-day],select[data-purchase-strategy],input[data-target-mode]').forEach(el=>{
+ box.querySelectorAll('input[data-k],input[data-funded],input[data-manual-risk],input[data-manual-rr],input[data-contract-stop],select[data-contract-symbol],select[data-manual-mode],input[data-consistency-enabled],input[data-consistency-limit],input[data-topstep-daily-cap],input[data-xfa-cap],input[data-xfa-days],input[data-xfa-day-min],input[data-xfa-slippage],input[data-account-count],input[data-funded-count],input[data-payout-count],input[data-parallel-accounts],input[data-signals-per-day],select[data-purchase-strategy],input[data-target-mode]').forEach(el=>{
   const key=Object.keys(el.dataset).sort().map(k=>k+':'+el.dataset[k]).join('|');
   if(!Object.prototype.hasOwnProperty.call(controls,key))return;
   const value=controls[key];
@@ -720,7 +731,7 @@ const scenarioFinished=(x,cfg,requestedPath='')=>x.status!=='active'||
   x.steps.length>=cfg.depth);
 function renderRisk(){
 contractSizing();
-const firmForPhases=firmBar.querySelector('[data-firm-type]').value;const expectedPhases=firmForPhases==='ftmo'?'2':'1';if($('[data-target-mode]').value!==expectedPhases)$('[data-target-mode]').value=expectedPhases;
+const firmForPhases=firmBar.querySelector('[data-firm-type]').value;xfaOptions.style.display=firmForPhases==='topstep'?'':'none';const expectedPhases=firmForPhases==='ftmo'?'2':'1';if($('[data-target-mode]').value!==expectedPhases)$('[data-target-mode]').value=expectedPhases;
 const v=vals(),leaves=[],allPaths=[];Object.assign(v,STRATEGIES[activeStrategy].eval);v.manualRisks=manualConfig();v.manualRRs=manualRRConfig();if(firmForPhases==='topstep'){v.topstepOptionalDailyCap=box.querySelector('[data-topstep-daily-cap]').checked;v.topstepConsistency=true;if(activeStrategy==='current')v.fixedRisk=1000;v.consistencyRate=Math.max(1,Math.min(100,Number(box.querySelector('[data-consistency-limit]')?.value)||55));}
 function walk(path){const x=calc(path,v);if(path&&allPaths.length<4000)allPaths.push(x);if(scenarioFinished(x,v,path)){leaves.push(x);return}walk(path+'W');walk(path+'L')}
 walk('');
@@ -1239,6 +1250,7 @@ $('[data-prev]').disabled=page===0;$('[data-next]').disabled=(page+1)*10>=shown.
 }
 box.addEventListener('change',e=>{if(e.target.matches('[data-consistency-enabled]')){let old={};try{old=JSON.parse(localStorage.getItem(consistencyKey)||'{}')||{}}catch(x){}old.enabled=e.target.checked;try{localStorage.setItem(consistencyKey,JSON.stringify(old))}catch(x){}renderRisk()}});
 box.addEventListener('change',e=>{if(e.target.matches('[data-consistency-limit],[data-consistency-days]')){const old=(()=>{try{return JSON.parse(localStorage.getItem(consistencyKey)||'{}')}catch(x){return {}}})();if(e.target.matches('[data-consistency-limit]'))old.limit=e.target.value;else old.days=e.target.value;try{localStorage.setItem(consistencyKey,JSON.stringify(old))}catch(x){}renderRisk()}});
+box.addEventListener('input',e=>{if(e.target.matches('[data-xfa-cap],[data-xfa-days],[data-xfa-day-min],[data-xfa-slippage]')){saveSettings();renderRisk()}});
 box.addEventListener('input',e=>{if(e.target.matches('[data-k],[data-account-count],[data-funded]')){page=0;saveSettings();renderRisk()}});
 box.addEventListener('change',e=>{if(e.target.matches('[data-funded-path-filter]')){fundedPage=0;expandedFunded.clear();renderRisk()}});
 box.addEventListener('change',e=>{if(e.target.matches('[data-filter]')){page=0;expandedPaths.clear();renderRisk()}});
