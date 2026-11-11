@@ -1170,6 +1170,9 @@ const p1Pass=hasVerification?
 const funnelCount=count=>modelBuys===null?'—':count.toFixed(2);
 const percent=value=>Number.isFinite(value)?(100*Math.max(0,Math.min(1,value))).toFixed(1)+'%':'—';
 const p2Conditional=p1Pass>0?Math.min(1,pEval/p1Pass):null;
+const topstepNoPassNote=firmType==='topstep'&&p1Pass>0&&pEval<=1e-12?
+ '<div style="font-size:11px;line-height:1.5;margin:6px 0;padding:7px;border:1px solid #b78a4280;border-radius:6px">P3 is unreachable within the selected two-day paths and trade limits. At a strict 50% consistency threshold, two net-profit days must finish equally; commissions, whole contracts, price ticks and fixed RR can prevent that. Tick-rounded partial TP may help but cannot guarantee a pass. Topstep publishes 55% as its Trading Combine consistency target. Review P1/P2 risk steps or increase the setting to 55% only if that matches your intended rules.</div>':'';
+
 /* Both stage rates are calculated from actual weighted paths. Equal manual
    settings and remaining risk allowances can yield equal stage rates, but
    a different inherited trailing-floor budget can yield different rates. */
@@ -1243,7 +1246,7 @@ const funnelData=[
 const reversePayoutPlan=payoutMode?'<div style="margin:8px 0;padding:8px 10px;border:1px solid #8884;border-radius:7px;font-size:11px">'+
  '<strong>Reverse plan · '+payoutGoal+' projected full payout targets</strong>'+
  '<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:7px">'+
- '<div><small>P4 · Target reached</small><div style="font-weight:700">'+(modelBuys===null?'—':modelSuccess.toFixed(2))+'</div></div>'+
+ '<div><small>P4 · Eligible first payout</small><div style="font-weight:700">'+(modelBuys===null?'—':modelSuccess.toFixed(2))+'</div></div>'+
  '<div><small>P3 · Funded qualified</small><div style="font-weight:700">'+(modelBuys===null?'—':modelPassed.toFixed(2))+'</div></div>'+
  '<div><small>P2 · First checkpoint</small><div style="font-weight:700">'+funnelCount(funnelP1)+'</div></div>'+
  '<div><small>P1 · Evaluations bought</small><div style="font-weight:700">'+funnelCount(modelBuys)+'</div></div>'+
@@ -1261,6 +1264,7 @@ const rows=funnelData.map(x=>'<tr><td style="text-align:left;white-space:nowrap"
  '<td style="text-align:right;font-variant-numeric:tabular-nums" title="New fees incurred at this stage for the modeled cohort">'+modelCash(x.newCost)+'</td>'+
  '<td style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums" title="Cumulative fees spent divided by expected accounts achieving this stage">'+x.unitCost+'</td></tr>').join('');
 $('[data-funnel]').innerHTML='<div class="jj-funnel-wrap">'+
+ topstepNoPassNote+
  '<div class="jj-funnel-note"><strong>'+(payoutMode?'Target '+payoutGoal+' projected payouts':replacementMode?'Target funded accounts':'Fixed cohort')+
  '</strong> · Start: '+funnelCount(modelBuys)+' evaluations · Fee: '+modelCash(modelBuys===null?null:modelBuys*v.accountCost)+'</div>'+reversePayoutPlan+
  '<div style="display:flex;justify-content:flex-end;margin:5px 0;position:relative"><details data-funnel-column-menu style="position:relative"><summary style="cursor:pointer;font-size:11px;padding:4px 8px;border:1px solid #8885;border-radius:6px">Columns</summary><div data-funnel-column-options style="position:absolute;right:0;z-index:20;background:var(--background,#232632);border:1px solid #8885;border-radius:7px;padding:8px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;min-width:200px"></div></details></div>'+
