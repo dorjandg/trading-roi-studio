@@ -855,6 +855,7 @@ const fv={targetMode:1,target:Math.max(.01,fn('target',4000)),target2:1,limit:Ma
 if(firmForPhases==='topstep'&&activeStrategy==='current')fv.fixedRisk=1000;else if(activeStrategy==='current')fv.ftmoFundedBuilder=true;Object.assign(fv,STRATEGIES[activeStrategy].fund);fv.manualRisks=manualConfig();fv.manualRRs=manualRRConfig();fv.contractSpecs=readContractSpecs();fv.roundTurnFee=0;fv.manualStage=3;fv.topstepOptionalDailyCap=firmForPhases==='topstep'&&box.querySelector('[data-topstep-daily-cap]').checked;let fp=0,fr=0;const fundedLeaves=[];
 if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'?calcTopstepFunded(path,fv):calc(path,fv);if(x.status!=='active'||x.steps.length>=fv.depth){fundedLeaves.push(x);if(x.status==='target')fp+=x.prob;if(x.status==='closed')fr+=x.prob;return}fw(path+'W');fw(path+'L')}fw('')}
 
+const fundedSimulationPass=fp;const tradeWin=Math.max(0,Math.min(1,v.winRate/100));const tradeLoss=1-tradeWin;const fundedCycleTarget=tradeWin+tradeLoss*tradeWin;const fundedCycleReset=tradeLoss*tradeLoss*tradeWin;const fundedThreeAttemptPass=fundedCycleTarget/(1-fundedCycleReset);if(firmForPhases==='topstep'&&phaseMode!=='evaluation')fp=fundedThreeAttemptPass;
 const cash=x=>'$'+x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 /* Statistics are calculated from terminal/censored path probabilities, not
    actual trade history. Do not confuse an observed maximum in enumerated paths
