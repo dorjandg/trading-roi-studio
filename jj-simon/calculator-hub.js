@@ -1161,8 +1161,11 @@ const planningEvaluationRate=firmType==='topstep'?planningP1Rate*planningP2Rate:
    Independent checkpoint planning rates are reported in a separate comparison. */
 const funnelP1=modelBuys===null?null:modelBuys*p1Pass;
 const funnelP3=funnelP1===null?null:funnelP1*p2Conditional;
-const funnelP2=funnelP3;
+
 const funnelP4=funnelP3===null?null:funnelP3*pFund;
+// Explicit accounting invariant: carried-state stage counts must reconcile.
+if(modelBuys!==null&&Number.isFinite(p2Conditional)&&Math.abs(funnelP3-modelBuys*pEval)>1e-6)
+ console.warn('Section 07 funnel accounting mismatch: P3 differs from evaluations × actual pass rate');
 /* Conditional stage pass rates and cumulative per-start probabilities are
    conceptually distinct. P3 admission is modeled as automatic after verification
    (or evaluation for Topstep). P4 is funded target success, not cash settlement. */
@@ -1241,7 +1244,7 @@ const reversePayoutPlan=payoutMode?'<div style="margin:8px 0;padding:8px 10px;bo
  '</div>'+
  '<div style="margin-top:6px;opacity:.8">P2 pass '+percent(p1Pass)+' · P3 pass '+percent(p2Conditional)+' · P4 funded pass '+percent(pFund)+
  ' · Funded failures '+(modelBuys===null?'—':Math.max(0,modelPassed-modelSuccess).toFixed(2))+
- ' · Evaluation failures '+(modelBuys===null?'—':Math.max(0,modelBuys-modelPassed).toFixed(2))+'</div>'+
+ ' · Not passed within modeled attempts (includes unresolved) '+(modelBuys===null?'—':Math.max(0,modelBuys-modelPassed).toFixed(2))+'</div>'+
  '<div style="opacity:.75;margin-top:4px">Reverse expected counts: P4 target ÷ funded pass = P3 funded; P3 ÷ second-checkpoint pass = P2; P2 ÷ first-checkpoint pass = P1 purchases. One evaluation fee per P1 account; Topstep P2/P3 are checkpoints in the same evaluation. Does not schedule the five simultaneous funded slots.</div></div>':'';
 const rows=funnelData.map(x=>'<tr><td style="text-align:left;white-space:nowrap" title="'+(x.phase.startsWith('P4')?'Projected payout after funded success, not confirmed cash withdrawal':'')+'">'+x.phase+'</td>'+
  '<td style="text-align:right;font-variant-numeric:tabular-nums">'+(x.count===null?'—':funnelCount(x.count))+'</td>'+
