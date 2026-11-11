@@ -30,7 +30,7 @@ function jjDisplayChapterTitle(m,position){
 const jjPreferredChapterOrder={
  'Learn Strategies':['master-strategy-encyclopedia','strategy-decision-tree','fair-price','bos-entry','winning-days','trading-rules-playbook'],
  'Account Management':['funded-plan','evaluation','account-management','scaling','portfolio-risk','prop-firm-reference'],
- 'Calculators & Simulations':['jj-kpi-reference','jj-plan-10k','jj-plan-20k','jj-plan-30k','jj-plan-100k','kpi-workbench','calc-acquisition','calc-prop-vs-live','calc-risk-scenarios','calc-math-bankroll'],
+ 'Calculators & Simulations':['calc-acquisition','jj-kpi-reference','jj-plan-10k','jj-plan-20k','jj-plan-30k','jj-plan-100k','kpi-workbench','calc-prop-vs-live','calc-risk-scenarios','calc-math-bankroll'],
  'Math & Research':['youtube-transcript-research','public-web-research','research-completion-dashboard','source-evidence-explorer','risk-math','kpi-library','kpi-workbench','source-coverage','critical-rules','research-verification-tracker','visual-evidence-worklist','course-conflict-register'],
  'Student Q&A':['student-qa-library','examples','live-qa-extract','live-qa-deep-dive','live-claim-verification']
 };
