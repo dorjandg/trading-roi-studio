@@ -8,7 +8,7 @@ if(!chapters.some(x=>x.slug===slug)){
  chapters.push({
    slug,
    group:'Calculators & Simulations',
-   title:'Evaluation Acquisition Calculator',
+   title:'Topstep & FTMO Evaluation Acquisition Calculator',
    intro:'Estimate the average cost of reaching a funded account and the chance of at least one funded payout pathway across multiple evaluation purchases. The editable calculator is directly below.',
    status:'Illustrative course-based probability model — assumptions editable',
    sections:[
@@ -46,7 +46,7 @@ if(!chapters.some(x=>x.slug===slug)){
 if(!curriculum.some(x=>x.slug===slug)){
  curriculum.push({
   slug,
-  title:'Evaluation Acquisition Calculator',
+  title:'Topstep & FTMO Evaluation Acquisition Calculator',
   status:'review',
   reason:'Interactive JJ-derived evaluation acquisition probability model; user assumptions and firm costs require verification.'
  });
