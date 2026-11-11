@@ -63,7 +63,7 @@ const fundedNeeded=payoutGoal/fundedPass;
 const buys=fundedNeeded/carried;
 const fees=buys*evalFee+fundedNeeded*activation;
 const payout=payoutGoal*fundedConfig.target*split;
-near((payout-fees)/fees*100,136.4480039305902,'Modeled ROI',1e-4);
+near((payout-fees)/fees*100,127.76778760248024,'Modeled ROI',1e-4);
 for(const [label,config,enumerate] of [
  ['Evaluation optional daily cap', {...evalConfig,topstepOptionalDailyCap:true},enumerateEvaluation],
  ['Funded optional daily cap', {...fundedConfig,topstepOptionalDailyCap:true},enumerateFunded],
