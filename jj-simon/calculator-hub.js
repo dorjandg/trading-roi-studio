@@ -210,18 +210,6 @@ const fundedManualPanel=document.createElement('div');
 fundedManualPanel.style.cssText='margin:8px 0;font-size:11px;min-width:0;max-width:100%';
 fundedManualPanel.innerHTML='<details><summary style="cursor:pointer;font-weight:600">P3 · Manual Risk & Contracts</summary>'+phaseCards(3)+'</details>';
 box.querySelector('[data-section="funded-settings"] .jj-risk-section-body').append(fundedManualPanel);
-const xfaOptions=document.createElement('div');
-xfaOptions.style.cssText='font-size:11px;margin:8px 0;min-width:0';
-xfaOptions.innerHTML='<details><summary style="font-weight:600;cursor:pointer">Topstep XFA · Payout Rules & Trading Costs</summary>'+
- '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:6px">'+
- '<label>Max request $<input data-xfa-cap type="number" min="0" step="100" value="2000" style="width:100%;box-sizing:border-box;padding:4px"></label>'+
- '<label>Required winning days<input data-xfa-days type="number" min="1" max="12" value="5" style="width:100%;box-sizing:border-box;padding:4px"></label>'+
- '<label>Minimum net day $<input data-xfa-day-min type="number" min="0" value="150" style="width:100%;box-sizing:border-box;padding:4px"></label>'+
- '<label>Slippage $/contract<input data-xfa-slippage type="number" min="0" step="0.1" value="0" style="width:100%;box-sizing:border-box;padding:4px"></label>'+
- '<label>Payout transfer fee $<input data-xfa-transfer-fee type="number" min="0" step="1" value="0" style="width:100%;box-sizing:border-box;padding:4px"></label></div>'+
- '<p style="font-size:10px;opacity:.72">Standard 50K XFA: 5 winning days of $150+, at least 50% of the account balance stays in the account, $2,000 default maximum request, plus 90/10 published profit split. Simplifying assumption: one closed trade per trading day, limited to your Funded depth. Fewer than 5 modeled funded trades means no Standard payout eligibility. Trading fees: MGC $1.92 and GC $4.32 round turn per contract. 50K XFA scaling: 20/30/50 micros (or 2/3/5 minis) as the prior EOD balance crosses $1,500 and $2,000. A wire/SWIFT payout may cost $30 (set transfer fee accordingly). A payout cap above $2,000 requires the applicable Topstep promotion or account-size/path entitlement. No payout is counted merely for hitting a trading profit target.</p></details>';
-box.querySelector('[data-section="funded-settings"] .jj-risk-section-body').append(xfaOptions);
-
 const contractSizing=()=>{for(const phase of [1,2,3]){
  const sym=box.querySelector('[data-contract-symbol="'+phase+'"]')?.value||'MGC';
  const dollarsPerPoint=sym==='GC'?100:10;
@@ -306,12 +294,6 @@ const topstepDailyToggle=document.createElement('label');
 topstepDailyToggle.style.cssText='display:flex;align-items:center;gap:6px;margin:5px 0;font-size:11px';
 topstepDailyToggle.innerHTML='<input data-topstep-daily-cap type="checkbox" style="width:15px;height:15px"> Apply optional daily loss cap to Topstep evaluation';
 consistencyPanel.after(topstepDailyToggle);
-const topstepTpToggle=document.createElement('label');
-topstepTpToggle.style.cssText='display:flex;gap:6px;align-items:center;font-size:11px;margin:5px 0';
-topstepTpToggle.innerHTML='<input data-topstep-checkpoint-tp type="checkbox" checked style="width:15px;height:15px"> Allow tick-rounded partial TP at $1,500 checkpoint (may reduce RR)';
-topstepDailyToggle.after(topstepTpToggle);
-topstepTpToggle.querySelector('input').addEventListener('change',()=>{saveSettings();renderRisk()});
-
 topstepDailyToggle.querySelector('input').addEventListener('change',()=>{saveSettings();renderRisk()});
 
 try{const saved=JSON.parse(localStorage.getItem('jj-risk-calculator09-sections-v1')||'{}');box.querySelectorAll('.jj-risk-section').forEach(d=>{if(typeof saved[d.dataset.section]==='boolean')d.open=saved[d.dataset.section]})}catch(e){}
@@ -496,7 +478,7 @@ const verifyManualPreset=settings=>{
 const capturePageSettings=()=>{
  const controls={};
  const selectors=['[data-k]','[data-funded]','[data-manual-mode]','[data-manual-risk]','[data-manual-rr]','[data-contract-symbol]','[data-contract-stop]',
-  '[data-consistency-enabled]','[data-consistency-limit]','[data-topstep-daily-cap]','[data-topstep-checkpoint-tp]','[data-xfa-cap]','[data-xfa-days]','[data-xfa-day-min]','[data-xfa-slippage]','[data-xfa-transfer-fee]','[data-account-count]','[data-funded-count]','[data-payout-count]',
+  '[data-consistency-enabled]','[data-consistency-limit]','[data-topstep-daily-cap]','[data-account-count]','[data-funded-count]','[data-payout-count]',
   '[data-parallel-accounts]','[data-signals-per-day]','[data-purchase-strategy]','[data-target-mode]'];
  for(const selector of selectors){
   box.querySelectorAll(selector).forEach(el=>{
@@ -510,7 +492,7 @@ const capturePageSettings=()=>{
 const restorePageSettings=pageSettings=>{
  if(!pageSettings||pageSettings.version!==2||!pageSettings.controls)return;
  const controls=pageSettings.controls;
- box.querySelectorAll('input[data-k],input[data-funded],input[data-manual-risk],input[data-manual-rr],input[data-contract-stop],select[data-contract-symbol],select[data-manual-mode],input[data-consistency-enabled],input[data-consistency-limit],input[data-topstep-daily-cap],input[data-topstep-checkpoint-tp],input[data-xfa-cap],input[data-xfa-days],input[data-xfa-day-min],input[data-xfa-slippage],input[data-xfa-transfer-fee],input[data-account-count],input[data-funded-count],input[data-payout-count],input[data-parallel-accounts],input[data-signals-per-day],select[data-purchase-strategy],input[data-target-mode]').forEach(el=>{
+ box.querySelectorAll('input[data-k],input[data-funded],input[data-manual-risk],input[data-manual-rr],input[data-contract-stop],select[data-contract-symbol],select[data-manual-mode],input[data-consistency-enabled],input[data-consistency-limit],input[data-topstep-daily-cap],input[data-account-count],input[data-funded-count],input[data-payout-count],input[data-parallel-accounts],input[data-signals-per-day],select[data-purchase-strategy],input[data-target-mode]').forEach(el=>{
   const key=Object.keys(el.dataset).sort().map(k=>k+':'+el.dataset[k]).join('|');
   if(!Object.prototype.hasOwnProperty.call(controls,key))return;
   const value=controls[key];
@@ -598,9 +580,7 @@ function calcTopstep(path,v){
  for(const c of path){
   if(status!=='active'||stageTrades>=attemptsPerStage)break;
   const day=stage,checkpointStage=stage;
-  const dailyLosses=steps.filter(t=>t.checkpointStage===stage&&t.c==='L').length;
-  if(dailyLosses>=Math.max(1,Number(v.tradesPerDay)||100)){status='daily-blocked';break}
-  const required=stage===1?checkpointTarget-stagePnl:Math.max(checkpointTarget-stagePnl,v.target-total,dailyTotals[1]/rate-total);
+  const required=stage===1?checkpointTarget-stagePnl:Math.max(v.target,checkpointTarget/rate)-total;
   const room=total-trailingFloor,dailyRoom=v.topstepOptionalDailyCap?v.dailyLimit+stagePnl:Infinity;
   if(room<=v.floor+1e-7){status='closed';break}
   if(dailyRoom<=1e-7||required<=1e-7){status='daily-blocked';break;}
@@ -613,36 +593,12 @@ function calcTopstep(path,v){
   const rrOverride=v.manualRRs?.[checkpointStage]?.[Math.min(3,streak)];
   const rr=manual&&Number(rrOverride)>0?Number(rrOverride):v.rr;
   const planned=manual?manual[Math.min(3,streak)]:
-   v.riskModel==='fixed'?(v.baseRisk||v.fixedRisk||Math.max(0,required/rr)):
+   v.riskModel==='fixed'?v.baseRisk:
    v.riskModel==='half'?Math.max(0,required/rr/2):
    v.fixedRisk||v.baseRisk||Math.max(0,required/rr);
-  const budget=Math.max(0,Math.min(planned,Math.max(0,room-v.floor),dailyRoom));
-  const spec=v.topstepContractSpecs?.[stage];
-  const symbol=spec?.symbol||'MGC';
-  const perPoint=symbol==='GC'?100:10;
-  const feeEach=(symbol==='GC'?4.32:1.92)+Math.max(0,v.topstepSlip||0);
-  const move=Math.max(.01,spec?.stops?.[Math.min(3,streak)]||5);
-  const units=spec?Math.min(symbol==='GC'?5:50,Math.floor(budget/(move*perPoint+feeEach))):0;
-  const fee=spec?units*feeEach:0;
-  const risk=spec?units*move*perPoint:budget;
+  const risk=Math.max(0,Math.min(planned,Math.max(0,room-v.floor),dailyRoom,required/rr));
   if(risk<=1e-7){status='daily-blocked';break;}
-  // A discretionary partial take-profit can stop a winning trade as soon as
-  // the next checkpoint's NET profit is reached. RR remains an upper bound.
-  // Without this option, the fixed RR trade is taken in full, even if it
-  // overshoots the required amount and fails a strict 50% two-day target.
-  const fullDelta=(c==='W'?risk*rr:-risk)-fee;
-  const remainingNet=stage===1?Math.max(0,checkpointTarget-stagePnl):
-    Math.max(0,checkpointTarget-stagePnl,v.target-total,dailyTotals[1]/rate-total);
-  // MGC tick = $1/contract, GC tick = $10/contract.
-  // Round required gross gain UP to a tradable tick without exceeding
-  // the chosen maximum reward for this trade.
-  const tickGain=(symbol==='GC'?10:1)*units;
-  const ticksNeeded=tickGain>0?Math.ceil(Math.max(0,remainingNet+fee-1e-8)/tickGain):Infinity;
-  const tickDelta=ticksNeeded*tickGain-fee;
-  const partial=c==='W'&&v.topstepCheckpointTP&&tickGain>0&&
-   tickDelta>=remainingNet-1e-7&&tickDelta<=fullDelta+1e-7;
-  const delta=partial?tickDelta:fullDelta;
-  const realizedRR=c==='W'?(delta+fee)/risk:rr;
+  const delta=c==='W'?risk*rr:-risk;
   total+=delta;stagePnl+=delta;stageTrades++;
   dailyTotals[day]=stagePnl;
   prob*=c==='W'?v.winRate/100:1-v.winRate/100;
@@ -650,13 +606,13 @@ function calcTopstep(path,v){
   let passed=false;
   if(status==='active'&&c==='W'){
    if(stage===1&&stagePnl>=checkpointTarget-1e-7)passed=true;
-   else if(stage===2&&stagePnl>=checkpointTarget-1e-7&&total>=v.target-1e-7){
+   else if(stage===2&&total>=v.target-1e-7){
     const best=Math.max(dailyTotals[1],dailyTotals[2]);
     if(best<=total*rate+1e-7){passed=true;status='target'}
    }
   }
   steps.push({c,risk,rr,pnl:total,stage:checkpointStage,checkpointStage,
-   stagePnl,passed,day,dayPnl:stagePnl,fees:fee,contracts:units,realizedRR,partialTP:partial,lossesToday:0,
+   stagePnl,passed,day,dayPnl:stagePnl,lossesToday:0,
    dailyLeft:Math.max(0,v.dailyLimit+stagePnl)});
   if(status==='active'&&passed&&stage===1){
    peakEOD=Math.max(peakEOD,total);
@@ -671,28 +627,6 @@ function calcTopstep(path,v){
      total-trailingFloor<=v.floor+1e-7||
      (stage===2&&Math.max(v.target,checkpointTarget/rate)-total<=1e-7)))
    status='daily-blocked';
- // If no next whole contract can be placed, stop before any further W/L
- // path expansion. This avoids duplicating probability in zero-volume branches.
- if(status==='active'&&steps.filter(t=>t.checkpointStage===stage&&t.c==='L').length>=Math.max(1,Number(v.tradesPerDay)||100))status='daily-blocked';
- if(status==='active'&&v.topstepContractSpecs&&stageTrades<attemptsPerStage){
-  const nextSpec=v.topstepContractSpecs[stage];
-  if(nextSpec){
-   let nextStreak=0;
-   for(let i=steps.length-1;i>=0;i--){if(steps[i].checkpointStage!==stage||steps[i].c==='W')break;nextStreak++}
-   const tier=Math.min(3,nextStreak);
-   const nextRR=v.manualRisks?.[stage]&&Number(v.manualRRs?.[stage]?.[tier])>0?Number(v.manualRRs[stage][tier]):v.rr;
-   const goal=stage===1?checkpointTarget-stagePnl:Math.max(checkpointTarget-stagePnl,v.target-total,dailyTotals[1]/rate-total);
-   const room=Math.max(0,total-trailingFloor-v.floor);
-   const dayRoom=v.topstepOptionalDailyCap?v.dailyLimit+stagePnl:Infinity;
-   const manual=v.manualRisks?.[stage];
-   const planned=manual?manual[tier]:v.riskModel==='fixed'?(v.baseRisk||v.fixedRisk||Math.max(0,goal/nextRR)):v.riskModel==='half'?Math.max(0,goal/nextRR/2):v.fixedRisk||v.baseRisk||Math.max(0,goal/nextRR);
-   const budget=Math.max(0,Math.min(planned,room,dayRoom));
-   const value=nextSpec.symbol==='GC'?100:10;
-   const fee=(nextSpec.symbol==='GC'?4.32:1.92)+Math.max(0,v.topstepSlip||0);
-   const move=Math.max(.01,nextSpec.stops[tier]||5);
-   if(budget<move*value+fee-1e-7)status='daily-blocked';
-  }
- }
  const checkpoint=steps.some(t=>t.checkpointStage===1&&t.passed);
  return {path:steps.map(t=>t.c).join(''),pnl:total,stage,stagePnl,
   left:total-trailingFloor,status,topstepCheckpoint:checkpoint,
@@ -701,64 +635,6 @@ function calcTopstep(path,v){
   risk:Math.max(0,total-trailingFloor),steps,prob,day:stage,
   dailyLeft:Math.max(0,v.dailyLimit+stagePnl),dayPnl:stagePnl,lossesToday:0,
   checkpointAttempts:stageTrades,checkpointLimit:attemptsPerStage,trailingFloor};
-}
-/* Standard 50K XFA: funded payout eligibility. One model trade per day.
-   Net profit, qualifying winning days, MLL, and capped requests are modeled;
-   position scaling and market slippage remain separate uncertainties. */
-function calcTopstepFunded(path,v){
- const requiredDays=Math.max(1,Math.min(12,v.requiredWinningDays||5));
- const minWinningDay=Math.max(0,v.minWinningDay??150);
- const maxDepth=Math.max(1,Math.min(12,Math.floor(v.depth)));
- const contractValue=v.symbol==='GC'?100:10,roundTurn=v.symbol==='GC'?4.32:1.92;
- const move=Math.max(.01,v.stopMove||5);
- const costPerContract=roundTurn+Math.max(0,v.slippagePerContract||0);
- let pnl=0,prob=1,floor=-v.limit,peak=0,winDays=0,steps=[],fees=0,status='active';
- for(const c of path){
-  if(status!=='active'||steps.length>=maxDepth)break;
-  const room=pnl-floor;
-  if(room<=v.floor+1e-7){status='closed';break}
-  let streak=0;for(let i=steps.length-1;i>=0;i--){if(steps[i].c==='W')break;streak++}
-  const manual=v.manualRisks?.[3],rrValue=v.manualRRs?.[3]?.[Math.min(3,streak)];
-  const rr=manual&&Number(rrValue)>0?Number(rrValue):v.rr;
-  const wins=steps.some(x=>x.c==='W');
-  const desired=manual?manual[Math.min(3,streak)]:
-    v.ftmoFundedBuilder?(wins?450:150):
-    v.riskModel==='fixed'?(v.baseRisk||v.fixedRisk||1000):
-    v.fixedRisk||Math.max(1,Math.min(v.target-pnl,1000)/rr);
-  // 50K XFA scaling: 2/3/5 mini equivalents at EOD balances
-  // below 1500, 1500-1999.99, and 2000+, respectively.
-  // A micro is 0.1 mini equivalent; every modeled trade is a new session.
-  const maxMinis=pnl>=2000?5:pnl>=1500?3:2;
-  const maxUnits=maxMinis*(v.symbol==='GC'?1:10);
-  const units=Math.min(maxUnits,Math.max(0,Math.floor(Math.min(desired,room-v.floor)/(move*contractValue+costPerContract))));
-  if(!units){status='daily-blocked';break}
-  const risk=units*move*contractValue,fee=units*costPerContract;
-  const delta=(c==='W'?risk*rr:-risk)-fee;
-  pnl+=delta;fees+=fee;prob*=c==='W'?v.winRate/100:1-v.winRate/100;
-  if(delta>=minWinningDay)winDays++;
-  steps.push({c,risk,rr,pnl,stage:3,checkpointStage:3,stagePnl:pnl,passed:false,day:steps.length+1,dayPnl:delta,fees:fee,contracts:units,dailyLeft:0});
-  if(pnl<=floor+1e-7){status='closed';break}
-  peak=Math.max(peak,pnl);
-  floor=Math.min(0,Math.max(floor,peak-v.limit));
-  if(pnl>=v.target-1e-7&&winDays>=requiredDays&&Math.min(v.payoutCap,pnl*.5)>=125){
-   status='target';steps[steps.length-1].passed=true;break;
-  }
- }
- // Resolve paths that cannot place their NEXT contract before recursing.
- if(status==='active'&&steps.length<maxDepth){
-  let streak=0;for(let i=steps.length-1;i>=0;i--){if(steps[i].c==='W')break;streak++}
-  const manual=v.manualRisks?.[3];
-  const wins=steps.some(x=>x.c==='W');
-  const nextRisk=manual?manual[Math.min(3,streak)]:
-    v.ftmoFundedBuilder?(wins?450:150):
-    v.riskModel==='fixed'?(v.baseRisk||v.fixedRisk||1000):
-    v.fixedRisk||Math.max(1,Math.min(v.target-pnl,1000)/v.rr);
-  const capacity=Math.min(nextRisk,pnl-floor-v.floor);
-  if(capacity<move*contractValue+costPerContract-1e-7)status='daily-blocked';
- }
- const gross=status==='target'?Math.min(v.payoutCap,pnl*.5):0;
- return {path:steps.map(x=>x.c).join(''),pnl,stage:3,stagePnl:pnl,left:pnl-floor,status,steps,prob,
-  winDays,fees,eligibleGross:gross,day:steps.length,dayPnl:steps.at(-1)?.dayPnl||0,dailyLeft:0,lossesToday:0,risk:0,trailingFloor:floor};
 }
 function calc(path,v){
 if(v.topstepConsistency)return calcTopstep(path,v);
@@ -803,16 +679,8 @@ const scenarioFinished=(x,cfg,requestedPath='')=>x.status!=='active'||
   x.steps.length>=cfg.depth);
 function renderRisk(){
 contractSizing();
-const firmForPhases=firmBar.querySelector('[data-firm-type]').value;xfaOptions.style.display=firmForPhases==='topstep'?'':'none';const expectedPhases=firmForPhases==='ftmo'?'2':'1';if($('[data-target-mode]').value!==expectedPhases)$('[data-target-mode]').value=expectedPhases;
-const v=vals(),leaves=[],allPaths=[];Object.assign(v,STRATEGIES[activeStrategy].eval);v.manualRisks=manualConfig();v.manualRRs=manualRRConfig();if(firmForPhases==='topstep'){
- v.topstepContractSpecs={};
- for(const phase of [1,2]){
-  v.topstepContractSpecs[phase]={symbol:box.querySelector('[data-contract-symbol="'+phase+'"]')?.value||'MGC',
-   stops:[1,2,3,4].map(t=>Math.max(.01,Number(box.querySelector('[data-contract-stop="'+phase+'-'+t+'"]')?.value)||5))};
- }
- v.topstepSlip=Math.max(0,Number(box.querySelector('[data-xfa-slippage]')?.value)||0);
- v.topstepCheckpointTP=box.querySelector('[data-topstep-checkpoint-tp]').checked;
- v.topstepOptionalDailyCap=box.querySelector('[data-topstep-daily-cap]').checked;v.topstepConsistency=true;if(activeStrategy==='current')v.fixedRisk=1000;v.consistencyRate=Math.max(1,Math.min(100,Number(box.querySelector('[data-consistency-limit]')?.value)||55));}
+const firmForPhases=firmBar.querySelector('[data-firm-type]').value;const expectedPhases=firmForPhases==='ftmo'?'2':'1';if($('[data-target-mode]').value!==expectedPhases)$('[data-target-mode]').value=expectedPhases;
+const v=vals(),leaves=[],allPaths=[];Object.assign(v,STRATEGIES[activeStrategy].eval);v.manualRisks=manualConfig();v.manualRRs=manualRRConfig();if(firmForPhases==='topstep'){v.topstepOptionalDailyCap=box.querySelector('[data-topstep-daily-cap]').checked;v.topstepConsistency=true;if(activeStrategy==='current')v.fixedRisk=1000;v.consistencyRate=Math.max(1,Math.min(100,Number(box.querySelector('[data-consistency-limit]')?.value)||55));}
 function walk(path){const x=calc(path,v);if(path&&allPaths.length<4000)allPaths.push(x);if(scenarioFinished(x,v,path)){leaves.push(x);return}walk(path+'W');walk(path+'L')}
 walk('');
 const counts={target:0,closed:0,active:0,'daily-blocked':0};leaves.forEach(x=>counts[x.status]++);
@@ -846,27 +714,9 @@ const kpiTooltip=(label,value,help)=>'<div class="jj-kpi-help" tabindex="0" aria
 const mostLikely=leaves.reduce((best,x)=>!best||x.prob>best.prob?x:best,null);
 const fn=(k,d)=>{const x=Number(box.querySelector('[data-funded="'+k+'"]').value);return Number.isFinite(x)?x:d};
 const fv={targetMode:1,target:Math.max(.01,fn('target',4000)),target2:1,limit:Math.max(.01,fn('limit',2000)),dailyLimit:Math.max(.01,fn('dailyLimit',1000)),tradesPerDay:Math.max(1,Math.min(100,Math.floor(fn('tradesPerDay',3)))),rr:Math.max(.01,fn('rr',3)),floor:Math.max(0,fn('floor',100)),winRate:Math.max(0,Math.min(100,fn('winRate',50))),depth:Math.max(1,Math.min(12,Math.floor(fn('depth',6))))};
-if(firmForPhases==='topstep'&&activeStrategy==='current')fv.fixedRisk=1000;else if(activeStrategy==='current')fv.ftmoFundedBuilder=true;Object.assign(fv,STRATEGIES[activeStrategy].fund);fv.manualRisks=manualConfig();fv.manualRRs=manualRRConfig();fv.manualStage=3;
-fv.xfaStandard=firmForPhases==='topstep';
-if(fv.xfaStandard){
- const num=(q,d)=>{const n=Number(box.querySelector(q)?.value);return Number.isFinite(n)?n:d};
- fv.requiredWinningDays=Math.max(1,Math.min(12,Math.floor(num('[data-xfa-days]',5))));
- fv.minWinningDay=Math.max(0,num('[data-xfa-day-min]',150));
- fv.payoutCap=Math.max(0,num('[data-xfa-cap]',2000));
- fv.transferFee=Math.max(0,num('[data-xfa-transfer-fee]',0));
- fv.slippagePerContract=Math.max(0,num('[data-xfa-slippage]',0));
- fv.symbol=box.querySelector('[data-contract-symbol="3"]')?.value||'MGC';
- fv.stopMove=Math.max(.01,Number(box.querySelector('[data-contract-stop="3-1"]')?.value)||5);
-}
-let fp=0,fr=0;const fundedLeaves=[];
-if(phaseMode!=='evaluation'){function fw(path){const x=fv.xfaStandard?calcTopstepFunded(path,fv):calc(path,fv);if(x.status!=='active'||x.steps.length>=fv.depth||x.steps.length<path.length){fundedLeaves.push(x);if(x.status==='target')fp+=x.prob;if(x.status==='closed')fr+=x.prob;return}fw(path+'W');fw(path+'L')}fw('')}
+if(firmForPhases==='topstep'&&activeStrategy==='current')fv.fixedRisk=1000;else if(activeStrategy==='current')fv.ftmoFundedBuilder=true;Object.assign(fv,STRATEGIES[activeStrategy].fund);fv.manualRisks=manualConfig();fv.manualRRs=manualRRConfig();fv.manualStage=3;let fp=0,fr=0;const fundedLeaves=[];
+if(phaseMode!=='evaluation'){function fw(path){const x=calc(path,fv);if(x.status!=='active'||x.steps.length>=fv.depth){fundedLeaves.push(x);if(x.status==='target')fp+=x.prob;if(x.status==='closed')fr+=x.prob;return}fw(path+'W');fw(path+'L')}fw('')}
 
-const fundedDepthNotice=fv.xfaStandard&&fv.depth<fv.requiredWinningDays?
- '<div style="font-size:11px;margin:6px 0">Funded depth '+fv.depth+' allows fewer modeled days than the '+fv.requiredWinningDays+' qualifying winning days required. Payout success is 0% within this horizon.</div>':'';
-const fundedGrossPerAttempt=fv.xfaStandard?fundedLeaves.reduce((sum,x)=>sum+x.prob*(x.eligibleGross||0),0):fp*fv.target;
-const payoutGrossPerSuccess=fp>0?fundedGrossPerAttempt/fp:0;
-const netPayoutPerFunded=Math.max(0,fundedGrossPerAttempt*Math.max(0,Math.min(1,Number(box.querySelector('[data-funded="split"]')?.value||0)/100))-fp*(fv.xfaStandard?fv.transferFee:0));
-const netPayoutPerSuccess=fp>0?netPayoutPerFunded/fp:0;
 const cash=x=>'$'+x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 /* Statistics are calculated from terminal/censored path probabilities, not
    actual trade history. Do not confuse an observed maximum in enumerated paths
@@ -933,9 +783,7 @@ tradeStatsPanel.querySelector('[data-trade-stats-content]').innerHTML=
 if(compareSection.open){const sim=cfg=>{let hit=0,fail=0,ev=0;function go(p){const x=calc(p,cfg);if(scenarioFinished(x,cfg,p)){if(x.status==='target')hit+=x.prob;if(x.status==='closed')fail+=x.prob;ev+=x.prob*x.pnl;return}go(p+'W');go(p+'L')}go('');return [hit*100,fail*100,ev]};const phases=firmForPhases==='ftmo'?[[1,v.target],[2,v.target2],[3,fv.target]]:[[1,v.target],[3,fv.target]];let rows='';for(const item of phases){const phase=item[0],target=item[1],base=phase===3?fv:v;const common=Object.assign({},base,{targetMode:1,target:target,manualStage:phase,topstepConsistency:phase===1&&firmForPhases==='topstep'});const auto=sim(Object.assign({},common,{manualRisks:{},manualRRs:{}}));const manual=sim(Object.assign({},common,{manualRisks:manualConfig(),manualRRs:manualRRConfig()}));let phaseRows='';for(let i=0;i<3;i++){const diff=manual[i]-auto[i];phaseRows+='<tr><td>'+['Target %','Failure %','EV'][i]+'</td><td>'+manual[i].toFixed(2)+'</td><td>'+auto[i].toFixed(2)+'</td><td class="'+((i===1?diff<0:diff>0)?'jj-risk-win':(i===1?diff>0:diff<0)?'jj-risk-loss':'')+'">'+diff.toFixed(2)+'</td></tr>';;}rows+='<details style="margin:6px 0;padding:8px;border:1px solid #8884;border-radius:7px"><summary style="cursor:pointer;font-weight:700">P'+phase+' · Target '+manual[0].toFixed(1)+'% / '+auto[0].toFixed(1)+'%</summary><div style="overflow-x:auto"><table style="font-size:11px;white-space:nowrap"><thead><tr><th>Metric</th><th>Manual</th><th>Auto</th><th>Δ</th></tr></thead><tbody>'+phaseRows+'</tbody></table></div></details>'; }comparePanel.querySelector('[data-compare]').innerHTML='<div style="font-size:11px;opacity:.7">Green = better · Red = worse · Δ = Manual − Auto</div>'+rows;}
 const nn=Math.max(1,Math.min(100,Math.floor(Number($('[data-account-count]').value)||10)));
 const totalFees=nn*v.accountCost,expectedFunded=nn*probability,activationFee=Math.max(0,fn('activation',0)),splitPct=Math.max(0,Math.min(1,fn('split',80)/100));
-const xfaSplitNotice=fv.xfaStandard&&Math.abs(Number(box.querySelector('[data-funded="split"]')?.value||0)-90)>0.01?
- '<div style="margin:6px 0;font-size:11px;opacity:.8">Topstep currently publishes a 90/10 split. Your preset uses '+Number(box.querySelector('[data-funded="split"]')?.value||0).toFixed(1)+'%; the calculator preserves that custom setting. Change it to 90% for the published terms.</div>':'';
-const grossPayout=expectedFunded*netPayoutPerFunded,activationFees=expectedFunded*activationFee,netCash=grossPayout-totalFees-activationFees;
+const grossPayout=expectedFunded*fp*fv.target*splitPct,activationFees=expectedFunded*activationFee,netCash=grossPayout-totalFees-activationFees;
 
 let mathPanel=box.querySelector('[data-ch09-math]');
 if(!mathPanel){
@@ -1020,10 +868,10 @@ const replacementPurchases=evalPass>0&&(!payoutMode||fp>0)?allocationTarget/eval
 const replacementFailures=replacementPurchases===null?null:replacementPurchases-allocationTarget;
 const replacementEvalFees=replacementPurchases===null?null:replacementPurchases*v.accountCost;
 const replacementActivationFees=allocationTarget*activationFee;
-const replacementExpectedPayout=allocationTarget*netPayoutPerFunded;
+const replacementExpectedPayout=allocationTarget*fp*fv.target*splitPct;
 const replacementTotalFees=replacementEvalFees===null?null:replacementEvalFees+replacementActivationFees;
 const replacementNet=replacementTotalFees===null?null:replacementExpectedPayout-replacementTotalFees;
-const modelBuys=replacementMode?replacementPurchases:nn;const modelPassed=replacementMode?(replacementPurchases===null?0:allocationTarget):expectedFunded;const modelFailed=modelBuys===null?null:Math.max(0,modelBuys-modelPassed);const modelFees=modelBuys===null?null:modelBuys*v.accountCost+modelPassed*activationFee;const modelPayout=modelPassed*netPayoutPerFunded;const modelNet=modelFees===null?null:modelPayout-modelFees;const modelRoi=modelFees>0?100*modelNet/modelFees:null;const modelSuccess=modelBuys===null?0:modelPassed*fp;const modelPct=modelBuys>0?100*modelPassed/modelBuys:0;const modelCash=x=>x===null?'—':cash(x);const modelPossible=modelBuys!==null;const resultGroup=(heading,cards)=>'<div style="min-width:0;margin:5px 0 9px"><div style="font-size:11px;font-weight:700;opacity:.8;margin:0 0 5px">'+heading+'</div><div class="jj-risk-results-grid">'+cards+'</div></div>';
+const modelBuys=replacementMode?replacementPurchases:nn;const modelPassed=replacementMode?(replacementPurchases===null?0:allocationTarget):expectedFunded;const modelFailed=modelBuys===null?null:Math.max(0,modelBuys-modelPassed);const modelFees=modelBuys===null?null:modelBuys*v.accountCost+modelPassed*activationFee;const modelPayout=modelPassed*fp*fv.target*splitPct;const modelNet=modelFees===null?null:modelPayout-modelFees;const modelRoi=modelFees>0?100*modelNet/modelFees:null;const modelSuccess=modelBuys===null?0:modelPassed*fp;const modelPct=modelBuys>0?100*modelPassed/modelBuys:0;const modelCash=x=>x===null?'—':cash(x);const modelPossible=modelBuys!==null;const resultGroup=(heading,cards)=>'<div style="min-width:0;margin:5px 0 9px"><div style="font-size:11px;font-weight:700;opacity:.8;margin:0 0 5px">'+heading+'</div><div class="jj-risk-results-grid">'+cards+'</div></div>';
 
 // Section 04 must consume the same purchase-strategy cohort as Sections 05/07.
 // Never use the raw fixed-purchase input as the number of funded attempts.
@@ -1032,15 +880,15 @@ const fundedAttempts=modelBuys===null?null:modelPassed;
 const fundedSuccesses=modelBuys===null?null:modelSuccess;
 const fundedFailures=modelBuys===null?null:Math.max(0,fundedAttempts-fundedSuccesses);
 const fundedCards=
- metricFund('Funded pass',(fp*100).toFixed(2)+'%','For Topstep XFA Standard: chance to meet the profit target AND qualifying winning days before loss or depth cutoff. One trade/day assumed.')+
+ metricFund('Funded pass',(fp*100).toFixed(2)+'%','Probability one funded account reaches its profit target within the selected trading depth.')+
  metricFund('Funded ruin',(fr*100).toFixed(2)+'%','Probability one funded account breaches the modeled loss allowance within the trade depth.')+
  metricFund('Funded unresolved',(Math.max(0,1-fp-fr)*100).toFixed(2)+'%','Probability one funded account remains unresolved within the trade depth.')+
  metricFund('Funded attempts',fundedAttempts===null?'—':fundedAttempts.toFixed(2),'Expected cumulative funded accounts entering P3 under the selected Section 07 purchase strategy; not the number active simultaneously.')+
  metricFund('Expected funded successes',fundedSuccesses===null?'—':fundedSuccesses.toFixed(2),'Expected accounts reaching the funded profit target, consistent with Section 07 P4.')+
  metricFund('Expected funded failures',fundedFailures===null?'—':fundedFailures.toFixed(2),'Expected funded attempts that do not reach the profit target within the modeled trade depth; includes both ruin and unresolved paths.')+
- metricFund('Expected payout / funded',cash(netPayoutPerFunded),'Probability-weighted payout projection per funded attempt, before purchase and activation fees.')+
- metricFund('Payout per success',cash(netPayoutPerSuccess),'Modeled eligible payout after 50%-balance restriction, payout cap and profit split; trading fees are deducted from path P&L.');
-$('[data-funded-results]').innerHTML='<div class="jj-risk-results-grid">'+fundedCards+'</div>'+xfaSplitNotice+fundedDepthNotice+
+ metricFund('Expected payout / funded',cash(fp*fv.target*splitPct),'Probability-weighted payout projection per funded attempt, before purchase and activation fees.')+
+ metricFund('Payout per success',cash(fv.target*splitPct),'Projected cash payout from one funded account that reaches its profit target, after profit split, before fees.');
+$('[data-funded-results]').innerHTML='<div class="jj-risk-results-grid">'+fundedCards+'</div>'+
  '<div style="font-size:11px;opacity:.75;margin:5px 0">Using <strong>'+(
   payoutMode?'Maximum Funded Limit Payout':replacementMode?'Reach Funded Limit':'Fixed Purchases'
  )+'</strong>: '+(fundedAttempts===null?'—':fundedAttempts.toFixed(2))+' expected funded attempts × '+(fp*100).toFixed(2)+
@@ -1055,7 +903,7 @@ resultGroup('01 · Results',
  metricFund('Expected funded',modelPossible?modelPassed.toFixed(2):'—','Expected funded accounts under the selected purchase strategy.')+
  metricFund('Successful payouts',modelPossible?modelSuccess.toFixed(2):'—','Expected first payout successes.'))+
 resultGroup('02 · Payouts',
- metricFund('Payout / success',cash(netPayoutPerSuccess),'First payout after a successful funded target, after the configured split.')+
+ metricFund('Payout / success',cash(fv.target*splitPct),'First payout after a successful funded target, after the configured split.')+
  metricFund('Expected payout cash',modelPossible?cash(modelPayout):'—','Probability-weighted total first payout cash after the configured split.'))+
 resultGroup('03 · Spending',
  metricFund('Evaluation buys',modelPossible?modelBuys.toFixed(2):'—','Expected evaluation purchases, including replacements when enabled.')+
@@ -1066,7 +914,6 @@ resultGroup('04 · Profit & ROI',
  metricFund('Net ROI',modelRoi===null?'—':modelRoi.toFixed(1)+'%','Expected net profit divided by expected total fees.'));
 
 const optimizeRiskStrategies=()=>{
- if(firmType==='topstep')return '<p style="font-size:11px">Topstep optimization is temporarily disabled pending comparison-engine reconciliation with payout eligibility and trading costs.</p>';
  const test=cfg=>{let pass=0,unresolved=0;const walk=p=>{const x=calc(p,cfg);if(scenarioFinished(x,cfg,p)){if(x.status==='target')pass+=x.prob;else if(x.status==='active')unresolved+=x.prob;return}walk(p+'W');walk(p+'L')};walk('');return {pass,unresolved}};
  const consistency=firmType==='topstep'?Math.max(1,Math.min(100,Number(box.querySelector('[data-consistency-limit]')?.value)||55)):undefined;
  const evalBase={...v,topstepConsistency:firmType==='topstep',consistencyRate:consistency,fixedRisk:undefined};
@@ -1110,7 +957,6 @@ const optimizeRiskStrategies=()=>{
  return '<div style="font-size:11px;margin:7px 0"><b>Advanced scenarios · '+eligible.length+' qualifying / '+results.length+' tested pairs</b><p style="margin:4px 0;opacity:.8">Current edited parameters. Dynamic models recalculate target-based risk after each win/loss, subject to a cap and remaining drawdown reserve. Fixed models included for comparison. Saved presets unchanged.</p><div style="overflow-x:auto"><table style="font-size:11px"><thead><tr><th>#</th><th>Challenge</th><th>Funded</th><th>Eval pass</th><th>Fund pass</th><th>Net</th><th>ROI</th></tr></thead><tbody>'+(rows||'<tr><td colspan="7">No qualifying strategies. Review RR, trade depth and limits.</td></tr>')+'</tbody></table></div><small style="opacity:.75">Exploratory model, max 12 trades/stage. No payout calendar, correlated trades, concurrency or complete trailing drawdown simulation. Unresolved paths are not counted as passes.</small></div>';
 };
 const strategyComparison=()=>{
- if(firmType==='topstep')return '<p style="font-size:11px;opacity:.75">Topstep strategy rankings are paused until the candidate paths use the audited XFA winning-day and payout-cap model. Section 07 uses the corrected model.</p>';
  const candidates=[['current','Dynamic + buffer','Target ÷ RR','150 until first win, then 450',{},{}],['fixedlow','Fixed low','250 every trade','150 every trade',{riskModel:'fixed',baseRisk:250},{riskModel:'fixed',baseRisk:150}],['half','Half-target','Half remaining target ÷ RR','150 every trade',{riskModel:'half'},{riskModel:'fixed',baseRisk:150}],['recovery','Recovery + buffer','250 + 50% per phase loss; cap 450','150 until first win, then 450',{riskModel:'recovery'},{riskModel:'buffer'}],['fixedhigh','Fixed high','350 every trade','450 every trade',{riskModel:'fixed',baseRisk:350},{riskModel:'fixed',baseRisk:450}]];
  const run=cfg=>{let pass=0,fail=0,unresolved=0,success=[];const walk=p=>{const x=calc(p,cfg);if(scenarioFinished(x,cfg,p)){if(x.status==='target'){pass+=x.prob;success.push(x)}else if(x.status==='closed')fail+=x.prob;else unresolved+=x.prob;return}walk(p+'W');walk(p+'L')};walk('');success.sort((a,b)=>b.prob-a.prob);return {pass,fail,unresolved,success}};
  const rows=candidates.map(([id,name,evalRule,fundRule,ev,fu])=>{const e=run({...v,riskModel:undefined,baseRisk:undefined,fixedRisk:undefined,...ev}),u=run({...fv,riskModel:undefined,baseRisk:undefined,fixedRisk:undefined,ftmoFundedBuilder:undefined,...fu}),buys=replacementMode?(e.pass?allocationTarget/e.pass:null):nn,funded=buys===null?null:replacementMode?allocationTarget:buys*e.pass,fees=buys===null?null:buys*v.accountCost+funded*activationFee,payout=fees===null?null:funded*u.pass*fv.target*splitPct,net=fees===null?null:payout-fees;return {id,name,evalRule,fundRule,e,u,fees,payout,net,roi:fees>0?100*net/fees:null}});
@@ -1170,9 +1016,6 @@ const p1Pass=hasVerification?
 const funnelCount=count=>modelBuys===null?'—':count.toFixed(2);
 const percent=value=>Number.isFinite(value)?(100*Math.max(0,Math.min(1,value))).toFixed(1)+'%':'—';
 const p2Conditional=p1Pass>0?Math.min(1,pEval/p1Pass):null;
-const topstepNoPassNote=firmType==='topstep'&&p1Pass>0&&pEval<=1e-12?
- '<div style="font-size:11px;line-height:1.5;margin:6px 0;padding:7px;border:1px solid #b78a4280;border-radius:6px">P3 is unreachable within the selected two-day paths and trade limits. At a strict 50% consistency threshold, two net-profit days must finish equally; commissions, whole contracts, price ticks and fixed RR can prevent that. Tick-rounded partial TP may help but cannot guarantee a pass. Topstep publishes 55% as its Trading Combine consistency target. Review P1/P2 risk steps or increase the setting to 55% only if that matches your intended rules.</div>':'';
-
 /* Both stage rates are calculated from actual weighted paths. Equal manual
    settings and remaining risk allowances can yield equal stage rates, but
    a different inherited trailing-floor budget can yield different rates. */
@@ -1192,7 +1035,7 @@ const allSpend=modelBuys===null?null:evalSpend+activationSpend;
 const costPer=(spend,number)=>spend===null||number===null||number<=0?'—':cash(spend/number);
 /* Stage averages are conditional on paths completing the given checkpoint,
    and count INCREMENTAL trades executed at that stage (not cumulative trades).
-   P1 purchases no trades. For Topstep, P4 includes only payout-eligible funded paths. */
+   P1 purchases no trades. Funded P4 includes only paths hitting funded target. */
 const tradesBeforeCheckpoint=path=>{
  if(hasVerification){
   const at=path.steps.findIndex(t=>t.stage===1&&t.passed);
@@ -1241,12 +1084,12 @@ const funnelData=[
  {phase:'P1 · Evaluations purchased',count:modelBuys,rate:null,total:1,newCost:evalSpend,unitCost:costPer(evalSpend,modelBuys),avg:null,totTrades:0},
  {phase:hasVerification?'P2 · Challenge passed':'P2 · First trading day passed',count:funnelP1,rate:p1Pass,total:p1Pass,newCost:0,unitCost:costPer(evalSpend,funnelP1),avg:averageP2,totTrades:totP2},
  {phase:hasVerification?'P3 · Verification passed / funded':'P3 · Second trading day passed / funded',count:funnelP3,rate:p2Conditional,total:pEval,newCost:activationSpend,unitCost:costPer(allSpend,funnelP3),avg:averageP3,totTrades:totP3},
- {phase:fv.xfaStandard?'P4 · Eligible first payout':'P4 · Funded payout target reached',count:funnelP4,rate:pFund,total:pEval*pFund,newCost:0,unitCost:costPer(allSpend,funnelP4),avg:averageP4,totTrades:totP4}
+ {phase:'P4 · Funded payout target reached',count:funnelP4,rate:pFund,total:pEval*pFund,newCost:0,unitCost:costPer(allSpend,funnelP4),avg:averageP4,totTrades:totP4}
 ];
 const reversePayoutPlan=payoutMode?'<div style="margin:8px 0;padding:8px 10px;border:1px solid #8884;border-radius:7px;font-size:11px">'+
  '<strong>Reverse plan · '+payoutGoal+' projected full payout targets</strong>'+
  '<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:7px">'+
- '<div><small>P4 · Eligible first payout</small><div style="font-weight:700">'+(modelBuys===null?'—':modelSuccess.toFixed(2))+'</div></div>'+
+ '<div><small>P4 · Target reached</small><div style="font-weight:700">'+(modelBuys===null?'—':modelSuccess.toFixed(2))+'</div></div>'+
  '<div><small>P3 · Funded qualified</small><div style="font-weight:700">'+(modelBuys===null?'—':modelPassed.toFixed(2))+'</div></div>'+
  '<div><small>P2 · First checkpoint</small><div style="font-weight:700">'+funnelCount(funnelP1)+'</div></div>'+
  '<div><small>P1 · Evaluations bought</small><div style="font-weight:700">'+funnelCount(modelBuys)+'</div></div>'+
@@ -1264,16 +1107,15 @@ const rows=funnelData.map(x=>'<tr><td style="text-align:left;white-space:nowrap"
  '<td style="text-align:right;font-variant-numeric:tabular-nums" title="New fees incurred at this stage for the modeled cohort">'+modelCash(x.newCost)+'</td>'+
  '<td style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums" title="Cumulative fees spent divided by expected accounts achieving this stage">'+x.unitCost+'</td></tr>').join('');
 $('[data-funnel]').innerHTML='<div class="jj-funnel-wrap">'+
- topstepNoPassNote+
  '<div class="jj-funnel-note"><strong>'+(payoutMode?'Target '+payoutGoal+' projected payouts':replacementMode?'Target funded accounts':'Fixed cohort')+
  '</strong> · Start: '+funnelCount(modelBuys)+' evaluations · Fee: '+modelCash(modelBuys===null?null:modelBuys*v.accountCost)+'</div>'+reversePayoutPlan+
  '<div style="display:flex;justify-content:flex-end;margin:5px 0;position:relative"><details data-funnel-column-menu style="position:relative"><summary style="cursor:pointer;font-size:11px;padding:4px 8px;border:1px solid #8885;border-radius:6px">Columns</summary><div data-funnel-column-options style="position:absolute;right:0;z-index:20;background:var(--background,#232632);border:1px solid #8885;border-radius:7px;padding:8px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;min-width:200px"></div></details></div>'+
- '<div style="width:100%;overflow-x:auto"><table data-funnel-table style="width:100%;font-size:11px;table-layout:auto"><thead><tr><th style="text-align:left;cursor:help" title="P1 evaluations purchased; P2 first trading checkpoint; P3 full evaluation passed and funded qualified; P4 eligible first payout (Topstep)" aria-label="Phase: P1 evaluations purchased; P2 first trading checkpoint; P3 full evaluation passed and funded qualified; P4 eligible first payout (Topstep)">Phase</th><th style="text-align:right;cursor:help" title="Expected accounts at this stage; P1 is purchases, P2 and P3 are checkpoint passes, P4 is funded target successes" aria-label="Accounts: Expected accounts at this stage; P1 is purchases, P2 and P3 are checkpoint passes, P4 is funded target successes">Accounts</th><th style="text-align:right;cursor:help" title="Chance to pass this stage conditional on entering it. P1 is purchases, so no pass rate applies" aria-label="Pass %: Chance to pass this stage conditional on entering it. P1 is purchases, so no pass rate applies">Pass %</th><th style="text-align:right;cursor:help" title="Cumulative chance for one purchased evaluation to reach this stage; P1 baseline is 100%" aria-label="Total %: Cumulative chance for one purchased evaluation to reach this stage; P1 baseline is 100%">Total %</th><th style="text-align:right;cursor:help" title="Average trades taken IN this stage, among accounts that successfully pass it; failed attempts excluded">Avg T</th><th style="text-align:right;cursor:help" title="Average winning trades IN this stage, among accounts successfully passing it">Avg W</th><th style="text-align:right;cursor:help" title="Average losing trades IN this stage, among accounts successfully passing it">Avg L</th><th style="text-align:right;cursor:help" title="Expected total trades in this stage across ALL attempts (failed and unresolved included)">Tot T</th><th style="text-align:right;cursor:help" title="Incremental expected cohort fees: evaluation purchases at P1, funding activation at P3. No invented second Topstep evaluation fee" aria-label="Stage $: Incremental expected cohort fees: evaluation purchases at P1, funding activation at P3. No invented second Topstep evaluation fee">Stage $</th><th style="text-align:right;cursor:help" title="Total expected fees incurred through this stage divided by expected accounts reaching it, including failed attempts" aria-label="Cost / result: Total expected fees incurred through this stage divided by expected accounts reaching it, including failed attempts">Cost / result</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+ '<div style="width:100%;overflow-x:auto"><table data-funnel-table style="width:100%;font-size:11px;table-layout:auto"><thead><tr><th style="text-align:left;cursor:help" title="P1 evaluations purchased; P2 first trading checkpoint; P3 full evaluation passed and funded qualified; P4 funded profit target reached" aria-label="Phase: P1 evaluations purchased; P2 first trading checkpoint; P3 full evaluation passed and funded qualified; P4 funded profit target reached">Phase</th><th style="text-align:right;cursor:help" title="Expected accounts at this stage; P1 is purchases, P2 and P3 are checkpoint passes, P4 is funded target successes" aria-label="Accounts: Expected accounts at this stage; P1 is purchases, P2 and P3 are checkpoint passes, P4 is funded target successes">Accounts</th><th style="text-align:right;cursor:help" title="Chance to pass this stage conditional on entering it. P1 is purchases, so no pass rate applies" aria-label="Pass %: Chance to pass this stage conditional on entering it. P1 is purchases, so no pass rate applies">Pass %</th><th style="text-align:right;cursor:help" title="Cumulative chance for one purchased evaluation to reach this stage; P1 baseline is 100%" aria-label="Total %: Cumulative chance for one purchased evaluation to reach this stage; P1 baseline is 100%">Total %</th><th style="text-align:right;cursor:help" title="Average trades taken IN this stage, among accounts that successfully pass it; failed attempts excluded">Avg T</th><th style="text-align:right;cursor:help" title="Average winning trades IN this stage, among accounts successfully passing it">Avg W</th><th style="text-align:right;cursor:help" title="Average losing trades IN this stage, among accounts successfully passing it">Avg L</th><th style="text-align:right;cursor:help" title="Expected total trades in this stage across ALL attempts (failed and unresolved included)">Tot T</th><th style="text-align:right;cursor:help" title="Incremental expected cohort fees: evaluation purchases at P1, funding activation at P3. No invented second Topstep evaluation fee" aria-label="Stage $: Incremental expected cohort fees: evaluation purchases at P1, funding activation at P3. No invented second Topstep evaluation fee">Stage $</th><th style="text-align:right;cursor:help" title="Total expected fees incurred through this stage divided by expected accounts reaching it, including failed attempts" aria-label="Cost / result: Total expected fees incurred through this stage divided by expected accounts reaching it, including failed attempts">Cost / result</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
  (replacementMode?'':portfolioSummary)+
  '<div class="jj-funnel-summary"><span>Projected payout cash <strong>'+modelCash(modelPayout)+'</strong> · P4 target successes '+(modelBuys===null?'—':modelSuccess.toFixed(2))+'</span><span>Net <strong>'+modelCash(modelNet)+'</strong></span><span>ROI <strong>'+(modelRoi===null?'—':modelRoi.toFixed(1)+'%')+'</strong></span></div>'+
  '<div class="jj-funnel-note">'+
  (payoutMode?'Reverse target: P4 funded profit successes ÷ funded pass rate = P3 qualified funded accounts; P3 ÷ evaluation pass = P1 purchases. ':'')+
- 'If checkpoint partial TP is enabled, a winning trade may close at a smaller realized RR, rounded up to MGC/GC tick size. '+'Avg T / W / L are the average trades, wins and losses within EACH stage among successful paths. They exclude failed accounts and are not cumulative. P1 has no trades; P2 is the first checkpoint, P3 the remaining evaluation trades, and P4 funded target trades. '+
+ 'Avg T / W / L are the average trades, wins and losses within EACH stage among successful paths. They exclude failed accounts and are not cumulative. P1 has no trades; P2 is the first checkpoint, P3 the remaining evaluation trades, and P4 funded target trades. '+
  (firmType==='topstep'?'Topstep P1 and P2 are separate checkpoint days, each with its own R1–R4 counter and up to '+Math.min(8,v.depth)+' modeled trades (max 8 per checkpoint for performance). EOD trailing loss allowance carries into P2; equal trade setups need not have equal passes if available drawdown differs. ':'')+
  'P1 purchases: '+funnelCount(modelBuys)+'; P2 first checkpoint passed: '+funnelCount(funnelP1)+
  '; P3 evaluation passed and funded: '+funnelCount(funnelP3)+
@@ -1300,7 +1142,7 @@ showFunnelColumns();
 
 if(!replacementMode)$('[data-funnel]').querySelector('.jj-funnel-parallel').append(Object.assign(document.createElement('label'),{textContent:'Parallel active accounts  '}),parallelInput);
 const funnelControls=$('[data-funnel]').querySelector('.jj-funnel-parallel');if(funnelControls)funnelControls.style.cssText='display:flex;gap:10px;flex-wrap:wrap;align-items:center';const signalLabel=document.createElement('label');signalLabel.textContent='Signals / day  ';signalLabel.append(signalsInput);if(funnelControls)funnelControls.append(signalLabel);
-const consistencyHost=$('[data-consistency-panel]');if(consistencyHost){const topstep=firmType==='topstep';const toggle=$('[data-consistency-enabled]');consistencyToggle.style.display=topstep?'flex':'none';topstepDailyToggle.style.display=topstep?'flex':'none';topstepTpToggle.style.display=topstep?'flex':'none';let consistencySettings={};try{consistencySettings=JSON.parse(localStorage.getItem(consistencyKey)||'{}')||{}}catch(e){}toggle.checked=consistencySettings.enabled!==false;consistencyHost.style.display=topstep&&toggle.checked?'':'none';if(topstep&&toggle.checked){const safeText=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));let state={limit:55,days:'1500,1500'};try{state={...state,...JSON.parse(localStorage.getItem(consistencyKey)||'{}')}}catch(e){}const rate=Math.max(1,Math.min(100,Number(state.limit)||55));const days=String(state.days||'').split(/[;,\\s]+/).map(Number).filter(Number.isFinite);const total=days.reduce((a,b)=>a+b,0);const best=Math.max(0,...days);const actual=total>0?100*best/total:0;const adjusted=Math.max(v.target,best/(rate/100));const extra=Math.max(0,adjusted-total);const pass=total>=v.target-1e-7&&total>0&&actual<=rate+1e-7;const status=pass?'Passed':total<=0?'No positive profit yet':'Needs more profit';consistencyHost.innerHTML='<div class="jj-funnel-portfolio"><strong>Topstep · Daily profit consistency</strong><div class="jj-risk-fields"><label>Consistency max (%)<input data-consistency-limit type="number" min="1" max="100" step="0.1" value="'+rate+'"></label><label>Daily net P&L ($, comma separated)<input data-consistency-days type="text" value="'+safeText(state.days)+'" placeholder="1500, 1500"></label></div><div class="jj-funnel-portfolio-grid"><div><small>Evaluation target</small><strong>'+cash(v.target)+'</strong></div><div><small>Total net profit</small><strong>'+cash(total)+'</strong></div><div><small>Best profitable day</small><strong>'+cash(best)+'</strong></div><div><small>Current consistency</small><strong>'+actual.toFixed(1)+'%</strong></div><div><small>Adjusted profit target</small><strong>'+cash(adjusted)+'</strong></div><div><small>Additional profit needed</small><strong>'+cash(extra)+'</strong></div><div><small>Result</small><strong>'+status+'</strong></div></div><div class="jj-funnel-note">Daily net P&L may include losses. Pass requires total profit at least the base target and best profitable day / total profit no more than the consistency limit. This independent calculator does not yet change the existing scenario-path pass probability or model drawdown.</div></div>'}}
+const consistencyHost=$('[data-consistency-panel]');if(consistencyHost){const topstep=firmType==='topstep';const toggle=$('[data-consistency-enabled]');consistencyToggle.style.display=topstep?'flex':'none';topstepDailyToggle.style.display=topstep?'flex':'none';let consistencySettings={};try{consistencySettings=JSON.parse(localStorage.getItem(consistencyKey)||'{}')||{}}catch(e){}toggle.checked=consistencySettings.enabled!==false;consistencyHost.style.display=topstep&&toggle.checked?'':'none';if(topstep&&toggle.checked){const safeText=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));let state={limit:55,days:'1500,1500'};try{state={...state,...JSON.parse(localStorage.getItem(consistencyKey)||'{}')}}catch(e){}const rate=Math.max(1,Math.min(100,Number(state.limit)||55));const days=String(state.days||'').split(/[;,\\s]+/).map(Number).filter(Number.isFinite);const total=days.reduce((a,b)=>a+b,0);const best=Math.max(0,...days);const actual=total>0?100*best/total:0;const adjusted=Math.max(v.target,best/(rate/100));const extra=Math.max(0,adjusted-total);const pass=total>=v.target-1e-7&&total>0&&actual<=rate+1e-7;const status=pass?'Passed':total<=0?'No positive profit yet':'Needs more profit';consistencyHost.innerHTML='<div class="jj-funnel-portfolio"><strong>Topstep · Daily profit consistency</strong><div class="jj-risk-fields"><label>Consistency max (%)<input data-consistency-limit type="number" min="1" max="100" step="0.1" value="'+rate+'"></label><label>Daily net P&L ($, comma separated)<input data-consistency-days type="text" value="'+safeText(state.days)+'" placeholder="1500, 1500"></label></div><div class="jj-funnel-portfolio-grid"><div><small>Evaluation target</small><strong>'+cash(v.target)+'</strong></div><div><small>Total net profit</small><strong>'+cash(total)+'</strong></div><div><small>Best profitable day</small><strong>'+cash(best)+'</strong></div><div><small>Current consistency</small><strong>'+actual.toFixed(1)+'%</strong></div><div><small>Adjusted profit target</small><strong>'+cash(adjusted)+'</strong></div><div><small>Additional profit needed</small><strong>'+cash(extra)+'</strong></div><div><small>Result</small><strong>'+status+'</strong></div></div><div class="jj-funnel-note">Daily net P&L may include losses. Pass requires total profit at least the base target and best profitable day / total profit no more than the consistency limit. This independent calculator does not yet change the existing scenario-path pass probability or model drawdown.</div></div>'}}
 const stagePreview=$('[data-stages-preview]');if(stagePreview){const ruleRow=(name,detail)=>'<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid #8883;font-size:12px"><strong>'+name+'</strong><span style="text-align:right">'+detail+'</span></div>';stagePreview.innerHTML='<div class="jj-funnel-portfolio"><strong>'+firmType.toUpperCase()+' · Evaluation stages</strong>'+(firmType==='ftmo'?ruleRow('P1 · Challenge','Target '+cash(v.target))+ruleRow('P2 · Verification','Target '+cash(v.target2))+ruleRow('Consistency','Not modeled')+ruleRow('Funded','Target '+cash(fv.target)):ruleRow('P1 · Evaluation','Target '+cash(v.target))+ruleRow('Daily consistency','Max 55% of total profits from any single day')+ruleRow('Example','Two +$1,500 days for a $3,000 target')+ruleRow('Funded','Target '+cash(fv.target)))+'<div class="jj-funnel-note">Reference rules only. This preview does not alter the existing scenario engine or enforce consistency or minimum trading days. For FTMO choose 2 Targets in Challenge Parameters; for Topstep choose 1 Target. Topstep consistency needs a separate daily-profit-aware engine before its pass probability can be calculated.</div></div>'}
 const allocationMount=$('[data-allocation-preview]');if(allocationMount)allocationMount.innerHTML=allocationText;
 box.querySelectorAll('[data-account-mode]').forEach(btn=>{const active=btn.dataset.accountMode===accountMode;btn.setAttribute('aria-pressed',String(active));btn.style.fontWeight=active?'700':'400';btn.style.background=active?'var(--accent-soft,rgba(85,137,201,.15))':''});
@@ -1356,7 +1198,6 @@ $('[data-prev]').disabled=page===0;$('[data-next]').disabled=(page+1)*10>=shown.
 }
 box.addEventListener('change',e=>{if(e.target.matches('[data-consistency-enabled]')){let old={};try{old=JSON.parse(localStorage.getItem(consistencyKey)||'{}')||{}}catch(x){}old.enabled=e.target.checked;try{localStorage.setItem(consistencyKey,JSON.stringify(old))}catch(x){}renderRisk()}});
 box.addEventListener('change',e=>{if(e.target.matches('[data-consistency-limit],[data-consistency-days]')){const old=(()=>{try{return JSON.parse(localStorage.getItem(consistencyKey)||'{}')}catch(x){return {}}})();if(e.target.matches('[data-consistency-limit]'))old.limit=e.target.value;else old.days=e.target.value;try{localStorage.setItem(consistencyKey,JSON.stringify(old))}catch(x){}renderRisk()}});
-box.addEventListener('input',e=>{if(e.target.matches('[data-xfa-cap],[data-xfa-days],[data-xfa-day-min],[data-xfa-slippage],[data-xfa-transfer-fee]')){saveSettings();renderRisk()}});
 box.addEventListener('input',e=>{if(e.target.matches('[data-k],[data-account-count],[data-funded]')){page=0;saveSettings();renderRisk()}});
 box.addEventListener('change',e=>{if(e.target.matches('[data-funded-path-filter]')){fundedPage=0;expandedFunded.clear();renderRisk()}});
 box.addEventListener('change',e=>{if(e.target.matches('[data-filter]')){page=0;expandedPaths.clear();renderRisk()}});
