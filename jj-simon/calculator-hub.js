@@ -647,6 +647,24 @@ function calcTopstep(path,v){
   }
   if(!(v.manualRisks[stage][Math.min(3,nextStreak)]>1e-7))status='daily-blocked';
  }
+ // Contract rounding can make the next trade impossible even when the
+ // dollar-risk budget remains positive. End that branch before recursion.
+ if(status==='active'&&stageTrades<attemptsPerStage&&v.contractSpecs?.[stage]){
+  let streak=0;
+  for(let i=steps.length-1;i>=0;i--){
+   if(steps[i].checkpointStage!==stage||steps[i].c==='W')break;
+   streak++;
+  }
+  const tier=Math.min(3,streak);
+  const manual=v.manualRisks?.[stage];
+  const rrOverride=v.manualRRs?.[stage]?.[tier];
+  const rr=manual&&Number(rrOverride)>0?Number(rrOverride):v.rr;
+  const required=stage===1?checkpointTarget-stagePnl:Math.max(v.target,checkpointTarget/rate)-total;
+  const planned=manual?manual[tier]:v.fixedRisk||v.baseRisk||required/rr;
+  const dailyRoom=v.topstepOptionalDailyCap?v.dailyLimit+stagePnl:Infinity;
+  if(!(goldExecution(v,stage,tier,planned,total-trailingFloor-v.floor,dailyRoom,required,rr).risk>1e-7))
+   status='daily-blocked';
+ }
  // Close branches immediately when the next trade cannot execute. Otherwise
  // two child branches inherit the same probability and break the model.
  if(status==='active'&&stageTrades<attemptsPerStage&&
@@ -713,8 +731,12 @@ function calcTopstepFunded(path,v){
   let nextStreak=0;
   for(let i=steps.length-1;i>=0;i--){if(steps[i].c==='W')break;nextStreak++;}
   const nextPlanned=manual?manual[Math.min(3,nextStreak)]:null;
+  const nextRR=manual&&Number(v.manualRRs?.[3]?.[Math.min(3,nextStreak)])>0?
+   Number(v.manualRRs[3][Math.min(3,nextStreak)]):v.rr;
+  const nextRisk=manual?nextPlanned:v.fixedRisk||v.baseRisk||(v.target-total)/nextRR;
+  const executable=goldExecution(v,3,Math.min(3,nextStreak),nextRisk,nextRoom-v.floor,nextDailyRoom,v.target-total,nextRR);
   if(nextRoom<=v.floor+1e-7||nextDailyRoom<=1e-7||
-     (manual&&!(nextPlanned>1e-7)))status='closed';
+     (manual&&!(nextPlanned>1e-7))||!(executable.risk>1e-7))status='closed';
  }
  return {path:steps.map(t=>t.c).join(''),pnl:total,stage:1,stagePnl:total,
   left:total-trailingFloor,status,steps,prob,day,dayPnl,lossesToday,
