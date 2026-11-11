@@ -590,7 +590,7 @@ function goldExecution(v,stage,tier,planned,room,dailyRoom,remainingGoal,rr){
 }
 function calcTopstep(path,v){
  const checkpointTarget=v.target/2;
- const rate=Math.max(.01,Math.min(1,(v.consistencyRate||50)/100));
+ const rate=Math.max(.01,Math.min(.99,(v.consistencyRate||50)/100));
  const attemptsPerStage=Math.max(1,Math.min(8,Math.floor(v.depth)));
  let stage=1,stagePnl=0,total=0,prob=1,status='active';
  let stageTrades=0,steps=[],trailingFloor=-v.limit,peakEOD=0;
@@ -598,7 +598,7 @@ function calcTopstep(path,v){
  for(const c of path){
   if(status!=='active'||stageTrades>=attemptsPerStage)break;
   const day=stage,checkpointStage=stage;
-  const required=stage===1?checkpointTarget-stagePnl:Math.max(v.target,checkpointTarget/rate)-total;
+  const required=stage===1?checkpointTarget-stagePnl:Math.max(v.target,dailyTotals[1]/rate,stage===2?dailyTotals[1]/(1-rate):0)-total;
   const room=total-trailingFloor,dailyRoom=v.topstepOptionalDailyCap?v.dailyLimit+stagePnl:Infinity;
   if(room<=v.floor+1e-7){status='closed';break}
   if(dailyRoom<=1e-7||required<=1e-7){status='daily-blocked';break;}
@@ -660,7 +660,7 @@ function calcTopstep(path,v){
   const manual=v.manualRisks?.[stage];
   const rrOverride=v.manualRRs?.[stage]?.[tier];
   const rr=manual&&Number(rrOverride)>0?Number(rrOverride):v.rr;
-  const required=stage===1?checkpointTarget-stagePnl:Math.max(v.target,checkpointTarget/rate)-total;
+  const required=stage===1?checkpointTarget-stagePnl:Math.max(v.target,dailyTotals[1]/rate,stage===2?dailyTotals[1]/(1-rate):0)-total;
   const planned=manual?manual[tier]:v.fixedRisk||v.baseRisk||required/rr;
   const dailyRoom=v.topstepOptionalDailyCap?v.dailyLimit+stagePnl:Infinity;
   if(!(goldExecution(v,stage,tier,planned,total-trailingFloor-v.floor,dailyRoom,required,rr).risk>1e-7))
@@ -671,7 +671,7 @@ function calcTopstep(path,v){
  if(status==='active'&&stageTrades<attemptsPerStage&&
     ((v.topstepOptionalDailyCap&&v.dailyLimit+stagePnl<=1e-7)||
      total-trailingFloor<=v.floor+1e-7||
-     (stage===2&&Math.max(v.target,checkpointTarget/rate)-total<=1e-7)))
+     (stage===2&&Math.max(v.target,dailyTotals[1]/rate,stage===2?dailyTotals[1]/(1-rate):0)-total<=1e-7)))
    status='daily-blocked';
  const checkpoint=steps.some(t=>t.checkpointStage===1&&t.passed);
  return {path:steps.map(t=>t.c).join(''),pnl:total,stage,stagePnl,
