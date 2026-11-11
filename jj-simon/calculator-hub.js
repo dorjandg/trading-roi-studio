@@ -219,7 +219,7 @@ xfaOptions.innerHTML='<details><summary style="font-weight:600;cursor:pointer">T
  '<label>Minimum net day $<input data-xfa-day-min type="number" min="0" value="150" style="width:100%;box-sizing:border-box;padding:4px"></label>'+
  '<label>Slippage $/contract<input data-xfa-slippage type="number" min="0" step="0.1" value="0" style="width:100%;box-sizing:border-box;padding:4px"></label>'+
  '<label>Payout transfer fee $<input data-xfa-transfer-fee type="number" min="0" step="1" value="0" style="width:100%;box-sizing:border-box;padding:4px"></label></div>'+
- '<p style="font-size:10px;opacity:.72">Standard 50K XFA: 5 winning days of $150+, at least 50% of the account balance stays in the account, $2,000 default maximum request, plus 90/10 published profit split. Simplifying assumption: one closed trade per trading day. Trading fees: MGC $1.92 and GC $4.32 round turn per contract. 50K XFA scaling: 20/30/50 micros (or 2/3/5 minis) as the prior EOD balance crosses $1,500 and $2,000. A wire/SWIFT payout may cost $30 (set transfer fee accordingly). A payout cap above $2,000 requires the applicable Topstep promotion or account-size/path entitlement. No payout is counted merely for hitting a trading profit target.</p></details>';
+ '<p style="font-size:10px;opacity:.72">Standard 50K XFA: 5 winning days of $150+, at least 50% of the account balance stays in the account, $2,000 default maximum request, plus 90/10 published profit split. Simplifying assumption: one closed trade per trading day, limited to your Funded depth. Fewer than 5 modeled funded trades means no Standard payout eligibility. Trading fees: MGC $1.92 and GC $4.32 round turn per contract. 50K XFA scaling: 20/30/50 micros (or 2/3/5 minis) as the prior EOD balance crosses $1,500 and $2,000. A wire/SWIFT payout may cost $30 (set transfer fee accordingly). A payout cap above $2,000 requires the applicable Topstep promotion or account-size/path entitlement. No payout is counted merely for hitting a trading profit target.</p></details>';
 box.querySelector('[data-section="funded-settings"] .jj-risk-section-body').append(xfaOptions);
 
 const contractSizing=()=>{for(const phase of [1,2,3]){
@@ -686,7 +686,7 @@ function calcTopstep(path,v){
 function calcTopstepFunded(path,v){
  const requiredDays=Math.max(1,Math.min(12,v.requiredWinningDays||5));
  const minWinningDay=Math.max(0,v.minWinningDay??150);
- const maxDepth=Math.min(12,Math.max(requiredDays,v.depth));
+ const maxDepth=Math.max(1,Math.min(12,Math.floor(v.depth)));
  const contractValue=v.symbol==='GC'?100:10,roundTurn=v.symbol==='GC'?4.32:1.92;
  const move=Math.max(.01,v.stopMove||5);
  const costPerContract=roundTurn+Math.max(0,v.slippagePerContract||0);
@@ -836,8 +836,10 @@ if(fv.xfaStandard){
  fv.stopMove=Math.max(.01,Number(box.querySelector('[data-contract-stop="3-1"]')?.value)||5);
 }
 let fp=0,fr=0;const fundedLeaves=[];
-if(phaseMode!=='evaluation'){function fw(path){const x=fv.xfaStandard?calcTopstepFunded(path,fv):calc(path,fv);if(x.status!=='active'||x.steps.length>=Math.max(fv.depth,fv.xfaStandard?fv.requiredWinningDays:0)||x.steps.length<path.length){fundedLeaves.push(x);if(x.status==='target')fp+=x.prob;if(x.status==='closed')fr+=x.prob;return}fw(path+'W');fw(path+'L')}fw('')}
+if(phaseMode!=='evaluation'){function fw(path){const x=fv.xfaStandard?calcTopstepFunded(path,fv):calc(path,fv);if(x.status!=='active'||x.steps.length>=fv.depth||x.steps.length<path.length){fundedLeaves.push(x);if(x.status==='target')fp+=x.prob;if(x.status==='closed')fr+=x.prob;return}fw(path+'W');fw(path+'L')}fw('')}
 
+const fundedDepthNotice=fv.xfaStandard&&fv.depth<fv.requiredWinningDays?
+ '<div style="font-size:11px;margin:6px 0">Funded depth '+fv.depth+' allows fewer modeled days than the '+fv.requiredWinningDays+' qualifying winning days required. Payout success is 0% within this horizon.</div>':'';
 const fundedGrossPerAttempt=fv.xfaStandard?fundedLeaves.reduce((sum,x)=>sum+x.prob*(x.eligibleGross||0),0):fp*fv.target;
 const payoutGrossPerSuccess=fp>0?fundedGrossPerAttempt/fp:0;
 const netPayoutPerFunded=Math.max(0,fundedGrossPerAttempt*Math.max(0,Math.min(1,Number(box.querySelector('[data-funded="split"]')?.value||0)/100))-fp*(fv.xfaStandard?fv.transferFee:0));
@@ -1015,7 +1017,7 @@ const fundedCards=
  metricFund('Expected funded failures',fundedFailures===null?'—':fundedFailures.toFixed(2),'Expected funded attempts that do not reach the profit target within the modeled trade depth; includes both ruin and unresolved paths.')+
  metricFund('Expected payout / funded',cash(netPayoutPerFunded),'Probability-weighted payout projection per funded attempt, before purchase and activation fees.')+
  metricFund('Payout per success',cash(netPayoutPerSuccess),'Modeled eligible payout after 50%-balance restriction, payout cap and profit split; trading fees are deducted from path P&L.');
-$('[data-funded-results]').innerHTML='<div class="jj-risk-results-grid">'+fundedCards+'</div>'+xfaSplitNotice+
+$('[data-funded-results]').innerHTML='<div class="jj-risk-results-grid">'+fundedCards+'</div>'+xfaSplitNotice+fundedDepthNotice+
  '<div style="font-size:11px;opacity:.75;margin:5px 0">Using <strong>'+(
   payoutMode?'Maximum Funded Limit Payout':replacementMode?'Reach Funded Limit':'Fixed Purchases'
  )+'</strong>: '+(fundedAttempts===null?'—':fundedAttempts.toFixed(2))+' expected funded attempts × '+(fp*100).toFixed(2)+
