@@ -675,6 +675,15 @@ function calcTopstepFunded(path,v){
    passed:status==='target',day,dayPnl,lossesToday,
    dailyLeft:Math.max(0,v.dailyLimit+dayPnl)});
  }
+ /* A branch that cannot execute its NEXT trade must terminate now.
+    Otherwise W/L children both inherit the same probability and mass > 1. */
+ if(status==='active'){
+  const nextDay=dayPnl<-1e-7||lossesToday>=v.tradesPerDay||v.dailyLimit+dayPnl<=1e-7;
+  const nextFloor=nextDay?Math.min(0,Math.max(trailingFloor,Math.max(peakEOD,total)-v.limit)):trailingFloor;
+  const nextRoom=total-nextFloor;
+  const nextDailyRoom=nextDay?v.dailyLimit:v.dailyLimit+dayPnl;
+  if(nextRoom<=v.floor+1e-7||nextDailyRoom<=1e-7)status='closed';
+ }
  return {path:steps.map(t=>t.c).join(''),pnl:total,stage:1,stagePnl:total,
   left:total-trailingFloor,status,steps,prob,day,dayPnl,lossesToday,
   dailyLeft:Math.max(0,v.dailyLimit+dayPnl),trailingFloor};
