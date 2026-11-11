@@ -577,7 +577,7 @@ function calcTopstep(path,v){
   const required=stage===1?checkpointTarget-stagePnl:Math.max(v.target,checkpointTarget/rate)-total;
   const room=total-trailingFloor,dailyRoom=v.dailyLimit+stagePnl;
   if(room<=v.floor+1e-7){status='closed';break}
-  if(dailyRoom<=1e-7||required<=1e-7)break;
+  if(dailyRoom<=1e-7||required<=1e-7){status='daily-blocked';break;}
   let streak=0;
   for(let i=steps.length-1;i>=0;i--){
    if(steps[i].checkpointStage!==checkpointStage||steps[i].c==='W')break;
@@ -591,7 +591,7 @@ function calcTopstep(path,v){
    v.riskModel==='half'?Math.max(0,required/rr/2):
    v.fixedRisk||v.baseRisk||Math.max(0,required/rr);
   const risk=Math.max(0,Math.min(planned,room,dailyRoom,required/rr));
-  if(risk<=1e-7)break;
+  if(risk<=1e-7){status='daily-blocked';break;}
   const delta=c==='W'?risk*rr:-risk;
   total+=delta;stagePnl+=delta;stageTrades++;
   dailyTotals[day]=stagePnl;
@@ -614,6 +614,13 @@ function calcTopstep(path,v){
    stage=2;stagePnl=0;stageTrades=0;
   }
  }
+ // Close branches immediately when the next trade cannot execute. Otherwise
+ // two child branches inherit the same probability and break the model.
+ if(status==='active'&&stageTrades<attemptsPerStage&&
+    (v.dailyLimit+stagePnl<=1e-7||
+     total-trailingFloor<=v.floor+1e-7||
+     (stage===2&&Math.max(v.target,checkpointTarget/rate)-total<=1e-7)))
+   status='daily-blocked';
  const checkpoint=steps.some(t=>t.checkpointStage===1&&t.passed);
  return {path:steps.map(t=>t.c).join(''),pnl:total,stage,stagePnl,
   left:total-trailingFloor,status,topstepCheckpoint:checkpoint,
@@ -659,7 +666,7 @@ function renderRisk(){
 contractSizing();
 const firmForPhases=firmBar.querySelector('[data-firm-type]').value;const expectedPhases=firmForPhases==='ftmo'?'2':'1';if($('[data-target-mode]').value!==expectedPhases)$('[data-target-mode]').value=expectedPhases;
 const v=vals(),leaves=[],allPaths=[];Object.assign(v,STRATEGIES[activeStrategy].eval);v.manualRisks=manualConfig();v.manualRRs=manualRRConfig();if(firmForPhases==='topstep'){v.topstepConsistency=true;if(activeStrategy==='current')v.fixedRisk=1000;v.consistencyRate=Math.max(1,Math.min(100,Number(box.querySelector('[data-consistency-limit]')?.value)||55));}
-function walk(path){const x=calc(path,v);if(path)allPaths.push(x);if(x.status!=='active'||(v.topstepConsistency?(x.checkpointAttempts>=x.checkpointLimit||x.steps.length>=2*x.checkpointLimit):x.steps.length>=v.depth)){leaves.push(x);return}walk(path+'W');walk(path+'L')}
+function walk(path){const x=calc(path,v);if(path)allPaths.push(x);if(x.status!=='active'||(v.topstepConsistency?(x.checkpointAttempts>=x.checkpointLimit||x.steps.length>=2*x.checkpointLimit||x.steps.length<path.length):x.steps.length>=v.depth)){leaves.push(x);return}walk(path+'W');walk(path+'L')}
 walk('');
 const counts={target:0,closed:0,active:0,'daily-blocked':0};leaves.forEach(x=>counts[x.status]++);
 const probability=leaves.filter(x=>x.status==='target').reduce((sum,x)=>sum+x.prob,0);
