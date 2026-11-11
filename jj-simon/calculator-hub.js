@@ -591,7 +591,7 @@ function calcTopstep(path,v){
  for(const c of path){
   if(status!=='active'||stageTrades>=attemptsPerStage)break;
   const day=stage,checkpointStage=stage;
-  const required=stage===1?checkpointTarget-stagePnl:Math.max(v.target,checkpointTarget/rate)-total;
+  const required=stage===1?checkpointTarget-stagePnl:Math.max(checkpointTarget-stagePnl,v.target-total,dailyTotals[1]/rate-total);
   const room=total-trailingFloor,dailyRoom=v.topstepOptionalDailyCap?v.dailyLimit+stagePnl:Infinity;
   if(room<=v.floor+1e-7){status='closed';break}
   if(dailyRoom<=1e-7||required<=1e-7){status='daily-blocked';break;}
@@ -607,7 +607,7 @@ function calcTopstep(path,v){
    v.riskModel==='fixed'?v.baseRisk:
    v.riskModel==='half'?Math.max(0,required/rr/2):
    v.fixedRisk||v.baseRisk||Math.max(0,required/rr);
-  const budget=Math.max(0,Math.min(planned,Math.max(0,room-v.floor),dailyRoom,required/rr));
+  const budget=Math.max(0,Math.min(planned,Math.max(0,room-v.floor),dailyRoom));
   const spec=v.topstepContractSpecs?.[stage];
   const symbol=spec?.symbol||'MGC';
   const perPoint=symbol==='GC'?100:10;
@@ -625,7 +625,7 @@ function calcTopstep(path,v){
   let passed=false;
   if(status==='active'&&c==='W'){
    if(stage===1&&stagePnl>=checkpointTarget-1e-7)passed=true;
-   else if(stage===2&&total>=v.target-1e-7){
+   else if(stage===2&&stagePnl>=checkpointTarget-1e-7&&total>=v.target-1e-7){
     const best=Math.max(dailyTotals[1],dailyTotals[2]);
     if(best<=total*rate+1e-7){passed=true;status='target'}
    }
@@ -655,12 +655,12 @@ function calcTopstep(path,v){
    for(let i=steps.length-1;i>=0;i--){if(steps[i].checkpointStage!==stage||steps[i].c==='W')break;nextStreak++}
    const tier=Math.min(3,nextStreak);
    const nextRR=v.manualRisks?.[stage]&&Number(v.manualRRs?.[stage]?.[tier])>0?Number(v.manualRRs[stage][tier]):v.rr;
-   const goal=stage===1?checkpointTarget-stagePnl:Math.max(v.target,checkpointTarget/rate)-total;
+   const goal=stage===1?checkpointTarget-stagePnl:Math.max(checkpointTarget-stagePnl,v.target-total,dailyTotals[1]/rate-total);
    const room=Math.max(0,total-trailingFloor-v.floor);
    const dayRoom=v.topstepOptionalDailyCap?v.dailyLimit+stagePnl:Infinity;
    const manual=v.manualRisks?.[stage];
    const planned=manual?manual[tier]:v.riskModel==='fixed'?v.baseRisk:v.riskModel==='half'?Math.max(0,goal/nextRR/2):v.fixedRisk||v.baseRisk||Math.max(0,goal/nextRR);
-   const budget=Math.max(0,Math.min(planned,room,dayRoom,goal/nextRR));
+   const budget=Math.max(0,Math.min(planned,room,dayRoom));
    const value=nextSpec.symbol==='GC'?100:10;
    const fee=(nextSpec.symbol==='GC'?4.32:1.92)+Math.max(0,v.topstepSlip||0);
    const move=Math.max(.01,nextSpec.stops[tier]||5);
