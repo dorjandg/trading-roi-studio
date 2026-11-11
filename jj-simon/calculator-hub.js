@@ -620,6 +620,15 @@ function calcTopstep(path,v){
    stage=2;stagePnl=0;stageTrades=0;
   }
  }
+ // A zero-sized next manual risk is terminal, not two identical W/L children.
+ if(status==='active'&&stageTrades<attemptsPerStage&&v.manualRisks?.[stage]){
+  let nextStreak=0;
+  for(let i=steps.length-1;i>=0;i--){
+   if(steps[i].checkpointStage!==stage||steps[i].c==='W')break;
+   nextStreak++;
+  }
+  if(!(v.manualRisks[stage][Math.min(3,nextStreak)]>1e-7))status='daily-blocked';
+ }
  // Close branches immediately when the next trade cannot execute. Otherwise
  // two child branches inherit the same probability and break the model.
  if(status==='active'&&stageTrades<attemptsPerStage&&
@@ -682,7 +691,11 @@ function calcTopstepFunded(path,v){
   const nextFloor=nextDay?Math.min(0,Math.max(trailingFloor,Math.max(peakEOD,total)-v.limit)):trailingFloor;
   const nextRoom=total-nextFloor;
   const nextDailyRoom=v.topstepOptionalDailyCap?(nextDay?v.dailyLimit:v.dailyLimit+dayPnl):Infinity;
-  if(nextRoom<=v.floor+1e-7||nextDailyRoom<=1e-7)status='closed';
+  let nextStreak=0;
+  for(let i=steps.length-1;i>=0;i--){if(steps[i].c==='W')break;nextStreak++;}
+  const nextPlanned=manual?manual[Math.min(3,nextStreak)]:null;
+  if(nextRoom<=v.floor+1e-7||nextDailyRoom<=1e-7||
+     (manual&&!(nextPlanned>1e-7)))status='closed';
  }
  return {path:steps.map(t=>t.c).join(''),pnl:total,stage:1,stagePnl:total,
   left:total-trailingFloor,status,steps,prob,day,dayPnl,lossesToday,
