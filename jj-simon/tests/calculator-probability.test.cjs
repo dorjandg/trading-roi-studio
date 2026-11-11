@@ -86,5 +86,26 @@ near(rate(ce,x=>x.status==='target'),0.1341,'Carried-state consistency-qualified
 near(rate(cf,x=>x.status==='target'),0.41209220673,'Whole-contract funded pass');
 assert(calcTopstepFunded('L',contractFunded).steps[0].contracts===14,'MGC first risk contracts');
 assert(calcTopstepFunded('LL',contractFunded).steps[1].contracts===16,'MGC second risk contracts');
+// Verify the website's forecast is wired to carried-state, not squared planning.
+assert(/const probability=actualEvaluationProbability;/.test(source),
+ 'Financial forecast must consume actual carried-state evaluation pass');
+assert(/const evalPass=probability;/.test(source),
+ 'Replacement purchases must consume the financial pass rate');
+assert(/const modelRoi=modelFees>0\?100\*modelNet\/modelFees:null;/.test(source),
+ 'ROI must use modeled net profit divided by actual modeled fees');
+function forecast(evalPass,fundedPass){
+ const fundedNeeded=payoutGoal/fundedPass;
+ const purchases=fundedNeeded/evalPass;
+ const spending=purchases*evalFee+fundedNeeded*activation;
+ const cash=payoutGoal*fundedConfig.target*split;
+ return {fundedNeeded,purchases,spending,cash,net:cash-spending,roi:100*(cash-spending)/spending};
+}
+const executableForecast=forecast(rate(ce,x=>x.status==='target'),rate(cf,x=>x.status==='target'));
+const planningForecast=forecast(rate(ce,x=>x.topstepCheckpoint)**2,rate(cf,x=>x.status==='target'));
+assert(executableForecast.purchases>planningForecast.purchases,
+ 'Carried-state consistency must increase required evaluation purchases');
+assert(executableForecast.roi<planningForecast.roi,
+ 'Carried-state forecast must not reuse optimistic planning ROI');
+near(executableForecast.cash,15000,'Executable modeled payout cash');
 console.log(JSON.stringify({evaluationMass:sum(e),checkpoint,modeledEvaluationPass:checkpoint**2,
  carriedEvaluationPass:carried,fundedMass:sum(f),fundedPass,fees,payout,roi:(payout-fees)/fees*100},null,2));
