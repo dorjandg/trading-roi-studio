@@ -684,6 +684,18 @@ function calcTopstepFunded(path,v){
    status='target';steps[steps.length-1].passed=true;break;
   }
  }
+ // Resolve paths that cannot place their NEXT contract before recursing.
+ if(status==='active'&&steps.length<maxDepth){
+  let streak=0;for(let i=steps.length-1;i>=0;i--){if(steps[i].c==='W')break;streak++}
+  const manual=v.manualRisks?.[3];
+  const wins=steps.some(x=>x.c==='W');
+  const nextRisk=manual?manual[Math.min(3,streak)]:
+    v.ftmoFundedBuilder?(wins?450:150):
+    v.riskModel==='fixed'?(v.baseRisk||v.fixedRisk||1000):
+    v.fixedRisk||Math.max(1,Math.min(v.target-pnl,1000)/v.rr);
+  const capacity=Math.min(nextRisk,pnl-floor-v.floor);
+  if(capacity<move*contractValue+costPerContract-1e-7)status='daily-blocked';
+ }
  const gross=status==='target'?Math.min(v.payoutCap,pnl*.5):0;
  return {path:steps.map(x=>x.c).join(''),pnl,stage:3,stagePnl:pnl,left:pnl-floor,status,steps,prob,
   winDays,fees,eligibleGross:gross,day:steps.length,dayPnl:steps.at(-1)?.dayPnl||0,dailyLeft:0,lossesToday:0,risk:0,trailingFloor:floor};
