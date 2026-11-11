@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_utc": "2026-11-10T07:12:45Z",
+  "updated_utc": "2026-11-11T07:55:36Z",
   "source": "Private user-owned Google Sheet caption Index and timestamped Segments; public-video research only; no transcript copied",
   "reviewed": [
     {
@@ -217,6 +217,76 @@
       "status": "reviewed_caption_only",
       "reviewed_utc": "2026-11-10T07:12:45Z",
       "evidence": "youtube-transcript-research.js Nov 10 review sections",
+      "chart_verified": false
+    },
+    {
+      "video_id": "4BXpI-hYqe0",
+      "status": "reviewed_caption_only",
+      "reviewed_utc": "2026-11-11T07:55:36Z",
+      "evidence": "youtube-transcript-research.js Nov 11 review sections",
+      "chart_verified": false
+    },
+    {
+      "video_id": "74CRg-mID5c",
+      "status": "reviewed_caption_only",
+      "reviewed_utc": "2026-11-11T07:55:36Z",
+      "evidence": "youtube-transcript-research.js Nov 11 review sections",
+      "chart_verified": false
+    },
+    {
+      "video_id": "PMGhHCjYG5c",
+      "status": "reviewed_caption_only",
+      "reviewed_utc": "2026-11-11T07:55:36Z",
+      "evidence": "youtube-transcript-research.js Nov 11 review sections",
+      "chart_verified": false
+    },
+    {
+      "video_id": "0uAQUHEB_L8",
+      "status": "reviewed_caption_only",
+      "reviewed_utc": "2026-11-11T07:55:36Z",
+      "evidence": "youtube-transcript-research.js Nov 11 review sections",
+      "chart_verified": false
+    },
+    {
+      "video_id": "MtBZeAkYH8Q",
+      "status": "reviewed_caption_only",
+      "reviewed_utc": "2026-11-11T07:55:36Z",
+      "evidence": "youtube-transcript-research.js Nov 11 review sections",
+      "chart_verified": false
+    },
+    {
+      "video_id": "g68HHbrIBBg",
+      "status": "reviewed_caption_only",
+      "reviewed_utc": "2026-11-11T07:55:36Z",
+      "evidence": "youtube-transcript-research.js Nov 11 review sections",
+      "chart_verified": false
+    },
+    {
+      "video_id": "S8fSNbPFuLA",
+      "status": "reviewed_caption_only",
+      "reviewed_utc": "2026-11-11T07:55:36Z",
+      "evidence": "youtube-transcript-research.js Nov 11 review sections",
+      "chart_verified": false
+    },
+    {
+      "video_id": "pwO9IAu7FUQ",
+      "status": "reviewed_caption_only",
+      "reviewed_utc": "2026-11-11T07:55:36Z",
+      "evidence": "youtube-transcript-research.js Nov 11 review sections",
+      "chart_verified": false
+    },
+    {
+      "video_id": "AxP-cg50TdM",
+      "status": "reviewed_caption_only",
+      "reviewed_utc": "2026-11-11T07:55:36Z",
+      "evidence": "youtube-transcript-research.js Nov 11 review sections",
+      "chart_verified": false
+    },
+    {
+      "video_id": "MIWsdldzJgQ",
+      "status": "reviewed_caption_only",
+      "reviewed_utc": "2026-11-11T07:55:36Z",
+      "evidence": "youtube-transcript-research.js Nov 11 review sections",
       "chart_verified": false
     }
   ]
