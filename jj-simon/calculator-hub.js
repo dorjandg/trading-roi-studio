@@ -580,7 +580,9 @@ const vals=()=>{const num=(k,f)=>{const x=Number(box.querySelector('[data-k="'+k
 function goldExecution(v,stage,tier,planned,room,dailyRoom,remainingGoal,rr){
  const spec=v.contractSpecs?.[stage]?.[tier];
  const fee=Math.max(0,Number(v.roundTurnFee)||0);
- if(!spec||!(spec.stop>0))return {risk:Math.max(0,Math.min(planned,room,dailyRoom,remainingGoal/rr)),fee:0,contracts:null};
+ if(!spec||!(spec.stop>0))return {risk:Math.max(0,Math.min(planned,room,dailyRoom)),fee:0,contracts:null};
+ // Overshooting the remaining profit target is allowed; cap by loss limits,
+ // not remainingGoal/rr. Capping creates false zero-contract dead ends.
  const pointValue=spec.symbol==='GC'?100:10;
  const tickStop=Math.ceil((spec.stop-1e-9)/.1)*.1;
  const unitRisk=tickStop*pointValue;
