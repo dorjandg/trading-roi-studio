@@ -778,9 +778,22 @@ const kpiTooltip=(label,value,help)=>'<div class="jj-kpi-help" tabindex="0" aria
 const mostLikely=leaves.reduce((best,x)=>!best||x.prob>best.prob?x:best,null);
 const fn=(k,d)=>{const x=Number(box.querySelector('[data-funded="'+k+'"]').value);return Number.isFinite(x)?x:d};
 const fv={targetMode:1,target:Math.max(.01,fn('target',4000)),target2:1,limit:Math.max(.01,fn('limit',2000)),dailyLimit:Math.max(.01,fn('dailyLimit',1000)),tradesPerDay:Math.max(1,Math.min(100,Math.floor(fn('tradesPerDay',3)))),rr:Math.max(.01,fn('rr',3)),floor:Math.max(0,fn('floor',100)),winRate:Math.max(0,Math.min(100,fn('winRate',50))),depth:Math.max(1,Math.min(12,Math.floor(fn('depth',6))))};
-if(firmForPhases==='topstep'&&activeStrategy==='current')fv.fixedRisk=1000;else if(activeStrategy==='current')fv.ftmoFundedBuilder=true;Object.assign(fv,STRATEGIES[activeStrategy].fund);fv.manualRisks=manualConfig();fv.manualRRs=manualRRConfig();fv.manualStage=3;let fp=0,fr=0;const fundedLeaves=[];
-if(phaseMode!=='evaluation'){function fw(path){const x=calc(path,fv);if(x.status!=='active'||x.steps.length>=fv.depth){fundedLeaves.push(x);if(x.status==='target')fp+=x.prob;if(x.status==='closed')fr+=x.prob;return}fw(path+'W');fw(path+'L')}fw('')}
+if(firmForPhases==='topstep'&&activeStrategy==='current')fv.fixedRisk=1000;else if(activeStrategy==='current')fv.ftmoFundedBuilder=true;Object.assign(fv,STRATEGIES[activeStrategy].fund);fv.manualRisks=manualConfig();fv.manualRRs=manualRRConfig();fv.manualStage=3;
+fv.xfaStandard=firmForPhases==='topstep';
+if(fv.xfaStandard){
+ const num=(q,d)=>{const n=Number(box.querySelector(q)?.value);return Number.isFinite(n)?n:d};
+ fv.requiredWinningDays=Math.max(1,Math.min(12,Math.floor(num('[data-xfa-days]',5))));
+ fv.minWinningDay=Math.max(0,num('[data-xfa-day-min]',150));
+ fv.payoutCap=Math.max(0,num('[data-xfa-cap]',2000));
+ fv.slippagePerContract=Math.max(0,num('[data-xfa-slippage]',0));
+ fv.symbol=box.querySelector('[data-contract-symbol="3"]')?.value||'MGC';
+ fv.stopMove=Math.max(.01,Number(box.querySelector('[data-contract-stop="3-1"]')?.value)||5);
+}
+let fp=0,fr=0;const fundedLeaves=[];
+if(phaseMode!=='evaluation'){function fw(path){const x=fv.xfaStandard?calcTopstepFunded(path,fv):calc(path,fv);if(x.status!=='active'||x.steps.length>=Math.max(fv.depth,fv.xfaStandard?fv.requiredWinningDays:0)||x.steps.length<path.length){fundedLeaves.push(x);if(x.status==='target')fp+=x.prob;if(x.status==='closed')fr+=x.prob;return}fw(path+'W');fw(path+'L')}fw('')}
 
+const fundedGrossPerAttempt=fv.xfaStandard?fundedLeaves.reduce((sum,x)=>sum+x.prob*(x.eligibleGross||0),0):fp*fv.target;
+const payoutGrossPerSuccess=fp>0?fundedGrossPerAttempt/fp:0;
 const cash=x=>'$'+x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 /* Statistics are calculated from terminal/censored path probabilities, not
    actual trade history. Do not confuse an observed maximum in enumerated paths
