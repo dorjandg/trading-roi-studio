@@ -3,7 +3,7 @@
 const fs=require('node:fs');
 const assert=require('node:assert/strict');
 const source=fs.readFileSync(require('node:path').join(__dirname,'..','calculator-hub.js'),'utf8');
-const begin=source.indexOf('function calcTopstep(');
+const begin=source.indexOf('function goldExecution(');
 const end=source.indexOf('function calc(path,v)',begin);
 assert(begin>=0&&end>begin,'Topstep functions must exist');
 const {calcTopstep,calcTopstepFunded}=new Function(source.slice(begin,end)+';return {calcTopstep,calcTopstepFunded};')();
