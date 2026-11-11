@@ -1160,8 +1160,8 @@ const planningEvaluationRate=firmType==='topstep'?planningP1Rate*planningP2Rate:
 /* Account funnel rates and counts MUST describe the same carried-state model.
    Independent checkpoint planning rates are reported in a separate comparison. */
 const funnelP1=modelBuys===null?null:modelBuys*p1Pass;
-const funnelP2=funnelP3;
 const funnelP3=funnelP1===null?null:funnelP1*p2Conditional;
+const funnelP2=funnelP3;
 const funnelP4=funnelP3===null?null:funnelP3*pFund;
 /* Conditional stage pass rates and cumulative per-start probabilities are
    conceptually distinct. P3 admission is modeled as automatic after verification
