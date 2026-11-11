@@ -662,11 +662,20 @@ return {path:steps.map(x=>x.c).join(''),pnl:total,stage,stagePnl,left,status,top
 risk:status==='active'?Math.max(0,Math.min((goal-stagePnl)/v.rr,left,nextDailyLeft)):0,
 steps,prob,day:day+(nextDay?1:0),dailyLeft:nextDailyLeft,dayPnl:nextDay?0:dayPnl,lossesToday:nextDay?0:lossesToday};
 }
+/* One stopping rule for every simulation consumer. Topstep resets its
+   attempt counter at P2, so comparing steps.length with global depth alone can
+   recurse indefinitely when the first day exhausts its own allowance. */
+const scenarioFinished=(x,cfg,requestedPath='')=>x.status!=='active'||
+ (cfg.topstepConsistency?
+  x.checkpointAttempts>=x.checkpointLimit||
+  x.steps.length>=2*x.checkpointLimit||
+  (requestedPath.length>0&&x.steps.length<requestedPath.length):
+  x.steps.length>=cfg.depth);
 function renderRisk(){
 contractSizing();
 const firmForPhases=firmBar.querySelector('[data-firm-type]').value;const expectedPhases=firmForPhases==='ftmo'?'2':'1';if($('[data-target-mode]').value!==expectedPhases)$('[data-target-mode]').value=expectedPhases;
 const v=vals(),leaves=[],allPaths=[];Object.assign(v,STRATEGIES[activeStrategy].eval);v.manualRisks=manualConfig();v.manualRRs=manualRRConfig();if(firmForPhases==='topstep'){v.topstepConsistency=true;if(activeStrategy==='current')v.fixedRisk=1000;v.consistencyRate=Math.max(1,Math.min(100,Number(box.querySelector('[data-consistency-limit]')?.value)||55));}
-function walk(path){const x=calc(path,v);if(path&&allPaths.length<4000)allPaths.push(x);if(x.status!=='active'||(v.topstepConsistency?(x.checkpointAttempts>=x.checkpointLimit||x.steps.length>=2*x.checkpointLimit||x.steps.length<path.length):x.steps.length>=v.depth)){leaves.push(x);return}walk(path+'W');walk(path+'L')}
+function walk(path){const x=calc(path,v);if(path&&allPaths.length<4000)allPaths.push(x);if(scenarioFinished(x,v,path)){leaves.push(x);return}walk(path+'W');walk(path+'L')}
 walk('');
 const counts={target:0,closed:0,active:0,'daily-blocked':0};leaves.forEach(x=>counts[x.status]++);
 const probability=leaves.filter(x=>x.status==='target').reduce((sum,x)=>sum+x.prob,0);
@@ -765,7 +774,7 @@ tradeStatsPanel.querySelector('[data-trade-stats-content]').innerHTML=
  '</tr></thead><tbody>'+streakRows+'</tbody></table></div>'+
  '<p style="font-size:11px;opacity:.75;margin-top:7px">Based on '+statsPaths.length+' enumerated terminal or unfinished paths, weighted by their probabilities (total '+statPct(stats.totalMass)+'). Stops at account target, breach, or trade-depth limit. This is a theoretical model, not historical executed trades. Longer real streaks remain possible, and shared signals may correlate accounts.</p>':
  '<p style="font-size:11px;opacity:.75">No funded paths are currently calculated. Select Combined or Funded mode to see funded streak statistics.</p>';
-if(compareSection.open){const sim=cfg=>{let hit=0,fail=0,ev=0;function go(p){const x=calc(p,cfg);if(x.status!=='active'||x.steps.length>=cfg.depth){if(x.status==='target')hit+=x.prob;if(x.status==='closed')fail+=x.prob;ev+=x.prob*x.pnl;return}go(p+'W');go(p+'L')}go('');return [hit*100,fail*100,ev]};const phases=firmForPhases==='ftmo'?[[1,v.target],[2,v.target2],[3,fv.target]]:[[1,v.target],[3,fv.target]];let rows='';for(const item of phases){const phase=item[0],target=item[1],base=phase===3?fv:v;const common=Object.assign({},base,{targetMode:1,target:target,manualStage:phase,topstepConsistency:phase===1&&firmForPhases==='topstep'});const auto=sim(Object.assign({},common,{manualRisks:{},manualRRs:{}}));const manual=sim(Object.assign({},common,{manualRisks:manualConfig(),manualRRs:manualRRConfig()}));let phaseRows='';for(let i=0;i<3;i++){const diff=manual[i]-auto[i];phaseRows+='<tr><td>'+['Target %','Failure %','EV'][i]+'</td><td>'+manual[i].toFixed(2)+'</td><td>'+auto[i].toFixed(2)+'</td><td class="'+((i===1?diff<0:diff>0)?'jj-risk-win':(i===1?diff>0:diff<0)?'jj-risk-loss':'')+'">'+diff.toFixed(2)+'</td></tr>';;}rows+='<details style="margin:6px 0;padding:8px;border:1px solid #8884;border-radius:7px"><summary style="cursor:pointer;font-weight:700">P'+phase+' · Target '+manual[0].toFixed(1)+'% / '+auto[0].toFixed(1)+'%</summary><div style="overflow-x:auto"><table style="font-size:11px;white-space:nowrap"><thead><tr><th>Metric</th><th>Manual</th><th>Auto</th><th>Δ</th></tr></thead><tbody>'+phaseRows+'</tbody></table></div></details>'; }comparePanel.querySelector('[data-compare]').innerHTML='<div style="font-size:11px;opacity:.7">Green = better · Red = worse · Δ = Manual − Auto</div>'+rows;}
+if(compareSection.open){const sim=cfg=>{let hit=0,fail=0,ev=0;function go(p){const x=calc(p,cfg);if(scenarioFinished(x,cfg,p)){if(x.status==='target')hit+=x.prob;if(x.status==='closed')fail+=x.prob;ev+=x.prob*x.pnl;return}go(p+'W');go(p+'L')}go('');return [hit*100,fail*100,ev]};const phases=firmForPhases==='ftmo'?[[1,v.target],[2,v.target2],[3,fv.target]]:[[1,v.target],[3,fv.target]];let rows='';for(const item of phases){const phase=item[0],target=item[1],base=phase===3?fv:v;const common=Object.assign({},base,{targetMode:1,target:target,manualStage:phase,topstepConsistency:phase===1&&firmForPhases==='topstep'});const auto=sim(Object.assign({},common,{manualRisks:{},manualRRs:{}}));const manual=sim(Object.assign({},common,{manualRisks:manualConfig(),manualRRs:manualRRConfig()}));let phaseRows='';for(let i=0;i<3;i++){const diff=manual[i]-auto[i];phaseRows+='<tr><td>'+['Target %','Failure %','EV'][i]+'</td><td>'+manual[i].toFixed(2)+'</td><td>'+auto[i].toFixed(2)+'</td><td class="'+((i===1?diff<0:diff>0)?'jj-risk-win':(i===1?diff>0:diff<0)?'jj-risk-loss':'')+'">'+diff.toFixed(2)+'</td></tr>';;}rows+='<details style="margin:6px 0;padding:8px;border:1px solid #8884;border-radius:7px"><summary style="cursor:pointer;font-weight:700">P'+phase+' · Target '+manual[0].toFixed(1)+'% / '+auto[0].toFixed(1)+'%</summary><div style="overflow-x:auto"><table style="font-size:11px;white-space:nowrap"><thead><tr><th>Metric</th><th>Manual</th><th>Auto</th><th>Δ</th></tr></thead><tbody>'+phaseRows+'</tbody></table></div></details>'; }comparePanel.querySelector('[data-compare]').innerHTML='<div style="font-size:11px;opacity:.7">Green = better · Red = worse · Δ = Manual − Auto</div>'+rows;}
 const nn=Math.max(1,Math.min(100,Math.floor(Number($('[data-account-count]').value)||10)));
 const totalFees=nn*v.accountCost,expectedFunded=nn*probability,activationFee=Math.max(0,fn('activation',0)),splitPct=Math.max(0,Math.min(1,fn('split',80)/100));
 const grossPayout=expectedFunded*fp*fv.target*splitPct,activationFees=expectedFunded*activationFee,netCash=grossPayout-totalFees-activationFees;
@@ -899,7 +908,7 @@ resultGroup('04 · Profit & ROI',
  metricFund('Net ROI',modelRoi===null?'—':modelRoi.toFixed(1)+'%','Expected net profit divided by expected total fees.'));
 
 const optimizeRiskStrategies=()=>{
- const test=cfg=>{let pass=0,unresolved=0;const walk=p=>{const x=calc(p,cfg);if(x.status!=='active'||x.steps.length>=cfg.depth){if(x.status==='target')pass+=x.prob;else if(x.status==='active')unresolved+=x.prob;return}walk(p+'W');walk(p+'L')};walk('');return {pass,unresolved}};
+ const test=cfg=>{let pass=0,unresolved=0;const walk=p=>{const x=calc(p,cfg);if(scenarioFinished(x,cfg,p)){if(x.status==='target')pass+=x.prob;else if(x.status==='active')unresolved+=x.prob;return}walk(p+'W');walk(p+'L')};walk('');return {pass,unresolved}};
  const consistency=firmType==='topstep'?Math.max(1,Math.min(100,Number(box.querySelector('[data-consistency-limit]')?.value)||55)):undefined;
  const evalBase={...v,topstepConsistency:firmType==='topstep',consistencyRate:consistency,fixedRisk:undefined};
  const fundBase={...fv,topstepConsistency:false,fixedRisk:undefined,ftmoFundedBuilder:undefined};
@@ -943,7 +952,7 @@ const optimizeRiskStrategies=()=>{
 };
 const strategyComparison=()=>{
  const candidates=[['current','Dynamic + buffer','Target ÷ RR','150 until first win, then 450',{},{}],['fixedlow','Fixed low','250 every trade','150 every trade',{riskModel:'fixed',baseRisk:250},{riskModel:'fixed',baseRisk:150}],['half','Half-target','Half remaining target ÷ RR','150 every trade',{riskModel:'half'},{riskModel:'fixed',baseRisk:150}],['recovery','Recovery + buffer','250 + 50% per phase loss; cap 450','150 until first win, then 450',{riskModel:'recovery'},{riskModel:'buffer'}],['fixedhigh','Fixed high','350 every trade','450 every trade',{riskModel:'fixed',baseRisk:350},{riskModel:'fixed',baseRisk:450}]];
- const run=cfg=>{let pass=0,fail=0,unresolved=0,success=[];const walk=p=>{const x=calc(p,cfg);if(x.status!=='active'||x.steps.length>=cfg.depth){if(x.status==='target'){pass+=x.prob;success.push(x)}else if(x.status==='closed')fail+=x.prob;else unresolved+=x.prob;return}walk(p+'W');walk(p+'L')};walk('');success.sort((a,b)=>b.prob-a.prob);return {pass,fail,unresolved,success}};
+ const run=cfg=>{let pass=0,fail=0,unresolved=0,success=[];const walk=p=>{const x=calc(p,cfg);if(scenarioFinished(x,cfg,p)){if(x.status==='target'){pass+=x.prob;success.push(x)}else if(x.status==='closed')fail+=x.prob;else unresolved+=x.prob;return}walk(p+'W');walk(p+'L')};walk('');success.sort((a,b)=>b.prob-a.prob);return {pass,fail,unresolved,success}};
  const rows=candidates.map(([id,name,evalRule,fundRule,ev,fu])=>{const e=run({...v,riskModel:undefined,baseRisk:undefined,fixedRisk:undefined,...ev}),u=run({...fv,riskModel:undefined,baseRisk:undefined,fixedRisk:undefined,ftmoFundedBuilder:undefined,...fu}),buys=replacementMode?(e.pass?allocationTarget/e.pass:null):nn,funded=buys===null?null:replacementMode?allocationTarget:buys*e.pass,fees=buys===null?null:buys*v.accountCost+funded*activationFee,payout=fees===null?null:funded*u.pass*fv.target*splitPct,net=fees===null?null:payout-fees;return {id,name,evalRule,fundRule,e,u,fees,payout,net,roi:fees>0?100*net/fees:null}});
  const visibleRows=firmType==='topstep'?rows.filter(x=>x.id==='current'||(Number.isFinite(x.net)&&x.net>0&&Number.isFinite(x.roi)&&x.roi>0&&x.e.pass>0&&x.u.pass>0)):rows;
  if(firmType==='topstep'&&!visibleRows.some(x=>x.id===activeStrategy)){activeStrategy='current';try{localStorage.setItem(ACTIVE_KEY,activeStrategy)}catch(e){}}
@@ -978,7 +987,7 @@ box.addEventListener('click',event=>{
  const child=parent.querySelector('[data-opt-children]');if(!tree||!child)return;
  const cfg=JSON.parse(decodeURIComponent(tree.dataset.optCfg)),path=btn.dataset.optPath;
  const x=calc(path,cfg),last=x.steps[x.steps.length-1],next=calc(path+'W',cfg).steps[path.length];
- const risk=next?.risk||0,done=x.status!=='active'||x.steps.length>=cfg.depth||risk<=0;
+ const risk=next?.risk||0,done=scenarioFinished(x,cfg,path)||risk<=0;
  const fmt=n=>'$'+Number(n||0).toLocaleString('en-US',{maximumFractionDigits:2});
  child.innerHTML='<div data-opt-node style="margin:5px 0 5px 8px;padding:6px;border-left:2px solid #8885"><b>Trade '+x.steps.length+' · '+(last?.c==='W'?'WIN':'LOSS')+'</b> · Risk '+fmt(last?.risk)+' · P&L '+fmt(last?.stagePnl)+' · DD left '+fmt(cfg.limit+x.stagePnl)+' · Day '+(last?.day||1)+'<div>'+(x.status==='target'?'TARGET REACHED':x.status==='closed'?'ACCOUNT CLOSED':x.steps.length>=cfg.depth?'TRADE LIMIT': 'CONTINUE')+'</div>'+(done?'':'<div>Next risk '+fmt(risk)+' · Win +'+fmt(risk*cfg.rr)+' / Loss −'+fmt(risk)+'</div><div style="display:flex;gap:5px;margin-top:4px"><button type="button" data-opt-path="'+path+'W">If WIN</button><button type="button" data-opt-path="'+path+'L">If LOSS</button></div><div data-opt-children></div>')+'</div>';
 },true);
