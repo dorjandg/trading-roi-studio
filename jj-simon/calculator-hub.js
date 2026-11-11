@@ -583,7 +583,7 @@ function goldExecution(v,stage,tier,planned,room,dailyRoom,remainingGoal,rr){
  const pointValue=spec.symbol==='GC'?100:10;
  const tickStop=Math.ceil((spec.stop-1e-9)/.1)*.1;
  const unitRisk=tickStop*pointValue;
- const maxContracts=Math.floor(Math.max(0,Math.min(planned/unitRisk,room/(unitRisk+fee),dailyRoom/(unitRisk+fee),remainingGoal/(unitRisk*rr-fee>0?unitRisk*rr-fee:Infinity))));
+ const maxContracts=Math.floor(Math.max(0,Math.min(planned/unitRisk,room/(unitRisk+fee),dailyRoom/(unitRisk+fee))));
  const contracts=Math.max(0,maxContracts);
  return {risk:contracts*unitRisk,fee:contracts*fee,contracts};
 }
