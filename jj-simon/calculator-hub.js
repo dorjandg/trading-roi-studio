@@ -290,6 +290,12 @@ payoutCountInput.addEventListener('change',()=>{
 const allocationPreview=document.createElement('div');allocationPreview.dataset.allocationPreview='';box.querySelector('[data-section="funnel"]').after(allocationPreview);group('allocation-preview','08 · Replacement Until Funded Target · Preview',[allocationPreview]);
 const stagesPreview=document.createElement('div');stagesPreview.dataset.stagesPreview='';box.querySelector('[data-section="allocation-preview"]').after(stagesPreview);group('stages-preview','09 · Firm Stages · Rules Preview',[stagesPreview]);
 const consistencyPanel=document.createElement('div');consistencyPanel.dataset.consistencyPanel='';const consistencyToggle=document.createElement('label');consistencyToggle.style.cssText='display:flex;align-items:center;gap:7px;font-size:12px;margin:10px 0 5px';consistencyToggle.innerHTML='<input type="checkbox" data-consistency-enabled style="width:15px;height:15px"> Enable consistency rule';const challengeBody=box.querySelector('[data-section="challenge-settings"] .jj-risk-section-body');const challengeFields=challengeBody.querySelector('[data-risk-fields]');challengeFields.before(phaseGuide);challengeFields.after(consistencyToggle,consistencyPanel);
+const topstepDailyToggle=document.createElement('label');
+topstepDailyToggle.style.cssText='display:flex;align-items:center;gap:6px;margin:5px 0;font-size:11px';
+topstepDailyToggle.innerHTML='<input data-topstep-daily-cap type="checkbox" style="width:15px;height:15px"> Apply optional daily loss cap to Topstep evaluation';
+consistencyPanel.after(topstepDailyToggle);
+topstepDailyToggle.querySelector('input').addEventListener('change',()=>{saveSettings();renderRisk()});
+
 try{const saved=JSON.parse(localStorage.getItem('jj-risk-calculator09-sections-v1')||'{}');box.querySelectorAll('.jj-risk-section').forEach(d=>{if(typeof saved[d.dataset.section]==='boolean')d.open=saved[d.dataset.section]})}catch(e){}
 box.addEventListener('toggle',e=>{if(!e.target.matches||!e.target.matches('.jj-risk-section'))return;try{const state={};box.querySelectorAll('.jj-risk-section').forEach(d=>state[d.dataset.section]=d.open);localStorage.setItem('jj-risk-calculator09-sections-v1',JSON.stringify(state))}catch(err){}},true);
 const $=q=>box.querySelector(q);let page=0;const expandedPaths=new Set();
@@ -472,7 +478,7 @@ const verifyManualPreset=settings=>{
 const capturePageSettings=()=>{
  const controls={};
  const selectors=['[data-k]','[data-funded]','[data-manual-mode]','[data-manual-risk]','[data-manual-rr]','[data-contract-symbol]','[data-contract-stop]',
-  '[data-consistency-enabled]','[data-consistency-limit]','[data-account-count]','[data-funded-count]','[data-payout-count]',
+  '[data-consistency-enabled]','[data-consistency-limit]','[data-topstep-daily-cap]','[data-account-count]','[data-funded-count]','[data-payout-count]',
   '[data-parallel-accounts]','[data-signals-per-day]','[data-purchase-strategy]','[data-target-mode]'];
  for(const selector of selectors){
   box.querySelectorAll(selector).forEach(el=>{
@@ -486,7 +492,7 @@ const capturePageSettings=()=>{
 const restorePageSettings=pageSettings=>{
  if(!pageSettings||pageSettings.version!==2||!pageSettings.controls)return;
  const controls=pageSettings.controls;
- box.querySelectorAll('input[data-k],input[data-funded],input[data-manual-risk],input[data-manual-rr],input[data-contract-stop],select[data-contract-symbol],select[data-manual-mode],input[data-consistency-enabled],input[data-consistency-limit],input[data-account-count],input[data-funded-count],input[data-payout-count],input[data-parallel-accounts],input[data-signals-per-day],select[data-purchase-strategy],input[data-target-mode]').forEach(el=>{
+ box.querySelectorAll('input[data-k],input[data-funded],input[data-manual-risk],input[data-manual-rr],input[data-contract-stop],select[data-contract-symbol],select[data-manual-mode],input[data-consistency-enabled],input[data-consistency-limit],input[data-topstep-daily-cap],input[data-account-count],input[data-funded-count],input[data-payout-count],input[data-parallel-accounts],input[data-signals-per-day],select[data-purchase-strategy],input[data-target-mode]').forEach(el=>{
   const key=Object.keys(el.dataset).sort().map(k=>k+':'+el.dataset[k]).join('|');
   if(!Object.prototype.hasOwnProperty.call(controls,key))return;
   const value=controls[key];
@@ -575,7 +581,7 @@ function calcTopstep(path,v){
   if(status!=='active'||stageTrades>=attemptsPerStage)break;
   const day=stage,checkpointStage=stage;
   const required=stage===1?checkpointTarget-stagePnl:Math.max(v.target,checkpointTarget/rate)-total;
-  const room=total-trailingFloor,dailyRoom=v.dailyLimit+stagePnl;
+  const room=total-trailingFloor,dailyRoom=v.topstepOptionalDailyCap?v.dailyLimit+stagePnl:Infinity;
   if(room<=v.floor+1e-7){status='closed';break}
   if(dailyRoom<=1e-7||required<=1e-7){status='daily-blocked';break;}
   let streak=0;
@@ -590,7 +596,7 @@ function calcTopstep(path,v){
    v.riskModel==='fixed'?v.baseRisk:
    v.riskModel==='half'?Math.max(0,required/rr/2):
    v.fixedRisk||v.baseRisk||Math.max(0,required/rr);
-  const risk=Math.max(0,Math.min(planned,room,dailyRoom,required/rr));
+  const risk=Math.max(0,Math.min(planned,Math.max(0,room-v.floor),dailyRoom,required/rr));
   if(risk<=1e-7){status='daily-blocked';break;}
   const delta=c==='W'?risk*rr:-risk;
   total+=delta;stagePnl+=delta;stageTrades++;
@@ -617,7 +623,7 @@ function calcTopstep(path,v){
  // Close branches immediately when the next trade cannot execute. Otherwise
  // two child branches inherit the same probability and break the model.
  if(status==='active'&&stageTrades<attemptsPerStage&&
-    (v.dailyLimit+stagePnl<=1e-7||
+    ((v.topstepOptionalDailyCap&&v.dailyLimit+stagePnl<=1e-7)||
      total-trailingFloor<=v.floor+1e-7||
      (stage===2&&Math.max(v.target,checkpointTarget/rate)-total<=1e-7)))
    status='daily-blocked';
@@ -674,7 +680,7 @@ const scenarioFinished=(x,cfg,requestedPath='')=>x.status!=='active'||
 function renderRisk(){
 contractSizing();
 const firmForPhases=firmBar.querySelector('[data-firm-type]').value;const expectedPhases=firmForPhases==='ftmo'?'2':'1';if($('[data-target-mode]').value!==expectedPhases)$('[data-target-mode]').value=expectedPhases;
-const v=vals(),leaves=[],allPaths=[];Object.assign(v,STRATEGIES[activeStrategy].eval);v.manualRisks=manualConfig();v.manualRRs=manualRRConfig();if(firmForPhases==='topstep'){v.topstepConsistency=true;if(activeStrategy==='current')v.fixedRisk=1000;v.consistencyRate=Math.max(1,Math.min(100,Number(box.querySelector('[data-consistency-limit]')?.value)||55));}
+const v=vals(),leaves=[],allPaths=[];Object.assign(v,STRATEGIES[activeStrategy].eval);v.manualRisks=manualConfig();v.manualRRs=manualRRConfig();if(firmForPhases==='topstep'){v.topstepOptionalDailyCap=box.querySelector('[data-topstep-daily-cap]').checked;v.topstepConsistency=true;if(activeStrategy==='current')v.fixedRisk=1000;v.consistencyRate=Math.max(1,Math.min(100,Number(box.querySelector('[data-consistency-limit]')?.value)||55));}
 function walk(path){const x=calc(path,v);if(path&&allPaths.length<4000)allPaths.push(x);if(scenarioFinished(x,v,path)){leaves.push(x);return}walk(path+'W');walk(path+'L')}
 walk('');
 const counts={target:0,closed:0,active:0,'daily-blocked':0};leaves.forEach(x=>counts[x.status]++);
@@ -1136,7 +1142,7 @@ showFunnelColumns();
 
 if(!replacementMode)$('[data-funnel]').querySelector('.jj-funnel-parallel').append(Object.assign(document.createElement('label'),{textContent:'Parallel active accounts  '}),parallelInput);
 const funnelControls=$('[data-funnel]').querySelector('.jj-funnel-parallel');if(funnelControls)funnelControls.style.cssText='display:flex;gap:10px;flex-wrap:wrap;align-items:center';const signalLabel=document.createElement('label');signalLabel.textContent='Signals / day  ';signalLabel.append(signalsInput);if(funnelControls)funnelControls.append(signalLabel);
-const consistencyHost=$('[data-consistency-panel]');if(consistencyHost){const topstep=firmType==='topstep';const toggle=$('[data-consistency-enabled]');consistencyToggle.style.display=topstep?'flex':'none';let consistencySettings={};try{consistencySettings=JSON.parse(localStorage.getItem(consistencyKey)||'{}')||{}}catch(e){}toggle.checked=consistencySettings.enabled!==false;consistencyHost.style.display=topstep&&toggle.checked?'':'none';if(topstep&&toggle.checked){const safeText=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));let state={limit:55,days:'1500,1500'};try{state={...state,...JSON.parse(localStorage.getItem(consistencyKey)||'{}')}}catch(e){}const rate=Math.max(1,Math.min(100,Number(state.limit)||55));const days=String(state.days||'').split(/[;,\\s]+/).map(Number).filter(Number.isFinite);const total=days.reduce((a,b)=>a+b,0);const best=Math.max(0,...days);const actual=total>0?100*best/total:0;const adjusted=Math.max(v.target,best/(rate/100));const extra=Math.max(0,adjusted-total);const pass=total>=v.target-1e-7&&total>0&&actual<=rate+1e-7;const status=pass?'Passed':total<=0?'No positive profit yet':'Needs more profit';consistencyHost.innerHTML='<div class="jj-funnel-portfolio"><strong>Topstep · Daily profit consistency</strong><div class="jj-risk-fields"><label>Consistency max (%)<input data-consistency-limit type="number" min="1" max="100" step="0.1" value="'+rate+'"></label><label>Daily net P&L ($, comma separated)<input data-consistency-days type="text" value="'+safeText(state.days)+'" placeholder="1500, 1500"></label></div><div class="jj-funnel-portfolio-grid"><div><small>Evaluation target</small><strong>'+cash(v.target)+'</strong></div><div><small>Total net profit</small><strong>'+cash(total)+'</strong></div><div><small>Best profitable day</small><strong>'+cash(best)+'</strong></div><div><small>Current consistency</small><strong>'+actual.toFixed(1)+'%</strong></div><div><small>Adjusted profit target</small><strong>'+cash(adjusted)+'</strong></div><div><small>Additional profit needed</small><strong>'+cash(extra)+'</strong></div><div><small>Result</small><strong>'+status+'</strong></div></div><div class="jj-funnel-note">Daily net P&L may include losses. Pass requires total profit at least the base target and best profitable day / total profit no more than the consistency limit. This independent calculator does not yet change the existing scenario-path pass probability or model drawdown.</div></div>'}}
+const consistencyHost=$('[data-consistency-panel]');if(consistencyHost){const topstep=firmType==='topstep';const toggle=$('[data-consistency-enabled]');consistencyToggle.style.display=topstep?'flex':'none';topstepDailyToggle.style.display=topstep?'flex':'none';let consistencySettings={};try{consistencySettings=JSON.parse(localStorage.getItem(consistencyKey)||'{}')||{}}catch(e){}toggle.checked=consistencySettings.enabled!==false;consistencyHost.style.display=topstep&&toggle.checked?'':'none';if(topstep&&toggle.checked){const safeText=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));let state={limit:55,days:'1500,1500'};try{state={...state,...JSON.parse(localStorage.getItem(consistencyKey)||'{}')}}catch(e){}const rate=Math.max(1,Math.min(100,Number(state.limit)||55));const days=String(state.days||'').split(/[;,\\s]+/).map(Number).filter(Number.isFinite);const total=days.reduce((a,b)=>a+b,0);const best=Math.max(0,...days);const actual=total>0?100*best/total:0;const adjusted=Math.max(v.target,best/(rate/100));const extra=Math.max(0,adjusted-total);const pass=total>=v.target-1e-7&&total>0&&actual<=rate+1e-7;const status=pass?'Passed':total<=0?'No positive profit yet':'Needs more profit';consistencyHost.innerHTML='<div class="jj-funnel-portfolio"><strong>Topstep · Daily profit consistency</strong><div class="jj-risk-fields"><label>Consistency max (%)<input data-consistency-limit type="number" min="1" max="100" step="0.1" value="'+rate+'"></label><label>Daily net P&L ($, comma separated)<input data-consistency-days type="text" value="'+safeText(state.days)+'" placeholder="1500, 1500"></label></div><div class="jj-funnel-portfolio-grid"><div><small>Evaluation target</small><strong>'+cash(v.target)+'</strong></div><div><small>Total net profit</small><strong>'+cash(total)+'</strong></div><div><small>Best profitable day</small><strong>'+cash(best)+'</strong></div><div><small>Current consistency</small><strong>'+actual.toFixed(1)+'%</strong></div><div><small>Adjusted profit target</small><strong>'+cash(adjusted)+'</strong></div><div><small>Additional profit needed</small><strong>'+cash(extra)+'</strong></div><div><small>Result</small><strong>'+status+'</strong></div></div><div class="jj-funnel-note">Daily net P&L may include losses. Pass requires total profit at least the base target and best profitable day / total profit no more than the consistency limit. This independent calculator does not yet change the existing scenario-path pass probability or model drawdown.</div></div>'}}
 const stagePreview=$('[data-stages-preview]');if(stagePreview){const ruleRow=(name,detail)=>'<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid #8883;font-size:12px"><strong>'+name+'</strong><span style="text-align:right">'+detail+'</span></div>';stagePreview.innerHTML='<div class="jj-funnel-portfolio"><strong>'+firmType.toUpperCase()+' · Evaluation stages</strong>'+(firmType==='ftmo'?ruleRow('P1 · Challenge','Target '+cash(v.target))+ruleRow('P2 · Verification','Target '+cash(v.target2))+ruleRow('Consistency','Not modeled')+ruleRow('Funded','Target '+cash(fv.target)):ruleRow('P1 · Evaluation','Target '+cash(v.target))+ruleRow('Daily consistency','Max 55% of total profits from any single day')+ruleRow('Example','Two +$1,500 days for a $3,000 target')+ruleRow('Funded','Target '+cash(fv.target)))+'<div class="jj-funnel-note">Reference rules only. This preview does not alter the existing scenario engine or enforce consistency or minimum trading days. For FTMO choose 2 Targets in Challenge Parameters; for Topstep choose 1 Target. Topstep consistency needs a separate daily-profit-aware engine before its pass probability can be calculated.</div></div>'}
 const allocationMount=$('[data-allocation-preview]');if(allocationMount)allocationMount.innerHTML=allocationText;
 box.querySelectorAll('[data-account-mode]').forEach(btn=>{const active=btn.dataset.accountMode===accountMode;btn.setAttribute('aria-pressed',String(active));btn.style.fontWeight=active?'700':'400';btn.style.background=active?'var(--accent-soft,rgba(85,137,201,.15))':''});
