@@ -219,7 +219,7 @@ xfaOptions.innerHTML='<details><summary style="font-weight:600;cursor:pointer">T
  '<label>Minimum net day $<input data-xfa-day-min type="number" min="0" value="150" style="width:100%;box-sizing:border-box;padding:4px"></label>'+
  '<label>Slippage $/contract<input data-xfa-slippage type="number" min="0" step="0.1" value="0" style="width:100%;box-sizing:border-box;padding:4px"></label>'+
  '<label>Payout transfer fee $<input data-xfa-transfer-fee type="number" min="0" step="1" value="0" style="width:100%;box-sizing:border-box;padding:4px"></label></div>'+
- '<p style="font-size:10px;opacity:.72">Standard 50K XFA: 5 winning days of $150+, at least 50% of the account balance stays in the account, $2,000 default maximum request, plus 90/10 published profit split. Simplifying assumption: one closed trade per trading day. Trading fees: MGC $1.92 and GC $4.32 round turn per contract. A wire/SWIFT payout may cost $30 (set transfer fee accordingly). No payout is counted merely for hitting a trading profit target.</p></details>';
+ '<p style="font-size:10px;opacity:.72">Standard 50K XFA: 5 winning days of $150+, at least 50% of the account balance stays in the account, $2,000 default maximum request, plus 90/10 published profit split. Simplifying assumption: one closed trade per trading day. Trading fees: MGC $1.92 and GC $4.32 round turn per contract. A wire/SWIFT payout may cost $30 (set transfer fee accordingly). A payout cap above $2,000 requires the applicable Topstep promotion or account-size/path entitlement. No payout is counted merely for hitting a trading profit target.</p></details>';
 box.querySelector('[data-section="funded-settings"] .jj-risk-section-body').append(xfaOptions);
 
 const contractSizing=()=>{for(const phase of [1,2,3]){
@@ -605,7 +605,7 @@ function calcTopstep(path,v){
   const rrOverride=v.manualRRs?.[checkpointStage]?.[Math.min(3,streak)];
   const rr=manual&&Number(rrOverride)>0?Number(rrOverride):v.rr;
   const planned=manual?manual[Math.min(3,streak)]:
-   v.riskModel==='fixed'?v.baseRisk:
+   v.riskModel==='fixed'?(v.baseRisk||v.fixedRisk||Math.max(0,required/rr)):
    v.riskModel==='half'?Math.max(0,required/rr/2):
    v.fixedRisk||v.baseRisk||Math.max(0,required/rr);
   const budget=Math.max(0,Math.min(planned,Math.max(0,room-v.floor),dailyRoom));
@@ -660,7 +660,7 @@ function calcTopstep(path,v){
    const room=Math.max(0,total-trailingFloor-v.floor);
    const dayRoom=v.topstepOptionalDailyCap?v.dailyLimit+stagePnl:Infinity;
    const manual=v.manualRisks?.[stage];
-   const planned=manual?manual[tier]:v.riskModel==='fixed'?v.baseRisk:v.riskModel==='half'?Math.max(0,goal/nextRR/2):v.fixedRisk||v.baseRisk||Math.max(0,goal/nextRR);
+   const planned=manual?manual[tier]:v.riskModel==='fixed'?(v.baseRisk||v.fixedRisk||Math.max(0,goal/nextRR)):v.riskModel==='half'?Math.max(0,goal/nextRR/2):v.fixedRisk||v.baseRisk||Math.max(0,goal/nextRR);
    const budget=Math.max(0,Math.min(planned,room,dayRoom));
    const value=nextSpec.symbol==='GC'?100:10;
    const fee=(nextSpec.symbol==='GC'?4.32:1.92)+Math.max(0,v.topstepSlip||0);
@@ -832,7 +832,7 @@ if(phaseMode!=='evaluation'){function fw(path){const x=fv.xfaStandard?calcTopste
 
 const fundedGrossPerAttempt=fv.xfaStandard?fundedLeaves.reduce((sum,x)=>sum+x.prob*(x.eligibleGross||0),0):fp*fv.target;
 const payoutGrossPerSuccess=fp>0?fundedGrossPerAttempt/fp:0;
-const netPayoutPerFunded=fundedGrossPerAttempt*Math.max(0,Math.min(1,Number(box.querySelector('[data-funded="split"]')?.value||0)/100))-fp*(fv.xfaStandard?fv.transferFee:0);
+const netPayoutPerFunded=Math.max(0,fundedGrossPerAttempt*Math.max(0,Math.min(1,Number(box.querySelector('[data-funded="split"]')?.value||0)/100))-fp*(fv.xfaStandard?fv.transferFee:0));
 const netPayoutPerSuccess=fp>0?netPayoutPerFunded/fp:0;
 const cash=x=>'$'+x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 /* Statistics are calculated from terminal/censored path probabilities, not
@@ -900,6 +900,8 @@ tradeStatsPanel.querySelector('[data-trade-stats-content]').innerHTML=
 if(compareSection.open){const sim=cfg=>{let hit=0,fail=0,ev=0;function go(p){const x=calc(p,cfg);if(scenarioFinished(x,cfg,p)){if(x.status==='target')hit+=x.prob;if(x.status==='closed')fail+=x.prob;ev+=x.prob*x.pnl;return}go(p+'W');go(p+'L')}go('');return [hit*100,fail*100,ev]};const phases=firmForPhases==='ftmo'?[[1,v.target],[2,v.target2],[3,fv.target]]:[[1,v.target],[3,fv.target]];let rows='';for(const item of phases){const phase=item[0],target=item[1],base=phase===3?fv:v;const common=Object.assign({},base,{targetMode:1,target:target,manualStage:phase,topstepConsistency:phase===1&&firmForPhases==='topstep'});const auto=sim(Object.assign({},common,{manualRisks:{},manualRRs:{}}));const manual=sim(Object.assign({},common,{manualRisks:manualConfig(),manualRRs:manualRRConfig()}));let phaseRows='';for(let i=0;i<3;i++){const diff=manual[i]-auto[i];phaseRows+='<tr><td>'+['Target %','Failure %','EV'][i]+'</td><td>'+manual[i].toFixed(2)+'</td><td>'+auto[i].toFixed(2)+'</td><td class="'+((i===1?diff<0:diff>0)?'jj-risk-win':(i===1?diff>0:diff<0)?'jj-risk-loss':'')+'">'+diff.toFixed(2)+'</td></tr>';;}rows+='<details style="margin:6px 0;padding:8px;border:1px solid #8884;border-radius:7px"><summary style="cursor:pointer;font-weight:700">P'+phase+' · Target '+manual[0].toFixed(1)+'% / '+auto[0].toFixed(1)+'%</summary><div style="overflow-x:auto"><table style="font-size:11px;white-space:nowrap"><thead><tr><th>Metric</th><th>Manual</th><th>Auto</th><th>Δ</th></tr></thead><tbody>'+phaseRows+'</tbody></table></div></details>'; }comparePanel.querySelector('[data-compare]').innerHTML='<div style="font-size:11px;opacity:.7">Green = better · Red = worse · Δ = Manual − Auto</div>'+rows;}
 const nn=Math.max(1,Math.min(100,Math.floor(Number($('[data-account-count]').value)||10)));
 const totalFees=nn*v.accountCost,expectedFunded=nn*probability,activationFee=Math.max(0,fn('activation',0)),splitPct=Math.max(0,Math.min(1,fn('split',80)/100));
+const xfaSplitNotice=fv.xfaStandard&&Math.abs(Number(box.querySelector('[data-funded="split"]')?.value||0)-90)>0.01?
+ '<div style="margin:6px 0;font-size:11px;opacity:.8">Topstep currently publishes a 90/10 split. Your preset uses '+Number(box.querySelector('[data-funded="split"]')?.value||0).toFixed(1)+'%; the calculator preserves that custom setting. Change it to 90% for the published terms.</div>':'';
 const grossPayout=expectedFunded*netPayoutPerFunded,activationFees=expectedFunded*activationFee,netCash=grossPayout-totalFees-activationFees;
 
 let mathPanel=box.querySelector('[data-ch09-math]');
@@ -1005,7 +1007,7 @@ const fundedCards=
  metricFund('Expected funded failures',fundedFailures===null?'—':fundedFailures.toFixed(2),'Expected funded attempts that do not reach the profit target within the modeled trade depth; includes both ruin and unresolved paths.')+
  metricFund('Expected payout / funded',cash(netPayoutPerFunded),'Probability-weighted payout projection per funded attempt, before purchase and activation fees.')+
  metricFund('Payout per success',cash(netPayoutPerSuccess),'Modeled eligible payout after 50%-balance restriction, payout cap and profit split; trading fees are deducted from path P&L.');
-$('[data-funded-results]').innerHTML='<div class="jj-risk-results-grid">'+fundedCards+'</div>'+
+$('[data-funded-results]').innerHTML='<div class="jj-risk-results-grid">'+fundedCards+'</div>'+xfaSplitNotice+
  '<div style="font-size:11px;opacity:.75;margin:5px 0">Using <strong>'+(
   payoutMode?'Maximum Funded Limit Payout':replacementMode?'Reach Funded Limit':'Fixed Purchases'
  )+'</strong>: '+(fundedAttempts===null?'—':fundedAttempts.toFixed(2))+' expected funded attempts × '+(fp*100).toFixed(2)+
