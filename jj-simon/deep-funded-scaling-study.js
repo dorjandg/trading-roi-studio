@@ -171,7 +171,7 @@ if(typeof render==='function')render();
 
 /* 2026-11-11 Module 18 course cross-video audit: conditional evaluation pipeline and cash liquidity. */
 (function(){
-const chapter=(typeof curriculum!=='undefined')?curriculum.find(x=>x.slug==='scaling-big'):null;
+const chapter=(typeof curriculum!=='undefined')?curriculum.find(x=>x.slug==='scaling'):null;
 const fallback=(typeof chapters!=='undefined')?chapters.find(x=>/scal/i.test(x.slug)&&/big/i.test(x.title)):null;
 const c=chapter&&Array.isArray(chapter.sections)?chapter:fallback;
 if(!c||!Array.isArray(c.sections)||c.sections.some(s=>s.title==="Five funded slots are not fifteen guaranteed evaluation passes — inventory and liquidity audit"))return;
