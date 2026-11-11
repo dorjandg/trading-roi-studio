@@ -573,6 +573,20 @@ const vals=()=>{const num=(k,f)=>{const x=Number(box.querySelector('[data-k="'+k
 /* Topstep: two separate trading-day checkpoints with independent R1-R4
    attempt counters, one shared account balance, and inherited EOD trailing floor.
    Finite model: one modeled day per checkpoint, no extra recovery days. */
+/* Convert planned gross risk to tradable gold futures contracts when stop
+   information is present. Fees are round-turn USD per contract, default zero
+   until explicitly configured. */
+function goldExecution(v,stage,tier,planned,room,dailyRoom,remainingGoal,rr){
+ const spec=v.contractSpecs?.[stage]?.[tier];
+ const fee=Math.max(0,Number(v.roundTurnFee)||0);
+ if(!spec||!(spec.stop>0))return {risk:Math.max(0,Math.min(planned,room,dailyRoom,remainingGoal/rr)),fee:0,contracts:null};
+ const pointValue=spec.symbol==='GC'?100:10;
+ const tickStop=Math.ceil((spec.stop-1e-9)/.1)*.1;
+ const unitRisk=tickStop*pointValue;
+ const maxContracts=Math.floor(Math.max(0,Math.min(planned/unitRisk,room/(unitRisk+fee),dailyRoom/(unitRisk+fee),remainingGoal/(unitRisk*rr-fee>0?unitRisk*rr-fee:Infinity))));
+ const contracts=Math.max(0,maxContracts);
+ return {risk:contracts*unitRisk,fee:contracts*fee,contracts};
+}
 function calcTopstep(path,v){
  const checkpointTarget=v.target/2;
  const rate=Math.max(.01,Math.min(1,(v.consistencyRate||50)/100));
@@ -599,9 +613,10 @@ function calcTopstep(path,v){
    v.riskModel==='fixed'?v.baseRisk:
    v.riskModel==='half'?Math.max(0,required/rr/2):
    v.fixedRisk||v.baseRisk||Math.max(0,required/rr);
-  const risk=Math.max(0,Math.min(planned,Math.max(0,room-v.floor),dailyRoom,required/rr));
+  const execution=goldExecution(v,checkpointStage,Math.min(3,streak),planned,Math.max(0,room-v.floor),dailyRoom,required,rr);
+  const risk=execution.risk;
   if(risk<=1e-7){status='daily-blocked';break;}
-  const delta=c==='W'?risk*rr:-risk;
+  const delta=(c==='W'?risk*rr:-risk)-execution.fee;
   total+=delta;stagePnl+=delta;stageTrades++;
   dailyTotals[day]=stagePnl;
   prob*=c==='W'?v.winRate/100:1-v.winRate/100;
@@ -614,7 +629,7 @@ function calcTopstep(path,v){
     if(best<=total*rate+1e-7){passed=true;status='target'}
    }
   }
-  steps.push({c,risk,rr,pnl:total,stage:checkpointStage,checkpointStage,
+  steps.push({c,risk,fee:execution.fee,contracts:execution.contracts,rr,pnl:total,stage:checkpointStage,checkpointStage,
    stagePnl,passed,day,dayPnl:stagePnl,lossesToday:0,
    dailyLeft:Math.max(0,v.dailyLimit+stagePnl)});
   if(status==='active'&&passed&&stage===1){
@@ -675,15 +690,16 @@ function calcTopstepFunded(path,v){
    v.riskModel==='half'?(v.target-total)/rr/2:
    v.riskModel==='buffer'?(steps.some(t=>t.c==='W')?450:150):
    v.fixedRisk||v.baseRisk||(v.target-total)/rr;
-  const risk=Math.max(0,Math.min(planned,room-v.floor,dailyRoom,(v.target-total)/rr));
+  const execution=goldExecution(v,3,Math.min(3,streak),planned,room-v.floor,dailyRoom,v.target-total,rr);
+  const risk=execution.risk;
   if(!(risk>1e-7)){status='closed';break;}
-  const delta=c==='W'?risk*rr:-risk;
+  const delta=(c==='W'?risk*rr:-risk)-execution.fee;
   total+=delta;dayPnl+=delta;
   if(c==='L')lossesToday++;
   prob*=c==='W'?v.winRate/100:1-v.winRate/100;
   if(total<=trailingFloor+1e-7)status='closed';
   if(status==='active'&&total>=v.target-1e-7)status='target';
-  steps.push({c,risk,rr,pnl:total,stage:1,checkpointStage:3,stagePnl:total,
+  steps.push({c,risk,fee:execution.fee,contracts:execution.contracts,rr,pnl:total,stage:1,checkpointStage:3,stagePnl:total,
    passed:status==='target',day,dayPnl,lossesToday,
    dailyLeft:Math.max(0,v.dailyLimit+dayPnl)});
  }
@@ -745,10 +761,22 @@ const scenarioFinished=(x,cfg,requestedPath='')=>x.status!=='active'||
   x.steps.length>=2*x.checkpointLimit||
   (requestedPath.length>0&&x.steps.length<requestedPath.length):
   x.steps.length>=cfg.depth);
+const readContractSpecs=()=>{
+ const specs={};
+ for(let stage=1;stage<=3;stage++){
+  specs[stage]=[];
+  const symbol=box.querySelector('[data-contract-symbol="'+stage+'"]')?.value||'MGC';
+  for(let tier=1;tier<=4;tier++){
+   const stop=Number(box.querySelector('[data-contract-stop="'+stage+'-'+tier+'"]')?.value);
+   specs[stage].push(stop>0?{symbol,stop}:null);
+  }
+ }
+ return specs;
+};
 function renderRisk(){
 contractSizing();
 const firmForPhases=firmBar.querySelector('[data-firm-type]').value;const expectedPhases=firmForPhases==='ftmo'?'2':'1';if($('[data-target-mode]').value!==expectedPhases)$('[data-target-mode]').value=expectedPhases;
-const v=vals(),leaves=[],allPaths=[];Object.assign(v,STRATEGIES[activeStrategy].eval);v.manualRisks=manualConfig();v.manualRRs=manualRRConfig();if(firmForPhases==='topstep'){v.topstepOptionalDailyCap=box.querySelector('[data-topstep-daily-cap]').checked;v.topstepConsistency=true;if(activeStrategy==='current')v.fixedRisk=1000;v.consistencyRate=Math.max(1,Math.min(100,Number(box.querySelector('[data-consistency-limit]')?.value)||55));}
+const v=vals(),leaves=[],allPaths=[];Object.assign(v,STRATEGIES[activeStrategy].eval);v.manualRisks=manualConfig();v.manualRRs=manualRRConfig();v.contractSpecs=readContractSpecs();v.roundTurnFee=0;if(firmForPhases==='topstep'){v.topstepOptionalDailyCap=box.querySelector('[data-topstep-daily-cap]').checked;v.topstepConsistency=true;if(activeStrategy==='current')v.fixedRisk=1000;v.consistencyRate=Math.max(1,Math.min(100,Number(box.querySelector('[data-consistency-limit]')?.value)||55));}
 function walk(path){const x=calc(path,v);if(path&&allPaths.length<4000)allPaths.push(x);if(scenarioFinished(x,v,path)){leaves.push(x);return}walk(path+'W');walk(path+'L')}
 walk('');
 const counts={target:0,closed:0,active:0,'daily-blocked':0};leaves.forEach(x=>counts[x.status]++);
@@ -793,7 +821,7 @@ const kpiTooltip=(label,value,help)=>'<div class="jj-kpi-help" tabindex="0" aria
 const mostLikely=leaves.reduce((best,x)=>!best||x.prob>best.prob?x:best,null);
 const fn=(k,d)=>{const x=Number(box.querySelector('[data-funded="'+k+'"]').value);return Number.isFinite(x)?x:d};
 const fv={targetMode:1,target:Math.max(.01,fn('target',4000)),target2:1,limit:Math.max(.01,fn('limit',2000)),dailyLimit:Math.max(.01,fn('dailyLimit',1000)),tradesPerDay:Math.max(1,Math.min(100,Math.floor(fn('tradesPerDay',3)))),rr:Math.max(.01,fn('rr',3)),floor:Math.max(0,fn('floor',100)),winRate:Math.max(0,Math.min(100,fn('winRate',50))),depth:Math.max(1,Math.min(12,Math.floor(fn('depth',6))))};
-if(firmForPhases==='topstep'&&activeStrategy==='current')fv.fixedRisk=1000;else if(activeStrategy==='current')fv.ftmoFundedBuilder=true;Object.assign(fv,STRATEGIES[activeStrategy].fund);fv.manualRisks=manualConfig();fv.manualRRs=manualRRConfig();fv.manualStage=3;fv.topstepOptionalDailyCap=firmForPhases==='topstep'&&box.querySelector('[data-topstep-daily-cap]').checked;let fp=0,fr=0;const fundedLeaves=[];
+if(firmForPhases==='topstep'&&activeStrategy==='current')fv.fixedRisk=1000;else if(activeStrategy==='current')fv.ftmoFundedBuilder=true;Object.assign(fv,STRATEGIES[activeStrategy].fund);fv.manualRisks=manualConfig();fv.manualRRs=manualRRConfig();fv.contractSpecs=readContractSpecs();fv.roundTurnFee=0;fv.manualStage=3;fv.topstepOptionalDailyCap=firmForPhases==='topstep'&&box.querySelector('[data-topstep-daily-cap]').checked;let fp=0,fr=0;const fundedLeaves=[];
 if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'?calcTopstepFunded(path,fv):calc(path,fv);if(x.status!=='active'||x.steps.length>=fv.depth){fundedLeaves.push(x);if(x.status==='target')fp+=x.prob;if(x.status==='closed')fr+=x.prob;return}fw(path+'W');fw(path+'L')}fw('')}
 
 const cash=x=>'$'+x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
