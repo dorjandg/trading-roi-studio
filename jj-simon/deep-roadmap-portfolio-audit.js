@@ -166,3 +166,19 @@ c.sections.push({title:'Retrospective opportunities are not independent executab
 if(typeof renderNav==='function')renderNav();
 if(typeof render==='function')render();
 })();
+
+/* Module 17 cross-video audit: original course transcript, audio/chart unverified. */
+(function(){
+if(typeof chapters==='undefined')return;
+const c=chapters.find(x=>x.slug==='scaling');
+if(!c||!Array.isArray(c.sections)||c.sections.some(s=>s.title==='Funded setup classes versus account executions and value equivalents'))return;
+c.sections.push({title:'Funded setup classes versus account executions and value equivalents',points:[
+'JJ’s How Many Trades Per Day? distinguishes three funded setup classes (overnight, New York AM 100-point, and two 50-point moves), while also discussing copying setups across more accounts. His “three funded trades” wording at 00:11–00:23 is therefore ambiguous: three setup classes should not be mistaken for a verified provider cap of three account executions.',
+'His one-trade-per-funded-account guideline has a narrated exception for a two-leg 50-point sequence (00:42–01:14, 04:10–04:21). Evaluation trades have no stated overall count cap, but he separately limits reversion attempts to three (03:11–03:25). Funded midday avoidance around 11:00–14:00 differs from his smaller-target evaluation exception (03:24–03:56); the source does not establish a time zone here.',
+'In The Mindset Shift To Trading Multiple Accounts (02:09–02:39), four profitable accounts plus one new funded account are described as roughly thirteen new-account value equivalents: 4 × 3 + 1 = 13, using a hypothetical one-third funded success probability. These are conditional value units, not thirteen actual accounts. One lost new account is then about 1/13 of this illustrative value, despite being 1/5 of the account count.',
+'The same lesson says trading half the accounts would make the same money “in half the time” (01:20–01:34), which reverses the direction of simple throughput arithmetic for a fixed total profit target. Treat as an unresolved narration/transcription issue pending video check. Neither the 33% success assumption nor the claim of statistically optimal daily rotation has been independently validated.',
+'Copying one signal into several accounts increases correlated account executions, not independent market events. Provider trailing drawdown, session timing, chart context, actual win rate and fill records remain unverified.'
+],src:[['How Many Trades Per Day?','00:05–00:23; 00:42–01:14; 01:22–02:25; 03:11–04:21','1cdESUiP_6dF8s8VZjVKBmVa2a8ey4kve'],['The Mindset Shift To Trading Multiple Accounts','01:20–01:34; 02:09–02:39','1SNtLcgSoTCDabD81yPA9-GLWJtrw77jt']]});
+if(typeof renderNav==='function')renderNav();
+if(typeof render==='function')render();
+})();
