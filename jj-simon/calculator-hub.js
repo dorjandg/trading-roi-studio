@@ -250,7 +250,7 @@ fundedManualPanel.addEventListener('change',persistContracts);
 
 try{const stored=JSON.parse(localStorage.getItem(manualRiskKey)||'{}');box.querySelectorAll('[data-manual-mode]').forEach(el=>{if(stored['m'+el.dataset.manualMode])el.value=stored['m'+el.dataset.manualMode]});box.querySelectorAll('[data-manual-risk]').forEach(el=>{const val=stored['r'+el.dataset.manualRisk];if(Number(val)>0)el.value=val});box.querySelectorAll('[data-manual-rr]').forEach(el=>{const val=stored['rr'+el.dataset.manualRr];if(Number(val)>0)el.value=val})}catch(e){}
 const comparePanel=document.createElement('div');comparePanel.innerHTML='<div data-compare style="min-width:0"></div>';
-const manualConfig=()=>{const result={};for(let n=1;n<=3;n++){const mode=box.querySelector('[data-manual-mode="'+n+'"]').value;if(mode==='manual')result[n]=[1,2,3,4].map(k=>Math.max(.01,Number(box.querySelector('[data-manual-risk="'+n+'-'+k+'"]').value)||.01))}return result};const manualRRConfig=()=>{const result={};for(let n=1;n<=3;n++)result[n]=[1,2,3,4].map(k=>{const el=box.querySelector('[data-manual-rr="'+n+'-'+k+'"]');return el.value!==''&&Number(el.value)>0?Number(el.value):null});return result};
+const manualConfig=()=>{const result={};for(let n=1;n<=3;n++){const mode=box.querySelector('[data-manual-mode="'+n+'"]').value;if(mode==='manual')result[n]=[1,2,3,4].map(k=>Math.max(0,Number(box.querySelector('[data-manual-risk="'+n+'-'+k+'"]').value)||0))}return result};const manualRRConfig=()=>{const result={};for(let n=1;n<=3;n++)result[n]=[1,2,3,4].map(k=>{const el=box.querySelector('[data-manual-rr="'+n+'-'+k+'"]');return el.value!==''&&Number(el.value)>0?Number(el.value):null});return result};
 const persistManualRisks=()=>{contractSizing();const stored={};box.querySelectorAll('[data-manual-mode]').forEach(el=>stored['m'+el.dataset.manualMode]=el.value);box.querySelectorAll('[data-manual-risk]').forEach(el=>stored['r'+el.dataset.manualRisk]=el.value);box.querySelectorAll('[data-manual-rr]').forEach(el=>stored['rr'+el.dataset.manualRr]=el.value);try{localStorage.setItem(manualRiskKey,JSON.stringify(stored))}catch(e){}renderRisk()};manualPanel.addEventListener('change',persistManualRisks);fundedManualPanel.addEventListener('change',persistManualRisks);
 
 group('funded-results','04 · Funded · Results',[box.querySelector('[data-funded-results]')]);
@@ -747,8 +747,13 @@ const t1Probability=leaves.filter(x=>x.stage===2||x.status==='target').reduce((s
 const failProbability=leaves.filter(x=>x.status==='closed').reduce((sum,x)=>sum+x.prob,0);
 const unresolvedProbability=leaves.filter(x=>x.status==='active'||x.status==='daily-blocked').reduce((sum,x)=>sum+x.prob,0);
 const expectedPnl=leaves.reduce((sum,x)=>sum+x.prob*x.pnl,0);
-const resolvedProbability=probability+failProbability;
-const resolvedPassRate=resolvedProbability>0?probability/resolvedProbability:0;
+/* Outcome categories below describe the ACTUAL enumerated paths, not the
+   hypothetical squared-checkpoint funnel. Mixing their denominators produces
+   impossible pass/ruin totals. */
+const resolvedProbability=actualEvaluationProbability+failProbability;
+const terminalMass=leaves.reduce((sum,path)=>sum+path.prob,0);
+if(Math.abs(terminalMass-1)>1e-6)console.warn('Evaluation probability mass invalid',terminalMass);
+const resolvedPassRate=resolvedProbability>0?actualEvaluationProbability/resolvedProbability:0;
 const kpiHelp={
 'Pass chance':'Probability that one account reaches its selected target before hitting the loss limit, within the simulated trade depth. Sum of the probabilities of passing terminal paths.',
 'Risk of ruin':'Probability that one account hits the modeled account loss allowance before reaching the target, within the simulated trade depth. This is not lifetime risk.',
