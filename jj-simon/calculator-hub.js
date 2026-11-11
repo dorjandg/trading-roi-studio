@@ -275,6 +275,9 @@ tradeStatsPanel.dataset.tradeStatsPanel='';
 tradeStatsPanel.innerHTML='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px"><label style="font-size:11px">Trade system <select data-trade-stats-scope style="font-size:11px"><option value="evaluation">Evaluation</option><option value="funded">Funded</option></select></label><small style="opacity:.7">Probability-weighted trade paths</small></div><div data-trade-stats-content></div>';
 box.querySelector('[data-section="funded-paths"]').after(tradeStatsPanel);
 group('trade-statistics','12 · Trade Statistics · Winning & Losing Streaks',[tradeStatsPanel]);
+const kpiFourteen=document.createElement('div');kpiFourteen.dataset.kpiFourteen='';
+mountKpiFourteen(kpiFourteen);
+group('financial-formulas','14 · P1–P4 Financial Formulas & KPIs',[kpiFourteen]);
 const tradeStatsScope=tradeStatsPanel.querySelector('[data-trade-stats-scope]');
 tradeStatsScope.addEventListener('change',()=>renderRisk());
 const purchaseStrategy=document.createElement('div');purchaseStrategy.style.cssText='display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;margin:0 0 10px';purchaseStrategy.innerHTML='<strong>Purchase strategy</strong><select data-purchase-strategy aria-label="Account purchase strategy"><option value="fixed">Fixed purchases</option><option value="target">Reach Funded Limit</option><option value="payout">Maximum Funded Limit Payout</option></select><span data-purchase-strategy-help style="opacity:.75"></span>';box.querySelector('[data-section="funnel"] .jj-risk-section-body').prepend(purchaseStrategy);const strategySelect=purchaseStrategy.querySelector('[data-purchase-strategy]');let purchaseStrategyMode='target';
@@ -931,6 +934,7 @@ if(!mathPanel){
  mathPanel.innerHTML='<div data-math-cards class="jj-risk-results-grid"></div><small style="opacity:.75">Calculated from Chapter 09 settings. Probabilities use finite simulation depth; historical confidence intervals require observed trade/account records.</small>';
  (box.querySelector('[data-section="trade-statistics"]')||box.querySelector('[data-section="funded-paths"]')||box.lastElementChild).after(mathPanel);
  group('math-bankroll','13 · Math & Bankroll KPIs',[mathPanel]);
+ const fourteen=box.querySelector('[data-section="financial-formulas"]');const thirteen=box.querySelector('[data-section="math-bankroll"]');if(fourteen&&thirteen)thirteen.after(fourteen);
 }
 const fmtMathPct=x=>Number.isFinite(x)?(100*x).toFixed(2)+'%':'—';
 const evalP=Math.max(0,Math.min(1,v.winRate/100)),fundP=Math.max(0,Math.min(1,fv.winRate/100));
@@ -1390,10 +1394,7 @@ box.addEventListener('change',e=>{if(e.target.matches('[data-filter]')){page=0;e
 box.addEventListener('click',e=>{const btn=e.target.closest('button');if(!btn)return;if(btn.hasAttribute('data-optimize-risk'))return;if(btn.hasAttribute('data-funded-expand')){const key=btn.dataset.fundedExpand;if(expandedFunded.has(key))expandedFunded.delete(key);else expandedFunded.add(key);renderRisk();return}if(btn.hasAttribute('data-funded-prev')){fundedPage=Math.max(0,fundedPage-1);renderRisk();return}if(btn.hasAttribute('data-funded-next')){fundedPage++;renderRisk();return}if(btn.hasAttribute('data-phase')){phaseMode=btn.dataset.phase;saveSettings()}else if(btn.hasAttribute('data-account-mode')){accountMode=btn.dataset.accountMode;saveSettings()}else if(btn.hasAttribute('data-mode-button')){box.querySelector('[data-target-mode]').value=btn.dataset.modeButton;page=0;expandedPaths.clear();saveSettings()}else if(btn.hasAttribute('data-expand-path')||btn.hasAttribute('data-path')){const key=btn.hasAttribute('data-expand-path')?btn.dataset.expandPath:btn.dataset.path;if(expandedPaths.has(key))expandedPaths.delete(key);else expandedPaths.add(key)}else if(btn.hasAttribute('data-prev'))page--;else if(btn.hasAttribute('data-next'))page++;renderRisk()});
 renderRisk();
 }
-const jj9Slug='calc-financial-kpis';
-if(!chapters.some(x=>x.slug===jj9Slug))chapters.push({slug:jj9Slug,group:'Calculators & Simulations',title:'P1–P4 Financial Formulas & KPIs',intro:'A dedicated reference for the probability, trade-capacity, payout and ROI calculations discussed in JJ9. Expand the table to inspect definitions and formulas.',status:'Worked statistical example · not a live payout guarantee',sections:[{title:'How to read these KPIs',points:['The reference uses 10 initial accounts, a 25% independent trade win rate, $50 purchase fees, $150 funded activation, and $2,000 wallet cash per successful payout.','P1 and P2 pass on W, LW or LLW. P3 reaches its target on W or LW; LLW restarts; LLL loses the account.','The table contains expected values and probabilities, not guaranteed counts or realized cash. Fees and payout eligibility must be verified against actual firm rules.']}]});
-if(!curriculum.some(x=>x.slug===jj9Slug))curriculum.push({slug:jj9Slug,title:'P1–P4 Financial Formulas & KPIs',status:'review',reason:'Illustrative probability and financial glossary; no independent course-source attribution for JJ9 user model.'});
-function mountJJ9Reference(){const root=document.getElementById(jj9Slug);if(!root||root.querySelector('.jj9-kpi-reference'))return;
+function mountKpiFourteen(target){if(target.querySelector('.jj9-kpi-reference'))return;
 /* jj9-kpi-reference-v2: compact, expandable formula glossary and example. */
 (function(){
  const n=10,w=.25,q=1-w,pass=1-q*q*q,success=(w+q*w)/(1-q*q*w);
@@ -1439,10 +1440,8 @@ function mountJJ9Reference(){const root=document.getElementById(jj9Slug);if(!roo
  table.append(tbody);scroller.append(table);detail.append(scroller);
  const note=document.createElement('p');note.textContent='Hover a row on desktop or read the explanation column on mobile. P1/P2 wins are qualifications, not wallet cash. The earlier +$480 / −$22 (22×) amounts are bookkeeping allocations, NOT cash trade payoffs. Assumes independent trades/accounts, unlimited P3 LLW resets, and full payout once the funded target is reached.';detail.append(note);
  let style=document.getElementById('jj9-kpi-reference-style');if(!style){style=document.createElement('style');style.id='jj9-kpi-reference-style';style.textContent='.jj9-kpi-reference{margin:8px 0;border:1px solid #8885;border-radius:8px;padding:8px;font-size:11px}.jj9-kpi-reference summary{font-weight:700;cursor:pointer}.jj9-kpi-reference p{font-size:11px;line-height:1.45}.jj9-kpi-reference table{border-collapse:collapse;width:100%;font-size:11px}.jj9-kpi-reference th,.jj9-kpi-reference td{text-align:left;vertical-align:top;border-bottom:1px solid #8883;padding:6px}.jj9-kpi-reference td:nth-child(2){font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}@media(max-width:600px){.jj9-kpi-reference{padding:6px}.jj9-kpi-reference th,.jj9-kpi-reference td{padding:5px 4px;font-size:10px}.jj9-kpi-reference td:last-child{min-width:185px}}';document.head.append(style)}
- root.append(detail);
+ target.append(detail);
 })();
-
-
 }
-const original=render;render=function(){original();if(active===slug)mount();if(active===jj9Slug)mountJJ9Reference()};if(new URLSearchParams(location.search).get('topic')===slug||(!new URLSearchParams(location.search).get('topic')&&(()=>{try{return localStorage.getItem('jj-academy-last-page-v1')===slug}catch(e){return false}})())){active=slug;try{localStorage.setItem('jj-academy-last-page-v1',slug)}catch(e){}}if(typeof jjRebuildMobileSelector==='function')jjRebuildMobileSelector();renderNav();render();
+const original=render;render=function(){original();if(active===slug)mount();};if(new URLSearchParams(location.search).get('topic')===slug||(!new URLSearchParams(location.search).get('topic')&&(()=>{try{return localStorage.getItem('jj-academy-last-page-v1')===slug}catch(e){return false}})())){active=slug;try{localStorage.setItem('jj-academy-last-page-v1',slug)}catch(e){}}if(typeof jjRebuildMobileSelector==='function')jjRebuildMobileSelector();renderNav();render();
 })();
