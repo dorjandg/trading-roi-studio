@@ -1074,12 +1074,17 @@ const secondStageSteps=path=>{
 };
 const successfulFundedSteps=path=>path.status==='target'?path.steps:null;
 const averageP2=stageAverage(leaves,checkpointSteps);
-const averageP3=stageAverage(leaves,secondStageSteps);
+/* The Topstep funnel treats both checkpoints as independent copies of the
+   same strategy. Their successful-path averages must therefore also match.
+   Do not mix a carried-state stage-2 average with modeled checkpoint rates. */
+const averageP3=firmType==='topstep'?averageP2:stageAverage(leaves,secondStageSteps);
 const averageP4=stageAverage(fundedLeaves,successfulFundedSteps);
 const totalTrades=(paths,n,portion)=>n===null||!Number.isFinite(n)||!paths.length?null:n*paths.reduce((sum,path)=>sum+path.prob*portion(path).length,0);
 const cut=path=>{const n=tradesBeforeCheckpoint(path);return n===null?path.steps.length:n;};
 const totP2=totalTrades(leaves,modelBuys,path=>path.steps.slice(0,cut(path)));
-const totP3=totalTrades(leaves,modelBuys,path=>path.steps.slice(cut(path)));
+/* The carried-state second-stage trade total is not a valid independent-stage
+   forecast. Hide it rather than present misleading precision. */
+const totP3=firmType==='topstep'?null:totalTrades(leaves,modelBuys,path=>path.steps.slice(cut(path)));
 const totP4=totalTrades(fundedLeaves,modelPassed,path=>path.steps);
 
 /* Exactly four sequential checkpoints. Funded activation is not an
