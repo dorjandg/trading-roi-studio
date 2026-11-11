@@ -576,7 +576,8 @@ function calcTopstep(path,v){
   const day=stage,checkpointStage=stage;
   const required=stage===1?checkpointTarget-stagePnl:Math.max(v.target,checkpointTarget/rate)-total;
   const room=total-trailingFloor,dailyRoom=v.dailyLimit+stagePnl;
-  if(room<=v.floor+1e-7||dailyRoom<=1e-7||required<=1e-7){status='closed';break}
+  if(room<=v.floor+1e-7){status='closed';break}
+  if(dailyRoom<=1e-7||required<=1e-7)break;
   let streak=0;
   for(let i=steps.length-1;i>=0;i--){
    if(steps[i].checkpointStage!==checkpointStage||steps[i].c==='W')break;
@@ -590,7 +591,7 @@ function calcTopstep(path,v){
    v.riskModel==='half'?Math.max(0,required/rr/2):
    v.fixedRisk||v.baseRisk||Math.max(0,required/rr);
   const risk=Math.max(0,Math.min(planned,room,dailyRoom,required/rr));
-  if(risk<=1e-7){status='closed';break}
+  if(risk<=1e-7)break;
   const delta=c==='W'?risk*rr:-risk;
   total+=delta;stagePnl+=delta;stageTrades++;
   dailyTotals[day]=stagePnl;
@@ -1093,6 +1094,7 @@ $('[data-funnel]').innerHTML='<div class="jj-funnel-wrap">'+
  '<div class="jj-funnel-note">'+
  (payoutMode?'Reverse target: P4 funded profit successes ÷ funded pass rate = P3 qualified funded accounts; P3 ÷ evaluation pass = P1 purchases. ':'')+
  'Avg T / W / L are the average trades, wins and losses within EACH stage among successful paths. They exclude failed accounts and are not cumulative. P1 has no trades; P2 is the first checkpoint, P3 the remaining evaluation trades, and P4 funded target trades. '+
+ (firmType==='topstep'?'Topstep P1 and P2 are separate checkpoint days, each with its own R1–R4 counter and up to '+Math.min(8,v.depth)+' modeled trades (max 8 per checkpoint for performance). EOD trailing loss allowance carries into P2; equal trade setups need not have equal passes if available drawdown differs. ':'')+
  'P1 purchases: '+funnelCount(modelBuys)+'; P2 first checkpoint passed: '+funnelCount(funnelP1)+
  '; P3 evaluation passed and funded: '+funnelCount(funnelP3)+
  '; P4 funded payout profit target: '+funnelCount(funnelP4)+'. '+
