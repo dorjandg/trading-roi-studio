@@ -118,7 +118,7 @@ near(rate(ce,x=>x.status==='target')+blocked+breached,1,'Exclusive evaluation ou
 near(breached,0,'No breached evaluation in current limited-attempt preset');
 assert(blocked>0.8,'Most paths remain unresolved after the configured attempts');
 // Funnel conditional rate and counts must use the SAME probability model.
-assert(/const p2Conditional=firmType==='topstep'\?checkpointProbability:actualP2Conditional;/.test(source),
+assert(/const p2Conditional=firmType==='topstep'\?threeAttemptPass:actualP2Conditional;/.test(source),
  'Topstep P2 and P3 must have identical checkpoint rates');
 assert(/const funnelP3=funnelP1===null\?null:funnelP1\*p2Conditional;/.test(source),
  'P3 count must equal P2 count multiplied by displayed conditional rate');
@@ -136,5 +136,16 @@ assert(Math.abs(carriedConditional-checkpoint)>.1,
 const purchaseForFive=5/(rate(cf,x=>x.status==='target')*checkpoint*checkpoint);
 near(purchaseForFive*checkpoint*checkpoint*rate(cf,x=>x.status==='target'),5,'Five-payout reverse plan');
 near(purchaseForFive*checkpoint*checkpoint,5/rate(cf,x=>x.status==='target'),'Funded account allocation');
+// User-defined rule: W, LW, LLW pass; LLL loses the checkpoint.
+const pThree=1-(1-.30)**3;
+near(pThree,.657,'Three-attempt checkpoint at 30% WR');
+near(pThree*pThree,.431649,'Both identical checkpoints');
+near(1-(1-.25)**3,.578125,'Three-attempt checkpoint at 25% WR');
+assert(/const threeAttemptPass=1-Math.pow\(1-Math.max\(0,Math.min\(1,v.winRate\/100\)\),3\);/.test(source),
+ 'Website must use three-losses-in-a-row pass formula');
+assert(/const planningProbability=firmForPhases==='topstep'\?threeAttemptPass\*threeAttemptPass:actualEvaluationProbability;/.test(source),
+ 'Evaluation pass must multiply two identical three-attempt stages');
+const neededForFive=5/(pThree*pThree*rate(cf,x=>x.status==='target'));
+near(neededForFive*pThree*pThree*rate(cf,x=>x.status==='target'),5,'Payout target from three-attempt funnel');
 console.log(JSON.stringify({evaluationMass:sum(e),checkpoint,modeledEvaluationPass:checkpoint**2,
  carriedEvaluationPass:carried,fundedMass:sum(f),fundedPass,fees,payout,roi:(payout-fees)/fees*100},null,2));
