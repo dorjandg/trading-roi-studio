@@ -1423,7 +1423,17 @@ $('[data-prev]').disabled=page===0;$('[data-next]').disabled=(page+1)*10>=shown.
 }
 box.addEventListener('change',e=>{if(e.target.matches('[data-consistency-enabled]')){let old={};try{old=JSON.parse(localStorage.getItem(consistencyKey)||'{}')||{}}catch(x){}old.enabled=e.target.checked;try{localStorage.setItem(consistencyKey,JSON.stringify(old))}catch(x){}renderRisk()}});
 box.addEventListener('change',e=>{if(e.target.matches('[data-consistency-limit],[data-consistency-days]')){const old=(()=>{try{return JSON.parse(localStorage.getItem(consistencyKey)||'{}')}catch(x){return {}}})();if(e.target.matches('[data-consistency-limit]'))old.limit=e.target.value;else old.days=e.target.value;try{localStorage.setItem(consistencyKey,JSON.stringify(old))}catch(x){}renderRisk()}});
-box.addEventListener('input',e=>{if(e.target.matches('[data-k],[data-account-count],[data-funded]')){page=0;saveSettings();renderRisk()}});
+/* Recompute every scenario when an allowance or funded parameter changes. Preserve the active numeric field while the user types. */
+const refreshRiskParameter=e=>{
+ if(!e.target.matches('[data-k],[data-account-count],[data-funded]'))return;
+ const el=e.target,selector=el.hasAttribute('data-funded')?'[data-funded="'+el.getAttribute('data-funded')+'"]':el.hasAttribute('data-k')?'[data-k="'+el.getAttribute('data-k')+'"]':'[data-account-count]';
+ const start=el.selectionStart,end=el.selectionEnd;
+ page=0;fundedPage=0;expandedFunded.clear();saveSettings();renderRisk();
+ const current=box.querySelector(selector);
+ if(current&&current!==document.activeElement&&document.activeElement===el){current.focus({preventScroll:true});try{if(start!==null)current.setSelectionRange(start,end)}catch(_){}}
+};
+box.addEventListener('input',refreshRiskParameter);
+box.addEventListener('change',refreshRiskParameter);
 box.addEventListener('change',e=>{if(e.target.matches('[data-funded-path-filter]')){fundedPage=0;expandedFunded.clear();renderRisk()}});
 box.addEventListener('change',e=>{if(e.target.matches('[data-filter]')){page=0;expandedPaths.clear();renderRisk()}});
 box.addEventListener('click',e=>{const btn=e.target.closest('button');if(!btn)return;if(btn.hasAttribute('data-optimize-risk'))return;if(btn.hasAttribute('data-funded-expand')){const key=btn.dataset.fundedExpand;if(expandedFunded.has(key))expandedFunded.delete(key);else expandedFunded.add(key);renderRisk();return}if(btn.hasAttribute('data-funded-prev')){fundedPage=Math.max(0,fundedPage-1);renderRisk();return}if(btn.hasAttribute('data-funded-next')){fundedPage++;renderRisk();return}if(btn.hasAttribute('data-phase')){phaseMode=btn.dataset.phase;saveSettings()}else if(btn.hasAttribute('data-account-mode')){accountMode=btn.dataset.accountMode;saveSettings()}else if(btn.hasAttribute('data-mode-button')){box.querySelector('[data-target-mode]').value=btn.dataset.modeButton;page=0;expandedPaths.clear();saveSettings()}else if(btn.hasAttribute('data-expand-path')||btn.hasAttribute('data-path')){const key=btn.hasAttribute('data-expand-path')?btn.dataset.expandPath:btn.dataset.path;if(expandedPaths.has(key))expandedPaths.delete(key);else expandedPaths.add(key)}else if(btn.hasAttribute('data-prev'))page--;else if(btn.hasAttribute('data-next'))page++;renderRisk()});
