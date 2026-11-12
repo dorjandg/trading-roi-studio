@@ -77,3 +77,11 @@ GitHub commit history on `jj-simon-knowledge-hub` contains earlier edits. This r
 - **Protected:** Original T1 risk/RR/stop/fee/win-rate inputs unchanged.
 - **Commit:** `7eae6d857f79b59231b98c23c751609b9582c986`.
 - **Verification:** JS syntax passed; no independent browser or probability-mass validation yet. Extra consistency-repair days remain unsupported, so ROI and P2 conditional pass rate are provisional.
+
+## FIX-007 — 2026-11-12 — Daily P2 target vs fully qualified evaluation
+- **Discussion:** User correctly questioned P1 daily 57.8% vs P2 qualification 20.3%, given identical $1,500 day targets and risks.
+- **Problem:** UI presented a daily target pass rate and a stricter full evaluation pass rate as comparable metrics, obscuring why they differed.
+- **Change:** Added P2 $1,500 daily target probability conditional on P1, separate from P2 fully qualified probability and probability mass reaching P2 daily target without satisfying qualification. Existing funnel and ROI still use actual fully qualified evaluation probability.
+- **Reason:** Do not mislabel a strategy checkpoint success as a funded account; preserve true broker constraints.
+- **Commit:** `2a2e66fdbb70d4f7b4592bee37a70097a18fe092`.
+- **Verification:** JavaScript syntax checked; numeric regression, live deployment and additional consistency-repair days still outstanding. T1 preset untouched.
