@@ -57,3 +57,13 @@ GitHub commit history on `jj-simon-knowledge-hub` contains earlier edits. This r
 - **Commit:** `581dfe50371f1851b49c54fece7d4c5870d67ed7`.
 - **Protected:** T1 preset, risk sequence, win rate, and ROI formula unchanged.
 - **Validation:** JavaScript syntax checked; live deployment, exact numerical probability-mass audit, and independent rule validation are pending. The diagnostic is not proof the engine is correct.
+
+## FIX-005 — 2026-11-12 — Consistency repair-day limitation (warning, not full engine repair)
+- **Discussion:** User rejected a 60.7% P1 versus 22.1% P2 gap and requested a proper audit.
+- **Finding:** With a 50% best-day consistency limit, exactly two profitable trading days must have equal profit. T1 checkpoint winners can earn $1500, $1520 or $1530, so mismatched profits may require an additional day to satisfy consistency. The current evaluation engine uses two checkpoint days and has no third-day continuation.
+- **Problem:** Model can understate eventual evaluation completion, making P2 and ROI provisional. Carrying the EOD trailing drawdown is still necessary.
+- **Change:** Added explicit FIX-005 limitation warning in the calculator's funnel diagnostics and history. No forced equality or fabricated corrected percentage.
+- **Target for next implementation:** Support extra consistency-repair days, carry EOD drawdown correctly, enforce per-day limits, separate failed/unresolved paths, and regression-test probabilities and ROI against independent enumeration.
+- **Protected:** User's T1 preset and financial formulas unchanged.
+- **Commit:** `2ad84702e1e74676be47591f67c80e298da959e2`.
+- **Verification:** JS syntax checked; full engine fix and live deployment not yet verified.
