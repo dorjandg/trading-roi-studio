@@ -835,7 +835,16 @@ const counts={target:0,closed:0,active:0,'daily-blocked':0};leaves.forEach(x=>co
   });
   const rows=[...paths.values()].sort((a,b)=>a.key.length-b.key.length||a.key.localeCompare(b.key)).slice(0,250);
   const title=stage===1?'P1 · Challenge scenarios':'P2 · Verification / second checkpoint scenarios';
-  return '<details class="jj-risk-section" open><summary>'+title+'</summary><div class="jj-risk-section-body"><div style="overflow-x:auto"><table><thead><tr><th>Path</th><th>Chance %</th><th>Trades</th><th>Stage P&L</th><th>Result</th></tr></thead><tbody>'+rows.map(x=>'<tr><td>'+x.key+'</td><td>'+(x.conditional*100).toFixed(2)+'%</td><td>'+x.steps.length+'</td><td>'+fundedBalance(x.pnl)+'</td><td>'+(x.passed?'Passed':x.final?'Stopped':'Continuing')+'</td></tr>').join('')+'</tbody></table></div><small style="opacity:.7">Path chance is conditional on entering this stage; rows include intermediate prefixes and must not be summed. P2 risk/drawdown state may depend on P1 history.</small></div></details>';
+  const fmt=n=>(n>0?'+':n<0?'−':'')+tableNumber(Math.abs(n));
+  const byPath=new Map(rows.map(x=>[x.key,x]));
+  const body=rows.map(x=>{
+   const w=byPath.get(x.key+'W'),l=byPath.get(x.key+'L');
+   const next=w?.steps[x.steps.length]||l?.steps[x.steps.length];
+   const risk=!x.final&&next?next.risk:null;
+   const last=x.steps[x.steps.length-1];
+   return '<tr><td>'+x.key+'</td><td>'+(x.conditional*100).toFixed(2)+'%</td><td>'+(risk===null?'—':'−'+tableNumber(risk))+'</td><td>'+(x.final?'—':w?fmt(w.pnl):'—')+'</td><td>'+(x.final?'—':l?fmt(l.pnl):'—')+'</td><td>'+fmt(x.pnl)+'</td><td>'+tableNumber(Math.max(0,last.left??(v.limit+x.pnl)))+'</td><td>'+tableNumber(Math.max(0,(stage===1?v.target:v.target2)-x.pnl))+'</td><td>'+(x.passed?'PASS':x.final?'STOP':'…')+'</td></tr>';
+  }).join('');
+  return '<details class="jj-risk-section" open><summary>'+title+'</summary><div class="jj-risk-section-body"><div style="overflow-x:auto"><table><thead><tr><th>Path</th><th>%</th><th>Risk</th><th>Win</th><th>Loss</th><th>P&L</th><th>DD</th><th>Left</th><th>Result</th></tr></thead><tbody>'+body+'</tbody></table></div><small style="opacity:.7">Win/Loss show resulting stage P&L; terminal paths do not continue. DD uses evaluation allowance. P2 state can depend on P1 history.</small></div></details>';
  };
  host.innerHTML=makeStage(1)+makeStage(2);
 })();
