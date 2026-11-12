@@ -645,6 +645,8 @@ function calcTopstep(path,v){
     if(best<=total*rate+1e-7){passed=true;status='target'}
    }
   }
+  // FIX-005 pending: two-day consistency overshoots may need a third trading day.
+  // Never treat these unresolved evaluation states as confirmed account failures.
   steps.push({c,risk,fee:execution.fee,contracts:execution.contracts,rr,pnl:total,stage:checkpointStage,checkpointStage,
    stagePnl,passed,day,dayPnl:stagePnl,lossesToday:0,
    dailyLeft:Math.max(0,v.dailyLimit+stagePnl)});
@@ -1215,6 +1217,7 @@ const p1Pass=hasVerification?
 const funnelCount=count=>modelBuys===null?'—':count.toFixed(2);
 const percent=value=>Number.isFinite(value)?(100*Math.max(0,Math.min(1,value))).toFixed(1)+'%':'—';
 const actualP2Conditional=p1Pass>0?Math.min(1,pEval/p1Pass):null;
+// FIX-005: the two-checkpoint model cannot represent additional consistency-repair days.
 const p2Audit=firmType==='topstep'?(()=>{
  const reached=leaves.filter(x=>x.steps.some(t=>t.checkpointStage===1&&t.passed));
  const mass=xs=>xs.reduce((sum,x)=>sum+x.prob,0);
@@ -1362,7 +1365,7 @@ $('[data-funnel]').innerHTML='<div class="jj-funnel-wrap">'+
  'Avg T / W / L are the average trades, wins and losses within EACH stage among successful paths. They exclude failed accounts and are not cumulative. P1 has no trades; P2 is the first checkpoint, P3 the remaining evaluation trades, and P4 funded target trades. '+
  (firmType==='topstep'?'Topstep account funnel uses enumerated carried-state checkpoint paths, including trailing drawdown and consistency. The separate equal-checkpoint benchmark is informational only. Each checkpoint has its own R1–R4 counter and up to '+Math.min(8,v.depth)+' modeled trades. ':'')+
  (firmType==='topstep'?'<details open style="margin:7px 0"><summary style="cursor:pointer;font-weight:700">Evaluation probability comparison · open</summary><div style="padding:6px 0">Equal-checkpoint PLANNING: P1→P2 '+percent(planningP1Rate)+'; P2→P3 '+percent(planningP2Rate)+'; combined '+percent(planningEvaluationRate)+'. ACCOUNT funnel: P1→P2 '+percent(p1Pass)+'; P2→P3 '+percent(p2Conditional)+'; combined '+percent(pEval)+'. Actual carried-state evaluation engine: '+percent(actualEvaluationProbability)+'. Difference: '+((planningProbability-actualEvaluationProbability)*100).toFixed(2)+' percentage points. <strong>Financial projections and account funnel use the carried-state path probability; the equal-checkpoint benchmark is diagnostic only. Execution costs and payout eligibility remain unverified.</strong> The carried-state calculation includes inherited end-of-day trailing drawdown and consistency but does not model all real execution costs.</div></details>':'')+
- (p2Audit?'<div style="padding:7px 0"><strong>FIX-004 P2 path audit (probability per purchased evaluation)</strong>: P1 reached '+percent(p2Audit.entered)+' · P2 completed '+percent(p2Audit.passed)+' · P2 closed '+percent(p2Audit.closed)+' · P2 unfinished/blocked '+percent(p2Audit.incomplete)+' · paths encountering consistency threshold '+percent(p2Audit.consistencyTouched)+'. Consistency category overlaps closed/unfinished; not an additional failure count. Checkpoint rates need not be identical when balances and consistency carry forward.</div>':'')+
+ (p2Audit?'<div style="padding:7px 0"><strong>FIX-005 limitation:</strong> Two modeled trading days cannot resolve every 50% consistency overshoot. Some paths require a third trading day; do not interpret the current P2 pass rate or ROI as final. <strong>FIX-004 P2 path audit (probability per purchased evaluation)</strong>: P1 reached '+percent(p2Audit.entered)+' · P2 completed '+percent(p2Audit.passed)+' · P2 closed '+percent(p2Audit.closed)+' · P2 unfinished/blocked '+percent(p2Audit.incomplete)+' · paths encountering consistency threshold '+percent(p2Audit.consistencyTouched)+'. Consistency category overlaps closed/unfinished; not an additional failure count. Checkpoint rates need not be identical when balances and consistency carry forward.</div>':'')+
  'P1 purchases: '+funnelCount(modelBuys)+'; P2 first checkpoint passed: '+funnelCount(funnelP1)+
  '; P3 evaluation passed and funded: '+funnelCount(funnelP3)+
  '; P4 funded payout profit target: '+funnelCount(funnelP4)+'. '+
@@ -1562,6 +1565,7 @@ const original=render;render=function(){original();if(active===slug)mount();};if
 'use strict';
 const slug='calc-fix-history';
 if(!chapters.some(x=>x.slug===slug))chapters.push({slug,group:'Calculators & Simulations',title:'Calculator Fix History',intro:'Permanent numbered record of calculator changes, the reason for each decision, and how to return to a previous version.',status:'GitHub commit history is the rollback source of truth.',sections:[
+{title:'FIX-005 · 2026-11-12 · Consistency needs extra days',points:['Finding: 50% consistency over exactly two days requires equal daily profits. T1 winners can overshoot $1,500, creating a third-day requirement.','Problem: The current carried-state evaluation engine models only two checkpoint days and cannot continue into extra consistency-repair days.','Decision: Add an explicit warning rather than force P1 and P2 pass rates equal or misrepresent incomplete outcomes as verified failures.','Remaining work: Implement additional trading days with correct EOD drawdown and consistency accounting, then independently test path probabilities and ROI.']},
 {title:'FIX-004 · 2026-11-12 · P2 discrepancy audit',points:['Discussion: User challenged P1 60.7% versus conditional P2 22.1%, expecting similar rates.','Finding: Equal risks do not guarantee equal pass rates when the second checkpoint inherits P1 profits and 50% consistency.','Change: Added visible probability breakdown for P1 reached, P2 passed, P2 closed, P2 unfinished or blocked, and paths encountering the consistency threshold.','This fix adds diagnostics, not a forced equalization. T1 preset and financial probabilities remain unchanged. Browser deployment and numeric validation pending.']},
 {title:'FIX-003 · 2026-11-12 · Unified path-based funnel',points:['Problem: Section 07 still used simplified three-attempt checkpoint rates, producing conflicting funded and payout counts.','Decision: Derive P1 from enumerated first-checkpoint paths and P2 conditionally from complete evaluation paths.','Target: P3 funded accounts and P4 payout-target successes reconcile with the financial cohort and ROI.','No preset or trading parameter changed. Syntax verified; live deployment and full simulation audit remain pending.']},
 {title:'FIX-002 · 2026-11-12 · Path-based stage probabilities',points:[
