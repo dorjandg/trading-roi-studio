@@ -613,7 +613,7 @@ function calcTopstep(path,v){
  for(const c of path){
   if(status!=='active'||stageTrades>=attemptsPerStage)break;
   const day=stage,checkpointStage=stage;
-  const required=stage===1?checkpointTarget-stagePnl:Math.max(v.target,dailyTotals[1]/rate)-total;
+  const required=checkpointTarget-stagePnl; // FIX-006: identical $1,500 strategy target on both days
   const room=total-trailingFloor,dailyRoom=v.topstepOptionalDailyCap?v.dailyLimit+stagePnl:Infinity;
   if(room<=v.floor+1e-7){status='closed';break}
   if(dailyRoom<=1e-7||required<=1e-7){status='daily-blocked';break;}
@@ -640,9 +640,10 @@ function calcTopstep(path,v){
   let passed=false;
   if(status==='active'&&c==='W'){
    if(stage===1&&stagePnl>=checkpointTarget-1e-7)passed=true;
-   else if(stage===2&&total>=v.target-1e-7){
+   else if(stage===2&&stagePnl>=checkpointTarget-1e-7){
     const best=Math.max(dailyTotals[1],dailyTotals[2]);
-    if(best<=total*rate+1e-7){passed=true;status='target'}
+    if(total>=v.target-1e-7&&best<=total*rate+1e-7){passed=true;status='target'}
+    else status='daily-blocked'; // strategy day complete; broker consistency/total still unmet
    }
   }
   // FIX-005 pending: two-day consistency overshoots may need a third trading day.
@@ -677,7 +678,7 @@ function calcTopstep(path,v){
   const manual=v.manualRisks?.[stage];
   const rrOverride=v.manualRRs?.[stage]?.[tier];
   const rr=manual&&Number(rrOverride)>0?Number(rrOverride):v.rr;
-  const required=stage===1?checkpointTarget-stagePnl:Math.max(v.target,dailyTotals[1]/rate)-total;
+  const required=checkpointTarget-stagePnl; // FIX-006: identical $1,500 strategy target on both days
   const planned=manual?manual[tier]:v.fixedRisk||v.baseRisk||required/rr;
   const dailyRoom=v.topstepOptionalDailyCap?v.dailyLimit+stagePnl:Infinity;
   if(!(goldExecution(v,stage,tier,planned,total-trailingFloor-v.floor,dailyRoom,required,rr).risk>1e-7))
@@ -688,7 +689,7 @@ function calcTopstep(path,v){
  if(status==='active'&&stageTrades<attemptsPerStage&&
     ((v.topstepOptionalDailyCap&&v.dailyLimit+stagePnl<=1e-7)||
      total-trailingFloor<=v.floor+1e-7||
-     (stage===2&&Math.max(v.target,dailyTotals[1]/rate)-total<=1e-7)))
+     (stage===2&&checkpointTarget-stagePnl<=1e-7)))
    status='daily-blocked';
  const checkpoint=steps.some(t=>t.checkpointStage===1&&t.passed);
  return {path:steps.map(t=>t.c).join(''),pnl:total,stage,stagePnl,
@@ -1565,6 +1566,7 @@ const original=render;render=function(){original();if(active===slug)mount();};if
 'use strict';
 const slug='calc-fix-history';
 if(!chapters.some(x=>x.slug===slug))chapters.push({slug,group:'Calculators & Simulations',title:'Calculator Fix History',intro:'Permanent numbered record of calculator changes, the reason for each decision, and how to return to a previous version.',status:'GitHub commit history is the rollback source of truth.',sections:[
+{title:'FIX-006 · 2026-11-12 · Equal $1,500 daily strategy targets',points:['User clarification: Each evaluation trading day has the same $1,500 strategy target, not a variable second-day catch-up target.','Change: Both checkpoint days stop their strategy after earning at least $1,500.','Broker protection: An account is marked evaluation passed only if the full $3,000 total and 50% consistency are actually satisfied. Otherwise the branch is blocked/unresolved, not a funded success.','No preset risks, reward ratios, fees, or win rates changed. Full path and deployment verification remain pending.']},
 {title:'FIX-005 · 2026-11-12 · Consistency needs extra days',points:['Finding: 50% consistency over exactly two days requires equal daily profits. T1 winners can overshoot $1,500, creating a third-day requirement.','Problem: The current carried-state evaluation engine models only two checkpoint days and cannot continue into extra consistency-repair days.','Decision: Add an explicit warning rather than force P1 and P2 pass rates equal or misrepresent incomplete outcomes as verified failures.','Remaining work: Implement additional trading days with correct EOD drawdown and consistency accounting, then independently test path probabilities and ROI.']},
 {title:'FIX-004 · 2026-11-12 · P2 discrepancy audit',points:['Discussion: User challenged P1 60.7% versus conditional P2 22.1%, expecting similar rates.','Finding: Equal risks do not guarantee equal pass rates when the second checkpoint inherits P1 profits and 50% consistency.','Change: Added visible probability breakdown for P1 reached, P2 passed, P2 closed, P2 unfinished or blocked, and paths encountering the consistency threshold.','This fix adds diagnostics, not a forced equalization. T1 preset and financial probabilities remain unchanged. Browser deployment and numeric validation pending.']},
 {title:'FIX-003 · 2026-11-12 · Unified path-based funnel',points:['Problem: Section 07 still used simplified three-attempt checkpoint rates, producing conflicting funded and payout counts.','Decision: Derive P1 from enumerated first-checkpoint paths and P2 conditionally from complete evaluation paths.','Target: P3 funded accounts and P4 payout-target successes reconcile with the financial cohort and ROI.','No preset or trading parameter changed. Syntax verified; live deployment and full simulation audit remain pending.']},
