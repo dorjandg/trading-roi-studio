@@ -857,7 +857,7 @@ const counts={target:0,closed:0,active:0,'daily-blocked':0};leaves.forEach(x=>co
  host.innerHTML=makeStage(1)+makeStage(2);
 })();
 const actualEvaluationProbability=leaves.filter(x=>x.status==='target').reduce((sum,x)=>sum+x.prob,0);
-/* Topstep funnel uses two equivalent standalone checkpoints, as requested.
+/* Topstep planning benchmark uses two equivalent standalone checkpoints.
    This is a strategy model, NOT the carried-drawdown/consistency account forecast.
    Keep the latter available for diagnostics; never silently equate the two. */
 const checkpointProbability=leaves.reduce((sum,path)=>sum+
@@ -865,10 +865,10 @@ const checkpointProbability=leaves.reduce((sum,path)=>sum+
 // Three attempts per checkpoint: any win passes; only LLL fails.
 const threeAttemptPass=1-Math.pow(1-Math.max(0,Math.min(1,v.winRate/100)),3);
 const planningProbability=firmForPhases==='topstep'?threeAttemptPass*threeAttemptPass:actualEvaluationProbability;
-// Financial results and account funnel use actual carried-state outcomes.
-// Section 07 planning uses two identical, independent Topstep checkpoints.
-// The carried-state simulation remains diagnostic only.
-const probability=firmForPhases==='topstep'?planningProbability:actualEvaluationProbability;
+// Financial results and account funnel must use actual carried-state outcomes.
+// The simplified squared-checkpoint model is a planning benchmark only.
+// Unresolved paths at finite depth are not counted as completed passes.
+const probability=actualEvaluationProbability;
 const t1Probability=leaves.filter(x=>x.stage===2||x.status==='target').reduce((sum,x)=>sum+x.prob,0);
 const failProbability=leaves.filter(x=>x.status==='closed').reduce((sum,x)=>sum+x.prob,0);
 const unresolvedProbability=leaves.filter(x=>x.status==='active'||x.status==='daily-blocked').reduce((sum,x)=>sum+x.prob,0);
