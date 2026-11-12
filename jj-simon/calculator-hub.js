@@ -807,6 +807,7 @@ const readContractSpecs=()=>{
  }
  return specs;
 };
+const fundedBalance=n=>(n>0?'+':n<0?'−':'')+tableNumber(Math.abs(n));
 function renderRisk(){
 contractSizing();
 const firmForPhases=firmBar.querySelector('[data-firm-type]').value;const expectedPhases=firmForPhases==='ftmo'?'2':'1';if($('[data-target-mode]').value!==expectedPhases)$('[data-target-mode]').value=expectedPhases;
@@ -1388,8 +1389,7 @@ box.querySelectorAll('[data-mode-button]').forEach(btn=>{const active=btn.datase
 $('[data-kpis]').innerHTML=['target','closed','active','daily-blocked'] .map(k=>kpiTooltip(k==='target'?(v.targetMode===1?'PASS T1':'PASS BOTH'):k==='closed'?'FAIL':k==='daily-blocked'?'DAY BLOCK':'ACTIVE',counts[k],kpiHelp[k])).join('');
 $('[data-prob]').textContent=(v.targetMode===1?'T1 reached within '+v.depth+' trades: '+(probability*100).toFixed(2)+'%.': 'T1 reached: '+(t1Probability*100).toFixed(2)+'% · Both targets reached within '+v.depth+' trades: '+(probability*100).toFixed(2)+'%. T2 starts at stage P&L 0 with a fresh '+tableNumber(v.limit)+' stage allowance; T1 profit remains banked.')+' Independent trades, '+v.winRate+'% win rate. Daily loss cap '+tableNumber(v.dailyLimit)+' with '+v.tradesPerDay+' losses/day maximum. A negative daily P&L or exhausted daily allowance stops that day; the next simulated trade begins a new day.';
 const fundedFilter=$('[data-funded-path-filter]').value;
-const fundedPrefixes=new Set(['']);fundedLeaves.forEach(x=>{for(let i=1;i<x.path.length;i++)fundedPrefixes.add(x.path.slice(0,i))});const fundedBalance=n=>(n>0?'+':n<0?'−':'')+tableNumber(Math.abs(n));
-const fundedDD=x=>tableNumber(Math.max(0,firmForPhases==='topstep'?(x.ddAvailable??(x.pnl-x.trailingFloor)):fv.limit+x.pnl));
+const fundedPrefixes=new Set(['']);fundedLeaves.forEach(x=>{for(let i=1;i<x.path.length;i++)fundedPrefixes.add(x.path.slice(0,i))});const fundedDD=x=>tableNumber(Math.max(0,firmForPhases==='topstep'?(x.ddAvailable??(x.pnl-x.trailingFloor)):fv.limit+x.pnl));
 const fundedPathCalc=p=>firmForPhases==='topstep'?calcTopstepFunded(p,fv):calc(p,fv);
 const fundedDecisions=[...fundedPrefixes].map(p=>fundedPathCalc(p)).filter(x=>x.status==='active'&&x.steps.length<fv.depth).map(x=>({...x,win:fundedPathCalc(x.path+'W'),loss:fundedPathCalc(x.path+'L')}));
 const fundedShown=fundedDecisions.filter(x=>fundedFilter==='all'||fundedFilter==='active'||x.win.status===fundedFilter||x.loss.status===fundedFilter).sort((a,b)=>a.steps.length-b.steps.length||a.path.localeCompare(b.path));
