@@ -837,13 +837,14 @@ const counts={target:0,closed:0,active:0,'daily-blocked':0};leaves.forEach(x=>co
   const title=stage===1?'P1 · Challenge scenarios':'P2 · Verification / second checkpoint scenarios';
   const fmt=n=>(n>0?'+':n<0?'−':'')+tableNumber(Math.abs(n));
   const pnlClass=n=>n>0?'jj-risk-win':n<0?'jj-risk-loss':'';
+  const cellColor=n=>n>0?'color:#00df83;font-weight:800':n<0?'color:#f05b65;font-weight:750':'';
   const byPath=new Map(rows.map(x=>[x.key,x]));
   const body=rows.map(x=>{
    const w=byPath.get(x.key+'W'),l=byPath.get(x.key+'L');
    const next=w?.steps[x.steps.length]||l?.steps[x.steps.length];
    const risk=!x.final&&next?next.risk:null;
    const last=x.steps[x.steps.length-1];
-   return '<tr><td>'+x.key+'</td><td>'+(x.conditional*100).toFixed(2)+'%</td><td>'+(risk===null?'—':'−'+tableNumber(risk))+'</td><td>'+(x.final?'—':w?fmt(w.pnl):'—')+'</td><td>'+(x.final?'—':l?fmt(l.pnl):'—')+'</td><td>'+fmt(x.pnl)+'</td><td>'+tableNumber(Math.max(0,last.left??(v.limit+x.pnl)))+'</td><td>'+tableNumber(Math.max(0,(stage===1?v.target:v.target2)-x.pnl))+'</td><td>'+(x.passed?'PASS':x.final?'STOP':'…')+'</td></tr>';
+   return '<tr><td>'+x.key+'</td><td>'+(x.conditional*100).toFixed(2)+'%</td><td style="color:#f05b65;font-weight:750">'+(risk===null?'—':'−'+tableNumber(risk))+'</td><td style="'+(w?cellColor(w.pnl):'')+'">'+(x.final?'—':w?fmt(w.pnl):'—')+'</td><td style="'+(l?cellColor(l.pnl):'')+'">'+(x.final?'—':l?fmt(l.pnl):'—')+'</td><td style="'+cellColor(x.pnl)+'">'+fmt(x.pnl)+'</td><td>'+tableNumber(Math.max(0,last.left??(v.limit+x.pnl)))+'</td><td>'+tableNumber(Math.max(0,(stage===1?v.target:v.target2)-x.pnl))+'</td><td style="'+(x.passed?'color:#00df83;font-weight:800':x.final?'color:#f05b65;font-weight:750':'')+'">'+(x.passed?'PASS':x.final?'STOP':'…')+'</td></tr>';
   }).join('');
   return '<details class="jj-risk-section" open><summary>'+title+'</summary><div class="jj-risk-section-body"><div style="overflow-x:auto"><table><thead><tr><th>Path</th><th>%</th><th>Risk</th><th>Win</th><th>Loss</th><th>P&L</th><th>DD</th><th>Left</th><th>Result</th></tr></thead><tbody>'+body+'</tbody></table></div><small style="opacity:.7">Win/Loss show resulting stage P&L; terminal paths do not continue. DD uses evaluation allowance. P2 state can depend on P1 history.</small></div></details>';
  };
