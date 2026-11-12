@@ -67,3 +67,13 @@ GitHub commit history on `jj-simon-knowledge-hub` contains earlier edits. This r
 - **Protected:** User's T1 preset and financial formulas unchanged.
 - **Commit:** `2ad84702e1e74676be47591f67c80e298da959e2`.
 - **Verification:** JS syntax checked; full engine fix and live deployment not yet verified.
+
+## FIX-006 — 2026-11-12 — Two equal $1,500 strategy targets
+- **Discussion:** User clarified that the $3,000 evaluation target is split into two $1,500 winning trading-day targets, with the same risk sequence each day. No variable catch-up target is intended.
+- **Problem:** Previous second-day required-profit logic used max($3000, first-day profit / consistency ratio) minus current total, silently making the second-day strategy target different.
+- **Change:** Both checkpoint days use `checkpointTarget-stagePnl`; second-day winning paths stop when daily P&L reaches $1,500. Only mark account as fully passed if total ≥$3,000 and 50% best-day consistency is met; otherwise classify as `daily-blocked` (unresolved, not a pass or loss). Updated the next-trade stop test similarly.
+- **Reason:** Preserve the user's daily strategy without claiming that an overshoot automatically satisfies Topstep's consistency requirement.
+- **Target:** Equal strategy targets, with explicit separation of daily target and actual evaluation qualification.
+- **Protected:** Original T1 risk/RR/stop/fee/win-rate inputs unchanged.
+- **Commit:** `7eae6d857f79b59231b98c23c751609b9582c986`.
+- **Verification:** JS syntax passed; no independent browser or probability-mass validation yet. Extra consistency-repair days remain unsupported, so ROI and P2 conditional pass rate are provisional.
