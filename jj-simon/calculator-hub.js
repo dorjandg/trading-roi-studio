@@ -700,6 +700,7 @@ function calcTopstepFunded(path,v){
  const manual=v.manualRisks?.[3];
  for(const c of path){
   if(status!=='active')break;
+  /* Each win resets the risk sequence; three consecutive losses close it. */
   if(dayPnl<-1e-7||lossesToday>=v.tradesPerDay||(v.topstepOptionalDailyCap&&v.dailyLimit+dayPnl<=1e-7)){
    peakEOD=Math.max(peakEOD,total);
    trailingFloor=Math.min(0,Math.max(trailingFloor,peakEOD-v.limit));
@@ -711,14 +712,15 @@ function calcTopstepFunded(path,v){
   if(room<=v.floor+1e-7||dailyRoom<=1e-7){status='closed';break;}
   let streak=0;
   for(let i=steps.length-1;i>=0;i--){if(steps[i].c==='W')break;streak++;}
-  const rrOverride=v.manualRRs?.[3]?.[Math.min(3,streak)];
+  if(streak>=3){status='closed';break;}
+  const rrOverride=v.manualRRs?.[3]?.[Math.min(2,streak)];
   const rr=manual&&Number(rrOverride)>0?Number(rrOverride):v.rr;
-  const planned=manual?manual[Math.min(3,streak)]:
+  const planned=manual?manual[Math.min(2,streak)]:
    v.riskModel==='fixed'?v.baseRisk:
    v.riskModel==='half'?(v.target-total)/rr/2:
    v.riskModel==='buffer'?(steps.some(t=>t.c==='W')?450:150):
    v.fixedRisk||v.baseRisk||(v.target-total)/rr;
-  const execution=goldExecution(v,3,Math.min(3,streak),planned,room-v.floor,dailyRoom,v.target-total,rr);
+  const execution=goldExecution(v,3,Math.min(2,streak),planned,room-v.floor,dailyRoom,v.target-total,rr);
   const risk=execution.risk;
   if(!(risk>1e-7)){status='closed';break;}
   const delta=(c==='W'?risk*rr:-risk)-execution.fee;
@@ -740,12 +742,12 @@ function calcTopstepFunded(path,v){
   const nextDailyRoom=v.topstepOptionalDailyCap?(nextDay?v.dailyLimit:v.dailyLimit+dayPnl):Infinity;
   let nextStreak=0;
   for(let i=steps.length-1;i>=0;i--){if(steps[i].c==='W')break;nextStreak++;}
-  const nextPlanned=manual?manual[Math.min(3,nextStreak)]:null;
-  const nextRR=manual&&Number(v.manualRRs?.[3]?.[Math.min(3,nextStreak)])>0?
-   Number(v.manualRRs[3][Math.min(3,nextStreak)]):v.rr;
+  const nextPlanned=manual?manual[Math.min(2,nextStreak)]:null;
+  const nextRR=manual&&Number(v.manualRRs?.[3]?.[Math.min(2,nextStreak)])>0?
+   Number(v.manualRRs[3][Math.min(2,nextStreak)]):v.rr;
   const nextRisk=manual?nextPlanned:v.fixedRisk||v.baseRisk||(v.target-total)/nextRR;
-  const executable=goldExecution(v,3,Math.min(3,nextStreak),nextRisk,nextRoom-v.floor,nextDailyRoom,v.target-total,nextRR);
-  if(nextRoom<=v.floor+1e-7||nextDailyRoom<=1e-7||
+  const executable=goldExecution(v,3,Math.min(2,nextStreak),nextRisk,nextRoom-v.floor,nextDailyRoom,v.target-total,nextRR);
+  if(nextStreak>=3||nextRoom<=v.floor+1e-7||nextDailyRoom<=1e-7||
      (manual&&!(nextPlanned>1e-7))||!(executable.risk>1e-7))status='closed';
  }
  return {path:steps.map(t=>t.c).join(''),pnl:total,stage:1,stagePnl:total,
@@ -1386,7 +1388,8 @@ box.querySelectorAll('[data-mode-button]').forEach(btn=>{const active=btn.datase
 $('[data-kpis]').innerHTML=['target','closed','active','daily-blocked'] .map(k=>kpiTooltip(k==='target'?(v.targetMode===1?'PASS T1':'PASS BOTH'):k==='closed'?'FAIL':k==='daily-blocked'?'DAY BLOCK':'ACTIVE',counts[k],kpiHelp[k])).join('');
 $('[data-prob]').textContent=(v.targetMode===1?'T1 reached within '+v.depth+' trades: '+(probability*100).toFixed(2)+'%.': 'T1 reached: '+(t1Probability*100).toFixed(2)+'% · Both targets reached within '+v.depth+' trades: '+(probability*100).toFixed(2)+'%. T2 starts at stage P&L 0 with a fresh '+tableNumber(v.limit)+' stage allowance; T1 profit remains banked.')+' Independent trades, '+v.winRate+'% win rate. Daily loss cap '+tableNumber(v.dailyLimit)+' with '+v.tradesPerDay+' losses/day maximum. A negative daily P&L or exhausted daily allowance stops that day; the next simulated trade begins a new day.';
 const fundedFilter=$('[data-funded-path-filter]').value;
-const fundedPrefixes=new Set(['']);fundedLeaves.forEach(x=>{for(let i=1;i<x.path.length;i++)fundedPrefixes.add(x.path.slice(0,i))});const fundedDecisions=[...fundedPrefixes].map(p=>calc(p,fv)).filter(x=>x.status==='active'&&x.steps.length<fv.depth).map(x=>({...x,win:calc(x.path+'W',fv),loss:calc(x.path+'L',fv)}));
+const fundedPrefixes=new Set(['']);fundedLeaves.forEach(x=>{for(let i=1;i<x.path.length;i++)fundedPrefixes.add(x.path.slice(0,i))});const fundedPathCalc=p=>firmForPhases==='topstep'?calcTopstepFunded(p,fv):calc(p,fv);
+const fundedDecisions=[...fundedPrefixes].map(p=>fundedPathCalc(p)).filter(x=>x.status==='active'&&x.steps.length<fv.depth).map(x=>({...x,win:fundedPathCalc(x.path+'W'),loss:fundedPathCalc(x.path+'L')}));
 const fundedShown=fundedDecisions.filter(x=>fundedFilter==='all'||fundedFilter==='active'||x.win.status===fundedFilter||x.loss.status===fundedFilter).sort((a,b)=>a.steps.length-b.steps.length||a.path.localeCompare(b.path));
 fundedPage=Math.min(fundedPage,Math.max(0,Math.ceil(fundedShown.length/10)-1));
 $('[data-funded-path-count]').textContent=fundedShown.length+' decision points · '+(fundedShown.reduce((a,x)=>a+x.prob,0)*100).toFixed(2)+'% cumulative path probability (overlapping prefixes)';
