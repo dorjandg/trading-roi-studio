@@ -108,3 +108,10 @@ GitHub commit history on `jj-simon-knowledge-hub` contains earlier edits. This r
 - Presets and trading-engine logic were not changed. FTMO execution logic already uses exact dollar risk, but phase rules and daily-loss handling require a separate correction.
 - Validation: JavaScript parsed successfully with `new Function(source)`; GitHub commit `b06fcd1a802d0bc30f8bc20e4e34f6ea1ff4636c`. Browser deployment not independently verified.
 - Limitation: FTMO Preset 2 funded risk $500 × 4R = $2,000, exceeding its $1,500 target in one win. This contradicts the requested two-win funded condition; do not silently change the preset or hardcode an incompatible pass condition.
+
+## FIX-011 — FTMO phase targets and target-driven trading (2026-11-12)
+- User clarified phase pass is driven by the editable target, not a fixed number of wins. Corrected generic FTMO engine to compare stage P&L against its own `goal` ($1,000 P1; $500 P2; funded editable).
+- Removed cap on trade risk based on remaining profit target divided by RR. Overshooting the profit target is valid, and trade risk remains bounded by total/daily loss room and manual planned risk.
+- On P1-to-P2 transition reset daily P&L/loss counter and advance simulated day, in addition to resetting stage P&L.
+- Preset 2 unchanged. JS syntax validation passed. Commit `ce507ea45294895af320d5580fe6ad9fd80adc8a`.
+- Limitations: model remains depth-capped at 12 trades and does not enforce FTMO minimum trading days or a fully independent per-phase account lifecycle. Browser deployment and numerical end-to-end path tests have not been verified. Recovery LLW for preset P1 yields +$12, not exactly zero, under supplied 3.6R.
