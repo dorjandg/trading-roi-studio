@@ -269,6 +269,8 @@ const strategyPanel=document.createElement('div');strategyPanel.dataset.strategy
 const funnel=document.createElement('div');funnel.dataset.funnel='';box.querySelector('[data-section="strategy-comparison"]').after(funnel);group('funnel','07 · P1 → P2 → P3 → P4 · Account Funnel',[funnel]);
 const title=Array.from(box.querySelectorAll('h4')).find(x=>x.textContent.includes('All scenario paths'));
 if(title){const nodes=[];let n=title;while(n&&n.tagName!=='P'){nodes.push(n);n=n.nextElementSibling}group('paths','10 · Challenge · Scenario Paths',nodes)}
+const challengeStageView=document.createElement('div');challengeStageView.className='jj-challenge-stage-view';challengeStageView.innerHTML='<p style="font-size:11px;opacity:.8">P1 and P2 scenario paths use the current challenge risk, win-rate and checkpoint settings. P2 chances are conditional on reaching P2.</p><div data-challenge-stage-tables></div>';
+box.querySelector('[data-section="paths"] .jj-risk-section-body').prepend(challengeStageView);
 const fundedScenario=document.createElement('div');fundedScenario.innerHTML='<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px"><label style="font-size:12px">Filter <select data-funded-path-filter><option value="all">All paths</option><option value="target">Target hit</option><option value="closed">Failed</option><option value="active">Unresolved</option></select></label><span data-funded-path-count style="font-size:11px;opacity:.7"></span></div><div data-funded-path-table></div><div style="display:flex;align-items:center;gap:8px;margin-top:8px"><button data-funded-prev type="button">Previous</button><span data-funded-page style="font-size:11px"></span><button data-funded-next type="button">Next</button></div><p style="font-size:11px;opacity:.7">Illustrative funded paths from the existing funded engine; no payout waiting period or firm-specific day rules are enforced here.</p>';box.querySelector('[data-section="paths"]').after(fundedScenario);group('funded-paths','11 · P3 Funded · Scenario Paths',[fundedScenario]);let fundedPage=0;const expandedFunded=new Set();
 const tradeStatsPanel=document.createElement('div');
 tradeStatsPanel.dataset.tradeStatsPanel='';
@@ -810,6 +812,30 @@ const v=vals(),leaves=[],allPaths=[];Object.assign(v,STRATEGIES[activeStrategy].
 function walk(path){const x=calc(path,v);if(path&&allPaths.length<4000)allPaths.push(x);if(scenarioFinished(x,v,path)){leaves.push(x);return}walk(path+'W');walk(path+'L')}
 walk('');
 const counts={target:0,closed:0,active:0,'daily-blocked':0};leaves.forEach(x=>counts[x.status]++);
+/* P1/P2: derive paths from the same evaluation engine, not a separate assumed 3-attempt model. */
+(function renderChallengeStages(){
+ const host=box.querySelector('[data-challenge-stage-tables]');if(!host)return;
+ const makeStage=(stage)=>{
+  const paths=new Map();
+  allPaths.concat(leaves).forEach(x=>{
+   const steps=x.steps||[],selected=steps.filter(t=>(t.checkpointStage||t.stage)===stage);
+   if(!selected.length)return;
+   const key=selected.map(t=>t.c).join('');
+   const moved=steps.some(t=>(t.checkpointStage||t.stage)>stage);
+   const passed=selected.some(t=>t.passed)||moved||(stage===2&&x.status==='target');
+   const final=x.status!=='active'||moved||passed;
+   if(!final&&!selected.length)return;
+   const conditional=selected.reduce((a,t)=>a*(t.c==='W'?v.winRate/100:1-v.winRate/100),1);
+   const pnl=selected[selected.length-1].stagePnl;
+   const prior=paths.get(key);
+   if(!prior||(!prior.final&&final))paths.set(key,{key,conditional,pnl,passed,final,steps:selected});
+  });
+  const rows=[...paths.values()].sort((a,b)=>a.key.length-b.key.length||a.key.localeCompare(b.key)).slice(0,250);
+  const title=stage===1?'P1 · Challenge scenarios':'P2 · Verification / second checkpoint scenarios';
+  return '<details class="jj-risk-section" open><summary>'+title+'</summary><div class="jj-risk-section-body"><div style="overflow-x:auto"><table><thead><tr><th>Path</th><th>Chance %</th><th>Trades</th><th>Stage P&L</th><th>Result</th></tr></thead><tbody>'+rows.map(x=>'<tr><td>'+x.key+'</td><td>'+(x.conditional*100).toFixed(2)+'%</td><td>'+x.steps.length+'</td><td>'+tableNumber(x.pnl)+'</td><td>'+(x.passed?'Passed':x.final?'Stopped':'Continuing')+'</td></tr>').join('')+'</tbody></table></div><small style="opacity:.7">Path chance is conditional on entering this stage; rows include intermediate prefixes and must not be summed. P2 risk/drawdown state may depend on P1 history.</small></div></details>';
+ };
+ host.innerHTML=makeStage(1)+makeStage(2);
+})();
 const actualEvaluationProbability=leaves.filter(x=>x.status==='target').reduce((sum,x)=>sum+x.prob,0);
 /* Topstep funnel uses two equivalent standalone checkpoints, as requested.
    This is a strategy model, NOT the carried-drawdown/consistency account forecast.
