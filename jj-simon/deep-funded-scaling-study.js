@@ -188,3 +188,19 @@ if(typeof renderNav==='function')renderNav();if(typeof render==='function')rende
 
 /* Course Module 18: original probability sensitivity analysis, not verified empirical outcomes. */
 (function(){if(typeof chapters==='undefined')return;const c=chapters.find(x=>x.slug==='scaling'||x.slug==='scaling-big'||(x.title||'').includes('Scaling'));if(!c)return;c.sections=c.sections||[];c.sections.push({title:"Copied cohorts preserve expected passes but amplify zero-pass tail",points:["JJ's historical lesson proposes 15 evaluations at a 33% pass rate for five funded slots and allows batches of five. That establishes five expected passes, not a guaranteed five funded accounts.","Under independent evaluations with pass probability 1/3, the probability that all fifteen fail is (2/3)^15 ≈ 0.228%. If three independent batches of five are each perfectly copied within the batch, the zero-pass probability is (2/3)^3 ≈ 29.63%, although the expected funded count remains five.","The copied-batch example has P(at least five funded)=1−(2/3)^3≈70.37%, compared with approximately 59.6% for independent attempts. A higher target-hit probability can coexist with a much worse zero-pass tail. These are illustrative correlation assumptions, not measured JJ performance.","Track correlated evaluation cohorts, realized purchase and reset fees, renewal dates, replacement inventory, and settled payout cash separately. JJ's April-to-May billing example is historical and provider-specific; pending withdrawals are not spendable cash. Original course charts and current firm rules are unverified."],src:[["The Optimal Number of Accounts To Manage","01:36–01:50; 03:13–03:46","11nOzXqPVWcTMHX6cpQivsM7StZVrtbZM"],["Managing Resets Billing Cycles Across Multiple Futures Funded Accounts","00:29–00:41; 01:43–02:27","1pdmFifqByLbI75-XtX0C53vMiCGR4-i-"]]});if(typeof renderNav==='function')renderNav();if(typeof render==='function')render();})();
+
+
+/* 2026-11-12: Original, brief course-source cross-check; video and chart unverified. */
+jjExecutionDeepStudy.find(b=>b.slug==="funded-plan").sections.push({
+title:"Overnight anchor invalidation, wick-filter and stop exception",
+points:[
+"Overnight Trades normally searches near 10–11 p.m. after marking the 6 p.m. reopen and 9:30 NY reference. A choppy window can be a no-trade, and one example waits until 12:15 for a clearer break; neither time is a guaranteed signal.",
+"How Does Volume Change Fair Price treats a session open as a provisional fair-price candidate. When later Asian or New York participation drives away rather than reverting, JJ describes deleting the old anchor and adopting a newer candidate. A large candle is called a volume spike, but actual traded volume is not established from candle size alone.",
+"In Overnight Trades JJ prefers a cleaner five-minute structure break without a large wick, reasoning that a big wick may conceal a one-minute reversal. This is a discretionary filter; no numerical wick or BOS threshold is specified.",
+"The overnight lesson generally uses one NQ with a 50-point stop and 100- or 200-point target (nominal $1K risk, $2K or $4K gross gain). It also narrates a distinct 30-point stop example. Preserve both rather than declaring the 50-point stop universal.",
+"These historical examples require original chart, audio, news, timezone, contract and provider overnight-permission verification. They do not demonstrate measured profitability."
+],
+src:[
+["Overnight Trades","00:17–01:39; 03:49–05:26; 08:22–09:17","1Ye5f_tmATyBYcAhwSWdMtZTzdvVh1Igg"],
+["How Does Volume Change Fair Price","00:28–02:36","1miR0iSYdOTWrShLV9UfT-uDJUVmY8qeG"]
+]});
