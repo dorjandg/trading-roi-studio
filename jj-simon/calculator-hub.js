@@ -861,6 +861,10 @@ if(firmForPhases==='topstep'&&activeStrategy==='current')fv.fixedRisk=1000;else 
 if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'?calcTopstepFunded(path,fv):calc(path,fv);if(x.status!=='active'||x.steps.length>=fv.depth){fundedLeaves.push(x);if(x.status==='target')fp+=x.prob;if(x.status==='closed')fr+=x.prob;return}fw(path+'W');fw(path+'L')}fw('')}
 
 const fundedSimulationPass=fp;const tradeWin=Math.max(0,Math.min(1,v.winRate/100));const tradeLoss=1-tradeWin;const fundedCycleTarget=tradeWin+tradeLoss*tradeWin;const fundedCycleReset=tradeLoss*tradeLoss*tradeWin;const fundedThreeAttemptPass=fundedCycleTarget/(1-fundedCycleReset);if(firmForPhases==='topstep'&&phaseMode!=='evaluation')fp=fundedThreeAttemptPass;
+const p1Shared=firmForPhases==='topstep'?threeAttemptPass:Math.max(0,Math.min(1,t1Probability));
+const p2Shared=firmForPhases==='topstep'?threeAttemptPass:(p1Shared>0?Math.max(0,Math.min(1,actualEvaluationProbability/p1Shared)):0);
+window.__jj14StageData={firm:firmForPhases,p1:p1Shared,p2:p2Shared,p3:Math.max(0,Math.min(1,fp)),evalWin:v.winRate,fundedWin:fv.winRate,accountFee:v.accountCost,activationFee:fn('activation',0),walletCash:fv.target*Math.max(0,Math.min(1,fn('split',80)/100)),accountCount:Number(box.querySelector('[data-account-count]')?.value)||10,depth:fv.depth};
+if(typeof window.__jj14Update==='function')window.__jj14Update();
 const cash=x=>'$'+x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 /* Statistics are calculated from terminal/censored path probabilities, not
    actual trade history. Do not confuse an observed maximum in enumerated paths
@@ -1400,8 +1404,10 @@ function mountKpiFourteen(target){
  if(target.querySelector('.jj9-kpi-reference'))return;
  const root=document.createElement('div');root.className='jj9-kpi-reference';
  root.innerHTML='<p>Change the inputs to recalculate every KPI instantly. Use the goal planner to estimate purchases needed for funded accounts or payouts.</p>';
+ const syncInfo=document.createElement('p');root.append(syncInfo);
  const fields=document.createElement('div');fields.className='jj14-inputs';root.append(fields);
  const defaults={n:10,w:25,attempts:3,fee:50,activation:150,cash:2000,goal:1,confidence:80};
+ const shared=window.__jj14StageData;if(shared){defaults.n=shared.accountCount;defaults.w=shared.evalWin;defaults.fee=shared.accountFee;defaults.activation=shared.activationFee;defaults.cash=shared.walletCash;}
  const values={...defaults};
  const inputs={};
  const specs=[['n','P1 purchases',1,100000,1],['w','Trade win rate %',0,100,.5],['attempts','P1 / P2 attempts',1,20,1],['fee','P1 fee $',0,100000,1],['activation','P3 activation $',0,100000,1],['cash','Wallet payout $',0,10000000,100],['goal','Goal accounts / payouts',1,100000,1],['confidence','Goal probability %',1,99.9,.5]];
@@ -1424,10 +1430,12 @@ function mountKpiFourteen(target){
  const exact=(n,k,p)=>{if(k>n)return 0;if(p===0)return k===0?1:0;if(p===1)return k===n?1:0;let log=0;for(let j=1;j<=k;j++)log+=Math.log((n-j+1)/j);return Math.exp(log+k*Math.log(p)+(n-k)*Math.log1p(-p))};
  function update(){
   const {n,w,attempts,fee,activation,cash,goal,confidence}=values,q=1-w/100,p=1-Math.pow(q,attempts);
+  const source=window.__jj14StageData,p1=source?source.p1:p,p2=source?source.p2:p,stage3=source?source.p3:((1-q*q*(w/100))>0?((w/100)*(1+q))/(1-q*q*(w/100)):0);
   const success=(1-q*q*(w/100))>0?((w/100)*(1+q))/(1-q*q*(w/100)):0;
-  const funded=n*p*p,per=p*p*success,payouts=n*per,spending=n*fee+funded*activation,wallet=payouts*cash;
+  const funded=n*p1*p2,per=p1*p2*stage3,payouts=n*per,spending=n*fee+funded*activation,wallet=payouts*cash;
+  syncInfo.textContent=source?'Synced '+source.firm.toUpperCase()+' scenario probabilities: P1 '+pct(p1)+' / P2 '+pct(p2)+' / P3 '+pct(stage3)+' (depth '+source.depth+').':'Standalone illustrative probability model; open Chapter 09 to sync.';
   const trades=p>0?p/(1-q):attempts;
-  const goalRate=mode.value==='funded'?p*p:per;
+  const goalRate=mode.value==='funded'?p1*p2:per;
   let required=goalRate>0?Math.ceil(goal/goalRate):Infinity;
   if(mode.value==='chance'){
    required=Infinity;
@@ -1438,13 +1446,13 @@ function mountKpiFourteen(target){
    ['P1 purchases',num(n),'Editable initial evaluation purchases'],
    ['P1 max trade slots',num(n*attempts),'Purchases × allowed P1 attempts'],
    ['P1 expected trades',num(n*trades),'Purchases × expected attempts until win or failure'],
-   ['P1 pass probability',pct(p),'1 − (1 − trade win rate)^attempts'],
-   ['P2 entering accounts',num(n*p),'P1 purchases × P1 pass probability'],
-   ['P2 max trade slots',num(n*p*attempts),'Expected P2 entrants × allowed attempts'],
-   ['P2 expected trades',num(n*p*trades),'Expected P2 entrants × expected attempts'],
-   ['P2 pass probability',pct(p),'Same win-rate and attempt rule as P1'],
+   ['P1 pass probability',pct(p1),'1 − (1 − trade win rate)^attempts'],
+   ['P2 entering accounts',num(n*p1),'P1 purchases × P1 pass probability'],
+   ['P2 max trade slots',num(n*p1*attempts),'Expected P2 entrants × allowed attempts'],
+   ['P2 expected trades',num(n*p1*trades),'Expected P2 entrants × expected attempts'],
+   ['P2 pass probability',pct(p2),'Same win-rate and attempt rule as P1'],
    ['P3 funded accounts',num(funded),'Purchases × P1 pass × P2 pass'],
-   ['P3 payout-target success',pct(success),'(w + qw)/(1 − q²w); funded W/LW pays, LLW restarts, LLL fails'],
+   ['P3 payout-target success',pct(stage3),'(w + qw)/(1 − q²w); funded W/LW pays, LLW restarts, LLL fails'],
    ['P4 expected payouts',num(payouts),'Funded accounts × funded success probability'],
    ['Chance of 1+ payouts',pct(binTail(n,1,per)),'Probability at least one payout from purchased accounts'],
    ['Chance of zero payouts',pct(exact(n,0,per)),'Probability all purchased accounts miss payout'],
@@ -1467,7 +1475,7 @@ function mountKpiFourteen(target){
  mode.addEventListener('change',update);
  let style=document.getElementById('jj9-kpi-reference-style');if(!style){style=document.createElement('style');style.id='jj9-kpi-reference-style';document.head.append(style)}
  style.textContent='.jj9-kpi-reference{margin:8px 0;padding:8px;font-size:11px}.jj9-kpi-reference p{font-size:11px;line-height:1.45}.jj14-inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:7px;margin:10px 0}.jj14-inputs label{font-size:11px;display:grid;gap:3px}.jj14-inputs input,.jj14-inputs select,.jj14-inputs button{box-sizing:border-box;width:100%;min-width:0;padding:6px;border:1px solid #8886;border-radius:6px;background:var(--card,var(--bg,#fff));color:inherit}.jj14-planner{font-weight:700;padding:8px;border:1px solid #8885;border-radius:6px}.jj9-kpi-reference table{border-collapse:collapse;width:100%;font-size:11px}.jj9-kpi-reference th,.jj9-kpi-reference td{text-align:left;vertical-align:top;border-bottom:1px solid #8883;padding:6px}.jj9-kpi-reference td:nth-child(2){font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}@media(max-width:600px){.jj9-kpi-reference{padding:4px}.jj14-inputs{grid-template-columns:repeat(2,minmax(0,1fr))}.jj9-kpi-reference th,.jj9-kpi-reference td{padding:5px 4px;font-size:10px}.jj9-kpi-reference td:last-child{min-width:180px}}';
- target.append(root);update();
+ target.append(root);window.__jj14Update=update;update();
 }
 const original=render;render=function(){original();if(active===slug)mount();};if(new URLSearchParams(location.search).get('topic')===slug||(!new URLSearchParams(location.search).get('topic')&&(()=>{try{return localStorage.getItem('jj-academy-last-page-v1')===slug}catch(e){return false}})())){active=slug;try{localStorage.setItem('jj-academy-last-page-v1',slug)}catch(e){}}if(typeof jjRebuildMobileSelector==='function')jjRebuildMobileSelector();renderNav();render();
 })();
