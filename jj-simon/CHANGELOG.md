@@ -93,3 +93,11 @@ GitHub commit history on `jj-simon-knowledge-hub` contains earlier edits. This r
 - **Protected:** T1 risks, targets, fees, saved preset and broker qualification checks unchanged.
 - **Commit:** `abdd9ce8768ebcf8c3091a27e1a25dedf8060273`.
 - **Verification:** Syntax passed. Full numeric regression and additional-day modeling outstanding; live deployment not independently verified.
+
+## FIX-009 — 2026-11-12 — Two distinct $1,500 winning days, no consistency gate
+- **User decision:** T1 evaluation strategy has only two $1,500 targets on two separate trading days. Remove all consistency-based qualification logic from this calculator model.
+- **Problem:** The consistency check made day two a different and harder goal despite identical user-defined day targets.
+- **Change:** After P1 reaches $1,500 the path engine advances to trading day two, carrying EOD drawdown. When P2 reaches $1,500 it marks the evaluation as passed; removed the consistency condition and consistency-derived required total. No third day is required by this model.
+- **Protected:** User T1 preset, risks, reward ratios, contract sizing and drawdown unchanged.
+- **Commit:** `9434fd9368226b8d1ced1b106e0eb579d8671060`.
+- **Caveat:** This is the user's simplified evaluation strategy model; actual firm qualification terms should be verified separately. JS syntax passed, full regression and live deployment pending.
