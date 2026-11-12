@@ -869,6 +869,7 @@ const planningProbability=firmForPhases==='topstep'?threeAttemptPass*threeAttemp
 // The simplified squared-checkpoint model is a planning benchmark only.
 // Unresolved paths at finite depth are not counted as completed passes.
 const probability=actualEvaluationProbability;
+// Audit rule: unresolved evaluation leaves are not failures and must be reported separately.
 const t1Probability=leaves.filter(x=>x.stage===2||x.status==='target').reduce((sum,x)=>sum+x.prob,0);
 const failProbability=leaves.filter(x=>x.status==='closed').reduce((sum,x)=>sum+x.prob,0);
 const unresolvedProbability=leaves.filter(x=>x.status==='active'||x.status==='daily-blocked').reduce((sum,x)=>sum+x.prob,0);
@@ -907,8 +908,8 @@ if(firmForPhases==='topstep'&&activeStrategy==='current')fv.fixedRisk=1000;else 
 if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'?calcTopstepFunded(path,fv):calc(path,fv);if(x.status!=='active'||x.steps.length>=fv.depth){fundedLeaves.push(x);if(x.status==='target')fp+=x.prob;if(x.status==='closed')fr+=x.prob;return}fw(path+'W');fw(path+'L')}fw('')}
 
 const fundedSimulationPass=fp;const tradeWin=Math.max(0,Math.min(1,v.winRate/100));const tradeLoss=1-tradeWin;const fundedCycleTarget=tradeWin+tradeLoss*tradeWin;const fundedCycleReset=tradeLoss*tradeLoss*tradeWin;const fundedThreeAttemptPass=fundedCycleTarget/(1-fundedCycleReset);/* Use the enumerated funded engine success probability; do not overwrite it with a different LLW reset formula. The latter is a separate theoretical unlimited-horizon benchmark. */
-const p1Shared=firmForPhases==='topstep'?threeAttemptPass:Math.max(0,Math.min(1,t1Probability));
-const p2Shared=firmForPhases==='topstep'?threeAttemptPass:(p1Shared>0?Math.max(0,Math.min(1,actualEvaluationProbability/p1Shared)):0);
+const p1Shared=firmForPhases==='topstep'?Math.max(0,Math.min(1,checkpointProbability)):Math.max(0,Math.min(1,t1Probability));
+const p2Shared=p1Shared>0?Math.max(0,Math.min(1,actualEvaluationProbability/p1Shared)):0;
 window.__jj14StageData={firm:firmForPhases,p1:p1Shared,p2:p2Shared,p3:Math.max(0,Math.min(1,fp)),evalWin:v.winRate,fundedWin:fv.winRate,accountFee:v.accountCost,activationFee:fn('activation',0),walletCash:fv.target*Math.max(0,Math.min(1,fn('split',80)/100)),accountCount:Number(box.querySelector('[data-account-count]')?.value)||10,depth:fv.depth};
 if(typeof window.__jj14Update==='function')window.__jj14Update();
 const cash=x=>'$'+x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -1542,4 +1543,32 @@ function mountKpiFourteen(target){
  target.append(root);window.__jj14Update=update;update();
 }
 const original=render;render=function(){original();if(active===slug)mount();};if(new URLSearchParams(location.search).get('topic')===slug||(!new URLSearchParams(location.search).get('topic')&&(()=>{try{return localStorage.getItem('jj-academy-last-page-v1')===slug}catch(e){return false}})())){active=slug;try{localStorage.setItem('jj-academy-last-page-v1',slug)}catch(e){}}if(typeof jjRebuildMobileSelector==='function')jjRebuildMobileSelector();renderNav();render();
+})();
+/* Persistent, reviewable change history. Every future fix must add an entry here
+   and in jj-simon/CHANGELOG.md, with problem, decision, impact and rollback SHA. */
+(function(){
+'use strict';
+const slug='calc-fix-history';
+if(!chapters.some(x=>x.slug===slug))chapters.push({slug,group:'Calculators & Simulations',title:'Calculator Fix History',intro:'Permanent numbered record of calculator changes, the reason for each decision, and how to return to a previous version.',status:'GitHub commit history is the rollback source of truth.',sections:[
+{title:'FIX-002 · 2026-11-12 · Path-based stage probabilities',points:[
+'Problem: The shared P1/P2 stage metrics still used a simplified three-attempt probability even after financial ROI switched to simulated evaluation paths.',
+'Decision: Derive P1 from the enumerated checkpoint pass probability and P2 from completed evaluation probability divided by P1 probability.',
+'Why: P1 × P2 must equal the actual path-based evaluation pass rate used by ROI. Keep unresolved paths distinct from failed accounts.',
+'Protected: T1 risks, reward ratios, stops, targets, fees, funded risk reset and saved presets were not modified.',
+'Validation: JavaScript syntax checked. Browser deployment and full path-mass audit remain pending.',
+'Rollback: Use GitHub commit history; prior financial-formula fix was 18fbf16a.' ]},
+{title:'FIX-001 · 2026-11-12 · ROI uses evaluation paths',points:[
+'Problem: Financial ROI used (1 − (1 − WR)^3)^2 instead of the actual carried-state evaluation pass rate.',
+'Decision: Replace financial probability with the enumerated evaluation target probability.',
+'Why: Account purchases, activation spending and payouts must follow the same model as the actual trading rules.',
+'Limitation: Finite 12-trade paths may remain unresolved; no claim of a fully validated production ROI.',
+'Commit: 18fbf16a7f5949d4ed1999db733c54e9fa7e98d1.' ]},
+{title:'Baseline · T1 WR20 · 2026-11-12',points:[
+'Preserved T1 preset: P1/P2 risks $500 / $700 / $800, reward ratios 3 / 2.9 / 3.4; P3 risks $700 / $800 / $500, reward ratios 5 / 5.25 / 6.',
+'P1/P2 evaluation target $3,000, trailing drawdown $2,000, 50% consistency; P3 target $3,500, drawdown $2,000.',
+'Evaluation fee $50; activation $150; payout split 75%; 5 target payouts; original win rate 20% for both phases.',
+'Goal: Correct probabilities and ROI without altering trading strategy or presets.' ]}
+]});
+if(typeof jjRebuildMobileSelector==='function')jjRebuildMobileSelector();
+if(typeof renderNav==='function')renderNav();
 })();
