@@ -37,3 +37,13 @@ User supplied Chapter 09 JSON preset `t1 wr20`. P1/P2 manual risks 500,700,800,1
 
 ## Existing history
 GitHub commit history on `jj-simon-knowledge-hub` contains earlier edits. This register begins at FIX-001; prior commits are not retroactively assigned invented fix numbers.
+
+## FIX-003 — 2026-11-12 — Unify Section 07 funnel
+- **Discussion:** User showed screenshot: 26.86 funded and 16.09 P4 target successes in table, but 8.34 funded and 5.00 payout successes in top summary; requested fix.
+- **Problem:** Section 07 still used simplified three-attempt rates (65.7% in screenshot) despite financial cohort using actual evaluation paths (13.4% combined in screenshot).
+- **Target:** One consistent path-based cohort across funded counts, payout-target counts, spending, and ROI.
+- **Change:** P1 pass now uses enumerated first-checkpoint pass probability; conditional P2 = actual complete evaluation pass probability / P1. Removed old text claiming simplified probabilities drive financial results. Added runtime reconciliation warning for P3/P4 against financial cohort.
+- **Reason:** P1 purchases × P1 pass × conditional P2 = expected funded accounts, which × funded target success = expected P4 target successes.
+- **Protected:** T1 preset and risk parameters untouched; simplified benchmark remains only for comparison.
+- **Commit:** `0e0e063872743c717e2cbf0a9d2c4a89b67960cd`.
+- **Verification:** JavaScript syntax validated. Live Cloudflare deployment and full probability-mass / unresolved-path audit not yet verified. This is a modeled payout-target count, not proof of withdrawal or received payout.
