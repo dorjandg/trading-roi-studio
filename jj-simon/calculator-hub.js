@@ -836,6 +836,7 @@ const counts={target:0,closed:0,active:0,'daily-blocked':0};leaves.forEach(x=>co
   const rows=[...paths.values()].sort((a,b)=>a.key.length-b.key.length||a.key.localeCompare(b.key)).slice(0,250);
   const title=stage===1?'P1 · Challenge scenarios':'P2 · Verification / second checkpoint scenarios';
   const fmt=n=>(n>0?'+':n<0?'−':'')+tableNumber(Math.abs(n));
+  const pnlClass=n=>n>0?'jj-risk-win':n<0?'jj-risk-loss':'';
   const byPath=new Map(rows.map(x=>[x.key,x]));
   const body=rows.map(x=>{
    const w=byPath.get(x.key+'W'),l=byPath.get(x.key+'L');
