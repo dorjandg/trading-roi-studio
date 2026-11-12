@@ -47,3 +47,13 @@ GitHub commit history on `jj-simon-knowledge-hub` contains earlier edits. This r
 - **Protected:** T1 preset and risk parameters untouched; simplified benchmark remains only for comparison.
 - **Commit:** `0e0e063872743c717e2cbf0a9d2c4a89b67960cd`.
 - **Verification:** JavaScript syntax validated. Live Cloudflare deployment and full probability-mass / unresolved-path audit not yet verified. This is a modeled payout-target count, not proof of withdrawal or received payout.
+
+## FIX-004 — 2026-11-12 — P2 discrepancy audit
+- **Discussion:** User expects P1 and P2 rates to be similar and questioned 60.7% vs 22.1%; requested investigation rather than an assumption.
+- **Problem:** A single P2 pass rate hid how many paths breached drawdown, remained unfinished, or encountered 50% consistency.
+- **Target:** Show auditable probabilities for P1 reached, P2 completed, P2 closed, P2 unresolved/blocked, and paths encountering consistency.
+- **Change:** Added a visible FIX-004 diagnostic breakdown in Section 07, derived from the same enumerated path leaves. Consistency-touched overlaps other categories and is explicitly labeled non-additive.
+- **Reason:** Distinguish genuine carried-state differences from simulation implementation errors before changing probability formulas.
+- **Commit:** `581dfe50371f1851b49c54fece7d4c5870d67ed7`.
+- **Protected:** T1 preset, risk sequence, win rate, and ROI formula unchanged.
+- **Validation:** JavaScript syntax checked; live deployment, exact numerical probability-mass audit, and independent rule validation are pending. The diagnostic is not proof the engine is correct.
