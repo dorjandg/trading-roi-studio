@@ -605,7 +605,7 @@ function goldExecution(v,stage,tier,planned,room,dailyRoom,remainingGoal,rr){
 }
 function calcTopstep(path,v){
  const checkpointTarget=v.target/2;
- const rate=Math.max(.01,Math.min(.99,(v.consistencyRate||50)/100));
+ // FIX-009: T1 has two distinct trading-day $1,500 targets; no consistency filter.
  const attemptsPerStage=Math.max(1,Math.min(8,Math.floor(v.depth)));
  let stage=1,stagePnl=0,total=0,prob=1,status='active';
  let stageTrades=0,steps=[],trailingFloor=-v.limit,peakEOD=0;
@@ -641,10 +641,8 @@ function calcTopstep(path,v){
   if(status==='active'&&c==='W'){
    if(stage===1&&stagePnl>=checkpointTarget-1e-7)passed=true;
    else if(stage===2&&stagePnl>=checkpointTarget-1e-7){
-    const best=Math.max(dailyTotals[1],dailyTotals[2]);
-    passed=true; // Daily strategy target reached, independent of broker qualification.
-    if(total>=v.target-1e-7&&best<=total*rate+1e-7)status='target';
-    else status='daily-blocked'; // consistency requires more days; NOT a funded account // strategy day complete; broker consistency/total still unmet
+    passed=true;
+    status='target'; // Day 2 reached $1,500; two distinct days complete the T1 evaluation model. // strategy day complete; broker consistency/total still unmet
    }
   }
   // FIX-005 pending: two-day consistency overshoots may need a third trading day.
@@ -696,7 +694,7 @@ function calcTopstep(path,v){
  return {path:steps.map(t=>t.c).join(''),pnl:total,stage,stagePnl,
   left:total-trailingFloor,status,topstepCheckpoint:checkpoint,
   topstepBestDay:Math.max(0,dailyTotals[1],dailyTotals[2]),
-  topstepRequiredTarget:Math.max(v.target,Math.max(0,dailyTotals[1],dailyTotals[2])/rate),
+  topstepRequiredTarget:v.target,
   risk:Math.max(0,total-trailingFloor),steps,prob,day:stage,
   dailyLeft:Math.max(0,v.dailyLimit+stagePnl),dayPnl:stagePnl,lossesToday:0,
   checkpointAttempts:stageTrades,checkpointLimit:attemptsPerStage,trailingFloor};
@@ -1234,7 +1232,7 @@ const p2Audit=firmType==='topstep'?(()=>{
 // FIX-007: checkpoint strategy completion and broker qualification are different events.
 const p2DailyTargetMass=firmType==='topstep'?leaves.reduce((sum,x)=>sum+(x.steps.some(t=>t.checkpointStage===2&&t.passed)?x.prob:0),0):pEval;
 const p2DailyConditional=p1Pass>0?p2DailyTargetMass/p1Pass:0;
-const p2ConsistencyGap=Math.max(0,p2DailyTargetMass-pEval);
+const p2ConsistencyGap=Math.max(0,p2DailyTargetMass-pEval); // always zero in FIX-009 two-day target model
 const p2Conditional=actualP2Conditional;
 const planningP1Rate=firmType==='topstep'?threeAttemptPass:p1Pass;
 const planningP2Rate=firmType==='topstep'?threeAttemptPass:actualP2Conditional; // independent benchmark, not actual day-two rate
@@ -1572,6 +1570,7 @@ const original=render;render=function(){original();if(active===slug)mount();};if
 'use strict';
 const slug='calc-fix-history';
 if(!chapters.some(x=>x.slug===slug))chapters.push({slug,group:'Calculators & Simulations',title:'Calculator Fix History',intro:'Permanent numbered record of calculator changes, the reason for each decision, and how to return to a previous version.',status:'GitHub commit history is the rollback source of truth.',sections:[
+{title:'FIX-009 · 2026-11-12 · Two separate $1,500 trading days',points:['User directive: Remove consistency from the T1 simulation. The only profit targets are $1,500 on trading day one and $1,500 on trading day two.','Change: Evaluation passes immediately after the second distinct day reaches $1,500. No additional 50% consistency test or third-day requirement is applied in this strategy model.','Trailing drawdown, risk sequence, contract rounding, and existing T1 preset values remain unchanged.','This is the user-defined strategy model, not an independent verification of the firm’s current evaluation terms.']},
 {title:'FIX-008 · 2026-11-12 · Correct daily checkpoint success flag',points:['Problem: P2 reaching the $1,500 strategy target was flagged as not passed when broker consistency was unmet, mixing trading-day success with evaluation qualification.','Change: P2 step now records passed=true for daily strategy target; the evaluation status remains target only if full broker total and consistency pass, otherwise daily-blocked unresolved.','Financial payouts continue to count only broker-qualified evaluations. No T1 preset changes.','Remaining limitation: additional trading days and independent numerical tests are still needed.']},
 {title:'FIX-007 · 2026-11-12 · Distinguish second winning day from evaluation pass',points:['Problem: P1 57.8% and P2 20.3% were compared as if both were daily strategy success rates, but P2 was actually full evaluation qualification after consistency.','Change: Added separate P2 daily $1,500 target probability and fully qualified P2 probability, plus the gap attributable to reaching the daily target without qualifying.','Do not count an unqualified $1,500 second day as funded or as a received payout. T1 preset and original path-based ROI are unchanged.','Full independent numerical verification and third-day consistency continuation remain outstanding.']},
 {title:'FIX-006 · 2026-11-12 · Equal $1,500 daily strategy targets',points:['User clarification: Each evaluation trading day has the same $1,500 strategy target, not a variable second-day catch-up target.','Change: Both checkpoint days stop their strategy after earning at least $1,500.','Broker protection: An account is marked evaluation passed only if the full $3,000 total and 50% consistency are actually satisfied. Otherwise the branch is blocked/unresolved, not a funded success.','No preset risks, reward ratios, fees, or win rates changed. Full path and deployment verification remain pending.']},
