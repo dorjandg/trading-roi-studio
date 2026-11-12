@@ -264,6 +264,12 @@ box.querySelector('[data-section="funded-results"]').before(box.querySelector('[
 const combined=document.createElement('div');combined.dataset.combinedResults='';
 box.querySelector('[data-section="funded-results"]').after(combined);
 group('combined-results','05 · Combined · Final Results',[combined]);
+// Keep all three result sections together under one collapsible heading.
+const resultsSections=['challenge-results','funded-results','combined-results'].map(id=>box.querySelector('[data-section="'+id+'"]'));
+const resultsGroup=document.createElement('details');resultsGroup.className='jj-risk-section';resultsGroup.dataset.section='results-group';
+const resultsSummary=document.createElement('summary');const resultsArrow=document.createElement('span');resultsArrow.className='jj-risk-chevron';resultsArrow.setAttribute('aria-hidden','true');resultsArrow.textContent='▸';resultsSummary.append(resultsArrow,document.createTextNode('03–05 · Results · Challenge / Funded / Combined'));
+const resultsBody=document.createElement('div');resultsBody.className='jj-risk-section-body';resultsGroup.append(resultsSummary,resultsBody);resultsSections[0].before(resultsGroup);resultsSections.forEach(section=>resultsBody.append(section));
+
 combined.after(comparePanel);const compareSection=group('manual-auto','05A · Manual vs Auto · Comparison',[comparePanel]);compareSection.addEventListener('toggle',()=>{if(compareSection.open)renderRisk()});
 const strategyPanel=document.createElement('div');strategyPanel.dataset.strategyPanel='';box.querySelector('[data-section="combined-results"]').after(strategyPanel);const strategySection=group('strategy-comparison','06 · Risk Strategy Comparison',[strategyPanel],false);strategySection.addEventListener('toggle',()=>{if(strategySection.open)renderRisk()});
 const funnel=document.createElement('div');funnel.dataset.funnel='';box.querySelector('[data-section="strategy-comparison"]').after(funnel);group('funnel','07 · P1 → P2 → P3 → P4 · Account Funnel',[funnel]);
