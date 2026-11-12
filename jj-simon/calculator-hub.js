@@ -193,7 +193,7 @@ const stepCard=(phase,tier)=>'<div class="jj-contract-step" style="border:1px so
  '<label style="min-width:0;font-size:10px">Risk $<input data-manual-risk="'+phase+'-'+tier+'" type="number" min="0.01" step="0.01" value="100" style="box-sizing:border-box;width:100%;min-width:0;padding:3px 4px;font-size:11px"></label>'+
  '<label style="min-width:0;font-size:10px">RR<input data-manual-rr="'+phase+'-'+tier+'" type="number" min="0.1" max="100" step="0.1" placeholder="Auto" style="box-sizing:border-box;width:100%;min-width:0;padding:3px 4px;font-size:11px"></label>'+
  '<label style="min-width:0;font-size:10px">Stop $ move<input data-contract-stop="'+phase+'-'+tier+'" type="number" min="0.1" step="0.1" value="5" style="box-sizing:border-box;width:100%;min-width:0;padding:3px 4px;font-size:11px" title="Gold price movement from entry to stop, in $ per ounce"></label>'+
- '<div style="min-width:0"><span style="font-size:10px">Contracts</span><div data-contract-result="'+phase+'-'+tier+'" style="font-size:14px;font-weight:700;line-height:23px">—</div></div>'+
+ '<div style="min-width:0"><span data-sizing-label style="font-size:10px">Contracts</span><div data-contract-result="'+phase+'-'+tier+'" style="font-size:14px;font-weight:700;line-height:23px">—</div></div>'+
  '</div><div data-contract-detail="'+phase+'-'+tier+'" style="font-size:10px;opacity:.7;margin-top:3px;line-height:1.35"></div></div>';
 const phaseCards=phase=>'<div style="margin-top:7px"><div style="display:flex;gap:6px;align-items:center;justify-content:space-between;flex-wrap:wrap">'+
  '<strong style="font-size:12px">P'+phase+' · '+(phase===1?'First checkpoint':phase===2?'Second checkpoint':'Funded')+'</strong>'+
@@ -210,7 +210,7 @@ const fundedManualPanel=document.createElement('div');
 fundedManualPanel.style.cssText='margin:8px 0;font-size:11px;min-width:0;max-width:100%';
 fundedManualPanel.innerHTML='<details><summary style="cursor:pointer;font-weight:600">P3 · Manual Risk & Contracts</summary>'+phaseCards(3)+'</details>';
 box.querySelector('[data-section="funded-settings"] .jj-risk-section-body').append(fundedManualPanel);
-const contractSizing=()=>{for(const phase of [1,2,3]){
+const contractSizing=()=>{const isFtmo=firmBar.querySelector('[data-firm-type]')?.value==='ftmo';box.querySelectorAll('[data-sizing-label]').forEach(el=>el.textContent=isFtmo?'Lots':'Contracts');for(const phase of [1,2,3]){
  const sym=box.querySelector('[data-contract-symbol="'+phase+'"]')?.value||'MGC';
  const dollarsPerPoint=sym==='GC'?100:10;
  for(const tier of [1,2,3,4]){
@@ -221,6 +221,7 @@ const contractSizing=()=>{for(const phase of [1,2,3]){
   const detail=box.querySelector('[data-contract-detail="'+key+'"]');
   if(!out||!detail)continue;
   if(!(budget>0)||!(move>0)){out.textContent='—';detail.textContent='Enter risk and stop movement';continue}
+  if(isFtmo){const lots=budget/(move*100);out.textContent=lots.toFixed(3).replace(/0+$/,'').replace(/\.$/,'')+' lots';detail.textContent='$'+budget.toFixed(2)+' exact planned risk · XAUUSD 100 oz/lot assumption · excludes spread/slippage';continue;}
   // Gold futures trade in 0.10-point increments. Round stop distance UP
   // to the next valid tick so contract sizing never understates stop risk.
   const tickSize=.1;
