@@ -101,3 +101,10 @@ GitHub commit history on `jj-simon-knowledge-hub` contains earlier edits. This r
 - **Protected:** User T1 preset, risks, reward ratios, contract sizing and drawdown unchanged.
 - **Commit:** `9434fd9368226b8d1ced1b106e0eb579d8671060`.
 - **Caveat:** This is the user's simplified evaluation strategy model; actual firm qualification terms should be verified separately. JS syntax passed, full regression and live deployment pending.
+
+## FIX-010 — FTMO lot sizing display (2026-11-12)
+- User requested FTMO XAUUSD lots instead of futures contracts, keeping exact manual USD risks; Topstep remains contract-based.
+- Changed `contractSizing()` to display `risk / (stop_move * 100)` lots for FTMO, assuming 100 oz per standard XAUUSD lot. Existing Topstep whole-contract sizing is unchanged. Renamed the per-step display label dynamically.
+- Presets and trading-engine logic were not changed. FTMO execution logic already uses exact dollar risk, but phase rules and daily-loss handling require a separate correction.
+- Validation: JavaScript parsed successfully with `new Function(source)`; GitHub commit `b06fcd1a802d0bc30f8bc20e4e34f6ea1ff4636c`. Browser deployment not independently verified.
+- Limitation: FTMO Preset 2 funded risk $500 × 4R = $2,000, exceeding its $1,500 target in one win. This contradicts the requested two-win funded condition; do not silently change the preset or hardcode an incompatible pass condition.
