@@ -1215,6 +1215,15 @@ const p1Pass=hasVerification?
 const funnelCount=count=>modelBuys===null?'—':count.toFixed(2);
 const percent=value=>Number.isFinite(value)?(100*Math.max(0,Math.min(1,value))).toFixed(1)+'%':'—';
 const actualP2Conditional=p1Pass>0?Math.min(1,pEval/p1Pass):null;
+const p2Audit=firmType==='topstep'?(()=>{
+ const reached=leaves.filter(x=>x.steps.some(t=>t.checkpointStage===1&&t.passed));
+ const mass=xs=>xs.reduce((sum,x)=>sum+x.prob,0);
+ const blockedConsistency=reached.filter(x=>x.status!=='target'&&x.steps.some(t=>t.checkpointStage===2&&t.pnl>=v.target-1e-7&&Math.max(...x.steps.filter(y=>y.checkpointStage===1).map(y=>y.dayPnl),...x.steps.filter(y=>y.checkpointStage===2).map(y=>y.dayPnl))>t.pnl*(v.consistencyRate||50)/100+1e-7));
+ const failure=reached.filter(x=>x.status==='closed');
+ const incomplete=reached.filter(x=>x.status!=='closed'&&x.status!=='target');
+ return {entered:mass(reached),passed:pEval,closed:mass(failure),incomplete:mass(incomplete),consistencyTouched:mass(blockedConsistency)};
+})():null;
+
 // User-selected equal-checkpoint planning view: identical settings imply identical
 // standalone stage rates. Actual carried-state account outcomes remain separate.
 const p2Conditional=actualP2Conditional;
@@ -1353,6 +1362,7 @@ $('[data-funnel]').innerHTML='<div class="jj-funnel-wrap">'+
  'Avg T / W / L are the average trades, wins and losses within EACH stage among successful paths. They exclude failed accounts and are not cumulative. P1 has no trades; P2 is the first checkpoint, P3 the remaining evaluation trades, and P4 funded target trades. '+
  (firmType==='topstep'?'Topstep account funnel uses enumerated carried-state checkpoint paths, including trailing drawdown and consistency. The separate equal-checkpoint benchmark is informational only. Each checkpoint has its own R1–R4 counter and up to '+Math.min(8,v.depth)+' modeled trades. ':'')+
  (firmType==='topstep'?'<details open style="margin:7px 0"><summary style="cursor:pointer;font-weight:700">Evaluation probability comparison · open</summary><div style="padding:6px 0">Equal-checkpoint PLANNING: P1→P2 '+percent(planningP1Rate)+'; P2→P3 '+percent(planningP2Rate)+'; combined '+percent(planningEvaluationRate)+'. ACCOUNT funnel: P1→P2 '+percent(p1Pass)+'; P2→P3 '+percent(p2Conditional)+'; combined '+percent(pEval)+'. Actual carried-state evaluation engine: '+percent(actualEvaluationProbability)+'. Difference: '+((planningProbability-actualEvaluationProbability)*100).toFixed(2)+' percentage points. <strong>Financial projections and account funnel use the carried-state path probability; the equal-checkpoint benchmark is diagnostic only. Execution costs and payout eligibility remain unverified.</strong> The carried-state calculation includes inherited end-of-day trailing drawdown and consistency but does not model all real execution costs.</div></details>':'')+
+ (p2Audit?'<div style="padding:7px 0"><strong>FIX-004 P2 path audit (probability per purchased evaluation)</strong>: P1 reached '+percent(p2Audit.entered)+' · P2 completed '+percent(p2Audit.passed)+' · P2 closed '+percent(p2Audit.closed)+' · P2 unfinished/blocked '+percent(p2Audit.incomplete)+' · paths encountering consistency threshold '+percent(p2Audit.consistencyTouched)+'. Consistency category overlaps closed/unfinished; not an additional failure count. Checkpoint rates need not be identical when balances and consistency carry forward.</div>':'')+
  'P1 purchases: '+funnelCount(modelBuys)+'; P2 first checkpoint passed: '+funnelCount(funnelP1)+
  '; P3 evaluation passed and funded: '+funnelCount(funnelP3)+
  '; P4 funded payout profit target: '+funnelCount(funnelP4)+'. '+
@@ -1552,6 +1562,7 @@ const original=render;render=function(){original();if(active===slug)mount();};if
 'use strict';
 const slug='calc-fix-history';
 if(!chapters.some(x=>x.slug===slug))chapters.push({slug,group:'Calculators & Simulations',title:'Calculator Fix History',intro:'Permanent numbered record of calculator changes, the reason for each decision, and how to return to a previous version.',status:'GitHub commit history is the rollback source of truth.',sections:[
+{title:'FIX-004 · 2026-11-12 · P2 discrepancy audit',points:['Discussion: User challenged P1 60.7% versus conditional P2 22.1%, expecting similar rates.','Finding: Equal risks do not guarantee equal pass rates when the second checkpoint inherits P1 profits and 50% consistency.','Change: Added visible probability breakdown for P1 reached, P2 passed, P2 closed, P2 unfinished or blocked, and paths encountering the consistency threshold.','This fix adds diagnostics, not a forced equalization. T1 preset and financial probabilities remain unchanged. Browser deployment and numeric validation pending.']},
 {title:'FIX-003 · 2026-11-12 · Unified path-based funnel',points:['Problem: Section 07 still used simplified three-attempt checkpoint rates, producing conflicting funded and payout counts.','Decision: Derive P1 from enumerated first-checkpoint paths and P2 conditionally from complete evaluation paths.','Target: P3 funded accounts and P4 payout-target successes reconcile with the financial cohort and ROI.','No preset or trading parameter changed. Syntax verified; live deployment and full simulation audit remain pending.']},
 {title:'FIX-002 · 2026-11-12 · Path-based stage probabilities',points:[
 'Problem: The shared P1/P2 stage metrics still used a simplified three-attempt probability even after financial ROI switched to simulated evaluation paths.',
