@@ -85,3 +85,11 @@ GitHub commit history on `jj-simon-knowledge-hub` contains earlier edits. This r
 - **Reason:** Do not mislabel a strategy checkpoint success as a funded account; preserve true broker constraints.
 - **Commit:** `2a2e66fdbb70d4f7b4592bee37a70097a18fe092`.
 - **Verification:** JavaScript syntax checked; numeric regression, live deployment and additional consistency-repair days still outstanding. T1 preset untouched.
+
+## FIX-008 — 2026-11-12 — Distinguish P2 daily target from evaluation qualification in engine
+- **Discussion:** User identified continued mismatch between first and second daily target rates.
+- **Bug:** Stage 2 set `passed=true` only when both daily target and broker consistency were satisfied. A second day reaching $1,500 but needing a consistency repair day was incorrectly marked as not having reached the daily checkpoint.
+- **Fix:** Stage 2 now marks the daily strategy checkpoint passed at $1,500; only full $3,000 plus consistency changes the account status to `target`. Otherwise account remains `daily-blocked` and is NOT counted funded or failed.
+- **Protected:** T1 risks, targets, fees, saved preset and broker qualification checks unchanged.
+- **Commit:** `abdd9ce8768ebcf8c3091a27e1a25dedf8060273`.
+- **Verification:** Syntax passed. Full numeric regression and additional-day modeling outstanding; live deployment not independently verified.
