@@ -939,7 +939,7 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
   }
   return {trades:entries?trades/entries:NaN,wins:entries?wins/entries:NaN,losses:passed?passLosses/passed:NaN,total:trades};
  };
- const headings=['WR','Phase','Accounts','Pass %','Total %','Avg T','Avg W','Avg L','Tot T','Trades / Pass','Pass Paths','Stage $','Cost / result','Expected cash','Net P/L','ROI'];
+ const headings=['WR','Phase','Accounts','Pass %','Total %','Avg T','Avg W','Avg L','Tot T','Trades / Pass','Pass Paths','Stage $','Cost / result'];
  const rows=rates.map(rate=>{
   const p=rate/100;
   const evalPass=weighted(leaves,p,x=>x.status==='target'?1:0);
@@ -955,12 +955,12 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
   const fstats=fundedAvg.total>0?fundedAvg:st3;
   const stageRows=[
    {name:'P1 · Evaluations purchased',count:buys,pass:NaN,total:1,avg:null,trades:0,paths:'—',cost:buys*fee,costResult:fee},
-   {name:firmForPhases==='ftmo'?'P2 · Challenge passed':'P2 · First day passed',count:firstPass,pass:p1,total:p1,avg:st1,trades:buys*st1.total,paths:'See Section 07',cost:0,costResult:firstPass>0?buys*fee/firstPass:NaN},
-   {name:firmForPhases==='ftmo'?'P3 · Verification passed / funded':'P3 · Second day passed / funded',count:funded,pass:p2,total:evalPass,avg:st2,trades:buys*st2.total,paths:'See Section 07',cost:funded*activation,costResult:funded>0?spent/funded:NaN},
-   {name:'P4 · Funded payout target reached',count:payouts,pass:fundPass,total:evalPass*fundPass,avg:fstats,trades:funded*fstats.total,paths:'See Section 07',cost:0,costResult:payouts>0?spent/payouts:NaN}
+   {name:firmForPhases==='ftmo'?'P2 · Challenge passed':'P2 · First day passed',count:firstPass,pass:p1,total:p1,avg:st1,trades:buys*st1.total,paths:firmForPhases==='topstep'?'W · LW · LLW':'—',cost:0,costResult:firstPass>0?buys*fee/firstPass:NaN},
+   {name:firmForPhases==='ftmo'?'P3 · Verification passed / funded':'P3 · Second day passed / funded',count:funded,pass:p2,total:evalPass,avg:st2,trades:buys*st2.total,paths:firmForPhases==='topstep'?'W · LW · LLW':'—',cost:funded*activation,costResult:funded>0?spent/funded:NaN},
+   {name:'P4 · Funded payout target reached',count:payouts,pass:fundPass,total:evalPass*fundPass,avg:fstats,trades:funded*fstats.total,paths:firmForPhases==='topstep'?'W · LW · LLW':'—',cost:0,costResult:payouts>0?spent/payouts:NaN}
   ];
-  return stageRows.map((x,i)=>{const cells=[i===0?fmt(rate)+'%':'',x.name,fmt(x.count),Number.isFinite(x.pass)?fmt(100*x.pass)+'%':'—',fmt(100*x.total)+'%',x.avg?fmt(x.avg.trades):'—',x.avg?fmt(x.avg.wins):'—',x.avg?fmt(x.avg.losses):'—',fmt(x.trades),i>0&&x.count>0?fmt(x.trades/x.count):'—',x.paths,money(x.cost),money(x.costResult),i===3?money(gross):'—',i===3?money(net):'—',i===3?fmt(roi)+'%':'—'];
-   return '<tr'+(i===0?' style="border-top:2px solid #8887"':'')+'>'+cells.map((cell,j)=>'<td style="padding:6px 5px;text-align:'+(j===1||j===10?'left':'right')+';white-space:nowrap;'+(j===14&&i===3?'color:'+(net>=0?'#00df83':'#f05b65')+';':'')+'">'+cell+'</td>').join('')+'</tr>';
+  return stageRows.map((x,i)=>{const cells=[i===0?fmt(rate)+'%':'',x.name,fmt(x.count),Number.isFinite(x.pass)?fmt(100*x.pass)+'%':'—',fmt(100*x.total)+'%',x.avg?fmt(x.avg.trades):'—',x.avg?fmt(x.avg.wins):'—',x.avg?fmt(x.avg.losses):'—',fmt(x.trades),i>0&&x.count>0?fmt(x.trades/x.count):'—',x.paths,money(x.cost),money(x.costResult)];
+   return '<tr'+(i===0?' style="border-top:2px solid #8887"':'')+'>'+cells.map((cell,j)=>'<td style="padding:6px 5px;text-align:'+(j===1||j===10?'left':'right')+';white-space:nowrap;'+'">'+cell+'</td>').join('')+'</tr>';
   }).join('');
  }).join('');
  host.innerHTML='<table style="width:100%;border-collapse:collapse;white-space:nowrap;font-size:11px"><thead><tr>'+headings.map(h=>'<th style="padding:7px 5px;border-bottom:1px solid #8885;text-align:right">'+h+'</th>').join('')+'</tr></thead><tbody>'+rows+'</tbody></table>';
