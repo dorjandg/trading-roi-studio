@@ -989,7 +989,7 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
   return {trades:entries?trades/entries:NaN,wins:entries?wins/entries:NaN,losses:passed?passLosses/passed:NaN,total:trades};
  };
  const headings=compareMode==='wr'?wrAllColumns:['Scenario',...wrAllColumns.slice(1)];
- const comparisonNote=compareMode==='p3target'?'Topstep evaluation: P3 is the second-day pass. This model uses equal first-day and second-day targets, so both are adjusted together; the funded payout target remains unchanged.':compareMode==='pnl'?'Reverse net-profit planning: P&L = gross payout cash minus expected evaluation and activation fees. The calculator increases expected payouts to reach the net-profit goal; if expected net per payout is nonpositive, the goal is infeasible under these assumptions.':compareMode==='target'?'Reverse cash-goal planning: each scenario is a TOTAL cash payout goal. Funded trading target and split remain unchanged. P4 is the expected number of payouts needed (rounded up); P1–P3 are expected required accounts, not guaranteed results.':compareMode==='purchase'?'Purchase strategy may back-solve evaluation purchases to meet the payout goal; P4 is an expected count.':'Expected counts from modeled probabilities; they are not guaranteed outcomes.';
+ const comparisonNote=compareMode==='firm'?'Firm comparison uses each firm’s saved evaluation and funded settings where available, with defaults for missing values. Results are modeled estimates, not verified firm rules.':compareMode==='p3target'?'Topstep evaluation: P3 is the second-day pass. This model uses equal first-day and second-day targets, so both are adjusted together; the funded payout target remains unchanged.':compareMode==='pnl'?'Reverse net-profit planning: P&L = gross payout cash minus expected evaluation and activation fees. The calculator increases expected payouts to reach the net-profit goal; if expected net per payout is nonpositive, the goal is infeasible under these assumptions.':compareMode==='target'?'Reverse cash-goal planning: each scenario is a TOTAL cash payout goal. Funded trading target and split remain unchanged. P4 is the expected number of payouts needed (rounded up); P1–P3 are expected required accounts, not guaranteed results.':compareMode==='purchase'?'Purchase strategy may back-solve evaluation purchases to meet the payout goal; P4 is an expected count.':'Expected counts from modeled probabilities; they are not guaranteed outcomes.';
  const rows=rates.map(rate=>{
   const val=Number(rate),params={...v,manualRisks:Array.isArray(v.manualRisks)?[...v.manualRisks]:v.manualRisks,manualRRs:Array.isArray(v.manualRRs)?[...v.manualRRs]:v.manualRRs};
   const fundParams={...fv,manualRisks:Array.isArray(fv.manualRisks)?[...fv.manualRisks]:fv.manualRisks,manualRRs:Array.isArray(fv.manualRRs)?[...fv.manualRRs]:fv.manualRRs};
@@ -1004,23 +1004,49 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
    if(scenarioFirm!=='topstep'||!(val>0&&val<=100000))valid=false;
    else {params.target=2*val;params.topstepConsistency=true}
   }
-  if(compareMode==='firm'||compareMode==='custom')valid=false;
+  if(compareMode==='firm'){
+   if(!['topstep','ftmo'].includes(rate))valid=false;
+   else {
+    scenarioFirm=rate;
+    const profile=readProfiles()[rate]||firmDefaults(rate);
+    const defaults=firmDefaults(rate);
+    const fields={...defaults.fields,...(profile.fields||{})};
+    const funding={...defaults.funded,...(profile.funded||{})};
+    const setNumber=(obj,key,value)=>{if(value!==undefined&&value!==null&&value!==''&&Number.isFinite(Number(value)))obj[key]=Number(value)};
+    for(const key of ['target','target2','limit','dailyLimit','tradesPerDay','rr','floor','winRate','accountCost','depth'])setNumber(params,key,fields[key]);
+    params.targetMode=rate==='topstep'?1:2;
+    params.topstepConsistency=rate==='topstep';
+    if(rate==='topstep')params.topstepOptionalDailyCap=false;
+    else {delete params.topstepConsistency;delete params.fixedRisk}
+    for(const key of ['target','limit','dailyLimit','tradesPerDay','rr','floor','winRate','depth'])setNumber(fundParams,key,funding[key]);
+    if(rate==='topstep')delete fundParams.ftmoFundedBuilder;
+    else delete fundParams.fixedRisk;
+    p=Math.max(0,Math.min(1,params.winRate/100));
+    scenarioTarget=fundParams.target;
+    comparisonAccounts=Math.max(1,Number(profile.accountCount)||Number(defaults.accountCount)||numAccounts);
+    scenarioMode=['fixed','target','payout'].includes(profile.purchaseStrategy)?profile.purchaseStrategy:'fixed';
+   }
+  }
+  if(compareMode==='custom')valid=false;
   if(!valid)return '';
-  const evalPaths=['risk','rr','matrix','p3target'].includes(compareMode)?enumerate(params,false,scenarioFirm):leaves;
-  const fundPaths=['risk','rr','matrix','target'].includes(compareMode)?(phaseMode==='evaluation'?[]:enumerate(fundParams,true,scenarioFirm)):fundedLeaves;
+  const evalPaths=['risk','rr','matrix','p3target','firm'].includes(compareMode)?enumerate(params,false,scenarioFirm):leaves;
+  const fundPaths=['risk','rr','matrix','target','firm'].includes(compareMode)?((phaseMode==='evaluation'&&compareMode!=='firm')?[]:enumerate(fundParams,true,scenarioFirm)):fundedLeaves;
   const evalPass=weighted(evalPaths,p,x=>x.status==='target'?1:0);
   const p1=weighted(evalPaths,p,x=>x.steps.some(t=>t.checkpointStage===1&&t.passed||t.stage===1&&t.passed)?1:0);
   const p2=p1>0?evalPass/p1:0;
-  const fundPass=phaseMode==='evaluation'?0:weighted(fundPaths,p,x=>x.status==='target'?1:0);
-  const grossPerPayout=scenarioTarget*split;
-  const expectedCostPerPayout=evalPass>0&&fundPass>0?fee/(evalPass*fundPass)+activation/fundPass:NaN;
+  const fundPass=phaseMode==='evaluation'&&compareMode!=='firm'?0:weighted(fundPaths,p,x=>x.status==='target'?1:0);
+  const scenarioFee=compareMode==='firm'?Math.max(0,params.accountCost):fee;
+  const scenarioActivation=compareMode==='firm'?Math.max(0,Number((readProfiles()[scenarioFirm]||{}).funded?.activation??(scenarioFirm==='topstep'?150:0))):activation;
+  const scenarioSplit=compareMode==='firm'?Math.max(0,Math.min(1,Number((readProfiles()[scenarioFirm]||firmDefaults(scenarioFirm)).funded?.split??(scenarioFirm==='topstep'?75:80))/100)):split;
+  const grossPerPayout=scenarioTarget*scenarioSplit;
+  const expectedCostPerPayout=evalPass>0&&fundPass>0?scenarioFee/(evalPass*fundPass)+scenarioActivation/fundPass:NaN;
   const netPerPayout=grossPerPayout-expectedCostPerPayout;
   const requiredPayouts=scenarioMode==='cash-goal'?(grossPerPayout>0?Math.ceil(val/grossPerPayout):NaN):scenarioMode==='net-goal'?(netPerPayout>0?Math.ceil(val/netPerPayout):NaN):targetPayout;
   const funded=scenarioMode==='fixed'?comparisonAccounts*evalPass:scenarioMode==='target'?targetFunded:fundPass>0?requiredPayouts/fundPass:NaN;
   const buys=scenarioMode==='fixed'?comparisonAccounts:evalPass>0?funded/evalPass:NaN;
   const firstPass=buys*p1,payouts=funded*fundPass;
   const evalFailure=weighted(evalPaths,p,x=>x.status==='closed'?1:0),fundFailure=weighted(fundPaths,p,x=>x.status==='closed'?1:0);
-  const spent=buys*fee+funded*activation,gross=payouts*scenarioTarget*split,net=gross-spent,roi=spent>0?100*net/spent:NaN;
+  const spent=buys*scenarioFee+funded*scenarioActivation,gross=payouts*grossPerPayout,net=gross-spent,roi=spent>0?100*net/spent:NaN;
   const st1=stageStats(evalPaths,p,1),st2=stageStats(evalPaths,p,2),st3=stageStats(fundPaths,p,1);
   const fundedAvg=stageStats(fundPaths,p,3);
   const fstats=fundedAvg.total>0?fundedAvg:st3;
@@ -1031,18 +1057,18 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
   const tradingCapacity=Math.max(1,capacityOverride||Number(box.querySelector('[data-signals-per-day]')?.value)||Number(box.querySelector('[data-trades-per-day]')?.value)||fv.tradesPerDay||1);
   const daysPerPayout=payouts>0?totalExpectedTrades/payouts/tradingCapacity:NaN;
   const evals95=perEvalPayout>0?Math.ceil(Math.log(.05)/Math.log1p(-perEvalPayout)):NaN;
-  const spend95=perEvalPayout>=1?fee+activation:Number.isFinite(evals95)?evals95*fee+(evals95*evalPass*activation):NaN;
+  const spend95=perEvalPayout>=1?scenarioFee+scenarioActivation:Number.isFinite(evals95)?evals95*scenarioFee+(evals95*evalPass*scenarioActivation):NaN;
   const stageRows=[
-   {name:'P1 · Evaluations purchased',count:buys,pass:NaN,total:1,avg:null,trades:0,paths:'—',cost:buys*fee,costResult:fee},
-   {name:firmForPhases==='ftmo'?'P2 · Challenge passed':'P2 · First day passed',count:firstPass,pass:p1,total:p1,avg:st1,trades:buys*st1.total,paths:firmForPhases==='topstep'?'W · LW · LLW':'—',cost:0,costResult:firstPass>0?buys*fee/firstPass:NaN},
-   {name:firmForPhases==='ftmo'?'P3 · Verification passed / funded':'P3 · Second day passed / funded',count:funded,pass:p2,total:evalPass,avg:st2,trades:buys*st2.total,paths:firmForPhases==='topstep'?'W · LW · LLW':'—',cost:funded*activation,costResult:funded>0?spent/funded:NaN},
+   {name:'P1 · Evaluations purchased',count:buys,pass:NaN,total:1,avg:null,trades:0,paths:'—',cost:buys*scenarioFee,costResult:scenarioFee},
+   {name:firmForPhases==='ftmo'?'P2 · Challenge passed':'P2 · First day passed',count:firstPass,pass:p1,total:p1,avg:st1,trades:buys*st1.total,paths:firmForPhases==='topstep'?'W · LW · LLW':'—',cost:0,costResult:firstPass>0?buys*scenarioFee/firstPass:NaN},
+   {name:firmForPhases==='ftmo'?'P3 · Verification passed / funded':'P3 · Second day passed / funded',count:funded,pass:p2,total:evalPass,avg:st2,trades:buys*st2.total,paths:firmForPhases==='topstep'?'W · LW · LLW':'—',cost:funded*scenarioActivation,costResult:funded>0?spent/funded:NaN},
    {name:'P4 · Funded payout target reached',count:payouts,pass:fundPass,total:evalPass*fundPass,avg:fstats,trades:funded*fstats.total,paths:firmForPhases==='topstep'?'W · LW · LLW':'—',cost:0,costResult:payouts>0?spent/payouts:NaN}
   ];
-  return stageRows.map((x,i)=>{const cells=[i===0?(compareMode==='wr'?fmt(val)+'%':String(rate)):'',x.name,fmt(x.count),Number.isFinite(x.pass)?fmt(100*x.pass)+'%':'—',fmt(100*x.total)+'%',x.avg?fmt(x.avg.trades):'—',x.avg?fmt(x.avg.wins):'—',x.avg?fmt(x.avg.losses):'—',fmt(x.trades),i>0&&x.count>0?fmt(x.trades/x.count):'—',x.paths,money(x.cost),money(x.costResult),i===3?money(gross):'—',i===3?money(net):'—',i===3?fmt(roi)+'%':'—',i===3?fmt(buys):'—',i===3?fmt(funded):'—',i===3?fmt(payouts):'—',i===3?money(buys*fee):'—',i===3?money(funded*activation):'—',i===3?money(spent):'—',i===3?money(scenarioTarget*split):'—',i===3&&payouts>0?money(spent/payouts):'—',i===3?fmt(evalPass*fundPass*100)+'%':'—',i===3?fmt(evalFailure*100)+'%':'—',i===3?fmt(fundFailure*100)+'%':'—',i===3?fmt(Math.max(0,100*(1-fundPass-fundFailure)))+'%':'—',i===3?money(costFunded):'—',i===3&&firstPass>0?money(buys*fee/firstPass):'—',i===3&&funded>0?money(buys*fee/funded):'—',i===3?fmt(totalExpectedTrades):'—',i===3&&payouts>0?fmt(totalExpectedTrades/payouts):'—',i===3&&buys>0?money(net/buys):'—',i===3&&spent>0?fmt(gross/spent)+'×':'—',i===3?fmt(onePayoutChance*100)+'%':'—',i===3?fmt(daysPerPayout):'—',i===3?money(spend95):'—',i===3?fmt(100*perEvalPayout):'—',i===3&&totalExpectedTrades>0?money(net/totalExpectedTrades):'—'];
+  return stageRows.map((x,i)=>{const cells=[i===0?(compareMode==='wr'?fmt(val)+'%':String(rate)):'',x.name,fmt(x.count),Number.isFinite(x.pass)?fmt(100*x.pass)+'%':'—',fmt(100*x.total)+'%',x.avg?fmt(x.avg.trades):'—',x.avg?fmt(x.avg.wins):'—',x.avg?fmt(x.avg.losses):'—',fmt(x.trades),i>0&&x.count>0?fmt(x.trades/x.count):'—',x.paths,money(x.cost),money(x.costResult),i===3?money(gross):'—',i===3?money(net):'—',i===3?fmt(roi)+'%':'—',i===3?fmt(buys):'—',i===3?fmt(funded):'—',i===3?fmt(payouts):'—',i===3?money(buys*scenarioFee):'—',i===3?money(funded*scenarioActivation):'—',i===3?money(spent):'—',i===3?money(grossPerPayout):'—',i===3&&payouts>0?money(spent/payouts):'—',i===3?fmt(evalPass*fundPass*100)+'%':'—',i===3?fmt(evalFailure*100)+'%':'—',i===3?fmt(fundFailure*100)+'%':'—',i===3?fmt(Math.max(0,100*(1-fundPass-fundFailure)))+'%':'—',i===3?money(costFunded):'—',i===3&&firstPass>0?money(buys*fee/firstPass):'—',i===3&&funded>0?money(buys*scenarioFee/funded):'—',i===3?fmt(totalExpectedTrades):'—',i===3&&payouts>0?fmt(totalExpectedTrades/payouts):'—',i===3&&buys>0?money(net/buys):'—',i===3&&spent>0?fmt(gross/spent)+'×':'—',i===3?fmt(onePayoutChance*100)+'%':'—',i===3?fmt(daysPerPayout):'—',i===3?money(spend95):'—',i===3?fmt(100*perEvalPayout):'—',i===3&&totalExpectedTrades>0?money(net/totalExpectedTrades):'—'];
    return '<tr'+(i===0?' style="border-top:2px solid #8887"':'')+'>'+cells.map((cell,j)=>'<td style="padding:6px 5px;text-align:'+(j===1||j===10?'left':'right')+';white-space:nowrap;'+'">'+cell+'</td>').join('')+'</tr>';
   }).join('');
  }).join('');
- if(compareMode==='firm'||compareMode==='custom'){host.textContent='This mode requires complete saved firm/scenario parameter sets and is not available yet; no results are fabricated.';return}
+ if(compareMode==='custom'){host.textContent='Saved scenario comparison requires complete scenario settings and is not available yet.';return}
  // Invariant: every comparison row must have exactly one cell per KPI heading.
  const expectedColumns=headings.length;
  if(expectedColumns!==wrAllColumns.length){host.textContent='Comparison column configuration error.';return}
