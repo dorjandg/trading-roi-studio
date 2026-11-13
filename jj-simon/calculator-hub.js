@@ -291,7 +291,7 @@ mountKpiFourteen(kpiFourteen);
 group('financial-formulas','14 · P1–P4 Financial Formulas & KPIs',[kpiFourteen]);
 const tradeStatsScope=tradeStatsPanel.querySelector('[data-trade-stats-scope]');
 tradeStatsScope.addEventListener('change',()=>renderRisk());
-const purchaseStrategy=document.createElement('div');purchaseStrategy.style.cssText='display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;margin:0 0 10px';purchaseStrategy.innerHTML='<strong>Purchase strategy</strong><select data-purchase-strategy aria-label="Account purchase strategy"><option value="fixed">Fixed purchases</option><option value="target">Reach Funded Limit</option><option value="payout">Maximum Funded Limit Payout</option></select><span data-purchase-strategy-help style="opacity:.75"></span>';box.querySelector('[data-section="funnel"] .jj-risk-section-body').prepend(purchaseStrategy);const strategySelect=purchaseStrategy.querySelector('[data-purchase-strategy]');let purchaseStrategyMode='target';
+const purchaseStrategy=document.createElement('div');purchaseStrategy.style.cssText='display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;margin:0 0 10px';purchaseStrategy.innerHTML='<strong>Purchase strategy</strong><select data-purchase-strategy aria-label="Account purchase strategy"><option value="fixed">Fixed purchases</option><option value="target">Reach Funded Limit</option><option value="payout">Maximum Funded Limit Payout</option><option value="reach-payout">Reach Payout Target</option></select><span data-purchase-strategy-help style="opacity:.75"></span>';box.querySelector('[data-section="funnel"] .jj-risk-section-body').prepend(purchaseStrategy);const strategySelect=purchaseStrategy.querySelector('[data-purchase-strategy]');let purchaseStrategyMode='target';
 const purchaseCountControls=document.createElement('div');purchaseCountControls.style.cssText='display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:7px 0';purchaseCountControls.innerHTML='<label data-fixed-count-wrap style="font-size:12px">Evaluations to buy </label><label data-funded-count-wrap style="font-size:12px">Funded account target <input data-funded-count type="number" min="1" step="1" value="20" style="width:68px;padding:5px;margin-left:5px"></label>';purchaseStrategy.after(purchaseCountControls);const fundedCountInput=purchaseCountControls.querySelector('[data-funded-count]');
 const payoutCountWrap=document.createElement('label');payoutCountWrap.dataset.payoutCountWrap='';payoutCountWrap.style.fontSize='12px';
 payoutCountWrap.innerHTML='Payout target <input data-payout-count type="number" min="1" max="5" step="1" value="5" style="width:62px;padding:5px;margin-left:5px">';
@@ -433,7 +433,7 @@ const firmDefaults=firm=>firm==='ftmo'?{mode:'2',accountMode:'multi',accountCoun
 const readProfiles=()=>{try{const p=JSON.parse(localStorage.getItem(firmSettingsKey)||'{}');return p&&typeof p==='object'?p:{}}catch(e){return {}}};
 const writeProfile=(firm,data)=>{try{const p=readProfiles();p[firm]=data;localStorage.setItem(firmSettingsKey,JSON.stringify(p))}catch(e){}};
 const applyProfile=data=>{if(!data||typeof data!=='object')return;
-accountMode=data.accountMode==='multi'?'multi':'single';purchaseStrategyMode=['fixed','target','payout'].includes(data.purchaseStrategy)?data.purchaseStrategy:'target';strategySelect.value=purchaseStrategyMode;
+accountMode=data.accountMode==='multi'?'multi':'single';purchaseStrategyMode=['fixed','target','payout','reach-payout'].includes(data.purchaseStrategy)?data.purchaseStrategy:'target';strategySelect.value=purchaseStrategyMode;
 if(['evaluation','funded','combined'].includes(data.phaseMode))phaseMode=data.phaseMode;
 const applyNum=(el,value,min,max)=>{if(el&&value!==undefined&&value!==null&&value!==''&&Number.isFinite(Number(value)))el.value=String(Math.max(min,Math.min(max,Math.floor(Number(value)))))};
 applyNum(signalsInput,data.signalsPerDay,1,100);applyNum(parallelInput,data.parallelAccounts,1,100);
@@ -524,7 +524,7 @@ const restorePageSettings=pageSettings=>{
  }
  if(['evaluation','funded','combined'].includes(pageSettings.phaseMode))phaseMode=pageSettings.phaseMode;
  if(['single','multi'].includes(pageSettings.accountMode))accountMode=pageSettings.accountMode;
- if(['fixed','target','payout'].includes(pageSettings.purchaseStrategyMode)){
+ if(['fixed','target','payout','reach-payout'].includes(pageSettings.purchaseStrategyMode)){
   purchaseStrategyMode=pageSettings.purchaseStrategyMode;strategySelect.value=purchaseStrategyMode;
  }
  const count=Number(fundedCountInput.value);
@@ -1045,7 +1045,7 @@ const parallelCount=Math.max(1,Math.min(nn,Math.floor(Number(parallelInput.value
 const signalsPerDay=Math.max(1,Math.min(100,Math.floor(Number(signalsInput.value)||1)));signalsInput.value=String(signalsPerDay);
 const capacityDays=Math.max(Math.ceil(portfolioDays/parallelCount),Math.ceil(portfolioTrades/signalsPerDay));
 const fundedGoal=Math.max(1,Math.min(firmType==='topstep'?5:100,Math.floor(fundedTargets[firmType]||1)));
-const payoutMode=purchaseStrategyMode==='payout';
+const payoutMode=purchaseStrategyMode==='payout'||purchaseStrategyMode==='reach-payout';
 const payoutGoal=Math.max(1,Math.min(firmType==='topstep'?5:100,Math.floor(payoutTargets[firmType]||5)));
 payoutCountInput.max=firmType==='topstep'?'5':'100';
 fundedCountInput.max=firmType==='topstep'?'5':'100';
@@ -1057,7 +1057,8 @@ payoutCountWrap.style.display=payoutMode?'':'none';
 const replacementMode=purchaseStrategyMode!=='fixed';
 const allocationTarget=payoutMode?(fp>0?payoutGoal/fp:0):fundedGoal;
 strategySelect.value=purchaseStrategyMode;
-purchaseStrategy.querySelector('[data-purchase-strategy-help]').textContent=payoutMode?
+purchaseStrategy.querySelector('[data-purchase-strategy-help]').textContent=purchaseStrategyMode==='reach-payout'?
+ 'Stop projected purchases when '+payoutGoal+' expected payout successes are reached, regardless of the funded-account target. Replace failed evaluations and funded accounts; active account caps still apply. Expected funded attempts: '+(fp>0?(payoutGoal/fp).toFixed(2):'unreachable')+'.':payoutMode?
  'Target '+payoutGoal+' projected payout successes; replace failed evaluations AND failed funded accounts. Expected funded attempts: '+(fp>0?(payoutGoal/fp).toFixed(2):'unreachable')+'. Max five Topstep funded accounts active simultaneously; timing is not modeled.':
  replacementMode?'Obtain '+fundedGoal+' funded account'+(fundedGoal===1?'':'s')+' (up to five active Topstep accounts). Payouts are NOT guaranteed in this mode. Select Maximum Funded Limit Payout to replace funded failures.':
  'Purchase '+nn+' evaluations only; no replacements';
