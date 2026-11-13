@@ -278,6 +278,16 @@ const wrCompare=document.createElement('div');wrCompare.dataset.wrCompare='';wrC
 box.querySelector('[data-section="funnel"]').after(wrCompare);
 group('wr-comparison','07A · Win Rate Comparison',[wrCompare],false);
 wrCompare.querySelector('[data-wr-options]').addEventListener('change',()=>renderRisk());
+const wrModeBar=document.createElement('div');wrModeBar.style.cssText='display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;font-size:12px';wrModeBar.innerHTML='<label>Compare by <select data-compare-mode style="padding:5px;border-radius:5px"><option value="wr">Win Rate</option><option value="accounts">Account Quantity</option></select></label><label data-compare-values-label>Values (%) <input data-compare-values value="15, 20, 25, 30, 35, 40" style="width:min(100%,230px);padding:5px"></label>';
+wrCompare.querySelector('[data-wr-options]').closest('label').style.display='none';
+wrCompare.prepend(wrModeBar);
+const wrCompareMode=wrModeBar.querySelector('[data-compare-mode]'),wrCompareValues=wrModeBar.querySelector('[data-compare-values]');
+try{const mode=localStorage.getItem('jj-calculator09-compare-mode');if(mode==='accounts')wrCompareMode.value=mode;const saved=localStorage.getItem('jj-calculator09-compare-values-'+wrCompareMode.value);if(saved)wrCompareValues.value=saved}catch(e){}
+const updateWrCompareMode=()=>{const accountMode=wrCompareMode.value==='accounts';wrModeBar.querySelector('[data-compare-values-label]').firstChild.textContent=accountMode?'Evaluation counts ':'Win rates (%) ';const saved=(()=>{try{return localStorage.getItem('jj-calculator09-compare-values-'+wrCompareMode.value)}catch(e){return null}})();wrCompareValues.value=saved||(accountMode?'5, 10, 20, 30, 50':'15, 20, 25, 30, 35, 40')};
+wrCompareMode.addEventListener('change',()=>{updateWrCompareMode();try{localStorage.setItem('jj-calculator09-compare-mode',wrCompareMode.value)}catch(e){}renderRisk()});
+wrCompareValues.addEventListener('change',()=>{try{localStorage.setItem('jj-calculator09-compare-values-'+wrCompareMode.value,wrCompareValues.value)}catch(e){}renderRisk()});
+if(wrCompareMode.value==='accounts')updateWrCompareMode();
+
 const wrPresetBar=document.createElement('div');wrPresetBar.style.cssText='display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:0 0 7px;font-size:11px';wrPresetBar.innerHTML='<label>Column preset <select data-wr-preset style="padding:5px;border-radius:5px"><option value="original">Original · 16 columns</option><option value="funnel">Funnel & pass rates</option><option value="trades">Trades & efficiency</option><option value="finance">Costs, payout & ROI</option><option value="efficiency">Efficiency & unit costs</option><option value="risk">Risk & survival</option><option value="outcomes">Payout probability & timing</option><option value="all">All columns</option><option value="custom">Custom</option></select></label><button type="button" data-wr-save style="padding:5px 8px;border:1px solid #8886;border-radius:5px;cursor:pointer">Save custom</button>';wrCompare.querySelector('[data-wr-results]').before(wrPresetBar);
 const wrOriginalColumns=['WR','Phase','Accounts','Pass %','Total %','Avg T','Avg W','Avg L','Tot T','Trades / Pass','Pass Paths','Stage $','Cost / result','Expected cash','Net P/L','ROI'];
 const wrExtraColumns=['Eval buys','Funded attempts','Payouts','Eval fees','Activation fees','Total spent','Payout / success','Cost / payout','Overall pass %','Eval fail %','Funded fail %','Funded unresolved %','Cost / funded','Cost / P1 pass','Cost / P2 pass','Expected trades','Trades / payout','Net / eval buy','Payout / spent','≥1 payout chance','Days / payout est.','95% spend to first payout est.','Payouts / 100 evals','Net / trade'];
@@ -953,9 +963,10 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
 // Trade decisions and stop rules do not depend on win rate; only path probabilities do.
 (function renderWrComparison(){
  const host=wrCompare.querySelector('[data-wr-results]');
- const raw=wrCompare.querySelector('[data-wr-options]').value;
- const rates=[...new Set(raw.split(/[ ,;]+/).map(Number).filter(n=>Number.isFinite(n)&&n>=0&&n<=100))].slice(0,20);
- if(!rates.length){host.textContent='Enter win rates between 0 and 100, separated by commas.';return}
+ const accountMode=wrCompareMode.value==='accounts';
+ const raw=wrCompareValues.value;
+ const rates=[...new Set(raw.split(/[ ,;]+/).map(Number).filter(n=>Number.isFinite(n)&&n>=0&&n<=(accountMode?10000:100)&&(accountMode?Number.isInteger(n):true)))].slice(0,20);
+ if(!rates.length){host.textContent=accountMode?'Enter positive whole-number evaluation counts.':'Enter win rates between 0 and 100.';return}
  const pathWeight=(x,p)=>{let w=0,l=0;for(const t of x.steps||[]){if(t.c==='W')w++;else l++}return Math.pow(p,w)*Math.pow(1-p,l)};
  const fmt=n=>Number.isFinite(n)?n.toFixed(2):'—';
  const money=n=>Number.isFinite(n)?'$'+n.toLocaleString('en-US',{maximumFractionDigits:2,minimumFractionDigits:2}):'—';
@@ -974,15 +985,16 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
   }
   return {trades:entries?trades/entries:NaN,wins:entries?wins/entries:NaN,losses:passed?passLosses/passed:NaN,total:trades};
  };
- const headings=wrAllColumns;
+ const headings=accountMode?['Evaluations',...wrAllColumns.slice(1)]:wrAllColumns;
  const rows=rates.map(rate=>{
-  const p=rate/100;
+  const p=accountMode?Math.max(0,Math.min(1,v.winRate/100)):rate/100;
+  const comparisonAccounts=accountMode?rate:numAccounts;
   const evalPass=weighted(leaves,p,x=>x.status==='target'?1:0);
   const p1=weighted(leaves,p,x=>x.steps.some(t=>t.stage===1&&t.passed)?1:0);
   const p2=p1>0?evalPass/p1:0;
   const fundPass=phaseMode==='evaluation'?0:weighted(fundedLeaves,p,x=>x.status==='target'?1:0);
-  const funded=mode==='fixed'?numAccounts*evalPass:mode==='target'?targetFunded:fundPass>0?targetPayout/fundPass:NaN;
-  const buys=mode==='fixed'?numAccounts:evalPass>0?funded/evalPass:NaN;
+  const funded=mode==='fixed'?comparisonAccounts*evalPass:mode==='target'?targetFunded:fundPass>0?targetPayout/fundPass:NaN;
+  const buys=mode==='fixed'?comparisonAccounts:evalPass>0?funded/evalPass:NaN;
   const firstPass=buys*p1,payouts=funded*fundPass;
   const evalFailure=weighted(leaves,p,x=>x.status==='closed'?1:0),fundFailure=weighted(fundedLeaves,p,x=>x.status==='closed'?1:0);
   const spent=buys*fee+funded*activation,gross=payouts*fv.target*split,net=gross-spent,roi=spent>0?100*net/spent:NaN;
@@ -1003,7 +1015,7 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
    {name:firmForPhases==='ftmo'?'P3 · Verification passed / funded':'P3 · Second day passed / funded',count:funded,pass:p2,total:evalPass,avg:st2,trades:buys*st2.total,paths:firmForPhases==='topstep'?'W · LW · LLW':'—',cost:funded*activation,costResult:funded>0?spent/funded:NaN},
    {name:'P4 · Funded payout target reached',count:payouts,pass:fundPass,total:evalPass*fundPass,avg:fstats,trades:funded*fstats.total,paths:firmForPhases==='topstep'?'W · LW · LLW':'—',cost:0,costResult:payouts>0?spent/payouts:NaN}
   ];
-  return stageRows.map((x,i)=>{const cells=[i===0?fmt(rate)+'%':'',x.name,fmt(x.count),Number.isFinite(x.pass)?fmt(100*x.pass)+'%':'—',fmt(100*x.total)+'%',x.avg?fmt(x.avg.trades):'—',x.avg?fmt(x.avg.wins):'—',x.avg?fmt(x.avg.losses):'—',fmt(x.trades),i>0&&x.count>0?fmt(x.trades/x.count):'—',x.paths,money(x.cost),money(x.costResult),i===3?money(gross):'—',i===3?money(net):'—',i===3?fmt(roi)+'%':'—',i===3?fmt(buys):'—',i===3?fmt(funded):'—',i===3?fmt(payouts):'—',i===3?money(buys*fee):'—',i===3?money(funded*activation):'—',i===3?money(spent):'—',i===3?money(fv.target*split):'—',i===3&&payouts>0?money(spent/payouts):'—',i===3?fmt(evalPass*fundPass*100)+'%':'—',i===3?fmt(evalFailure*100)+'%':'—',i===3?fmt(fundFailure*100)+'%':'—',i===3?fmt(Math.max(0,100*(1-fundPass-fundFailure)))+'%':'—',i===3?money(costFunded):'—',i===3&&firstPass>0?money(buys*fee/firstPass):'—',i===3&&funded>0?money(buys*fee/funded):'—',i===3?fmt(totalExpectedTrades):'—',i===3&&payouts>0?fmt(totalExpectedTrades/payouts):'—',i===3&&buys>0?money(net/buys):'—',i===3&&spent>0?fmt(gross/spent)+'×':'—',i===3?fmt(onePayoutChance*100)+'%':'—',i===3?fmt(daysPerPayout):'—',i===3?money(spend95):'—',i===3?fmt(100*perEvalPayout):'—',i===3&&totalExpectedTrades>0?money(net/totalExpectedTrades):'—'];
+  return stageRows.map((x,i)=>{const cells=[i===0?(accountMode?String(rate):fmt(rate)+'%'):'',x.name,fmt(x.count),Number.isFinite(x.pass)?fmt(100*x.pass)+'%':'—',fmt(100*x.total)+'%',x.avg?fmt(x.avg.trades):'—',x.avg?fmt(x.avg.wins):'—',x.avg?fmt(x.avg.losses):'—',fmt(x.trades),i>0&&x.count>0?fmt(x.trades/x.count):'—',x.paths,money(x.cost),money(x.costResult),i===3?money(gross):'—',i===3?money(net):'—',i===3?fmt(roi)+'%':'—',i===3?fmt(buys):'—',i===3?fmt(funded):'—',i===3?fmt(payouts):'—',i===3?money(buys*fee):'—',i===3?money(funded*activation):'—',i===3?money(spent):'—',i===3?money(fv.target*split):'—',i===3&&payouts>0?money(spent/payouts):'—',i===3?fmt(evalPass*fundPass*100)+'%':'—',i===3?fmt(evalFailure*100)+'%':'—',i===3?fmt(fundFailure*100)+'%':'—',i===3?fmt(Math.max(0,100*(1-fundPass-fundFailure)))+'%':'—',i===3?money(costFunded):'—',i===3&&firstPass>0?money(buys*fee/firstPass):'—',i===3&&funded>0?money(buys*fee/funded):'—',i===3?fmt(totalExpectedTrades):'—',i===3&&payouts>0?fmt(totalExpectedTrades/payouts):'—',i===3&&buys>0?money(net/buys):'—',i===3&&spent>0?fmt(gross/spent)+'×':'—',i===3?fmt(onePayoutChance*100)+'%':'—',i===3?fmt(daysPerPayout):'—',i===3?money(spend95):'—',i===3?fmt(100*perEvalPayout):'—',i===3&&totalExpectedTrades>0?money(net/totalExpectedTrades):'—'];
    return '<tr'+(i===0?' style="border-top:2px solid #8887"':'')+'>'+cells.map((cell,j)=>'<td style="padding:6px 5px;text-align:'+(j===1||j===10?'left':'right')+';white-space:nowrap;'+'">'+cell+'</td>').join('')+'</tr>';
   }).join('');
  }).join('');
