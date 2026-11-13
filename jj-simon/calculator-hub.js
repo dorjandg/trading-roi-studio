@@ -989,6 +989,7 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
   return {trades:entries?trades/entries:NaN,wins:entries?wins/entries:NaN,losses:passed?passLosses/passed:NaN,total:trades};
  };
  const headings=compareMode==='wr'?wrAllColumns:['Scenario',...wrAllColumns.slice(1)];
+ const comparisonNote=compareMode==='target'?'Fixed evaluation cohort: the number of purchased evaluations stays constant across payout targets. P4 is an expected count, not a guaranteed payout.':compareMode==='purchase'?'Purchase strategy may back-solve evaluation purchases to meet the payout goal; P4 is an expected count.':'Expected counts from modeled probabilities; they are not guaranteed outcomes.';
  const rows=rates.map(rate=>{
   const val=Number(rate),params={...v,manualRisks:Array.isArray(v.manualRisks)?[...v.manualRisks]:v.manualRisks,manualRRs:Array.isArray(v.manualRRs)?[...v.manualRRs]:v.manualRRs};
   const fundParams={...fv,manualRisks:Array.isArray(fv.manualRisks)?[...fv.manualRisks]:fv.manualRisks,manualRRs:Array.isArray(fv.manualRRs)?[...fv.manualRRs]:fv.manualRRs};
@@ -998,7 +999,7 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
   if(compareMode==='rr'||compareMode==='matrix'){const pair=compareMode==='matrix'?String(rate).toLowerCase().split('x').map(Number):[p*100,val];if(pair.length!==2||!(pair[0]>=0&&pair[0]<=100&&pair[1]>0&&pair[1]<=20))valid=false;else{p=pair[0]/100;params.rr=pair[1];fundParams.rr=pair[1];if(Array.isArray(params.manualRRs))params.manualRRs=params.manualRRs.map(()=>pair[1]);if(Array.isArray(fundParams.manualRRs))fundParams.manualRRs=fundParams.manualRRs.map(()=>pair[1])}}
   if(compareMode==='purchase'){if(!['fixed','target','payout','reach-payout'].includes(rate))valid=false;else scenarioMode=rate}
   if(compareMode==='capacity'){if(!Number.isInteger(val)||val<1||val>100)valid=false;else capacityOverride=val}
-  if(compareMode==='target'){if(!(val>0&&val<=100000))valid=false;else{scenarioTarget=val;fundParams.target=val}}
+  if(compareMode==='target'){if(!(val>0&&val<=100000))valid=false;else{scenarioTarget=val;fundParams.target=val;scenarioMode='fixed'}}
   if(compareMode==='firm'||compareMode==='custom')valid=false;
   if(!valid)return '';
   const evalPaths=['risk','rr','matrix'].includes(compareMode)?enumerate(params,false,scenarioFirm):leaves;
@@ -1039,6 +1040,7 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
  if(expectedColumns!==wrAllColumns.length){host.textContent='Comparison column configuration error.';return}
  host.innerHTML='<table style="width:100%;border-collapse:collapse;white-space:nowrap;font-size:11px"><thead><tr>'+headings.map(h=>'<th style="padding:7px 5px;border-bottom:1px solid #8885;text-align:right">'+h+'</th>').join('')+'</tr></thead><tbody>'+rows+'</tbody></table>';
  applyWrColumnFilter();
+ const note=document.createElement('div');note.style.cssText='font-size:11px;opacity:.8;margin-top:6px';note.textContent=comparisonNote;host.append(note);
 
 })();
 const fundedSimulationPass=fp;const tradeWin=Math.max(0,Math.min(1,v.winRate/100));const tradeLoss=1-tradeWin;const fundedCycleTarget=tradeWin+tradeLoss*tradeWin;const fundedCycleReset=tradeLoss*tradeLoss*tradeWin;const fundedThreeAttemptPass=fundedCycleTarget/(1-fundedCycleReset);/* Use the enumerated funded engine success probability; do not overwrite it with a different LLW reset formula. The latter is a separate theoretical unlimited-horizon benchmark. */
