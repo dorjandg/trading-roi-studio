@@ -988,7 +988,7 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
   }
   return {trades:entries?trades/entries:NaN,wins:entries?wins/entries:NaN,losses:passed?passLosses/passed:NaN,total:trades};
  };
- const headings=compareMode==='wr'?wrAllColumns:['Scenario',...wrAllColumns];
+ const headings=compareMode==='wr'?wrAllColumns:['Scenario',...wrAllColumns.slice(1)];
  const rows=rates.map(rate=>{
   const val=Number(rate),params={...v,manualRisks:Array.isArray(v.manualRisks)?[...v.manualRisks]:v.manualRisks,manualRRs:Array.isArray(v.manualRRs)?[...v.manualRRs]:v.manualRRs};
   const fundParams={...fv,manualRisks:Array.isArray(fv.manualRisks)?[...fv.manualRisks]:fv.manualRisks,manualRRs:Array.isArray(fv.manualRRs)?[...fv.manualRRs]:fv.manualRRs};
@@ -1034,6 +1034,9 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
   }).join('');
  }).join('');
  if(compareMode==='firm'||compareMode==='custom'){host.textContent='This mode requires complete saved firm/scenario parameter sets and is not available yet; no results are fabricated.';return}
+ // Invariant: every comparison row must have exactly one cell per KPI heading.
+ const expectedColumns=headings.length;
+ if(expectedColumns!==wrAllColumns.length){host.textContent='Comparison column configuration error.';return}
  host.innerHTML='<table style="width:100%;border-collapse:collapse;white-space:nowrap;font-size:11px"><thead><tr>'+headings.map(h=>'<th style="padding:7px 5px;border-bottom:1px solid #8885;text-align:right">'+h+'</th>').join('')+'</tr></thead><tbody>'+rows+'</tbody></table>';
  applyWrColumnFilter();
 
