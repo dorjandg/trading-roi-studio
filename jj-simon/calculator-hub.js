@@ -945,7 +945,7 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
   }
   return {trades:entries?trades/entries:NaN,wins:entries?wins/entries:NaN,losses:passed?passLosses/passed:NaN,total:trades};
  };
- const headings=['WR','Phase','Accounts','Pass %','Total %','Avg T','Avg W','Avg L','Tot T','Trades / Pass','Pass Paths','Stage $','Cost / result'];
+ const headings=['WR','Phase','Accounts','Pass %','Total %','Avg T','Avg W','Avg L','Tot T','Trades / Pass','Pass Paths','Stage $','Cost / result','Expected cash','Net P/L','ROI'];
  const rows=rates.map(rate=>{
   const p=rate/100;
   const evalPass=weighted(leaves,p,x=>x.status==='target'?1:0);
@@ -965,7 +965,7 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
    {name:firmForPhases==='ftmo'?'P3 · Verification passed / funded':'P3 · Second day passed / funded',count:funded,pass:p2,total:evalPass,avg:st2,trades:buys*st2.total,paths:firmForPhases==='topstep'?'W · LW · LLW':'—',cost:funded*activation,costResult:funded>0?spent/funded:NaN},
    {name:'P4 · Funded payout target reached',count:payouts,pass:fundPass,total:evalPass*fundPass,avg:fstats,trades:funded*fstats.total,paths:firmForPhases==='topstep'?'W · LW · LLW':'—',cost:0,costResult:payouts>0?spent/payouts:NaN}
   ];
-  return stageRows.map((x,i)=>{const cells=[i===0?fmt(rate)+'%':'',x.name,fmt(x.count),Number.isFinite(x.pass)?fmt(100*x.pass)+'%':'—',fmt(100*x.total)+'%',x.avg?fmt(x.avg.trades):'—',x.avg?fmt(x.avg.wins):'—',x.avg?fmt(x.avg.losses):'—',fmt(x.trades),i>0&&x.count>0?fmt(x.trades/x.count):'—',x.paths,money(x.cost),money(x.costResult)];
+  return stageRows.map((x,i)=>{const cells=[i===0?fmt(rate)+'%':'',x.name,fmt(x.count),Number.isFinite(x.pass)?fmt(100*x.pass)+'%':'—',fmt(100*x.total)+'%',x.avg?fmt(x.avg.trades):'—',x.avg?fmt(x.avg.wins):'—',x.avg?fmt(x.avg.losses):'—',fmt(x.trades),i>0&&x.count>0?fmt(x.trades/x.count):'—',x.paths,money(x.cost),money(x.costResult),i===3?money(gross):'—',i===3?money(net):'—',i===3?fmt(roi)+'%':'—'];
    return '<tr'+(i===0?' style="border-top:2px solid #8887"':'')+'>'+cells.map((cell,j)=>'<td style="padding:6px 5px;text-align:'+(j===1||j===10?'left':'right')+';white-space:nowrap;'+'">'+cell+'</td>').join('')+'</tr>';
   }).join('');
  }).join('');
