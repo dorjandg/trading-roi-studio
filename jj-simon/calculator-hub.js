@@ -274,6 +274,10 @@ const resultsBody=document.createElement('div');resultsBody.className='jj-risk-s
 resultsGroup.after(comparePanel);const compareSection=group('manual-auto','05A · Manual vs Auto · Comparison',[comparePanel]);compareSection.addEventListener('toggle',()=>{if(compareSection.open)renderRisk()});
 const strategyPanel=document.createElement('div');strategyPanel.dataset.strategyPanel='';compareSection.after(strategyPanel);const strategySection=group('strategy-comparison','06 · Risk Strategy Comparison',[strategyPanel],false);strategySection.addEventListener('toggle',()=>{if(strategySection.open)renderRisk()});
 const funnel=document.createElement('div');funnel.dataset.funnel='';box.querySelector('[data-section="strategy-comparison"]').after(funnel);group('funnel','07 · P1 → P2 → P3 → P4 · Account Funnel',[funnel]);
+const wrCompare=document.createElement('div');wrCompare.dataset.wrCompare='';wrCompare.innerHTML='<label style="display:block;font-size:12px;margin-bottom:7px">Compare trade win rates (%) <input data-wr-options value="15, 20, 25, 30, 35, 40" style="width:min(100%,330px);padding:5px" aria-label="Win rates to compare"></label><div data-wr-results style="overflow-x:auto"></div><p style="font-size:11px;opacity:.7">Same loaded parameters and strategy; only evaluation and funded win rates vary together. Expected values, not guaranteed results. Unresolved paths at the depth limit are excluded from passes.</p>';
+box.querySelector('[data-section="funnel"]').after(wrCompare);
+group('wr-comparison','07A · Win Rate Comparison',[wrCompare],false);
+wrCompare.querySelector('[data-wr-options]').addEventListener('change',()=>renderRisk());
 const title=Array.from(box.querySelectorAll('h4')).find(x=>x.textContent.includes('All scenario paths'));
 if(title){const nodes=[];let n=title;while(n&&n.tagName!=='P'){nodes.push(n);n=n.nextElementSibling}group('paths','10 · Challenge · Scenario Paths',nodes);const body=box.querySelector('[data-section="paths"] .jj-risk-section-body');const extra=document.createElement('details');extra.className='jj-risk-section';const summary=document.createElement('summary');summary.textContent='All scenario paths';extra.appendChild(summary);nodes.forEach(node=>{if(node===title)node.remove();else extra.appendChild(node)});body.appendChild(extra)}
 const challengeStageView=document.createElement('div');challengeStageView.className='jj-challenge-stage-view';challengeStageView.innerHTML='<p style="font-size:11px;opacity:.8">P1 and P2 scenario paths use the current challenge risk, win-rate and checkpoint settings. P2 chances are conditional on reaching P2.</p><div data-challenge-stage-tables></div>';
@@ -910,6 +914,39 @@ const fv={targetMode:1,target:Math.max(.01,fn('target',4000)),target2:1,limit:Ma
 if(firmForPhases==='topstep'&&activeStrategy==='current')fv.fixedRisk=1000;else if(activeStrategy==='current')fv.ftmoFundedBuilder=true;Object.assign(fv,STRATEGIES[activeStrategy].fund);fv.manualRisks=manualConfig();fv.manualRRs=manualRRConfig();fv.contractSpecs=readContractSpecs();fv.roundTurnFee=0;fv.manualStage=3;fv.topstepOptionalDailyCap=firmForPhases==='topstep'&&box.querySelector('[data-topstep-daily-cap]').checked;let fp=0,fr=0;const fundedLeaves=[];
 if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'?calcTopstepFunded(path,fv):calc(path,fv);if(x.status!=='active'||x.steps.length>=fv.depth){fundedLeaves.push(x);if(x.status==='target')fp+=x.prob;if(x.status==='closed')fr+=x.prob;return}fw(path+'W');fw(path+'L')}fw('')}
 
+// FIX-013: Reweight the already enumerated paths at each candidate win rate.
+// Trade decisions and stop rules do not depend on win rate; only path probabilities do.
+(function renderWrComparison(){
+ const host=wrCompare.querySelector('[data-wr-results]');
+ const raw=wrCompare.querySelector('[data-wr-options]').value;
+ const rates=[...new Set(raw.split(/[ ,;]+/).map(Number).filter(n=>Number.isFinite(n)&&n>=0&&n<=100))].slice(0,20);
+ if(!rates.length){host.textContent='Enter win rates between 0 and 100, separated by commas.';return}
+ const pathWeight=(x,p)=>{let w=0,l=0;for(const t of x.steps||[]){if(t.c==='W')w++;else l++}return Math.pow(p,w)*Math.pow(1-p,l)};
+ const fmt=n=>Number.isFinite(n)?n.toFixed(2):'—';
+ const money=n=>Number.isFinite(n)?'$'+n.toLocaleString('en-US',{maximumFractionDigits:2,minimumFractionDigits:2}):'—';
+ const numAccounts=Math.max(1,Math.floor(Number(box.querySelector('[data-account-count]').value)||20));
+ const fee=Math.max(0,v.accountCost),activation=Math.max(0,fn('activation',0));
+ const split=Math.max(0,Math.min(1,fn('split',80)/100));
+ const targetFunded=Math.max(1,Math.floor(Number(fundedCountInput.value)||20));
+ const targetPayout=Math.max(1,Math.floor(Number(payoutCountInput.value)||5));
+ const mode=purchaseStrategyMode;
+ const rows=rates.map(rate=>{
+  const p=rate/100;
+  const evalPass=leaves.reduce((a,x)=>a+(x.status==='target'?pathWeight(x,p):0),0);
+  const p1=leaves.reduce((a,x)=>a+((x.stage===2||x.status==='target')?pathWeight(x,p):0),0);
+  const p2=p1>0?evalPass/p1:0;
+  const fundPass=phaseMode==='evaluation'?0:fundedLeaves.reduce((a,x)=>a+(x.status==='target'?pathWeight(x,p):0),0);
+  const funded=mode==='fixed'?numAccounts*evalPass:mode==='target'?targetFunded:fundPass>0?targetPayout/fundPass:NaN;
+  const buys=mode==='fixed'?numAccounts:evalPass>0?funded/evalPass:NaN;
+  const payouts=funded*fundPass;
+  const spent=buys*fee+funded*activation;
+  const gross=payouts*fv.target*split;
+  const net=gross-spent;
+  const roi=spent>0?100*net/spent:NaN;
+  return '<tr><td>'+fmt(rate)+'%</td><td>'+fmt(p1*100)+'%</td><td>'+fmt(p2*100)+'%</td><td>'+fmt(evalPass*100)+'%</td><td>'+fmt(fundPass*100)+'%</td><td>'+fmt(buys)+'</td><td>'+fmt(funded)+'</td><td>'+fmt(payouts)+'</td><td>'+money(spent)+'</td><td>'+money(gross)+'</td><td style="color:'+(net>=0?'#00df83':'#f05b65')+'">'+money(net)+'</td><td>'+fmt(roi)+'%</td></tr>';
+ }).join('');
+ host.innerHTML='<table style="width:100%;border-collapse:collapse;white-space:nowrap;font-size:11px"><thead><tr>'+['WR','P1 pass','P2 pass','Eval pass','P3 pass','Eval buys','Funded','Payouts','Spent','Gross cash','Net P/L','ROI'].map(h=>'<th style="padding:7px 5px;border-bottom:1px solid #8885;text-align:right">'+h+'</th>').join('')+'</tr></thead><tbody>'+rows+'</tbody></table>';
+})();
 const fundedSimulationPass=fp;const tradeWin=Math.max(0,Math.min(1,v.winRate/100));const tradeLoss=1-tradeWin;const fundedCycleTarget=tradeWin+tradeLoss*tradeWin;const fundedCycleReset=tradeLoss*tradeLoss*tradeWin;const fundedThreeAttemptPass=fundedCycleTarget/(1-fundedCycleReset);/* Use the enumerated funded engine success probability; do not overwrite it with a different LLW reset formula. The latter is a separate theoretical unlimited-horizon benchmark. */
 const p1Shared=firmForPhases==='topstep'?Math.max(0,Math.min(1,checkpointProbability)):Math.max(0,Math.min(1,t1Probability));
 const p2Shared=p1Shared>0?Math.max(0,Math.min(1,actualEvaluationProbability/p1Shared)):0;
