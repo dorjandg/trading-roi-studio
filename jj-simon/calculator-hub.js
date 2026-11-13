@@ -930,22 +930,41 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
  const targetFunded=Math.max(1,Math.floor(Number(fundedCountInput.value)||20));
  const targetPayout=Math.max(1,Math.floor(Number(payoutCountInput.value)||5));
  const mode=purchaseStrategyMode;
+ const weighted=(paths,p,select)=>paths.reduce((sum,x)=>sum+pathWeight(x,p)*select(x),0);
+ const stageStats=(paths,p,stage)=>{let entries=0,trades=0,wins=0,losses=0,passed=0,passLosses=0;
+  for(const x of paths){const w=pathWeight(x,p),steps=(x.steps||[]).filter(t=>t.stage===stage||t.checkpointStage===stage);
+   if(!steps.length)continue;
+   entries+=w;trades+=w*steps.length;wins+=w*steps.filter(t=>t.c==='W').length;losses+=w*steps.filter(t=>t.c==='L').length;
+   if(steps.some(t=>t.passed)){passed+=w;passLosses+=w*steps.filter(t=>t.c==='L').length}
+  }
+  return {trades:entries?trades/entries:NaN,wins:entries?wins/entries:NaN,losses:passed?passLosses/passed:NaN,total:trades};
+ };
+ const headings=['WR','Phase','Accounts','Pass %','Total %','Avg T','Avg W','Avg L','Tot T','Trades / Pass','Pass Paths','Stage $','Cost / result','Expected cash','Net P/L','ROI'];
  const rows=rates.map(rate=>{
   const p=rate/100;
-  const evalPass=leaves.reduce((a,x)=>a+(x.status==='target'?pathWeight(x,p):0),0);
-  const p1=leaves.reduce((a,x)=>a+((x.stage===2||x.status==='target')?pathWeight(x,p):0),0);
+  const evalPass=weighted(leaves,p,x=>x.status==='target'?1:0);
+  const p1=weighted(leaves,p,x=>x.steps.some(t=>t.stage===1&&t.passed)?1:0);
   const p2=p1>0?evalPass/p1:0;
-  const fundPass=phaseMode==='evaluation'?0:fundedLeaves.reduce((a,x)=>a+(x.status==='target'?pathWeight(x,p):0),0);
+  const fundPass=phaseMode==='evaluation'?0:weighted(fundedLeaves,p,x=>x.status==='target'?1:0);
   const funded=mode==='fixed'?numAccounts*evalPass:mode==='target'?targetFunded:fundPass>0?targetPayout/fundPass:NaN;
   const buys=mode==='fixed'?numAccounts:evalPass>0?funded/evalPass:NaN;
-  const payouts=funded*fundPass;
-  const spent=buys*fee+funded*activation;
-  const gross=payouts*fv.target*split;
-  const net=gross-spent;
-  const roi=spent>0?100*net/spent:NaN;
-  return '<tr><td>'+fmt(rate)+'%</td><td>'+fmt(p1*100)+'%</td><td>'+fmt(p2*100)+'%</td><td>'+fmt(evalPass*100)+'%</td><td>'+fmt(fundPass*100)+'%</td><td>'+fmt(buys)+'</td><td>'+fmt(funded)+'</td><td>'+fmt(payouts)+'</td><td>'+money(spent)+'</td><td>'+money(gross)+'</td><td style="color:'+(net>=0?'#00df83':'#f05b65')+'">'+money(net)+'</td><td>'+fmt(roi)+'%</td></tr>';
+  const firstPass=buys*p1,payouts=funded*fundPass;
+  const spent=buys*fee+funded*activation,gross=payouts*fv.target*split,net=gross-spent,roi=spent>0?100*net/spent:NaN;
+  const st1=stageStats(leaves,p,1),st2=stageStats(leaves,p,2),st3=stageStats(fundedLeaves,p,1);
+  const fundedAvg=stageStats(fundedLeaves,p,3);
+  const fstats=fundedAvg.total>0?fundedAvg:st3;
+  const stageRows=[
+   {name:'P1 · Evaluations purchased',count:buys,pass:NaN,total:1,avg:null,trades:0,paths:'—',cost:buys*fee,costResult:fee},
+   {name:firmForPhases==='ftmo'?'P2 · Challenge passed':'P2 · First day passed',count:firstPass,pass:p1,total:p1,avg:st1,trades:buys*st1.total,paths:'See Section 07',cost:0,costResult:firstPass>0?buys*fee/firstPass:NaN},
+   {name:firmForPhases==='ftmo'?'P3 · Verification passed / funded':'P3 · Second day passed / funded',count:funded,pass:p2,total:evalPass,avg:st2,trades:buys*st2.total,paths:'See Section 07',cost:funded*activation,costResult:funded>0?spent/funded:NaN},
+   {name:'P4 · Funded payout target reached',count:payouts,pass:fundPass,total:evalPass*fundPass,avg:fstats,trades:funded*fstats.total,paths:'See Section 07',cost:0,costResult:payouts>0?spent/payouts:NaN}
+  ];
+  return stageRows.map((x,i)=>{const cells=[i===0?fmt(rate)+'%':'',x.name,fmt(x.count),Number.isFinite(x.pass)?fmt(100*x.pass)+'%':'—',fmt(100*x.total)+'%',x.avg?fmt(x.avg.trades):'—',x.avg?fmt(x.avg.wins):'—',x.avg?fmt(x.avg.losses):'—',fmt(x.trades),i>0&&x.count>0?fmt(x.trades/x.count):'—',x.paths,money(x.cost),money(x.costResult),i===3?money(gross):'—',i===3?money(net):'—',i===3?fmt(roi)+'%':'—'];
+   return '<tr'+(i===0?' style="border-top:2px solid #8887"':'')+'>'+cells.map((cell,j)=>'<td style="padding:6px 5px;text-align:'+(j===1||j===10?'left':'right')+';white-space:nowrap;'+(j===14&&i===3?'color:'+(net>=0?'#00df83':'#f05b65')+';':'')+'">'+cell+'</td>').join('')+'</tr>';
+  }).join('');
  }).join('');
- host.innerHTML='<table style="width:100%;border-collapse:collapse;white-space:nowrap;font-size:11px"><thead><tr>'+['WR','P1 pass','P2 pass','Eval pass','P3 pass','Eval buys','Funded','Payouts','Spent','Gross cash','Net P/L','ROI'].map(h=>'<th style="padding:7px 5px;border-bottom:1px solid #8885;text-align:right">'+h+'</th>').join('')+'</tr></thead><tbody>'+rows+'</tbody></table>';
+ host.innerHTML='<table style="width:100%;border-collapse:collapse;white-space:nowrap;font-size:11px"><thead><tr>'+headings.map(h=>'<th style="padding:7px 5px;border-bottom:1px solid #8885;text-align:right">'+h+'</th>').join('')+'</tr></thead><tbody>'+rows+'</tbody></table>';
+
 })();
 const fundedSimulationPass=fp;const tradeWin=Math.max(0,Math.min(1,v.winRate/100));const tradeLoss=1-tradeWin;const fundedCycleTarget=tradeWin+tradeLoss*tradeWin;const fundedCycleReset=tradeLoss*tradeLoss*tradeWin;const fundedThreeAttemptPass=fundedCycleTarget/(1-fundedCycleReset);/* Use the enumerated funded engine success probability; do not overwrite it with a different LLW reset formula. The latter is a separate theoretical unlimited-horizon benchmark. */
 const p1Shared=firmForPhases==='topstep'?Math.max(0,Math.min(1,checkpointProbability)):Math.max(0,Math.min(1,t1Probability));
