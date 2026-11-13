@@ -278,23 +278,33 @@ const wrCompare=document.createElement('div');wrCompare.dataset.wrCompare='';wrC
 box.querySelector('[data-section="funnel"]').after(wrCompare);
 group('wr-comparison','07A · Win Rate Comparison',[wrCompare],false);
 wrCompare.querySelector('[data-wr-options]').addEventListener('change',()=>renderRisk());
-const wrPresetBar=document.createElement('div');wrPresetBar.style.cssText='display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:0 0 7px;font-size:11px';wrPresetBar.innerHTML='<label>Column preset <select data-wr-preset style="padding:5px;border-radius:5px"><option value="original">Original · 16 columns</option><option value="funnel">Funnel & pass rates</option><option value="trades">Trades & efficiency</option><option value="finance">Costs, payout & ROI</option><option value="all">All columns</option><option value="custom">Custom</option></select></label><button type="button" data-wr-save style="padding:5px 8px;border:1px solid #8886;border-radius:5px;cursor:pointer">Save custom</button>';wrCompare.querySelector('[data-wr-results]').before(wrPresetBar);
+const wrPresetBar=document.createElement('div');wrPresetBar.style.cssText='display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:0 0 7px;font-size:11px';wrPresetBar.innerHTML='<label>Column preset <select data-wr-preset style="padding:5px;border-radius:5px"><option value="original">Original · 16 columns</option><option value="funnel">Funnel & pass rates</option><option value="trades">Trades & efficiency</option><option value="finance">Costs, payout & ROI</option><option value="efficiency">Efficiency & unit costs</option><option value="risk">Risk & survival</option><option value="all">All columns</option><option value="custom">Custom</option></select></label><button type="button" data-wr-save style="padding:5px 8px;border:1px solid #8886;border-radius:5px;cursor:pointer">Save custom</button>';wrCompare.querySelector('[data-wr-results]').before(wrPresetBar);
 const wrOriginalColumns=['WR','Phase','Accounts','Pass %','Total %','Avg T','Avg W','Avg L','Tot T','Trades / Pass','Pass Paths','Stage $','Cost / result','Expected cash','Net P/L','ROI'];
-const wrExtraColumns=['Eval buys','Funded attempts','Payouts','Eval fees','Activation fees','Total spent','Payout / success','Cost / payout','Overall pass %'];
+const wrExtraColumns=['Eval buys','Funded attempts','Payouts','Eval fees','Activation fees','Total spent','Payout / success','Cost / payout','Overall pass %','Eval fail %','Funded fail %','Funded unresolved %','Cost / funded','Cost / P1 pass','Cost / P2 pass','Expected trades','Trades / payout','Net / eval buy','Breakeven WR margin'];
 const wrAllColumns=[...wrOriginalColumns,...wrExtraColumns];
 const wrPresetColumns={
  original:wrOriginalColumns,
  funnel:['WR','Phase','Accounts','Pass %','Total %','Eval buys','Funded attempts','Payouts','Overall pass %'],
  trades:['WR','Phase','Accounts','Pass %','Avg T','Avg W','Avg L','Tot T','Trades / Pass','Pass Paths'],
  finance:['WR','Phase','Accounts','Stage $','Cost / result','Eval fees','Activation fees','Total spent','Payout / success','Cost / payout','Expected cash','Net P/L','ROI'],
+ efficiency:['WR','Phase','Accounts','Pass %','Tot T','Trades / Pass','Expected trades','Trades / payout','Cost / funded','Cost / P1 pass','Cost / P2 pass','Net / eval buy'],
+ risk:['WR','Phase','Accounts','Pass %','Total %','Overall pass %','Eval fail %','Funded fail %','Funded unresolved %','Cost / payout','Net P/L','ROI'],
  all:wrAllColumns
 };
 let wrPreset='original';try{wrPreset=localStorage.getItem('jj-calculator09-wr-column-preset')||'original'}catch(e){}
 const wrPresetSelect=wrPresetBar.querySelector('[data-wr-preset]');
-if(!['original','funnel','trades','finance','all','custom'].includes(wrPreset))wrPreset='original';
+if(!['original','funnel','trades','finance','efficiency','risk','all','custom'].includes(wrPreset)&&!wrPreset.startsWith('named:'))wrPreset='original';
 wrPresetSelect.value=wrPreset;
-wrPresetSelect.addEventListener('change',()=>{wrPreset=wrPresetSelect.value;if(wrPreset!=='custom')wrHiddenColumns=wrAllColumns.filter(x=>!wrPresetColumns[wrPreset].includes(x));else{try{const saved=JSON.parse(localStorage.getItem('jj-calculator09-wr-custom-columns')||'[]');wrHiddenColumns=Array.isArray(saved)?saved:[]}catch(e){wrHiddenColumns=[]}}try{localStorage.setItem('jj-calculator09-wr-column-preset',wrPreset);localStorage.setItem('jj-calculator09-wr-hidden-columns',JSON.stringify(wrHiddenColumns))}catch(e){}applyWrColumnFilter();if(wrColumnFilter.open){wrColumnFilter.open=false;wrColumnFilter.open=true}});
-wrPresetBar.querySelector('[data-wr-save]').addEventListener('click',()=>{wrPreset='custom';wrPresetSelect.value='custom';try{localStorage.setItem('jj-calculator09-wr-custom-columns',JSON.stringify(wrHiddenColumns));localStorage.setItem('jj-calculator09-wr-column-preset','custom')}catch(e){}});
+wrPresetSelect.addEventListener('change',()=>{wrPreset=wrPresetSelect.value;if(wrPreset!=='custom'&&wrPresetColumns[wrPreset])wrHiddenColumns=wrAllColumns.filter(x=>!wrPresetColumns[wrPreset].includes(x));else{try{const saved=JSON.parse(localStorage.getItem('jj-calculator09-wr-custom-columns')||'[]');wrHiddenColumns=Array.isArray(saved)?saved:[]}catch(e){wrHiddenColumns=[]}}try{localStorage.setItem('jj-calculator09-wr-column-preset',wrPreset);localStorage.setItem('jj-calculator09-wr-hidden-columns',JSON.stringify(wrHiddenColumns))}catch(e){}applyWrColumnFilter();if(wrColumnFilter.open){wrColumnFilter.open=false;wrColumnFilter.open=true}});
+const wrNamedKey='jj-calculator09-wr-named-presets';
+let wrNamedPresets={};try{const saved=JSON.parse(localStorage.getItem(wrNamedKey)||'{}');if(saved&&typeof saved==='object'&&!Array.isArray(saved))wrNamedPresets=saved}catch(e){}
+const refreshWrNamedOptions=()=>{[...wrPresetSelect.options].filter(o=>o.value.startsWith('named:')).forEach(o=>o.remove());Object.keys(wrNamedPresets).sort().forEach(name=>{const option=document.createElement('option');option.value='named:'+name;option.textContent=name;wrPresetSelect.append(option)})};
+refreshWrNamedOptions();if(wrPreset.startsWith('named:')){if(wrNamedPresets[wrPreset.slice(6)]){wrPresetSelect.value=wrPreset;wrHiddenColumns=wrAllColumns.filter(x=>!wrNamedPresets[wrPreset.slice(6)].includes(x))}else{wrPreset='original';wrPresetSelect.value='original'}}
+wrPresetBar.querySelector('[data-wr-save]').textContent='Save as preset';
+wrPresetBar.querySelector('[data-wr-save]').addEventListener('click',()=>{const name=window.prompt('Name this column preset:','My comparison');if(!name||!name.trim())return;const clean=name.trim().slice(0,60);if(wrNamedPresets[clean]&&!window.confirm('Replace preset "'+clean+'"?'))return;wrNamedPresets[clean]=wrAllColumns.filter(x=>!wrHiddenColumns.includes(x));try{localStorage.setItem(wrNamedKey,JSON.stringify(wrNamedPresets))}catch(e){}refreshWrNamedOptions();wrPreset='named:'+clean;wrPresetSelect.value=wrPreset;try{localStorage.setItem('jj-calculator09-wr-column-preset',wrPreset)}catch(e){}});
+const wrDelete=document.createElement('button');wrDelete.type='button';wrDelete.textContent='Delete preset';wrDelete.style.cssText='padding:5px 8px;border:1px solid #8886;border-radius:5px;cursor:pointer';wrPresetBar.append(wrDelete);
+wrDelete.addEventListener('click',()=>{if(!wrPreset.startsWith('named:'))return;const name=wrPreset.slice(6);if(!window.confirm('Delete preset "'+name+'"?'))return;delete wrNamedPresets[name];try{localStorage.setItem(wrNamedKey,JSON.stringify(wrNamedPresets))}catch(e){}refreshWrNamedOptions();wrPreset='original';wrPresetSelect.value=wrPreset;wrHiddenColumns=wrAllColumns.filter(x=>!wrOriginalColumns.includes(x));try{localStorage.setItem('jj-calculator09-wr-column-preset',wrPreset);localStorage.setItem('jj-calculator09-wr-hidden-columns',JSON.stringify(wrHiddenColumns))}catch(e){}applyWrColumnFilter()});
+
 const wrColumnFilter=document.createElement('details');wrColumnFilter.style.cssText='position:relative;display:inline-block;margin:0 0 8px;font-size:11px';wrColumnFilter.innerHTML='<summary style="cursor:pointer;border:1px solid #8886;border-radius:6px;padding:5px 9px;list-style:revert">Columns</summary><div data-wr-column-options style="position:absolute;z-index:30;top:100%;left:0;max-height:260px;overflow-y:auto;min-width:180px;background:var(--jj-card-bg,#222);color:inherit;border:1px solid #8888;border-radius:6px;padding:8px;box-shadow:0 5px 20px #0005"></div>';
 wrCompare.querySelector('[data-wr-results]').before(wrColumnFilter);
 let wrHiddenColumns=[];try{const stored=JSON.parse(localStorage.getItem('jj-calculator09-wr-hidden-columns')||'[]');if(Array.isArray(stored))wrHiddenColumns=stored.filter(x=>typeof x==='string')}catch(e){}
@@ -963,7 +973,7 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
   }
   return {trades:entries?trades/entries:NaN,wins:entries?wins/entries:NaN,losses:passed?passLosses/passed:NaN,total:trades};
  };
- const headings=['WR','Phase','Accounts','Pass %','Total %','Avg T','Avg W','Avg L','Tot T','Trades / Pass','Pass Paths','Stage $','Cost / result','Expected cash','Net P/L','ROI','Eval buys','Funded attempts','Payouts','Eval fees','Activation fees','Total spent','Payout / success','Cost / payout','Overall pass %'];
+ const headings=wrAllColumns;
  const rows=rates.map(rate=>{
   const p=rate/100;
   const evalPass=weighted(leaves,p,x=>x.status==='target'?1:0);
@@ -973,17 +983,20 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
   const funded=mode==='fixed'?numAccounts*evalPass:mode==='target'?targetFunded:fundPass>0?targetPayout/fundPass:NaN;
   const buys=mode==='fixed'?numAccounts:evalPass>0?funded/evalPass:NaN;
   const firstPass=buys*p1,payouts=funded*fundPass;
+  const evalFailure=weighted(leaves,p,x=>x.status==='closed'?1:0),fundFailure=weighted(fundedLeaves,p,x=>x.status==='closed'?1:0);
   const spent=buys*fee+funded*activation,gross=payouts*fv.target*split,net=gross-spent,roi=spent>0?100*net/spent:NaN;
   const st1=stageStats(leaves,p,1),st2=stageStats(leaves,p,2),st3=stageStats(fundedLeaves,p,1);
   const fundedAvg=stageStats(fundedLeaves,p,3);
   const fstats=fundedAvg.total>0?fundedAvg:st3;
+  const totalExpectedTrades=buys*(st1.total+st2.total)+funded*fstats.total;
+  const costFunded=funded>0?spent/funded:NaN;
   const stageRows=[
    {name:'P1 · Evaluations purchased',count:buys,pass:NaN,total:1,avg:null,trades:0,paths:'—',cost:buys*fee,costResult:fee},
    {name:firmForPhases==='ftmo'?'P2 · Challenge passed':'P2 · First day passed',count:firstPass,pass:p1,total:p1,avg:st1,trades:buys*st1.total,paths:firmForPhases==='topstep'?'W · LW · LLW':'—',cost:0,costResult:firstPass>0?buys*fee/firstPass:NaN},
    {name:firmForPhases==='ftmo'?'P3 · Verification passed / funded':'P3 · Second day passed / funded',count:funded,pass:p2,total:evalPass,avg:st2,trades:buys*st2.total,paths:firmForPhases==='topstep'?'W · LW · LLW':'—',cost:funded*activation,costResult:funded>0?spent/funded:NaN},
    {name:'P4 · Funded payout target reached',count:payouts,pass:fundPass,total:evalPass*fundPass,avg:fstats,trades:funded*fstats.total,paths:firmForPhases==='topstep'?'W · LW · LLW':'—',cost:0,costResult:payouts>0?spent/payouts:NaN}
   ];
-  return stageRows.map((x,i)=>{const cells=[i===0?fmt(rate)+'%':'',x.name,fmt(x.count),Number.isFinite(x.pass)?fmt(100*x.pass)+'%':'—',fmt(100*x.total)+'%',x.avg?fmt(x.avg.trades):'—',x.avg?fmt(x.avg.wins):'—',x.avg?fmt(x.avg.losses):'—',fmt(x.trades),i>0&&x.count>0?fmt(x.trades/x.count):'—',x.paths,money(x.cost),money(x.costResult),i===3?money(gross):'—',i===3?money(net):'—',i===3?fmt(roi)+'%':'—',i===3?fmt(buys):'—',i===3?fmt(funded):'—',i===3?fmt(payouts):'—',i===3?money(buys*fee):'—',i===3?money(funded*activation):'—',i===3?money(spent):'—',i===3?money(fv.target*split):'—',i===3&&payouts>0?money(spent/payouts):'—',i===3?fmt(evalPass*fundPass*100)+'%':'—'];
+  return stageRows.map((x,i)=>{const cells=[i===0?fmt(rate)+'%':'',x.name,fmt(x.count),Number.isFinite(x.pass)?fmt(100*x.pass)+'%':'—',fmt(100*x.total)+'%',x.avg?fmt(x.avg.trades):'—',x.avg?fmt(x.avg.wins):'—',x.avg?fmt(x.avg.losses):'—',fmt(x.trades),i>0&&x.count>0?fmt(x.trades/x.count):'—',x.paths,money(x.cost),money(x.costResult),i===3?money(gross):'—',i===3?money(net):'—',i===3?fmt(roi)+'%':'—',i===3?fmt(buys):'—',i===3?fmt(funded):'—',i===3?fmt(payouts):'—',i===3?money(buys*fee):'—',i===3?money(funded*activation):'—',i===3?money(spent):'—',i===3?money(fv.target*split):'—',i===3&&payouts>0?money(spent/payouts):'—',i===3?fmt(evalPass*fundPass*100)+'%':'—',i===3?fmt(evalFailure*100)+'%':'—',i===3?fmt(fundFailure*100)+'%':'—',i===3?fmt(Math.max(0,100*(1-fundPass-fundFailure)))+'%':'—',i===3?money(costFunded):'—',i===3&&firstPass>0?money(buys*fee/firstPass):'—',i===3&&funded>0?money(buys*fee/funded):'—',i===3?fmt(totalExpectedTrades):'—',i===3&&payouts>0?fmt(totalExpectedTrades/payouts):'—',i===3&&buys>0?money(net/buys):'—',i===3&&spent>0?fmt(100*(gross/spent-1))+'%':'—'];
    return '<tr'+(i===0?' style="border-top:2px solid #8887"':'')+'>'+cells.map((cell,j)=>'<td style="padding:6px 5px;text-align:'+(j===1||j===10?'left':'right')+';white-space:nowrap;'+'">'+cell+'</td>').join('')+'</tr>';
   }).join('');
  }).join('');
