@@ -1106,6 +1106,32 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
  host.innerHTML='<table style="width:100%;border-collapse:collapse;white-space:nowrap;font-size:11px"><thead><tr>'+headings.map(h=>'<th style="padding:7px 5px;border-bottom:1px solid #8885;text-align:right">'+h+'</th>').join('')+'</tr></thead><tbody>'+rows+'</tbody></table>';
  applyWrColumnFilter();
  const note=document.createElement('div');note.style.cssText='font-size:11px;opacity:.8;margin-top:6px';note.textContent=comparisonNote;host.append(note);
+ // Read-only, explicit assumptions for each comparison mode. No engine inputs changed.
+ const assumptions=document.createElement('div');
+ assumptions.style.cssText='margin-top:8px;padding:9px 11px;border:1px solid #7892ac66;border-radius:7px;font-size:11px;line-height:1.6;white-space:normal';
+ const phaseModeLabel=phase=>{
+  const mode=box.querySelector('[data-manual-mode="'+phase+'"]')?.value||'auto';
+  const common=phase===3?Number(fv.winRate):Number(v.winRate);
+  const wrSaved=(()=>{try{return JSON.parse(localStorage.getItem('jj-risk-attempt-winrates-v1')||'{}')}catch(e){return {}}})();
+  const perWR=Array.from({length:4},(_,i)=>{const raw=wrSaved[phase+'-'+(i+1)];return raw!==undefined&&raw!==''&&Number.isFinite(Number(raw))?raw+'%':common+'%'}).join(' / ');
+  const risks=Array.from({length:4},(_,i)=>box.querySelector('[data-manual-risk="'+phase+'-'+(i+1)+'"]')?.value||'—').join(' / ');
+  const rrs=Array.from({length:4},(_,i)=>box.querySelector('[data-manual-rr="'+phase+'-'+(i+1)+'"]')?.value||'—').join(' / ');
+  return {mode,common,perWR,risks,rrs};
+ };
+ const lines=[];
+ if(compareMode==='wr'){
+  lines.push('WIN RATE comparison: each row uses its displayed WR for every attempt, including P3. Risk/RR follow the current phase modes.');
+  for(let phase=1;phase<=3;phase++){const a=phaseModeLabel(phase);lines.push('P'+phase+' '+a.mode.toUpperCase()+' risk/RR'+(a.mode==='manual'?' | Risk $ R1–R4: '+a.risks+' | RR: '+a.rrs:' | Engine-calculated risk/RR'))}
+ }else if(compareMode==='strategy'){
+  lines.push('AUTO scenario: P1/P2 WR '+Number(v.winRate)+'%, P3 WR '+Number(fv.winRate)+'%; engine-calculated risk/RR for all phases (manual overrides ignored).');
+  lines.push('MANUAL scenario: phase-by-phase assumptions below. Auto phases use engine-calculated risk/RR and common WR.');
+  for(let phase=1;phase<=3;phase++){const a=phaseModeLabel(phase);lines.push('P'+phase+' '+a.mode.toUpperCase()+' | WR R1–R4: '+(a.mode==='manual'?a.perWR:[a.common+'%','common for all attempts'].join(' '))+' | '+(a.mode==='manual'?'Risk $: '+a.risks+' | RR: '+a.rrs:'Engine-calculated risk/RR'))}
+ }else{
+  lines.push('Comparison uses the loaded phase modes and parameters, except for the parameter varied by the selected comparison.');
+ }
+ const heading=document.createElement('strong');heading.textContent='Active calculation assumptions';assumptions.append(heading);
+ lines.forEach(line=>{const item=document.createElement('div');item.textContent=line;assumptions.append(item)});
+ host.append(assumptions);
 
 })();
 const fundedSimulationPass=fp;const tradeWin=Math.max(0,Math.min(1,v.winRate/100));const tradeLoss=1-tradeWin;const fundedCycleTarget=tradeWin+tradeLoss*tradeWin;const fundedCycleReset=tradeLoss*tradeLoss*tradeWin;const fundedThreeAttemptPass=fundedCycleTarget/(1-fundedCycleReset);/* Use the enumerated funded engine success probability; do not overwrite it with a different LLW reset formula. The latter is a separate theoretical unlimited-horizon benchmark. */
