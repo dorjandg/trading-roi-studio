@@ -989,18 +989,39 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
   return {trades:entries?trades/entries:NaN,wins:entries?wins/entries:NaN,losses:passed?passLosses/passed:NaN,total:trades};
  };
  const headings=compareMode==='wr'?wrAllColumns:['Scenario',...wrAllColumns.slice(1)];
- const comparisonNote=compareMode==='strategy'?'Auto uses Sections 1–2 without manual risk overrides; Manual uses the current R1–R4 inputs. All other scenario assumptions are held constant.':compareMode==='firm'?'Firm comparison uses each firm’s saved evaluation and funded settings where available, with defaults for missing values. Results are modeled estimates, not verified firm rules.':compareMode==='p3target'?'P3 target comparison changes the Funded target ($) from Section 02 only. Evaluation day targets stay unchanged; funded paths and payout cash are recalculated for each value.':compareMode==='pnl'?'Reverse net-profit planning: P&L = gross payout cash minus expected evaluation and activation fees. The calculator increases expected payouts to reach the net-profit goal; if expected net per payout is nonpositive, the goal is infeasible under these assumptions.':compareMode==='target'?'Reverse cash-goal planning: each scenario is a TOTAL cash payout goal. Funded trading target and split remain unchanged. P4 is the expected number of payouts needed (rounded up); P1–P3 are expected required accounts, not guaranteed results.':compareMode==='purchase'?'Purchase strategy may back-solve evaluation purchases to meet the payout goal; P4 is an expected count.':'Expected counts from modeled probabilities; they are not guaranteed outcomes.';
+ const comparisonNote=compareMode==='strategy'?'Auto uses Sections 1–2 without overrides. Manual uses Risk, RR and WR overrides only for phases switched to Manual; Auto phases keep baseline settings.':compareMode==='firm'?'Firm comparison uses each firm’s saved evaluation and funded settings where available, with defaults for missing values. Results are modeled estimates, not verified firm rules.':compareMode==='p3target'?'P3 target comparison changes the Funded target ($) from Section 02 only. Evaluation day targets stay unchanged; funded paths and payout cash are recalculated for each value.':compareMode==='pnl'?'Reverse net-profit planning: P&L = gross payout cash minus expected evaluation and activation fees. The calculator increases expected payouts to reach the net-profit goal; if expected net per payout is nonpositive, the goal is infeasible under these assumptions.':compareMode==='target'?'Reverse cash-goal planning: each scenario is a TOTAL cash payout goal. Funded trading target and split remain unchanged. P4 is the expected number of payouts needed (rounded up); P1–P3 are expected required accounts, not guaranteed results.':compareMode==='purchase'?'Purchase strategy may back-solve evaluation purchases to meet the payout goal; P4 is an expected count.':'Expected counts from modeled probabilities; they are not guaranteed outcomes.';
  const rows=rates.map(rate=>{
   const val=Number(rate),params={...v,manualRisks:Array.isArray(v.manualRisks)?[...v.manualRisks]:v.manualRisks,manualRRs:Array.isArray(v.manualRRs)?[...v.manualRRs]:v.manualRRs};
   const fundParams={...fv,manualRisks:Array.isArray(fv.manualRisks)?[...fv.manualRisks]:fv.manualRisks,manualRRs:Array.isArray(fv.manualRRs)?[...fv.manualRRs]:fv.manualRRs};
   let p=compareMode==='wr'?val/100:v.winRate/100,comparisonAccounts=accountMode?val:numAccounts,scenarioMode=mode,scenarioTarget=fv.target,capacityOverride=null;
   let scenarioFirm=firmForPhases,valid=true;
   let attemptWR=null;
-  if(compareMode==='strategy'&&rate==='manual'){try{attemptWR=JSON.parse(localStorage.getItem('jj-risk-attempt-winrates-v1')||'{}')}catch(e){attemptWR={}}}
   if(compareMode==='strategy'){
    if(!['auto','manual'].includes(rate))valid=false;
+   // Auto is the unmodified Sections 1-2 baseline. Manual honors each phase's Mode.
    if(rate==='auto'){
     params.manualRisks={};params.manualRRs={};fundParams.manualRisks={};fundParams.manualRRs={};
+   }else{
+    let storedWR={};
+    try{storedWR=JSON.parse(localStorage.getItem('jj-risk-attempt-winrates-v1')||'{}')}catch(e){}
+    attemptWR={};
+    for(let phase=1;phase<=3;phase++){
+     const manual=box.querySelector('[data-manual-mode="'+phase+'"]')?.value==='manual';
+     if(!manual){
+      if(phase<=2){
+       if(params.manualRisks)delete params.manualRisks[phase];
+       if(params.manualRRs)delete params.manualRRs[phase];
+      }else{
+       if(fundParams.manualRisks)delete fundParams.manualRisks[phase];
+       if(fundParams.manualRRs)delete fundParams.manualRRs[phase];
+      }
+      continue;
+     }
+     for(let step=1;step<=4;step++){
+      const key=phase+'-'+step;
+      if(Object.prototype.hasOwnProperty.call(storedWR,key))attemptWR[key]=storedWR[key];
+     }
+    }
    }
   }
   if(compareMode==='risk'){if(!(val>0&&val<=5))valid=false;else{if(params.manualRisks)params.manualRisks=params.manualRisks.map(x=>Number(x)*val);if(fundParams.manualRisks)fundParams.manualRisks=fundParams.manualRisks.map(x=>Number(x)*val);if(Number.isFinite(params.fixedRisk))params.fixedRisk*=val;if(Number.isFinite(fundParams.fixedRisk))fundParams.fixedRisk*=val}}
