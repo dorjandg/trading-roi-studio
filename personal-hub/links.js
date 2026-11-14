@@ -85,6 +85,25 @@ window.PERSONAL_HUB_DATA = {
       ]
     },
     {
+      "id": "youtube-ai-academy",
+      "title": "YouTube AI Academy",
+      "url": "https://youtube-ai-academy.pages.dev/",
+      "description": "Multi-channel learning library with searchable academies and an AI chat interface; transcript-based answers are coming soon.",
+      "category": "workspaces",
+      "type": "My website",
+      "symbol": "YT",
+      "accent": "red",
+      "featured": true,
+      "tags": [
+        "YouTube",
+        "AI Academy",
+        "AI chat",
+        "transcripts",
+        "learning",
+        "channels"
+      ]
+    },
+    {
       "id": "jj-simon-knowledge",
       "title": "JJ Simon Knowledge Hub",
       "url": "https://jj-simon-knowledge.pages.dev/",
