@@ -12,6 +12,12 @@ function setup(){
  const box=document.querySelector(root);
  const section=box?.querySelector(sectionSelector);
  if(!section)return;
+ // One-time migration: preserve existing comparison inputs before decoupling.
+ if(!localStorage.getItem(strategyKey)){
+  const migrated={};let oldWR={};try{oldWR=JSON.parse(localStorage.getItem('jj-risk-attempt-winrates-v1')||'{}')}catch(e){}
+  for(let p=1;p<=3;p++){migrated['mode'+p]='comparison';for(let s=1;s<=4;s++){const k=p+'-'+s;for(const t of ['risk','rr'])migrated[t+k]=box.querySelector('[data-manual-'+t+'="'+k+'"]')?.value||'';if(oldWR[k]!==undefined)migrated['wr'+k]=oldWR[k]}}
+  writeStrategy(migrated);
+ }
  const body=section.querySelector('.jj-risk-section-body');
  if(!body||body.querySelector('[data-rr-editor]'))return;
  const details=document.createElement('details');
