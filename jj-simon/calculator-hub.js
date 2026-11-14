@@ -279,19 +279,6 @@ box.querySelector('[data-section="funnel"]').after(wrCompare);
 group('wr-comparison','07A · Win Rate Comparison',[wrCompare],false);
 wrCompare.querySelector('[data-wr-options]').addEventListener('change',()=>renderRisk());
 
-/* 07A phase-attempt comparison: read-only view of the actual stage inputs.
-   The existing engine remains authoritative for pass/fail and restart paths. */
-const attemptComparison=document.createElement('details');
-attemptComparison.style.cssText='margin:10px 0;border:1px solid #8296a344;border-radius:7px;padding:9px';
-attemptComparison.innerHTML='<summary style="cursor:pointer;font-weight:700;font-size:12px">R1–R4 · P1 / P2 / P3 comparison</summary><p style="font-size:11px;opacity:.75">Live phase inputs. W = risk × RR; L = −risk. The table does not assume that R4 is permitted or that a win always passes. Phase outcomes remain governed by the existing simulator.</p><div data-attempt-comparison-table style="overflow-x:auto"></div>';
-wrCompare.append(attemptComparison);
-function renderAttemptComparison(){
- const host=attemptComparison.querySelector('[data-attempt-comparison-table]');
- if(!host)return;
- const risks=manualConfig(),rrs=manualRRConfig();
- const base=vals(),firm=firmBar.querySelector('[data-firm-type]').value;
- const stageNames=['P1 · Evaluation','P2 · Verification','P3 · Funded'];
- const fmt=n=>Number.isFinite(n)?'
 const wrModeBar=document.createElement('div');wrModeBar.style.cssText='display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;font-size:12px';wrModeBar.innerHTML='<label>Compare by <select data-compare-mode style="padding:5px;border-radius:5px"><option value="wr">Win Rate</option><option value="accounts">Account Quantity</option><option value="risk">Risk multiplier</option><option value="rr">Risk / Reward</option><option value="purchase">Purchase strategy</option><option value="capacity">Trades per day</option><option value="target">Total cash payout goal</option><option value="pnl">Net P&amp;L goal</option><option value="p3target">P3 target (Section 02 · Funded)</option><option value="matrix">Win Rate × RR</option><option value="firm">Prop firm</option><option value="custom">Saved scenarios</option></select></label><label data-compare-values-label>Values (%) <input data-compare-values value="15, 20, 25, 30, 35, 40" style="width:min(100%,230px);padding:5px"></label>';
 wrCompare.querySelector('[data-wr-options]').closest('label').style.display='none';
 wrCompare.prepend(wrModeBar);
@@ -884,7 +871,6 @@ const readContractSpecs=()=>{
 const fundedBalance=n=>(n>0?'+':n<0?'−':'')+tableNumber(Math.abs(n));
 function renderRisk(){
 contractSizing();
-renderAttemptComparison();
 const firmForPhases=firmBar.querySelector('[data-firm-type]').value;const expectedPhases=firmForPhases==='ftmo'?'2':'1';if($('[data-target-mode]').value!==expectedPhases)$('[data-target-mode]').value=expectedPhases;
 const v=vals(),leaves=[],allPaths=[];Object.assign(v,STRATEGIES[activeStrategy].eval);v.manualRisks=manualConfig();v.manualRRs=manualRRConfig();v.contractSpecs=readContractSpecs();v.roundTurnFee=0;if(firmForPhases==='topstep'){v.topstepOptionalDailyCap=box.querySelector('[data-topstep-daily-cap]').checked;v.topstepConsistency=true;if(activeStrategy==='current')v.fixedRisk=1000;v.consistencyRate=Math.max(1,Math.min(100,Number(box.querySelector('[data-consistency-limit]')?.value)||55));}
 function walk(path){const x=calc(path,v);if(path&&allPaths.length<4000)allPaths.push(x);if(scenarioFinished(x,v,path)){leaves.push(x);return}walk(path+'W');walk(path+'L')}
