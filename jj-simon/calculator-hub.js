@@ -975,7 +975,7 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
  const rates=[...new Set(raw.split(/[ ,;]+/).map(x=>x.trim()).filter(Boolean))].slice(0,20).filter(x=>['purchase','matrix','firm','custom','strategy'].includes(compareMode)||Number.isFinite(Number(x))&&Number(x)>=(compareMode==='wr'?0:0.01));
  if(!rates.length){host.textContent='Enter valid comparison values.';return}
  const enumerate=(params,isFunded,firm)=>{const results=[];const depth=Math.min(12,Math.max(1,params.depth));const calculate=isFunded?(firm==='topstep'?calcTopstepFunded:calc):(firm==='topstep'?calcTopstep:calc);const visit=path=>{const x=calculate(path,params);if(x.status!=='active'||x.steps.length>=depth||(!isFunded&&scenarioFinished(x,params,path))){results.push(x);return}if(path.length>=depth)return;visit(path+'W');visit(path+'L')};visit('');return results};
- const pathWeight=(x,p,wr,offset=0)=>{let prob=1;const counts={};for(const t of x.steps||[]){const stage=Number(t.checkpointStage||t.stage)||1;counts[stage]=(counts[stage]||0)+1;const key=(stage+offset)+'-'+Math.min(4,counts[stage]);const raw=wr?.[key];const n=raw!==undefined&&raw!==''?Number(raw):NaN;const chance=Number.isFinite(n)&&n>=0&&n<=100?n/100:p;prob*=t.c==='W'?chance:1-chance}return prob};
+ const pathWeight=(x,p,wr,offset=0)=>{let prob=1;const counts={};for(const t of x.steps||[]){const stage=Number(t.checkpointStage)||(Number(t.stage)||1)+offset;counts[stage]=(counts[stage]||0)+1;const key=stage+'-'+Math.min(4,counts[stage]);const raw=wr?.[key];const n=raw!==undefined&&raw!==''?Number(raw):NaN;const chance=Number.isFinite(n)&&n>=0&&n<=100?n/100:p;prob*=t.c==='W'?chance:1-chance}return prob};
  const fmt=n=>Number.isFinite(n)?n.toFixed(2):'—';
  const money=n=>Number.isFinite(n)?'$'+n.toLocaleString('en-US',{maximumFractionDigits:2,minimumFractionDigits:2}):'—';
  const numAccounts=Math.max(1,Math.floor(Number(box.querySelector('[data-account-count]').value)||20));
@@ -1108,25 +1108,23 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
  // Read-only, explicit assumptions for each comparison mode. No engine inputs changed.
  const assumptions=document.createElement('div');
  assumptions.style.cssText='margin-top:8px;padding:9px 11px;border:1px solid #7892ac66;border-radius:7px;font-size:11px;line-height:1.6;white-space:normal';
- const phaseModeLabel=phase=>{
-  const mode=box.querySelector('[data-manual-mode="'+phase+'"]')?.value||'auto';
+ const comparisonSettings=(()=>{try{return JSON.parse(localStorage.getItem('jj-risk-comparison-strategy-v2')||'{}')}catch(e){return {}}})();
+ const comparisonPhase=phase=>{
+  const enabled=comparisonSettings['mode'+phase]!=='base';
   const common=phase===3?Number(fv.winRate):Number(v.winRate);
-  const wrSaved=(()=>{try{return JSON.parse(localStorage.getItem('jj-risk-attempt-winrates-v1')||'{}')}catch(e){return {}}})();
-  const perWR=Array.from({length:4},(_,i)=>{const raw=wrSaved[phase+'-'+(i+1)];return raw!==undefined&&raw!==''&&Number.isFinite(Number(raw))?raw+'%':common+'%'}).join(' / ');
-  const risks=Array.from({length:4},(_,i)=>box.querySelector('[data-manual-risk="'+phase+'-'+(i+1)+'"]')?.value||'—').join(' / ');
-  const rrs=Array.from({length:4},(_,i)=>box.querySelector('[data-manual-rr="'+phase+'-'+(i+1)+'"]')?.value||'—').join(' / ');
-  return {mode,common,perWR,risks,rrs};
+  const values=(type)=>Array.from({length:4},(_,i)=>{const raw=comparisonSettings[type+phase+'-'+(i+1)];return raw===undefined||raw===''?'—':String(raw)}).join(' / ');
+  const wr=Array.from({length:4},(_,i)=>{const raw=comparisonSettings['wr'+phase+'-'+(i+1)];return raw!==undefined&&raw!==''&&Number.isFinite(Number(raw))?raw+'%':common+'%'}).join(' / ');
+  return {enabled,common,wr,risks:values('risk'),rrs:values('rr')};
  };
  const lines=[];
  if(compareMode==='wr'){
-  lines.push('WIN RATE comparison: each row uses its displayed WR for every attempt, including P3. Risk/RR follow the current phase modes.');
-  for(let phase=1;phase<=3;phase++){const a=phaseModeLabel(phase);lines.push('P'+phase+' '+a.mode.toUpperCase()+' risk/RR'+(a.mode==='manual'?' | Risk $ R1–R4: '+a.risks+' | RR: '+a.rrs:' | Engine-calculated risk/RR'))}
+  lines.push('WIN RATE comparison: every attempt uses the WR shown in its scenario row. Risk/RR use the loaded base strategy from Sections 01–02.');
  }else if(compareMode==='strategy'){
-  lines.push('AUTO scenario: P1/P2 WR '+Number(v.winRate)+'%, P3 WR '+Number(fv.winRate)+'%; engine-calculated risk/RR for all phases (manual overrides ignored).');
-  lines.push('MANUAL scenario: phase-by-phase assumptions below. Auto phases use engine-calculated risk/RR and common WR.');
-  for(let phase=1;phase<=3;phase++){const a=phaseModeLabel(phase);lines.push('P'+phase+' '+a.mode.toUpperCase()+' | WR R1–R4: '+(a.mode==='manual'?a.perWR:[a.common+'%','common for all attempts'].join(' '))+' | '+(a.mode==='manual'?'Risk $: '+a.risks+' | RR: '+a.rrs:'Engine-calculated risk/RR'))}
+  lines.push('BASE scenario: Sections 01–02 settings, including their selected phase modes; P1/P2 common WR '+Number(v.winRate)+'%, P3 common WR '+Number(fv.winRate)+'%.');
+  lines.push('COMPARISON scenario: independent R1–R4 inputs below; phases set to Base inherit Sections 01–02.');
+  for(let phase=1;phase<=3;phase++){const p=comparisonPhase(phase);lines.push('P'+phase+' '+(p.enabled?'COMPARISON | WR: '+p.wr+' | Risk $: '+p.risks+' | RR: '+p.rrs:'BASE | Common WR: '+p.common+'%; base phase risk/RR'))}
  }else{
-  lines.push('Comparison uses the loaded phase modes and parameters, except for the parameter varied by the selected comparison.');
+  lines.push('Comparison uses the loaded base parameters except for the parameter varied by the selected comparison.');
  }
  const heading=document.createElement('strong');heading.textContent='Active calculation assumptions';assumptions.append(heading);
  lines.forEach(line=>{const item=document.createElement('div');item.textContent=line;assumptions.append(item)});
