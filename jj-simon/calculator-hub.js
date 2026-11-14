@@ -970,7 +970,7 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
  const rates=[...new Set(raw.split(/[ ,;]+/).map(x=>x.trim()).filter(Boolean))].slice(0,20).filter(x=>['purchase','matrix','firm','custom','strategy'].includes(compareMode)||Number.isFinite(Number(x))&&Number(x)>=(compareMode==='wr'?0:0.01));
  if(!rates.length){host.textContent='Enter valid comparison values.';return}
  const enumerate=(params,isFunded,firm)=>{const results=[];const depth=Math.min(12,Math.max(1,params.depth));const calculate=isFunded?(firm==='topstep'?calcTopstepFunded:calc):(firm==='topstep'?calcTopstep:calc);const visit=path=>{const x=calculate(path,params);if(x.status!=='active'||x.steps.length>=depth||(!isFunded&&scenarioFinished(x,params,path))){results.push(x);return}if(path.length>=depth)return;visit(path+'W');visit(path+'L')};visit('');return results};
- const pathWeight=(x,p)=>{let w=0,l=0;for(const t of x.steps||[]){if(t.c==='W')w++;else l++}return Math.pow(p,w)*Math.pow(1-p,l)};
+ const pathWeight=(x,p,wr,offset=0)=>{let prob=1;const counts={};for(const t of x.steps||[]){const stage=Number(t.checkpointStage||t.stage)||1;counts[stage]=(counts[stage]||0)+1;const key=(stage+offset)+'-'+Math.min(4,counts[stage]);const raw=wr?.[key];const n=raw!==undefined&&raw!==''?Number(raw):NaN;const chance=Number.isFinite(n)&&n>=0&&n<=100?n/100:p;prob*=t.c==='W'?chance:1-chance}return prob};
  const fmt=n=>Number.isFinite(n)?n.toFixed(2):'—';
  const money=n=>Number.isFinite(n)?'$'+n.toLocaleString('en-US',{maximumFractionDigits:2,minimumFractionDigits:2}):'—';
  const numAccounts=Math.max(1,Math.floor(Number(box.querySelector('[data-account-count]').value)||20));
@@ -979,9 +979,9 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
  const targetFunded=Math.max(1,Math.floor(Number(fundedCountInput.value)||20));
  const targetPayout=Math.max(1,Math.floor(Number(payoutCountInput.value)||5));
  const mode=purchaseStrategyMode;
- const weighted=(paths,p,select)=>paths.reduce((sum,x)=>sum+pathWeight(x,p)*select(x),0);
- const stageStats=(paths,p,stage)=>{let entries=0,trades=0,wins=0,losses=0,passed=0,passLosses=0;
-  for(const x of paths){const w=pathWeight(x,p),steps=(x.steps||[]).filter(t=>t.stage===stage||t.checkpointStage===stage);
+ const weighted=(paths,p,select,wr,offset=0)=>paths.reduce((sum,x)=>sum+pathWeight(x,p,wr,offset)*select(x),0);
+ const stageStats=(paths,p,stage,wr,offset=0)=>{let entries=0,trades=0,wins=0,losses=0,passed=0,passLosses=0;
+  for(const x of paths){const w=pathWeight(x,p,wr,offset),steps=(x.steps||[]).filter(t=>t.stage===stage||t.checkpointStage===stage);
    if(!steps.length)continue;
    entries+=w;trades+=w*steps.length;wins+=w*steps.filter(t=>t.c==='W').length;losses+=w*steps.filter(t=>t.c==='L').length;
    if(steps.some(t=>t.passed)){passed+=w;passLosses+=w*steps.filter(t=>t.c==='L').length}
@@ -995,6 +995,8 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
   const fundParams={...fv,manualRisks:Array.isArray(fv.manualRisks)?[...fv.manualRisks]:fv.manualRisks,manualRRs:Array.isArray(fv.manualRRs)?[...fv.manualRRs]:fv.manualRRs};
   let p=compareMode==='wr'?val/100:v.winRate/100,comparisonAccounts=accountMode?val:numAccounts,scenarioMode=mode,scenarioTarget=fv.target,capacityOverride=null;
   let scenarioFirm=firmForPhases,valid=true;
+  let attemptWR=null;
+  if(compareMode==='strategy'&&rate==='manual'){try{attemptWR=JSON.parse(localStorage.getItem('jj-risk-attempt-winrates-v1')||'{}')}catch(e){attemptWR={}}}
   if(compareMode==='strategy'){
    if(!['auto','manual'].includes(rate))valid=false;
    if(rate==='auto'){
@@ -1037,10 +1039,10 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
   if(!valid)return '';
   const evalPaths=['risk','rr','matrix','firm','strategy'].includes(compareMode)?enumerate(params,false,scenarioFirm):leaves;
   const fundPaths=['risk','rr','matrix','target','p3target','firm','strategy'].includes(compareMode)?((phaseMode==='evaluation'&&compareMode!=='firm')?[]:enumerate(fundParams,true,scenarioFirm)):fundedLeaves;
-  const evalPass=weighted(evalPaths,p,x=>x.status==='target'?1:0);
-  const p1=weighted(evalPaths,p,x=>x.steps.some(t=>t.checkpointStage===1&&t.passed||t.stage===1&&t.passed)?1:0);
+  const evalPass=weighted(evalPaths,p,x=>x.status==='target'?1:0,attemptWR);
+  const p1=weighted(evalPaths,p,x=>x.steps.some(t=>t.checkpointStage===1&&t.passed||t.stage===1&&t.passed)?1:0,attemptWR);
   const p2=p1>0?evalPass/p1:0;
-  const fundPass=phaseMode==='evaluation'&&compareMode!=='firm'?0:weighted(fundPaths,p,x=>x.status==='target'?1:0);
+  const fundPass=phaseMode==='evaluation'&&compareMode!=='firm'?0:weighted(fundPaths,p,x=>x.status==='target'?1:0,attemptWR,2);
   const scenarioFee=compareMode==='firm'?Math.max(0,params.accountCost):fee;
   const scenarioActivation=compareMode==='firm'?Math.max(0,Number((readProfiles()[scenarioFirm]||{}).funded?.activation??(scenarioFirm==='topstep'?150:0))):activation;
   const scenarioSplit=compareMode==='firm'?Math.max(0,Math.min(1,Number((readProfiles()[scenarioFirm]||firmDefaults(scenarioFirm)).funded?.split??(scenarioFirm==='topstep'?75:80))/100)):split;
@@ -1051,10 +1053,10 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
   const funded=scenarioMode==='fixed'?comparisonAccounts*evalPass:scenarioMode==='target'?targetFunded:fundPass>0?requiredPayouts/fundPass:NaN;
   const buys=scenarioMode==='fixed'?comparisonAccounts:evalPass>0?funded/evalPass:NaN;
   const firstPass=buys*p1,payouts=funded*fundPass;
-  const evalFailure=weighted(evalPaths,p,x=>x.status==='closed'?1:0),fundFailure=weighted(fundPaths,p,x=>x.status==='closed'?1:0);
+  const evalFailure=weighted(evalPaths,p,x=>x.status==='closed'?1:0,attemptWR),fundFailure=weighted(fundPaths,p,x=>x.status==='closed'?1:0,attemptWR,2);
   const spent=buys*scenarioFee+funded*scenarioActivation,gross=payouts*grossPerPayout,net=gross-spent,roi=spent>0?100*net/spent:NaN;
-  const st1=stageStats(evalPaths,p,1),st2=stageStats(evalPaths,p,2),st3=stageStats(fundPaths,p,1);
-  const fundedAvg=stageStats(fundPaths,p,3);
+  const st1=stageStats(evalPaths,p,1,attemptWR),st2=stageStats(evalPaths,p,2,attemptWR),st3=stageStats(fundPaths,p,1,attemptWR,2);
+  const fundedAvg=stageStats(fundPaths,p,3,attemptWR,2);
   const fstats=fundedAvg.total>0?fundedAvg:st3;
   const totalExpectedTrades=buys*(st1.total+st2.total)+funded*fstats.total;
   const costFunded=funded>0?spent/funded:NaN;
