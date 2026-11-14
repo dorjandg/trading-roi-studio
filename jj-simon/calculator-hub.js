@@ -980,9 +980,10 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
  const targetFunded=Math.max(1,Math.floor(Number(fundedCountInput.value)||20));
  const targetPayout=Math.max(1,Math.floor(Number(payoutCountInput.value)||5));
  const mode=purchaseStrategyMode;
- const weighted=(paths,p,select,wr,offset=0)=>paths.reduce((sum,x)=>sum+pathWeight(x,p,wr,offset)*select(x),0);
+ const legacyWeight=(x,p)=>{let wins=0,losses=0;for(const t of x.steps||[]){if(t.c==='W')wins++;else losses++}return Math.pow(p,wins)*Math.pow(1-p,losses)};
+ const weighted=(paths,p,select,wr,offset=0)=>paths.reduce((sum,x)=>sum+(compareMode==='strategy'?pathWeight(x,p,wr,offset):legacyWeight(x,p))*select(x),0);
  const stageStats=(paths,p,stage,wr,offset=0)=>{let entries=0,trades=0,wins=0,losses=0,passed=0,passLosses=0;
-  for(const x of paths){const w=pathWeight(x,p,wr,offset),steps=(x.steps||[]).filter(t=>t.stage===stage||t.checkpointStage===stage);
+  for(const x of paths){const w=compareMode==='strategy'?pathWeight(x,p,wr,offset):legacyWeight(x,p),steps=(x.steps||[]).filter(t=>t.stage===stage||t.checkpointStage===stage);
    if(!steps.length)continue;
    entries+=w;trades+=w*steps.length;wins+=w*steps.filter(t=>t.c==='W').length;losses+=w*steps.filter(t=>t.c==='L').length;
    if(steps.some(t=>t.passed)){passed+=w;passLosses+=w*steps.filter(t=>t.c==='L').length}
