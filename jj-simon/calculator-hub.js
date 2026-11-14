@@ -278,13 +278,13 @@ const wrCompare=document.createElement('div');wrCompare.dataset.wrCompare='';wrC
 box.querySelector('[data-section="funnel"]').after(wrCompare);
 group('wr-comparison','07A · Win Rate Comparison',[wrCompare],false);
 wrCompare.querySelector('[data-wr-options]').addEventListener('change',()=>renderRisk());
-const wrModeBar=document.createElement('div');wrModeBar.style.cssText='display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;font-size:12px';wrModeBar.innerHTML='<label>Compare by <select data-compare-mode style="padding:5px;border-radius:5px"><option value="wr">Win Rate</option><option value="accounts">Account Quantity</option><option value="risk">Risk multiplier</option><option value="rr">Risk / Reward</option><option value="purchase">Purchase strategy</option><option value="capacity">Trades per day</option><option value="target">Total cash payout goal</option><option value="pnl">Net P&amp;L goal</option><option value="p3target">P3 target (Section 02 · Funded)</option><option value="matrix">Win Rate × RR</option><option value="firm">Prop firm</option><option value="custom">Saved scenarios</option></select></label><label data-compare-values-label>Values (%) <input data-compare-values value="15, 20, 25, 30, 35, 40" style="width:min(100%,230px);padding:5px"></label>';
+const wrModeBar=document.createElement('div');wrModeBar.style.cssText='display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;font-size:12px';wrModeBar.innerHTML='<label>Compare by <select data-compare-mode style="padding:5px;border-radius:5px"><option value="wr">Win Rate</option><option value="strategy">Auto vs Manual (07A)</option><option value="accounts">Account Quantity</option><option value="risk">Risk multiplier</option><option value="rr">Risk / Reward</option><option value="purchase">Purchase strategy</option><option value="capacity">Trades per day</option><option value="target">Total cash payout goal</option><option value="pnl">Net P&amp;L goal</option><option value="p3target">P3 target (Section 02 · Funded)</option><option value="matrix">Win Rate × RR</option><option value="firm">Prop firm</option><option value="custom">Saved scenarios</option></select></label><label data-compare-values-label>Values (%) <input data-compare-values value="15, 20, 25, 30, 35, 40" style="width:min(100%,230px);padding:5px"></label>';
 wrCompare.querySelector('[data-wr-options]').closest('label').style.display='none';
 wrCompare.prepend(wrModeBar);
 const wrCompareMode=wrModeBar.querySelector('[data-compare-mode]'),wrCompareValues=wrModeBar.querySelector('[data-compare-values]');
 try{const mode=localStorage.getItem('jj-calculator09-compare-mode');if([...wrCompareMode.options].some(o=>o.value===mode))wrCompareMode.value=mode;else if(mode==='p2target')wrCompareMode.value='p3target';const saved=localStorage.getItem('jj-calculator09-compare-values-'+wrCompareMode.value);if(saved)wrCompareValues.value=saved}catch(e){}
-const wrDefaults={wr:'15, 20, 25, 30, 35, 40',accounts:'5, 10, 20, 30, 50',risk:'0.5, 0.75, 1, 1.25, 1.5',rr:'2.5, 3, 3.5, 4, 5',purchase:'fixed, target, payout',capacity:'3, 5, 7, 10',target:'5000, 10000',pnl:'5000, 10000',p3target:'2000, 3500, 4000, 5000',matrix:'20x3, 25x3, 30x3, 20x4, 25x4, 30x4',firm:'topstep, ftmo',custom:''};
-const wrLabels={wr:'Win rates (%)',accounts:'Evaluation counts',risk:'Risk multipliers',rr:'Reward ratios',purchase:'Purchase modes',capacity:'Trades/day',target:'Total cash goals ($)',pnl:'Net profit goals ($)',p3target:'Funded P3 targets ($)',matrix:'WR × RR pairs',firm:'Firms',custom:'Saved scenario names'};
+const wrDefaults={strategy:'auto, manual',wr:'15, 20, 25, 30, 35, 40',accounts:'5, 10, 20, 30, 50',risk:'0.5, 0.75, 1, 1.25, 1.5',rr:'2.5, 3, 3.5, 4, 5',purchase:'fixed, target, payout',capacity:'3, 5, 7, 10',target:'5000, 10000',pnl:'5000, 10000',p3target:'2000, 3500, 4000, 5000',matrix:'20x3, 25x3, 30x3, 20x4, 25x4, 30x4',firm:'topstep, ftmo',custom:''};
+const wrLabels={strategy:'Strategies',wr:'Win rates (%)',accounts:'Evaluation counts',risk:'Risk multipliers',rr:'Reward ratios',purchase:'Purchase modes',capacity:'Trades/day',target:'Total cash goals ($)',pnl:'Net profit goals ($)',p3target:'Funded P3 targets ($)',matrix:'WR × RR pairs',firm:'Firms',custom:'Saved scenario names'};
 const updateWrCompareMode=()=>{const mode=wrCompareMode.value;wrModeBar.querySelector('[data-compare-values-label]').firstChild.textContent=wrLabels[mode]+' ';let saved=null;try{saved=localStorage.getItem('jj-calculator09-compare-values-'+mode)}catch(e){}wrCompareValues.value=saved||wrDefaults[mode]};
 wrCompareMode.addEventListener('change',()=>{updateWrCompareMode();try{localStorage.setItem('jj-calculator09-compare-mode',wrCompareMode.value)}catch(e){}renderRisk()});
 wrCompareValues.addEventListener('change',()=>{try{localStorage.setItem('jj-calculator09-compare-values-'+wrCompareMode.value,wrCompareValues.value)}catch(e){}renderRisk()});
@@ -967,10 +967,10 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
  const host=wrCompare.querySelector('[data-wr-results]');
  const compareMode=wrCompareMode.value,accountMode=compareMode==='accounts';
  const raw=wrCompareValues.value;
- const rates=[...new Set(raw.split(/[ ,;]+/).map(x=>x.trim()).filter(Boolean))].slice(0,20).filter(x=>['purchase','matrix','firm','custom'].includes(compareMode)||Number.isFinite(Number(x))&&Number(x)>=(compareMode==='wr'?0:0.01));
+ const rates=[...new Set(raw.split(/[ ,;]+/).map(x=>x.trim()).filter(Boolean))].slice(0,20).filter(x=>['purchase','matrix','firm','custom','strategy'].includes(compareMode)||Number.isFinite(Number(x))&&Number(x)>=(compareMode==='wr'?0:0.01));
  if(!rates.length){host.textContent='Enter valid comparison values.';return}
  const enumerate=(params,isFunded,firm)=>{const results=[];const depth=Math.min(12,Math.max(1,params.depth));const calculate=isFunded?(firm==='topstep'?calcTopstepFunded:calc):(firm==='topstep'?calcTopstep:calc);const visit=path=>{const x=calculate(path,params);if(x.status!=='active'||x.steps.length>=depth||(!isFunded&&scenarioFinished(x,params,path))){results.push(x);return}if(path.length>=depth)return;visit(path+'W');visit(path+'L')};visit('');return results};
- const pathWeight=(x,p)=>{let w=0,l=0;for(const t of x.steps||[]){if(t.c==='W')w++;else l++}return Math.pow(p,w)*Math.pow(1-p,l)};
+ const pathWeight=(x,p,wr,offset=0)=>{let prob=1;const counts={};for(const t of x.steps||[]){const stage=Number(t.checkpointStage)||(Number(t.stage)||1)+offset;counts[stage]=(counts[stage]||0)+1;const key=stage+'-'+Math.min(4,counts[stage]);const raw=wr?.[key];const n=raw!==undefined&&raw!==''?Number(raw):NaN;const chance=Number.isFinite(n)&&n>=0&&n<=100?n/100:p;prob*=t.c==='W'?chance:1-chance}return prob};
  const fmt=n=>Number.isFinite(n)?n.toFixed(2):'—';
  const money=n=>Number.isFinite(n)?'$'+n.toLocaleString('en-US',{maximumFractionDigits:2,minimumFractionDigits:2}):'—';
  const numAccounts=Math.max(1,Math.floor(Number(box.querySelector('[data-account-count]').value)||20));
@@ -979,9 +979,9 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
  const targetFunded=Math.max(1,Math.floor(Number(fundedCountInput.value)||20));
  const targetPayout=Math.max(1,Math.floor(Number(payoutCountInput.value)||5));
  const mode=purchaseStrategyMode;
- const weighted=(paths,p,select)=>paths.reduce((sum,x)=>sum+pathWeight(x,p)*select(x),0);
- const stageStats=(paths,p,stage)=>{let entries=0,trades=0,wins=0,losses=0,passed=0,passLosses=0;
-  for(const x of paths){const w=pathWeight(x,p),steps=(x.steps||[]).filter(t=>t.stage===stage||t.checkpointStage===stage);
+ const weighted=(paths,p,select,wr,offset=0)=>paths.reduce((sum,x)=>sum+pathWeight(x,p,wr,offset)*select(x),0);
+ const stageStats=(paths,p,stage,wr,offset=0)=>{let entries=0,trades=0,wins=0,losses=0,passed=0,passLosses=0;
+  for(const x of paths){const w=pathWeight(x,p,wr,offset),steps=(x.steps||[]).filter(t=>t.stage===stage||t.checkpointStage===stage);
    if(!steps.length)continue;
    entries+=w;trades+=w*steps.length;wins+=w*steps.filter(t=>t.c==='W').length;losses+=w*steps.filter(t=>t.c==='L').length;
    if(steps.some(t=>t.passed)){passed+=w;passLosses+=w*steps.filter(t=>t.c==='L').length}
@@ -989,12 +989,41 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
   return {trades:entries?trades/entries:NaN,wins:entries?wins/entries:NaN,losses:passed?passLosses/passed:NaN,total:trades};
  };
  const headings=compareMode==='wr'?wrAllColumns:['Scenario',...wrAllColumns.slice(1)];
- const comparisonNote=compareMode==='firm'?'Firm comparison uses each firm’s saved evaluation and funded settings where available, with defaults for missing values. Results are modeled estimates, not verified firm rules.':compareMode==='p3target'?'P3 target comparison changes the Funded target ($) from Section 02 only. Evaluation day targets stay unchanged; funded paths and payout cash are recalculated for each value.':compareMode==='pnl'?'Reverse net-profit planning: P&L = gross payout cash minus expected evaluation and activation fees. The calculator increases expected payouts to reach the net-profit goal; if expected net per payout is nonpositive, the goal is infeasible under these assumptions.':compareMode==='target'?'Reverse cash-goal planning: each scenario is a TOTAL cash payout goal. Funded trading target and split remain unchanged. P4 is the expected number of payouts needed (rounded up); P1–P3 are expected required accounts, not guaranteed results.':compareMode==='purchase'?'Purchase strategy may back-solve evaluation purchases to meet the payout goal; P4 is an expected count.':'Expected counts from modeled probabilities; they are not guaranteed outcomes.';
+ const comparisonNote=compareMode==='strategy'?'Auto uses Sections 1–2 without overrides. Manual uses Risk, RR and WR overrides only for phases switched to Manual; Auto phases keep baseline settings.':compareMode==='firm'?'Firm comparison uses each firm’s saved evaluation and funded settings where available, with defaults for missing values. Results are modeled estimates, not verified firm rules.':compareMode==='p3target'?'P3 target comparison changes the Funded target ($) from Section 02 only. Evaluation day targets stay unchanged; funded paths and payout cash are recalculated for each value.':compareMode==='pnl'?'Reverse net-profit planning: P&L = gross payout cash minus expected evaluation and activation fees. The calculator increases expected payouts to reach the net-profit goal; if expected net per payout is nonpositive, the goal is infeasible under these assumptions.':compareMode==='target'?'Reverse cash-goal planning: each scenario is a TOTAL cash payout goal. Funded trading target and split remain unchanged. P4 is the expected number of payouts needed (rounded up); P1–P3 are expected required accounts, not guaranteed results.':compareMode==='purchase'?'Purchase strategy may back-solve evaluation purchases to meet the payout goal; P4 is an expected count.':'Expected counts from modeled probabilities; they are not guaranteed outcomes.';
  const rows=rates.map(rate=>{
   const val=Number(rate),params={...v,manualRisks:Array.isArray(v.manualRisks)?[...v.manualRisks]:v.manualRisks,manualRRs:Array.isArray(v.manualRRs)?[...v.manualRRs]:v.manualRRs};
   const fundParams={...fv,manualRisks:Array.isArray(fv.manualRisks)?[...fv.manualRisks]:fv.manualRisks,manualRRs:Array.isArray(fv.manualRRs)?[...fv.manualRRs]:fv.manualRRs};
   let p=compareMode==='wr'?val/100:v.winRate/100,comparisonAccounts=accountMode?val:numAccounts,scenarioMode=mode,scenarioTarget=fv.target,capacityOverride=null;
   let scenarioFirm=firmForPhases,valid=true;
+  let attemptWR=null;
+  if(compareMode==='strategy'){
+   if(!['auto','manual'].includes(rate))valid=false;
+   // Auto is the unmodified Sections 1-2 baseline. Manual honors each phase's Mode.
+   if(rate==='auto'){
+    params.manualRisks={};params.manualRRs={};fundParams.manualRisks={};fundParams.manualRRs={};
+   }else{
+    let storedWR={};
+    try{storedWR=JSON.parse(localStorage.getItem('jj-risk-attempt-winrates-v1')||'{}')}catch(e){}
+    attemptWR={};
+    for(let phase=1;phase<=3;phase++){
+     const manual=box.querySelector('[data-manual-mode="'+phase+'"]')?.value==='manual';
+     if(!manual){
+      if(phase<=2){
+       if(params.manualRisks)delete params.manualRisks[phase];
+       if(params.manualRRs)delete params.manualRRs[phase];
+      }else{
+       if(fundParams.manualRisks)delete fundParams.manualRisks[phase];
+       if(fundParams.manualRRs)delete fundParams.manualRRs[phase];
+      }
+      continue;
+     }
+     for(let step=1;step<=4;step++){
+      const key=phase+'-'+step;
+      if(Object.prototype.hasOwnProperty.call(storedWR,key))attemptWR[key]=storedWR[key];
+     }
+    }
+   }
+  }
   if(compareMode==='risk'){if(!(val>0&&val<=5))valid=false;else{if(params.manualRisks)params.manualRisks=params.manualRisks.map(x=>Number(x)*val);if(fundParams.manualRisks)fundParams.manualRisks=fundParams.manualRisks.map(x=>Number(x)*val);if(Number.isFinite(params.fixedRisk))params.fixedRisk*=val;if(Number.isFinite(fundParams.fixedRisk))fundParams.fixedRisk*=val}}
   if(compareMode==='rr'||compareMode==='matrix'){const pair=compareMode==='matrix'?String(rate).toLowerCase().split('x').map(Number):[p*100,val];if(pair.length!==2||!(pair[0]>=0&&pair[0]<=100&&pair[1]>0&&pair[1]<=20))valid=false;else{p=pair[0]/100;params.rr=pair[1];fundParams.rr=pair[1];if(Array.isArray(params.manualRRs))params.manualRRs=params.manualRRs.map(()=>pair[1]);if(Array.isArray(fundParams.manualRRs))fundParams.manualRRs=fundParams.manualRRs.map(()=>pair[1])}}
   if(compareMode==='purchase'){if(!['fixed','target','payout','reach-payout'].includes(rate))valid=false;else scenarioMode=rate}
@@ -1029,12 +1058,12 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
   }
   if(compareMode==='custom')valid=false;
   if(!valid)return '';
-  const evalPaths=['risk','rr','matrix','firm'].includes(compareMode)?enumerate(params,false,scenarioFirm):leaves;
-  const fundPaths=['risk','rr','matrix','target','p3target','firm'].includes(compareMode)?((phaseMode==='evaluation'&&compareMode!=='firm')?[]:enumerate(fundParams,true,scenarioFirm)):fundedLeaves;
-  const evalPass=weighted(evalPaths,p,x=>x.status==='target'?1:0);
-  const p1=weighted(evalPaths,p,x=>x.steps.some(t=>t.checkpointStage===1&&t.passed||t.stage===1&&t.passed)?1:0);
+  const evalPaths=['risk','rr','matrix','firm','strategy'].includes(compareMode)?enumerate(params,false,scenarioFirm):leaves;
+  const fundPaths=['risk','rr','matrix','target','p3target','firm','strategy'].includes(compareMode)?((phaseMode==='evaluation'&&compareMode!=='firm')?[]:enumerate(fundParams,true,scenarioFirm)):fundedLeaves;
+  const evalPass=weighted(evalPaths,p,x=>x.status==='target'?1:0,attemptWR);
+  const p1=weighted(evalPaths,p,x=>x.steps.some(t=>t.checkpointStage===1&&t.passed||t.stage===1&&t.passed)?1:0,attemptWR);
   const p2=p1>0?evalPass/p1:0;
-  const fundPass=phaseMode==='evaluation'&&compareMode!=='firm'?0:weighted(fundPaths,p,x=>x.status==='target'?1:0);
+  const fundPass=phaseMode==='evaluation'&&compareMode!=='firm'?0:weighted(fundPaths,p,x=>x.status==='target'?1:0,attemptWR,2);
   const scenarioFee=compareMode==='firm'?Math.max(0,params.accountCost):fee;
   const scenarioActivation=compareMode==='firm'?Math.max(0,Number((readProfiles()[scenarioFirm]||{}).funded?.activation??(scenarioFirm==='topstep'?150:0))):activation;
   const scenarioSplit=compareMode==='firm'?Math.max(0,Math.min(1,Number((readProfiles()[scenarioFirm]||firmDefaults(scenarioFirm)).funded?.split??(scenarioFirm==='topstep'?75:80))/100)):split;
@@ -1045,10 +1074,10 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
   const funded=scenarioMode==='fixed'?comparisonAccounts*evalPass:scenarioMode==='target'?targetFunded:fundPass>0?requiredPayouts/fundPass:NaN;
   const buys=scenarioMode==='fixed'?comparisonAccounts:evalPass>0?funded/evalPass:NaN;
   const firstPass=buys*p1,payouts=funded*fundPass;
-  const evalFailure=weighted(evalPaths,p,x=>x.status==='closed'?1:0),fundFailure=weighted(fundPaths,p,x=>x.status==='closed'?1:0);
+  const evalFailure=weighted(evalPaths,p,x=>x.status==='closed'?1:0,attemptWR),fundFailure=weighted(fundPaths,p,x=>x.status==='closed'?1:0,attemptWR,2);
   const spent=buys*scenarioFee+funded*scenarioActivation,gross=payouts*grossPerPayout,net=gross-spent,roi=spent>0?100*net/spent:NaN;
-  const st1=stageStats(evalPaths,p,1),st2=stageStats(evalPaths,p,2),st3=stageStats(fundPaths,p,1);
-  const fundedAvg=stageStats(fundPaths,p,3);
+  const st1=stageStats(evalPaths,p,1,attemptWR),st2=stageStats(evalPaths,p,2,attemptWR),st3=stageStats(fundPaths,p,1,attemptWR,2);
+  const fundedAvg=stageStats(fundPaths,p,3,attemptWR,2);
   const fstats=fundedAvg.total>0?fundedAvg:st3;
   const totalExpectedTrades=buys*(st1.total+st2.total)+funded*fstats.total;
   const costFunded=funded>0?spent/funded:NaN;
