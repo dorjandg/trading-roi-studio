@@ -45,18 +45,21 @@ function render(details){
  if(!box||!details.open)return;
  const host=details.querySelector('[data-rr-editor-table]');
  const fallback=Number(box.querySelector('[data-k="rr"]')?.value)||3;
- let rows='';
+ let sections='';
  for(let p=1;p<=3;p++){
+  let rows='';
   const mode=box.querySelector('[data-manual-mode="'+p+'"]')?.value||'auto';
   for(let s=1;s<=4;s++){
    const risk=box.querySelector('[data-manual-risk="'+p+'-'+s+'"]')?.value||'';
    const rr=box.querySelector('[data-manual-rr="'+p+'-'+s+'"]')?.value||'';
    const r=Number(risk),ratio=Number(rr)||fallback;
    const valid=mode==='manual'&&r>0&&ratio>0;
-   rows+='<tr><td>P'+p+'</td><td>R'+s+'</td><td><input aria-label="P'+p+' R'+s+' risk" data-rr-edit="risk:'+p+':'+s+'" type="number" min="0.01" step="any" value="'+risk+'" style="width:78px"></td><td><input aria-label="P'+p+' R'+s+' RR" data-rr-edit="rr:'+p+':'+s+'" type="number" min="0.1" step="any" placeholder="'+fallback+'" value="'+rr+'" style="width:65px"></td><td>'+(valid?money(r*ratio):'—')+'</td><td>'+(valid?money(-r):'—')+'</td><td><button type="button" data-rr-set-mode="'+p+'">'+mode+'</button></td></tr>';
+   rows+='<tr><td>R'+s+'</td><td><input aria-label="P'+p+' R'+s+' risk" data-rr-edit="risk:'+p+':'+s+'" type="number" min="0.01" step="any" value="'+risk+'" style="width:78px"></td><td><input aria-label="P'+p+' R'+s+' RR" data-rr-edit="rr:'+p+':'+s+'" type="number" min="0.1" step="any" placeholder="'+fallback+'" value="'+rr+'" style="width:65px"></td><td>'+(valid?money(r*ratio):'—')+'</td><td>'+(valid?money(-r):'—')+'</td><td><button type="button" data-rr-set-mode="'+p+'">'+mode+'</button></td></tr>';
   }
+  const title=p===1?'P1 · Evaluation Day 1':p===2?'P2 · Evaluation Day 2':'P3 · Funded';
+  sections+='<section style="margin:12px 0 18px;border:1px solid #8886;border-radius:8px;padding:10px"><h4 style="font-size:13px;margin:0 0 8px">'+title+'</h4><table style="width:100%;min-width:480px;font-size:11px"><thead><tr><th>Try</th><th>Risk $</th><th>RR</th><th>Win P/L</th><th>Loss P/L</th><th>Mode</th></tr></thead><tbody>'+rows+'</tbody></table></section>';
  }
- host.innerHTML='<table style="width:100%;min-width:520px;font-size:11px"><thead><tr><th>Phase</th><th>Try</th><th>Risk $</th><th>RR</th><th>Win P/L</th><th>Loss P/L</th><th>Mode</th></tr></thead><tbody>'+rows+'</tbody></table>';
+ host.innerHTML=sections;
 }
 document.addEventListener('change',e=>{
  if(!e.target.closest?.(root)||e.target.closest('[data-rr-editor]'))return;
