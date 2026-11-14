@@ -600,8 +600,8 @@ const restorePageSettings=pageSettings=>{
   });
  }
 };
-const presetSnapshot=()=>({...captureProfile(),fundedTarget:fundedTargets[currentFirm],payoutTarget:payoutTargets[currentFirm],manualPhases:captureManualPreset(),pageSettings:capturePageSettings()});
-const applyNamedPreset=data=>{if(!data)return false;applyProfile(data);if(Number.isFinite(Number(data.payoutTarget))){payoutTargets[currentFirm]=Math.max(1,Math.min(currentFirm==='topstep'?5:100,Math.floor(Number(data.payoutTarget))));try{localStorage.setItem('jj-risk-calculator09-payout-targets-v1',JSON.stringify(payoutTargets))}catch(e){}}if(Number.isFinite(Number(data.fundedTarget))){fundedTargets[currentFirm]=Math.max(1,Math.min(currentFirm==='topstep'?5:100,Math.floor(Number(data.fundedTarget))));try{localStorage.setItem('jj-risk-calculator09-funded-targets-v1',JSON.stringify(fundedTargets))}catch(e){}}restorePageSettings(data.pageSettings);restoreManualPreset(data.manualPhases);saveSettings();page=0;expandedPaths.clear();renderRisk();return verifyManualPreset(data.manualPhases)};
+const presetSnapshot=()=>({...captureProfile(),fundedTarget:fundedTargets[currentFirm],payoutTarget:payoutTargets[currentFirm],manualPhases:captureManualPreset(),comparisonStrategy:(()=>{try{return JSON.parse(localStorage.getItem('jj-risk-comparison-strategy-v2')||'{}')}catch(e){return {}}})(),pageSettings:capturePageSettings()});
+const applyNamedPreset=data=>{if(!data)return false;applyProfile(data);if(Number.isFinite(Number(data.payoutTarget))){payoutTargets[currentFirm]=Math.max(1,Math.min(currentFirm==='topstep'?5:100,Math.floor(Number(data.payoutTarget))));try{localStorage.setItem('jj-risk-calculator09-payout-targets-v1',JSON.stringify(payoutTargets))}catch(e){}}if(Number.isFinite(Number(data.fundedTarget))){fundedTargets[currentFirm]=Math.max(1,Math.min(currentFirm==='topstep'?5:100,Math.floor(Number(data.fundedTarget))));try{localStorage.setItem('jj-risk-calculator09-funded-targets-v1',JSON.stringify(fundedTargets))}catch(e){}}restorePageSettings(data.pageSettings);restoreManualPreset(data.manualPhases);if(data.comparisonStrategy&&typeof data.comparisonStrategy==='object'){try{localStorage.setItem('jj-risk-comparison-strategy-v2',JSON.stringify(data.comparisonStrategy))}catch(e){}}saveSettings();page=0;expandedPaths.clear();renderRisk();return verifyManualPreset(data.manualPhases)};
 /* LOAD deliberately reads cloud first, never silently preferring old browser storage. */
 presetBar.querySelector('[data-preset-load]').addEventListener('click',async()=>{
  const key=presetSelect.value;if(!key)return;
@@ -1004,29 +1004,24 @@ if(phaseMode!=='evaluation'){function fw(path){const x=firmForPhases==='topstep'
   let attemptWR=null;
   if(compareMode==='strategy'){
    if(!['auto','manual'].includes(rate))valid=false;
-   // Auto is the unmodified Sections 1-2 baseline. Manual honors each phase's Mode.
-   if(rate==='auto'){
-    params.manualRisks={};params.manualRRs={};fundParams.manualRisks={};fundParams.manualRRs={};
-   }else{
-    let storedWR={};
-    try{storedWR=JSON.parse(localStorage.getItem('jj-risk-attempt-winrates-v1')||'{}')}catch(e){}
+   // Base and Comparison are two independent R1-R4 strategies.
+   // Never mutate source controls or copy one strategy into the other.
+   if(rate==='manual'){
+    let stored={};try{stored=JSON.parse(localStorage.getItem('jj-risk-comparison-strategy-v2')||'{}')}catch(e){}
     attemptWR={};
     for(let phase=1;phase<=3;phase++){
-     const manual=box.querySelector('[data-manual-mode="'+phase+'"]')?.value==='manual';
-     if(!manual){
-      if(phase<=2){
-       if(params.manualRisks)delete params.manualRisks[phase];
-       if(params.manualRRs)delete params.manualRRs[phase];
-      }else{
-       if(fundParams.manualRisks)delete fundParams.manualRisks[phase];
-       if(fundParams.manualRRs)delete fundParams.manualRRs[phase];
-      }
-      continue;
-     }
+     if(stored['mode'+phase]==='base')continue;
+     const risks=[],rrs=[];
      for(let step=1;step<=4;step++){
       const key=phase+'-'+step;
-      if(Object.prototype.hasOwnProperty.call(storedWR,key))attemptWR[key]=storedWR[key];
+      const risk=stored['risk'+key],rr=stored['rr'+key],wr=stored['wr'+key];
+      risks.push(risk!==undefined&&risk!==''?Math.max(0,Number(risk)||0):0);
+      rrs.push(rr!==undefined&&rr!==''&&Number(rr)>0?Number(rr):null);
+      if(wr!==undefined&&wr!==''&&Number.isFinite(Number(wr)))attemptWR[key]=wr;
      }
+     const target=phase===3?fundParams:params;
+     target.manualRisks={...(target.manualRisks||{}),[phase]:risks};
+     target.manualRRs={...(target.manualRRs||{}),[phase]:rrs};
     }
    }
   }
