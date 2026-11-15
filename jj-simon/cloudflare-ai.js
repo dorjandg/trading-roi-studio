@@ -544,7 +544,7 @@
    .jj-ai-float-bar button{background:transparent!important;border:1px solid var(--stroke)!important;color:var(--text)!important;border-radius:6px!important;padding:6px 8px!important;font-size:11px!important;cursor:pointer!important}
    .jj-ai-float-frame{border:0!important;width:100%!important;flex:1 1 auto!important;min-height:0!important;background:var(--bg)!important}
    @media(min-width:601px) and (max-width:1180px){.jj-ai-float-shell{width:min(500px,calc(100vw - 24px))!important;height:min(720px,calc(100dvh - 90px))!important}}
-   @media(max-width:600px){.jj-ai-float-launch{bottom:calc(10px + env(safe-area-inset-bottom))!important;right:10px!important;padding:9px 12px!important;font-size:11px!important}.jj-ai-float-shell{right:5px!important;bottom:auto!important;top:calc(var(--jj-parent-vv-top,0px) + 8px)!important;width:calc(100vw - 10px)!important;height:min(650px,calc(var(--jj-parent-vv-height,100dvh) - 64px))!important;max-height:calc(var(--jj-parent-vv-height,100dvh) - 16px)!important;border-radius:10px!important}}
+   @media(max-width:600px){.jj-ai-float-launch{bottom:calc(10px + env(safe-area-inset-bottom))!important;right:10px!important;padding:9px 12px!important;font-size:11px!important}.jj-ai-float-shell{right:5px!important;bottom:auto!important;top:calc(var(--jj-parent-vv-top,0px) + 4px)!important;width:calc(100vw - 10px)!important;height:calc(var(--jj-parent-vv-height,100dvh) - 12px)!important;max-height:calc(var(--jj-parent-vv-height,100dvh) - 12px)!important;border-radius:10px!important}}
    @media(prefers-reduced-motion:reduce){.jj-ai-float-shell,.jj-ai-float-launch{transition:none!important}}
   `;document.head.append(css);
  }
