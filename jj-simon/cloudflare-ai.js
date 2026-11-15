@@ -450,6 +450,29 @@
       display:flex!important;flex-direction:column!important;overflow:hidden!important;background:var(--bg)!important}
     body>#jj-helper-app>#jj-cloudflare-ai{flex:1 1 0!important;min-height:0!important;max-height:none!important;
       overflow-y:auto!important;overscroll-behavior:contain!important}
+    /* The floating iframe uses its own full-height chat layout. The previous
+       310px thread cap left unused room even when the outer popup was tall. */
+    body>#jj-helper-app>#jj-cloudflare-ai{
+      display:flex!important;flex-direction:column!important;
+      overflow:hidden!important;padding:8px 10px!important;
+    }
+    body>#jj-helper-app>#jj-cloudflare-ai>.jj-ai-unified-tools,
+    body>#jj-helper-app>#jj-cloudflare-ai>.jj-ai-usage,
+    body>#jj-helper-app>#jj-cloudflare-ai>.jj-ai-status{
+      flex:0 0 auto!important;
+    }
+    body>#jj-helper-app>#jj-cloudflare-ai>.jj-ai-thread{
+      display:flex!important;flex-direction:column!important;
+      flex:1 1 0!important;height:auto!important;
+      min-height:0!important;max-height:none!important;
+      overflow-y:auto!important;overflow-x:hidden!important;
+      margin:4px 0!important;overscroll-behavior:contain!important;
+    }
+    body>#jj-helper-app>#jj-cloudflare-ai>.jj-ai-answer,
+    body>#jj-helper-app>#jj-cloudflare-ai>.jj-ai-sources,
+    body>#jj-helper-app>#jj-cloudflare-ai>.jj-ai-history{
+      flex:0 0 auto!important;
+    }
     body>#jj-helper-app>.jj-helper-form{display:flex!important;position:relative!important;bottom:auto!important;
       flex:0 0 auto!important;z-index:2!important;margin:0!important;border:0!important;
       border-top:1px solid var(--stroke)!important;border-radius:0!important;background:var(--panel)!important}
