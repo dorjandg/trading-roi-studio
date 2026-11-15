@@ -225,10 +225,10 @@
   if(recent)drawerBody.append(recent);
   drawerBody.append(library,studyPanel,archive);
   drawer.append(drawerTitle,drawerBody);
-  panel.append(drawer,el('strong','','JJ Academy AI · conversation'),usage,status,thread,answer,sources,history);
+  panel.append(drawer,usage,status,thread,answer,sources,history);
   if(pageQuestions.length){
    const contextPanel=el('details','jj-ai-page-context');
-   contextPanel.open=true;
+   contextPanel.open=false;
    contextPanel.append(el('summary','','This page · '+pageTitle));
    const options=el('div','jj-ai-page-questions');
    for(const q of pageQuestions){
@@ -311,7 +311,7 @@
    toLatest();
    requestAnimationFrame(()=>{toLatest();requestAnimationFrame(toLatest)});
 
-   status.textContent=conversation.length?'Conversation saved locally · Ask a follow-up below.':'Ask a question to start a conversation.';
+   status.textContent=conversation.length?'':'Ask a question to start a conversation.';
   };
   drawThread();
   if(conversation.length){panel.hidden=false;drawThread()}
@@ -456,6 +456,14 @@
       display:flex!important;flex-direction:column!important;
       overflow:hidden!important;padding:8px 10px!important;
     }
+    body>#jj-helper-app>#jj-cloudflare-ai>.jj-ai-usage{font-size:10px!important;margin:2px 0 4px!important;opacity:.8!important}
+    body>#jj-helper-app>#jj-cloudflare-ai>.jj-ai-status:empty{display:none!important}
+    body>#jj-helper-app>#jj-cloudflare-ai>.jj-ai-page-context{margin:3px 0!important;padding:4px 7px!important}
+    body>#jj-helper-app>#jj-cloudflare-ai>.jj-ai-unified-tools{margin:0 0 4px!important}
+    body>#jj-helper-app>#jj-cloudflare-ai>.jj-ai-unified-tools>summary{padding:5px 7px!important}
+    body>#jj-helper-app>.jj-helper-form{padding:7px 9px!important;gap:5px!important}
+    body>#jj-helper-app>.jj-helper-form textarea{height:48px!important;min-height:48px!important;max-height:96px!important;padding:8px!important}
+    body>#jj-helper-app>.jj-helper-form .jj-helper-form-actions button{min-height:38px!important;padding:7px!important}
     body>#jj-helper-app>#jj-cloudflare-ai>.jj-ai-unified-tools,
     body>#jj-helper-app>#jj-cloudflare-ai>.jj-ai-usage,
     body>#jj-helper-app>#jj-cloudflare-ai>.jj-ai-status{
