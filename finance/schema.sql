@@ -81,3 +81,14 @@ CREATE TABLE IF NOT EXISTS invitations (
  UNIQUE(workspace_id,email)
 );
 CREATE INDEX IF NOT EXISTS idx_invitations_email ON invitations(email,expires_at);
+
+-- Private, per-user snapshot storage for opt-in Finance Hub synchronization.
+-- A workspace administrator does not automatically gain read access to another user's snapshot.
+CREATE TABLE IF NOT EXISTS finance_snapshots (
+ workspace_id TEXT NOT NULL REFERENCES workspaces(id),
+ user_id TEXT NOT NULL REFERENCES users(id),
+ revision INTEGER NOT NULL DEFAULT 1 CHECK(revision > 0),
+ payload TEXT NOT NULL,
+ updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ PRIMARY KEY(workspace_id,user_id)
+);
