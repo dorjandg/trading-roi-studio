@@ -1,7 +1,6 @@
 'use strict';
 const {test,expect}=require('@playwright/test');
-const path=require('node:path');
-const url='file://'+path.resolve(__dirname,'index.html');
+const url='http://127.0.0.1:8765/finance/';
 test('Finance Hub renders navigation, saves a prop account and cash event',async({page})=>{
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(url);
