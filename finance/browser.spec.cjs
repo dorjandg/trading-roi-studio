@@ -32,6 +32,6 @@ test('Finance Hub renders navigation, saves a prop account and cash event',async
   const downloadPromise=page.waitForEvent('download');
   await page.locator('#backupDownload').click();
   const download=await downloadPromise;
-  expect(download.suggestedFilename()).toMatch(/^finance-hub-backup-.*\\.json$/);
+  expect(download.suggestedFilename()).toMatch(/^finance-hub-backup-.*\.json$/);
   expect(errors).toEqual([]);
 });
