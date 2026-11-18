@@ -1794,7 +1794,7 @@ const original=render;render=function(){original();if(active===slug)mount();};if
 'use strict';
 const slug='calc-risk-scenarios',storage='jj-reverse-p4-v1';
 function mount(){
- const root=document.getElementById(slug);
+ const root=document.querySelector('#'+slug+' .jj-risk-workbench');
  if(!root||root.querySelector('.jj-reverse-p4'))return;
  const panel=document.createElement('section');panel.className='jj-reverse-p4';
  panel.innerHTML='<h3>15 · Reverse P1–P4 Calculator — Costs & Success Probability</h3><p>Work backwards from a target number of P4 successes. P1 evaluation purchases and P3 activation fees are counted separately. All account quantities below are expectations, not guaranteed outcomes.</p><div class="jj-reverse-fields"></div><div class="jj-reverse-summary" aria-live="polite"></div><div class="jj-reverse-table"></div><p class="jj-reverse-note">Assumes independent accounts, fixed conditional stage pass rates and one activation fee per P3 entrant. The probability calculation does not guarantee success; correlated copied trades, resets, renewals, commissions and payout restrictions are excluded.</p>';
@@ -1960,7 +1960,7 @@ if(typeof renderNav==='function')renderNav();
 }
 const css=document.createElement('style');css.textContent='.jj-reverse-p4{margin:18px 0 10px;padding:12px;border:1px solid #8885;border-radius:10px;font-size:12px}.jj-reverse-p4 h3{font-size:16px;margin:0 0 8px}.jj-reverse-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:12px 0}.jj-reverse-fields label{display:grid;gap:4px;font-size:11px}.jj-reverse-fields input,.jj-reverse-fields button{min-width:0;width:100%;box-sizing:border-box;padding:7px;border:1px solid #8887;border-radius:6px;background:var(--card,var(--bg,#fff));color:inherit}.jj-reverse-summary{font-weight:700;line-height:1.6;padding:9px;background:#8881;border-radius:6px}.jj-reverse-table{overflow-x:auto}.jj-reverse-p4 table{width:100%;border-collapse:collapse;margin:10px 0}.jj-reverse-p4 th,.jj-reverse-p4 td{padding:7px 5px;border-bottom:1px solid #8884;text-align:left}.jj-reverse-p4 td:last-child{text-align:right;font-variant-numeric:tabular-nums}.jj-reverse-note{opacity:.8;font-size:11px}@media(max-width:600px){.jj-reverse-fields{grid-template-columns:repeat(2,minmax(0,1fr))}}';document.head.append(css);
 window.jjMountReverseP4=mount;
-if(new URLSearchParams(location.search).get('topic')===slug)mount();
+
 })();
 
 
