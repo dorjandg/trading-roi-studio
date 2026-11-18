@@ -1707,6 +1707,7 @@ box.addEventListener('change',e=>{if(e.target.matches('[data-funded-path-filter]
 box.addEventListener('change',e=>{if(e.target.matches('[data-filter]')){page=0;expandedPaths.clear();renderRisk()}});
 box.addEventListener('click',e=>{const btn=e.target.closest('button');if(!btn)return;if(btn.hasAttribute('data-optimize-risk'))return;if(btn.hasAttribute('data-funded-expand')){const key=btn.dataset.fundedExpand;if(expandedFunded.has(key))expandedFunded.delete(key);else expandedFunded.add(key);renderRisk();return}if(btn.hasAttribute('data-funded-prev')){fundedPage=Math.max(0,fundedPage-1);renderRisk();return}if(btn.hasAttribute('data-funded-next')){fundedPage++;renderRisk();return}if(btn.hasAttribute('data-phase')){phaseMode=btn.dataset.phase;saveSettings()}else if(btn.hasAttribute('data-account-mode')){accountMode=btn.dataset.accountMode;saveSettings()}else if(btn.hasAttribute('data-mode-button')){box.querySelector('[data-target-mode]').value=btn.dataset.modeButton;page=0;expandedPaths.clear();saveSettings()}else if(btn.hasAttribute('data-expand-path')||btn.hasAttribute('data-path')){const key=btn.hasAttribute('data-expand-path')?btn.dataset.expandPath:btn.dataset.path;if(expandedPaths.has(key))expandedPaths.delete(key);else expandedPaths.add(key)}else if(btn.hasAttribute('data-prev'))page--;else if(btn.hasAttribute('data-next'))page++;renderRisk()});
 renderRisk();
+if(typeof window.jjMountReverseP4==='function')window.jjMountReverseP4();
 }
 function mountKpiFourteen(target){
  if(target.querySelector('.jj9-kpi-reference'))return;
@@ -1958,8 +1959,10 @@ if(typeof renderNav==='function')renderNav();
  update();
 }
 const css=document.createElement('style');css.textContent='.jj-reverse-p4{margin:18px 0 10px;padding:12px;border:1px solid #8885;border-radius:10px;font-size:12px}.jj-reverse-p4 h3{font-size:16px;margin:0 0 8px}.jj-reverse-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:12px 0}.jj-reverse-fields label{display:grid;gap:4px;font-size:11px}.jj-reverse-fields input,.jj-reverse-fields button{min-width:0;width:100%;box-sizing:border-box;padding:7px;border:1px solid #8887;border-radius:6px;background:var(--card,var(--bg,#fff));color:inherit}.jj-reverse-summary{font-weight:700;line-height:1.6;padding:9px;background:#8881;border-radius:6px}.jj-reverse-table{overflow-x:auto}.jj-reverse-p4 table{width:100%;border-collapse:collapse;margin:10px 0}.jj-reverse-p4 th,.jj-reverse-p4 td{padding:7px 5px;border-bottom:1px solid #8884;text-align:left}.jj-reverse-p4 td:last-child{text-align:right;font-variant-numeric:tabular-nums}.jj-reverse-note{opacity:.8;font-size:11px}@media(max-width:600px){.jj-reverse-fields{grid-template-columns:repeat(2,minmax(0,1fr))}}';document.head.append(css);
-const previous=render;render=function(){previous();if(active===slug)mount()};if(active===slug)mount();
+window.jjMountReverseP4=mount;
+if(new URLSearchParams(location.search).get('topic')===slug)mount();
 })();
+
 
 /* Persistent, reviewable change history. Every future fix must add an entry here
    and in jj-simon/CHANGELOG.md, with problem, decision, impact and rollback SHA. */
