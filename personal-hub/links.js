@@ -85,6 +85,18 @@ window.PERSONAL_HUB_DATA = {
       ]
     },
     {
+      "id": "finance-hub",
+      "title": "Finance Hub",
+      "url": "https://trading-roi-studio.pages.dev/finance/",
+      "description": "Financial dashboard for transactions, expenses, prop-firm accounts, payouts, reports and reconciliation. Cloud synchronization is under development.",
+      "category": "workspaces",
+      "type": "My website",
+      "symbol": "FH",
+      "accent": "emerald",
+      "featured": true,
+      "tags": ["finance", "expenses", "dashboard", "prop firms", "Topstep", "FTMO", "reports", "payouts"]
+    },
+    {
       "id": "youtube-ai-academy",
       "title": "YouTube AI Academy",
       "url": "https://youtube-ai-academy.pages.dev/",
