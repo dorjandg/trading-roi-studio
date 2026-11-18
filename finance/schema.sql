@@ -68,3 +68,16 @@ CREATE TABLE IF NOT EXISTS audit_events (
  object_id TEXT,
  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Invitation-based onboarding: administrator invites member by verified email.
+CREATE TABLE IF NOT EXISTS invitations (
+ id TEXT PRIMARY KEY,
+ workspace_id TEXT NOT NULL REFERENCES workspaces(id),
+ email TEXT NOT NULL,
+ role TEXT NOT NULL CHECK(role IN ('member')),
+ expires_at TEXT NOT NULL,
+ accepted_at TEXT,
+ created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ UNIQUE(workspace_id,email)
+);
+CREATE INDEX IF NOT EXISTS idx_invitations_email ON invitations(email,expires_at);
