@@ -24,4 +24,6 @@ jobs:
           npm install --no-save @playwright/test
           npx playwright install --with-deps chromium
       - name: Finance Hub browser smoke test
-        run: npx playwright test finance/browser.spec.cjs --browser=chromium --reporter=line
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/finance-http.log 2>&1 &
+          npx playwright test finance/browser.spec.cjs --browser=chromium --reporter=line
