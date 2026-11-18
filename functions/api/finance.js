@@ -40,6 +40,10 @@ async function handler(ctx){
   }
  }
  const ws=member.workspace_id,write=["owner","admin","member"].includes(member.role);
+ if(method==="GET"&&url.searchParams.get("resource")==="snapshot-meta"){
+  const row=await db.prepare("SELECT revision,updated_at FROM finance_snapshots WHERE workspace_id=? AND user_id=?").bind(ws,user.id).first();
+  return json(row?{revision:row.revision,updated_at:row.updated_at}:{revision:0,updated_at:null});
+ }
  if(url.searchParams.get("resource")==="snapshot"){
   // Snapshot access is always restricted to the authenticated member's own user ID.
   if(method==="GET"){
