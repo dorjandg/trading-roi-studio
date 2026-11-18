@@ -36,16 +36,17 @@ async function handler(ctx){
  const ws=member.workspace_id,write=["owner","admin","member"].includes(member.role);
  if(method==="GET"&&url.searchParams.get("resource")==="me")return json({user:{email:user.email,id:user.id},workspace_id:ws,role:member.role});
  if(method==="GET"&&url.searchParams.get("resource")==="connections"){
-  const rows=await db.prepare("SELECT a.id,a.account_label,a.account_type,a.currency,a.owner_user_id,p.name AS provider_name FROM financial_accounts a LEFT JOIN providers p ON p.id=a.provider_id WHERE a.workspace_id=? ORDER BY a.created_at DESC LIMIT 500").bind(ws).all();
+  const rows=await db.prepare("SELECT a.id,a.account_label,a.account_type,a.currency,a.owner_user_id,p.name AS provider_name FROM financial_accounts a LEFT JOIN providers p ON p.id=a.provider_id WHERE a.workspace_id=? AND (? IN ('owner','admin') OR a.owner_user_id=?) ORDER BY a.created_at DESC LIMIT 500").bind(ws,member.role,user.id).all();
   return json({connections:rows.results});
  }
  if(method==="GET"&&url.searchParams.get("resource")==="transactions"){
-  const rows=await db.prepare("SELECT id,occurred_on,category,transaction_type,amount_minor,currency,notes,account_id,user_id FROM transactions WHERE workspace_id=? ORDER BY occurred_on DESC LIMIT 1000").bind(ws).all();
+  const rows=await db.prepare("SELECT id,occurred_on,category,transaction_type,amount_minor,currency,notes,account_id,user_id FROM transactions WHERE workspace_id=? AND (? IN ('owner','admin') OR user_id=?) ORDER BY occurred_on DESC LIMIT 1000").bind(ws,member.role,user.id).all();
   return json({transactions:rows.results});
  }
  if(method==="POST"&&url.searchParams.get("resource")==="connections"&&write){
   let data;try{data=await request.json()}catch{return json({error:"Invalid JSON"},400)}
   const provider=String(data.provider||"").trim().slice(0,80),label=String(data.label||"").trim().slice(0,120),owner=String(data.owner_user_id||user.id);
+  if(!['owner','admin'].includes(member.role)&&owner!==user.id)return json({error:'Cannot create an account for another user'},403);
   if(!provider||!label||!["USD","EUR","AED","GBP"].includes(data.currency))return json({error:"Invalid connection"},400);
   const permitted=await db.prepare("SELECT 1 FROM memberships WHERE workspace_id=? AND user_id=?").bind(ws,owner).first();if(!permitted)return json({error:"Account owner must belong to workspace"},403);
   let p=await db.prepare("SELECT id FROM providers WHERE workspace_id=? AND name=?").bind(ws,provider).first();
