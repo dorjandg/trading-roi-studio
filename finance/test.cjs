@@ -26,4 +26,28 @@ const octoberPayout=monthly.filter(x=>x.payoutDate.slice(0,7)==='2026-10').reduc
 const septemberPayout=monthly.filter(x=>x.payoutDate.slice(0,7)==='2026-09').reduce((a,x)=>a+x.payout,0);
 assert.equal(octoberPayout,750,'Payout assigned to receipt month');
 assert.equal(septemberPayout,0,'Payout not assigned to purchase month');
-console.log('PASS Finance Hub: JavaScript syntax, DOM references, 15-page navigation, financial sample calculations, payout dates.');
+
+// Accounting regression checks: fixtures for linked events and independent currencies.
+const accountsFixture=[{id:'a',owner:'Dori',currency:'USD',evaluationFee:50,activationFee:150,payout:0}];
+const eventsFixture=[{id:'e1',accountId:'a',kind:'payout',amount:750,date:'2026-10-15',linkedTransactionId:'t1'},{id:'e2',accountId:'a',kind:'reset',amount:25,date:'2026-10-16',linkedTransactionId:'t2'}];
+const ledgerFixture=[{id:'t1',user:'Dori',type:'Income',amount:750,currency:'USD',date:'2026-10-15'},{id:'t2',user:'Dori',type:'Expense',amount:25,currency:'USD',date:'2026-10-16'},{id:'t3',user:'Dori',type:'Expense',amount:80,currency:'USD',date:'2026-10-16'},{id:'t4',user:'Dori',type:'Expense',amount:90,currency:'EUR',date:'2026-10-16'}];
+const linked=new Set(eventsFixture.map(e=>e.linkedTransactionId));
+const usdOther=ledgerFixture.filter(t=>t.currency==='USD'&&t.type==='Expense'&&!linked.has(t.id)).reduce((n,t)=>n+t.amount,0);
+const usdLinked=ledgerFixture.filter(t=>t.currency==='USD'&&t.type==='Expense'&&linked.has(t.id)).reduce((n,t)=>n+t.amount,0);
+assert.equal(usdOther,80,'Linked fee excluded from other ledger expenses');
+assert.equal(usdLinked,25,'Linked fee appears in linked ledger metric');
+assert.equal(usdOther+usdLinked,105,'Ledger expense partition preserves totals');
+assert.equal(ledgerFixture.filter(t=>t.currency==='EUR').reduce((n,t)=>n+t.amount,0),90,'EUR stays separate from USD');
+const cashFees=accountsFixture[0].evaluationFee+accountsFixture[0].activationFee+eventsFixture.filter(e=>e.kind!=='payout').reduce((n,e)=>n+e.amount,0);
+assert.equal(cashFees,225,'Account fees plus dated fee events');
+assert.equal(750-cashFees,525,'Net prop cash after dated reset fee');
+assert.equal(eventsFixture.filter(e=>e.kind==='payout').reduce((n,e)=>n+e.amount,0),750,'Linked payout is not added twice to prop cash');
+const backup={format:'finance-hub-backup',version:2,transactions:ledgerFixture,propAccounts:accountsFixture,propEvents:eventsFixture,propAudit:[{id:'audit-1',eventId:'e1',action:'status changed'}],subscriptions:[],invoices:[]};
+const restored=JSON.parse(JSON.stringify(backup));
+assert.deepEqual(restored.propEvents,eventsFixture,'Backup round trip preserves event links');
+assert.deepEqual(restored.propAudit,backup.propAudit,'Backup round trip preserves audit history');
+assert.ok(html.includes("const linkedIds=new Set(propEvents.filter("),'Linked expense reporting remains present');
+assert.ok(html.includes("linkedTransactionId"),'Cash event transaction links remain present');
+assert.ok(html.includes("propAudit=b.version===2"),'Backup restore includes audit history');
+assert.ok(html.includes("/^\\d{4}-\\d{2}-\\d{2}$/"),'Cash event ISO date validation remains correct');
+console.log('PASS Finance Hub: JavaScript syntax, DOM references, 15-page navigation, financial fixtures, linked fee partition, payout dates, backup round trip.');
