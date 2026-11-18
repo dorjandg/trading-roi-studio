@@ -1,0 +1,26 @@
+'use strict';
+const {test,expect}=require('@playwright/test');
+const path=require('node:path');
+const url='file://'+path.resolve(__dirname,'index.html');
+test('Finance Hub renders navigation, saves a prop account and cash event',async({page})=>{
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(url);
+  await expect(page.locator('#page-overview')).toBeVisible();
+  await page.locator('[data-page="propaccounts"]').first().click();
+  await expect(page.locator('#page-propaccounts')).toBeVisible();
+  await page.locator('#propForm [name="label"]').fill('Smoke test 50K');
+  await page.locator('#propForm [name="size"]').fill('50000');
+  await page.locator('#propForm [name="date"]').fill('2026-10-15');
+  await page.locator('#propForm button').click();
+  await expect(page.locator('#propRows')).toContainText('Smoke test 50K');
+  await page.locator('#propEventForm [name="amount"]').fill('750');
+  await page.locator('#propEventForm [name="date"]').fill('2026-10-16');
+  await page.locator('#propEventForm button').click();
+  await expect(page.locator('#propEventRows')).toContainText('750');
+  await page.reload();
+  await page.locator('[data-page="propaccounts"]').first().click();
+  await expect(page.locator('#propEventRows')).toContainText('750');
+  await page.locator('[data-page="reconciliation"]').first().click();
+  await expect(page.locator('#recEventQueue')).toContainText('Smoke test 50K');
+  expect(errors).toEqual([]);
+});
