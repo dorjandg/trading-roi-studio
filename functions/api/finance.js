@@ -24,6 +24,11 @@ async function handler(ctx){
  const db=env.FINANCE_DB;const url=new URL(request.url);const method=request.method;
  let member=await db.prepare("SELECT m.workspace_id,m.role FROM memberships m JOIN users u ON u.id=m.user_id WHERE u.id=? LIMIT 1").bind(user.id).first();
  if(!member){
+  const invitation=await db.prepare("SELECT workspace_id,role FROM invitations WHERE email=? AND accepted_at IS NULL AND expires_at > CURRENT_TIMESTAMP LIMIT 1").bind(user.email).first();
+  if(invitation){
+   await db.batch([db.prepare("INSERT OR IGNORE INTO users(id,email,display_name) VALUES(?,?,?)").bind(user.id,user.email,user.email),db.prepare("INSERT OR IGNORE INTO memberships(workspace_id,user_id,role) VALUES(?,?,?)").bind(invitation.workspace_id,user.id,invitation.role),db.prepare("UPDATE invitations SET accepted_at=CURRENT_TIMESTAMP WHERE workspace_id=? AND email=? AND accepted_at IS NULL").bind(invitation.workspace_id,user.email)]);
+   member={workspace_id:invitation.workspace_id,role:invitation.role};
+  }else{
   if(user.email!==String(env.FINANCE_BOOTSTRAP_EMAIL||"").toLowerCase())return json({error:"No workspace membership; request an invitation from the owner"},403);
   const id=crypto.randomUUID();
   await db.batch([
@@ -32,6 +37,7 @@ async function handler(ctx){
    db.prepare("INSERT OR IGNORE INTO memberships(workspace_id,user_id,role) VALUES(?,?,?)").bind(id,user.id,"owner")
   ]);
   member={workspace_id:id,role:"owner"};
+  }
  }
  const ws=member.workspace_id,write=["owner","admin","member"].includes(member.role);
  if(method==="GET"&&url.searchParams.get("resource")==="me")return json({user:{email:user.email,id:user.id},workspace_id:ws,role:member.role});
@@ -54,7 +60,13 @@ async function handler(ctx){
   const id=crypto.randomUUID();await db.prepare("INSERT INTO financial_accounts(id,workspace_id,provider_id,owner_user_id,account_label,account_type,currency) VALUES(?,?,?,?,?,?,?)").bind(id,ws,p.id,owner,label,"manual",data.currency).run();
   return json({id,status:"manual_record_only"},201);
  }
+ if(method==="POST"&&url.searchParams.get("resource")==="invitations"&&["owner","admin"].includes(member.role)){
+  let data;try{data=await request.json()}catch{return json({error:"Invalid JSON"},400)}
+  const email=String(data.email||"").trim().toLowerCase();if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)||data.role!=="member")return json({error:"A valid member email is required"},400);
+  const id=crypto.randomUUID();await db.prepare("INSERT INTO invitations(id,workspace_id,email,role,expires_at) VALUES(?,?,?,?,datetime(\'now\',\'+7 days\')) ON CONFLICT(workspace_id,email) DO UPDATE SET role=excluded.role,expires_at=excluded.expires_at,accepted_at=NULL").bind(id,ws,email,"member").run();return json({status:"invitation_registered",email,role:"member"},201);
+ }
  if(method==="GET"&&url.searchParams.get("resource")==="members"){
+  if(!["owner","admin"].includes(member.role))return json({error:"Forbidden"},403);
   const rows=await db.prepare("SELECT u.id,u.email,u.display_name,m.role FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.workspace_id=?").bind(ws).all();
   return json({members:rows.results});
  }
