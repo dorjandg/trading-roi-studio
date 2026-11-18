@@ -40,6 +40,35 @@ async function handler(ctx){
   }
  }
  const ws=member.workspace_id,write=["owner","admin","member"].includes(member.role);
+ if(url.searchParams.get("resource")==="snapshot"){
+  // Snapshot access is always restricted to the authenticated member's own user ID.
+  if(method==="GET"){
+   const row=await db.prepare("SELECT revision,payload,updated_at FROM finance_snapshots WHERE workspace_id=? AND user_id=?").bind(ws,user.id).first();
+   return json(row?{revision:row.revision,updated_at:row.updated_at,data:JSON.parse(row.payload)}:{revision:0,data:null});
+  }
+  if(method==="PUT"){
+   if(!write)return json({error:"Read-only membership"},403);
+   const len=Number(request.headers.get("content-length")||0);
+   if(len>1024*1024)return json({error:"Snapshot exceeds 1 MB"},413);
+   let raw;try{raw=await request.text()}catch{return json({error:"Invalid body"},400)}
+   if(raw.length>1024*1024)return json({error:"Snapshot exceeds 1 MB"},413);
+   let body;try{body=JSON.parse(raw)}catch{return json({error:"Invalid JSON"},400)}
+   if(!body||!Number.isSafeInteger(body.expectedRevision)||body.expectedRevision<0||!body.data||typeof body.data!=="object"||Array.isArray(body.data))return json({error:"Invalid snapshot"},400);
+   const required=["transactions","propAccounts","propEvents","propAudit","subscriptions","invoices"];
+   if(!required.every(k=>Array.isArray(body.data[k]))||body.data.format!=="finance-hub-backup"||body.data.version!==2)return json({error:"Unsupported snapshot format"},400);
+   const payload=JSON.stringify(body.data);
+   if(payload.length>1024*1024)return json({error:"Snapshot exceeds 1 MB"},413);
+   if(body.expectedRevision===0){
+    const inserted=await db.prepare("INSERT OR IGNORE INTO finance_snapshots(workspace_id,user_id,revision,payload) VALUES(?,?,1,?)").bind(ws,user.id,payload).run();
+    if(inserted.meta?.changes===1)return json({revision:1});
+   }else{
+    const updated=await db.prepare("UPDATE finance_snapshots SET payload=?,revision=revision+1,updated_at=CURRENT_TIMESTAMP WHERE workspace_id=? AND user_id=? AND revision=?").bind(payload,ws,user.id,body.expectedRevision).run();
+    if(updated.meta?.changes===1)return json({revision:body.expectedRevision+1});
+   }
+   return json({error:"Cloud snapshot changed. Refresh before saving to avoid overwriting another device."},409);
+  }
+  return json({error:"Method not allowed"},405);
+ }
  if(method==="GET"&&url.searchParams.get("resource")==="me")return json({user:{email:user.email,id:user.id},workspace_id:ws,role:member.role});
  if(method==="GET"&&url.searchParams.get("resource")==="connections"){
   const rows=await db.prepare("SELECT a.id,a.account_label,a.account_type,a.currency,a.owner_user_id,p.name AS provider_name FROM financial_accounts a LEFT JOIN providers p ON p.id=a.provider_id WHERE a.workspace_id=? AND (? IN ('owner','admin') OR a.owner_user_id=?) ORDER BY a.created_at DESC LIMIT 500").bind(ws,member.role,user.id).all();
