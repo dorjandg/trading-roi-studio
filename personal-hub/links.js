@@ -125,6 +125,18 @@ window.PERSONAL_HUB_DATA = {
       ]
     },
     {
+      "id": "p4-reverse-cost-calculator",
+      "title": "P4 Reverse Cost Calculator",
+      "url": "https://trading-roi-studio.pages.dev/p4-reverse-cost-demo.html",
+      "description": "Reverse P1–P4 pass rates, evaluation and activation fees, withdrawals, net profit and ROI. Separate local settings for Doen, Dori and Dona across Topstep, FTMO, Lucid and MFFU.",
+      "category": "workspaces",
+      "type": "My website",
+      "symbol": "P4",
+      "accent": "green",
+      "featured": true,
+      "tags": ["P4", "calculator", "withdrawal", "ROI", "Topstep", "FTMO", "Lucid", "MFFU"]
+    },
+    {
       "id": "whoop",
       "title": "WHOOP",
       "url": "https://app.whoop.com/",
