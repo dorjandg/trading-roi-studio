@@ -36,3 +36,16 @@ CSV/Excel import and email receipt reconciliation. Screenshots require a separat
 - Migrate locally stored records with explicit owner confirmation.
 - Implement and test one provider adapter at a time.
 - Validate Cloudflare production deployment and backups.
+
+## Cloud save and restore rollout (not yet provisioned)
+
+The Finance Hub Settings page has **Check cloud access**, **Save to cloud**, **Restore from cloud**, and **Check for updates**. The API lives at `/api/finance?resource=snapshot` and requires the Cloudflare Pages Function to be deployed with a D1 binding and a validated Cloudflare Access JWT. No automatic two-way merge is implemented.
+
+1. Create a Cloudflare D1 database for the Finance Hub. Apply `finance/schema.sql` using the Cloudflare dashboard or `wrangler d1 execute <database-name> --remote --file=finance/schema.sql` from an authorized environment.
+2. In the **Cloudflare Pages project that serves the Finance Hub**, add a D1 binding named `FINANCE_DB` referencing that database. Confirm that the deployed project actually includes `functions/api/finance.js` and routes `/api/finance` to it; the current repository can be built differently for each Pages project.
+3. Configure Cloudflare Zero Trust Access for the Finance Hub and its API, restricting access to approved identities. Add the Pages environment variables `CF_ACCESS_TEAM_DOMAIN` (e.g. `https://your-team.cloudflareaccess.com`), `CF_ACCESS_AUD` (the Access application audience tag), and `FINANCE_BOOTSTRAP_EMAIL` (Dori's verified login email). Do not commit these values or any private keys.
+4. Deploy and sign in as the bootstrap administrator. In Settings, select **Check cloud access**. The API must return the verified identity and revision 0. The first **Save to cloud** creates revision 1; another save increments it. Test **Restore from cloud** only after downloading a local JSON backup.
+5. Add Dona and Doen only through administrator invitations after their actual login emails are known. Every user's cloud snapshot is scoped to their verified identity, not to the display-name selector. Confirm a member cannot fetch or overwrite another user's snapshot.
+6. Test on a second device. **Check for updates** reports a new revision without changing local data. **Restore from cloud** is an explicit replacement, not a merge. A stale save must receive HTTP 409 and must not overwrite the cloud copy.
+
+**Deployment safety:** Do not assume that adding code to GitHub creates a D1 database, Access policy, environment variables, or a successful production deployment. Until those are configured and tested, use local JSON backups.
