@@ -21,5 +21,17 @@ test('Finance Hub renders navigation, saves a prop account and cash event',async
   await expect(page.locator('#propEventRows')).toContainText('750');
   await page.locator('[data-page="reconciliation"]').first().click();
   await expect(page.locator('#recEventQueue')).toContainText('Smoke test 50K');
+  const status=page.locator('[data-rec-event]').first();
+  await status.selectOption('review');
+  await expect(page.locator('[data-rec-event]').first()).toHaveValue('review');
+  await page.reload();
+  await expect(page.locator('[data-rec-event]').first()).toHaveValue('review');
+  await page.locator('[data-page="propaccounts"]').first().click();
+  await expect(page.locator('#propAuditHistory')).toContainText('status changed');
+  await page.locator('[data-page="settings"]').first().click();
+  const downloadPromise=page.waitForEvent('download');
+  await page.locator('#backupDownload').click();
+  const download=await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/^finance-hub-backup-.*\\.json$/);
   expect(errors).toEqual([]);
 });
