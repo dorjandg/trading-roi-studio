@@ -47,7 +47,13 @@ jobs:
           elif status==404:
               status,result=request(root,"POST",{"name":"fin","production_branch":"main"})
               if status not in (200,201) or not result.get("success"):
-                  print("::error::Unable to create fin Pages project; verify name availability and Pages Edit permission.")
+                  errors=result.get("errors") or []
+                  for err in errors:
+                      code=err.get("code","unknown")
+                      message=str(err.get("message","Unknown Cloudflare error")).replace("\\n"," ")
+                      print(f"::error::Cloudflare Pages create failed (HTTP {status}, code {code}): {message}")
+                  if not errors:
+                      print(f"::error::Cloudflare Pages create failed (HTTP {status}); no error details returned.")
                   sys.exit(1)
               print("Created dedicated fin Pages project.")
           else:
