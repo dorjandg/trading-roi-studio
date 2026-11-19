@@ -1,0 +1,20 @@
+{
+  "id": "/",
+  "name": "Personal Hub — My Digital Home",
+  "short_name": "Personal Hub",
+  "description": "Your private personal dashboard and website launchpad.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0b1020",
+  "theme_color": "#0b1020",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icons/hub-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
