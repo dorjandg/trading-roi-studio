@@ -70,7 +70,7 @@ This workflow is not an always-on ChatGPT connector: it is an auditable, manuall
 The Finance Hub remains in this repository but deploys independently via `.github/workflows/finance-hub-deploy.yml`. The workflow stages `finance/index.html` as the website root and `functions/api/finance.js` as the Pages Function. It targets a **separate** Cloudflare Pages project named `fin`, leaving Trading ROI Studio unchanged.
 
 To activate:
-1. In Cloudflare Pages, create the `fin` project (or confirm it already exists). Use a Direct Upload project for the manual Wrangler workflow; do not accidentally attach it to the Trading ROI Studio deployment.
+1. The deployment workflow checks for the `fin` Pages project and attempts to create it as a Direct Upload project if missing. This requires a Cloudflare API token with Pages Edit permission; the project name must be available. It refuses to overwrite an existing Git-connected `fin` project. Do not attach it to Trading ROI Studio.
 2. In GitHub's `finance-cloudflare` environment, configure `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. The token needs Pages deployment permissions. D1 verification also uses `CLOUDFLARE_D1_DATABASE_ID`.
 3. Manually run **Deploy Finance Hub (separate site)** from GitHub Actions. Verify the deployment URL and confirm the API route is deployed. A successful code deployment does not provision the D1 database or authentication.
 4. In Cloudflare Pages project `fin`, confirm that Cloudflare assigned `fin.pages.dev` to the new project (the name must be available). Do not switch the Personal Hub link until the new domain serves the expected website.
