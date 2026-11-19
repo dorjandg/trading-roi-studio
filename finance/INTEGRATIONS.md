@@ -1,7 +1,19 @@
 # Finance Hub — integration implementation plan
 
-## Current status
-The website is a browser-local prototype. No credentials are collected. No live APIs, multi-user login, server database, or background sync are active.
+## Verified live status (November 19, 2026)
+
+**Production site:** https://fin-kac.pages.dev/ (Cloudflare Pages project `fin`, deployed independently from Trading ROI Studio).
+
+The core authenticated cloud-sync implementation has been configured and user-tested: Cloudflare Access with Google sign-in, Cloudflare D1 database `finance-hub-db`, binding `FINANCE_DB`, validated JWT audience/team, owner bootstrap, private per-user snapshots, automatic saving and loading. An observed currency preference change synchronized from one authenticated browser to another. Owner identity is visible under Settings. Cloud revision checks prevent silent stale overwrites; concurrent divergent edits are **not merged**.
+
+**Still to verify before marking multi-user security complete:** Dona and Doen need an actual sign-in and private-record isolation test. The Settings owner-only **Authorized Finance Hub users** panel (new change awaiting deployment) registers seven-day backend invitations; it does not send emails or automatically change the Cloudflare Access allow list. Existing account policy must explicitly include each invited email. Automatic service connections to external banks and trading providers are not implemented.
+
+**Operations:** Manual GitHub workflow `finance-hub-deploy.yml` deploys the dedicated site. `finance-hub-checks.yml` runs UI/financial regression tests and the authenticated API isolation fixture. The old Trading ROI Studio `/finance/` page should not be treated as the protected production service. Reduce D1 API token write permissions after completing database setup. Maintain periodic JSON exports for recovery.
+
+---
+
+## Historical initial scope
+The original website was a browser-local prototype; the verified live deployment and remaining limitations are recorded above.
 
 ## Deployment architecture
 - Cloudflare Pages for static dashboard.
@@ -37,7 +49,7 @@ CSV/Excel import and email receipt reconciliation. Screenshots require a separat
 - Implement and test one provider adapter at a time.
 - Validate Cloudflare production deployment and backups.
 
-## Cloud save and restore rollout (not yet provisioned)
+## Cloud save and restore rollout (completed for owner; onboarding guidance below)
 
 The Finance Hub Settings page has **Check cloud access**, **Save to cloud**, **Restore from cloud**, and **Check for updates**. The API lives at `/api/finance?resource=snapshot` and requires the Cloudflare Pages Function to be deployed with a D1 binding and a validated Cloudflare Access JWT. No automatic two-way merge is implemented.
 
