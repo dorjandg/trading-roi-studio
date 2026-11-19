@@ -142,3 +142,24 @@ test('Prop-firm fee, payout, and ROI dashboard uses actual account records',asyn
   await expect(metrics).toContainText('$550.00');
   await expect(metrics).toContainText('275.0%');
 });
+
+test('An out-of-date cloud revision pauses auto-save rather than overwriting another device',async({page})=>{
+  let remoteRevision=1,putCalls=0;
+  const emptyBackup={format:'finance-hub-backup',version:2,transactions:[],propAccounts:[],propEvents:[],propAudit:[],subscriptions:[],invoices:[]};
+  await page.route('**/api/finance?resource=*',async route=>{
+    const resource=new URL(route.request().url()).searchParams.get('resource');
+    let response;
+    if(resource==='me')response={user:{id:'conflict-user',email:'conflict@example.com'},role:'owner',workspace_id:'conflict-ws'};
+    else if(resource==='snapshot')response={revision:1,data:emptyBackup};
+    else if(resource==='snapshot-meta')response={revision:remoteRevision,updated_at:null};
+    else if(resource==='members')response={members:[]};
+    else{putCalls++;response={error:'Unexpected update'}}
+    await route.fulfill({status:response.error?409:200,contentType:'application/json',body:JSON.stringify(response)});
+  });
+  await page.goto(url);
+  await expect(page.locator('#cloudStatus')).toContainText('Up to date');
+  remoteRevision=2;
+  await page.locator('#overviewCurrency').selectOption('EUR');
+  await expect(page.locator('#cloudStatus')).toContainText('Sync paused',{timeout:15000});
+  expect(putCalls).toBe(0);
+});
