@@ -12,6 +12,10 @@ jobs:
     environment: finance-cloudflare
     steps:
       - uses: actions/checkout@v4
+      - name: Verify Finance Hub source and accounting regression tests
+        run: node finance/test.cjs
+      - name: Verify signed authentication, private snapshots, and revision conflicts
+        run: node finance/auth-isolation.test.cjs
       - name: Check Cloudflare deployment credentials
         env:
           TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
