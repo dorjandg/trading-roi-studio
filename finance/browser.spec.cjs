@@ -150,7 +150,7 @@ test('An out-of-date cloud revision pauses auto-save rather than overwriting ano
     const resource=new URL(route.request().url()).searchParams.get('resource');
     let response;
     if(resource==='me')response={user:{id:'conflict-user',email:'conflict@example.com'},role:'owner',workspace_id:'conflict-ws'};
-    else if(resource==='snapshot')response={revision:1,data:emptyBackup};
+    else if(resource==='snapshot'){if(route.request().method()==='PUT'){putCalls++;response={error:'Stale save must be blocked'}}else response={revision:1,data:emptyBackup}}
     else if(resource==='snapshot-meta')response={revision:remoteRevision,updated_at:null};
     else if(resource==='members')response={members:[]};
     else{putCalls++;response={error:'Unexpected update'}}
