@@ -30,4 +30,4 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           cd .finance-deploy
-          npx --yes wrangler@4 pages deploy . --project-name finance-hub --branch main
+          npx --yes wrangler@4 pages deploy . --project-name fin --branch main
