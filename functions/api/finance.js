@@ -95,7 +95,7 @@ async function handler(ctx){
  }
  if(method==="POST"&&url.searchParams.get("resource")==="invitations"&&["owner","admin"].includes(member.role)){
   let data;try{data=await request.json()}catch{return json({error:"Invalid JSON"},400)}
-  const email=String(data.email||"").trim().toLowerCase();if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)||data.role!=="member")return json({error:"A valid member email is required"},400);
+  const email=String(data.email||"").trim().toLowerCase();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||data.role!=="member")return json({error:"A valid member email is required"},400);
   const id=crypto.randomUUID();await db.prepare("INSERT INTO invitations(id,workspace_id,email,role,expires_at) VALUES(?,?,?,?,datetime(\'now\',\'+7 days\')) ON CONFLICT(workspace_id,email) DO UPDATE SET role=excluded.role,expires_at=excluded.expires_at,accepted_at=NULL").bind(id,ws,email,"member").run();return json({status:"invitation_registered",email,role:"member"},201);
  }
  if(method==="GET"&&url.searchParams.get("resource")==="members"){
