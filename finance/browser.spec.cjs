@@ -115,3 +115,30 @@ test('Switching authenticated accounts never shows the previous account cached t
   await expect(page.locator('#rows')).not.toContainText('Alice private ledger');
   await expect(page.locator('#financeAuthGuard')).toBeHidden();
 });
+
+test('Prop-firm fee, payout, and ROI dashboard uses actual account records',async({page})=>{
+  await page.route('**/api/finance?resource=*',async route=>{
+    const r=new URL(route.request().url()).searchParams.get('resource');
+    const data=r==='me'?{user:{id:'prop-fixture-user',email:'prop@example.com'},role:'owner',workspace_id:'prop-workspace'}:
+      r==='snapshot'?{revision:0,data:null}:r==='members'?{members:[]}:{revision:0,updated_at:null};
+    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(data)});
+  });
+  await page.goto(url);
+  await expect(page.locator('#signedInEmail')).toHaveText('prop@example.com');
+  await page.locator('[data-page="propaccounts"]').first().click();
+  await page.locator('#propForm [name="label"]').fill('ROI fixture');
+  await page.locator('#propForm [name="size"]').fill('50000');
+  await page.locator('#propForm [name="evaluationFee"]').fill('50');
+  await page.locator('#propForm [name="activationFee"]').fill('150');
+  await page.locator('#propForm [name="payout"]').fill('750');
+  await page.locator('#propForm [name="date"]').fill('2026-10-15');
+  await page.locator('#propForm [name="payoutDate"]').fill('2026-10-16');
+  await page.locator('#propForm button').click();
+  await page.locator('[data-page="performance"]').first().click();
+  await page.locator('#perfPeriod').selectOption('all');
+  const metrics=page.locator('#perfMetrics');
+  await expect(metrics).toContainText('$200.00');
+  await expect(metrics).toContainText('$750.00');
+  await expect(metrics).toContainText('$550.00');
+  await expect(metrics).toContainText('275.0%');
+});
