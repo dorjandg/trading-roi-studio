@@ -49,3 +49,17 @@ The Finance Hub Settings page has **Check cloud access**, **Save to cloud**, **R
 6. Test on a second device. **Check for updates** reports a new revision without changing local data. **Restore from cloud** is an explicit replacement, not a merge. A stale save must receive HTTP 409 and must not overwrite the cloud copy.
 
 **Deployment safety:** Do not assume that adding code to GitHub creates a D1 database, Access policy, environment variables, or a successful production deployment. Until those are configured and tested, use local JSON backups.
+
+
+## GitHub-to-Cloudflare connection (manual opt-in)
+
+The workflow `.github/workflows/finance-cloudflare-connection.yml` verifies a Cloudflare API token and a D1 database through GitHub Actions. It does **not** create the database, configure Pages bindings or Cloudflare Access, or deploy the site. Run it manually from **Actions → Finance Cloudflare connection check → Run workflow**.
+
+1. In GitHub repository **Settings → Environments**, create `finance-cloudflare`. For production, add required reviewers to protect schema changes.
+2. In that environment's **Secrets**, add `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, and `CLOUDFLARE_D1_DATABASE_ID`. Keep all values private. Never send tokens through chat or commit them.
+3. Create a Cloudflare API token with only the required account D1 read permissions for verification. The optional schema operation requires D1 write permissions; prefer a separate short-lived token when doing migrations.
+4. Run with **apply_schema = false** first. Inspect the GitHub Actions result for verification success.
+5. Only after inspecting `finance/schema.sql` and confirming the target database is correct, explicitly select **apply_schema = true** to run the remote migration.
+6. Configure the Pages D1 binding `FINANCE_DB` and Access JWT settings separately as described above. Verify the production API and two-device synchronization before calling it live.
+
+This workflow is not an always-on ChatGPT connector: it is an auditable, manually triggered GitHub-to-Cloudflare connection.
