@@ -3,10 +3,12 @@ on:
   push:
     paths:
       - 'finance/**'
+      - 'functions/api/finance.js'
       - '.github/workflows/finance-hub-checks.yml'
   pull_request:
     paths:
       - 'finance/**'
+      - 'functions/api/finance.js'
   workflow_dispatch:
 jobs:
   test:
@@ -19,6 +21,8 @@ jobs:
           node-version: '22'
       - name: Finance Hub source and financial fixture tests
         run: node finance/test.cjs
+      - name: Authenticated API isolation and concurrency tests
+        run: node finance/auth-isolation.test.cjs
       - name: Install Playwright Chromium
         run: |
           npm install --no-save @playwright/test
