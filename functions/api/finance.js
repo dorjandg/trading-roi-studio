@@ -75,11 +75,11 @@ async function handler(ctx){
  }
  if(method==="GET"&&url.searchParams.get("resource")==="me")return json({user:{email:user.email,id:user.id},workspace_id:ws,role:member.role});
  if(method==="GET"&&url.searchParams.get("resource")==="connections"){
-  const rows=await db.prepare("SELECT a.id,a.account_label,a.account_type,a.currency,a.owner_user_id,p.name AS provider_name FROM financial_accounts a LEFT JOIN providers p ON p.id=a.provider_id WHERE a.workspace_id=? AND (? IN ('owner','admin') OR a.owner_user_id=?) ORDER BY a.created_at DESC LIMIT 500").bind(ws,member.role,user.id).all();
+  const rows=await db.prepare("SELECT a.id,a.account_label,a.account_type,a.currency,a.owner_user_id,p.name AS provider_name FROM financial_accounts a LEFT JOIN providers p ON p.id=a.provider_id WHERE a.workspace_id=? AND a.owner_user_id=? ORDER BY a.created_at DESC LIMIT 500").bind(ws,user.id).all();
   return json({connections:rows.results});
  }
  if(method==="GET"&&url.searchParams.get("resource")==="transactions"){
-  const rows=await db.prepare("SELECT id,occurred_on,category,transaction_type,amount_minor,currency,notes,account_id,user_id FROM transactions WHERE workspace_id=? AND (? IN ('owner','admin') OR user_id=?) ORDER BY occurred_on DESC LIMIT 1000").bind(ws,member.role,user.id).all();
+  const rows=await db.prepare("SELECT id,occurred_on,category,transaction_type,amount_minor,currency,notes,account_id,user_id FROM transactions WHERE workspace_id=? AND user_id=? ORDER BY occurred_on DESC LIMIT 1000").bind(ws,user.id).all();
   return json({transactions:rows.results});
  }
  if(method==="POST"&&url.searchParams.get("resource")==="connections"&&write){
