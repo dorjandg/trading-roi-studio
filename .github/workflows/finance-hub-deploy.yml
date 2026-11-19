@@ -1,0 +1,32 @@
+name: Deploy Finance Hub (separate site)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: finance-hub-production
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: finance-cloudflare
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Cloudflare deployment credentials
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$TOKEN" || { echo "::error::Missing CLOUDFLARE_API_TOKEN"; exit 1; }
+          test -n "$ACCOUNT" || { echo "::error::Missing CLOUDFLARE_ACCOUNT_ID"; exit 1; }
+      - name: Prepare standalone Finance Hub
+        run: |
+          mkdir -p .finance-deploy/functions/api
+          cp finance/index.html .finance-deploy/index.html
+          cp functions/api/finance.js .finance-deploy/functions/api/finance.js
+      - name: Deploy to dedicated Cloudflare Pages project
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx --yes wrangler@4 pages deploy .finance-deploy --project-name finance-hub --branch main
