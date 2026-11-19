@@ -130,6 +130,9 @@ let csvSource=null,csvCandidates=[];const csvAliases={date:['date','transaction 
        }
        keys.forEach(k=>localStorage.setItem(k,'[]'));
        [items,propAccounts,propEvents,propAudit,subscriptions,invoices]=[[],[],[],[],[],[]];
+       // Display filters are private preferences too: never carry the prior
+       // account's currency or reporting period into a new identity.
+       for(const id of preferencesIds){const el=document.getElementById(id);if(el&&el.options.length)el.selectedIndex=0}
        redraw();
      }
      localStorage.setItem(activeKey,me.user.id);
