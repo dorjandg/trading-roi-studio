@@ -109,7 +109,7 @@ let csvSource=null,csvCandidates=[];const csvAliases={date:['date','transaction 
      const lastUser=localStorage.getItem(activeKey);
      const currentStoredMarker=localStorage.getItem(markerKey(me.user.id));
      let knownCurrent=false;
-     try{const m=currentStoredMarker&&JSON.parse(currentStoredMarker);knownCurrent=!!(m&&m.userId===me.user.id&&m.fingerprint===cloudFingerprint())}catch{}
+     try{const m=currentStoredMarker&&JSON.parse(currentStoredMarker);knownCurrent=!!(m&&m.userId===me.user.id)}catch{}
      if((lastUser&&lastUser!==me.user.id)||(!lastUser&&!knownCurrent&&!isEmpty())){
        // Preserve an offline copy before clearing shared browser storage.
        // Users on a shared computer should still use separate browser profiles.
