@@ -100,7 +100,9 @@ let csvSource=null,csvCandidates=[];const csvAliases={date:['date','transaction 
    cloud.busy=true;cloudControls();
    status('Connecting to your private cloud…');
    try{
-     const me=await cloudApi('me'),snapshot=await cloudApi('snapshot');
+     const me=await cloudApi('me');
+     showAccount(me);
+     const snapshot=await cloudApi('snapshot');
      cloud.user=me.user;
      try{currentMarker=JSON.parse(localStorage.getItem(markerKey(me.user.id))||'null')}catch{currentMarker=null}
      if(snapshot.data){
@@ -130,7 +132,7 @@ let csvSource=null,csvCandidates=[];const csvAliases={date:['date','transaction 
  const backupBox=document.querySelector('#cloudConnect').closest('.card');
  const oldDescription=backupBox.querySelector('.muted');
  oldDescription.textContent='Cloud sync is automatic for your signed-in account: changes save automatically and the latest version loads whenever you open or refresh. Conflicting unsaved edits are never overwritten.';
- const privacy=document.querySelector('#page-settings .card:nth-of-type(2) .muted');
+ const privacy=document.querySelector('#page-settings .card:last-of-type .muted');
  if(privacy)privacy.textContent='Your private cloud records are tied to your authenticated account. Keep occasional JSON exports for an additional backup; offline or conflicting changes require manual review.';
  const actions=backupBox.querySelector('.actions');
  const advanced=document.createElement('details');
