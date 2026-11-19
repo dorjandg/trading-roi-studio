@@ -28,7 +28,7 @@ let csvSource=null,csvCandidates=[];const csvAliases={date:['date','transaction 
  const originalBackup=currentCloudBackup;
  currentCloudBackup=()=>({...originalBackup(),preferences:collectPreferences()});
  const markerKey=id=>'finance-hub-synced-'+id;
- let currentMarker=null,ready=false,paused=false,lastAttempt=0;
+ let currentMarker=null,ready=false,paused=false,lastAttempt=0,retryDelay=2000,nextRetryAt=0;
  const syncBusy=()=>cloud.busy||!ready||!cloud.user||paused;
  const marker=(revision, fingerprint)=>{
    const m={revision,fingerprint,userId:cloud.user.id};
@@ -89,11 +89,13 @@ let csvSource=null,csvCandidates=[];const csvAliases={date:['date','transaction 
      cloud.revision=x.revision;
      cloud.localFingerprint=fp;
      marker(x.revision,fp);
+     retryDelay=2000;nextRetryAt=0;
      cloudAnnounce();
      status('Saved automatically · cloud revision '+x.revision);
    }catch(e){
-     if(/changed|409|conflict/i.test(e.message))paused=true;
-     status('Sync '+(paused?'paused':'retry pending')+': '+e.message+'. Local records retained.');
+     if(/changed|409|conflict|Authentication required|exceeds 1 MB|Unsupported snapshot|Read-only|403|401|413/i.test(e.message))paused=true;
+     else{nextRetryAt=Date.now()+retryDelay;retryDelay=Math.min(retryDelay*2,60000)}
+     status('Sync '+(paused?'paused — review in Settings':'retry pending')+': '+e.message+'. Local records retained.');
    }finally{cloud.busy=false;cloudControls()}
  }
  async function initialize(){
@@ -211,7 +213,7 @@ let csvSource=null,csvCandidates=[];const csvAliases={date:['date','transaction 
    }
  };
  setInterval(()=>{if(!ready||!cloud.user||document.visibilityState!=='visible'||cloud.busy)return;
-   if(Date.now()-lastAttempt<1500)return;
+   if(Date.now()-lastAttempt<1500||Date.now()<nextRetryAt)return;
    lastAttempt=Date.now();
    if(!paused&&cloudFingerprint()!==cloud.localFingerprint)saveIfChanged();
  },2000);
