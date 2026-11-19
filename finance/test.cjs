@@ -56,4 +56,8 @@ assert.match(apiSource,/WHERE a\.workspace_id=\? AND a\.owner_user_id=\? ORDER B
 assert.match(apiSource,/WHERE workspace_id=\? AND user_id=\? ORDER BY occurred_on DESC LIMIT 1000/,'Transaction listing must always be user-scoped');
 assert.doesNotMatch(apiSource,/\(\? IN \('owner','admin'\) OR (?:a\.owner_user_id|user_id)=\?\)/,'No administrative financial-data bypass');
 
+assert.ok(html.includes('id="finance-mobile-compact-2026"'),'Mobile compact stylesheet present');
+assert.ok(html.includes('.grid#stats{grid-template-columns:repeat(2,minmax(0,1fr))}'),'Two-column small-screen dashboard present');
+assert.ok(html.includes('table{width:100%;min-width:max-content}'),'Wide financial tables remain horizontally scrollable');
+assert.ok(html.includes('.form{grid-template-columns:minmax(0,1fr)}'),'Narrow-screen form fields stack');
 console.log('PASS Finance Hub: JavaScript syntax, DOM references, 15-page navigation, financial fixtures, linked fee partition, payout dates, backup round trip.');
