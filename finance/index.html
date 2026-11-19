@@ -14,12 +14,18 @@ let csvSource=null,csvCandidates=[];const csvAliases={date:['date','transaction 
 <script id="finance-seamless-sync-v1">
 /* Automatic authenticated sync. Revision locking means two devices never silently overwrite. */
 (()=>{
- const status=message=>cloudStateText(message);
+ const status=message=>{cloudStateText(message);const chip=document.querySelector('header .chip');const notice=document.querySelector('main>.notice');if(chip)chip.textContent=cloud.user&&!paused?'Cloud synced':'Local / offline';if(notice){notice.textContent=cloud.user&&!paused?'Private cloud sync is active. Your changes save automatically and reload across devices.':'Your cloud connection needs attention. Local edits are preserved; review the sync status in Settings.';notice.style.display=cloud.user&&!paused?'none':'';}};
  const keys=[KEY,PROPKEY,PROP_EVENT_KEY,PROP_AUDIT_KEY,SUBKEY,INVKEY];
  const arrays=()=>[items,propAccounts,propEvents,propAudit,subscriptions,invoices];
  const isEmpty=()=>arrays().every(a=>a.length===0);
  const isValid=b=>b&&b.format==='finance-hub-backup'&&b.version===2&&
    ['transactions','propAccounts','propEvents','propAudit','subscriptions','invoices'].every(k=>Array.isArray(b[k]));
+ const preferencesIds=['overviewCurrency','overviewPeriod','reportCurrency','period','tradingCurrency','recCurrency','perfCurrency','perfPeriod','plCurrency','plPeriod','csvDefaultCurrency'];
+ const collectPreferences=()=>Object.fromEntries(preferencesIds.map(id=>[id,document.getElementById(id)?.value]).filter(([k,v])=>typeof v==='string'));
+ const originalFingerprint=cloudFingerprint;
+ cloudFingerprint=()=>JSON.stringify([originalFingerprint(),collectPreferences()]);
+ const originalBackup=currentCloudBackup;
+ currentCloudBackup=()=>({...originalBackup(),preferences:collectPreferences()});
  const markerKey=id=>'finance-hub-synced-'+id;
  let currentMarker=null,ready=false,paused=false,lastAttempt=0;
  const syncBusy=()=>cloud.busy||!ready||!cloud.user||paused;
@@ -39,6 +45,7 @@ let csvSource=null,csvCandidates=[];const csvAliases={date:['date','transaction 
    try{keys.forEach((k,i)=>localStorage.setItem(k,JSON.stringify(values[i])))}
    catch(e){keys.forEach((k,i)=>{try{if(previous[i]===null)localStorage.removeItem(k);else localStorage.setItem(k,previous[i])}catch{}});throw e}
    [items,propAccounts,propEvents,propAudit,subscriptions,invoices]=values;
+   if(b.preferences&&typeof b.preferences==='object')for(const id of preferencesIds){const el=document.getElementById(id),v=b.preferences[id];if(el&&typeof v==='string'&&[...el.options].some(o=>o.value===v))el.value=v;}
    cloud.revision=snapshot.revision;
    cloud.localFingerprint=cloudFingerprint();
    marker(cloud.revision,cloud.localFingerprint);
