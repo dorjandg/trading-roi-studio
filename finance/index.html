@@ -113,9 +113,21 @@ let csvSource=null,csvCandidates=[];const csvAliases={date:['date','transaction 
      if((lastUser&&lastUser!==me.user.id)||(!lastUser&&!knownCurrent&&!isEmpty())){
        // Preserve an offline copy before clearing shared browser storage.
        // Users on a shared computer should still use separate browser profiles.
-       const backup=currentCloudBackup();
-       const savedKey='finance-hub-switch-backup-'+Date.now();
-       localStorage.setItem(savedKey,JSON.stringify({previousUser:lastUser||'unidentified',savedAt:new Date().toISOString(),data:backup}));
+       // Only retain an archive if the old browser records are NOT known to
+       // be safely backed up already. Avoid leaving redundant private copies
+       // behind on a browser subsequently used by another account.
+       let alreadyBackedUp=false;
+       const previousIds=lastUser?[lastUser]:
+         Object.keys(localStorage).filter(k=>k.startsWith('finance-hub-synced-')).map(k=>k.slice('finance-hub-synced-'.length));
+       for(const oldId of previousIds){try{
+         const m=JSON.parse(localStorage.getItem(markerKey(oldId))||'null');
+         if(m&&m.userId===oldId&&m.fingerprint===cloudFingerprint()){alreadyBackedUp=true;break}
+       }catch{}}
+       if(!alreadyBackedUp){
+         const backup=currentCloudBackup();
+         const savedKey='finance-hub-switch-backup-'+Date.now();
+         localStorage.setItem(savedKey,JSON.stringify({previousUser:lastUser||'unidentified',savedAt:new Date().toISOString(),data:backup}));
+       }
        keys.forEach(k=>localStorage.setItem(k,'[]'));
        [items,propAccounts,propEvents,propAudit,subscriptions,invoices]=[[],[],[],[],[],[]];
        redraw();
