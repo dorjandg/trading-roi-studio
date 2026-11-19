@@ -33,7 +33,7 @@ function db(){
     }
     throw Error('Unexpected SQL run '+sql);
    }
-  }};},async batch(){throw Error('Not needed in seeded tests')}
+  }}}},async batch(){throw Error('Not needed in seeded tests')}
  };
 }
 const payload={format:'finance-hub-backup',version:2,transactions:[],propAccounts:[],propEvents:[],propAudit:[],subscriptions:[],invoices:[]};
