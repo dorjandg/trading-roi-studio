@@ -1,0 +1,57 @@
+name: Finance Cloudflare connection check
+on:
+  workflow_dispatch:
+    inputs:
+      apply_schema:
+        description: 'Apply finance/schema.sql to the configured D1 database (changes production schema)'
+        required: true
+        default: false
+        type: boolean
+permissions:
+  contents: read
+jobs:
+  cloudflare:
+    runs-on: ubuntu-latest
+    environment: finance-cloudflare
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate configured secrets
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_DB: ${{ secrets.CLOUDFLARE_D1_DATABASE_ID }}
+        run: |
+          test -n "$CF_TOKEN" || { echo "::error::Missing CLOUDFLARE_API_TOKEN"; exit 1; }
+          test -n "$CF_ACCOUNT" || { echo "::error::Missing CLOUDFLARE_ACCOUNT_ID"; exit 1; }
+          test -n "$CF_DB" || { echo "::error::Missing CLOUDFLARE_D1_DATABASE_ID"; exit 1; }
+      - name: Verify Cloudflare token and D1 database
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_DB: ${{ secrets.CLOUDFLARE_D1_DATABASE_ID }}
+        run: |
+          python3 - <<'PY'
+          import os,json,urllib.request,sys
+          base='https://api.cloudflare.com/client/v4'
+          headers={'Authorization':'Bearer '+os.environ['CF_TOKEN']}
+          for path in ('/user/tokens/verify',f"/accounts/{os.environ['CF_ACCOUNT']}/d1/database/{os.environ['CF_DB']}"):
+              req=urllib.request.Request(base+path,headers=headers)
+              try:
+                  with urllib.request.urlopen(req,timeout=20) as resp:
+                      result=json.load(resp)
+              except Exception as exc:
+                  print('::error::Cloudflare API request failed:',type(exc).__name__)
+                  sys.exit(1)
+              if not result.get('success'):
+                  print('::error::Cloudflare rejected the request; check token scopes and identifiers')
+                  sys.exit(1)
+          print('Cloudflare token and D1 database verified; no data modified.')
+          PY
+      - name: Apply D1 schema (explicit opt-in only)
+        if: ${{ inputs.apply_schema == true }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          DB_ID: ${{ secrets.CLOUDFLARE_D1_DATABASE_ID }}
+        run: |
+          npx --yes wrangler@4 d1 execute "$DB_ID" --remote --file=finance/schema.sql --yes
