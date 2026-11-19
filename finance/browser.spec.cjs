@@ -112,6 +112,6 @@ test('Switching authenticated accounts never shows the previous account cached t
   await page.reload();
   await expect(page.locator('#signedInEmail')).toHaveText('bob@example.com');
   await page.locator('[data-page="transactions"]').first().click();
-  await expect(page.locator('#transactionRows')).not.toContainText('Alice private ledger');
+  await expect(page.locator('#rows')).not.toContainText('Alice private ledger');
   await expect(page.locator('#financeAuthGuard')).toBeHidden();
 });
