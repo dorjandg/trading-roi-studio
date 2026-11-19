@@ -87,8 +87,8 @@ window.PERSONAL_HUB_DATA = {
     {
       "id": "finance-hub",
       "title": "Finance Hub",
-      "url": "https://trading-roi-studio.pages.dev/finance/",
-      "description": "Financial dashboard for transactions, expenses, prop-firm accounts, payouts, reports and reconciliation. Cloud synchronization is under development.",
+      "url": "https://fin-kac.pages.dev/",
+      "description": "Private financial dashboard for transactions, expenses, prop-firm accounts, payouts and reports, with Google sign-in and automatic cloud synchronization.",
       "category": "workspaces",
       "type": "My website",
       "symbol": "FH",
