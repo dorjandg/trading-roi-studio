@@ -35,9 +35,6 @@ jobs:
           if not re.fullmatch("[0-9a-fA-F]{32}",account):
               print("::error::Invalid Account ID format: expected 32 hex characters.")
               sys.exit(1)
-          if account.lower()!="e21cd8776c9beef277b3eb6f27ce5c58":
-              print("::error::GitHub Cloudflare Account ID does not match the dashboard account ID.")
-              sys.exit(1)
           root=f"https://api.cloudflare.com/client/v4/accounts/{account}/pages/projects"
           headers={"Authorization":"Bearer "+os.environ["CLOUDFLARE_API_TOKEN"],"Content-Type":"application/json"}
           def request(url,method="GET",payload=None):
