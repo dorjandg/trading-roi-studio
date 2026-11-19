@@ -19,6 +19,41 @@ jobs:
         run: |
           test -n "$TOKEN" || { echo "::error::Missing CLOUDFLARE_API_TOKEN"; exit 1; }
           test -n "$ACCOUNT" || { echo "::error::Missing CLOUDFLARE_ACCOUNT_ID"; exit 1; }
+      - name: Ensure dedicated fin Pages project exists
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          python3 - <<'PY'
+          import json,os,sys,urllib.request,urllib.error
+          root=f"https://api.cloudflare.com/client/v4/accounts/{os.environ['CLOUDFLARE_ACCOUNT_ID']}/pages/projects"
+          headers={"Authorization":"Bearer "+os.environ["CLOUDFLARE_API_TOKEN"],"Content-Type":"application/json"}
+          def request(url,method="GET",payload=None):
+              body=json.dumps(payload).encode() if payload is not None else None
+              try:
+                  with urllib.request.urlopen(urllib.request.Request(url,data=body,headers=headers,method=method),timeout=30) as response:
+                      return response.status,json.load(response)
+              except urllib.error.HTTPError as exc:
+                  try: result=json.load(exc)
+                  except Exception: result={}
+                  return exc.code,result
+          status,result=request(root+"/fin")
+          if status==200 and result.get("success"):
+              project=result.get("result") or {}
+              if project.get("source",{}).get("type") not in (None,""):
+                  print("::error::Existing fin project uses a connected source. Refusing to overwrite it.")
+                  sys.exit(1)
+              print("Dedicated fin Pages project exists.")
+          elif status==404:
+              status,result=request(root,"POST",{"name":"fin","production_branch":"main"})
+              if status not in (200,201) or not result.get("success"):
+                  print("::error::Unable to create fin Pages project; verify name availability and Pages Edit permission.")
+                  sys.exit(1)
+              print("Created dedicated fin Pages project.")
+          else:
+              print("::error::Could not inspect fin Pages project; check Cloudflare credentials and permissions.")
+              sys.exit(1)
+          PY
       - name: Prepare standalone Finance Hub
         run: |
           mkdir -p .finance-deploy/functions/api
