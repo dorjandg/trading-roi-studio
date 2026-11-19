@@ -62,3 +62,56 @@ test('Mobile navigation and account panel remain usable',async({page})=>{
   await expect(page.locator('#signedInRole')).toHaveText('Owner');
   expect(errors).toEqual([]);
 });
+
+test('Financial totals exclude transfers, investments stay out of P&L, and currencies stay separate',async({page})=>{
+  await page.route('**/api/finance?resource=*',async route=>{
+    const resource=new URL(route.request().url()).searchParams.get('resource');
+    const response=resource==='me'?{user:{id:'math-user',email:'math@example.com'},role:'owner',workspace_id:'math-workspace'}:
+      resource==='snapshot'?{revision:0,data:null}:resource==='members'?{members:[]}:{revision:0,updated_at:null};
+    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(response)});
+  });
+  await page.goto(url);
+  await expect(page.locator('#signedInEmail')).toHaveText('math@example.com');
+  await page.locator('[data-page="transactions"]').first().click();
+  for(const [type,amount,currency] of [['Income','2000','USD'],['Expense','450','USD'],['Investment','300','USD'],['Transfer','999','USD'],['Expense','90','EUR']]){
+    await page.locator('#entry [name="date"]').fill('2026-10-15');
+    await page.locator('#entry [name="user"]').fill('Dori');
+    await page.locator('#entry [name="type"]').selectOption(type);
+    await page.locator('#entry [name="amount"]').fill(amount);
+    await page.locator('#entry [name="currency"]').selectOption(currency);
+    await page.locator('#entry button').click();
+  }
+  await page.locator('[data-page="overview"]').first().click();
+  await page.locator('#overviewPeriod').selectOption('all');
+  await expect(page.locator('#stats')).toContainText('$2,000.00');
+  await expect(page.locator('#stats')).toContainText('$450.00');
+  await expect(page.locator('#stats')).toContainText('$1,550.00');
+  await expect(page.locator('#stats')).toContainText('$1,250.00');
+  await page.locator('#overviewCurrency').selectOption('EUR');
+  await expect(page.locator('#stats')).toContainText('€90.00');
+  await expect(page.locator('#stats')).not.toContainText('$2,000.00');
+  await page.locator('[data-page="profitloss"]').first().click();
+  await page.locator('#plPeriod').selectOption('all');
+  await expect(page.locator('#plStatement')).toContainText('Investment outflows (not P&L expense)');
+});
+
+test('Switching authenticated accounts never shows the previous account cached transactions',async({page})=>{
+  let identity='alice';
+  await page.route('**/api/finance?resource=*',async route=>{
+    const resource=new URL(route.request().url()).searchParams.get('resource');
+    const response=resource==='me'?{user:{id:identity,email:identity+'@example.com'},role:'member',workspace_id:'shared'}:
+      resource==='snapshot'?{revision:0,data:null}:{revision:0,updated_at:null};
+    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(response)});
+  });
+  await page.goto(url);
+  await expect(page.locator('#signedInEmail')).toHaveText('alice@example.com');
+  await page.evaluate(()=>{
+    localStorage.setItem('finance-hub-v1',JSON.stringify([{id:'private-transaction',date:'2026-10-15',user:'Alice',category:'Personal',provider:'Private Bank',type:'Income',amount:777777,currency:'USD',notes:'Alice private ledger'}]));
+  });
+  identity='bob';
+  await page.reload();
+  await expect(page.locator('#signedInEmail')).toHaveText('bob@example.com');
+  await page.locator('[data-page="transactions"]').first().click();
+  await expect(page.locator('#transactionRows')).not.toContainText('Alice private ledger');
+  await expect(page.locator('#financeAuthGuard')).toBeHidden();
+});
