@@ -50,4 +50,10 @@ assert.ok(html.includes("const linkedIds=new Set(propEvents.filter("),'Linked ex
 assert.ok(html.includes("linkedTransactionId"),'Cash event transaction links remain present');
 assert.ok(html.includes("propAudit=b.version===2"),'Backup restore includes audit history');
 assert.ok(html.includes("/^\\d{4}-\\d{2}-\\d{2}$/"),'Cash event ISO date validation remains correct');
+
+const apiSource=fs.readFileSync(require('node:path').join(__dirname,'..','functions','api','finance.js'),'utf8');
+assert.match(apiSource,/WHERE a\.workspace_id=\? AND a\.owner_user_id=\? ORDER BY a\.created_at DESC LIMIT 500/,'Connection listing must always be owner-scoped');
+assert.match(apiSource,/WHERE workspace_id=\? AND user_id=\? ORDER BY occurred_on DESC LIMIT 1000/,'Transaction listing must always be user-scoped');
+assert.doesNotMatch(apiSource,/\(\? IN \('owner','admin'\) OR (?:a\.owner_user_id|user_id)=\?\)/,'No administrative financial-data bypass');
+
 console.log('PASS Finance Hub: JavaScript syntax, DOM references, 15-page navigation, financial fixtures, linked fee partition, payout dates, backup round trip.');
