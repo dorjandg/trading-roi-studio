@@ -163,3 +163,37 @@ test('An out-of-date cloud revision pauses auto-save rather than overwriting ano
   await expect(page.locator('#cloudStatus')).toContainText('Sync paused',{timeout:15000});
   expect(putCalls).toBe(0);
 });
+
+
+test('Additional reset fees and dated payouts change net prop cash and ROI without double counting',async({page})=>{
+  await page.route('**/api/finance?resource=*',async route=>{
+    const resource=new URL(route.request().url()).searchParams.get('resource');
+    const data=resource==='me'?{user:{id:'dated-prop-user',email:'dated@example.com'},role:'owner',workspace_id:'dated-ws'}:
+      resource==='snapshot'?{revision:0,data:null}:resource==='members'?{members:[]}:{revision:0,updated_at:null};
+    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(data)});
+  });
+  await page.goto(url);
+  await expect(page.locator('#signedInEmail')).toHaveText('dated@example.com');
+  await page.locator('[data-page="propaccounts"]').first().click();
+  await page.locator('#propForm [name="label"]').fill('Dated fee fixture');
+  await page.locator('#propForm [name="size"]').fill('50000');
+  await page.locator('#propForm [name="evaluationFee"]').fill('50');
+  await page.locator('#propForm [name="activationFee"]').fill('150');
+  await page.locator('#propForm [name="date"]').fill('2026-10-15');
+  await page.locator('#propForm button').click();
+  await page.locator('#propEventForm [name="kind"]').selectOption('reset');
+  await page.locator('#propEventForm [name="amount"]').fill('25');
+  await page.locator('#propEventForm [name="date"]').fill('2026-10-16');
+  await page.locator('#propEventForm button').click();
+  await page.locator('#propEventForm [name="kind"]').selectOption('payout');
+  await page.locator('#propEventForm [name="amount"]').fill('750');
+  await page.locator('#propEventForm [name="date"]').fill('2026-11-01');
+  await page.locator('#propEventForm button').click();
+  await page.locator('[data-page="performance"]').first().click();
+  await page.locator('#perfPeriod').selectOption('all');
+  await expect(page.locator('#perfMetrics')).toContainText('$225.00');
+  await expect(page.locator('#perfMetrics')).toContainText('$750.00');
+  await expect(page.locator('#perfMetrics')).toContainText('$525.00');
+  await expect(page.locator('#perfMetrics')).toContainText('233.3%');
+  await expect(page.locator('#perfPayouts')).toContainText('2026-11-01');
+});
