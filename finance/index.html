@@ -129,12 +129,21 @@ let csvSource=null,csvCandidates=[];const csvAliases={date:['date','transaction 
    ['transactions','propAccounts','propEvents','propAudit','subscriptions','invoices'].every(k=>Array.isArray(b[k]));
  const preferencesIds=['overviewCurrency','overviewPeriod','reportCurrency','period','tradingCurrency','recCurrency','perfCurrency','perfPeriod','plCurrency','plPeriod','csvDefaultCurrency'];
  const collectPreferences=()=>Object.fromEntries(preferencesIds.map(id=>[id,document.getElementById(id)?.value]).filter(([k,v])=>typeof v==='string'));
- const originalFingerprint=cloudFingerprint;
- cloudFingerprint=()=>JSON.stringify([originalFingerprint(),collectPreferences()]);
- // Older Finance Hub snapshots were synced before Gmail financial evidence existed.
- // Accept the original fingerprint only when no Gmail evidence is present, then
- // upgrade the marker as part of the normal verified snapshot load.
- const legacyFingerprint=()=>JSON.stringify([JSON.stringify([items,propAccounts,propEvents,propAudit,subscriptions,invoices]),collectPreferences()]);
+ // Gmail evidence has its own private Cloudflare D1 store and is imported
+ // independently. It must NOT cause accounting snapshot revisions or conflicts.
+ const accountingFingerprint=()=>JSON.stringify([items,propAccounts,propEvents,propAudit,subscriptions,invoices]);
+ cloudFingerprint=()=>JSON.stringify([accountingFingerprint(),collectPreferences()]);
+ // Accept markers from previous releases only when the accounting portions
+ // are identical. Never accept a changed transaction, account or invoice.
+ function safeAccountingMarker_(stored){
+   if(typeof stored!=='string')return false;
+   if(stored===cloudFingerprint())return true;
+   try{
+     const outer=JSON.parse(stored),oldRows=JSON.parse(outer[0]);
+     return Array.isArray(oldRows)&&oldRows.length>=6&&
+       JSON.stringify([JSON.stringify(oldRows.slice(0,6)),outer[1]])===cloudFingerprint();
+   }catch{return false}
+ }
  const originalBackup=currentCloudBackup;
  currentCloudBackup=()=>({...originalBackup(),preferences:collectPreferences()});
  const markerKey=id=>'finance-hub-synced-'+id;
@@ -164,7 +173,7 @@ let csvSource=null,csvCandidates=[];const csvAliases={date:['date','transaction 
  }
  function hasSafeLocalBaseline(){
    const fp=cloudFingerprint();
-   return isEmpty()||(currentMarker&&currentMarker.userId===cloud.user.id&&(currentMarker.fingerprint===fp||(gmailEvidence.length===0&&currentMarker.fingerprint===legacyFingerprint())));
+   return isEmpty()||(currentMarker&&currentMarker.userId===cloud.user.id&&safeAccountingMarker_(currentMarker.fingerprint));
  }
  async function refreshRemote(){
    if(cloud.busy||!cloud.user||paused)return;
