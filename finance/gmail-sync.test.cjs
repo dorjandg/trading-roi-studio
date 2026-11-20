@@ -26,15 +26,22 @@ const db={
 const secret='testing-hmac-secret-32-random-chars-long';
 const runtime={TextEncoder,TextDecoder,Response,crypto:webcrypto,Date,Uint8Array,JSON,Number,String,Math,RegExp,Error,Set};
 vm.createContext(runtime);vm.runInContext(file,runtime);
-async function request(body,signature){
+async function request(body,signature,proofOverride){
  const stamp=String(Date.now());
  const key=await webcrypto.subtle.importKey('raw',new TextEncoder().encode(secret),{name:'HMAC',hash:'SHA-256'},false,['sign']);
  const hex=Array.from(new Uint8Array(await webcrypto.subtle.sign('HMAC',key,new TextEncoder().encode(stamp+'\n'+body)))).map(x=>x.toString(16).padStart(2,'0')).join('');
- return runtime.gmailHandler({request:new Request('https://fin-kac.pages.dev/api/gmail-ingest',{method:'POST',headers:{'x-finance-timestamp':stamp,'x-finance-signature':signature===undefined?hex:signature,'content-type':'application/json'},body}),env:{FINANCE_DB:db,FINANCE_GMAIL_SYNC_SECRET:secret,FINANCE_GMAIL_SYNC_EMAIL:ownerEmail}});
+ const proof=Array.from(new Uint8Array(await webcrypto.subtle.sign('HMAC',key,new TextEncoder().encode('finance-keycheck-v1:'+stamp)))).map(x=>x.toString(16).padStart(2,'0')).join('');
+ return runtime.gmailHandler({request:new Request('https://fin-kac.pages.dev/api/gmail-ingest',{method:'POST',headers:{'x-finance-timestamp':stamp,'x-finance-signature':signature===undefined?hex:signature,'x-finance-keyproof':proofOverride===undefined?proof:proofOverride,'content-type':'application/json'},body}),env:{FINANCE_DB:db,FINANCE_GMAIL_SYNC_SECRET:secret,FINANCE_GMAIL_SYNC_EMAIL:ownerEmail}});
 }
 (async()=>{
  let res=await request(JSON.stringify({records:[]}),null);
  assert.equal(res.status,401,'Unsigned Gmail upload must fail');
+ let fail=await request(JSON.stringify({records:[]}),null,'0'.repeat(64));
+ assert.equal(fail.status,401);
+ assert.equal((await fail.json()).reason,'saved_secrets_differ','Key check diagnoses secret mismatches');
+ fail=await request(JSON.stringify({records:[]}),null);
+ assert.equal(fail.status,401);
+ assert.equal((await fail.json()).reason,'payload_signature_mismatch','Key match diagnoses body signature mistakes');
  const row={source_id:'gmail:abc123',date:'2026-11-20',provider:'FTMO',description:'Payment receipt',amount:'100.01',currency:'USDT',category:'Prop firms',status:'payment_confirmed',reference:'gmail:abc123'};
  const data=JSON.stringify({records:[row]});
  res=await request(data);assert.equal(res.status,200);
