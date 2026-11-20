@@ -31,6 +31,12 @@ assert.match(html,/id="gmailOverviewReviewQueue"/,'Overview has automated financ
 assert.match(html,/id="gmailDetectedMetrics"/,'Overview shows automatically detected financial activity independently of accounting');
 assert.match(html,/function gmailDetectedActivity_\(rows,currency,cutoff\)/,'Detected amounts are calculated from source evidence');
 assert.match(html,/function renderGmailDetected_\(\)/,'Detected activity updates dynamically');
+assert.match(html,/function gmailDetectedInventory_\(rows,cutoff\)/,'Detected inventory includes recognized amounts regardless of status or currency');
+assert.match(html,/Amounts recognized across all currencies/,'Overview displays real extracted evidence by native currency');
+assert.match(html,/Latest recognized financial notifications/,'Overview displays sample evidence instead of only empty KPIs');
+assert.match(html,/Raw notification sums are NOT income/,'Overview warns that raw evidence totals are not posted cash');
+assert.match(html,/data-detected-source/,'Evidence amounts can be opened for individual review');
+
 assert.match(html,/Potential expenses/,'Detected income and expenses are displayed as provisional data');
 assert.match(html,/ledgerLinked\.has\(r\.source_id\)/,'Already booked email receipts excluded from provisional amounts');
 assert.match(html,/matches\.has\(r\.source_id\)/,'Potential cross-provider duplicates excluded from provisional amounts');
