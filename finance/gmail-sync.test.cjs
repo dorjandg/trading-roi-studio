@@ -17,6 +17,10 @@ assert.match(financeUi,/syncButton\.textContent='Checking…'/,'Gmail sync butto
 assert.match(financeUi,/This does not trigger Gmail imports/,'Gmail refresh clarifies that imports run in Apps Script');
 
 assert.match(gas,/function startFullMailboxScan\(\)/,'Full Gmail history scan has a single startup entry point');
+assert.match(gas,/const FINANCE_ALLMAIL_PAGE_SIZE_ = 10;/,'Mailbox scan uses quota-friendly batches');
+assert.match(gas,/function pauseFullMailboxQuota_\(store,err\)/,'Quota pauses store retry information');
+assert.match(gas,/\['Next automatic retry \(UTC\)',state\.nextRetry/,'Review sheet shows explicit resume time');
+assert.match(gas,/Full mailbox backfill owns Gmail reads/,'Regular sync does not compete with Gmail full backfill');
 assert.match(gas,/function continueFullMailboxScan\(\)/,'Full Gmail history scan resumes with saved cursor');
 assert.match(gas,/includeSpamTrash:true/,'Full historical scan checks the entire mailbox including spam and trash');
 assert.match(gas,/pageToken:cursor\|\|undefined/,'Full historical scan continues exactly at its saved cursor');
