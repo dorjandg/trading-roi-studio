@@ -23,12 +23,59 @@
       "Lingerie",
       "Bodywear",
       "Home fragrances",
-      "Scents"
+      "Scents",
+      "Accessories",
+      "Hair Accessories",
+      "Scarves",
+      "Beauty Cases",
+      "Shapewear",
+      "Breast Tape",
+      "Backless Bras",
+      "Footwear"
     ],
-    "brands": [],
+    "brands": [
+      "PALADINI",
+      "MEY",
+      "CHANTELLE",
+      "WOLFORD",
+      "ETRO",
+      "ETRO HOME",
+      "BOGLIETTI",
+      "FALKE",
+      "EMANUELA BIFFOLI",
+      "WACOAL",
+      "HANRO",
+      "BYEBRA",
+      "CALLA LINGERIE",
+      "FURSTENBERG",
+      "EVA BITZER",
+      "WEISS",
+      "FLORA LASTRAIOLI",
+      "ZIMMERLI",
+      "CARRARA",
+      "MENGHI",
+      "MARC&ANDRE PARIS",
+      "SHIKKOSA",
+      "HUIT"
+    ],
     "products": [],
     "pricing_currency": "EUR",
-    "note": "No specific product prices, catalog numbers, sizes, or stock have been verified yet. Do not claim availability."
+    "note": "Brands and categories are owner-provided; no individual products, catalog numbers, prices, sizes or current inventory supplied. Brand-to-category mapping not yet verified.",
+    "category_groups": {
+      "Accessories": [
+        "Hair Accessories",
+        "Scarves",
+        "Beauty Cases",
+        "Footwear"
+      ],
+      "Solutions": [
+        "Shapewear",
+        "Breast Tape",
+        "Backless Bras"
+      ]
+    },
+    "brands_source": "Owner-provided Brands.docx; names confirmed as boutique brand list, not current stock",
+    "categories_source": "Owner-provided handwritten accessories and solutions note"
   },
   "policies": {
     "delivery": null,
@@ -52,7 +99,10 @@
       "How can I contact you?",
       "What collections do you offer?",
       "Can you help me choose a gift?",
-      "How can I ask about sizes and prices?"
+      "How can I ask about sizes and prices?",
+      "Which brands does GLAM carry?",
+      "Do you have shapewear or breast tape?",
+      "What accessories do you offer?"
     ]
   }
 }
