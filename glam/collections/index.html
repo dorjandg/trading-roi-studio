@@ -42,7 +42,7 @@ document.getElementById('return').onclick=back;window.addEventListener('popstate
   }
   window.glamRenderCollectionProducts=render;
   const initial=new URLSearchParams(location.search).get('category');
-  if(initial)render(initial);
-  fetch('/api/catalog',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('API unavailable');return r.json()}).then(d=>{if(Array.isArray(d.products)){products=d.products;if(active)render(active)}}).catch(()=>{});
+  if(initial){render(initial);const section=document.getElementById('detail');if(section&&!section.classList.contains('open')){const collection=typeof collections!=='undefined'&&collections.find(c=>c.id===initial);if(collection){document.getElementById('overview').hidden=true;section.classList.add('open');document.getElementById('detailTitle').textContent=collection.name;document.getElementById('detailDescription').textContent=collection.description;const sub=document.getElementById('subgrid');sub.replaceChildren();collection.items.forEach(item=>{const node=document.createElement('div');node.className='subitem';node.textContent=item;sub.append(node)})}}}
+  fetch('/api/catalog',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('API unavailable');return r.json()}).then(d=>{if(Array.isArray(d.products)&&d.products.length){products=d.products;if(active)render(active)}}).catch(()=>{});
 })();
 </script></body></html>
