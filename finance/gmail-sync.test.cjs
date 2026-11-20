@@ -66,17 +66,24 @@ async function request(body,signature,proofOverride){
  fail=await request(JSON.stringify({records:[]}),null);
  assert.equal(fail.status,401);
  assert.equal((await fail.json()).reason,'payload_signature_mismatch','Key match diagnoses body signature mistakes');
+ assert.match(gas,/authentication\|verification/,'Apps Script must filter login/security codes before upload');
+ assert.match(financeUi,/GMAIL_SECURITY_SUBJECT/,'Dashboard must suppress existing login/security evidence');
+ const security={source_id:'gmail:topstep-otp',date:'2026-11-20',provider:'Topstep',description:'Your Topstep authentication code',amount:'',currency:'',category:'Prop firms',status:'needs_review',reference:'gmail:topstep-otp'};
+ let ignoredResponse=await request(JSON.stringify({records:[security]}));
+ assert.equal(ignoredResponse.status,200);
+ assert.deepEqual(await ignoredResponse.json(),{accepted:1,inserted:0,duplicates:0,ignoredSecurity:1});
+ assert.equal(records.size,0,'Authentication code must not create financial evidence');
  const row={source_id:'gmail:abc123',date:'2026-11-20',provider:'FTMO',description:'Payment receipt',amount:'100.01',currency:'USDT',category:'Prop firms',status:'payment_confirmed',reference:'gmail:abc123'};
  const data=JSON.stringify({records:[row]});
  res=await request(data);assert.equal(res.status,200);
- assert.deepEqual(await res.json(),{accepted:1,inserted:1,duplicates:0});
+ assert.deepEqual(await res.json(),{accepted:1,inserted:1,duplicates:0,ignoredSecurity:0});
  res=await request(data);assert.equal(res.status,200);
  assert.equal((await res.json()).duplicates,1,'Re-imported Gmail source must not duplicate');
  assert.equal(records.size,1,'Only one private evidence row should exist');
  // The same message can occur twice inside one upstream page, and can be retried
  // again by the scheduled trigger. Neither case may create another database row.
  res=await request(JSON.stringify({records:[row,row]}));assert.equal(res.status,200);
- assert.deepEqual(await res.json(),{accepted:2,inserted:0,duplicates:2});
+ assert.deepEqual(await res.json(),{accepted:2,inserted:0,duplicates:2,ignoredSecurity:0});
  assert.equal(records.size,1,'Duplicate Gmail IDs inside a batch must not duplicate');
  res=await request(JSON.stringify({records:[{...row,source_id:'gmail:bad',date:'wrong'}]}));
  assert.equal(res.status,400,'Invalid data must be rejected');
