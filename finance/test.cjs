@@ -74,4 +74,14 @@ assert.ok(html.includes('id="ftmo-gmail-receipt-review"'),'FTMO receipt review l
 assert.ok(html.includes('Nothing has been saved.'),'FTMO receipts require human confirmation');
 assert.ok(html.includes("r.currency+' requires conversion/reconciliation"),'Non-ledger currencies cannot be silently booked');
 assert.ok(html.includes("x.reference===reference"),'Previously linked Gmail sources are detected');
+assert.ok(html.includes('id="gmailFinanceRegister"'),'Gmail financial inbox exists');
+assert.ok(html.includes('id="gmailEvidenceFile"'),'Gmail review CSV input exists');
+assert.ok(html.includes('id="gmailEvidenceRows"'),'Financial evidence table exists');
+assert.ok(html.includes("const GMAIL_EVIDENCE_KEY='finance-hub-gmail-evidence-v1'"),'Gmail evidence stored separately from transactions');
+assert.ok(html.includes("invoices,gmailEvidence}}$('cloudConnect')"),'Gmail evidence included in private cloud snapshot');
+assert.ok(html.includes('Array.isArray(b.gmailEvidence)?b.gmailEvidence:[]'),'Older snapshots remain compatible');
+assert.ok(html.includes('id="gmail-financial-evidence"'),'Financial evidence import script installed');
+assert.ok(html.includes("old.has(rec.source_id)"),'Duplicate Gmail source references skipped');
+assert.ok(html.includes("No accounting transactions were added."),'Gmail import does not auto-post cash movements');
+assert.ok(html.includes('id="gmailEvidenceExport"'),'Gmail evidence data can be exported');
 console.log('PASS Finance Hub: JavaScript syntax, DOM references, 15-page navigation, financial fixtures, linked fee partition, payout dates, backup round trip.');
