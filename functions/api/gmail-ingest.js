@@ -44,10 +44,18 @@ export async function onRequestPost({request,env}){
   if(!/^[a-zA-Z0-9._:-]{3,120}$/.test(source)||!/^(?:20|19)\d{2}-\d{2}-\d{2}$/.test(date)||!provider||provider.length>120||description.length>250||reference.length>130||amount.length>35||currency.length>10||!(/^-?\d+(\.\d{1,8})?$/.test(amount)||amount==="")||!(/^[A-Z0-9]{0,10}$/.test(currency)))return reply({error:"Invalid record fields"},400);
   pending.push({source,date,provider,description,amount,currency,category,status,reference});
  }
- let inserted=0;
+ let inserted=0,enriched=0;
  for(const r of pending){
   const result=await env.FINANCE_DB.prepare("INSERT OR IGNORE INTO gmail_financial_evidence(user_id,source_id,occurred_on,provider,description,amount,currency,category,status,reference) VALUES(?,?,?,?,?,?,?,?,?,?)").bind(person.id,r.source,r.date,r.provider,r.description,r.amount,r.currency,r.category,r.status,r.reference).run();
-  inserted+=result.meta?.changes||0;
+  const created=Number(result.meta?.changes||0);
+  inserted+=created;
+  // Re-reading an old Gmail message may now extract an amount from an HTML
+  // receipt. Enrich only an originally blank amount/currency, never replace
+  // a stored amount, user category, status, date, description or source ID.
+  if(!created&&r.amount&&r.currency){
+   const updated=await env.FINANCE_DB.prepare("UPDATE gmail_financial_evidence SET amount=?, currency=? WHERE user_id=? AND source_id=? AND amount='' AND currency=''").bind(r.amount,r.currency,person.id,r.source).run();
+   enriched+=Number(updated.meta?.changes||0);
+  }
  }
- return reply({accepted:data.records.length,inserted,duplicates:pending.length-inserted,ignoredSecurity});
+ return reply({accepted:data.records.length,inserted,duplicates:pending.length-inserted,ignoredSecurity,enriched});
 }
