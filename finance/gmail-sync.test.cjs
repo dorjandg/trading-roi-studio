@@ -50,13 +50,22 @@ assert.match(gas,/payload:utf8Payload/,'Gmail payload uses the same bytes');
 assert.match(gas,/result\.inserted\+result\.duplicates\+ignored!==result\.accepted/,'Every scheduled batch audits duplicates plus ignored security messages');
 assert.match(gas,/function ensureEnrichmentVersion_\(store\)/,'Enrichment pass has resumable independent cursor');
 assert.match(gas,/function decodeFinanceHtml_\(markup\)/,'HTML-only financial receipt support is present');
+assert.match(gas,/function financePaymentSubject_\(subject\)/,'Gmail uses payment-only subject gate');
+assert.match(gas,/!financePaymentSubject_\(subject\)/,'Market alerts are excluded before body decoding');
+assert.match(gas,/order confirmation\|order placed/,'Unpaid order confirmations do not become settled expenses');
+
 assert.match(financeUi,/Marketing rewards, promotional payouts and unused credit/,'Marketing amounts are not booked as cash');
 assert.match(financeUi,/activation_fee_processed/,'Processed activation fee evidence is classified separately');
 
 const parserContext={};vm.createContext(parserContext);
-vm.runInContext(gas+'\nthis.moneyFor=moneyFor_;this.html=decodeFinanceHtml_;this.statusFor=statusFor_;',parserContext);
+vm.runInContext(gas+'\nthis.moneyFor=moneyFor_;this.html=decodeFinanceHtml_;this.statusFor=statusFor_;this.financePaymentSubject_=financePaymentSubject_;',parserContext);
 assert.equal(parserContext.statusFor('Your Express Funded Account is Activated','Your Activation Fee of $149.00 has been processed.'),'activation_fee_processed','Processed activation fee is recognized as charge evidence');
 assert.equal(parserContext.statusFor('Your payout has been approved!','Your payout of $1970 has been approved and is on the way.'),'payout_approved','Approved payout is not settled cash');
+assert.equal(parserContext.financePaymentSubject_('News Alerts - 19. 11. 2026'),false,'FTMO news alerts do not stage');
+assert.equal(parserContext.financePaymentSubject_('Global Market Update – Key Events'),false,'Market recap ignored');
+assert.equal(parserContext.financePaymentSubject_('Order Confirmation of your 2-Step FTMO Challenge'),false,'FTMO order alone is not paid');
+assert.equal(parserContext.financePaymentSubject_('Your payment to FTMO Evaluation Global is complete'),true,'Confirmo FTMO payment recognized');
+assert.equal(parserContext.financePaymentSubject_('Your Express Funded Account is Activated'),true,'Topstep activation can be inspected for processed fee');
 const cases=[
  ['Payment receipt','Total paid: AED 125.50','125.50','AED'],
  ['Bank transfer','Amount: 250.00 EUR','250.00','EUR'],
