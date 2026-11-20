@@ -75,7 +75,90 @@
       ]
     },
     "brands_source": "Owner-provided Brands.docx; names confirmed as boutique brand list, not current stock",
-    "categories_source": "Owner-provided handwritten accessories and solutions note"
+    "categories_source": "Owner-provided handwritten accessories and solutions note",
+    "brand_profiles": [
+      {
+        "name": "PALADINI",
+        "story": "Italian luxury lingerie rooted in Milanese tailoring tradition; refined, romantic pieces and nightwear.",
+        "best_for": "Clients who value couture-inspired intimacy and Italian craftsmanship.",
+        "heritage": "Brand established in 1999; family atelier tradition predates it.",
+        "source": "https://partnerbrands-global.intimamediagroup.com/brand/paladini/",
+        "verified": true
+      },
+      {
+        "name": "CHANTELLE",
+        "story": "Parisian lingerie house combining fit expertise, design and innovation.",
+        "best_for": "Clients who want sophisticated everyday lingerie and thoughtful support.",
+        "heritage": "Company heritage dates to 1876.",
+        "source": "https://chantelle.com/shop/en-l/about-us",
+        "verified": true
+      },
+      {
+        "name": "WOLFORD",
+        "story": "Austrian luxury skinwear house celebrated for legwear, bodysuits and a second-skin approach.",
+        "best_for": "Clients drawn to sleek, architectural essentials.",
+        "heritage": "Established in Bregenz in 1950.",
+        "source": "https://www.wolford.com/en-gb/about-us",
+        "verified": true
+      },
+      {
+        "name": "ETRO",
+        "story": "Italian fashion house known for expressive prints, textiles and a distinctive paisley signature.",
+        "best_for": "Clients who enjoy artistic, individual style.",
+        "heritage": "Founded in 1968.",
+        "source": "https://www.etro.com/ch-en/about-us.html",
+        "verified": true
+      },
+      {
+        "name": "ETRO HOME",
+        "story": "ETRO's decorative home universe brings the house's textile and print identity into interiors.",
+        "best_for": "Clients seeking expressive home accents or distinctive gifts.",
+        "heritage": "Part of the ETRO creative world.",
+        "source": "https://www.etro.com/ch-en/homepage.html",
+        "verified": true
+      },
+      {
+        "name": "WACOAL",
+        "story": "Japanese-origin lingerie specialist with an emphasis on fit, craftsmanship and body-conscious design.",
+        "best_for": "Clients prioritizing fit and considered everyday comfort.",
+        "heritage": "Launched in Japan in 1949.",
+        "source": "https://www.wacoallingerie.com/row/en/about-us/",
+        "verified": true
+      },
+      {
+        "name": "HANRO",
+        "story": "Swiss heritage underwear, nightwear and loungewear with discreet luxury and fine natural fibres.",
+        "best_for": "Clients who appreciate understated quality and tactile comfort.",
+        "heritage": "Founded in 1884 in Liestal.",
+        "source": "https://hanro.com/pages/about-us",
+        "verified": true
+      },
+      {
+        "name": "EVA BITZER",
+        "story": "European silk, nightwear and loungewear label with delicate detailing and distinctive prints.",
+        "best_for": "Clients seeking relaxed refinement and silk gifting.",
+        "heritage": "Part of EVA B. BITZER GmbH.",
+        "source": "https://www.fuerstenberg-fashion.de/eva-bitzer",
+        "verified": true
+      },
+      {
+        "name": "FURSTENBERG",
+        "story": "European label within the EVA B. BITZER group focused on beachwear, nightwear and loungewear.",
+        "best_for": "Clients looking for elegant leisure and resort dressing.",
+        "heritage": "Part of a family-driven German fashion business.",
+        "source": "https://curve-newyork.german-pavilion.com/en/sites/exhibitors/115264",
+        "verified": true
+      },
+      {
+        "name": "WEISS",
+        "story": "Nightwear and loungewear label within the EVA B. BITZER family of brands.",
+        "best_for": "Clients interested in refined relaxation wear.",
+        "heritage": "Part of a family-driven German fashion business.",
+        "source": "https://curve-newyork.german-pavilion.com/en/sites/exhibitors/115264",
+        "verified": true
+      }
+    ],
+    "brand_research_status": "10 brand profiles grounded in external sources; remaining listed brands await individual verification. These are brand descriptions, not GLAM stock claims."
   },
   "policies": {
     "delivery": null,
@@ -91,7 +174,9 @@
       "When a verified answer exists, give it directly without claiming not to know.",
       "If exact information is missing, offer the verified WhatsApp contact for confirmation.",
       "Use the customer's language: English, Albanian or Italian.",
-      "Offer one relevant follow-up question when helpful."
+      "Offer one relevant follow-up question when helpful.",
+      "For brand history and positioning, use catalog.brand_profiles and its source URLs. Do not invent accolades, celebrity endorsements or product availability.",
+      "When asked about a brand without a verified profile, acknowledge that GLAM lists the brand but avoid unsupported history or product claims."
     ],
     "suggested_questions": [
       "Where is your boutique?",
