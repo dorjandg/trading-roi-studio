@@ -5,6 +5,22 @@ const vm=require('node:vm');
 const html=fs.readFileSync(require('node:path').join(__dirname,'index.html'),'utf8');
 const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(x=>x[1]).filter(Boolean);
 assert.match(html,/const accountingFingerprint=\(\)=>JSON\.stringify\(\[items,propAccounts,propEvents,propAudit,subscriptions,invoices\]\)/,'Cloud autosave ignores independently ingested Gmail evidence');
+assert.match(html,/function sameAccountingAsSnapshot_\(data\)/,'Cloud reload compares actual accounting with owner snapshot');
+assert.match(html,/hasSafeLocalBaseline\(snapshot\.data\)/,'Initial connection only falls back to verified snapshot data');
+const sameAccounting=html.match(/function sameAccountingAsSnapshot_\(data\)\{[\s\S]*?\n \}(?=\n function hasSafeLocalBaseline)/);
+assert.ok(sameAccounting,'Cloud reload exact accounting match verifier is present');
+function compareAccounting(local,remote){
+ const fields=['items','propAccounts','propEvents','propAudit','subscriptions','invoices'];
+ const context={JSON,...local,isValid:b=>!!b&&fields.slice(1).every(k=>Array.isArray(b[k]))&&Array.isArray(b.transactions)};
+ vm.createContext(context);vm.runInContext(sameAccounting[0]+';this.compare=sameAccountingAsSnapshot_;',context);
+ return context.compare(remote);
+}
+const accountingFixture={items:[{id:'a1',amount:125}],propAccounts:[],propEvents:[],propAudit:[],subscriptions:[],invoices:[]};
+const authenticatedSnapshot={transactions:[{id:'a1',amount:125}],propAccounts:[],propEvents:[],propAudit:[],subscriptions:[],invoices:[]};
+assert.equal(compareAccounting(accountingFixture,authenticatedSnapshot),true,'Identical authenticated accounting safely reconnects after reload');
+assert.equal(compareAccounting(accountingFixture,{...authenticatedSnapshot,transactions:[{id:'a1',amount:126}]}),false,'Changed financial transaction always blocks silent reload');
+assert.equal(compareAccounting(accountingFixture,{...authenticatedSnapshot,invoices:[{id:'bill1'}]}),false,'Changed invoices always block silent reload');
+
 assert.match(html,/safeAccountingMarker_\(currentMarker\.fingerprint\)/,'Legacy Gmail-inclusive sync markers are reconciled only when accounting unchanged');
 assert.match(html,/id="gmailOverviewCard"/,'Financial overview displays a Gmail evidence review card');
 assert.match(html,/id="gmailOverviewMetrics"/,'Financial overview includes an evidence KPI strip');
