@@ -7,6 +7,8 @@ const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].m
 assert.match(html,/const accountingFingerprint=\(\)=>JSON\.stringify\(\[items,propAccounts,propEvents,propAudit,subscriptions,invoices\]\)/,'Cloud autosave ignores independently ingested Gmail evidence');
 assert.match(html,/<option value="all">All source rows<\/option><option value="receipt_missing">/,'Audit opens to all loaded Gmail sources, not just missing amounts');
 assert.match(html,/function gmailAuditCoverage_\(\)/,'Audit reports loaded source IDs and filtered notices');
+assert.match(html,/Prepare draft/,'Eligible source audit candidates provide direct draft action');
+assert.match(html,/audit\.quality==='nontransaction'/,'Nontransaction evidence never enters accounting drafts');
 assert.doesNotMatch(html,/for\(const r of server\.amountSamples\|\|\[\]\)/,'A 40-item summary sample must not inflate the full Gmail receipt inventory');
 assert.match(html,/fullCloudReady=gmailRemoteOwner===cloud\.user\.id/,'Gmail Overview distinguishes full cloud load from cached evidence');
 assert.match(html,/if\(!fullCloudReady\)\{/,'Unloaded Gmail evidence displays loading rather than zero receipts');
