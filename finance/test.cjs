@@ -7,6 +7,8 @@ const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].m
 assert.match(html,/const accountingFingerprint=\(\)=>JSON\.stringify\(\[items,propAccounts,propEvents,propAudit,subscriptions,invoices\]\)/,'Cloud autosave ignores independently ingested Gmail evidence');
 assert.match(html,/function sameAccountingAsSnapshot_\(data\)/,'Cloud reload compares actual accounting with owner snapshot');
 assert.match(html,/hasSafeLocalBaseline\(snapshot\.data\)/,'Initial connection only falls back to verified snapshot data');
+assert.ok(!html.includes('if(!hasSafeLocalBaseline()){'),'Initial sync must never omit authenticated snapshot data');
+assert.match(html,/if\(snapshot\.data\)\{\s*if\(!hasSafeLocalBaseline\(snapshot\.data\)\)/,'Initial snapshot load passes data to baseline check rather than falsely pausing');
 const sameAccounting=html.match(/function sameAccountingAsSnapshot_\(data\)\{[\s\S]*?\n \}(?=\n function hasSafeLocalBaseline)/);
 assert.ok(sameAccounting,'Cloud reload exact accounting match verifier is present');
 function compareAccounting(local,remote){
