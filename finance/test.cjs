@@ -35,7 +35,7 @@ assert.match(html,/gmailServerSummaryOwner_===cloud\.user\.id/,'Live evidence su
 assert.match(html,/renderGmailLiveFeed_\(\);\s*gmailLiveStatus_\('Updated '/,'Database summary refresh updates Overview and its timestamp');
 
 assert.match(html,/document\.dispatchEvent\(new Event\('finance-cloud-ready'\)\)/,'Successful cloud initialization triggers immediate Gmail refresh');
-assert.match(html,/document\.addEventListener\('finance-cloud-ready',\(\)=>fetchGmailEvidence\(\)\)/,'Gmail evidence refresh waits for authenticated identity');
+assert.match(html,/document\.addEventListener\('finance-cloud-ready',\(\)=>\{refreshGmailSummary_\(\);fetchGmailEvidence\(\)\}\)/,'Gmail summaries and evidence refresh after authenticated identity');
 assert.match(html,/gmailLiveStatus_\('Syncing financial evidence…'\)/,'Live indicator distinguishes syncing from stale cached records');
 
 assert.match(html,/function gmailLiveFeedGroups_\(rows\)/,'Live financial evidence is grouped automatically');
