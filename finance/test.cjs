@@ -74,6 +74,8 @@ assert.ok(html.includes('id="ftmo-gmail-receipt-review"'),'FTMO receipt review l
 assert.ok(html.includes('Nothing has been saved.'),'FTMO receipts require human confirmation');
 assert.ok(html.includes("r.currency+' requires conversion/reconciliation"),'Non-ledger currencies cannot be silently booked');
 assert.ok(html.includes("x.reference===reference"),'Previously linked Gmail sources are detected');
+assert.ok(html.includes('id="page-gmail"'),'Dedicated Gmail financial inbox page exists');
+assert.ok(html.includes('data-page="gmail"'),'Gmail financial inbox navigation exists');
 assert.ok(html.includes('id="gmailFinanceRegister"'),'Gmail financial inbox exists');
 assert.ok(html.includes('id="gmailEvidenceFile"'),'Gmail review CSV input exists');
 assert.ok(html.includes('id="gmailEvidenceRows"'),'Financial evidence table exists');
@@ -87,4 +89,4 @@ assert.ok(html.includes('id="gmailEvidenceExport"'),'Gmail evidence data can be 
 assert.ok(html.includes("[items,propAccounts,propEvents,propAudit,subscriptions,invoices,gmailEvidence]=[[],[],[],[],[],[],[]]"),'Gmail financial evidence cleared on account switch');
 assert.ok(html.includes('Sign in to your verified Finance Hub cloud account before importing Gmail evidence.'),'Gmail import requires verified login');
 assert.ok(html.includes('gmailEvidence=Array.isArray(b.gmailEvidence)?b.gmailEvidence:[]'),'Gmail evidence restores with signed-in cloud snapshot');
-console.log('PASS Finance Hub: JavaScript syntax, DOM references, 15-page navigation, financial fixtures, linked fee partition, payout dates, backup round trip.');
+console.log('PASS Finance Hub: JavaScript syntax, DOM references, 16-page navigation, financial fixtures, linked fee partition, payout dates, backup round trip.');
