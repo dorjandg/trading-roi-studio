@@ -241,115 +241,124 @@ function syncPage_(query,token,config){
  * Start temporary, self-removing catch-up runs every five minutes.
  * The normal 15-minute sync remains untouched. Safe to run more than once.
  */
-function startGmailHistoryAutoImport(){
-  config_();
-  const store=PropertiesService.getScriptProperties();
-  if(store.getProperty('FINANCE_BACKFILL_DONE')==='1'){
-    stopGmailHistoryAutoImport_();
-    console.log('Historical Gmail import already complete; no catch-up trigger needed.');
-    return;
-  }
-  const existing=ScriptApp.getProjectTriggers().filter(t=>t.getHandlerFunction()==='importGmailHistoryNow');
-  if(!existing.length){
-    ScriptApp.newTrigger('importGmailHistoryNow').timeBased().everyMinutes(5).create();
-    console.log('Temporary 5-minute Gmail history catch-up enabled; regular 15-minute sync left intact.');
-  }else console.log('Gmail history catch-up trigger already installed; no duplicate created.');
-  importGmailHistoryNow();
+function ensureEnrichmentVersion_(store){
+ const version='finance-html-amount-enrich-v1';
+ if(store.getProperty('FINANCE_ENRICH_VERSION')!==version){
+  store.deleteProperty('FINANCE_ENRICH_PAGE_TOKEN');
+  store.deleteProperty('FINANCE_ENRICH_DONE');
+  store.setProperty('FINANCE_ENRICH_VERSION',version);
+  console.log('HTML amount enrichment scheduled to revisit financial messages from newest.');
+ }
 }
-/** Only delete the temporary history trigger. Never change the regular sync. */
+function startGmailHistoryAutoImport(){
+ config_();
+ const store=PropertiesService.getScriptProperties();
+ ensureEnrichmentVersion_(store);
+ if(store.getProperty('FINANCE_BACKFILL_DONE')==='1'&&store.getProperty('FINANCE_ENRICH_DONE')==='1'){
+  stopGmailHistoryAutoImport_();
+  console.log('Historical import and amount enrichment already complete.');
+  return;
+ }
+ const existing=ScriptApp.getProjectTriggers().filter(t=>t.getHandlerFunction()==='importGmailHistoryNow');
+ if(!existing.length){
+  ScriptApp.newTrigger('importGmailHistoryNow').timeBased().everyMinutes(5).create();
+  console.log('Temporary five-minute history and amount-enrichment trigger enabled.');
+ }else console.log('Temporary historical import trigger already exists.');
+ importGmailHistoryNow();
+}
+/** Only delete the temporary history trigger, never the regular sync trigger. */
 function stopGmailHistoryAutoImport_(){
-  for(const trigger of ScriptApp.getProjectTriggers()){
-    if(trigger.getHandlerFunction()==='importGmailHistoryNow')ScriptApp.deleteTrigger(trigger);
-  }
+ for(const trigger of ScriptApp.getProjectTriggers()){
+  if(trigger.getHandlerFunction()==='importGmailHistoryNow')ScriptApp.deleteTrigger(trigger);
+ }
 }
 function stopGmailHistoryAutoImport(){
-  stopGmailHistoryAutoImport_();
-  console.log('Temporary Gmail history catch-up stopped. Regular 15-minute sync is unchanged.');
+ stopGmailHistoryAutoImport_();
+ console.log('Temporary Gmail catch-up stopped. Regular fifteen-minute sync unchanged.');
 }
+function runHistoryPass_(store,config,phase,maxPages,deadline){
+ const enrich=phase==='enrichment',tokenKey=enrich?'FINANCE_ENRICH_PAGE_TOKEN':'FINANCE_BACKFILL_PAGE_TOKEN';
+ const doneKey=enrich?'FINANCE_ENRICH_DONE':'FINANCE_BACKFILL_DONE';
+ let pages=0,inserted=0,duplicates=0,accepted=0,enriched=0,rateLimited=false,complete=store.getProperty(doneKey)==='1';
+ while(!complete&&pages<maxPages&&Date.now()<deadline){
+  const token=store.getProperty(tokenKey)||'';
+  let page;
+  try{page=syncPage_(FINANCE_QUERY,token,config)}
+  catch(err){
+   if(gmailQuotaError_(err)){pauseGmailQuota_(store,err);rateLimited=true;break}
+   if(token&&/page.?token|invalid argument/i.test(String(err))){
+    store.deleteProperty(tokenKey);
+    throw Error('Gmail '+phase+' cursor expired. Next run restarts at newest with source-ID deduplication. '+err.message);
+   }
+   throw err;
+  }
+  accepted+=page.result.accepted;
+  inserted+=page.result.inserted;
+  duplicates+=page.result.duplicates;
+  enriched+=Number(page.result.enriched||0);
+  pages++;
+  if(page.pageToken)store.setProperty(tokenKey,page.pageToken);
+  else{store.deleteProperty(tokenKey);store.setProperty(doneKey,'1');complete=true}
+  if(!complete&&pages<maxPages&&Date.now()+12000<deadline)Utilities.sleep(12000);
+ }
+ console.log('Gmail '+phase+': pages='+pages+' accepted='+accepted+' inserted='+inserted+' duplicates='+duplicates+' enriched='+enriched+' complete='+complete+' rateLimited='+rateLimited);
+ return {complete,rateLimited};
+}
+/** Resumable two-stage import: first capture messages, then revisit old HTML receipts. */
 function importGmailHistoryNow(){
-  const lock=LockService.getScriptLock();
-  if(!lock.tryLock(1000)){console.log('Another Gmail import is active; no duplicate worker started.');return;}
-  try{
-    const config=config_(),store=PropertiesService.getScriptProperties();
-    if(gmailCoolingDown_(store))return;
-    const version='finance-search-20261120-v2';
-    if(store.getProperty('FINANCE_QUERY_VERSION')!==version){
-      store.deleteProperty('FINANCE_BACKFILL_DONE');
-      store.deleteProperty('FINANCE_BACKFILL_PAGE_TOKEN');
-      store.deleteProperty('FINANCE_RECENT_PAGE_TOKEN');
-      store.setProperty('FINANCE_QUERY_VERSION',version);
-      console.log('Expanded financial Gmail search started from newest; existing records are deduplicated.');
-    }
-    const deadline=Date.now()+160000;
-    let pages=0,accepted=0,inserted=0,duplicates=0,done=store.getProperty('FINANCE_BACKFILL_DONE')==='1',rateLimited=false;
-    if(done){stopGmailHistoryAutoImport_();console.log('Historical Gmail backfill already complete. Temporary trigger removed.');return;}
-    while(!done&&pages<8&&Date.now()<deadline){
-      const token=store.getProperty('FINANCE_BACKFILL_PAGE_TOKEN')||'';
-      let page;
-      try{page=syncPage_(FINANCE_QUERY,token,config)}
-      catch(err){
-        if(gmailQuotaError_(err)){pauseGmailQuota_(store,err);rateLimited=true;break;}
-        if(token&&/page.?token|invalid argument/i.test(String(err))){
-          store.deleteProperty('FINANCE_BACKFILL_PAGE_TOKEN');
-          throw Error('Gmail page cursor expired. Next run restarts safely with deduplication. '+err.message);
-        }
-        throw err;
-      }
-      accepted+=page.result.accepted;inserted+=page.result.inserted;duplicates+=page.result.duplicates;
-      pages++;
-      if(page.pageToken)store.setProperty('FINANCE_BACKFILL_PAGE_TOKEN',page.pageToken);
-      else{
-        store.deleteProperty('FINANCE_BACKFILL_PAGE_TOKEN');
-        store.setProperty('FINANCE_BACKFILL_DONE','1');
-        done=true;
-      }
-      if(!done&&pages<8&&Date.now()+12000<deadline)Utilities.sleep(12000);
-    }
-    console.log('Historical catch-up: pages='+pages+' accepted='+accepted+' inserted='+inserted+' duplicates='+duplicates+' complete='+done+' rateLimited='+rateLimited+'. '+(done?'The financial search backfill reached its end.':'Saved cursor; temporary trigger or existing regular sync will resume on schedule.'));
-    if(done){stopGmailHistoryAutoImport_();console.log('Historical import complete: temporary catch-up trigger deleted; regular 15-minute sync continues.');}
-  }finally{lock.releaseLock()}
+ const lock=LockService.getScriptLock();
+ if(!lock.tryLock(1000)){console.log('Another Gmail import is active; skipped concurrent run.');return}
+ try{
+  const config=config_(),store=PropertiesService.getScriptProperties();
+  if(gmailCoolingDown_(store))return;
+  const version='finance-search-20261120-v2';
+  if(store.getProperty('FINANCE_QUERY_VERSION')!==version){
+   store.deleteProperty('FINANCE_BACKFILL_DONE');
+   store.deleteProperty('FINANCE_BACKFILL_PAGE_TOKEN');
+   store.deleteProperty('FINANCE_RECENT_PAGE_TOKEN');
+   store.setProperty('FINANCE_QUERY_VERSION',version);
+  }
+  ensureEnrichmentVersion_(store);
+  const phase=store.getProperty('FINANCE_BACKFILL_DONE')==='1'?'enrichment':'historical';
+  if(phase==='enrichment'&&store.getProperty('FINANCE_ENRICH_DONE')==='1'){
+   stopGmailHistoryAutoImport_();
+   console.log('All historical capture and amount enrichment completed. Regular sync remains enabled.');
+   return;
+  }
+  const result=runHistoryPass_(store,config,phase,8,Date.now()+160000);
+  if(result.complete&&phase==='historical')console.log('Historical capture completed. Next temporary run revisits older messages to fill blank amounts.');
+  if(result.complete&&phase==='enrichment'){
+   stopGmailHistoryAutoImport_();
+   console.log('Gmail amount enrichment complete; temporary trigger removed.');
+  }
+ }finally{lock.releaseLock()}
 }
-/** One cycle: recent changes plus bounded historical pages. Idempotent in D1 by message ID. */
+/** Fifteen-minute refresh continues even after both historical phases complete. */
 function syncGmailFinance(){
-  const lock=LockService.getScriptLock();if(!lock.tryLock(1000))return;
-  try{
-    const config=config_(),store=PropertiesService.getScriptProperties();
-    if(gmailCoolingDown_(store))return;
-    const recent='after:'+Utilities.formatDate(new Date(Date.now()-FINANCE_RECHECK_DAYS*86400000),'Etc/UTC','yyyy/MM/dd')+' '+FINANCE_QUERY;
-    const recentToken=store.getProperty('FINANCE_RECENT_PAGE_TOKEN')||'';
-    let recentResult;
-    try{recentResult=syncPage_(recent,recentToken,config)}
-    catch(err){
-      if(gmailQuotaError_(err)){pauseGmailQuota_(store,err);return;}
-      // Gmail page tokens may become invalid if the mailbox has shifted.
-      // Retry the newest page on the next trigger rather than losing coverage.
-      if(recentToken){store.deleteProperty('FINANCE_RECENT_PAGE_TOKEN');throw Error('Recent paging cursor expired; restart next run: '+err.message)}
-      throw err;
-    }
-    console.log('Recent Gmail evidence: '+JSON.stringify(recentResult.result));
-    if(recentResult.pageToken)store.setProperty('FINANCE_RECENT_PAGE_TOKEN',recentResult.pageToken);
-    else store.deleteProperty('FINANCE_RECENT_PAGE_TOKEN');
-    // Bound scheduled history scans to avoid consuming Gmail API user quota.
-    const historicalDeadline=Date.now()+60000;
-    for(let pageIndex=0;pageIndex<2&&Date.now()<historicalDeadline&&store.getProperty('FINANCE_BACKFILL_DONE')!=='1';pageIndex++){
-      const oldToken=store.getProperty('FINANCE_BACKFILL_PAGE_TOKEN')||'';
-      let historic;
-      try{historic=syncPage_(FINANCE_QUERY,oldToken,config)}
-      catch(err){
-        if(gmailQuotaError_(err)){pauseGmailQuota_(store,err);return;}
-        if(oldToken&&/page.?token|invalid argument/i.test(String(err)))store.deleteProperty('FINANCE_BACKFILL_PAGE_TOKEN');
-        throw Error('Historical backfill page retry needed: '+err.message);
-      }
-      if(historic.pageToken)store.setProperty('FINANCE_BACKFILL_PAGE_TOKEN',historic.pageToken);
-      else{
-        store.deleteProperty('FINANCE_BACKFILL_PAGE_TOKEN');
-        store.setProperty('FINANCE_BACKFILL_DONE','1');
-        stopGmailHistoryAutoImport_();
-        console.log('Historical import complete: temporary catch-up trigger removed.');
-      }
-      console.log('Historical Gmail evidence page '+(pageIndex+1)+': '+JSON.stringify(historic.result));
-    }
-  }finally{lock.releaseLock()}
+ const lock=LockService.getScriptLock();if(!lock.tryLock(1000))return;
+ try{
+  const config=config_(),store=PropertiesService.getScriptProperties();
+  if(gmailCoolingDown_(store))return;
+  ensureEnrichmentVersion_(store);
+  const recent='after:'+Utilities.formatDate(new Date(Date.now()-FINANCE_RECHECK_DAYS*86400000),'Etc/UTC','yyyy/MM/dd')+' '+FINANCE_QUERY;
+  const recentToken=store.getProperty('FINANCE_RECENT_PAGE_TOKEN')||'';
+  let recentResult;
+  try{recentResult=syncPage_(recent,recentToken,config)}
+  catch(err){
+   if(gmailQuotaError_(err)){pauseGmailQuota_(store,err);return}
+   if(recentToken){store.deleteProperty('FINANCE_RECENT_PAGE_TOKEN');throw Error('Recent paging cursor expired. Retry newest: '+err.message)}
+   throw err;
+  }
+  console.log('Recent Gmail evidence: '+JSON.stringify(recentResult.result));
+  if(recentResult.pageToken)store.setProperty('FINANCE_RECENT_PAGE_TOKEN',recentResult.pageToken);
+  else store.deleteProperty('FINANCE_RECENT_PAGE_TOKEN');
+  const phase=store.getProperty('FINANCE_BACKFILL_DONE')==='1'?'enrichment':'historical';
+  const doneKey=phase==='enrichment'?'FINANCE_ENRICH_DONE':'FINANCE_BACKFILL_DONE';
+  if(store.getProperty(doneKey)!=='1'){
+   const result=runHistoryPass_(store,config,phase,2,Date.now()+60000);
+   if(result.complete&&phase==='enrichment')stopGmailHistoryAutoImport_();
+  }
+ }finally{lock.releaseLock()}
 }
 function installGmailFinanceSync(){
   config_();const existing=ScriptApp.getProjectTriggers().filter(t=>t.getHandlerFunction()==='syncGmailFinance');
