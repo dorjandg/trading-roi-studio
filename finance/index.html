@@ -477,7 +477,7 @@ const opts=CATEGORIES.map(c=>'<option>'+clean(c)+'</option>').join('');
  * Many unrelated payments share values; never auto-merge or post to ledger.
  */
 function gmailPotentialMatches_(rows){
- const a=rows.filter(r=>r.source_id&&/^(?:[0-9]+)(?:\\.[0-9]{1,8})?$/.test(String(r.amount||''))&&Number(r.amount)>0&&r.currency&&/^\\d{4}-\\d{2}-\\d{2}$/.test(r.date));
+ const a=rows.filter(r=>r.source_id&&/^(?:[0-9]+)(?:\.[0-9]{1,8})?$/.test(String(r.amount||''))&&Number(r.amount)>0&&r.currency&&/^\d{4}-\d{2}-\d{2}$/.test(r.date));
  const byAmount=new Map();
  for(const r of a){
    const key=String(r.currency).toUpperCase()+'|'+String(Number(r.amount));
