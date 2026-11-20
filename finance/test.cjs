@@ -27,6 +27,13 @@ assert.match(html,/safeAccountingMarker_\(currentMarker\.fingerprint\)/,'Legacy 
 assert.match(html,/id="gmailOverviewCard"/,'Financial overview displays a Gmail evidence review card');
 assert.match(html,/id="gmailOverviewMetrics"/,'Financial overview includes an evidence KPI strip');
 assert.match(html,/id="gmailOverviewBreakdown"/,'Overview shows classified Gmail evidence by category');
+assert.match(html,/data-gmail-review/,'Gmail evidence offers manual accounting review rather than auto-posting');
+assert.match(html,/Review to record/,'Review action is labeled clearly');
+assert.match(html,/items\.some\(t=>String\(t\.notes\|\|''\)\.includes\(marker\)\)/,'Gmail accounting review checks existing Gmail source markers');
+assert.match(html,/entry\.elements\.user\.value=''/,'Receipt review requires an explicit account owner');
+assert.match(html,/entry\.elements\.type\.value='Expense'/,'Receipt review creates an editable expense draft');
+assert.match(html,/navigate\('transactions'\)/,'Receipt review opens transaction entry for confirmation');
+
 assert.match(html,/Collected financial evidence by category/,'Overview breakdown explains evidence rather than booked cash totals');
 assert.match(html,/Amounts identified/,'Overview distinguishes found amounts from missing amounts');
 assert.match(html,/function renderGmailOverview_\(\)/,'Overview Gmail evidence KPIs render from imported records');
