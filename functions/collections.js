@@ -1,7 +1,8 @@
-// Legacy collection route: always use the maintained static collection catalog.
-export async function onRequest({request}) {
-  const incoming = new URL(request.url);
-  const target = new URL('/collections/', incoming.origin);
-  target.search = incoming.search;
-  return Response.redirect(target.toString(), 302);
+// Serve the real Collections page without redirecting /collections/ to itself.
+// Cloudflare Pages exposes static build assets through env.ASSETS.
+export async function onRequest({request,env}) {
+  const url = new URL(request.url);
+  url.pathname = '/collections/index.html';
+  const response = await env.ASSETS.fetch(new Request(url.toString(), request));
+  return response;
 }
