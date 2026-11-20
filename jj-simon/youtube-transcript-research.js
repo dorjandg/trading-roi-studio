@@ -128,3 +128,19 @@ const jjYTBeforeRender=render;
 render=function(){jjYTBeforeRender();jjYTMount()};
 if(new URLSearchParams(location.search).get('topic')===jjYTResearch.slug)active=jjYTResearch.slug;
 if(typeof jjRebuildMobileSelector==='function')jjRebuildMobileSelector();renderNav();render();
+
+// 2026-11-20: New public-video caption audit; historical plan examples, not current provider rules.
+jjYTVideoSources["4UGFy2Dz9Rc"]={title:"JJ Simon — Vest Markets optimization (2026-11)",video:"https://www.youtube.com/watch?v=4UGFy2Dz9Rc",verified:"Public native captions; provider prices, simulated pass odds, charts and payouts unverified."};
+const jjVestTitle="Public video · Static drawdown, acquisition EV and leverage sensitivity";
+if(!jjYTResearch.sections.some(s=>s.title===jjVestTitle)){
+ jjYTResearch.sections.push({title:jjVestTitle,points:[
+ "00:50–02:55 — JJ compares instant accounts with static-drawdown evaluations and suggests similar EV across stop/target variants. This is a speaker hypothesis, not an identity once hard daily breaches, fees, slippage and payout restrictions are included.",
+ "02:55–04:10 — Historical instrument illustration: one NQ contract is $20/point versus a quoted $1/point per Vest unit. At 89 units, $750 gross requires about 8.43 points; at 18 units, about 41.67 points. Higher exposure compresses adverse as well as favorable price distance.",
+ "04:10–06:45 — Historical one-step 50K plan example: 8% max drawdown, 3% hard daily loss and 10% target. The 43.6% pass estimate is simulated under an assumed edge; $1,333 repeated three times nearly exhausts $4,000 before fees. Not verified current terms.",
+ "08:10–13:25 — Fee-normalized acquisition model: cost per expected pass c/p and cost per funded drawdown dollar c/(pD), assuming independent repeated attempts. Funded drawdown is not cash; compare net settled payouts, split, fees, eligibility and elapsed time separately. JJ distinguishes higher ROI from faster throughput.",
+ "06:40–08:00 — Speaker discusses weekend leverage reductions, daily reset, trade fees, payout reinvestment and affiliate commission. These are historical claims requiring dated provider verification, not a course trading mandate.",
+ "Cross-check: Module 17 course's one-funded-account trade/day and conditional copier restrictions apply to a different product and cannot automatically be transferred to this public static-plan example."
+ ],src:[]});
+ jjYTResearchMeta.push({title:jjVestTitle,sources:[["4UGFy2Dz9Rc","00:50–02:55"],["4UGFy2Dz9Rc","02:55–04:10"],["4UGFy2Dz9Rc","04:10–06:45"],["4UGFy2Dz9Rc","08:10–13:25"]],status:"Public machine captions; course comparison is version-specific. Current firm terms, charts, backtest and actual returns not independently verified."});
+}
+renderNav();render();
