@@ -115,6 +115,10 @@ let csvSource=null,csvCandidates=[];const csvAliases={date:['date','transaction 
  const collectPreferences=()=>Object.fromEntries(preferencesIds.map(id=>[id,document.getElementById(id)?.value]).filter(([k,v])=>typeof v==='string'));
  const originalFingerprint=cloudFingerprint;
  cloudFingerprint=()=>JSON.stringify([originalFingerprint(),collectPreferences()]);
+ // Older Finance Hub snapshots were synced before Gmail financial evidence existed.
+ // Accept the original fingerprint only when no Gmail evidence is present, then
+ // upgrade the marker as part of the normal verified snapshot load.
+ const legacyFingerprint=()=>JSON.stringify([JSON.stringify([items,propAccounts,propEvents,propAudit,subscriptions,invoices]),collectPreferences()]);
  const originalBackup=currentCloudBackup;
  currentCloudBackup=()=>({...originalBackup(),preferences:collectPreferences()});
  const markerKey=id=>'finance-hub-synced-'+id;
@@ -144,7 +148,7 @@ let csvSource=null,csvCandidates=[];const csvAliases={date:['date','transaction 
  }
  function hasSafeLocalBaseline(){
    const fp=cloudFingerprint();
-   return isEmpty()||(currentMarker&&currentMarker.userId===cloud.user.id&&currentMarker.fingerprint===fp);
+   return isEmpty()||(currentMarker&&currentMarker.userId===cloud.user.id&&(currentMarker.fingerprint===fp||(gmailEvidence.length===0&&currentMarker.fingerprint===legacyFingerprint())));
  }
  async function refreshRemote(){
    if(cloud.busy||!cloud.user||paused)return;
