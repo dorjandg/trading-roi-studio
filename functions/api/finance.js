@@ -119,17 +119,17 @@ async function handler(ctx){
   try{
    evidence=await db.prepare("SELECT source_id,occurred_on AS date,provider,description,amount,currency,category,status FROM gmail_financial_evidence WHERE user_id=? ORDER BY occurred_on DESC,source_id DESC LIMIT 5000").bind(user.id).all();
   }catch{return json({error:"Gmail evidence database unavailable"},503)}
-  const existingSources=new Set(data.transactions.flatMap(t=>[...String(t.notes||"").matchAll(/\\[Gmail (gmail:[^\\]]+)\\]/g)].map(m=>m[1])));
-  const validDate=d=>/^\\d{4}-\\d{2}-\\d{2}$/.test(d)&&new Date(d+"T00:00:00Z").toISOString().slice(0,10)===d;
+  const existingSources=new Set(data.transactions.flatMap(t=>[...String(t.notes||"").matchAll(/\[Gmail (gmail:[^\]]+)\]/g)].map(m=>m[1])));
+  const validDate=d=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(d))return false;const t=Date.parse(d+"T00:00:00Z");return Number.isFinite(t)&&new Date(t).toISOString().slice(0,10)===d};
   let imported=0,reviewNeeded=0,alreadyRecorded=0;
   for(const row of evidence.results||[]){
    if(!row?.source_id||existingSources.has(row.source_id)){alreadyRecorded++;continue}
    const subject=String(row.description||""),provider=String(row.provider||"").trim(),status=String(row.status||"");
    const amount=String(row.amount||""),currency=String(row.currency||"").toUpperCase(),date=String(row.date||"");
    const settled=status==="payment_confirmed"||status==="activation_fee_processed";
-   const explicitReceipt=/\\b(?:receipt for your payment to|payment to .+ is complete|payment (?:successful|completed)|activation fee .+ processed|your e-receipt|your receipt from)\\b/i.test(subject);
-   const excluded=/\\b(?:approved|processing|pending|declined|failed|refund|reversal|authorization|giveaway|bonus|win up to|account closed|cash waiting|weekly payout)\\b/i.test(subject);
-   if(!settled||!explicitReceipt||excluded||!provider||!validDate(date)||!/^\\d+(?:\\.\\d{1,2})?$/.test(amount)||Number(amount)<=0||!["USD","EUR","AED","GBP"].includes(currency)){reviewNeeded++;continue}
+   const explicitReceipt=status==="activation_fee_processed"||/\b(?:receipt for your payment to|payment to .+ is complete|payment (?:successful|completed)|activation fee .+ processed|your e-receipt|your receipt from)\b/i.test(subject);
+   const excluded=/\b(?:approved|processing|pending|declined|failed|refund|reversal|authorization|giveaway|bonus|win up to|account closed|cash waiting|weekly payout)\b/i.test(subject);
+   if(!settled||!explicitReceipt||excluded||!provider||!validDate(date)||!/^\d+(?:\.\d{1,2})?$/.test(amount)||Number(amount)<=0||!["USD","EUR","AED","GBP"].includes(currency)){reviewNeeded++;continue}
    const category=/topstep|hola.?prime|ftmo|lucid|mffu/i.test(provider+" "+subject)?"Prop firm":
     /cloudflare|hosting|domain/i.test(provider+" "+subject)?"Business":
     /google|openai|heygen|duplikium|tradingview/i.test(provider+" "+subject)?"Trading software":"Other";
