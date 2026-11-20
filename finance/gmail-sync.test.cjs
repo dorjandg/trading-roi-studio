@@ -11,6 +11,11 @@ assert.match(financeUi,/existing\.has\(rec\.source_id\)/,'Downloaded Gmail recor
 assert.match(financeUi,/gmailRemoteOwner/,'Evidence preview is scoped to the authenticated owner');
 assert.match(financeUi,/allGmailEvidence\(\)/,'Full cloud evidence remains visible beyond browser snapshot limits');
 assert.match(financeUi,/gmailEvidenceMore/,'More than 250 matching records can be browsed');
+assert.match(financeUi,/Missing amount/,'Gmail evidence dashboard shows missing amount review count');
+assert.match(financeUi,/Needs review/,'Gmail evidence dashboard shows needs-review count');
+assert.match(financeUi,/syncButton\.textContent='Checking…'/,'Gmail sync button shows running feedback');
+assert.match(financeUi,/This does not trigger Gmail imports/,'Gmail refresh clarifies that imports run in Apps Script');
+
 assert.match(gas,/function importGmailHistoryNow\(\)/,'Manual historical catch-up is available');
 assert.match(gas,/function startGmailHistoryAutoImport\(\)/,'One-click unattended Gmail historical import exists');
 assert.match(gas,/everyMinutes\(5\)/,'Temporary catch-up scheduler is five-minute');
