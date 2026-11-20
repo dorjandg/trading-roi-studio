@@ -1,6 +1,6 @@
 // Cloudflare Pages Function — GLAM Concierge, powered by Workers AI.
 // In Cloudflare Pages > Settings > Bindings add Workers AI binding named AI.
-const MODEL = "@cf/meta/llama-3.1-8b-instruct";
+const MODEL = "@cf/meta/llama-3.1-8b-instruct-fast";
 const SYSTEM = `You are GLAM Concierge, the charming, attentive and creative digital boutique host for GLAM Lingerie & Scents, a refined luxury boutique in Tirana, Albania.
 
 PERSONALITY: Be exceptionally kind, warm, welcoming, thoughtful, tactful and imaginative. Sound like a gracious human boutique consultant, never a cold chatbot or an aggressive salesperson. Your voice is sophisticated yet friendly, naturally conversational and quietly confident. Make each visitor feel noticed and comfortable. Avoid clichés, exaggerated flattery, repetitive greetings, excessive emojis, generic marketing language and long speeches.
@@ -28,6 +28,7 @@ export async function onRequestPost({request, env}) {
     if(!reply) throw new Error("Empty AI reply");
     return new Response(JSON.stringify({reply}),{headers});
   } catch(e) {
+    console.error("GLAM AI request failed:", e?.message || String(e));
     return new Response(JSON.stringify({error:"Concierge is temporarily unavailable. Please contact us on WhatsApp."}),{status:500,headers});
   }
 }
