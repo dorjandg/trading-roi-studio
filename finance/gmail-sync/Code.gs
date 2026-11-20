@@ -164,6 +164,8 @@ function financePaymentSubject_(subject){
  // messages. An "order confirmation" on its own is not a settled charge.
  if(/news alerts?|market recap|market update|trading week ahead|webinar|newsletter|breaking news|economic calendar|market impact|trade ideas|trading psychology|market outlook|volatility|upcoming releases|weekly outlook/i.test(subject))return false;
  if(/order confirmation|order placed|account passed|login credentials|account agreement|challenge.*violation|account breached/i.test(subject))return false;
+ // Topstep order email contains a real charged-card receipt, unlike FTMO's unpaid order confirmation.
+ if(/order confirmed\. your trading combine is ready/i.test(subject))return true;
  return /receipt|payment|paid|charged|charge|fee refund|refund|invoice|billing|subscription|activation fee|express funded account (?:is )?activated|google play order|withdrawal|deposit|transfer|transaction|payout|funds credited/i.test(subject);
 }
 function recordFrom_(message){
@@ -176,12 +178,21 @@ function recordFrom_(message){
  const text=financialText_(message);
  const provider=providerFor_(sender,subject,text);
  if(!provider||!['FTMO','Topstep'].includes(provider[0]))return null;
- const status=statusFor_(subject,text);if(!status)return null;
+ let status=statusFor_(subject,text);
+ if(provider[0]==='Topstep'&&/order confirmed\. your trading combine is ready/i.test(subject)&&
+    /you have successfully been charged\s*\$\s*[\d,.]+/i.test(text))status='payment_confirmed';
+ if(!status)return null;
  // "needs_review" is not a confirmation. Retain only financial-status events
  // that may contain actual paid/received/settled transaction evidence.
  if(!['payment_confirmed','activation_fee_processed','refund_issued','withdrawal_confirmed',
        'transfer_confirmed','deposit_confirmed','payout_approved','payout_processing'].includes(status))return null;
  const m=moneyFor_(subject,text);
+ // Prefer the actual one-time charged amount over future recurring subscription
+ // amounts or trading account balances in the same Topstep email.
+ if(provider[0]==='Topstep'&&/order confirmed\. your trading combine is ready/i.test(subject)){
+  const paid=text.match(/you have successfully been charged\s*\$\s*([\d,]+(?:\.\d{1,2})?)/i);
+  if(paid){m.amount=paid[1].replace(/,/g,'');m.currency='USD'}
+ }
  const date=Utilities.formatDate(new Date(Number(message.internalDate)),'Etc/UTC','yyyy-MM-dd');
  return {
    source_id:'gmail:'+message.id,date,provider:provider[0],
