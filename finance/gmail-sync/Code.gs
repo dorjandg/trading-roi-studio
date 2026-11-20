@@ -85,6 +85,9 @@ function providerFor_(sender,subject,body){
 }
 function statusFor_(subject,content){
   const s=(subject+' '+content.slice(0,400)).toLowerCase();
+  // Security/login messages are never financial evidence. Check the subject
+  // independently so a noisy template body cannot hide the actual message type.
+  if(/\b(?:authentication|verification|security|sign[ -]?in|login|access|one[ -]?time|two[ -]?factor|2fa)\s+(?:codes?|pins?|passwords?)\b|\botp\b|password reset|reset your password|magic link|verify your (?:email|account|identity)/i.test(subject))return null;
   if(/otp|verification code|security code|password reset|sign.in code|two.factor/.test(s))return null;
   if(/declined|failed|suspended|cancelled|canceled|payment reminder/.test(s))return 'needs_review';
   if(/authorization|approve your transaction|securepass/.test(s))return 'authorization_only';
