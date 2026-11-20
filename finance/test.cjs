@@ -11,7 +11,7 @@ const reconciliationFixture=[
  {source_id:'gmail:topstep1',date:'2026-11-18',provider:'Topstep',description:'Payout approved',amount:'2000',currency:'USD',category:'Prop firms',status:'payout_approved'},
  {source_id:'gmail:bank1',date:'2026-11-19',provider:'Banking provider',description:'Transfer received',amount:'2000',currency:'USD',category:'Banking',status:'transfer_confirmed'},
  {source_id:'gmail:topstep2',date:'2026-10-01',provider:'Topstep',description:'Payout approved',amount:'2000',currency:'USD',category:'Prop firms',status:'payout_approved'},
- {source_id:'gmail:topstep3',date:'2026-11-19',provider:'Topstep',description:'Payment receipt',amount:'2000',currency:'USD',category:'Prop firms',status:'payment_confirmed'},
+ {source_id:'gmail:topstep3',date:'2026-11-19',provider:'Topstep',description:'Payment receipt',amount:'1800',currency:'USD',category:'Prop firms',status:'payment_confirmed'},
  {source_id:'gmail:bank2',date:'2026-11-19',provider:'Banking provider',description:'Transfer received',amount:'2000',currency:'EUR',category:'Banking',status:'transfer_confirmed'}
 ];
 const candidates=candidateContext.reconcile(reconciliationFixture);
