@@ -1,0 +1,5 @@
+# GLAM live catalog setup
+
+The catalog status sync requires Cloudflare Pages Functions deployed from glam/functions and a D1 binding named GLAM_DB. Configure a Cloudflare Pages environment variable GLAM_CATALOG_ADMIN_TOKEN as a strong secret (do not put it in GitHub or public JavaScript). The public website reads GET /api/catalog, while staff publishing uses authenticated POST /api/catalog. Restrict /staff/ using Cloudflare Access as an additional protection. On the staff page, enter the publishing token only when prompted; it is not stored in localStorage.
+
+For a Pages project with repository root as its build root, Pages Functions must be in the repository-root functions directory. If the GLAM Pages project uses glam/ as its root directory, glam/functions is correct. Verify root directory in Cloudflare before deploying. A D1 database must be created and bound as GLAM_DB in the GLAM Pages project; then redeploy. Until configured, the public website retains the existing reference catalog, and staff status changes remain local.
