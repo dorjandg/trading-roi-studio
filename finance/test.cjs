@@ -60,4 +60,9 @@ assert.ok(html.includes('id="finance-mobile-compact-2026"'),'Mobile compact styl
 assert.ok(html.includes('.grid#stats{grid-template-columns:repeat(2,minmax(0,1fr))}'),'Two-column small-screen dashboard present');
 assert.ok(html.includes('table{width:100%;min-width:max-content}'),'Wide financial tables remain horizontally scrollable');
 assert.ok(html.includes('.form{grid-template-columns:minmax(0,1fr)}'),'Narrow-screen form fields stack');
+assert.ok(html.includes('id="ftmoImportPanel"'),'FTMO read-only import panel exists');
+assert.ok(html.includes('id="ftmoHistoryFile"'),'FTMO local CSV input exists');
+assert.ok(html.includes('No live sync configured'),'FTMO integration does not falsely claim live connection');
+assert.ok(html.includes('chosen.size>2*1024*1024'),'FTMO CSV input size is bounded');
+assert.ok(html.includes('rows=matrix.slice(1,20001)'),'FTMO local preview row count is bounded');
 console.log('PASS Finance Hub: JavaScript syntax, DOM references, 15-page navigation, financial fixtures, linked fee partition, payout dates, backup round trip.');
