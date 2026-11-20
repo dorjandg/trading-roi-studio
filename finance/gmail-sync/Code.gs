@@ -71,6 +71,9 @@ function financialText_(msg){
 }
 function providerFor_(sender,subject,body){
   const text=(sender+' '+subject).toLowerCase();
+  // Payment processors (e.g., Confirmo) may not name FTMO in the subject.
+  // Determine provider from payment destination without accepting unrelated crypto notices.
+  if(/confirmo\.net/i.test(sender)&&/\bFTMO Evaluation Global\b/i.test(body))return ['FTMO','Prop firms'];
   const known=[
     [/ftmo/,['FTMO','Prop firms']],[/topstep/,['Topstep','Prop firms']],
     [/apex trader/,['Apex Trader Funding','Prop firms']],
@@ -172,7 +175,7 @@ function recordFrom_(message){
  if(/\bkarim\b/i.test(sender+' '+subject))return null;
  const text=financialText_(message);
  const provider=providerFor_(sender,subject,text);
- if(!provider)return null;
+ if(!provider||!['FTMO','Topstep'].includes(provider[0]))return null;
  const status=statusFor_(subject,text);if(!status)return null;
  // "needs_review" is not a confirmation. Retain only financial-status events
  // that may contain actual paid/received/settled transaction evidence.
@@ -416,7 +419,7 @@ function mirrorFinanceEvidenceSheet_(records){
  for(let i=0;i<old.length;i++)if(old[i][7])byId.set(String(old[i][7]).toLowerCase(),i);
  const added=[];let enriched=0;
  for(const r of records){
-  if(!r?.source_id)continue;
+  if(!r?.source_id||!['FTMO','Topstep'].includes(String(r.provider)))continue;
   const id=String(r.source_id).toLowerCase(),ix=byId.get(id);
   if(ix!==undefined){
    // Never overwrite owner edits or silently change a previously approved row.
@@ -449,7 +452,7 @@ function pushApprovedFinanceSheet_(){
  const count=sheet.getLastRow()-1,rows=sheet.getRange(2,1,count,11).getDisplayValues();
  const approved=[];
  for(const row of rows){
-  if(String(row[8]).trim()!=='Approved')continue;
+  if(String(row[8]).trim()!=='Approved'||!['FTMO','Topstep'].includes(String(row[1]).trim()))continue;
   const amount=String(row[3]).replace(/,/g,'').trim();
   const date=String(row[0]).trim();
   if(!/^20[0-9]{2}-[0-9]{2}-[0-9]{2}$/.test(date)||!amount)continue;
