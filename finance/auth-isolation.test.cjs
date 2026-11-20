@@ -12,7 +12,7 @@ const rows={users:new Map([['owner-id',{email:'owner@example.com'}],['member-id'
  {source_id:'gmail:approved',date:'2026-11-17',provider:'Topstep',description:'Your payout has been approved!',amount:'1970.00',currency:'USD',status:'payout_approved'},
  {source_id:'gmail:promotion',date:'2026-11-18',provider:'Other',description:'Claim your bonus',amount:'1000.00',currency:'USD',status:'payment_confirmed'},
  {source_id:'gmail:invalid-date',date:'2026-19-99',provider:'Cloudflare',description:'Receipt for Your Payment to Cloudflare Inc',amount:'4.67',currency:'USD',status:'payment_confirmed'}
- ]])};
+ ]]])};
 const normalized=s=>s.toLowerCase().replace(/\s+/g,' ').trim();
 function db(){
  return {
