@@ -5,12 +5,14 @@ on:
       - 'finance/**'
       - 'functions/api/finance.js'
       - 'functions/api/gmail-ingest.js'
+      - 'functions/api/finance-sheet-sync.js'
       - '.github/workflows/finance-hub-checks.yml'
   pull_request:
     paths:
       - 'finance/**'
       - 'functions/api/finance.js'
       - 'functions/api/gmail-ingest.js'
+      - 'functions/api/finance-sheet-sync.js'
   workflow_dispatch:
 jobs:
   test:
@@ -27,6 +29,8 @@ jobs:
         run: node finance/auth-isolation.test.cjs
       - name: Gmail ingest HMAC, account isolation and deduplication tests
         run: node finance/gmail-sync.test.cjs
+      - name: Approved Google Sheet to ledger signature and deduplication tests
+        run: node finance/sheet-sync.test.cjs
       - name: Install Playwright Chromium
         run: |
           npm install --no-save @playwright/test
