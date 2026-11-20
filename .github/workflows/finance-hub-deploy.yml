@@ -84,11 +84,18 @@ jobs:
               print("::error::Could not inspect fin Pages project; check Cloudflare credentials and permissions.")
               sys.exit(1)
           PY
+      - name: Apply additive Gmail evidence D1 migration
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx --yes wrangler@4 d1 execute finance-hub-db --remote --file=finance/migrations/20261120_gmail_evidence.sql
       - name: Prepare standalone Finance Hub
         run: |
           mkdir -p .finance-deploy/functions/api
           cp finance/index.html .finance-deploy/index.html
           cp functions/api/finance.js .finance-deploy/functions/api/finance.js
+          cp functions/api/gmail-ingest.js .finance-deploy/functions/api/gmail-ingest.js
       - name: Deploy to dedicated Cloudflare Pages project
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
