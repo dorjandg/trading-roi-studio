@@ -17,7 +17,7 @@ const db={prepare(sql){return {bind(...args){return{
  async run(){
   if(sql.startsWith('INSERT OR IGNORE INTO finance_snapshots')){
    if(row)return {meta:{changes:0}};
-   row={revision:1,payload:args[3]};
+   row={revision:1,payload:args[2]};
    return {meta:{changes:1}};
   }
   if(sql.startsWith('UPDATE finance_snapshots')){
