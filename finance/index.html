@@ -588,19 +588,40 @@ function gmailLiveFeedGroups_(rows){
  }
  return {rows:classified,categories:[...groups.values()].sort((a,b)=>b.emails-a.emails)};
 }
+let gmailServerSummary_=null,gmailServerSummaryOwner_='',gmailSummaryBusy_=false;
+async function refreshGmailSummary_(){
+ if(!cloud.user||gmailSummaryBusy_)return;
+ const owner=cloud.user.id;
+ gmailSummaryBusy_=true;
+ gmailLiveStatus_('Checking live database…');
+ try{
+  const result=await cloudApi('gmail-summary');
+  if(cloud.user?.id!==owner)return;
+  if(result.setupRequired)throw Error('Financial evidence database is not ready');
+  gmailServerSummary_=result;
+  gmailServerSummaryOwner_=owner;
+  renderGmailLiveFeed_();
+  gmailLiveStatus_('Updated '+new Date(result.asOf).toLocaleTimeString());
+ }catch(error){
+  if(cloud.user?.id===owner)gmailLiveStatus_('Live database unavailable · retry');
+ }finally{gmailSummaryBusy_=false}
+}
 function renderGmailLiveFeed_(){
  const root=document.getElementById('gmailLiveFeedRows'),stats=document.getElementById('gmailLiveFeedStats');
  if(!root||!stats)return;
  if(!cloud.user){stats.textContent='Sign in to see live Gmail financial evidence.';root.textContent='';return}
- const data=gmailLiveFeedGroups_(allGmailEvidence());
+ const server=gmailServerSummaryOwner_===cloud.user.id?gmailServerSummary_:null;
+ const data=gmailLiveFeedGroups_(server?server.recent:allGmailEvidence());
  const linked=new Set();
  for(const t of items)for(const m of String(t.notes||'').matchAll(/\[Gmail (gmail:[^\]]+)\]/g))linked.add(m[1]);
- const countAmount=data.rows.filter(r=>r.amount&&r.currency).length;
+ const countAmount=server?server.amountsIdentified:data.rows.filter(r=>r.amount&&r.currency).length;
  const booked=data.rows.filter(r=>linked.has(r.source_id)).length;
- const figures=[['Financial notifications',data.rows.length],['Amounts identified',countAmount],['Not yet recorded',data.rows.length-booked],['Recorded in ledger',booked]];
+ const total=server?server.notifications:data.rows.length;
+ const figures=[['Imported notifications',total],['Amounts extracted',countAmount],['Needs review',server?server.needsReview:data.rows.filter(r=>r.status==='needs_review').length],['Verified ledger entries',items.length]];
  stats.innerHTML=figures.map(([name,n])=>'<div class="metric-tile"><small>'+clean(name)+'</small><strong>'+n+'</strong></div>').join('');
  const cats=data.categories.slice(0,8);
- root.innerHTML='<h3>Financial categories detected from Gmail</h3>'+
+ root.innerHTML='<p class="hint">'+(server?'Figures from the private Gmail database, updated independently of browser cache. ':'Showing cached evidence while secure database summary connects. ')+'Email notifications are not verified accounting entries.</p>'+
+ '<h3>Financial categories detected from Gmail (latest sample)</h3>'+
  '<div class="table-scroll"><table><thead><tr><th>Category</th><th>Emails</th><th>Amounts identified</th></tr></thead><tbody>'+
  cats.map(x=>'<tr><td>'+clean(x.category)+'</td><td>'+x.emails+'</td><td>'+x.withAmount+'</td></tr>').join('')+
  (cats.length?'':'<tr><td colspan="3">No financial email records available yet.</td></tr>')+
@@ -910,11 +931,12 @@ document.querySelector('[data-page="gmail"]')?.addEventListener('click',()=>{ren
 // Refresh visible Finance Hub data each minute (Gmail Apps Script imports run on their own schedule).
 // Only the authenticated owner may retrieve evidence; concurrent refreshes are prevented.
 const gmailLiveStatus_=message=>{const el=document.getElementById('gmailLiveFeedStatus');if(el)el.textContent=message};
-document.getElementById('gmailLiveFeedRefresh')?.addEventListener('click',()=>fetchGmailEvidence());
-document.addEventListener('finance-cloud-ready',()=>fetchGmailEvidence());
-setInterval(()=>{if(document.visibilityState==='visible'&&(document.getElementById('page-gmail')?.classList.contains('active')||document.getElementById('page-overview')?.classList.contains('active')))fetchGmailEvidence()},60000);
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&cloud.user)fetchGmailEvidence()});
-setTimeout(fetchGmailEvidence,3000); // fallback; identity-ready event normally refreshes first
+document.getElementById('gmailLiveFeedRefresh')?.addEventListener('click',()=>{refreshGmailSummary_();fetchGmailEvidence()});
+document.addEventListener('finance-cloud-ready',()=>{refreshGmailSummary_();fetchGmailEvidence()});
+setInterval(()=>{if(document.visibilityState==='visible'&&(document.getElementById('page-gmail')?.classList.contains('active')||document.getElementById('page-overview')?.classList.contains('active')))refreshGmailSummary_()},60000);
+setInterval(()=>{if(document.visibilityState==='visible'&&(document.getElementById('page-gmail')?.classList.contains('active')||document.getElementById('page-overview')?.classList.contains('active')))fetchGmailEvidence()},300000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&cloud.user)refreshGmailSummary_()});
+setTimeout(()=>{refreshGmailSummary_();fetchGmailEvidence()},3000); // fallback after sign-in
 
 renderGmailEvidence();
 })();
