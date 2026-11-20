@@ -63,6 +63,12 @@
 }
 </style></head><body><div id="financeAuthGuard" role="status" aria-live="polite"><strong>Connecting securely to Finance Hub…</strong><p id="financeAuthGuardText">Verifying your signed-in account before displaying private financial records.</p></div><button id="mobileNavToggle" class="mobile-nav-toggle" type="button" aria-label="Open navigation" aria-expanded="false">☰</button><div id="mobileNavBackdrop" class="mobile-nav-backdrop" hidden></div><aside class="sidebar" id="financeSidebar"><div class="brand">◈ Finance<span>Hub</span></div><div class="side-label">WORKSPACE</div><button class="nav-link active" data-page="overview"><span class="nav-icon">▦</span><span class="nav-text">Overview</span></button><button class="nav-link" data-page="transactions"><span class="nav-icon">⇄</span><span class="nav-text">Transactions</span></button><button class="nav-link" data-page="reports"><span class="nav-icon">▥</span><span class="nav-text">Reports & Analytics</span></button><div class="side-label">FINANCIAL AREAS</div><button class="nav-link" data-page="trading"><span class="nav-icon">⌁</span><span class="nav-text">Trading & Prop Firms</span></button><button class="nav-link" data-page="reconciliation"><span class="nav-icon">⇋</span><span class="nav-text">Reconciliation</span></button><button class="nav-link" data-page="performance"><span class="nav-icon">◫</span><span class="nav-text">Performance Center</span></button><button class="nav-link" data-page="propaccounts"><span class="nav-icon">▤</span><span class="nav-text">Prop Firm Accounts</span></button><button class="nav-link" data-page="investments"><span class="nav-icon">◈</span><span class="nav-text">Investments</span></button><button class="nav-link" data-page="personal"><span class="nav-icon">⌂</span><span class="nav-text">Personal & Business</span></button><button class="nav-link" data-page="subscriptions"><span class="nav-icon">↻</span><span class="nav-text">Subscriptions</span></button><button class="nav-link" data-page="invoices"><span class="nav-icon">▤</span><span class="nav-text">Invoices</span></button><button class="nav-link" data-page="accounts"><span class="nav-icon">▣</span><span class="nav-text">Accounts & Balances</span></button><button class="nav-link" data-page="profitloss"><span class="nav-icon">≋</span><span class="nav-text">Profit & Loss</span></button><div class="side-label">MANAGEMENT</div><button class="nav-link" data-page="gmail"><span class="nav-icon">✉</span><span class="nav-text">Gmail Financial Inbox</span></button><button class="nav-link" data-page="connections"><span class="nav-icon">⛓</span><span class="nav-text">Connections</span></button><button class="nav-link" data-page="settings"><span class="nav-icon">⚙</span><span class="nav-text">Settings</span></button></aside><header><div><h1>Financial workspace</h1><nav>Finance Hub / <span id="crumb">Overview</span></nav></div><span class="chip">Local preview</span></header><main><p class="notice">Preview only: data remains in this browser. Do not store sensitive financial information until secure login and cloud storage are configured.</p><section class="page active" id="page-overview"><div class="page-head"><div><h2>Financial overview</h2><p>Your financial position across all accounts and categories</p></div><div class="actions"><select id="overviewCurrency" aria-label="Overview currency" style="width:110px"><option>USD</option><option>EUR</option><option>AED</option><option>GBP</option></select><select id="overviewPeriod" aria-label="Overview period" style="width:145px"><option value="12">Last 12 months</option><option value="6">Last 6 months</option><option value="3">Last 3 months</option><option value="all">All time</option></select></div></div><p class="hint">Verified accounting (only approved transactions) — unreviewed Gmail records are shown separately below.</p>
 <div class="grid" id="stats"></div>
+<div class="card" id="gmailAutoAccountingCard" aria-label="Automatic financial classification">
+ <h2>Automatically classified finances · pending verification</h2>
+ <p class="hint">Amounts below are recognized receipts, not posted accounting. Pending payouts, promotional messages, ambiguous transfers, and possible duplicate payments are excluded.</p>
+ <div id="gmailAutoAccountingMetrics" class="metric-strip">Loading financial classifications…</div>
+ <div id="gmailAutoAccountingDetails"></div>
+</div>
 <div class="card" id="gmailLiveFeedCard">
  <div class="page-head"><div><h2>Live financial activity</h2><p>Automatically updated from connected Gmail evidence · unverified email notifications are not booked cash</p></div>
  <div class="actions"><span class="chip" id="gmailLiveFeedStatus" aria-live="polite">Connecting…</span><button type="button" id="gmailLiveFeedRefresh" class="mini-button">Refresh now</button></div></div>
@@ -600,6 +606,7 @@ async function refreshGmailSummary_(){
   if(result.setupRequired)throw Error('Financial evidence database is not ready');
   gmailServerSummary_=result;
   gmailServerSummaryOwner_=owner;
+  renderGmailAutoAccounting_();
   renderGmailLiveFeed_();
   gmailLiveStatus_('Updated '+new Date(result.asOf).toLocaleTimeString());
  }catch(error){
@@ -645,6 +652,35 @@ document.getElementById('gmailLiveFeedRows')?.addEventListener('click',event=>{
  const query=document.getElementById('gmailEvidenceQuery'),category=document.getElementById('gmailEvidenceCategory');
  if(query)query.value=source;
  if(category)category.value='';
+ navigate('gmail');
+ if(typeof window.renderGmailEvidence==='function')window.renderGmailEvidence();
+});
+function renderGmailAutoAccounting_(){
+ const host=document.getElementById('gmailAutoAccountingMetrics'),details=document.getElementById('gmailAutoAccountingDetails');
+ if(!host||!details)return;
+ if(!cloud.user){host.textContent='Waiting for secure cloud connection';details.textContent='';return}
+ const selected=document.getElementById('overviewCurrency')?.value||'EUR';
+ const period=document.getElementById('overviewPeriod')?.value||'all',now=new Date();
+ const cutoff=period==='all'?'0000-00':new Date(Date.UTC(now.getFullYear(),now.getMonth()-Number(period)+1,1)).toISOString().slice(0,7);
+ const source=allGmailEvidence();
+ const server=gmailServerSummaryOwner_===cloud.user.id?gmailServerSummary_:null;
+ const complete=server?new Map([...source,...(server.amountSamples||[])].map(r=>[r.source_id,r])):new Map(source.map(r=>[r.source_id,r]));
+ const rows=[...complete.values()].filter(r=>!GMAIL_NONFINANCIAL_HEADLINE.test(String(r.description||'')));
+ const candidates=gmailDetectedActivity_(rows,selected,cutoff);
+ const format=x=>clean(money(x,selected));
+ const figures=[['Potential income',format(candidates.income)],['Potential expenses',format(candidates.expense)],['Potential refunds',format(candidates.refund)],['Classified receipts',String(candidates.rows.length)]];
+ host.innerHTML=figures.map(([name,value])=>'<div class="metric-tile"><small>'+clean(name)+'</small><strong>'+value+'</strong></div>').join('');
+ details.innerHTML='<p class="hint">Potential figures only: '+candidates.excludedAmbiguous+' same-provider possible duplicates excluded. The verified accounting cards above update only when a transaction is approved. '+(server?'Live Gmail database connected.':'Full Gmail evidence sync still loading.')+'</p>'+
+ '<div class="table-scroll"><table><thead><tr><th>Date</th><th>Provider</th><th>Amount</th><th>Classification</th><th>Action</th></tr></thead><tbody>'+
+ candidates.rows.slice(0,20).map(x=>'<tr><td>'+clean(x.r.date)+'</td><td>'+clean(x.r.provider)+'</td><td>'+clean(x.r.amount+' '+x.r.currency)+'</td><td>'+clean(x.direction)+'</td><td><button type="button" class="mini-button" data-auto-review="'+clean(x.r.source_id)+'">Verify</button></td></tr>').join('')+
+ (candidates.rows.length?'':'<tr><td colspan="5">No receipts meet the strict confirmation and classification rules for this currency yet. The live inbox continues collecting evidence.</td></tr>')+
+ '</tbody></table></div>';
+}
+document.getElementById('gmailAutoAccountingDetails')?.addEventListener('click',e=>{
+ const source=e.target?.closest('[data-auto-review]')?.dataset?.autoReview;
+ if(!source||!cloud.user)return;
+ const q=document.getElementById('gmailEvidenceQuery'),cat=document.getElementById('gmailEvidenceCategory');
+ if(q)q.value=source;if(cat)cat.value='';
  navigate('gmail');
  if(typeof window.renderGmailEvidence==='function')window.renderGmailEvidence();
 });
@@ -753,6 +789,7 @@ function gmailReviewQueue_(rows){
    .sort((a,b)=>a.decision.priority-b.decision.priority||String(b.r.date).localeCompare(String(a.r.date)));
 }
 function renderGmailOverview_(){
+ renderGmailAutoAccounting_();
  renderGmailLiveFeed_();
  renderGmailDetected_();
  const el=document.getElementById('gmailOverviewMetrics'),breakdown=document.getElementById('gmailOverviewBreakdown');if(!el)return;
