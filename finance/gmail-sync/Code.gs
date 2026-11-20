@@ -161,7 +161,7 @@ function financePaymentSubject_(subject){
  // messages. An "order confirmation" on its own is not a settled charge.
  if(/news alerts?|market recap|market update|trading week ahead|webinar|newsletter|breaking news|economic calendar|market impact|trade ideas|trading psychology|market outlook|volatility|upcoming releases|weekly outlook/i.test(subject))return false;
  if(/order confirmation|order placed|account passed|login credentials|account agreement|challenge.*violation|account breached/i.test(subject))return false;
- return /receipt|payment|paid|charged|charge|fee refund|refund|invoice|billing|subscription|activation fee|withdrawal|deposit|transfer|transaction|payout|funds credited/i.test(subject);
+ return /receipt|payment|paid|charged|charge|fee refund|refund|invoice|billing|subscription|activation fee|express funded account (?:is )?activated|google play order|withdrawal|deposit|transfer|transaction|payout|funds credited/i.test(subject);
 }
 function recordFrom_(message){
  const subject=extractHeader_(message,'subject').slice(0,180);
