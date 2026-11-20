@@ -146,13 +146,26 @@ function syncGmailFinance(){
   try{
     const config=config_(),store=PropertiesService.getScriptProperties();
     const recent='after:'+Utilities.formatDate(new Date(Date.now()-FINANCE_RECHECK_DAYS*86400000),'Etc/UTC','yyyy/MM/dd')+' '+FINANCE_QUERY;
-    const recentResult=syncPage_(recent,'',config);
+    const recentToken=store.getProperty('FINANCE_RECENT_PAGE_TOKEN')||'';
+    let recentResult;
+    try{recentResult=syncPage_(recent,recentToken,config)}
+    catch(err){
+      // Gmail page tokens may become invalid if the mailbox has shifted.
+      // Retry the newest page on the next trigger rather than losing coverage.
+      if(recentToken){store.deleteProperty('FINANCE_RECENT_PAGE_TOKEN');throw Error('Recent paging cursor expired; restart next run: '+err.message)}
+      throw err;
+    }
     console.log('Recent Gmail evidence: '+JSON.stringify(recentResult.result));
     if(recentResult.pageToken)store.setProperty('FINANCE_RECENT_PAGE_TOKEN',recentResult.pageToken);
     else store.deleteProperty('FINANCE_RECENT_PAGE_TOKEN');
     const oldToken=store.getProperty('FINANCE_BACKFILL_PAGE_TOKEN')||'';
     if(store.getProperty('FINANCE_BACKFILL_DONE')!=='1'){
-      const historic=syncPage_(FINANCE_QUERY,oldToken,config);
+      let historic;
+      try{historic=syncPage_(FINANCE_QUERY,oldToken,config)}
+      catch(err){
+        if(oldToken)store.deleteProperty('FINANCE_BACKFILL_PAGE_TOKEN');
+        throw Error('Historical backfill page retry needed: '+err.message);
+      }
       if(historic.pageToken)store.setProperty('FINANCE_BACKFILL_PAGE_TOKEN',historic.pageToken);
       else{store.deleteProperty('FINANCE_BACKFILL_PAGE_TOKEN');store.setProperty('FINANCE_BACKFILL_DONE','1')}
       console.log('Historical Gmail evidence: '+JSON.stringify(historic.result));
