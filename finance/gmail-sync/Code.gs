@@ -134,6 +134,16 @@ function signedPost_(records,config){
   if(response.getResponseCode()!==200)throw Error('Finance Hub rejected batch: HTTP '+response.getResponseCode()+' '+response.getContentText().slice(0,300));
   return JSON.parse(response.getContentText());
 }
+/**
+ * Diagnostics only: signs and submits an empty ASCII-only record batch.
+ * Does not read Gmail, install triggers, or create financial records.
+ * If this works while normal sync fails, inspect Unicode payload serialization.
+ */
+function testGmailSyncSigning(){
+  const result=signedPost_([],config_());
+  if(result.accepted!==0||result.inserted!==0)throw Error('Unexpected nonempty signing test response');
+  console.log('Gmail signing test PASSED: accepted=0 inserted=0. No financial records changed.');
+}
 function syncPage_(query,token,config){
   let page=Gmail.Users.Messages.list('me',{q:query,maxResults:FINANCE_BACKFILL_PAGE,pageToken:token||undefined});
   const candidates=[],ids=(page.messages||[]).slice(0,FINANCE_MAX_MESSAGES_PER_RUN);
