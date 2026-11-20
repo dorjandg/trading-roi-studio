@@ -87,7 +87,7 @@
 <div><label for="gmailEvidenceFile">Import Gmail evidence CSV</label><input id="gmailEvidenceFile" type="file" accept=".csv,text/csv"></div>
 <div><label for="gmailEvidenceCategory">Category</label><select id="gmailEvidenceCategory"><option value="">All categories</option><option>Prop firms</option><option>Broker investments</option><option>Banking</option><option>Crypto &amp; transfers</option><option>Housing &amp; utilities</option><option>Food &amp; delivery</option><option>Travel</option><option>Business</option><option>Software</option><option>Health &amp; family</option><option>Other</option><option>Unclassified</option></select></div>
 <div><label for="gmailEvidenceQuery">Search merchant or reference</label><input id="gmailEvidenceQuery" placeholder="Liquid Brokers, AquaFunded, Careem"></div></div>
-<div class="actions"><button type="button" id="gmailEvidenceExport">Export review CSV</button><button type="button" id="gmailEvidenceClear">Clear imported evidence</button></div>
+<div class="actions"><button type="button" id="gmailEvidenceSync">Check Gmail sync</button><button type="button" id="gmailEvidenceExport">Export review CSV</button><button type="button" id="gmailEvidenceClear">Clear imported evidence</button></div>
 <p id="gmailEvidenceStatus" class="hint" role="status">No Gmail records imported. The website has no direct Gmail authorization.</p>
 <div id="gmailEvidenceMetrics" class="metric-strip"></div>
 <div class="table-scroll"><table><thead><tr><th>Date</th><th>Provider</th><th>Evidence</th><th>Amount</th><th>Category</th><th>Status</th><th>Reference</th></tr></thead><tbody id="gmailEvidenceRows"></tbody></table></div>
@@ -512,7 +512,42 @@ document.getElementById('gmailEvidenceExport').addEventListener('click',()=>{
  const csv=[fields.map(encode).join(','),...gmailEvidence.map(r=>fields.map(k=>encode(r[k])).join(','))].join('\r\n');
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='gmail-financial-evidence-review.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 });
-document.querySelector('[data-page="gmail"]')?.addEventListener('click',renderGmailEvidence);
+let gmailEvidenceSyncBusy=false;
+async function fetchGmailEvidence(){
+ if(!cloud.user||gmailEvidenceSyncBusy)return;
+ gmailEvidenceSyncBusy=true;
+ const syncButton=document.getElementById('gmailEvidenceSync');if(syncButton)syncButton.disabled=true;
+ try{
+  let offset=0,newCount=0,got=0,setupRequired=false;
+  const existing=new Map(gmailEvidence.map(e=>[e.source_id,e]));
+  do{
+   const response=await cloudApi('gmail-evidence&offset='+offset);
+   if(response.setupRequired){setupRequired=true;break}
+   const records=Array.isArray(response.records)?response.records:[];
+   got+=records.length;
+   for(const rec of records){
+    if(!validate(rec)||existing.has(rec.source_id))continue;
+    if(existing.size>=3500)break;
+    existing.set(rec.source_id,rec);newCount++;
+   }
+   offset=response.nextOffset===null?null:response.nextOffset;
+  }while(offset!==null&&got<3000);
+  if(newCount){
+   const next=[...existing.values()];
+   if(JSON.stringify(next).length<750000){gmailEvidence=next;persist()}
+   else status.textContent='Cloud evidence available, but local snapshot limit reached. Export older evidence before merging more.';
+  }
+  if(setupRequired)status.textContent='Gmail evidence table is not installed yet. Cloudflare database migration is required.';
+  else if(!newCount)status.textContent='Gmail evidence checked: no new items. '+gmailEvidence.length+' records available. No financial totals changed.';
+  else status.textContent=newCount+' new Gmail evidence record(s) synchronized. No accounting totals changed.';
+ }catch(e){status.textContent='Gmail sync unavailable: '+e.message+'. Existing records are preserved.'}
+ finally{gmailEvidenceSyncBusy=false;if(syncButton)syncButton.disabled=false}
+}
+document.getElementById('gmailEvidenceSync')?.addEventListener('click',fetchGmailEvidence);
+document.querySelector('[data-page="gmail"]')?.addEventListener('click',()=>{renderGmailEvidence();fetchGmailEvidence()});
+setInterval(()=>{if(document.visibilityState==='visible'&&document.getElementById('page-gmail')?.classList.contains('active'))fetchGmailEvidence()},60000);
+setTimeout(fetchGmailEvidence,3000);
+
 renderGmailEvidence();
 })();
 </script></body></html>
