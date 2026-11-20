@@ -1,6 +1,13 @@
 name: Deploy Finance Hub (separate site)
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows:
+      - Finance Hub checks
+    types:
+      - completed
+    branches:
+      - main
 permissions:
   contents: read
 concurrency:
@@ -8,10 +15,18 @@ concurrency:
   cancel-in-progress: false
 jobs:
   deploy:
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     environment: finance-cloudflare
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || 'main' }}
+      - name: Refuse deployment of superseded commit
+        if: github.event_name == 'workflow_run'
+        run: |
+          git fetch origin main --depth=1
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" || { echo "::error::A newer main commit exists; refusing stale deployment."; exit 1; }
       - name: Verify Finance Hub source and accounting regression tests
         run: node finance/test.cjs
       - name: Verify signed authentication, private snapshots, and revision conflicts
