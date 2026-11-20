@@ -38,8 +38,13 @@ assert.match(gas,/payload:utf8Payload/,'Gmail payload uses the same bytes');
 assert.match(gas,/result\.inserted\+result\.duplicates\+ignored!==result\.accepted/,'Every scheduled batch audits duplicates plus ignored security messages');
 assert.match(gas,/function ensureEnrichmentVersion_\(store\)/,'Enrichment pass has resumable independent cursor');
 assert.match(gas,/function decodeFinanceHtml_\(markup\)/,'HTML-only financial receipt support is present');
+assert.match(financeUi,/Marketing rewards, promotional payouts and unused credit/,'Marketing amounts are not booked as cash');
+assert.match(financeUi,/activation_fee_processed/,'Processed activation fee evidence is classified separately');
+
 const parserContext={};vm.createContext(parserContext);
-vm.runInContext(gas+'\nthis.moneyFor=moneyFor_;this.html=decodeFinanceHtml_;',parserContext);
+vm.runInContext(gas+'\nthis.moneyFor=moneyFor_;this.html=decodeFinanceHtml_;this.statusFor=statusFor_;',parserContext);
+assert.equal(parserContext.statusFor('Your Express Funded Account is Activated','Your Activation Fee of $149.00 has been processed.'),'activation_fee_processed','Processed activation fee is recognized as charge evidence');
+assert.equal(parserContext.statusFor('Your payout has been approved!','Your payout of $1970 has been approved and is on the way.'),'payout_approved','Approved payout is not settled cash');
 const cases=[
  ['Payment receipt','Total paid: AED 125.50','125.50','AED'],
  ['Bank transfer','Amount: 250.00 EUR','250.00','EUR'],
