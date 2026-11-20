@@ -61,7 +61,7 @@
     ],
     "products": [],
     "pricing_currency": "EUR",
-    "note": "Brands and categories are owner-provided; no individual products, catalog numbers, prices, sizes or current inventory supplied. Brand-to-category mapping not yet verified.",
+    "note": "Brands and categories are owner-provided; no individual products, catalog numbers, prices, sizes or current inventory supplied. Brand-to-category mapping not yet verified. Product type examples are editorial suggestions only and require staff confirmation before publication.",
     "category_groups": {
       "Accessories": [
         "Hair Accessories",
@@ -159,7 +159,216 @@
         "verified": true
       }
     ],
-    "brand_research_status": "10 brand profiles grounded in external sources; remaining listed brands await individual verification. These are brand descriptions, not GLAM stock claims."
+    "brand_research_status": "10 brand profiles grounded in external sources; remaining listed brands await individual verification. These are brand descriptions, not GLAM stock claims.",
+    "brand_product_type_examples": [
+      {
+        "brand": "PALADINI",
+        "product_types": [
+          "Fine lingerie",
+          "Silk nightwear",
+          "Romantic sets"
+        ],
+        "status": "Illustrative product families for staff organization; not verified GLAM stock, specific SKUs, or current brand catalog."
+      },
+      {
+        "brand": "MEY",
+        "product_types": [
+          "Everyday bras",
+          "Underwear",
+          "Loungewear"
+        ],
+        "status": "Illustrative product families for staff organization; not verified GLAM stock, specific SKUs, or current brand catalog."
+      },
+      {
+        "brand": "CHANTELLE",
+        "product_types": [
+          "Bras",
+          "Briefs",
+          "Lingerie sets"
+        ],
+        "status": "Illustrative product families for staff organization; not verified GLAM stock, specific SKUs, or current brand catalog."
+      },
+      {
+        "brand": "WOLFORD",
+        "product_types": [
+          "Bodysuits",
+          "Tights",
+          "Bodywear"
+        ],
+        "status": "Illustrative product families for staff organization; not verified GLAM stock, specific SKUs, or current brand catalog."
+      },
+      {
+        "brand": "ETRO",
+        "product_types": [
+          "Fashion accessories",
+          "Textile accents",
+          "Fragrance"
+        ],
+        "status": "Illustrative product families for staff organization; not verified GLAM stock, specific SKUs, or current brand catalog."
+      },
+      {
+        "brand": "ETRO HOME",
+        "product_types": [
+          "Home textiles",
+          "Decorative accents",
+          "Home fragrance"
+        ],
+        "status": "Illustrative product families for staff organization; not verified GLAM stock, specific SKUs, or current brand catalog."
+      },
+      {
+        "brand": "BOGLIETTI",
+        "product_types": [
+          "Nightwear",
+          "Loungewear",
+          "Underwear"
+        ],
+        "status": "Illustrative product families for staff organization; not verified GLAM stock, specific SKUs, or current brand catalog."
+      },
+      {
+        "brand": "FALKE",
+        "product_types": [
+          "Hosiery",
+          "Socks",
+          "Legwear"
+        ],
+        "status": "Illustrative product families for staff organization; not verified GLAM stock, specific SKUs, or current brand catalog."
+      },
+      {
+        "brand": "EMANUELA BIFFOLI",
+        "product_types": [
+          "Hair accessories",
+          "Scarves",
+          "Beauty cases"
+        ],
+        "status": "Illustrative product families for staff organization; not verified GLAM stock, specific SKUs, or current brand catalog."
+      },
+      {
+        "brand": "WACOAL",
+        "product_types": [
+          "Support bras",
+          "Shapewear",
+          "Briefs"
+        ],
+        "status": "Illustrative product families for staff organization; not verified GLAM stock, specific SKUs, or current brand catalog."
+      },
+      {
+        "brand": "HANRO",
+        "product_types": [
+          "Cotton underwear",
+          "Nightwear",
+          "Loungewear"
+        ],
+        "status": "Illustrative product families for staff organization; not verified GLAM stock, specific SKUs, or current brand catalog."
+      },
+      {
+        "brand": "BYEBRA",
+        "product_types": [
+          "Breast tape",
+          "Adhesive bras",
+          "Backless solutions"
+        ],
+        "status": "Illustrative product families for staff organization; not verified GLAM stock, specific SKUs, or current brand catalog."
+      },
+      {
+        "brand": "CALLA LINGERIE",
+        "product_types": [
+          "Lingerie",
+          "Bras",
+          "Briefs"
+        ],
+        "status": "Illustrative product families for staff organization; not verified GLAM stock, specific SKUs, or current brand catalog."
+      },
+      {
+        "brand": "FURSTENBERG",
+        "product_types": [
+          "Nightwear",
+          "Robes",
+          "Loungewear"
+        ],
+        "status": "Illustrative product families for staff organization; not verified GLAM stock, specific SKUs, or current brand catalog."
+      },
+      {
+        "brand": "EVA BITZER",
+        "product_types": [
+          "Silk nightwear",
+          "Loungewear",
+          "Robes"
+        ],
+        "status": "Illustrative product families for staff organization; not verified GLAM stock, specific SKUs, or current brand catalog."
+      },
+      {
+        "brand": "WEISS",
+        "product_types": [
+          "Nightwear",
+          "Underwear",
+          "Loungewear"
+        ],
+        "status": "Illustrative product families for staff organization; not verified GLAM stock, specific SKUs, or current brand catalog."
+      },
+      {
+        "brand": "FLORA LASTRAIOLI",
+        "product_types": [
+          "Lingerie",
+          "Nightwear",
+          "Robes"
+        ],
+        "status": "Illustrative product families for staff organization; not verified GLAM stock, specific SKUs, or current brand catalog."
+      },
+      {
+        "brand": "ZIMMERLI",
+        "product_types": [
+          "Premium underwear",
+          "Loungewear",
+          "Nightwear"
+        ],
+        "status": "Illustrative product families for staff organization; not verified GLAM stock, specific SKUs, or current brand catalog."
+      },
+      {
+        "brand": "CARRARA",
+        "product_types": [
+          "Bath textiles",
+          "Towels",
+          "Home textiles"
+        ],
+        "status": "Illustrative product families for staff organization; not verified GLAM stock, specific SKUs, or current brand catalog."
+      },
+      {
+        "brand": "MENGHI",
+        "product_types": [
+          "Footwear",
+          "Sandals",
+          "Slides"
+        ],
+        "status": "Illustrative product families for staff organization; not verified GLAM stock, specific SKUs, or current brand catalog."
+      },
+      {
+        "brand": "MARC&ANDRE PARIS",
+        "product_types": [
+          "Lingerie",
+          "Swimwear",
+          "Loungewear"
+        ],
+        "status": "Illustrative product families for staff organization; not verified GLAM stock, specific SKUs, or current brand catalog."
+      },
+      {
+        "brand": "SHIKKOSA",
+        "product_types": [
+          "Nightwear",
+          "Loungewear",
+          "Underwear"
+        ],
+        "status": "Illustrative product families for staff organization; not verified GLAM stock, specific SKUs, or current brand catalog."
+      },
+      {
+        "brand": "HUIT",
+        "product_types": [
+          "Bras",
+          "Briefs",
+          "Lingerie sets"
+        ],
+        "status": "Illustrative product families for staff organization; not verified GLAM stock, specific SKUs, or current brand catalog."
+      }
+    ]
   },
   "policies": {
     "delivery": null,
