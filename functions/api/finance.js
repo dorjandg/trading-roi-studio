@@ -80,7 +80,7 @@ async function handler(ctx){
   const offset=Math.min(Number(offsetRaw),50000);
   try{
     const rows=await db.prepare("SELECT source_id,occurred_on AS date,provider,description,amount,currency,category,status,reference FROM gmail_financial_evidence WHERE user_id=? ORDER BY occurred_on DESC,source_id DESC LIMIT 300 OFFSET ?").bind(user.id,offset).all();
-    return json({records:rows.results||[],nextOffset:(rows.results||[]).length===300?offset+300:null});
+    return json({records:rows.results||[],nextOffset:(rows.results||[]).length===300?offset+300:null,syncConfigured:!!(env.FINANCE_GMAIL_SYNC_SECRET&&env.FINANCE_GMAIL_SYNC_EMAIL)});
   }catch(e){
     if(/no such table/i.test(String(e)))return json({records:[],nextOffset:null,setupRequired:true});
     return json({error:"Gmail financial evidence query unavailable"},503);
