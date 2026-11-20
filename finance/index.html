@@ -633,7 +633,7 @@ async function fetchGmailEvidence(){
 }
 document.getElementById('gmailEvidenceSync')?.addEventListener('click',fetchGmailEvidence);
 document.querySelector('[data-page="gmail"]')?.addEventListener('click',()=>{renderGmailEvidence();fetchGmailEvidence()});
-setInterval(()=>{if(document.visibilityState==='visible'&&document.getElementById('page-gmail')?.classList.contains('active'))fetchGmailEvidence()},60000);
+setInterval(()=>{if(document.visibilityState==='visible'&&(document.getElementById('page-gmail')?.classList.contains('active')||document.getElementById('page-overview')?.classList.contains('active')))fetchGmailEvidence()},300000);
 setTimeout(fetchGmailEvidence,3000);
 
 renderGmailEvidence();
