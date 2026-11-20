@@ -74,6 +74,18 @@ async function handler(ctx){
   return json({error:"Method not allowed"},405);
  }
  if(method==="GET"&&url.searchParams.get("resource")==="me")return json({user:{email:user.email,id:user.id},workspace_id:ws,role:member.role});
+ if(method==="GET"&&url.searchParams.get("resource")==="gmail-evidence"){
+  const offsetRaw=url.searchParams.get("offset")||"0";
+  if(!/^\d{1,6}$/.test(offsetRaw))return json({error:"Invalid offset"},400);
+  const offset=Math.min(Number(offsetRaw),50000);
+  try{
+    const rows=await db.prepare("SELECT source_id,occurred_on AS date,provider,description,amount,currency,category,status,reference FROM gmail_financial_evidence WHERE user_id=? ORDER BY occurred_on DESC,source_id DESC LIMIT 300 OFFSET ?").bind(user.id,offset).all();
+    return json({records:rows.results||[],nextOffset:(rows.results||[]).length===300?offset+300:null});
+  }catch(e){
+    if(/no such table/i.test(String(e)))return json({records:[],nextOffset:null,setupRequired:true});
+    return json({error:"Gmail financial evidence query unavailable"},503);
+  }
+ }
  if(method==="GET"&&url.searchParams.get("resource")==="connections"){
   const rows=await db.prepare("SELECT a.id,a.account_label,a.account_type,a.currency,a.owner_user_id,p.name AS provider_name FROM financial_accounts a LEFT JOIN providers p ON p.id=a.provider_id WHERE a.workspace_id=? AND a.owner_user_id=? ORDER BY a.created_at DESC LIMIT 500").bind(ws,user.id).all();
   return json({connections:rows.results});
