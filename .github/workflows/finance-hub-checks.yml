@@ -4,11 +4,13 @@ on:
     paths:
       - 'finance/**'
       - 'functions/api/finance.js'
+      - 'functions/api/gmail-ingest.js'
       - '.github/workflows/finance-hub-checks.yml'
   pull_request:
     paths:
       - 'finance/**'
       - 'functions/api/finance.js'
+      - 'functions/api/gmail-ingest.js'
   workflow_dispatch:
 jobs:
   test:
