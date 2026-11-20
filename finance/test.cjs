@@ -96,8 +96,9 @@ assert.ok(html.includes('id="ftmo-gmail-receipt-review"'),'FTMO receipt review l
 assert.ok(html.includes('Nothing has been saved.'),'FTMO receipts require human confirmation');
 assert.ok(html.includes("r.currency+' requires conversion/reconciliation"),'Non-ledger currencies cannot be silently booked');
 assert.ok(html.includes("x.reference===reference"),'Previously linked Gmail sources are detected');
-assert.ok(html.includes("const legacyFingerprint=()=>JSON.stringify"),'Existing per-user cloud snapshots have a safe fingerprint migration');
-assert.ok(html.includes("gmailEvidence.length===0&&currentMarker.fingerprint===legacyFingerprint()"),'Legacy snapshots only accepted when no Gmail evidence exists');
+assert.ok(html.includes("function safeAccountingMarker_(stored)"),'Existing per-user cloud snapshots have a safe fingerprint migration');
+assert.ok(html.includes("currentMarker.userId===cloud.user.id&&safeAccountingMarker_(currentMarker.fingerprint)"),'Legacy snapshots only accepted for the authenticated account after checking accounting data');
+assert.ok(html.includes("JSON.stringify(oldRows.slice(0,6))"),'Legacy Gmail evidence is excluded from fingerprint comparison without ignoring accounting changes');
 assert.ok(html.includes('id="page-gmail"'),'Dedicated Gmail financial inbox page exists');
 assert.ok(html.includes('data-page="gmail"'),'Gmail financial inbox navigation exists');
 assert.ok(html.includes('id="gmailFinanceRegister"'),'Gmail financial inbox exists');
