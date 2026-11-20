@@ -12,9 +12,24 @@
  * In Cloudflare configure FINANCE_GMAIL_SYNC_EMAIL to the Finance Hub owner.
  */
 const FINANCE_QUERY = '{subject:payment subject:receipt subject:invoice subject:transaction subject:deposit subject:withdrawal subject:transfer subject:payout subject:refund subject:purchase subject:charged subject:charge subject:billing subject:subscription subject:statement subject:order subject:booking subject:paid subject:expense subject:credit subject:debit subject:balance subject:salary subject:rent subject:utility subject:fee from:(notifications@bybit.com) from:(confirmo.net) from:(topstep.com) from:(ftmo.com) from:(swaymarkets.com) from:(liquidbrokers.com)} -in:spam -in:trash';
-const FINANCE_BACKFILL_PAGE = 20;
+const FINANCE_BACKFILL_PAGE = 10;
 const FINANCE_RECHECK_DAYS = 21;
 const FINANCE_MAX_MESSAGES_PER_RUN = 70;
+const FINANCE_QUOTA_COOLDOWN_MS = 180000;
+function gmailQuotaError_(err){
+ return /quota exceeded|rate.?limit|too many requests|resource exhausted|userRateLimitExceeded|rateLimitExceeded/i.test(String(err));
+}
+function gmailCoolingDown_(store){
+ const until=Number(store.getProperty('FINANCE_GMAIL_COOLDOWN_UNTIL')||0);
+ if(until>Date.now()){console.log('Gmail cooldown: '+Math.ceil((until-Date.now())/1000)+' seconds remaining. Saved cursor unchanged.');return true}
+ if(until)store.deleteProperty('FINANCE_GMAIL_COOLDOWN_UNTIL');
+ return false;
+}
+function pauseGmailQuota_(store,err){
+ store.setProperty('FINANCE_GMAIL_COOLDOWN_UNTIL',String(Date.now()+FINANCE_QUOTA_COOLDOWN_MS));
+ console.warn('Gmail quota reached: pausing 3 minutes. Failed page cursor was not advanced. '+String(err).slice(0,150));
+}
+
 function config_() {
   const prop = PropertiesService.getScriptProperties();
   const names=['FINANCE_INGEST_URL','FINANCE_SYNC_SECRET','FINANCE_ACCESS_CLIENT_ID','FINANCE_ACCESS_CLIENT_SECRET'];
@@ -182,6 +197,7 @@ function importGmailHistoryNow(){
   if(!lock.tryLock(1000)){console.log('Another Gmail import is active; no duplicate worker started.');return;}
   try{
     const config=config_(),store=PropertiesService.getScriptProperties();
+    if(gmailCoolingDown_(store))return;
     if(store.getProperty('FINANCE_QUERY_VERSION')!=='finance-search-20261120-v2'){
       store.deleteProperty('FINANCE_BACKFILL_DONE');
       store.deleteProperty('FINANCE_BACKFILL_PAGE_TOKEN');
@@ -196,13 +212,14 @@ function importGmailHistoryNow(){
       store.setProperty('FINANCE_QUERY_VERSION',version);
       console.log('Expanded financial Gmail search started from newest; existing records are deduplicated.');
     }
-    const deadline=Date.now()+170000;
-    let pages=0,accepted=0,inserted=0,duplicates=0,done=store.getProperty('FINANCE_BACKFILL_DONE')==='1';
-    while(!done&&pages<60&&Date.now()<deadline){
+    const deadline=Date.now()+160000;
+    let pages=0,accepted=0,inserted=0,duplicates=0,done=store.getProperty('FINANCE_BACKFILL_DONE')==='1',rateLimited=false;
+    while(!done&&pages<8&&Date.now()<deadline){
       const token=store.getProperty('FINANCE_BACKFILL_PAGE_TOKEN')||'';
       let page;
       try{page=syncPage_(FINANCE_QUERY,token,config)}
       catch(err){
+        if(gmailQuotaError_(err)){pauseGmailQuota_(store,err);rateLimited=true;break;}
         if(token&&/page.?token|invalid argument/i.test(String(err))){
           store.deleteProperty('FINANCE_BACKFILL_PAGE_TOKEN');
           throw Error('Gmail page cursor expired. Next run restarts safely with deduplication. '+err.message);
@@ -217,8 +234,9 @@ function importGmailHistoryNow(){
         store.setProperty('FINANCE_BACKFILL_DONE','1');
         done=true;
       }
+      if(!done&&pages<8&&Date.now()+12000<deadline)Utilities.sleep(12000);
     }
-    console.log('Historical catch-up: pages='+pages+' accepted='+accepted+' inserted='+inserted+' duplicates='+duplicates+' complete='+done+'. '+(done?'The financial search backfill reached its end.':'Run importGmailHistoryNow again for the next pages.'));
+    console.log('Historical catch-up: pages='+pages+' accepted='+accepted+' inserted='+inserted+' duplicates='+duplicates+' complete='+done+' rateLimited='+rateLimited+'. '+(done?'The financial search backfill reached its end.':'Run importGmailHistoryNow again for the next pages.'));
   }finally{lock.releaseLock()}
 }
 /** One cycle: recent changes plus one backfill page. Idempotent in D1 by message ID. */
@@ -226,11 +244,13 @@ function syncGmailFinance(){
   const lock=LockService.getScriptLock();if(!lock.tryLock(1000))return;
   try{
     const config=config_(),store=PropertiesService.getScriptProperties();
+    if(gmailCoolingDown_(store))return;
     const recent='after:'+Utilities.formatDate(new Date(Date.now()-FINANCE_RECHECK_DAYS*86400000),'Etc/UTC','yyyy/MM/dd')+' '+FINANCE_QUERY;
     const recentToken=store.getProperty('FINANCE_RECENT_PAGE_TOKEN')||'';
     let recentResult;
     try{recentResult=syncPage_(recent,recentToken,config)}
     catch(err){
+      if(gmailQuotaError_(err)){pauseGmailQuota_(store,err);return;}
       // Gmail page tokens may become invalid if the mailbox has shifted.
       // Retry the newest page on the next trigger rather than losing coverage.
       if(recentToken){store.deleteProperty('FINANCE_RECENT_PAGE_TOKEN');throw Error('Recent paging cursor expired; restart next run: '+err.message)}
@@ -242,12 +262,13 @@ function syncGmailFinance(){
     // Five backfill pages per scheduled cycle, bounded by 65 seconds.
     // This keeps new mail fresh while making older financial history available
     // substantially faster than one 20-message page every 15 minutes.
-    const historicalDeadline=Date.now()+65000;
-    for(let pageIndex=0;pageIndex<5&&Date.now()<historicalDeadline&&store.getProperty('FINANCE_BACKFILL_DONE')!=='1';pageIndex++){
+    const historicalDeadline=Date.now()+60000;
+    for(let pageIndex=0;pageIndex<2&&Date.now()<historicalDeadline&&store.getProperty('FINANCE_BACKFILL_DONE')!=='1';pageIndex++){
       const oldToken=store.getProperty('FINANCE_BACKFILL_PAGE_TOKEN')||'';
       let historic;
       try{historic=syncPage_(FINANCE_QUERY,oldToken,config)}
       catch(err){
+        if(gmailQuotaError_(err)){pauseGmailQuota_(store,err);return;}
         if(oldToken&&/page.?token|invalid argument/i.test(String(err)))store.deleteProperty('FINANCE_BACKFILL_PAGE_TOKEN');
         throw Error('Historical backfill page retry needed: '+err.message);
       }
