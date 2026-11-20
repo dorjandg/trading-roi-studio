@@ -45,6 +45,7 @@ export async function onRequestPost({request,env}){
   const direction=String(raw.direction||"").trim();
   const paymentStatus=String(raw.payment_status||"").trim(),currency=String(raw.currency||"").toUpperCase();
   const amount=Number(raw.amount);
+  if(!["FTMO","Topstep"].includes(provider)){held++;continue}
   if(String(raw.review_state)!=="Approved"||!/^gmail:[a-z0-9]{10,32}$/.test(source)||!sourceDate_(date)||
      !provider||provider.length>120||description.length>250||!["Expense","Income"].includes(direction)||
      !["USD","EUR","AED","GBP"].includes(currency)||!Number.isFinite(amount)||amount<=0||amount>100000000||
