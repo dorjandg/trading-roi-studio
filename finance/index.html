@@ -920,7 +920,7 @@ function renderGmailAudit_(rows){
  summary.innerHTML=figures.map(([label,value])=>'<div class="metric-tile"><small>'+clean(label)+'</small><strong>'+value+'</strong></div>').join('');
  const filter=document.getElementById('gmailAuditFilter')?.value||'all';
  const filtered=audit.filter(x=>filter==='all'||x.quality===filter||(filter==='issues'&&x.quality==='receipt_missing'));
- output.innerHTML=filtered.slice(0,gmailAuditVisible_).map(x=>'<tr><td>'+clean(x.r.date)+'</td><td>'+clean(x.r.source_id)+'</td><td>'+clean(x.r.provider)+'</td><td>'+clean(x.r.description)+'</td><td>'+clean(x.amount||'—')+'</td><td>'+clean(x.currency||'—')+'</td><td>'+clean(x.direction)+'</td><td>'+clean(x.r.status)+'</td><td>'+clean(x.flags.join('; ')||'Candidate, not verified')+'</td><td><button type="button" class="mini-button" data-audit-source="'+clean(x.r.source_id)+'">Review</button></td></tr>').join('')||'<tr><td colspan="10">No matching source records.</td></tr>';
+ output.innerHTML=filtered.slice(0,gmailAuditVisible_).map(x=>'<tr><td>'+clean(x.r.date)+'</td><td>'+clean(x.r.source_id)+'</td><td>'+clean(x.r.provider)+'</td><td>'+clean(x.r.description)+'</td><td>'+clean(x.amount||'—')+'</td><td>'+clean(x.currency||'—')+'</td><td>'+clean(x.direction)+'</td><td>'+clean(x.r.status)+'</td><td>'+clean(x.flags.join('; ')||'Candidate, not verified')+'</td><td>'+(x.quality==='nontransaction'?'<span class="hint">Excluded</span>':'<button type="button" class="mini-button" data-audit-source="'+clean(x.r.source_id)+'">'+(x.quality==='candidate'?'Prepare draft':'Review evidence')+'</button>')+'</td></tr>').join('')||'<tr><td colspan="10">No matching source records.</td></tr>';
  const note=document.getElementById('gmailAuditPageNote'),more=document.getElementById('gmailAuditMore');
  if(note)note.textContent='Showing '+Math.min(gmailAuditVisible_,filtered.length)+' of '+filtered.length+' selected rows. Unique IDs currently loaded: '+coverage.loaded+'; security notices filtered: '+coverage.excludedSecurity+'; marketing notices filtered: '+coverage.excludedMarketing+'. Counts describe this browser’s loaded source data, not necessarily every row in the private database. Use Check Gmail sync to refresh.';
  if(more)more.style.display=filtered.length>gmailAuditVisible_?'inline-block':'none';
@@ -931,6 +931,11 @@ document.getElementById('gmailAuditRows')?.addEventListener('click',e=>{
  const id=e.target?.closest('[data-audit-source]')?.dataset?.auditSource;
  if(!id)return;
  q.value=id;cat.value='';gmailVisibleLimit=250;renderGmailEvidence();
+ const audited=gmailAuditData_(allGmailEvidence()).find(x=>x.r.source_id===id);
+ if(audited?.quality==='candidate'){
+  const review=[...document.querySelectorAll('[data-gmail-review]')].find(el=>el.dataset.gmailReview===id);
+  if(review){review.click();return}
+ }
  document.getElementById('gmailEvidenceRows')?.scrollIntoView({behavior:'smooth',block:'center'});
 });
 document.getElementById('gmailAuditExport')?.addEventListener('click',()=>{
@@ -997,7 +1002,12 @@ out.addEventListener('click',e=>{
  if(!id||!cloud.user)return;
  const record=allGmailEvidence().find(r=>r.source_id===id);
  if(!record)return;
- if(['authorization_only','payout_processing','payout_approved'].includes(record.status))return;
+ // Prevent promotional notices and unsettled payout/order statuses
+ // from being turned into misleading cash transactions.
+ const audit=gmailAuditRow_(record,new Set());
+ if(audit.quality==='nontransaction'||['authorization_only','payout_processing','payout_approved','order_confirmed'].includes(record.status)){
+  status.textContent='Not confirmed settled cash. No accounting draft was prepared.';return;
+ }
  const marker='[Gmail '+record.source_id+']';
  if(items.some(t=>String(t.notes||'').includes(marker))){status.textContent='Already linked to an accounting transaction.';return;}
  const entry=document.getElementById('entry');if(!entry)return;
