@@ -31,7 +31,8 @@
       "Shapewear",
       "Breast Tape",
       "Backless Bras",
-      "Footwear"
+      "Footwear",
+      "Solutions"
     ],
     "brands": [
       "PALADINI",
@@ -176,7 +177,9 @@
       "Use the customer's language: English, Albanian or Italian.",
       "Offer one relevant follow-up question when helpful.",
       "For brand history and positioning, use catalog.brand_profiles and its source URLs. Do not invent accolades, celebrity endorsements or product availability.",
-      "When asked about a brand without a verified profile, acknowledge that GLAM lists the brand but avoid unsupported history or product claims."
+      "When asked about a brand without a verified profile, acknowledge that GLAM lists the brand but avoid unsupported history or product claims.",
+      "Read the live public catalog endpoint on each customer request; newly published categories, brands and products override older static catalog snapshots.",
+      "A listed product is not proof of current inventory. Only explicitly verified availability can be described as in stock."
     ],
     "suggested_questions": [
       "Where is your boutique?",
