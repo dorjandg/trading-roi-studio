@@ -111,7 +111,7 @@
 const GMAIL_EVIDENCE_KEY='finance-hub-gmail-evidence-v1';let gmailEvidence=[];try{gmailEvidence=JSON.parse(localStorage.getItem(GMAIL_EVIDENCE_KEY)||'[]');if(!Array.isArray(gmailEvidence))gmailEvidence=[]}catch{gmailEvidence=[]}
 let gmailRemoteEvidence=[],gmailRemoteOwner='',gmailVisibleLimit=250;
 const GMAIL_SECURITY_SUBJECT=/\b(?:authentication|verification|security|sign[ -]?in|login|access|one[ -]?time|two[ -]?factor|2fa)\s+(?:codes?|pins?|passwords?)\b|\botp\b|password reset|reset your password|magic link|verify your (?:email|account|identity)/i;
-const GMAIL_NONFINANCIAL_HEADLINE=/\b(?:goes public|going public|ipo announcement|ipo launches?|join (?:our|the) webinar|register for (?:our|the) webinar)\b/i;
+const GMAIL_NONFINANCIAL_HEADLINE=/\b(?:goes public|going public|ipo announcement|ipo launches?|join (?:our|the) webinar|register for (?:our|the) webinar|chance to win|win up to|enter (?:the )?(?:draw|giveaway)|giveaway|sweepstakes|prize draw|limited.time offer|exclusive offer|promotional offer|special promotion|paid in rewards|in rewards (?:last|this)|million(?:s)? (?:in|of) rewards|claim your bonus|invite friends|refer (?:a |your )?friend|cashback campaign|cashback promotion)\b|\b\$?[0-9]+(?:\.[0-9]+)?[mb]\+?\s+paid in rewards\b/i;
 function allGmailEvidence(){
  const merged=new Map();
  if(cloud.user?.id===gmailRemoteOwner)for(const row of gmailRemoteEvidence)if(row?.source_id)merged.set(row.source_id,row);
@@ -595,7 +595,7 @@ function gmailDetectedActivity_(rows,currency,cutoff){
 function gmailDetectedInventory_(rows,cutoff){
  // Inventory ALL recognized amounts, regardless of currency or ambiguous status.
  // Display them individually; never add mixed currencies or post to the ledger.
- const receipts=rows.filter(r=>r.source_id&&String(r.date||'').slice(0,7)>=cutoff&&
+ const receipts=rows.filter(r=>r.source_id&&!GMAIL_NONFINANCIAL_HEADLINE.test(String(r.description||''))&&String(r.date||'').slice(0,7)>=cutoff&&
   /^\d+(?:\.\d{1,8})?$/.test(String(r.amount||''))&&Number(r.amount)>0&&r.currency);
  const groups=new Map(),linked=new Set();
  for(const x of items)for(const m of String(x.notes||'').matchAll(/\[Gmail (gmail:[^\]]+)\]/g))linked.add(m[1]);
