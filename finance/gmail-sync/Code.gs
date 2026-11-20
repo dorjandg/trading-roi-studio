@@ -160,7 +160,12 @@ function syncPage_(query,token,config){
     try{
       const msg=Gmail.Users.Messages.get('me',item.id,{format:'full'});
       const record=recordFrom_(msg);if(record)candidates.push(record);
-    }catch(err){console.warn('Skipped Gmail message: '+String(err).slice(0,130))}
+    }catch(err){
+      // A deleted message is harmless; retry any other Gmail API failure rather
+      // than advancing past evidence that was never inspected.
+      if(/(?:404|not found)/i.test(String(err)))console.warn('Deleted Gmail message skipped: '+item.id);
+      else throw err;
+    }
   }
   // Send even empty batches; verified destination check precedes advancing cursor.
   const result=signedPost_(candidates,config);
@@ -234,17 +239,21 @@ function syncGmailFinance(){
     console.log('Recent Gmail evidence: '+JSON.stringify(recentResult.result));
     if(recentResult.pageToken)store.setProperty('FINANCE_RECENT_PAGE_TOKEN',recentResult.pageToken);
     else store.deleteProperty('FINANCE_RECENT_PAGE_TOKEN');
-    const oldToken=store.getProperty('FINANCE_BACKFILL_PAGE_TOKEN')||'';
-    if(store.getProperty('FINANCE_BACKFILL_DONE')!=='1'){
+    // Five backfill pages per scheduled cycle, bounded by 65 seconds.
+    // This keeps new mail fresh while making older financial history available
+    // substantially faster than one 20-message page every 15 minutes.
+    const historicalDeadline=Date.now()+65000;
+    for(let pageIndex=0;pageIndex<5&&Date.now()<historicalDeadline&&store.getProperty('FINANCE_BACKFILL_DONE')!=='1';pageIndex++){
+      const oldToken=store.getProperty('FINANCE_BACKFILL_PAGE_TOKEN')||'';
       let historic;
       try{historic=syncPage_(FINANCE_QUERY,oldToken,config)}
       catch(err){
-        if(oldToken)store.deleteProperty('FINANCE_BACKFILL_PAGE_TOKEN');
+        if(oldToken&&/page.?token|invalid argument/i.test(String(err)))store.deleteProperty('FINANCE_BACKFILL_PAGE_TOKEN');
         throw Error('Historical backfill page retry needed: '+err.message);
       }
       if(historic.pageToken)store.setProperty('FINANCE_BACKFILL_PAGE_TOKEN',historic.pageToken);
       else{store.deleteProperty('FINANCE_BACKFILL_PAGE_TOKEN');store.setProperty('FINANCE_BACKFILL_DONE','1')}
-      console.log('Historical Gmail evidence: '+JSON.stringify(historic.result));
+      console.log('Historical Gmail evidence page '+(pageIndex+1)+': '+JSON.stringify(historic.result));
     }
   }finally{lock.releaseLock()}
 }
