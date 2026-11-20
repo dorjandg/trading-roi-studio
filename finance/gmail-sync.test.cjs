@@ -16,6 +16,14 @@ assert.match(financeUi,/Needs review/,'Gmail evidence dashboard shows needs-revi
 assert.match(financeUi,/syncButton\.textContent='Checking…'/,'Gmail sync button shows running feedback');
 assert.match(financeUi,/This does not trigger Gmail imports/,'Gmail refresh clarifies that imports run in Apps Script');
 
+assert.match(gas,/function startFullMailboxScan\(\)/,'Full Gmail history scan has a single startup entry point');
+assert.match(gas,/function continueFullMailboxScan\(\)/,'Full Gmail history scan resumes with saved cursor');
+assert.match(gas,/includeSpamTrash:true/,'Full historical scan checks the entire mailbox including spam and trash');
+assert.match(gas,/pageToken:cursor\|\|undefined/,'Full historical scan continues exactly at its saved cursor');
+assert.match(gas,/function fullMailboxScanStatusSheet_\(state\)/,'Full scan updates spreadsheet status');
+assert.match(gas,/stopFullMailboxScanTrigger_\(\)/,'Full scan stops only its own temporary trigger');
+assert.match(gas,/mirrorFinanceEvidenceSheet_\(candidates\);/,'Full scan writes financial evidence to Google Sheet before cursor advancing');
+assert.match(gas,/store\.setProperties\(properties,false\)/,'Full scan persists page totals and saved cursor after successful review Sheet writes');
 assert.match(gas,/function importGmailHistoryNow\(\)/,'Manual historical catch-up is available');
 assert.match(gas,/function startGmailHistoryAutoImport\(\)/,'One-click unattended Gmail historical import exists');
 assert.match(gas,/everyMinutes\(5\)/,'Temporary catch-up scheduler is five-minute');
