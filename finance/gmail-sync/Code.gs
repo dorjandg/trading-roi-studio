@@ -83,6 +83,11 @@ function providerFor_(sender,subject,body){
   if(/invoice|receipt|paid|payment|transaction|charge|deposit|withdraw|refund|payout|transfer/i.test(subject))return ['Other merchant','Unclassified'];
   return null;
 }
+function nonFinancialHeadline_(subject){
+ // Reject obvious marketing/financial-news announcements, not invoices,
+ // payout approvals or bank transfers. Kept narrow to avoid false negatives.
+ return /\b(?:goes public|going public|ipo announcement|ipo launches?|join (?:our|the) webinar|register for (?:our|the) webinar)\b/i.test(subject);
+}
 function statusFor_(subject,content){
   const s=(subject+' '+content.slice(0,400)).toLowerCase();
   // Security/login messages are never financial evidence. Check the subject
@@ -118,6 +123,7 @@ function recordFrom_(message){
   const subject=extractHeader_(message,'subject').slice(0,180);
   const sender=extractHeader_(message,'from');
   const text=financialText_(message);
+  if(nonFinancialHeadline_(subject))return null;
   // Owner request: exclude Karim expenses from the evidence feed.
   if(/\bkarim\b/i.test(sender+' '+subject))return null;
   const provider=providerFor_(sender,subject,text);
