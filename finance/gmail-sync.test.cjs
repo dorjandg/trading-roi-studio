@@ -8,6 +8,12 @@ const financeUi=fs.readFileSync(path.join(__dirname,'index.html'),'utf8');
 assert.match(financeUi,/const existing=new Map\(\);\s*let localDuplicates=0;/,'Cloud refresh must reconcile local copies');
 assert.match(financeUi,/if\(newCount\|\|localDuplicates\)/,'Cloud refresh must persist cleanup even with zero new items');
 assert.match(financeUi,/existing\.has\(rec\.source_id\)/,'Downloaded Gmail records must be deduplicated');
+assert.match(financeUi,/gmailRemoteOwner/,'Evidence preview is scoped to the authenticated owner');
+assert.match(financeUi,/allGmailEvidence\(\)/,'Full cloud evidence remains visible beyond browser snapshot limits');
+assert.match(financeUi,/gmailEvidenceMore/,'More than 250 matching records can be browsed');
+assert.match(gas,/function importGmailHistoryNow\(\)/,'Manual historical catch-up is available');
+assert.match(gas,/FINANCE_BACKFILL_PAGE_TOKEN/,'Historical catch-up saves its paging cursor');
+
 assert.match(gas,/Utilities\.newBlob\(data,'application\/json'\)\.getBytes\(\)/,'Apps Script sends explicit UTF-8 bytes');
 assert.match(gas,/Utilities\.computeHmacSha256Signature\(stamp\+'\\n'\+data,config\.FINANCE_SYNC_SECRET,Utilities\.Charset\.UTF_8\)/,'Apps Script signs explicit UTF-8 text');
 assert.match(gas,/payload:utf8Payload/,'Gmail payload uses the same bytes');
