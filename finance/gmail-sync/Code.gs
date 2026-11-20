@@ -461,3 +461,190 @@ function pushApprovedFinanceSheet_(){
  }
  console.log('Approved Sheet -> Finance Hub: sent='+accepted+' imported='+imported+' duplicate='+duplicates+' held='+held);
 }
+
+
+/**
+ * COMPLETE MAILBOX AUDIT
+ *
+ * Scans Gmail's entire mailbox, page by page, including archived, Sent, Spam
+ * and Trash messages for coverage. Spam/Trash are inspected but never staged
+ * as payable evidence. Only financial candidates are placed in Source Inbox.
+ *
+ * This has a separate cursor and trigger from the legacy finance-keyword
+ * importer. Every successfully staged page is checkpointed. Any Gmail or
+ * Sheets failure leaves the current page available for retry. When all pages
+ * have been visited, only the temporary full-scan trigger is removed.
+ */
+const FINANCE_ALLMAIL_PAGE_SIZE_ = 50;
+const FINANCE_ALLMAIL_PAGES_PER_RUN_ = 3;
+const FINANCE_ALLMAIL_LIMIT_MS_ = 190000;
+const FINANCE_ALLMAIL_TRIGGER_ = 'continueFullMailboxScan';
+
+function fullMailboxScanState_() {
+ const p=PropertiesService.getScriptProperties();
+ const asNumber=k=>Number(p.getProperty(k)||0);
+ return {
+  status:p.getProperty('FINANCE_ALLMAIL_COMPLETE')==='1'?'Complete':
+   p.getProperty('FINANCE_ALLMAIL_COOLDOWN')&&Number(p.getProperty('FINANCE_ALLMAIL_COOLDOWN'))>Date.now()?'Paused: Gmail quota':'Scanning',
+  scanned:asNumber('FINANCE_ALLMAIL_SCANNED'),
+  financial:asNumber('FINANCE_ALLMAIL_FINANCIAL'),
+  excluded:asNumber('FINANCE_ALLMAIL_EXCLUDED'),
+  pages:asNumber('FINANCE_ALLMAIL_PAGES'),
+  estimate:asNumber('FINANCE_ALLMAIL_ESTIMATE'),
+  started:p.getProperty('FINANCE_ALLMAIL_STARTED')||'',
+  updated:p.getProperty('FINANCE_ALLMAIL_UPDATED')||'',
+  completed:p.getProperty('FINANCE_ALLMAIL_FINISHED')||''
+ };
+}
+function fullMailboxScanStatusSheet_(state){
+ const fileId=PropertiesService.getScriptProperties().getProperty('FINANCE_SHEET_ID');
+ if(!fileId)throw Error('Set FINANCE_SHEET_ID in private Script Properties first');
+ const book=SpreadsheetApp.openById(fileId);
+ const tab=book.getSheetByName('Scan Progress')||book.insertSheet('Scan Progress');
+ const rows=[
+  ['Full Gmail mailbox audit','Value'],
+  ['State',state.status],
+  ['Emails checked',state.scanned],
+  ['Financial candidates',state.financial],
+  ['Other/unsafe messages skipped',state.excluded],
+  ['Pages completed',state.pages],
+  ['Gmail estimated mailbox count',state.estimate],
+  ['Started (UTC)',state.started],
+  ['Last successful page (UTC)',state.updated],
+  ['Completed (UTC)',state.completed],
+  ['Scope','All Gmail messages, including archived/Sent/Spam/Trash; unsafe messages are excluded from financial staging'],
+  ['Accounting','Only manually Approved rows can be sent to Finance Hub']
+ ];
+ tab.getRange(1,1,rows.length,2).setValues(rows);
+ tab.setFrozenRows(1);
+ tab.setColumnWidth(1,260);
+ tab.setColumnWidth(2,620);
+}
+function stopFullMailboxScanTrigger_(){
+ for(const trigger of ScriptApp.getProjectTriggers())
+  if(trigger.getHandlerFunction()===FINANCE_ALLMAIL_TRIGGER_)ScriptApp.deleteTrigger(trigger);
+}
+function startFullMailboxScan(){
+ const store=PropertiesService.getScriptProperties();
+ if(!financeReviewSheet_())throw Error('Set FINANCE_SHEET_ID before starting the full scan');
+ if(store.getProperty('FINANCE_ALLMAIL_COMPLETE')==='1'){
+  fullMailboxScanStatusSheet_(fullMailboxScanState_());
+  console.log('Full historical mailbox already scanned. Use restartFullMailboxScan only to deliberately rescan.');
+  return;
+ }
+ if(!store.getProperty('FINANCE_ALLMAIL_STARTED'))
+  store.setProperty('FINANCE_ALLMAIL_STARTED',new Date().toISOString());
+ const installed=ScriptApp.getProjectTriggers().some(x=>x.getHandlerFunction()===FINANCE_ALLMAIL_TRIGGER_);
+ if(!installed)ScriptApp.newTrigger(FINANCE_ALLMAIL_TRIGGER_).timeBased().everyMinutes(5).create();
+ fullMailboxScanStatusSheet_(fullMailboxScanState_());
+ continueFullMailboxScan();
+}
+function continueFullMailboxScan(){
+ const lock=LockService.getScriptLock();
+ if(!lock.tryLock(1000)){console.log('Another Gmail finance scan is active; retry by trigger');return}
+ try{
+  const store=PropertiesService.getScriptProperties();
+  if(store.getProperty('FINANCE_ALLMAIL_COMPLETE')==='1'){
+   stopFullMailboxScanTrigger_();
+   fullMailboxScanStatusSheet_(fullMailboxScanState_());
+   return;
+  }
+  const until=Number(store.getProperty('FINANCE_ALLMAIL_COOLDOWN')||0);
+  if(until>Date.now()){
+   console.log('Full mailbox scan quota cooldown; resume automatically after '+new Date(until).toISOString());
+   fullMailboxScanStatusSheet_(fullMailboxScanState_());return;
+  }
+  if(!financeReviewSheet_())throw Error('Private review Sheet is not connected');
+  const deadline=Date.now()+FINANCE_ALLMAIL_LIMIT_MS_;
+  for(let pageNo=0;pageNo<FINANCE_ALLMAIL_PAGES_PER_RUN_&&Date.now()<deadline;pageNo++){
+   const cursor=store.getProperty('FINANCE_ALLMAIL_CURSOR')||'';
+   let page;
+   try{
+    page=Gmail.Users.Messages.list('me',{
+     maxResults:FINANCE_ALLMAIL_PAGE_SIZE_,
+     includeSpamTrash:true,
+     pageToken:cursor||undefined
+    });
+   }catch(err){
+    if(gmailQuotaError_(err)){
+     store.setProperty('FINANCE_ALLMAIL_COOLDOWN',String(Date.now()+FINANCE_QUOTA_COOLDOWN_MS));
+     console.warn('Full Gmail scan quota pause; saved cursor not advanced');break;
+    }
+    if(cursor&&/page.?token|invalid argument/i.test(String(err))){
+     store.deleteProperty('FINANCE_ALLMAIL_CURSOR');
+     store.setProperty('FINANCE_ALLMAIL_SCANNED','0');
+     store.setProperty('FINANCE_ALLMAIL_FINANCIAL','0');
+     store.setProperty('FINANCE_ALLMAIL_EXCLUDED','0');
+     store.setProperty('FINANCE_ALLMAIL_PAGES','0');
+     console.warn('Gmail page cursor expired; restart from newest with Sheet source-ID deduplication');
+     break;
+    }
+    throw err;
+   }
+   const messages=page.messages||[],candidates=[];
+   let checked=0,excluded=0;
+   try{
+    for(const item of messages){
+     let message;
+     try{message=Gmail.Users.Messages.get('me',item.id,{format:'full'})}
+     catch(err){
+      if(/(?:404|not found)/i.test(String(err))){checked++;excluded++;continue}
+      throw err;
+     }
+     checked++;
+     // Count every email for coverage, but never turn junk/deleted mail
+     // into a payment candidate.
+     const labels=message.labelIds||[];
+     if(labels.includes('SPAM')||labels.includes('TRASH')){excluded++;continue}
+     const evidence=recordFrom_(message);
+     if(evidence)candidates.push(evidence);else excluded++;
+    }
+    // A successful page requires the Sheet to accept all candidate rows.
+    // Nothing is checkpointed if this write throws.
+    mirrorFinanceEvidenceSheet_(candidates);
+   }catch(err){
+    if(gmailQuotaError_(err)){
+     store.setProperty('FINANCE_ALLMAIL_COOLDOWN',String(Date.now()+FINANCE_QUOTA_COOLDOWN_MS));
+     console.warn('Gmail quota pause within page; all emails on this page will retry');break;
+    }
+    throw err;
+   }
+   const totals=fullMailboxScanState_(),now=new Date().toISOString();
+   const next=page.nextPageToken||'';
+   const properties={
+    FINANCE_ALLMAIL_SCANNED:String(totals.scanned+checked),
+    FINANCE_ALLMAIL_FINANCIAL:String(totals.financial+candidates.length),
+    FINANCE_ALLMAIL_EXCLUDED:String(totals.excluded+excluded),
+    FINANCE_ALLMAIL_PAGES:String(totals.pages+1),
+    FINANCE_ALLMAIL_ESTIMATE:String(page.resultSizeEstimate||totals.estimate||0),
+    FINANCE_ALLMAIL_UPDATED:now
+   };
+   if(next)properties.FINANCE_ALLMAIL_CURSOR=next;
+   else{
+    properties.FINANCE_ALLMAIL_COMPLETE='1';
+    properties.FINANCE_ALLMAIL_FINISHED=now;
+   }
+   store.setProperties(properties,false);
+   if(!next)store.deleteProperty('FINANCE_ALLMAIL_CURSOR');
+   console.log('Full Gmail page '+(totals.pages+1)+': checked='+checked+' finance='+candidates.length+' excluded='+excluded+' next='+(next?'yes':'no'));
+   fullMailboxScanStatusSheet_(fullMailboxScanState_());
+   if(!next){stopFullMailboxScanTrigger_();console.log('Full Gmail historical mailbox scan COMPLETE');break}
+  }
+ }finally{lock.releaseLock()}
+}
+/** Deliberate rescan; earlier evidence, manual reviews and ledger remain intact. */
+function restartFullMailboxScan(){
+ const p=PropertiesService.getScriptProperties();
+ for(const name of ['FINANCE_ALLMAIL_CURSOR','FINANCE_ALLMAIL_COMPLETE',
+  'FINANCE_ALLMAIL_FINISHED','FINANCE_ALLMAIL_SCANNED',
+  'FINANCE_ALLMAIL_FINANCIAL','FINANCE_ALLMAIL_EXCLUDED',
+  'FINANCE_ALLMAIL_PAGES','FINANCE_ALLMAIL_ESTIMATE',
+  'FINANCE_ALLMAIL_COOLDOWN','FINANCE_ALLMAIL_STARTED',
+  'FINANCE_ALLMAIL_UPDATED'])p.deleteProperty(name);
+ startFullMailboxScan();
+}
+/** Stop historical scanning only; the regular 15-minute finance sync is unchanged. */
+function stopFullMailboxScan(){
+ stopFullMailboxScanTrigger_();
+ fullMailboxScanStatusSheet_({...fullMailboxScanState_(),status:'Stopped manually'});
+}
