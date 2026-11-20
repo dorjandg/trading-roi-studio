@@ -67,4 +67,11 @@ assert.ok(html.includes('ftmo-cash-summary'),'FTMO summary uses existing financi
 assert.ok(!html.includes('ftmoHistoryFile'),'FTMO trade history importer removed');
 assert.ok(!html.includes('ftmo-read-only-history'),'FTMO trade analysis script removed');
 assert.ok(html.includes('Automatic FTMO billing/payout retrieval is'),'No false automatic payout-sync claim');
+assert.ok(html.includes('id="ftmoReceiptReview"'),'FTMO Gmail review queue exists');
+assert.ok(html.includes('id="ftmoReceiptFile"'),'FTMO receipt CSV file input exists');
+assert.ok(html.includes('id="ftmoReceiptRows"'),'FTMO review rows exist');
+assert.ok(html.includes('id="ftmo-gmail-receipt-review"'),'FTMO receipt review logic present');
+assert.ok(html.includes('Nothing has been saved.'),'FTMO receipts require human confirmation');
+assert.ok(html.includes("r.currency+' requires conversion/reconciliation"),'Non-ledger currencies cannot be silently booked');
+assert.ok(html.includes("x.reference===reference"),'Previously linked Gmail sources are detected');
 console.log('PASS Finance Hub: JavaScript syntax, DOM references, 15-page navigation, financial fixtures, linked fee partition, payout dates, backup round trip.');
