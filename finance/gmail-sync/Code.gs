@@ -97,9 +97,9 @@ function providerFor_(sender,subject,body){
   return null;
 }
 function nonFinancialHeadline_(subject){
- // Reject obvious marketing/financial-news announcements, not invoices,
- // payout approvals or bank transfers. Kept narrow to avoid false negatives.
- return /\b(?:goes public|going public|ipo announcement|ipo launches?|join (?:our|the) webinar|register for (?:our|the) webinar)\b/i.test(subject);
+ // Promotional prize values and provider-wide reward totals must never be
+ // mistaken for the signed-in person's payments.
+ return /\b(?:goes public|going public|ipo announcement|ipo launches?|join (?:our|the) webinar|register for (?:our|the) webinar|chance to win|win up to|enter (?:the )?(?:draw|giveaway)|giveaway|sweepstakes|prize draw|limited.time offer|exclusive offer|promotional offer|special promotion|paid in rewards|in rewards (?:last|this)|million(?:s)? (?:in|of) rewards|claim your bonus|invite friends|refer (?:a |your )?friend|cashback campaign|cashback promotion)\b|\b\$?[0-9]+(?:\.[0-9]+)?[mb]\+?\s+paid in rewards\b/i.test(subject);
 }
 function statusFor_(subject,content){
   const s=(subject+' '+content.slice(0,400)).toLowerCase();
