@@ -100,6 +100,56 @@ async function handler(ctx){
     return json({error:"Gmail financial evidence query unavailable"},503);
   }
  }
+ // Import only unambiguous settled expense notifications from the owner's
+ // private Gmail evidence into the same cloud snapshot used by the dashboard.
+ // No CSV, no third-party credentials, no guessed exchange rates or income.
+ if(method==="POST"&&url.searchParams.get("resource")==="gmail-post-confirmed"){
+  if(!write||user.email!==String(env.FINANCE_BOOTSTRAP_EMAIL||"").toLowerCase())
+   return json({error:"Only the verified mailbox owner can synchronize these payments"},403);
+  let requested;try{requested=await request.json()}catch{return json({error:"Invalid JSON"},400)}
+  if(!Number.isSafeInteger(requested?.expectedRevision)||requested.expectedRevision<0)
+   return json({error:"Expected current snapshot revision"},400);
+  const existing=await db.prepare("SELECT revision,payload FROM finance_snapshots WHERE workspace_id=? AND user_id=?").bind(ws,user.id).first();
+  const revision=Number(existing?.revision||0);
+  if(revision!==requested.expectedRevision)return json({error:"Cloud snapshot changed. Refresh before importing."},409);
+  const data=existing?JSON.parse(existing.payload):{format:"finance-hub-backup",version:2,transactions:[],propAccounts:[],propEvents:[],propAudit:[],subscriptions:[],invoices:[]};
+  if(data.format!=="finance-hub-backup"||data.version!==2||!Array.isArray(data.transactions))
+   return json({error:"Existing finance records need review before importing"},409);
+  let evidence;
+  try{
+   evidence=await db.prepare("SELECT source_id,occurred_on AS date,provider,description,amount,currency,category,status FROM gmail_financial_evidence WHERE user_id=? ORDER BY occurred_on DESC,source_id DESC LIMIT 5000").bind(user.id).all();
+  }catch{return json({error:"Gmail evidence database unavailable"},503)}
+  const existingSources=new Set(data.transactions.flatMap(t=>[...String(t.notes||"").matchAll(/\\[Gmail (gmail:[^\\]]+)\\]/g)].map(m=>m[1])));
+  const validDate=d=>/^\\d{4}-\\d{2}-\\d{2}$/.test(d)&&new Date(d+"T00:00:00Z").toISOString().slice(0,10)===d;
+  let imported=0,reviewNeeded=0,alreadyRecorded=0;
+  for(const row of evidence.results||[]){
+   if(!row?.source_id||existingSources.has(row.source_id)){alreadyRecorded++;continue}
+   const subject=String(row.description||""),provider=String(row.provider||"").trim(),status=String(row.status||"");
+   const amount=String(row.amount||""),currency=String(row.currency||"").toUpperCase(),date=String(row.date||"");
+   const settled=status==="payment_confirmed"||status==="activation_fee_processed";
+   const explicitReceipt=/\\b(?:receipt for your payment to|payment to .+ is complete|payment (?:successful|completed)|activation fee .+ processed|your e-receipt|your receipt from)\\b/i.test(subject);
+   const excluded=/\\b(?:approved|processing|pending|declined|failed|refund|reversal|authorization|giveaway|bonus|win up to|account closed|cash waiting|weekly payout)\\b/i.test(subject);
+   if(!settled||!explicitReceipt||excluded||!provider||!validDate(date)||!/^\\d+(?:\\.\\d{1,2})?$/.test(amount)||Number(amount)<=0||!["USD","EUR","AED","GBP"].includes(currency)){reviewNeeded++;continue}
+   const category=/topstep|hola.?prime|ftmo|lucid|mffu/i.test(provider+" "+subject)?"Prop firm":
+    /cloudflare|hosting|domain/i.test(provider+" "+subject)?"Business":
+    /google|openai|heygen|duplikium|tradingview/i.test(provider+" "+subject)?"Trading software":"Other";
+   const merchant=provider.slice(0,100);
+   // A manual entry with the same source-less identity may already represent this receipt.
+   const possibleManualDuplicate=data.transactions.some(t=>!String(t.notes||"").includes("[Gmail ")&&t.date===date&&t.type==="Expense"&&t.currency===currency&&Math.abs(Number(t.amount)-Number(amount))<0.005&&String(t.provider||"").toLowerCase()===merchant.toLowerCase());
+   if(possibleManualDuplicate){reviewNeeded++;continue}
+   data.transactions.push({id:crypto.randomUUID(),date,user:"Dori",category,provider:merchant,type:"Expense",amount:Number(amount),currency,notes:"[Gmail "+row.source_id+"] Confirmed payment email; date is Gmail receipt date, not verified bank settlement date."});
+   existingSources.add(row.source_id);imported++;
+   if(imported>=200)break;
+  }
+  if(!imported)return json({imported:0,reviewNeeded,alreadyRecorded,revision});
+  const payload=JSON.stringify(data);
+  if(payload.length>1024*1024)return json({error:"Snapshot capacity reached; nothing imported"},413);
+  let result;
+  if(revision===0)result=await db.prepare("INSERT OR IGNORE INTO finance_snapshots(workspace_id,user_id,revision,payload) VALUES(?,?,1,?)").bind(ws,user.id,payload).run();
+  else result=await db.prepare("UPDATE finance_snapshots SET payload=?,revision=revision+1,updated_at=CURRENT_TIMESTAMP WHERE workspace_id=? AND user_id=? AND revision=?").bind(payload,ws,user.id,revision).run();
+  if(result.meta?.changes!==1)return json({error:"Cloud changed while importing; nothing overwritten"},409);
+  return json({imported,reviewNeeded,alreadyRecorded,revision:revision+1});
+ }
  if(method==="GET"&&url.searchParams.get("resource")==="connections"){
   const rows=await db.prepare("SELECT a.id,a.account_label,a.account_type,a.currency,a.owner_user_id,p.name AS provider_name FROM financial_accounts a LEFT JOIN providers p ON p.id=a.provider_id WHERE a.workspace_id=? AND a.owner_user_id=? ORDER BY a.created_at DESC LIMIT 500").bind(ws,user.id).all();
   return json({connections:rows.results});
