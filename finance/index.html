@@ -272,7 +272,7 @@ let csvSource=null,csvCandidates=[];const csvAliases={date:['date','transaction 
      const snapshot=await cloudApi('snapshot');
      try{currentMarker=JSON.parse(localStorage.getItem(markerKey(me.user.id))||'null')}catch{currentMarker=null}
      if(snapshot.data){
-       if(!hasSafeLocalBaseline()){
+       if(!hasSafeLocalBaseline(snapshot.data)){
          paused=true;
          cloud.revision=snapshot.revision;cloud.localFingerprint=null;
          status('Cloud is connected, but this browser already has different local records. For safety, automatic sync is paused. Export a backup, then use Restore from cloud in Settings.');
