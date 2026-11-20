@@ -65,7 +65,7 @@
 <div class="grid" id="stats"></div>
 <div class="card" id="gmailDetectedActivity" aria-label="Automatically detected financial activity">
  <h2>Automatically detected payment activity</h2>
- <p class="hint">Estimated from financial receipts, not approved accounting. Ambiguous payments, transfers and possible duplicates are excluded. Switch currency and period above to filter.</p>
+ <p class="hint">Shows every amount identified in Gmail, including uncertain payments, grouped by original currency. Raw email amounts are not booked transactions or cash balances.</p>
  <div class="metric-strip" id="gmailDetectedMetrics">Loading reviewed evidence…</div>
  <div id="gmailDetectedDetails"></div>
 </div>
@@ -592,25 +592,59 @@ function gmailDetectedActivity_(rows,currency,cutoff){
  const sum=kind=>rowsOut.filter(x=>x.direction===kind).reduce((total,x)=>total+Number(x.r.amount),0);
  return {income:sum('Potential income'),expense:sum('Potential expense'),refund:sum('Refund (separate)'),rows:rowsOut,excludedAmbiguous:candidates.length-rowsOut.length};
 }
+function gmailDetectedInventory_(rows,cutoff){
+ // Inventory ALL recognized amounts, regardless of currency or ambiguous status.
+ // Display them individually; never add mixed currencies or post to the ledger.
+ const receipts=rows.filter(r=>r.source_id&&String(r.date||'').slice(0,7)>=cutoff&&
+  /^\d+(?:\.\d{1,8})?$/.test(String(r.amount||''))&&Number(r.amount)>0&&r.currency);
+ const groups=new Map(),linked=new Set();
+ for(const x of items)for(const m of String(x.notes||'').matchAll(/\[Gmail (gmail:[^\]]+)\]/g))linked.add(m[1]);
+ for(const r of receipts){
+  const currency=String(r.currency).toUpperCase();
+  const g=groups.get(currency)||{currency,count:0,amountSum:0,unconfirmed:0,recorded:0};
+  g.count++;g.amountSum+=Number(r.amount);
+  if(linked.has(r.source_id))g.recorded++;
+  else if(!['payment_confirmed','withdrawal_confirmed','deposit_confirmed','transfer_confirmed','refund_issued','receipt'].includes(r.status))g.unconfirmed++;
+  groups.set(currency,g);
+ }
+ return {receipts,groups:[...groups.values()].sort((a,b)=>b.count-a.count),linked};
+}
 function renderGmailDetected_(){
- const metrics=document.getElementById('gmailDetectedMetrics');
- const details=document.getElementById('gmailDetectedDetails');
+ const metrics=document.getElementById('gmailDetectedMetrics'),details=document.getElementById('gmailDetectedDetails');
  if(!metrics||!details)return;
  if(!cloud.user){metrics.textContent='Sign in to view detected payments.';details.textContent='';return}
- const currency=document.getElementById('overviewCurrency')?.value||'EUR';
- const period=document.getElementById('overviewPeriod')?.value||'all';
- const now=new Date();
+ const selectedCurrency=document.getElementById('overviewCurrency')?.value||'EUR';
+ const period=document.getElementById('overviewPeriod')?.value||'all',now=new Date();
  const cutoff=period==='all'?'0000-00':new Date(Date.UTC(now.getFullYear(),now.getMonth()-Number(period)+1,1)).toISOString().slice(0,7);
- const activity=gmailDetectedActivity_(allGmailEvidence(),currency,cutoff);
- const tiles=[['Potential income',activity.income],['Potential expenses',activity.expense],['Refunds (separate)',activity.refund]];
- metrics.innerHTML=tiles.map(([label,amount])=>'<div class="metric-tile"><small>'+clean(label)+'</small><strong>'+clean(money(amount,currency))+'</strong></div>').join('')+
- '<div class="metric-tile"><small>Receipts identified</small><strong>'+activity.rows.length+'</strong></div>';
- details.innerHTML='<p class="hint">Read-only estimates from '+activity.rows.length+' distinct supported receipt(s); '+activity.excludedAmbiguous+' same-provider amount/date repeats excluded. Not part of your verified bank balance or accounting totals.</p>'+
- '<div class="table-scroll"><table><thead><tr><th>Date</th><th>Provider</th><th>Evidence</th><th>Amount</th><th>Estimated direction</th></tr></thead><tbody>'+
- activity.rows.slice(0,12).map(x=>'<tr><td>'+clean(x.r.date)+'</td><td>'+clean(x.r.provider)+'</td><td>'+clean(x.r.description)+'</td><td>'+clean(money(Number(x.r.amount),currency))+'</td><td>'+clean(x.direction)+'</td></tr>').join('')+
- (activity.rows.length?'':'<tr><td colspan="5">No confirmed-amount receipts match this currency and period yet. The Gmail importer will continue enriching records.</td></tr>')+
+ const rows=allGmailEvidence();
+ const inventory=gmailDetectedInventory_(rows,cutoff);
+ const conservative=gmailDetectedActivity_(rows,selectedCurrency,cutoff);
+ const detected=inventory.receipts.filter(r=>r.currency===selectedCurrency);
+ const candidates=detected.filter(r=>!inventory.linked.has(r.source_id));
+ const stateCount=detected.filter(r=>['payment_confirmed','withdrawal_confirmed','deposit_confirmed','transfer_confirmed','refund_issued','receipt'].includes(r.status)).length;
+ const tiles=[['All emails with amounts',inventory.receipts.length],['In '+selectedCurrency,detected.length],['With confirmation status',stateCount],['Still unverified',candidates.length]];
+ metrics.innerHTML=tiles.map(([label,count])=>'<div class="metric-tile"><small>'+clean(label)+'</small><strong>'+count+'</strong></div>').join('');
+ const grouped=inventory.groups.map(g=>'<tr><td>'+clean(g.currency)+'</td><td>'+g.count+'</td><td>'+clean(new Intl.NumberFormat('en-US',{maximumFractionDigits:8}).format(g.amountSum))+'</td><td>'+g.unconfirmed+'</td><td>'+g.recorded+'</td></tr>').join('');
+ const ordered=[...inventory.receipts].sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+ details.innerHTML='<p class="hint">All recognized amounts from imported emails are shown below, including uncertain records. Raw notification sums are NOT income, expenses or cash balances and may include duplicates and transfers.</p>'+
+ '<h3>Amounts recognized across all currencies</h3>'+
+ '<div class="table-scroll"><table><thead><tr><th>Currency</th><th>Emails with amount</th><th>Sum of notifications (not cash)</th><th>Unconfirmed</th><th>Recorded</th></tr></thead><tbody>'+
+ (grouped||'<tr><td colspan="5">No amounts recognized in this period yet.</td></tr>')+'</tbody></table></div>'+
+ '<p class="hint">For '+clean(selectedCurrency)+': conservative potential income '+clean(money(conservative.income,selectedCurrency))+
+ ', expenses '+clean(money(conservative.expense,selectedCurrency))+'. These estimates may remain zero when settlement or payment direction cannot be proven. They are not accounting entries.</p>'+
+ '<h3>Latest recognized financial notifications</h3>'+
+ '<div class="table-scroll"><table><thead><tr><th>Date</th><th>Provider</th><th>Subject</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead><tbody>'+
+ ordered.slice(0,25).map(r=>'<tr><td>'+clean(r.date)+'</td><td>'+clean(r.provider)+'</td><td>'+clean(r.description)+'</td><td>'+clean(r.amount+' '+r.currency)+'</td><td>'+clean(r.status)+'</td><td><button type="button" class="mini-button" data-detected-source="'+clean(r.source_id)+'">Review</button></td></tr>').join('')+
+ (ordered.length?'':'<tr><td colspan="6">No financial amounts are available yet. Enrichment is still needed.</td></tr>')+
  '</tbody></table></div>';
 }
+document.getElementById('gmailDetectedDetails')?.addEventListener('click',e=>{
+ const id=e.target?.closest('[data-detected-source]')?.dataset?.detectedSource;
+ if(!id||!cloud.user)return;
+ const search=document.getElementById('gmailEvidenceQuery'),category=document.getElementById('gmailEvidenceCategory');
+ if(search)search.value=id;if(category)category.value='';
+ navigate('gmail');if(typeof window.renderGmailEvidence==='function')window.renderGmailEvidence();
+});
 function gmailEvidenceDecision_(r,linked,matched){
  const description=String(r.description||'').toLowerCase();
  const state=String(r.status||'').toLowerCase();
