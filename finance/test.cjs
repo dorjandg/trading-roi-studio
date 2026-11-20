@@ -29,6 +29,10 @@ assert.match(html,/id="gmailOverviewMetrics"/,'Financial overview includes an ev
 assert.match(html,/id="gmailOverviewBreakdown"/,'Overview shows classified Gmail evidence by category');
 assert.match(html,/id="gmailOverviewReviewQueue"/,'Overview has automated financial review queue');
 assert.match(html,/id="gmailLiveFeedCard"/,'Overview includes live imported financial activity');
+assert.match(html,/document\.dispatchEvent\(new Event\('finance-cloud-ready'\)\)/,'Successful cloud initialization triggers immediate Gmail refresh');
+assert.match(html,/document\.addEventListener\('finance-cloud-ready',\(\)=>fetchGmailEvidence\(\)\)/,'Gmail evidence refresh waits for authenticated identity');
+assert.match(html,/gmailLiveStatus_\('Syncing financial evidence…'\)/,'Live indicator distinguishes syncing from stale cached records');
+
 assert.match(html,/function gmailLiveFeedGroups_\(rows\)/,'Live financial evidence is grouped automatically');
 assert.match(html,/function renderGmailLiveFeed_\(\)/,'Live evidence feed renders in Overview');
 assert.match(html,/gmailLiveStatus_\('Updated '/,'Live sync reports the most recent successful update');
