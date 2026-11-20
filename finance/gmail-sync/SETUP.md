@@ -1,0 +1,37 @@
+# Finance Hub Gmail financial evidence — installation
+
+This integration does **not** read trading activity or execute trades. It scans financial-email candidates and sends only minimal evidence metadata (date, provider, email subject, original amount/currency where identifiable, source identifier and status) to Finance Hub.
+
+## 1. Cloudflare setup (one-time, owner only)
+
+1. Create a strong random secret in Cloudflare Pages project `fin` variable `FINANCE_GMAIL_SYNC_SECRET`. Use a random value of at least 32 bytes. Also add `FINANCE_GMAIL_SYNC_EMAIL` containing the *existing authenticated Finance Hub owner's email*.
+2. Apply the D1 SQL migration: `finance/migrations/20261120_gmail_evidence.sql` to the existing `finance-hub-db` database. This table is user scoped. No accounting rows are edited.
+3. In Cloudflare Zero Trust Access for the Finance Hub app, create a **service token** for Apps Script and an Access policy permitting that token to reach `/api/gmail-ingest`. **Do not bypass protection for other site paths.** Provide the service token Client ID and Client Secret only as Apps Script private properties.
+4. Verify that unauthorized calls to `/api/gmail-ingest` fail and the regular Finance Hub pages remain protected. The endpoint additionally verifies HMAC timestamps and binds records exclusively to the configured owner, never a client-supplied user.
+5. Deploy the updated Finance Hub Pages project; deploy workflow now includes the ingest function. Set credentials only in Cloudflare, never GitHub.
+
+## 2. Apps Script setup (one-time)
+
+1. Open [script.google.com](https://script.google.com/) while signed in to the Gmail account whose financial emails you want synced, and create a new project.
+2. Copy `Code.gs` into the project and enable **Gmail API** under Services > Add a service. Under Project Settings, enable the manifest editor and use the supplied `appsscript.json` manifest (including **gmail.readonly** scope).
+3. Project Settings > Script Properties: configure:
+   - `FINANCE_INGEST_URL` = `https://fin-kac.pages.dev/api/gmail-ingest`
+   - `FINANCE_SYNC_SECRET` = the same random Cloudflare secret
+   - `FINANCE_ACCESS_CLIENT_ID` = Cloudflare Access service token client ID
+   - `FINANCE_ACCESS_CLIENT_SECRET` = Cloudflare Access service token client secret
+4. Run `installGmailFinanceSync` once and approve Google's OAuth prompts. The script needs Gmail **read-only** and trigger/external-request permissions. Confirm the install log indicates non-error 200 responses. The 15-minute trigger runs without your phone being open.
+
+## 3. Operation and privacy
+
+- Each scheduled run inspects recent financial messages and one page of older history. The historical backfill advances once each page is successfully accepted, and stops when it reaches the end.
+- Every message uses its Gmail ID as a deterministic reference. Rechecks and restarts do not create duplicate D1 records.
+- Unclear amounts and emails are stored for review only; they do not change account balances, expense totals or payouts.
+- The Finance Hub UI reads the evidence through the **already-authenticated user session**; it cannot read another user's records.
+- Gmail Apps Script does not share the OAuth token with Cloudflare. The app never stores full message bodies, OTPs, trade histories, or Gmail credentials.
+- If the Gmail account contains historical finance evidence outside the search query, broaden query cautiously and run `resetGmailBackfill` to re-scan.
+- Revoke the service token, delete the trigger, or revoke Gmail authorization to disable new synchronization. Existing evidence stays in private D1 unless separately deleted.
+- Cloudflare / Apps Script quota limits and Cloudflare Access policies may affect actual scheduling; verify an end-to-end imported record before relying on the system.
+
+## Important limitation
+
+Google Apps Script cannot automatically receive the Gmail connection you authorized inside ChatGPT. The account owner must approve the new script explicitly. Do **not** place token secrets in this repository, public URLs, screenshots or chat messages.
