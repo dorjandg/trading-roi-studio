@@ -26,6 +26,9 @@ assert.equal(compareAccounting(accountingFixture,{...authenticatedSnapshot,invoi
 assert.match(html,/safeAccountingMarker_\(currentMarker\.fingerprint\)/,'Legacy Gmail-inclusive sync markers are reconciled only when accounting unchanged');
 assert.match(html,/id="gmailOverviewCard"/,'Financial overview displays a Gmail evidence review card');
 assert.match(html,/id="gmailOverviewMetrics"/,'Financial overview includes an evidence KPI strip');
+assert.match(html,/id="gmailOverviewBreakdown"/,'Overview shows classified Gmail evidence by category');
+assert.match(html,/Collected financial evidence by category/,'Overview breakdown explains evidence rather than booked cash totals');
+assert.match(html,/Amounts identified/,'Overview distinguishes found amounts from missing amounts');
 assert.match(html,/function renderGmailOverview_\(\)/,'Overview Gmail evidence KPIs render from imported records');
 assert.match(html,/Possible related payments/,'Overview presents provisional reconciliation candidate count');
 const candidateFunction=html.match(/function gmailPotentialMatches_\(rows\)\{[\s\S]*?\n\}(?=\nfunction renderGmailReconciliation_)/);
