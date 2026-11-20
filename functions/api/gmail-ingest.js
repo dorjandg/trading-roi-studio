@@ -19,7 +19,14 @@ export async function onRequestPost({request,env}){
  let body;try{body=await request.text()}catch{return reply({error:"Bad request"},400)}
  if(body.length>95000)return reply({error:"Batch too large"},413);
  const signature=request.headers.get("x-finance-signature")||"";
- if(!await verifyHmac(stamp+"\n"+body,signature,env.FINANCE_GMAIL_SYNC_SECRET))return reply({error:"Unauthorized"},401);
+ // Separate proof over a fixed non-financial string distinguishes a saved-secret
+ // mismatch from a payload/signature problem, without disclosing either secret.
+ // This diagnostic cannot authorize writes: the full signed body is still mandatory.
+ const proof=request.headers.get("x-finance-keyproof")||"";
+ if(proof&&!await verifyHmac("finance-keycheck-v1:"+stamp,proof,env.FINANCE_GMAIL_SYNC_SECRET))
+   return reply({error:"Unauthorized",reason:"saved_secrets_differ"},401);
+ if(!await verifyHmac(stamp+"\n"+body,signature,env.FINANCE_GMAIL_SYNC_SECRET))
+   return reply({error:"Unauthorized",reason:proof?"payload_signature_mismatch":"signature_unverified"},401);
  let data;try{data=JSON.parse(body)}catch{return reply({error:"Invalid JSON"},400)}
  if(!Array.isArray(data?.records)||data.records.length>60)return reply({error:"Maximum 60 records per batch"},400);
  const email=String(env.FINANCE_GMAIL_SYNC_EMAIL).toLowerCase().trim();
