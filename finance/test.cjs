@@ -29,6 +29,11 @@ assert.match(html,/id="gmailOverviewMetrics"/,'Financial overview includes an ev
 assert.match(html,/id="gmailOverviewBreakdown"/,'Overview shows classified Gmail evidence by category');
 assert.match(html,/id="gmailOverviewReviewQueue"/,'Overview has automated financial review queue');
 assert.match(html,/id="gmailLiveFeedCard"/,'Overview includes live imported financial activity');
+assert.match(html,/async function refreshGmailSummary_\(\)/,'Overview reads a lightweight database summary');
+assert.match(html,/cloudApi\('gmail-summary'\)/,'Live Overview queries the authenticated server instead of relying on cached Gmail');
+assert.match(html,/gmailServerSummaryOwner_===cloud\.user\.id/,'Live evidence summary is scoped to the active signed-in user');
+assert.match(html,/renderGmailLiveFeed_\(\);\s*gmailLiveStatus_\('Updated '/,'Database summary refresh updates Overview and its timestamp');
+
 assert.match(html,/document\.dispatchEvent\(new Event\('finance-cloud-ready'\)\)/,'Successful cloud initialization triggers immediate Gmail refresh');
 assert.match(html,/document\.addEventListener\('finance-cloud-ready',\(\)=>fetchGmailEvidence\(\)\)/,'Gmail evidence refresh waits for authenticated identity');
 assert.match(html,/gmailLiveStatus_\('Syncing financial evidence…'\)/,'Live indicator distinguishes syncing from stale cached records');
@@ -139,6 +144,10 @@ assert.ok(html.includes("propAudit=b.version===2"),'Backup restore includes audi
 assert.ok(html.includes("/^\\d{4}-\\d{2}-\\d{2}$/"),'Cash event ISO date validation remains correct');
 
 const apiSource=fs.readFileSync(require('node:path').join(__dirname,'..','functions','api','finance.js'),'utf8');
+assert.match(apiSource,/resource"\)==="gmail-summary"/,'Authenticated finance API provides live summary');
+assert.match(apiSource,/FROM gmail_financial_evidence WHERE user_id=\?/,'Summary reads evidence for the authenticated owner only');
+assert.match(apiSource,/amountsIdentified:Number\(totals\?\.amounts_identified\|\|0\)/,'Live summary includes recognized amounts from D1');
+
 assert.match(apiSource,/WHERE a\.workspace_id=\? AND a\.owner_user_id=\? ORDER BY a\.created_at DESC LIMIT 500/,'Connection listing must always be owner-scoped');
 assert.match(apiSource,/WHERE workspace_id=\? AND user_id=\? ORDER BY occurred_on DESC LIMIT 1000/,'Transaction listing must always be user-scoped');
 assert.doesNotMatch(apiSource,/\(\? IN \('owner','admin'\) OR (?:a\.owner_user_id|user_id)=\?\)/,'No administrative financial-data bypass');
