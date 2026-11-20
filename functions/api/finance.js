@@ -74,6 +74,19 @@ async function handler(ctx){
   return json({error:"Method not allowed"},405);
  }
  if(method==="GET"&&url.searchParams.get("resource")==="me")return json({user:{email:user.email,id:user.id},workspace_id:ws,role:member.role});
+ if(method==="GET"&&url.searchParams.get("resource")==="gmail-summary"){
+  // Owner-scoped, read-only summary from primary D1 evidence. Never interpret
+  // unreviewed email amounts as actual income, bank balances or cash flow.
+  try{
+   const totals=await db.prepare("SELECT COUNT(*) AS notifications, SUM(CASE WHEN amount IS NOT NULL AND amount<>'' AND currency IS NOT NULL AND currency<>'' THEN 1 ELSE 0 END) AS amounts_identified, SUM(CASE WHEN status='needs_review' THEN 1 ELSE 0 END) AS needs_review FROM gmail_financial_evidence WHERE user_id=?").bind(user.id).first();
+   const currencies=await db.prepare("SELECT currency,COUNT(*) AS records FROM gmail_financial_evidence WHERE user_id=? AND amount IS NOT NULL AND amount<>'' AND currency IS NOT NULL AND currency<>'' GROUP BY currency ORDER BY records DESC LIMIT 20").bind(user.id).all();
+   const recent=await db.prepare("SELECT source_id,occurred_on AS date,provider,description,amount,currency,category,status,reference FROM gmail_financial_evidence WHERE user_id=? ORDER BY occurred_on DESC,source_id DESC LIMIT 40").bind(user.id).all();
+   return json({notifications:Number(totals?.notifications||0),amountsIdentified:Number(totals?.amounts_identified||0),needsReview:Number(totals?.needs_review||0),currencies:currencies.results||[],recent:recent.results||[],asOf:new Date().toISOString()});
+  }catch(e){
+   if(/no such table/i.test(String(e)))return json({notifications:0,amountsIdentified:0,needsReview:0,currencies:[],recent:[],setupRequired:true});
+   return json({error:"Financial evidence summary unavailable"},503);
+  }
+ }
  if(method==="GET"&&url.searchParams.get("resource")==="gmail-evidence"){
   const offsetRaw=url.searchParams.get("offset")||"0";
   if(!/^\d{1,6}$/.test(offsetRaw))return json({error:"Invalid offset"},400);
