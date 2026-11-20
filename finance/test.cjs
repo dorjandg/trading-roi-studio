@@ -31,7 +31,7 @@ assert.match(html,/id="gmailOverviewReviewQueue"/,'Overview has automated financ
 assert.match(html,/id="gmailLiveFeedCard"/,'Overview includes live imported financial activity');
 assert.match(html,/function gmailLiveFeedGroups_\(rows\)/,'Live financial evidence is grouped automatically');
 assert.match(html,/function renderGmailLiveFeed_\(\)/,'Live evidence feed renders in Overview');
-assert.match(html,/gmailLiveFeedStatus_\('Updated '/,'Live sync reports the most recent successful update');
+assert.match(html,/gmailLiveStatus_\('Updated '/,'Live sync reports the most recent successful update');
 assert.match(html,/60000\);/,'Gmail evidence refresh uses a one-minute interval');
 assert.match(html,/id="gmailLiveFeedRefresh"/,'User can refresh the latest imported financial evidence manually');
 assert.match(html,/Financial categories detected from Gmail/,'Provider category evidence is visible even when no amount is extracted');
