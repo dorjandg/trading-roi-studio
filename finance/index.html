@@ -171,9 +171,21 @@ let csvSource=null,csvCandidates=[];const csvAliases={date:['date','transaction 
    marker(cloud.revision,cloud.localFingerprint);
    redraw();
  }
- function hasSafeLocalBaseline(){
-   const fp=cloudFingerprint();
-   return isEmpty()||(currentMarker&&currentMarker.userId===cloud.user.id&&safeAccountingMarker_(currentMarker.fingerprint));
+ // A previous successful cloud restore may have saved an older marker
+ // format, or browser preferences may have changed independently of the
+ // accounting data. Compare actual accounting rows with the authenticated
+ // snapshot before pausing: evidence cache and display preferences are not
+ // financial transactions, and never authorize replacing different entries.
+ function sameAccountingAsSnapshot_(data){
+   if(!isValid(data))return false;
+   try{return JSON.stringify([items,propAccounts,propEvents,propAudit,subscriptions,invoices])===
+     JSON.stringify([data.transactions,data.propAccounts,data.propEvents,data.propAudit,data.subscriptions,data.invoices]);}
+   catch{return false}
+ }
+ function hasSafeLocalBaseline(snapshotData){
+   return isEmpty()||
+     (currentMarker&&currentMarker.userId===cloud.user.id&&safeAccountingMarker_(currentMarker.fingerprint))||
+     sameAccountingAsSnapshot_(snapshotData);
  }
  async function refreshRemote(){
    if(cloud.busy||!cloud.user||paused)return;
@@ -181,7 +193,7 @@ let csvSource=null,csvCandidates=[];const csvAliases={date:['date','transaction 
    try{
      const latest=await cloudApi('snapshot-meta');
      if(latest.revision!==cloud.revision){
-       if(!hasSafeLocalBaseline()){
+       if(!hasSafeLocalBaseline(snapshot.data)){
          paused=true;status('Sync paused: this browser has unsaved changes and another device has newer data. Export a JSON backup and resolve in Settings. Nothing was overwritten.');
        }else{
          const snapshot=await cloudApi('snapshot');
