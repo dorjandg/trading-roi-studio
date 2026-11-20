@@ -118,9 +118,12 @@ function signedPost_(records,config){
   const stamp=String(Date.now());
   const signature=Utilities.computeHmacSha256Signature(stamp+'\n'+data,config.FINANCE_SYNC_SECRET)
     .map(x=>(x<0?x+256:x).toString(16).padStart(2,'0')).join('');
+  // Non-secret diagnostic proof: never log credentials or the HMAC value.
+  const keyproof=Utilities.computeHmacSha256Signature('finance-keycheck-v1:'+stamp,config.FINANCE_SYNC_SECRET)
+    .map(x=>(x<0?x+256:x).toString(16).padStart(2,'0')).join('');
   const response=UrlFetchApp.fetch(config.FINANCE_INGEST_URL,{
     method:'post',contentType:'application/json',payload:data,muteHttpExceptions:true,
-    headers:{'x-finance-timestamp':stamp,'x-finance-signature':signature,
+    headers:{'x-finance-timestamp':stamp,'x-finance-signature':signature,'x-finance-keyproof':keyproof,
       'CF-Access-Client-Id':config.FINANCE_ACCESS_CLIENT_ID,
       'CF-Access-Client-Secret':config.FINANCE_ACCESS_CLIENT_SECRET}
   });
