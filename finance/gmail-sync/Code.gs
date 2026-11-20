@@ -41,20 +41,33 @@ function extractHeader_(data,name){
   const v=(data.payload?.headers||[]).find(h=>String(h.name).toLowerCase()===name);
   return v?.value||'';
 }
+function decodeFinanceHtml_(markup){
+ // Normalize HTML-only receipts while retaining separators around tables.
+ // Never upload raw HTML or message bodies to Finance Hub.
+ return markup.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,' ')
+   .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi,' ')
+   .replace(/<\/(?:tr|td|th|div|p|li|h[1-6])>|<br\b[^>]*\/?>/gi,' | ')
+   .replace(/<[^>]*>/g,' ')
+   .replace(/&(?:nbsp|thinsp|ensp|emsp);|&#(?:160|8239);/gi,' ')
+   .replace(/&(?:euro|#8364);/gi,' € ').replace(/&(?:pound|#163);/gi,' £ ')
+   .replace(/&(?:dollar|#36);/gi,' $ ')
+   .replace(/&amp;/gi,'&').replace(/&lt;/gi,'<').replace(/&gt;/gi,'>');
+}
 function plainParts_(part,found){
-  if(!part)return;
-  if(part.mimeType==='text/plain'&&part.body?.data) {
-    try{found.push(Utilities.newBlob(Utilities.base64DecodeWebSafe(part.body.data)).getDataAsString('UTF-8'))}catch(e){}
-  }
-  for(const child of part.parts||[])plainParts_(child,found);
+ if(!part)return;
+ if((part.mimeType==='text/plain'||part.mimeType==='text/html')&&part.body?.data){
+   try{
+     const decoded=Utilities.newBlob(Utilities.base64DecodeWebSafe(part.body.data)).getDataAsString('UTF-8');
+     found.push(part.mimeType==='text/html'?decodeFinanceHtml_(decoded):decoded);
+   }catch(e){}
+ }
+ for(const child of part.parts||[])plainParts_(child,found);
 }
 function financialText_(msg){
-  const parts=[];plainParts_(msg.payload,parts);
-  let text=parts.join('\n');
-  if(!text && msg.payload?.body?.data){
-    try{text=Utilities.newBlob(Utilities.base64DecodeWebSafe(msg.payload.body.data)).getDataAsString('UTF-8')}catch(e){}
-  }
-  return text.replace(/<[^>]*>/g,' ').replace(/https?:\/\/\S+/g,' ').replace(/\s+/g,' ').slice(0,12000);
+ const parts=[];plainParts_(msg.payload,parts);
+ // Many bank, airline and prop-firm receipts use HTML-only email templates.
+ const text=parts.join(' | ');
+ return text.replace(/https?:\/\/\S+/g,' ').replace(/\s+/g,' ').slice(0,24000);
 }
 function providerFor_(sender,subject,body){
   const text=(sender+' '+subject).toLowerCase();
@@ -107,17 +120,38 @@ function statusFor_(subject,content){
   return 'needs_review';
 }
 function moneyFor_(subject,text){
-  const s=(subject+' '+text).slice(0,4500);
-  const patterns=[
-    /(?:payment of|amount of|total amount paid|deposit of|deposit request for|payment amount:|total:|amount:)\s*(?:USD|EUR|AED|GBP|USDT)?\s*(?:\$|€|£)?\s*([\d,]+(?:\.\d{1,8})?)\s*(USD|EUR|AED|GBP|USDT|USDC|BTC|ETH)?/i,
-    /(?:USD|EUR|AED|GBP|USDT|USDC)\s*([\d,]+(?:\.\d{1,8})?)/i
-  ];
-  for(const p of patterns){const m=s.match(p);if(m){
-    const amount=m[1].replace(/,/g,'');if(!/^\d+(?:\.\d{1,8})?$/.test(amount))continue;
-    const currency=(m[2]||s.match(/\b(?:USDT|USDC|USD|EUR|AED|GBP)\b|\$/i)?.[0]||'').toUpperCase().replace('$','USD');
-    if(currency)return {amount,currency};
-  }}
-  return {amount:'',currency:''};
+ // Only record a value when amount and currency are visible together,
+ // preferably beside a payment/receipt/transfer label. Never infer currency
+ // from the sender or from a different part of the email.
+ const s=(subject+' | '+text).slice(0,24000);
+ const currency='(?:USD|EUR|AED|GBP|USDT|USDC|SAR|TRY|CHF|CAD|AUD|INR|BTC|ETH)';
+ const value='(?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)(?:\\.[0-9]{1,8})?';
+ const label='(?:amount(?:\\s+(?:paid|charged|debited|credited|received|due))?|payment(?:\\s+amount)?|total(?:\\s+(?:paid|charged|due|price|amount))?|grand\\s+total|paid|charged|debited|credited|received|transferred|withdrawn|deposit(?:ed)?|payout|price|invoice\\s+total)';
+ const patterns=[
+   new RegExp('\\b'+label+'\\b\\s*(?:of|is|was|:|=|[-|])?\\s*(?:'+currency+')\\s*('+value+')\\b','i'),
+   new RegExp('\\b'+label+'\\b\\s*(?:of|is|was|:|=|[-|])?\\s*([$€£])\\s*('+value+')\\b','i'),
+   new RegExp('\\b'+label+'\\b\\s*(?:of|is|was|:|=|[-|])?\\s*('+value+')\\s*('+currency+')\\b','i'),
+   new RegExp('\\b'+label+'\\b[\\s|:=-]{0,28}('+currency+')\\s*('+value+')\\b','i'),
+   new RegExp('\\b'+label+'\\b[\\s|:=-]{0,28}('+value+')\\s*('+currency+')\\b','i'),
+   new RegExp('\\b('+currency+')\\s*('+value+')\\b','i'),
+   new RegExp('([$€£])\\s*('+value+')\\b','i'),
+   new RegExp('\\b('+value+')\\s*('+currency+')\\b','i')
+ ];
+ const symbolCurrency={'$':'USD','€':'EUR','£':'GBP'};
+ for(let i=0;i<patterns.length;i++){
+   const m=s.match(patterns[i]);if(!m)continue;
+   let amount='',code='';
+   if(i===1||i===6){code=symbolCurrency[m[1]];amount=m[2];}
+   else if(i===2||i===4||i===7){amount=m[1];code=m[2];}
+   else{code=m[1];amount=m[2];}
+   amount=amount.replace(/,/g,'');code=String(code).toUpperCase();
+   if(!/^[0-9]+(?:\.[0-9]{1,8})?$/.test(amount)||!code||!Number.isFinite(Number(amount))||Number(amount)<=0)continue;
+   // Keep eight-decimal precision for crypto; numeric bounds prevent capturing
+   // enormous account numbers as plausible cash amounts.
+   if(Number(amount)>1e12)continue;
+   return {amount,currency:code};
+ }
+ return {amount:'',currency:''};
 }
 function recordFrom_(message){
   const subject=extractHeader_(message,'subject').slice(0,180);
