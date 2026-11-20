@@ -4,6 +4,22 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const html=fs.readFileSync(require('node:path').join(__dirname,'index.html'),'utf8');
 const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(x=>x[1]).filter(Boolean);
+const candidateFunction=html.match(/function gmailPotentialMatches_\(rows\)\{[\s\S]*?\n\}(?=\nfunction renderGmailReconciliation_)/);
+assert.ok(candidateFunction,'Gmail conservative reconciliation function is present');
+const candidateContext={};vm.createContext(candidateContext);vm.runInContext(candidateFunction[0]+';this.reconcile=gmailPotentialMatches_;',candidateContext);
+const reconciliationFixture=[
+ {source_id:'gmail:topstep1',date:'2026-11-18',provider:'Topstep',description:'Payout approved',amount:'2000',currency:'USD',category:'Prop firms',status:'payout_approved'},
+ {source_id:'gmail:bank1',date:'2026-11-19',provider:'Banking provider',description:'Transfer received',amount:'2000',currency:'USD',category:'Banking',status:'transfer_confirmed'},
+ {source_id:'gmail:topstep2',date:'2026-10-01',provider:'Topstep',description:'Payout approved',amount:'2000',currency:'USD',category:'Prop firms',status:'payout_approved'},
+ {source_id:'gmail:topstep3',date:'2026-11-19',provider:'Topstep',description:'Payment receipt',amount:'2000',currency:'USD',category:'Prop firms',status:'payment_confirmed'},
+ {source_id:'gmail:bank2',date:'2026-11-19',provider:'Banking provider',description:'Transfer received',amount:'2000',currency:'EUR',category:'Banking',status:'transfer_confirmed'}
+];
+const candidates=candidateContext.reconcile(reconciliationFixture);
+assert.equal(candidates.length,1,'Only the near-date cross-provider same-currency amount is a candidate');
+assert.equal(candidates[0].first.source_id,'gmail:topstep1');
+assert.equal(candidates[0].second.source_id,'gmail:bank1');
+assert.ok(html.includes('Potentially related financial emails'),'Review-only Gmail reconciliation section visible');
+
 assert.ok(scripts.length,'Finance Hub inline script exists');
 for(const script of scripts)new vm.Script(script,{filename:'finance/index.html'});
 const ids=new Set([...html.matchAll(/\bid="([\w-]+)"/g)].map(x=>x[1]));
