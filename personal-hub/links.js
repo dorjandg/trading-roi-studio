@@ -1,7 +1,7 @@
 /* Public GitHub repository: use only safe-to-share URLs and titles. Never add passwords or tokens. */
 window.PERSONAL_HUB_DATA = {
-  "version": "1.2.0",
-  "updated": "2026-11-06",
+  "version": "1.3.0",
+  "updated": "2026-11-20",
   "title": "Personal Hub",
   "subtitle": "My websites, learning, dashboards and useful links.",
   "categories": [
@@ -17,49 +17,56 @@ window.PERSONAL_HUB_DATA = {
       "name": "Work & Development",
       "icon": "layers",
       "description": "Coding, GitHub projects, Colab, Cloudflare and Google tools",
-      "order": 2
+      "order": 3
     },
     {
       "id": "learning",
       "name": "Learning & Study",
       "icon": "book",
       "description": "Courses, research, tutorials and study resources",
-      "order": 3
+      "order": 4
     },
     {
       "id": "community",
       "name": "Communities & Calls",
       "icon": "heart",
       "description": "Discord, Whop, Zoom, Skool and Circle",
-      "order": 4
+      "order": 5
     },
     {
       "id": "trading",
       "name": "Trading & Finance",
       "icon": "chart",
       "description": "Trading platforms, analytics and financial tools",
-      "order": 5
+      "order": 6
     },
     {
       "id": "media",
       "name": "Videos & Channels",
       "icon": "play",
       "description": "Saved channels, videos and playlists",
-      "order": 6
+      "order": 7
     },
     {
       "id": "documents",
       "name": "Sheets & Documents",
       "icon": "file",
       "description": "Spreadsheets, documents and shared files",
-      "order": 7
+      "order": 8
     },
     {
       "id": "wellbeing",
       "name": "Health & Lifestyle",
       "icon": "heart",
       "description": "Wellness, fitness and everyday tools",
-      "order": 8
+      "order": 9
+    },
+    {
+      "id": "jp-realty",
+      "name": "JP Realty",
+      "icon": "grid",
+      "description": "Public property websites and business management shortcuts",
+      "order": 2
     }
   ],
   "links": [
@@ -94,7 +101,16 @@ window.PERSONAL_HUB_DATA = {
       "symbol": "FH",
       "accent": "emerald",
       "featured": true,
-      "tags": ["finance", "expenses", "dashboard", "prop firms", "Topstep", "FTMO", "reports", "payouts"]
+      "tags": [
+        "finance",
+        "expenses",
+        "dashboard",
+        "prop firms",
+        "Topstep",
+        "FTMO",
+        "reports",
+        "payouts"
+      ]
     },
     {
       "id": "youtube-ai-academy",
@@ -146,7 +162,16 @@ window.PERSONAL_HUB_DATA = {
       "symbol": "P4",
       "accent": "green",
       "featured": true,
-      "tags": ["P4", "calculator", "withdrawal", "ROI", "Topstep", "FTMO", "Lucid", "MFFU"]
+      "tags": [
+        "P4",
+        "calculator",
+        "withdrawal",
+        "ROI",
+        "Topstep",
+        "FTMO",
+        "Lucid",
+        "MFFU"
+      ]
     },
     {
       "id": "whoop",
@@ -635,6 +660,150 @@ window.PERSONAL_HUB_DATA = {
         "Streamable",
         "video",
         "clips"
+      ]
+    },
+    {
+      "id": "jp-public",
+      "title": "JP Realty — Public Website",
+      "url": "https://realty-jp.com/",
+      "description": "Customer-facing agency website",
+      "category": "jp-realty",
+      "type": "Public website",
+      "symbol": "JP",
+      "accent": "blue",
+      "featured": true,
+      "tags": [
+        "JP Realty",
+        "real estate",
+        "Public website"
+      ]
+    },
+    {
+      "id": "jp-cloudflare",
+      "title": "JP Realty — New Website",
+      "url": "https://jp-realty.pages.dev/",
+      "description": "Cloudflare website deployment",
+      "category": "jp-realty",
+      "type": "Public website",
+      "symbol": "JP",
+      "accent": "blue",
+      "featured": false,
+      "tags": [
+        "JP Realty",
+        "real estate",
+        "Public website"
+      ]
+    },
+    {
+      "id": "jp-properties",
+      "title": "JP Realty — Property Management",
+      "url": "https://jp-realty.pages.dev/management/properties/",
+      "description": "Business property management; live access not yet verified",
+      "category": "jp-realty",
+      "type": "Business tool",
+      "symbol": "JP",
+      "accent": "blue",
+      "featured": true,
+      "tags": [
+        "JP Realty",
+        "real estate",
+        "Business tool"
+      ]
+    },
+    {
+      "id": "jp-contracts",
+      "title": "JP Realty — Contracts",
+      "url": "https://jp-realty.pages.dev/management/contracts/",
+      "description": "Contracts and agreements; live access not yet verified",
+      "category": "jp-realty",
+      "type": "Business tool",
+      "symbol": "JP",
+      "accent": "blue",
+      "featured": false,
+      "tags": [
+        "JP Realty",
+        "real estate",
+        "Business tool"
+      ]
+    },
+    {
+      "id": "jp-marketing",
+      "title": "JP Realty — Marketing",
+      "url": "https://jp-realty.pages.dev/management/marketing/",
+      "description": "Marketing campaigns; live access not yet verified",
+      "category": "jp-realty",
+      "type": "Business tool",
+      "symbol": "JP",
+      "accent": "blue",
+      "featured": false,
+      "tags": [
+        "JP Realty",
+        "real estate",
+        "Business tool"
+      ]
+    },
+    {
+      "id": "jp-followups",
+      "title": "JP Realty — Sales Follow-ups",
+      "url": "https://jp-realty.pages.dev/management/sales-followups/",
+      "description": "Sales follow-up workflow; live access not yet verified",
+      "category": "jp-realty",
+      "type": "Business tool",
+      "symbol": "JP",
+      "accent": "blue",
+      "featured": false,
+      "tags": [
+        "JP Realty",
+        "real estate",
+        "Business tool"
+      ]
+    },
+    {
+      "id": "jp-templates",
+      "title": "JP Realty — Business Templates",
+      "url": "https://jp-realty.pages.dev/management/templates/",
+      "description": "Business document templates; live access not yet verified",
+      "category": "jp-realty",
+      "type": "Business tool",
+      "symbol": "JP",
+      "accent": "blue",
+      "featured": false,
+      "tags": [
+        "JP Realty",
+        "real estate",
+        "Business tool"
+      ]
+    },
+    {
+      "id": "jp-sop",
+      "title": "JP Realty — Procedures",
+      "url": "https://jp-realty.pages.dev/management/sop/",
+      "description": "Standard operating procedures; live access not yet verified",
+      "category": "jp-realty",
+      "type": "Business tool",
+      "symbol": "JP",
+      "accent": "blue",
+      "featured": false,
+      "tags": [
+        "JP Realty",
+        "real estate",
+        "Business tool"
+      ]
+    },
+    {
+      "id": "jp-submit",
+      "title": "JP Realty — List a Property",
+      "url": "https://realty-jp.com/list-property/",
+      "description": "Public property submission form, not the private uploader",
+      "category": "jp-realty",
+      "type": "Public form",
+      "symbol": "JP",
+      "accent": "blue",
+      "featured": false,
+      "tags": [
+        "JP Realty",
+        "real estate",
+        "Public form"
       ]
     }
   ]
