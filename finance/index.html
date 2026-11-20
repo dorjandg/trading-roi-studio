@@ -68,7 +68,7 @@
 <div class="actions">
 <button type="button" id="ftmoGoAccounts">Manage FTMO accounts, fees &amp; payouts</button>
 </div>
-<div class="card" id="gmailFinanceRegister"><h2>Gmail Financial Inbox · Dori</h2>
+<div class="card" id="gmailFinanceRegister"><h2>Gmail Financial Inbox · signed-in account</h2>
 <p class="muted">Private review register for financial emails. Not automatically posted to income/expenses. No trading activity is imported.</p>
 <div class="form">
 <div><label for="gmailEvidenceFile">Import Gmail evidence CSV</label><input id="gmailEvidenceFile" type="file" accept=".csv,text/csv"></div>
@@ -221,7 +221,7 @@ let csvSource=null,csvCandidates=[];const csvAliases={date:['date','transaction 
          localStorage.setItem(savedKey,JSON.stringify({previousUser:lastUser||'unidentified',savedAt:new Date().toISOString(),data:backup}));
        }
        keys.forEach(k=>localStorage.setItem(k,'[]'));
-       [items,propAccounts,propEvents,propAudit,subscriptions,invoices]=[[],[],[],[],[],[]];
+       [items,propAccounts,propEvents,propAudit,subscriptions,invoices,gmailEvidence]=[[],[],[],[],[],[],[]];
        // Display filters are private preferences too: never carry the prior
        // account's currency or reporting period into a new identity.
        for(const id of preferencesIds){const el=document.getElementById(id);if(el&&el.options.length)el.selectedIndex=0}
@@ -457,6 +457,7 @@ const clean=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':
 function parse(src){let row=[],cell='',quoted=false,arr=[];for(let i=0;i<src.length;i++){const c=src[i];if(c==='"'){if(quoted&&src[i+1]==='"'){cell+='"';i++}else quoted=!quoted}else if(c===','&&!quoted){row.push(cell);cell=''}else if((c==='\n'||c==='\r')&&!quoted){if(c==='\r'&&src[i+1]==='\n')i++;row.push(cell);if(row.some(x=>x.trim()))arr.push(row);row=[];cell=''}else cell+=c}if(quoted)throw Error('Unclosed CSV quote');row.push(cell);if(row.some(x=>x.trim()))arr.push(row);return arr}
 const opts=CATEGORIES.map(c=>'<option>'+clean(c)+'</option>').join('');
 function renderGmailEvidence(){
+ if(!cloud.user){out.innerHTML='<tr><td colspan="7">Sign in to your private Finance Hub account to review Gmail evidence.</td></tr>';metric.textContent='';return;}
  const word=q.value.trim().toLowerCase(),category=cat.value;
  const filtered=gmailEvidence.filter(r=>(!category||r.category===category)&&(!word||[r.provider,r.description,r.reference,r.source_id,r.status,r.currency].join(' ').toLowerCase().includes(word)));
  out.innerHTML=filtered.slice(0,250).map(r=>'<tr><td>'+clean(r.date)+'</td><td>'+clean(r.provider)+'</td><td>'+clean(r.description)+'</td><td>'+clean(r.amount&&r.currency?r.amount+' '+r.currency:'—')+'</td><td><select class="mini-button" data-gmail-category="'+clean(r.source_id)+'">'+CATEGORIES.map(c=>'<option'+(c===r.category?' selected':'')+'>'+clean(c)+'</option>').join('')+'</select></td><td>'+clean(r.status)+'</td><td>'+clean(r.reference)+'</td></tr>').join('')||'<tr><td colspan="7">No matching financial evidence.</td></tr>';
@@ -473,7 +474,7 @@ function validate(v){
  return true;
 }
 file.addEventListener('change',async()=>{
- const f=file.files?.[0];if(!f)return;
+ const f=file.files?.[0];if(!f)return;if(!cloud.user){status.textContent='Sign in to your verified Finance Hub cloud account before importing Gmail evidence.';file.value='';return;}
  try{
  if(f.size>1024*1024||!/\.csv$/i.test(f.name))throw Error('Use a CSV below 1 MB');
  const matrix=parse((await f.text()).replace(/^\uFEFF/,''));
@@ -494,13 +495,14 @@ file.addEventListener('change',async()=>{
  gmailEvidence=next;persist();status.textContent=added+' new rows imported, '+skipped+' duplicate source identifiers ignored. No accounting transactions were added.';
  }catch(e){status.textContent='No records imported: '+e.message}finally{file.value=''}
 });
-out.addEventListener('change',e=>{const id=e.target?.dataset?.gmailCategory;if(!id)return;const r=gmailEvidence.find(x=>x.source_id===id);if(!r)return;const value=e.target.value;if(CATEGORIES.includes(value)){r.category=value;persist()}});
+out.addEventListener('change',e=>{const id=e.target?.dataset?.gmailCategory;if(!id)return;if(!cloud.user)return;const r=gmailEvidence.find(x=>x.source_id===id);if(!r)return;const value=e.target.value;if(CATEGORIES.includes(value)){r.category=value;persist()}});
 cat.addEventListener('change',renderGmailEvidence);q.addEventListener('input',renderGmailEvidence);
 document.getElementById('gmailEvidenceClear').addEventListener('click',()=>{
- if(!gmailEvidence.length||!confirm('Delete locally imported Gmail evidence from this signed-in browser? Export first. The cloud snapshot will change only if synced.'))return;
+ if(!cloud.user||!gmailEvidence.length||!confirm('Delete locally imported Gmail evidence from this signed-in browser? Export first. The cloud snapshot will change only if synced.'))return;
  gmailEvidence=[];persist();
 });
 document.getElementById('gmailEvidenceExport').addEventListener('click',()=>{
+ if(!cloud.user)return;
  const fields=['source_id','date','provider','description','amount','currency','category','status','reference'];
  const encode=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
  const csv=[fields.map(encode).join(','),...gmailEvidence.map(r=>fields.map(k=>encode(r[k])).join(','))].join('\r\n');
