@@ -128,7 +128,7 @@ function moneyFor_(subject,text){
  const value='(?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)(?:\\.[0-9]{1,8})?';
  const label='(?:amount(?:\\s+(?:paid|charged|debited|credited|received|due))?|payment(?:\\s+amount)?|total(?:\\s+(?:paid|charged|due|price|amount))?|grand\\s+total|paid|charged|debited|credited|received|transferred|withdrawn|deposit(?:ed)?|payout|price|invoice\\s+total)';
  const patterns=[
-   new RegExp('\\b'+label+'\\b\\s*(?:of|is|was|:|=|[-|])?\\s*(?:'+currency+')\\s*('+value+')\\b','i'),
+   new RegExp('\\b'+label+'\\b\\s*(?:of|is|was|:|=|[-|])?\\s*('+currency+')\\s*('+value+')\\b','i'),
    new RegExp('\\b'+label+'\\b\\s*(?:of|is|was|:|=|[-|])?\\s*([$€£])\\s*('+value+')\\b','i'),
    new RegExp('\\b'+label+'\\b\\s*(?:of|is|was|:|=|[-|])?\\s*('+value+')\\s*('+currency+')\\b','i'),
    new RegExp('\\b'+label+'\\b[\\s|:=-]{0,28}('+currency+')\\s*('+value+')\\b','i'),
