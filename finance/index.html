@@ -318,6 +318,9 @@ let csvSource=null,csvCandidates=[];const csvAliases={date:['date','transaction 
      }
      ready=true;cloud.auto=!paused;
      document.documentElement.classList.remove('finance-auth-pending');
+     // Gmail evidence is stored separately from accounting snapshots. Always
+     // fetch it immediately after identity and cloud snapshot are ready.
+     document.dispatchEvent(new Event('finance-cloud-ready'));
    }catch(e){showAccount(null);status('Cloud sign-in unavailable: '+e.message+'. Local records retained.');cloud.user=null;cloud.auto=false;
      const message=document.getElementById('financeAuthGuardText');
      if(message)message.textContent='Your authenticated cloud workspace could not be loaded. Refresh after signing in. Private local records remain hidden to prevent cross-account disclosure. ('+e.message+')';
@@ -858,7 +861,9 @@ document.getElementById('gmailEvidenceExport').addEventListener('click',()=>{
 });
 let gmailEvidenceSyncBusy=false;
 async function fetchGmailEvidence(){
- if(!cloud.user||gmailEvidenceSyncBusy)return;
+ if(!cloud.user){gmailLiveStatus_('Waiting for secure sign-in');return;}
+ if(gmailEvidenceSyncBusy)return;
+ gmailLiveStatus_('Syncing financial evidence…');
  const requestingOwner=cloud.user.id;
  gmailEvidenceSyncBusy=true;
  const syncButton=document.getElementById('gmailEvidenceSync');
@@ -906,9 +911,10 @@ document.querySelector('[data-page="gmail"]')?.addEventListener('click',()=>{ren
 // Only the authenticated owner may retrieve evidence; concurrent refreshes are prevented.
 const gmailLiveStatus_=message=>{const el=document.getElementById('gmailLiveFeedStatus');if(el)el.textContent=message};
 document.getElementById('gmailLiveFeedRefresh')?.addEventListener('click',()=>fetchGmailEvidence());
+document.addEventListener('finance-cloud-ready',()=>fetchGmailEvidence());
 setInterval(()=>{if(document.visibilityState==='visible'&&(document.getElementById('page-gmail')?.classList.contains('active')||document.getElementById('page-overview')?.classList.contains('active')))fetchGmailEvidence()},60000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&cloud.user)fetchGmailEvidence()});
-setTimeout(fetchGmailEvidence,3000);
+setTimeout(fetchGmailEvidence,3000); // fallback; identity-ready event normally refreshes first
 
 renderGmailEvidence();
 })();
