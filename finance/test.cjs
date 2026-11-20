@@ -31,6 +31,11 @@ assert.match(html,/data-gmail-review/,'Gmail evidence offers manual accounting r
 assert.match(html,/Review to record/,'Review action is labeled clearly');
 assert.match(html,/items\.some\(t=>String\(t\.notes\|\|''\)\.includes\(marker\)\)/,'Gmail accounting review checks existing Gmail source markers');
 assert.match(html,/entry\.elements\.user\.value=''/,'Receipt review requires an explicit account owner');
+assert.match(html,/if\(!confirm\('Have you verified the actual payment/,'Gmail accounting requires final manual confirmation');
+assert.match(html,/id="gmailDraftNotice"/,'Gmail evidence review explains unposted draft state');
+assert.match(html,/Select currency/,'Missing receipt currencies require explicit selection');
+assert.match(html,/entry\.elements\.amount\.value=record\.amount\|\|''/,'Missing receipt amounts can be manually reviewed');
+
 assert.match(html,/entry\.elements\.type\.value='Expense'/,'Receipt review creates an editable expense draft');
 assert.match(html,/navigate\('transactions'\)/,'Receipt review opens transaction entry for confirmation');
 
