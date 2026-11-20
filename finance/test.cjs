@@ -28,6 +28,13 @@ assert.match(html,/id="gmailOverviewCard"/,'Financial overview displays a Gmail 
 assert.match(html,/id="gmailOverviewMetrics"/,'Financial overview includes an evidence KPI strip');
 assert.match(html,/id="gmailOverviewBreakdown"/,'Overview shows classified Gmail evidence by category');
 assert.match(html,/id="gmailOverviewReviewQueue"/,'Overview has automated financial review queue');
+assert.match(html,/id="gmailDetectedMetrics"/,'Overview shows automatically detected financial activity independently of accounting');
+assert.match(html,/function gmailDetectedActivity_\(rows,currency,cutoff\)/,'Detected amounts are calculated from source evidence');
+assert.match(html,/function renderGmailDetected_\(\)/,'Detected activity updates dynamically');
+assert.match(html,/Potential expenses/,'Detected income and expenses are displayed as provisional data');
+assert.match(html,/ledgerLinked\.has\(r\.source_id\)/,'Already booked email receipts excluded from provisional amounts');
+assert.match(html,/matches\.has\(r\.source_id\)/,'Potential cross-provider duplicates excluded from provisional amounts');
+
 assert.match(html,/function gmailEvidenceDecision_\(r,linked,matched\)/,'Read-only financial evidence processing is implemented');
 assert.match(html,/function gmailReviewQueue_\(rows\)/,'Review candidates are prioritized automatically');
 assert.match(html,/data-open-gmail-source/,'Review candidate opens underlying Gmail evidence');
