@@ -21,21 +21,25 @@ assert.match(gas,/function startGmailHistoryAutoImport\(\)/,'One-click unattende
 assert.match(gas,/everyMinutes\(5\)/,'Temporary catch-up scheduler is five-minute');
 assert.match(gas,/function stopGmailHistoryAutoImport_\(\)/,'History trigger has automatic cleanup');
 assert.match(gas,/trigger\.getHandlerFunction\(\)==='importGmailHistoryNow'/,'Cleanup only targets historical catch-up trigger');
-assert.match(gas,/if\(done\)\{stopGmailHistoryAutoImport_\(\)/,'Temporary trigger removed on historical completion');
+assert.match(gas,/if\(result\.complete&&phase==='enrichment'\)/,'Temporary trigger removed after enrichment completes');
 
 assert.match(gas,/FINANCE_BACKFILL_PAGE_TOKEN/,'Historical catch-up saves its paging cursor');
 assert.match(gas,/const FINANCE_BACKFILL_PAGE = 10;/,'Historical Gmail reads use smaller pages');
 assert.match(gas,/function gmailQuotaError_\(err\)/,'Gmail API quota failures are recognized');
 assert.match(gas,/function pauseGmailQuota_\(store,err\)/,'Gmail quota failures trigger automatic cooldown');
-assert.match(gas,/rateLimited=true;break;/,'Historical importer retains cursor and pauses on quota');
+assert.match(gas,/rateLimited=true;break/,'Historical importer retains cursor and pauses on quota');
 assert.match(gas,/Utilities\.sleep\(12000\)/,'Manual backfill throttles Google API requests');
-assert.match(gas,/if\(gmailCoolingDown_\(store\)\)return;/,'Scheduled runs honor quota cooldown');
+assert.match(gas,/if\(gmailCoolingDown_\(store\)\)return/,'Scheduled runs honor quota cooldown');
 
 
 assert.match(gas,/Utilities\.newBlob\(data,'application\/json'\)\.getBytes\(\)/,'Apps Script sends explicit UTF-8 bytes');
 assert.match(gas,/Utilities\.computeHmacSha256Signature\(stamp\+'\\n'\+data,config\.FINANCE_SYNC_SECRET,Utilities\.Charset\.UTF_8\)/,'Apps Script signs explicit UTF-8 text');
 assert.match(gas,/payload:utf8Payload/,'Gmail payload uses the same bytes');
 assert.match(gas,/result\.inserted\+result\.duplicates\+ignored!==result\.accepted/,'Every scheduled batch audits duplicates plus ignored security messages');
+assert.match(gas,/function ensureEnrichmentVersion_\(store\)/,'Enrichment pass has resumable independent cursor');
+assert.match(gas,/function decodeFinanceHtml_\(markup\)/,'HTML-only financial receipt support is present');
+assert.match(gas,/function runHistoryPass_\(store,config,phase,maxPages,deadline\)/,'History and enrichment run as distinct passes');
+assert.match(file,/UPDATE gmail_financial_evidence SET amount=\?, currency=\?/,'Only blank historical amounts are enriched');
 assert.match(gas,/function testGmailSyncSigning\(\)/,'Zero-record signature-only diagnostic is available');
 assert.match(gas,/signedPost_\(\[\],config_\(\)\)/,'Diagnostic sends empty batch only');
 const records=new Map(),personId='dori-user-id',ownerEmail='owner@example.com';
@@ -48,6 +52,14 @@ const db={
     return {id:personId};
    },
    async run(){
+    if(sql.startsWith('UPDATE gmail_financial_evidence')){
+      const [amount,currency,userId,sourceId]=args;
+      assert.equal(userId,personId);
+      const key=userId+'|'+sourceId,existing=records.get(key);
+      if(!existing||existing[5]||existing[6])return {meta:{changes:0}};
+      existing[5]=amount;existing[6]=currency;
+      return {meta:{changes:1}};
+    }
     assert.match(sql,/INSERT OR IGNORE INTO gmail_financial_evidence/);
     assert.equal(args[0],personId);
     const key=args[0]+'|'+args[1];
@@ -82,12 +94,12 @@ async function request(body,signature,proofOverride){
  const security={source_id:'gmail:topstep-otp',date:'2026-11-20',provider:'Topstep',description:'Your Topstep authentication code',amount:'',currency:'',category:'Prop firms',status:'needs_review',reference:'gmail:topstep-otp'};
  let ignoredResponse=await request(JSON.stringify({records:[security]}));
  assert.equal(ignoredResponse.status,200);
- assert.deepEqual(await ignoredResponse.json(),{accepted:1,inserted:0,duplicates:0,ignoredSecurity:1});
+ assert.deepEqual(await ignoredResponse.json(),{accepted:1,inserted:0,duplicates:0,ignoredSecurity:1,enriched:0});
  assert.equal(records.size,0,'Authentication code must not create financial evidence');
  const news={...security,source_id:'gmail:ipo-news',reference:'gmail:ipo-news',description:'Tomorrow: Anthropic goes public!'};
  const newsResponse=await request(JSON.stringify({records:[news]}));
  assert.equal(newsResponse.status,200);
- assert.deepEqual(await newsResponse.json(),{accepted:1,inserted:0,duplicates:0,ignoredSecurity:1});
+ assert.deepEqual(await newsResponse.json(),{accepted:1,inserted:0,duplicates:0,ignoredSecurity:1,enriched:0});
  assert.equal(records.size,0,'Marketing and market news must not create financial evidence');
  assert.match(financeUi,/GMAIL_NONFINANCIAL_HEADLINE/,'Dashboard hides marketing headlines');
  assert.match(gas,/function nonFinancialHeadline_\(subject\)/,'Gmail importer ignores market news headlines');
@@ -95,20 +107,30 @@ async function request(body,signature,proofOverride){
  const row={source_id:'gmail:abc123',date:'2026-11-20',provider:'FTMO',description:'Payment receipt',amount:'100.01',currency:'USDT',category:'Prop firms',status:'payment_confirmed',reference:'gmail:abc123'};
  const data=JSON.stringify({records:[row]});
  res=await request(data);assert.equal(res.status,200);
- assert.deepEqual(await res.json(),{accepted:1,inserted:1,duplicates:0,ignoredSecurity:0});
+ assert.deepEqual(await res.json(),{accepted:1,inserted:1,duplicates:0,ignoredSecurity:0,enriched:0});
  res=await request(data);assert.equal(res.status,200);
  assert.equal((await res.json()).duplicates,1,'Re-imported Gmail source must not duplicate');
  assert.equal(records.size,1,'Only one private evidence row should exist');
  // The same message can occur twice inside one upstream page, and can be retried
  // again by the scheduled trigger. Neither case may create another database row.
  res=await request(JSON.stringify({records:[row,row]}));assert.equal(res.status,200);
- assert.deepEqual(await res.json(),{accepted:2,inserted:0,duplicates:2,ignoredSecurity:0});
+ assert.deepEqual(await res.json(),{accepted:2,inserted:0,duplicates:2,ignoredSecurity:0,enriched:0});
  assert.equal(records.size,1,'Duplicate Gmail IDs inside a batch must not duplicate');
+ const blank={...row,source_id:'gmail:htmlreceipt',reference:'gmail:htmlreceipt',amount:'',currency:''};
+ res=await request(JSON.stringify({records:[blank]}));
+ assert.equal((await res.json()).inserted,1,'Historical blank amount must import');
+ res=await request(JSON.stringify({records:[{...blank,amount:'245.50',currency:'AED'}]}));
+ assert.deepEqual(await res.json(),{accepted:1,inserted:0,duplicates:1,ignoredSecurity:0,enriched:1});
+ assert.equal(records.get(personId+'|gmail:htmlreceipt')[5],'245.50','Existing blank amount can be enriched');
+ assert.equal(records.get(personId+'|gmail:htmlreceipt')[6],'AED','Enriched currency is preserved');
+ res=await request(JSON.stringify({records:[{...blank,amount:'999',currency:'USD'}]}));
+ assert.equal((await res.json()).enriched,0,'Existing amount must never be overwritten');
+ assert.equal(records.get(personId+'|gmail:htmlreceipt')[5],'245.50');
  res=await request(JSON.stringify({records:[{...row,source_id:'gmail:bad',date:'wrong'}]}));
  assert.equal(res.status,400,'Invalid data must be rejected');
  const hijack=JSON.stringify({target_user:'someone-else',records:[{...row,source_id:'gmail:another'}]});
  res=await request(hijack);assert.equal(res.status,200);
- assert.equal(records.size,2);
+ assert.equal(records.size,3);
  for(const args of records.values())assert.equal(args[0],personId,'Uploader cannot choose another account');
  console.log('PASS Gmail HMAC, owner scoping, data validation and duplicate prevention.');
 })().catch(e=>{console.error(e);process.exitCode=1});
