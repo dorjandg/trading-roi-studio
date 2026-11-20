@@ -95,11 +95,12 @@
 const GMAIL_EVIDENCE_KEY='finance-hub-gmail-evidence-v1';let gmailEvidence=[];try{gmailEvidence=JSON.parse(localStorage.getItem(GMAIL_EVIDENCE_KEY)||'[]');if(!Array.isArray(gmailEvidence))gmailEvidence=[]}catch{gmailEvidence=[]}
 let gmailRemoteEvidence=[],gmailRemoteOwner='',gmailVisibleLimit=250;
 const GMAIL_SECURITY_SUBJECT=/\b(?:authentication|verification|security|sign[ -]?in|login|access|one[ -]?time|two[ -]?factor|2fa)\s+(?:codes?|pins?|passwords?)\b|\botp\b|password reset|reset your password|magic link|verify your (?:email|account|identity)/i;
+const GMAIL_NONFINANCIAL_HEADLINE=/\b(?:goes public|going public|ipo announcement|ipo launches?|join (?:our|the) webinar|register for (?:our|the) webinar)\b/i;
 function allGmailEvidence(){
  const merged=new Map();
  if(cloud.user?.id===gmailRemoteOwner)for(const row of gmailRemoteEvidence)if(row?.source_id)merged.set(row.source_id,row);
  for(const row of gmailEvidence)if(row?.source_id)merged.set(row.source_id,row); // saved review edits win
- return [...merged.values()].filter(row=>!GMAIL_SECURITY_SUBJECT.test(String(row.description||'')));
+ return [...merged.values()].filter(row=>!GMAIL_SECURITY_SUBJECT.test(String(row.description||''))&&!GMAIL_NONFINANCIAL_HEADLINE.test(String(row.description||'')));
 }
 const KEY='finance-hub-v1';let items=[];try{items=JSON.parse(localStorage.getItem(KEY)||'[]');if(!Array.isArray(items))items=[]}catch{}const $=id=>document.getElementById(id),save=()=>{localStorage.setItem(KEY,JSON.stringify(items));render()},esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),money=(v,c)=>new Intl.NumberFormat('en-US',{style:'currency',currency:c}).format(v);$('entry').elements.date.value=new Date().toISOString().slice(0,10);
 $('entry').onsubmit=e=>{e.preventDefault();const x=Object.fromEntries(new FormData(e.target));x.amount=Number(x.amount);const editId=e.target.dataset.editId;if(!Number.isFinite(x.amount)||x.amount<0)return;if(editId){const i=items.findIndex(v=>v.id===editId);if(i<0)return;x.id=editId;items[i]=x;delete e.target.dataset.editId;e.target.querySelector('button').textContent='Add record'}else{x.id=crypto.randomUUID();if(items.some(v=>transactionKey(v)===transactionKey(x))&&!confirm('A matching transaction already exists. Add duplicate anyway?'))return;items.push(x)}save();e.target.reset();e.target.elements.date.value=new Date().toISOString().slice(0,10)};
@@ -548,7 +549,7 @@ async function fetchGmailEvidence(){
    const records=Array.isArray(response.records)?response.records:[];
    got+=records.length;
    for(const rec of records){
-    if(!validate(rec)||GMAIL_SECURITY_SUBJECT.test(String(rec.description||'')))continue;
+    if(!validate(rec)||GMAIL_SECURITY_SUBJECT.test(String(rec.description||''))||GMAIL_NONFINANCIAL_HEADLINE.test(String(rec.description||'')))continue;
     remote.set(rec.source_id,rec);
     if(existing.has(rec.source_id)||existing.size>=3500)continue;
     existing.set(rec.source_id,rec);newCount++;
