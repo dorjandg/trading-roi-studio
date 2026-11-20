@@ -11,7 +11,7 @@
  *
  * In Cloudflare configure FINANCE_GMAIL_SYNC_EMAIL to the Finance Hub owner.
  */
-const FINANCE_QUERY = '{subject:("payment") subject:("receipt") subject:("invoice") subject:("transaction") subject:("deposit") subject:("withdrawal") subject:("transfer") subject:("payout") subject:("refund") subject:("order confirmed") subject:("order complete") subject:("booking confirmed") from:(notifications@bybit.com) from:(confirmo.net)} -in:spam -in:trash';
+const FINANCE_QUERY = '{subject:payment subject:receipt subject:invoice subject:transaction subject:deposit subject:withdrawal subject:transfer subject:payout subject:refund subject:purchase subject:charged subject:charge subject:billing subject:subscription subject:statement subject:order subject:booking subject:paid subject:expense subject:credit subject:debit subject:balance subject:salary subject:rent subject:utility subject:fee from:(notifications@bybit.com) from:(confirmo.net) from:(topstep.com) from:(ftmo.com) from:(swaymarkets.com) from:(liquidbrokers.com)} -in:spam -in:trash';
 const FINANCE_BACKFILL_PAGE = 20;
 const FINANCE_RECHECK_DAYS = 21;
 const FINANCE_MAX_MESSAGES_PER_RUN = 70;
@@ -100,6 +100,8 @@ function recordFrom_(message){
   const subject=extractHeader_(message,'subject').slice(0,180);
   const sender=extractHeader_(message,'from');
   const text=financialText_(message);
+  // Owner request: exclude Karim expenses from the evidence feed.
+  if(/\bkarim\b/i.test(sender+' '+subject))return null;
   const provider=providerFor_(sender,subject,text);
   if(!provider)return null;
   const status=statusFor_(subject,text);if(!status)return null;
@@ -163,6 +165,56 @@ function syncPage_(query,token,config){
   // Send even empty batches; verified destination check precedes advancing cursor.
   const result=signedPost_(candidates,config);
   return {pageToken:page.nextPageToken||'',result};
+}
+/**
+ * Manual historical catch-up. Runs for up to ~3 minutes or 60 pages (up to
+ * 1,200 Gmail candidates), whichever occurs first. Retains progress in Script
+ * Properties and safely skips duplicate Gmail IDs in D1. Can be run repeatedly.
+ * The existing 15-minute trigger remains unchanged.
+ */
+function importGmailHistoryNow(){
+  const lock=LockService.getScriptLock();
+  if(!lock.tryLock(1000)){console.log('Another Gmail import is active; no duplicate worker started.');return;}
+  try{
+    const config=config_(),store=PropertiesService.getScriptProperties();
+    if(store.getProperty('FINANCE_QUERY_VERSION')!=='finance-search-20261120-v2'){
+      store.deleteProperty('FINANCE_BACKFILL_DONE');
+      store.deleteProperty('FINANCE_BACKFILL_PAGE_TOKEN');
+      store.deleteProperty('FINANCE_RECENT_PAGE_TOKEN');
+      store.setProperty('FINANCE_QUERY_VERSION','finance-search-20261120-v2');
+    }
+    const version='finance-search-20261120-v2';
+    if(store.getProperty('FINANCE_QUERY_VERSION')!==version){
+      store.deleteProperty('FINANCE_BACKFILL_DONE');
+      store.deleteProperty('FINANCE_BACKFILL_PAGE_TOKEN');
+      store.deleteProperty('FINANCE_RECENT_PAGE_TOKEN');
+      store.setProperty('FINANCE_QUERY_VERSION',version);
+      console.log('Expanded financial Gmail search started from newest; existing records are deduplicated.');
+    }
+    const deadline=Date.now()+170000;
+    let pages=0,accepted=0,inserted=0,duplicates=0,done=store.getProperty('FINANCE_BACKFILL_DONE')==='1';
+    while(!done&&pages<60&&Date.now()<deadline){
+      const token=store.getProperty('FINANCE_BACKFILL_PAGE_TOKEN')||'';
+      let page;
+      try{page=syncPage_(FINANCE_QUERY,token,config)}
+      catch(err){
+        if(token&&/page.?token|invalid argument/i.test(String(err))){
+          store.deleteProperty('FINANCE_BACKFILL_PAGE_TOKEN');
+          throw Error('Gmail page cursor expired. Next run restarts safely with deduplication. '+err.message);
+        }
+        throw err;
+      }
+      accepted+=page.result.accepted;inserted+=page.result.inserted;duplicates+=page.result.duplicates;
+      pages++;
+      if(page.pageToken)store.setProperty('FINANCE_BACKFILL_PAGE_TOKEN',page.pageToken);
+      else{
+        store.deleteProperty('FINANCE_BACKFILL_PAGE_TOKEN');
+        store.setProperty('FINANCE_BACKFILL_DONE','1');
+        done=true;
+      }
+    }
+    console.log('Historical catch-up: pages='+pages+' accepted='+accepted+' inserted='+inserted+' duplicates='+duplicates+' complete='+done+'. '+(done?'The financial search backfill reached its end.':'Run importGmailHistoryNow again for the next pages.'));
+  }finally{lock.releaseLock()}
 }
 /** One cycle: recent changes plus one backfill page. Idempotent in D1 by message ID. */
 function syncGmailFinance(){
