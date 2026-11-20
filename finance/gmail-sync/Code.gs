@@ -198,12 +198,6 @@ function importGmailHistoryNow(){
   try{
     const config=config_(),store=PropertiesService.getScriptProperties();
     if(gmailCoolingDown_(store))return;
-    if(store.getProperty('FINANCE_QUERY_VERSION')!=='finance-search-20261120-v2'){
-      store.deleteProperty('FINANCE_BACKFILL_DONE');
-      store.deleteProperty('FINANCE_BACKFILL_PAGE_TOKEN');
-      store.deleteProperty('FINANCE_RECENT_PAGE_TOKEN');
-      store.setProperty('FINANCE_QUERY_VERSION','finance-search-20261120-v2');
-    }
     const version='finance-search-20261120-v2';
     if(store.getProperty('FINANCE_QUERY_VERSION')!==version){
       store.deleteProperty('FINANCE_BACKFILL_DONE');
@@ -239,7 +233,7 @@ function importGmailHistoryNow(){
     console.log('Historical catch-up: pages='+pages+' accepted='+accepted+' inserted='+inserted+' duplicates='+duplicates+' complete='+done+' rateLimited='+rateLimited+'. '+(done?'The financial search backfill reached its end.':'Run importGmailHistoryNow again for the next pages.'));
   }finally{lock.releaseLock()}
 }
-/** One cycle: recent changes plus one backfill page. Idempotent in D1 by message ID. */
+/** One cycle: recent changes plus bounded historical pages. Idempotent in D1 by message ID. */
 function syncGmailFinance(){
   const lock=LockService.getScriptLock();if(!lock.tryLock(1000))return;
   try{
@@ -259,9 +253,7 @@ function syncGmailFinance(){
     console.log('Recent Gmail evidence: '+JSON.stringify(recentResult.result));
     if(recentResult.pageToken)store.setProperty('FINANCE_RECENT_PAGE_TOKEN',recentResult.pageToken);
     else store.deleteProperty('FINANCE_RECENT_PAGE_TOKEN');
-    // Five backfill pages per scheduled cycle, bounded by 65 seconds.
-    // This keeps new mail fresh while making older financial history available
-    // substantially faster than one 20-message page every 15 minutes.
+    // Bound scheduled history scans to avoid consuming Gmail API user quota.
     const historicalDeadline=Date.now()+60000;
     for(let pageIndex=0;pageIndex<2&&Date.now()<historicalDeadline&&store.getProperty('FINANCE_BACKFILL_DONE')!=='1';pageIndex++){
       const oldToken=store.getProperty('FINANCE_BACKFILL_PAGE_TOKEN')||'';
