@@ -39,3 +39,21 @@ This integration does **not** read trading activity or execute trades. It scans 
 ## Important limitation
 
 Google Apps Script cannot automatically receive the Gmail connection you authorized inside ChatGPT. The account owner must approve the new script explicitly. Do **not** place token secrets in this repository, public URLs, screenshots or chat messages.
+
+
+## Google Sheets review gate (new, replaces direct Gmail-to-ledger posting)
+
+The dedicated private Google Sheet has three tabs: `Source Inbox`, `Approved Ledger`, and `Rules & Checks`.
+Email records are upserted by `source_id` into `Source Inbox`, without changing any human review decisions. Nothing from Gmail directly enters accounting.
+
+**Existing Apps Script installation — required one-time upgrade:**
+
+1. Update the *existing* Apps Script project's `Code.gs` and `appsscript.json` from this repository. This update is **not** installed merely by a GitHub commit.
+2. Set private Apps Script Script Property `FINANCE_SHEET_ID` to the native Google Sheet's file ID. Do not publish the ID in GitHub or log it.
+3. Reauthorize the new `spreadsheets` OAuth permission, keeping the existing Gmail read-only, external request, and scheduled trigger permissions. Run `syncGmailFinance` once to check both Sheet staging and approved-ledger push.
+4. In Cloudflare Access, allow the **same existing Apps Script service token** to call only the additionally protected endpoint `/api/finance-sheet-sync`. Do not make it public. Its HMAC is still checked against `FINANCE_GMAIL_SYNC_SECRET`, and it updates only the configured owner.
+5. Keep the single existing 15-minute `syncGmailFinance` trigger. It mirrors new Gmail source metadata to the Sheet, and sends only review-state `Approved` rows to the site in signed batches.
+
+The spreadsheet starts with every source as `Review` or `Blocked`. Verify original amount, currency, direction, bank or merchant settlement, and any duplicate invoice/account references **before** setting `Approved`. The website enforces these conditions again and does not accept pending payouts as received income.
+
+The legacy on-page direct Gmail auto-post hook is disabled. No CSV imports are part of this workflow. USDT stays in the Sheet until explicit currency support or a verified conversion is added. If the Apps Script upgrade or Cloudflare Access route change is pending, the spreadsheet is a static review register; do **not** describe it as a running live integration.
