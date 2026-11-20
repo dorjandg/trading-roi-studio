@@ -39,18 +39,19 @@ async function request(records,valid=true){
  const res=await ctx.sheetHandler({request:req,env});
  return {status:res.status,data:await res.json()};
 }
-const base={date:'2026-11-20',provider:'Cloudflare',description:'Receipt for Your Payment to Cloudflare Inc',
+const base={date:'2026-11-20',provider:'Topstep',description:'Activation fee processed',
  amount:11.17,currency:'USD',direction:'Expense',payment_status:'Confirmed payment',
- source_id:'gmail:abcdef1234567890',review_state:'Approved',category:'Business',notes:'Confirmed in Google Sheet'};
+ source_id:'gmail:abcdef1234567890',review_state:'Approved',category:'Prop firm',notes:'Confirmed in Google Sheet'};
 (async()=>{
  assert.equal((await request([base],false)).status,401,'Unsigned submissions cannot write');
  assert.equal((await request([{...base,review_state:'Review'}])).data.imported,0,'Review must not post');
  assert.equal(row,null,'A review-only batch must not create a ledger');
  const result=await request([base,{...base,source_id:'gmail:1234567890abcdef',direction:'Income',payment_status:'payout_approved'},
-   {...base,source_id:'gmail:9999999999999999',amount:0}]);
+   {...base,source_id:'gmail:9999999999999999',amount:0},
+   {...base,source_id:'gmail:3333333333333333',provider:'Bybit'}]);
  assert.equal(result.status,200);
  assert.equal(result.data.imported,1,'Only verified settled expense posted');
- assert.equal(result.data.held,2,'Payout approved and invalid amount held');
+ assert.equal(result.data.held,3,'Payout approved, invalid amount and Bybit are held');
  assert.equal(JSON.parse(row.payload).transactions[0].type,'Expense');
  assert.equal((await request([base])).data.duplicates,1,'Repeat is deduplicated');
  assert.equal(JSON.parse(row.payload).transactions.length,1,'No duplicate ledger postings');
