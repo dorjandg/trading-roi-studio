@@ -68,6 +68,17 @@
 <div class="actions">
 <button type="button" id="ftmoGoAccounts">Manage FTMO accounts, fees &amp; payouts</button>
 </div>
+<div class="card compact-card" id="ftmoReceiptReview">
+<h2>Review FTMO Gmail receipt candidates</h2>
+<p class="muted">Import a review-only CSV prepared from FTMO billing emails. The file is read locally; no Gmail access or trading access is granted to this website. Nothing is booked automatically.</p>
+<label for="ftmoReceiptFile">FTMO receipt review CSV</label>
+<input type="file" id="ftmoReceiptFile" accept=".csv,text/csv">
+<div class="actions" style="margin:10px 0"><button type="button" id="ftmoReceiptClear">Clear review</button></div>
+<div id="ftmoReceiptStatus" class="hint" role="status">No email candidates loaded.</div>
+<div class="table-scroll"><table><thead><tr><th>Date</th><th>Evidence</th><th>Amount (original currency)</th><th>Reference</th><th>Action</th></tr></thead><tbody id="ftmoReceiptRows"></tbody></table></div>
+<p class="hint">Order confirmations alone are not expenses. A refund sent is not a received refund. USDT is not USD; do not convert without evidence. For confirmed payments, choose the correct FTMO account and verify it is not already included in the account's evaluation fee before adding an event.</p>
+</div>
+
 <p class="hint">Enter the challenge purchase once as an evaluation fee, enter other documented fees as additional cash events, and enter a payout only once actually received. Use the payout receipt date, not the trading profit date. Currency totals are kept separate. Reconcile refunds or FTMO Points separately before treating them as cash.</p>
 <p class="hint">Automatic FTMO billing/payout retrieval is <strong>not connected</strong>. The safe future options are a provider-approved billing export or user-approved receipt/invoice import; no trading credentials or account access are needed.</p>
 </div></section><section class="page" id="page-subscriptions"><div class="page-head"><div><h2>Recurring subscriptions</h2><p>Monitor renewals, software and recurring expenses</p></div></div><div class="grid" id="subscriptionKpis"></div><div class="card"><h2>Add subscription</h2><form id="subscriptionForm" class="form"><div><label>Service</label><input name="name" required placeholder="TradingView"></div><div><label>Owner</label><select name="owner"><option>Dori</option><option>Dona</option><option>Doen</option></select></div><div><label>Amount</label><input name="amount" type="number" min="0" step="0.01" required></div><div><label>Currency</label><select name="currency"><option>USD</option><option>EUR</option><option>AED</option><option>GBP</option></select></div><div><label>Billing</label><select name="frequency"><option>Monthly</option><option>Yearly</option><option>Weekly</option></select></div><div><label>Next renewal</label><input name="renewal" type="date" required></div><div style="align-self:end"><button>Add subscription</button></div></form></div><div class="card"><h2>Subscriptions register</h2><section><table><thead><tr><th>Service</th><th>Owner</th><th>Cost</th><th>Frequency</th><th>Next renewal</th><th></th></tr></thead><tbody id="subscriptionRows"></tbody></table></section></div></section><section class="page" id="page-invoices"><div class="page-head"><div><h2>Invoices & bills</h2><p>Track invoices, payments and outstanding amounts</p></div></div><div class="grid" id="invoiceKpis"></div><div class="card"><h2>Add invoice</h2><form id="invoiceForm" class="form"><div><label>Invoice / reference</label><input name="reference" required placeholder="INV-001"></div><div><label>Vendor / customer</label><input name="counterparty" required></div><div><label>Owner</label><select name="owner"><option>Dori</option><option>Dona</option><option>Doen</option></select></div><div><label>Amount</label><input name="amount" type="number" min="0" step="0.01" required></div><div><label>Currency</label><select name="currency"><option>USD</option><option>EUR</option><option>AED</option><option>GBP</option></select></div><div><label>Due date</label><input name="due" type="date" required></div><div><label>Status</label><select name="status"><option>Unpaid</option><option>Paid</option></select></div><div style="align-self:end"><button>Add invoice</button></div></form></div><div class="card"><h2>Invoice register</h2><section><table><thead><tr><th>Reference</th><th>Vendor / customer</th><th>Owner</th><th>Amount</th><th>Due</th><th>Status</th><th></th></tr></thead><tbody id="invoiceRows"></tbody></table></section></div></section><section class="page" id="page-accounts"><div class="page-head"><div><h2>Accounts & balances</h2><p>Track cash movements by provider and currency</p></div></div><div class="card"><h2>Account cash-flow summary</h2><p class="muted">Based on recorded transactions only. These are not verified broker or bank balances.</p><div id="accountBalances"></div></div></section><section class="page" id="page-profitloss"><div class="page-head"><div><h2>Profit & loss</h2><p>Review operating income, costs and net results</p></div></div><div class="card"><h2>Profit and loss statement</h2><div class="form"><div><label>Currency</label><select id="plCurrency"><option>USD</option><option>EUR</option><option>AED</option><option>GBP</option></select></div><div><label>Period</label><select id="plPeriod"><option value="all">All time</option><option value="month">This month</option><option value="year">This year</option></select></div></div><div id="plStatement"></div></div></section><section class="page" id="page-settings"><div class="page-head"><div><h2>Workspace settings</h2><p>Data storage, backup and access controls</p></div></div><div class="card" id="financeMemberAccess" hidden style="display:none"><h2>Authorized Finance Hub users</h2><p class="muted">Only the workspace owner or an administrator can register an invitation. Users must also be allowed by your Cloudflare Access policy. Each user has a separate private cloud backup.</p><div id="financeMembers" class="hint">Loading authorized workspace users…</div><form id="financeInviteForm" style="margin-top:16px;display:flex;gap:10px;align-items:end;flex-wrap:wrap"><label style="flex:1;min-width:220px">Invite Google account email<input id="financeInviteEmail" type="email" required autocomplete="off" placeholder="person@example.com"></label><button type="submit" style="width:auto">Register invitation</button></form><p id="financeInviteStatus" role="status" class="hint">Invitations expire after seven days. Registration does not send an email: securely share the site link with the person separately. Never share your own login.</p></div><div class="card" id="signedInAccountCard"><h2>Signed-in account</h2><p class="muted">This is the verified Google account currently accessing your private Finance Hub workspace.</p><div style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-top:16px"><div><small class="muted">Google email</small><p id="signedInEmail" style="overflow-wrap:anywhere;font-weight:700;margin:5px 0">Checking secure session…</p></div><div><small class="muted">Workspace role</small><p id="signedInRole" style="font-weight:700;margin:5px 0">—</p></div><div><small class="muted">Cloud account</small><p id="signedInCloud" style="font-weight:700;margin:5px 0">Checking…</p></div></div><p class="hint">Your financial records belong to this verified login, not the local user-name filter. Sign in with a different Google account to use that account's own private records.</p></div><div class="card"><h2>Private cloud backup</h2><p class="muted">Requires configured Cloudflare Access and D1. Cloud saves are manual and private to your authenticated account. No automatic merge or overwrite.</p><div class="actions"><button type="button" id="cloudConnect">Check cloud access</button><button type="button" id="cloudSave" disabled>Save to cloud</button><button type="button" id="cloudLoad" disabled>Restore from cloud</button><button type="button" id="cloudSync" disabled>Check for updates</button><button type="button" id="cloudAuto" disabled>Enable auto-save (off)</button></div><p id="cloudStatus" role="status" class="hint">Not connected. Local data is unchanged.</p></div><div class="card"><h2>Data & privacy</h2><p class="muted">This version stores data in this browser only. It does not provide user authentication, shared storage, encryption-at-rest on a server or automatic backups. Export your records regularly.</p><div class="actions"><button type="button" id="backupDownload">Download full backup (JSON)</button><button type="button" id="backupRestore">Restore full backup</button><input type="file" id="backupFile" accept=".json,application/json" hidden></div><p class="hint">A full backup includes transactions, prop accounts, subscriptions and invoices. Restoring replaces the local records in this browser after confirmation.</p><button style="width:auto" data-goto="transactions">Transaction CSV tools</button></div></section></main><script>
@@ -358,5 +369,72 @@ go?.addEventListener('click',()=>{
 document.querySelector('[data-page="connections"]')?.addEventListener('click',()=>queueMicrotask(renderFTMOCash));
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&document.getElementById('page-connections')?.classList.contains('active'))renderFTMOCash()});
 if(location.hash==='#connections')queueMicrotask(renderFTMOCash);
+})();
+</script><script id="ftmo-gmail-receipt-review">
+(()=>{'use strict';
+const file=document.getElementById('ftmoReceiptFile'),status=document.getElementById('ftmoReceiptStatus'),rowsEl=document.getElementById('ftmoReceiptRows'),clear=document.getElementById('ftmoReceiptClear');
+if(!file||!status||!rowsEl||!clear)return;
+let records=[];
+const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+function parseCSV(src){
+ const output=[];let row=[],cell='',quote=false;
+ for(let i=0;i<src.length;i++){const c=src[i];
+  if(c==='"'){if(quote&&src[i+1]==='"'){cell+='"';i++}else quote=!quote}
+  else if(c===','&&!quote){row.push(cell);cell=''}
+  else if((c==='\n'||c==='\r')&&!quote){if(c==='\r'&&src[i+1]==='\n')i++;row.push(cell);if(row.some(v=>v.trim()))output.push(row);row=[];cell=''}
+  else cell+=c;
+ }
+ if(quote)throw Error('Unclosed quoted field');
+ row.push(cell);if(row.some(v=>v.trim()))output.push(row);return output;
+}
+function reset(){records=[];file.value='';rowsEl.textContent='';status.textContent='No email candidates loaded.'}
+const allowed=new Set(['confirmed_payment','order_confirmation','refund_sent','payout_notice','payout_received']);
+file.addEventListener('change',async()=>{
+ records=[];rowsEl.textContent='';const selected=file.files?.[0];if(!selected)return;
+ if(selected.size>1024*1024||!/\.csv$/i.test(selected.name)){status.textContent='Only CSV files up to 1 MB are supported.';return}
+ try{
+  const matrix=parseCSV((await selected.text()).replace(/^\uFEFF/,''));
+  const expected=['date','event','amount','currency','reference','source_id'];const head=matrix.shift()?.map(x=>x.toLowerCase().trim())||[];
+  if(!expected.every(h=>head.includes(h)))throw Error('Expected columns: '+expected.join(', '));
+  if(matrix.length>500)throw Error('Maximum 500 candidates per review');
+  const index=name=>head.indexOf(name);
+  records=matrix.filter(row=>row.some(v=>v.trim())).map((row,i)=>{
+   const r=Object.fromEntries(expected.map(k=>[k,(row[index(k)]||'').trim()]));
+   if(!/^\d{4}-\d{2}-\d{2}$/.test(r.date)||!allowed.has(r.event)||!/^\d+(?:\.\d{1,8})?$/.test(r.amount)||!r.currency||!r.source_id)throw Error('Invalid candidate at row '+(i+2));
+   return r;
+  });
+  const seen=new Set();records=records.filter(r=>{const key=r.source_id+'|'+r.event;if(seen.has(key))return false;seen.add(key);return true});
+  rowsEl.innerHTML=records.map((r,i)=>{
+   const eligible=r.event==='confirmed_payment'||r.event==='payout_received';
+   return '<tr><td>'+escape(r.date)+'</td><td>'+escape(r.event.replaceAll('_',' '))+'</td><td>'+escape(r.amount+' '+r.currency)+'</td><td>'+escape(r.reference)+'</td><td>'+(eligible?'<button type="button" class="mini-button" data-ftmo-review="'+i+'">Review</button>':'Needs separate confirmation')+'</td></tr>';
+  }).join('');
+  status.textContent=records.length+' candidate(s) ready for review. Nothing has been saved.';
+ }catch(e){records=[];rowsEl.textContent='';status.textContent='Review file not loaded: '+e.message}
+});
+rowsEl.addEventListener('click',e=>{
+ const button=e.target.closest('[data-ftmo-review]');if(!button)return;
+ const r=records[Number(button.dataset.ftmoReview)];if(!r)return;
+ if(!['USD','EUR','AED','GBP'].includes(r.currency)){status.textContent=r.currency+' requires conversion/reconciliation. Original value is preserved; no record created.';return}
+ const accounts=typeof propAccounts!=='undefined'?propAccounts.filter(a=>a.firm==='FTMO'&&a.currency===r.currency):[];
+ if(!accounts.length){status.textContent='Add an FTMO account with matching currency in Prop Firm Accounts first.';return}
+ const reference='GMAIL:'+r.source_id;
+ const already=typeof propEvents!=='undefined'&&propEvents.some(x=>x.reference===reference);
+ if(already){status.textContent='This Gmail source is already linked to a cash event. No duplicate created.';return}
+ if(accounts.length!==1){status.textContent='More than one FTMO account uses this currency. Choose the correct account in Prop Firm Accounts manually; no auto-assignment.';return}
+ const account=accounts[0];
+ if(r.event==='confirmed_payment'&&Number(account.evaluationFee||0)>0){status.textContent='This account already contains an evaluation fee. Verify the payment is not already counted before adding any new event.';return}
+ if(r.event==='payout_received'&&Number(account.payout||0)>0){status.textContent='This account has an existing legacy payout total. Verify the new payout is not already included before adding it.';return}
+ const form=document.getElementById('propEventForm');
+ if(!form){status.textContent='Cash event form unavailable';return}
+ document.querySelector('[data-page="propaccounts"]')?.click();
+ form.elements.accountId.value=account.id;
+ form.elements.kind.value=r.event==='payout_received'?'payout':'evaluation';
+ form.elements.amount.value=r.amount;
+ form.elements.date.value=r.date;
+ form.elements.reference.value=reference;
+ form.scrollIntoView({behavior:'smooth',block:'center'});
+ status.textContent='Draft prepared for manual review; NOT saved. Verify the cash settlement and click Add cash event only when correct.';
+});
+clear.addEventListener('click',reset);
 })();
 </script></body></html>
