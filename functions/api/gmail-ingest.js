@@ -35,7 +35,7 @@ export async function onRequestPost({request,env}){
  // Defense in depth: never store login/OTP notifications even if a stale
  // Apps Script version sends them. Existing evidence stays in D1 for audit.
  const securitySubject=/\b(?:authentication|verification|security|sign[ -]?in|login|access|one[ -]?time|two[ -]?factor|2fa)\s+(?:codes?|pins?|passwords?)\b|\botp\b|password reset|reset your password|magic link|verify your (?:email|account|identity)/i;
- const nonFinancialSubject=/\b(?:goes public|going public|ipo announcement|ipo launches?|join (?:our|the) webinar|register for (?:our|the) webinar)\b/i;
+ const nonFinancialSubject=/\b(?:goes public|going public|ipo announcement|ipo launches?|join (?:our|the) webinar|register for (?:our|the) webinar|chance to win|win up to|enter (?:the )?(?:draw|giveaway)|giveaway|sweepstakes|prize draw|limited.time offer|exclusive offer|promotional offer|special promotion|paid in rewards|in rewards (?:last|this)|million(?:s)? (?:in|of) rewards|claim your bonus|invite friends|refer (?:a |your )?friend|cashback campaign|cashback promotion)\b|\b\$?[0-9]+(?:\.[0-9]+)?[mb]\+?\s+paid in rewards\b/i;
  const pending=[];let ignoredSecurity=0;for(const rec of data.records){
   if(!rec||typeof rec!=="object"||Array.isArray(rec))return reply({error:"Invalid record"},400);
   const source=String(rec.source_id||""),date=String(rec.date||""),provider=String(rec.provider||"").trim(),description=String(rec.description||"").trim(),amount=String(rec.amount??""),currency=String(rec.currency||"").toUpperCase(),reference=String(rec.reference||"").trim();
