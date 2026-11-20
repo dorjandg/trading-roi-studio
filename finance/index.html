@@ -863,14 +863,18 @@ function gmailAuditRow_(r,linked){
  if(!r.source_id)errors.push('Missing source ID');
  const subject=String(r.description||'').toLowerCase(),state=String(r.status||'').toLowerCase();
  const nontransaction=/\b(?:account (?:has been |was )?closed|account closure|funded account has been closed|express funded account has been closed|your account is closed|challenge failed|evaluation failed|subscription cancelled|subscription canceled|account suspended|account disabled|trading account closed)\b/i.test(subject);
+ // Marketing rewards, promotional payouts and unused credit are not the owner's cash flow.
+ const promotion=/\b(?:uber cash (?:waiting|is yours)|cash waiting in your account|paid in just \d+ minutes|weekly payout update|paid in rewards|chance to win|win up to|giveaway|exclusive offer|promotional offer|claim your bonus)\b/i.test(subject);
+ if(promotion)return {r,amount,currency,direction:'Not a payment',flags:['Promotion or unused credit; excluded from financial transaction candidates'],quality:'nontransaction'};
  const receiptSubject=/\b(?:receipt|payment to|payment (?:completed|successful|confirmation)|invoice paid|charged|debited|purchase|payout (?:paid|received|settled))\b/i.test(subject);
  if(nontransaction)return {r,amount,currency,direction:'Not a payment',flags:['Account/status notice; excluded from financial transaction candidates'],quality:'nontransaction'};
  let direction='Unknown';
- const settled=['payment_confirmed','withdrawal_confirmed','deposit_confirmed','transfer_confirmed','refund_issued','receipt'].includes(state);
+ const settled=['payment_confirmed','withdrawal_confirmed','deposit_confirmed','transfer_confirmed','refund_issued','receipt','activation_fee_processed'].includes(state);
  if(['payout_approved','payout_processing','authorization_only','order_confirmed'].includes(state)||/\b(?:win up to|chance to win|giveaway|declined|failed|pending|payment due|approved|processing)\b/.test(subject))errors.push('Settlement unverified');
  if(r.category==='Banking'||r.category==='Crypto & transfers'||r.category==='Broker investments'||state==='transfer_confirmed')direction='Transfer / unknown';
  else if(state==='refund_issued')direction='Refund / review';
  else if(r.category==='Prop firms'&&/\b(?:payout|profit split|profit share)\b/.test(subject)&&/\b(?:paid|received|settled|completed)\b/.test(subject))direction='Possible income';
+ else if(state==='activation_fee_processed')direction='Possible expense';
  else if(settled&&/\b(?:payment|paid|charged|purchase|receipt|order)\b/.test(subject))direction='Possible expense';
  if(direction==='Unknown'||direction==='Transfer / unknown'||direction==='Refund / review')errors.push('Income/expense unverified');
  if(!settled)errors.push('Payment status unverified');
