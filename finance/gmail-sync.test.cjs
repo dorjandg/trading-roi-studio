@@ -73,6 +73,14 @@ async function request(body,signature,proofOverride){
  assert.equal(ignoredResponse.status,200);
  assert.deepEqual(await ignoredResponse.json(),{accepted:1,inserted:0,duplicates:0,ignoredSecurity:1});
  assert.equal(records.size,0,'Authentication code must not create financial evidence');
+ const news={...security,source_id:'gmail:ipo-news',reference:'gmail:ipo-news',description:'Tomorrow: Anthropic goes public!'};
+ const newsResponse=await request(JSON.stringify({records:[news]}));
+ assert.equal(newsResponse.status,200);
+ assert.deepEqual(await newsResponse.json(),{accepted:1,inserted:0,duplicates:0,ignoredSecurity:1});
+ assert.equal(records.size,0,'Marketing and market news must not create financial evidence');
+ assert.match(financeUi,/GMAIL_NONFINANCIAL_HEADLINE/,'Dashboard hides marketing headlines');
+ assert.match(gas,/function nonFinancialHeadline_\(subject\)/,'Gmail importer ignores market news headlines');
+
  const row={source_id:'gmail:abc123',date:'2026-11-20',provider:'FTMO',description:'Payment receipt',amount:'100.01',currency:'USDT',category:'Prop firms',status:'payment_confirmed',reference:'gmail:abc123'};
  const data=JSON.stringify({records:[row]});
  res=await request(data);assert.equal(res.status,200);
