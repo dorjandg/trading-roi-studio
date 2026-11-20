@@ -106,7 +106,12 @@ const GMAIL_NONFINANCIAL_HEADLINE=/\b(?:goes public|going public|ipo announcemen
 function allGmailEvidence(){
  const merged=new Map();
  if(cloud.user?.id===gmailRemoteOwner)for(const row of gmailRemoteEvidence)if(row?.source_id)merged.set(row.source_id,row);
- for(const row of gmailEvidence)if(row?.source_id)merged.set(row.source_id,row); // saved review edits win
+ for(const row of gmailEvidence)if(row?.source_id){
+   const remote=merged.get(row.source_id);
+   // Keep deliberate local review-category edits, but display newly enriched
+   // cloud amounts rather than a stale local copy with blank amount fields.
+   merged.set(row.source_id,remote?{...remote,...row,amount:remote.amount||row.amount,currency:remote.currency||row.currency}:row);
+ }
  return [...merged.values()].filter(row=>!GMAIL_SECURITY_SUBJECT.test(String(row.description||''))&&!GMAIL_NONFINANCIAL_HEADLINE.test(String(row.description||'')));
 }
 const KEY='finance-hub-v1';let items=[];try{items=JSON.parse(localStorage.getItem(KEY)||'[]');if(!Array.isArray(items))items=[]}catch{}const $=id=>document.getElementById(id),save=()=>{localStorage.setItem(KEY,JSON.stringify(items));render()},esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),money=(v,c)=>new Intl.NumberFormat('en-US',{style:'currency',currency:c}).format(v);$('entry').elements.date.value=new Date().toISOString().slice(0,10);
