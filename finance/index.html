@@ -63,6 +63,12 @@
 }
 </style></head><body><div id="financeAuthGuard" role="status" aria-live="polite"><strong>Connecting securely to Finance Hub…</strong><p id="financeAuthGuardText">Verifying your signed-in account before displaying private financial records.</p></div><button id="mobileNavToggle" class="mobile-nav-toggle" type="button" aria-label="Open navigation" aria-expanded="false">☰</button><div id="mobileNavBackdrop" class="mobile-nav-backdrop" hidden></div><aside class="sidebar" id="financeSidebar"><div class="brand">◈ Finance<span>Hub</span></div><div class="side-label">WORKSPACE</div><button class="nav-link active" data-page="overview"><span class="nav-icon">▦</span><span class="nav-text">Overview</span></button><button class="nav-link" data-page="transactions"><span class="nav-icon">⇄</span><span class="nav-text">Transactions</span></button><button class="nav-link" data-page="reports"><span class="nav-icon">▥</span><span class="nav-text">Reports & Analytics</span></button><div class="side-label">FINANCIAL AREAS</div><button class="nav-link" data-page="trading"><span class="nav-icon">⌁</span><span class="nav-text">Trading & Prop Firms</span></button><button class="nav-link" data-page="reconciliation"><span class="nav-icon">⇋</span><span class="nav-text">Reconciliation</span></button><button class="nav-link" data-page="performance"><span class="nav-icon">◫</span><span class="nav-text">Performance Center</span></button><button class="nav-link" data-page="propaccounts"><span class="nav-icon">▤</span><span class="nav-text">Prop Firm Accounts</span></button><button class="nav-link" data-page="investments"><span class="nav-icon">◈</span><span class="nav-text">Investments</span></button><button class="nav-link" data-page="personal"><span class="nav-icon">⌂</span><span class="nav-text">Personal & Business</span></button><button class="nav-link" data-page="subscriptions"><span class="nav-icon">↻</span><span class="nav-text">Subscriptions</span></button><button class="nav-link" data-page="invoices"><span class="nav-icon">▤</span><span class="nav-text">Invoices</span></button><button class="nav-link" data-page="accounts"><span class="nav-icon">▣</span><span class="nav-text">Accounts & Balances</span></button><button class="nav-link" data-page="profitloss"><span class="nav-icon">≋</span><span class="nav-text">Profit & Loss</span></button><div class="side-label">MANAGEMENT</div><button class="nav-link" data-page="gmail"><span class="nav-icon">✉</span><span class="nav-text">Gmail Financial Inbox</span></button><button class="nav-link" data-page="connections"><span class="nav-icon">⛓</span><span class="nav-text">Connections</span></button><button class="nav-link" data-page="settings"><span class="nav-icon">⚙</span><span class="nav-text">Settings</span></button></aside><header><div><h1>Financial workspace</h1><nav>Finance Hub / <span id="crumb">Overview</span></nav></div><span class="chip">Local preview</span></header><main><p class="notice">Preview only: data remains in this browser. Do not store sensitive financial information until secure login and cloud storage are configured.</p><section class="page active" id="page-overview"><div class="page-head"><div><h2>Financial overview</h2><p>Your financial position across all accounts and categories</p></div><div class="actions"><select id="overviewCurrency" aria-label="Overview currency" style="width:110px"><option>USD</option><option>EUR</option><option>AED</option><option>GBP</option></select><select id="overviewPeriod" aria-label="Overview period" style="width:145px"><option value="12">Last 12 months</option><option value="6">Last 6 months</option><option value="3">Last 3 months</option><option value="all">All time</option></select></div></div><p class="hint">Verified accounting (only approved transactions) — unreviewed Gmail records are shown separately below.</p>
 <div class="grid" id="stats"></div>
+<div class="card" id="gmailLiveFeedCard">
+ <div class="page-head"><div><h2>Live financial activity</h2><p>Automatically updated from connected Gmail evidence · unverified email notifications are not booked cash</p></div>
+ <div class="actions"><span class="chip" id="gmailLiveFeedStatus" aria-live="polite">Connecting…</span><button type="button" id="gmailLiveFeedRefresh" class="mini-button">Refresh now</button></div></div>
+ <div class="metric-strip" id="gmailLiveFeedStats">Loading imported financial activity…</div>
+ <div id="gmailLiveFeedRows"></div>
+</div>
 <div class="card" id="gmailDetectedActivity" aria-label="Automatically detected financial activity">
  <h2>Automatically detected payment activity</h2>
  <p class="hint">Shows every amount identified in Gmail, including uncertain payments, grouped by original currency. Raw email amounts are not booked transactions or cash balances.</p>
@@ -561,6 +567,56 @@ function renderGmailReconciliation_(rows){
 
 // Conservative financial activity preview: never include these amounts in the
 // bookkeeping ledger or merge currencies without a verified FX rate.
+// Live dashboard is an evidence feed, not an automatic posting mechanism.
+// It always shows imported financial activity even while amount extraction runs.
+function gmailLiveFeedGroups_(rows){
+ const unique=new Map();
+ for(const r of rows)if(r&&r.source_id)unique.set(r.source_id,r);
+ const classified=[...unique.values()].filter(r=>!GMAIL_NONFINANCIAL_HEADLINE.test(String(r.description||''))&&!GMAIL_SECURITY_SUBJECT.test(String(r.description||'')));
+ classified.sort((a,b)=>String(b.date).localeCompare(String(a.date))||String(b.source_id).localeCompare(String(a.source_id)));
+ const groups=new Map();
+ for(const r of classified){
+  const key=r.category||'Unclassified';
+  const item=groups.get(key)||{category:key,emails:0,withAmount:0,providers:new Set()};
+  item.emails++;
+  if(r.amount&&r.currency&&Number(r.amount)>0)item.withAmount++;
+  item.providers.add(r.provider);
+  groups.set(key,item);
+ }
+ return {rows:classified,categories:[...groups.values()].sort((a,b)=>b.emails-a.emails)};
+}
+function renderGmailLiveFeed_(){
+ const root=document.getElementById('gmailLiveFeedRows'),stats=document.getElementById('gmailLiveFeedStats');
+ if(!root||!stats)return;
+ if(!cloud.user){stats.textContent='Sign in to see live Gmail financial evidence.';root.textContent='';return}
+ const data=gmailLiveFeedGroups_(allGmailEvidence());
+ const linked=new Set();
+ for(const t of items)for(const m of String(t.notes||'').matchAll(/\[Gmail (gmail:[^\]]+)\]/g))linked.add(m[1]);
+ const countAmount=data.rows.filter(r=>r.amount&&r.currency).length;
+ const booked=data.rows.filter(r=>linked.has(r.source_id)).length;
+ const figures=[['Financial notifications',data.rows.length],['Amounts identified',countAmount],['Not yet recorded',data.rows.length-booked],['Recorded in ledger',booked]];
+ stats.innerHTML=figures.map(([name,n])=>'<div class="metric-tile"><small>'+clean(name)+'</small><strong>'+n+'</strong></div>').join('');
+ const cats=data.categories.slice(0,8);
+ root.innerHTML='<h3>Financial categories detected from Gmail</h3>'+
+ '<div class="table-scroll"><table><thead><tr><th>Category</th><th>Emails</th><th>Amounts identified</th></tr></thead><tbody>'+
+ cats.map(x=>'<tr><td>'+clean(x.category)+'</td><td>'+x.emails+'</td><td>'+x.withAmount+'</td></tr>').join('')+
+ (cats.length?'':'<tr><td colspan="3">No financial email records available yet.</td></tr>')+
+ '</tbody></table></div>'+
+ '<h3>Latest incoming financial notifications</h3><p class="hint">Automatically refreshed while this page is open. Amounts, where present, are evidence only until verified.</p>'+
+ '<div class="table-scroll"><table><thead><tr><th>Date</th><th>Provider</th><th>Notification</th><th>Amount</th><th>Category</th><th>Action</th></tr></thead><tbody>'+
+ data.rows.slice(0,15).map(r=>'<tr><td>'+clean(r.date)+'</td><td>'+clean(r.provider)+'</td><td>'+clean(r.description)+'</td><td>'+clean(r.amount&&r.currency?r.amount+' '+r.currency:'—')+'</td><td>'+clean(r.category||'Unclassified')+'</td><td><button type="button" class="mini-button" data-gmail-live-source="'+clean(r.source_id)+'">Review</button></td></tr>').join('')+
+ (data.rows.length?'':'<tr><td colspan="6">No imported financial email evidence yet.</td></tr>')+
+ '</tbody></table></div>';
+}
+document.getElementById('gmailLiveFeedRows')?.addEventListener('click',event=>{
+ const source=event.target?.closest('[data-gmail-live-source]')?.dataset?.gmailLiveSource;
+ if(!source||!cloud.user)return;
+ const query=document.getElementById('gmailEvidenceQuery'),category=document.getElementById('gmailEvidenceCategory');
+ if(query)query.value=source;
+ if(category)category.value='';
+ navigate('gmail');
+ if(typeof window.renderGmailEvidence==='function')window.renderGmailEvidence();
+});
 function gmailDetectedActivity_(rows,currency,cutoff){
  const matches=new Set();
  for(const pair of gmailPotentialMatches_(rows)){matches.add(pair.first.source_id);matches.add(pair.second.source_id)}
@@ -666,6 +722,7 @@ function gmailReviewQueue_(rows){
    .sort((a,b)=>a.decision.priority-b.decision.priority||String(b.r.date).localeCompare(String(a.r.date)));
 }
 function renderGmailOverview_(){
+ renderGmailLiveFeed_();
  renderGmailDetected_();
  const el=document.getElementById('gmailOverviewMetrics'),breakdown=document.getElementById('gmailOverviewBreakdown');if(!el)return;
  if(!cloud.user){el.textContent='Sign in to view imported financial emails.';if(breakdown)breakdown.textContent='';return;}
@@ -832,7 +889,7 @@ async function fetchGmailEvidence(){
    }
    offset=response.nextOffset===null?null:response.nextOffset;
   }while(offset!==null&&got<50000);
-  if(!setupRequired&&cloud.user?.id===requestingOwner){gmailRemoteEvidence=[...remote.values()];gmailRemoteOwner=requestingOwner;renderGmailEvidence();}
+  if(!setupRequired&&cloud.user?.id===requestingOwner){gmailRemoteEvidence=[...remote.values()];gmailRemoteOwner=requestingOwner;renderGmailEvidence();gmailLiveStatus_('Updated '+new Date().toLocaleTimeString());}
   if(newCount||localDuplicates){
    const next=[...existing.values()];
    if(JSON.stringify(next).length<750000){gmailEvidence=next;persist()}
@@ -840,12 +897,17 @@ async function fetchGmailEvidence(){
   }
   if(setupRequired)status.textContent='Gmail evidence table is not installed yet. Cloudflare database migration is required.';
   else status.textContent='Checked at '+new Date().toLocaleTimeString()+': '+newCount+' new local copies, '+localDuplicates+' repeated local Gmail IDs removed. '+allGmailEvidence().length+' unique financial evidence records visible. '+(offset!==null?'Cloud evidence exceeds 50,000 rows and requires pagination review. ':'')+'This does not trigger Gmail imports or change accounting totals.';
- }catch(e){status.textContent='Gmail sync unavailable: '+e.message+'. Existing records are preserved.'}
+ }catch(e){status.textContent='Gmail sync unavailable: '+e.message+'. Existing records are preserved.';gmailLiveStatus_('Connection retry needed');}
  finally{gmailEvidenceSyncBusy=false;if(syncButton){syncButton.disabled=false;syncButton.textContent='Check Gmail sync'}}
 }
 document.getElementById('gmailEvidenceSync')?.addEventListener('click',fetchGmailEvidence);
 document.querySelector('[data-page="gmail"]')?.addEventListener('click',()=>{renderGmailEvidence();fetchGmailEvidence()});
-setInterval(()=>{if(document.visibilityState==='visible'&&(document.getElementById('page-gmail')?.classList.contains('active')||document.getElementById('page-overview')?.classList.contains('active')))fetchGmailEvidence()},300000);
+// Refresh visible Finance Hub data each minute (Gmail Apps Script imports run on their own schedule).
+// Only the authenticated owner may retrieve evidence; concurrent refreshes are prevented.
+const gmailLiveStatus_=message=>{const el=document.getElementById('gmailLiveFeedStatus');if(el)el.textContent=message};
+document.getElementById('gmailLiveFeedRefresh')?.addEventListener('click',()=>fetchGmailEvidence());
+setInterval(()=>{if(document.visibilityState==='visible'&&(document.getElementById('page-gmail')?.classList.contains('active')||document.getElementById('page-overview')?.classList.contains('active')))fetchGmailEvidence()},60000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&cloud.user)fetchGmailEvidence()});
 setTimeout(fetchGmailEvidence,3000);
 
 renderGmailEvidence();
