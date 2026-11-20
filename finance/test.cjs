@@ -4,6 +4,8 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const html=fs.readFileSync(require('node:path').join(__dirname,'index.html'),'utf8');
 const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(x=>x[1]).filter(Boolean);
+assert.match(html,/const accountingFingerprint=\(\)=>JSON\.stringify\(\[items,propAccounts,propEvents,propAudit,subscriptions,invoices\]\)/,'Cloud autosave ignores independently ingested Gmail evidence');
+assert.match(html,/safeAccountingMarker_\(currentMarker\.fingerprint\)/,'Legacy Gmail-inclusive sync markers are reconciled only when accounting unchanged');
 assert.match(html,/id="gmailOverviewCard"/,'Financial overview displays a Gmail evidence review card');
 assert.match(html,/id="gmailOverviewMetrics"/,'Financial overview includes an evidence KPI strip');
 assert.match(html,/function renderGmailOverview_\(\)/,'Overview Gmail evidence KPIs render from imported records');
