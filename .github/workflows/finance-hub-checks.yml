@@ -23,6 +23,8 @@ jobs:
         run: node finance/test.cjs
       - name: Authenticated API isolation and concurrency tests
         run: node finance/auth-isolation.test.cjs
+      - name: Gmail ingest HMAC, account isolation and deduplication tests
+        run: node finance/gmail-sync.test.cjs
       - name: Install Playwright Chromium
         run: |
           npm install --no-save @playwright/test
