@@ -29,6 +29,11 @@ assert.match(html,/id="gmailOverviewMetrics"/,'Financial overview includes an ev
 assert.match(html,/id="gmailOverviewBreakdown"/,'Overview shows classified Gmail evidence by category');
 assert.match(html,/id="gmailOverviewReviewQueue"/,'Overview has automated financial review queue');
 assert.match(html,/id="gmailLiveFeedCard"/,'Overview includes live imported financial activity');
+assert.match(html,/id="gmailAutoAccountingMetrics"/,'Overview shows potential income expenses distinct from verified ledger');
+assert.match(html,/function renderGmailAutoAccounting_\(\)/,'Automatic classification stays live as financial emails arrive');
+assert.match(html,/renderGmailAutoAccounting_\(\);\s*renderGmailLiveFeed_\(\)/,'Fresh D1 summary refreshes potential finances and live evidence together');
+assert.match(html,/data-auto-review/,'Classified receipt links to review for verified posting');
+
 assert.match(html,/async function refreshGmailSummary_\(\)/,'Overview reads a lightweight database summary');
 assert.match(html,/server\.amountSamples\|\|\[\]/,'Live Overview displays amount-bearing records from primary server instead of stale cache');
 assert.match(html,/Recent financial emails with extracted amounts/,'Live activity panel shows actual recognized financial evidence');
