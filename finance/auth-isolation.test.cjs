@@ -6,11 +6,22 @@ const vm=require('node:vm');
 const {webcrypto}=require('node:crypto');
 const source=fs.readFileSync(path.join(__dirname,'..','functions','api','finance.js'),'utf8').replace('export const onRequest=handler;','globalThis.financeHandler=handler;');
 const issuer='https://finance-test.cloudflareaccess.com',audience='finance-test-audience';
-const rows={users:new Map([['owner-id',{email:'owner@example.com'}],['member-id',{email:'member@example.com'}]]),memberships:new Map([['owner-id',{workspace_id:'test-workspace',role:'owner'}],['member-id',{workspace_id:'test-workspace',role:'member'}]]),snapshots:new Map()};
+const rows={users:new Map([['owner-id',{email:'owner@example.com'}],['member-id',{email:'member@example.com'}]]),memberships:new Map([['owner-id',{workspace_id:'test-workspace',role:'owner'}],['member-id',{workspace_id:'test-workspace',role:'member'}]]),snapshots:new Map(),gmail:new Map([['owner-id',[
+ {source_id:'gmail:paid-a',date:'2026-11-20',provider:'Cloudflare',description:'Receipt for Your Payment to Cloudflare Inc',amount:'11.17',currency:'USD',status:'payment_confirmed'},
+ {source_id:'gmail:activation',date:'2026-11-16',provider:'Topstep',description:'Your Express Funded Account is Activated',amount:'149.00',currency:'USD',status:'activation_fee_processed'},
+ {source_id:'gmail:approved',date:'2026-11-17',provider:'Topstep',description:'Your payout has been approved!',amount:'1970.00',currency:'USD',status:'payout_approved'},
+ {source_id:'gmail:promotion',date:'2026-11-18',provider:'Other',description:'Claim your bonus',amount:'1000.00',currency:'USD',status:'payment_confirmed'},
+ {source_id:'gmail:invalid-date',date:'2026-19-99',provider:'Cloudflare',description:'Receipt for Your Payment to Cloudflare Inc',amount:'4.67',currency:'USD',status:'payment_confirmed'}
+ ]])};
 const normalized=s=>s.toLowerCase().replace(/\s+/g,' ').trim();
 function db(){
  return {
   prepare(sql){return{bind(...args){return{
+   async all(){
+    const q=normalized(sql);
+    if(q.includes('from gmail_financial_evidence'))return {results:rows.gmail.get(args[0])||[]};
+    throw Error('Unexpected SQL all '+sql);
+   },
    async first(){
     const q=normalized(sql);
     if(q.includes('from memberships m join users u'))return rows.memberships.get(args[0])||null;
@@ -67,6 +78,16 @@ async function main(){
  assert.equal((await req('owner-id','owner@example.com','snapshot')).data.data.transactions.length,0,'Owner cannot read member backup');
  assert.equal((await req('owner-id','owner@example.com','snapshot','PUT',{expectedRevision:0,data:payload})).status,409,'Stale save rejected');
  assert.equal((await req('owner-id','owner@example.com','snapshot','PUT',{expectedRevision:1,data:payload})).data.revision,2,'Revision increments safely');
+ assert.equal((await req('member-id','member@example.com','gmail-post-confirmed','POST',{expectedRevision:1})).status,403,'Member cannot import owner Gmail records');
+ const firstImport=await req('owner-id','owner@example.com','gmail-post-confirmed','POST',{expectedRevision:2});
+ assert.equal(firstImport.status,200,'Confirmed receipt sync succeeds');
+ assert.equal(firstImport.data.imported,2,'Only confirmed expenses are posted');
+ assert.equal(firstImport.data.reviewNeeded,3,'Payout approval, promotion and invalid date remain out of ledger');
+ const afterImport=await req('owner-id','owner@example.com','snapshot');
+ assert.equal(afterImport.data.data.transactions.length,2,'Two independent confirmed payment sources enter ledger');
+ assert.equal(afterImport.data.data.transactions.every(x=>x.type==='Expense'),'No payout approval booked as income');
+ assert.equal((await req('owner-id','owner@example.com','gmail-post-confirmed','POST',{expectedRevision:3})).data.imported,0,'Repeated import is idempotent');
+ assert.equal((await req('owner-id','owner@example.com','gmail-post-confirmed','POST',{expectedRevision:2})).status,409,'Stale cloud import is blocked');
  assert.equal((await req('member-id','member@example.com','members')).status,403,'Member cannot enumerate others');
  console.log('PASS Finance Hub: signed JWT, owner/member snapshot isolation, uninvited denial, stale-write protection.');
 }
