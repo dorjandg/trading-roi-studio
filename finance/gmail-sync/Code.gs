@@ -346,6 +346,11 @@ function syncGmailFinance(){
   const config=config_(),store=PropertiesService.getScriptProperties();
   // Publish only rows explicitly approved in Google Sheet; independent of Gmail quota.
   try{pushApprovedFinanceSheet_()}catch(err){console.warn('Approved Sheet sync pending: '+String(err).slice(0,160))}
+  // While full-history scanning, do not run a second Gmail reader against
+  // the same account and compete for quota. Approved Sheet rows still sync.
+  if(store.getProperty('FINANCE_ALLMAIL_STARTED')&&store.getProperty('FINANCE_ALLMAIL_COMPLETE')!=='1'){
+   console.log('Full mailbox backfill owns Gmail reads; legacy incremental sync paused.');return;
+  }
   if(gmailCoolingDown_(store))return;
   ensureEnrichmentVersion_(store);
   const recent='after:'+Utilities.formatDate(new Date(Date.now()-FINANCE_RECHECK_DAYS*86400000),'Etc/UTC','yyyy/MM/dd')+' '+FINANCE_QUERY;
@@ -475,15 +480,31 @@ function pushApprovedFinanceSheet_(){
  * Sheets failure leaves the current page available for retry. When all pages
  * have been visited, only the temporary full-scan trigger is removed.
  */
-const FINANCE_ALLMAIL_PAGE_SIZE_ = 50;
-const FINANCE_ALLMAIL_PAGES_PER_RUN_ = 3;
+const FINANCE_ALLMAIL_PAGE_SIZE_ = 10;
+const FINANCE_ALLMAIL_PAGES_PER_RUN_ = 1;
 const FINANCE_ALLMAIL_LIMIT_MS_ = 190000;
 const FINANCE_ALLMAIL_TRIGGER_ = 'continueFullMailboxScan';
 
+// Back off longer than the short-term burst quota window and expose the
+// next attempt on the review Sheet. The cursor and approved accounting stay safe.
+function pauseFullMailboxQuota_(store,err){
+ const n=Number(store.getProperty('FINANCE_ALLMAIL_QUOTA_PAUSES')||0)+1;
+ const minutes=Math.min(240,Math.max(15,15*Math.pow(2,Math.min(n-1,4))));
+ const resume=Date.now()+minutes*60000;
+ store.setProperty('FINANCE_ALLMAIL_QUOTA_PAUSES',String(n));
+ store.setProperty('FINANCE_ALLMAIL_COOLDOWN',String(resume));
+ store.setProperty('FINANCE_ALLMAIL_LAST_ERROR',String(err).slice(0,200));
+ console.warn('Gmail quota pause '+n+'; next automatic attempt '+new Date(resume).toISOString()+'; saved cursor unchanged.');
+ fullMailboxScanStatusSheet_(fullMailboxScanState_());
+}
 function fullMailboxScanState_() {
  const p=PropertiesService.getScriptProperties();
  const asNumber=k=>Number(p.getProperty(k)||0);
+ const resume=Number(p.getProperty('FINANCE_ALLMAIL_COOLDOWN')||0);
  return {
+  nextRetry:resume>Date.now()?new Date(resume).toISOString():'',
+  quotaPauses:asNumber('FINANCE_ALLMAIL_QUOTA_PAUSES'),
+  lastError:p.getProperty('FINANCE_ALLMAIL_LAST_ERROR')||'',
   status:p.getProperty('FINANCE_ALLMAIL_COMPLETE')==='1'?'Complete':
    p.getProperty('FINANCE_ALLMAIL_COOLDOWN')&&Number(p.getProperty('FINANCE_ALLMAIL_COOLDOWN'))>Date.now()?'Paused: Gmail quota':'Scanning',
   scanned:asNumber('FINANCE_ALLMAIL_SCANNED'),
@@ -512,6 +533,9 @@ function fullMailboxScanStatusSheet_(state){
   ['Started (UTC)',state.started],
   ['Last successful page (UTC)',state.updated],
   ['Completed (UTC)',state.completed],
+  ['Next automatic retry (UTC)',state.nextRetry||'Not paused'],
+  ['Gmail quota pauses',state.quotaPauses],
+  ['Last warning',state.lastError],
   ['Scope','All Gmail messages, including archived/Sent/Spam/Trash; unsafe messages are excluded from financial staging'],
   ['Accounting','Only manually Approved rows can be sent to Finance Hub']
  ];
@@ -567,8 +591,7 @@ function continueFullMailboxScan(){
     });
    }catch(err){
     if(gmailQuotaError_(err)){
-     store.setProperty('FINANCE_ALLMAIL_COOLDOWN',String(Date.now()+FINANCE_QUOTA_COOLDOWN_MS));
-     console.warn('Full Gmail scan quota pause; saved cursor not advanced');break;
+     pauseFullMailboxQuota_(store,err);break;
     }
     if(cursor&&/page.?token|invalid argument/i.test(String(err))){
      store.deleteProperty('FINANCE_ALLMAIL_CURSOR');
@@ -604,8 +627,7 @@ function continueFullMailboxScan(){
     mirrorFinanceEvidenceSheet_(candidates);
    }catch(err){
     if(gmailQuotaError_(err)){
-     store.setProperty('FINANCE_ALLMAIL_COOLDOWN',String(Date.now()+FINANCE_QUOTA_COOLDOWN_MS));
-     console.warn('Gmail quota pause within page; all emails on this page will retry');break;
+     pauseFullMailboxQuota_(store,err);break;
     }
     throw err;
    }
@@ -625,6 +647,7 @@ function continueFullMailboxScan(){
     properties.FINANCE_ALLMAIL_FINISHED=now;
    }
    store.setProperties(properties,false);
+   store.deleteProperty('FINANCE_ALLMAIL_LAST_ERROR');
    if(!next)store.deleteProperty('FINANCE_ALLMAIL_CURSOR');
    console.log('Full Gmail page '+(totals.pages+1)+': checked='+checked+' finance='+candidates.length+' excluded='+excluded+' next='+(next?'yes':'no'));
    fullMailboxScanStatusSheet_(fullMailboxScanState_());
@@ -639,7 +662,8 @@ function restartFullMailboxScan(){
   'FINANCE_ALLMAIL_FINISHED','FINANCE_ALLMAIL_SCANNED',
   'FINANCE_ALLMAIL_FINANCIAL','FINANCE_ALLMAIL_EXCLUDED',
   'FINANCE_ALLMAIL_PAGES','FINANCE_ALLMAIL_ESTIMATE',
-  'FINANCE_ALLMAIL_COOLDOWN','FINANCE_ALLMAIL_STARTED',
+  'FINANCE_ALLMAIL_COOLDOWN','FINANCE_ALLMAIL_QUOTA_PAUSES',
+  'FINANCE_ALLMAIL_LAST_ERROR','FINANCE_ALLMAIL_STARTED',
   'FINANCE_ALLMAIL_UPDATED'])p.deleteProperty(name);
  startFullMailboxScan();
 }
