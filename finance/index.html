@@ -677,7 +677,15 @@ function renderGmailAutoAccounting_(){
  // Full cloud evidence is loaded by fetchGmailEvidence; use that set alone.
  const rows=source.filter(r=>!GMAIL_NONFINANCIAL_HEADLINE.test(String(r.description||''))&&String(r.date||'').slice(0,7)>=cutoff);
  const fullCloudReady=gmailRemoteOwner===cloud.user.id;
- const loadedLabel=fullCloudReady?'full cloud evidence loaded':'cached evidence · cloud loading';
+ // Zero before the authenticated evidence request finishes is not an
+ // accounting fact. Only show source counts once the cloud page is loaded.
+ if(!fullCloudReady){
+  host.innerHTML='<div class="metric-tile"><small>Gmail source records</small><strong>Loading…</strong><span>Checking private cloud evidence</span></div>'+
+   '<div class="metric-tile"><small>Posted accounting entries</small><strong>'+items.length+'</strong></div>';
+  details.innerHTML='<p class="hint">Loading the authenticated source records. The database preview is not counted as a second set of receipts. Click Check Gmail sync under Gmail Financial Evidence if loading does not complete.</p>';
+  return;
+ }
+ const loadedLabel='Full cloud evidence loaded';
  const serverCount=server?Number(server.amountsIdentified||0):null;
  const inventory=gmailDetectedInventory_(rows,cutoff);
  const selectedRows=inventory.receipts.filter(r=>r.currency===selected&&!inventory.linked.has(r.source_id));
@@ -1068,9 +1076,10 @@ async function fetchGmailEvidence(){
    if(JSON.stringify(next).length<750000){gmailEvidence=next;persist()}
    else{renderGmailEvidence();status.textContent='Full cloud evidence is visible, but browser snapshot capacity has been reached. No records were deleted.';return}
   }
-  if(setupRequired)status.textContent='Gmail evidence table is not installed yet. Cloudflare database migration is required.';
+  if(setupRequired){status.textContent='Gmail evidence table is not installed yet. Cloudflare database migration is required.';gmailLiveStatus_('Cloud evidence setup required');}
+  else if(cloud.user?.id===requestingOwner)renderGmailAutoAccounting_();
   else status.textContent='Checked at '+new Date().toLocaleTimeString()+': '+newCount+' new local copies, '+localDuplicates+' repeated local Gmail IDs removed. '+allGmailEvidence().length+' unique financial evidence records visible. '+(offset!==null?'Cloud evidence exceeds 50,000 rows and requires pagination review. ':'')+'This does not trigger Gmail imports or change accounting totals.';
- }catch(e){status.textContent='Gmail sync unavailable: '+e.message+'. Existing records are preserved.';gmailLiveStatus_('Connection retry needed');}
+ }catch(e){status.textContent='Gmail sync unavailable: '+e.message+'. Existing records are preserved.';gmailLiveStatus_('Connection retry needed');const metrics=document.getElementById('gmailAutoAccountingMetrics');if(metrics&&gmailRemoteOwner!==requestingOwner)metrics.innerHTML='<div class="metric-tile"><small>Gmail receipts</small><strong>Unavailable</strong><span>Cloud evidence could not be loaded; do not interpret this as zero.</span></div>';}
  finally{gmailEvidenceSyncBusy=false;if(syncButton){syncButton.disabled=false;syncButton.textContent='Check Gmail sync'}}
 }
 document.getElementById('gmailEvidenceSync')?.addEventListener('click',fetchGmailEvidence);
