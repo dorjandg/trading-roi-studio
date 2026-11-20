@@ -475,7 +475,7 @@ function renderGmailEvidence(){
  const records=allGmailEvidence();
  const filtered=records.filter(r=>(!category||r.category===category)&&(!word||[r.provider,r.description,r.reference,r.source_id,r.status,r.currency].join(' ').toLowerCase().includes(word)));
  out.innerHTML=filtered.slice(0,gmailVisibleLimit).map(r=>'<tr><td>'+clean(r.date)+'</td><td>'+clean(r.provider)+'</td><td>'+clean(r.description)+'</td><td>'+clean(r.amount&&r.currency?r.amount+' '+r.currency:'—')+'</td><td><select class="mini-button" data-gmail-category="'+clean(r.source_id)+'">'+CATEGORIES.map(c=>'<option'+(c===r.category?' selected':'')+'>'+clean(c)+'</option>').join('')+'</select></td><td>'+clean(r.status)+'</td><td>'+clean(r.reference)+'</td></tr>').join('')||'<tr><td colspan="7">No matching financial evidence.</td></tr>';
- metric.innerHTML='<div class="metric-tile"><small>Imported evidence</small><strong>'+records.length+'</strong></div><div class="metric-tile"><small>Matching</small><strong>'+filtered.length+'</strong></div><div class="metric-tile"><small>Unclassified</small><strong>'+records.filter(r=>r.category==='Unclassified').length+'</strong></div>';
+ metric.innerHTML='<div class="metric-tile"><small>Imported evidence</small><strong>'+records.length+'</strong></div><div class="metric-tile"><small>Matching</small><strong>'+filtered.length+'</strong></div><div class="metric-tile"><small>Unclassified</small><strong>'+records.filter(r=>r.category==='Unclassified').length+'</strong></div><div class="metric-tile"><small>Missing amount</small><strong>'+records.filter(r=>!r.amount||!r.currency).length+'</strong></div><div class="metric-tile"><small>Needs review</small><strong>'+records.filter(r=>r.status==='needs_review').length+'</strong></div>';
  const more=document.getElementById('gmailEvidenceMore');
  if(more){more.style.display=filtered.length>gmailVisibleLimit?'inline-block':'none';more.textContent='Show next '+Math.min(250,filtered.length-gmailVisibleLimit)+' records';}
  status.textContent=records.length+' unique evidence records available; showing '+Math.min(filtered.length,gmailVisibleLimit)+' of '+filtered.length+' matching. No financial totals have been changed.';
@@ -530,7 +530,9 @@ async function fetchGmailEvidence(){
  if(!cloud.user||gmailEvidenceSyncBusy)return;
  const requestingOwner=cloud.user.id;
  gmailEvidenceSyncBusy=true;
- const syncButton=document.getElementById('gmailEvidenceSync');if(syncButton)syncButton.disabled=true;
+ const syncButton=document.getElementById('gmailEvidenceSync');
+ if(syncButton){syncButton.disabled=true;syncButton.textContent='Checking…'}
+ status.textContent='Checking Finance Hub cloud evidence. This refreshes records already imported by Google Apps Script; it does not start a Gmail scan.';
  try{
   let offset=0,newCount=0,got=0,setupRequired=false;
   const remote=new Map();
@@ -563,9 +565,9 @@ async function fetchGmailEvidence(){
    else{renderGmailEvidence();status.textContent='Full cloud evidence is visible, but browser snapshot capacity has been reached. No records were deleted.';return}
   }
   if(setupRequired)status.textContent='Gmail evidence table is not installed yet. Cloudflare database migration is required.';
-  else status.textContent='Gmail evidence checked: '+newCount+' new local copies, '+localDuplicates+' repeated local Gmail IDs removed. '+allGmailEvidence().length+' unique records visible from Cloudflare and browser. '+(offset!==null?'More than 50,000 cloud records; narrow the import or use the API for the remainder. ':'')+'No financial totals changed.';
+  else status.textContent='Checked at '+new Date().toLocaleTimeString()+': '+newCount+' new local copies, '+localDuplicates+' repeated local Gmail IDs removed. '+allGmailEvidence().length+' unique financial evidence records visible. '+(offset!==null?'Cloud evidence exceeds 50,000 rows and requires pagination review. ':'')+'This does not trigger Gmail imports or change accounting totals.';
  }catch(e){status.textContent='Gmail sync unavailable: '+e.message+'. Existing records are preserved.'}
- finally{gmailEvidenceSyncBusy=false;if(syncButton)syncButton.disabled=false}
+ finally{gmailEvidenceSyncBusy=false;if(syncButton){syncButton.disabled=false;syncButton.textContent='Check Gmail sync'}}
 }
 document.getElementById('gmailEvidenceSync')?.addEventListener('click',fetchGmailEvidence);
 document.querySelector('[data-page="gmail"]')?.addEventListener('click',()=>{renderGmailEvidence();fetchGmailEvidence()});
