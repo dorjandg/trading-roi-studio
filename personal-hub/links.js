@@ -1,6 +1,6 @@
 /* Public GitHub repository: use only safe-to-share URLs and titles. Never add passwords or tokens. */
 window.PERSONAL_HUB_DATA = {
-  "version": "1.3.0",
+  "version": "1.4.0",
   "updated": "2026-11-20",
   "title": "Personal Hub",
   "subtitle": "My websites, learning, dashboards and useful links.",
@@ -17,49 +17,49 @@ window.PERSONAL_HUB_DATA = {
       "name": "Work & Development",
       "icon": "layers",
       "description": "Coding, GitHub projects, Colab, Cloudflare and Google tools",
-      "order": 3
+      "order": 4
     },
     {
       "id": "learning",
       "name": "Learning & Study",
       "icon": "book",
       "description": "Courses, research, tutorials and study resources",
-      "order": 4
+      "order": 5
     },
     {
       "id": "community",
       "name": "Communities & Calls",
       "icon": "heart",
       "description": "Discord, Whop, Zoom, Skool and Circle",
-      "order": 5
+      "order": 6
     },
     {
       "id": "trading",
       "name": "Trading & Finance",
       "icon": "chart",
       "description": "Trading platforms, analytics and financial tools",
-      "order": 6
+      "order": 7
     },
     {
       "id": "media",
       "name": "Videos & Channels",
       "icon": "play",
       "description": "Saved channels, videos and playlists",
-      "order": 7
+      "order": 8
     },
     {
       "id": "documents",
       "name": "Sheets & Documents",
       "icon": "file",
       "description": "Spreadsheets, documents and shared files",
-      "order": 8
+      "order": 9
     },
     {
       "id": "wellbeing",
       "name": "Health & Lifestyle",
       "icon": "heart",
       "description": "Wellness, fitness and everyday tools",
-      "order": 9
+      "order": 10
     },
     {
       "id": "jp-realty",
@@ -67,6 +67,13 @@ window.PERSONAL_HUB_DATA = {
       "icon": "grid",
       "description": "Public property websites and business management shortcuts",
       "order": 2
+    },
+    {
+      "id": "glam",
+      "name": "GLAM Lingerie",
+      "icon": "grid",
+      "description": "GLAM public store, studio preview and business shortcuts",
+      "order": 3
     }
   ],
   "links": [
@@ -804,6 +811,96 @@ window.PERSONAL_HUB_DATA = {
         "JP Realty",
         "real estate",
         "Public form"
+      ]
+    },
+    {
+      "id": "glam-public",
+      "title": "GLAM — Public Website",
+      "url": "https://glam-lingerie.com/",
+      "description": "Main GLAM Lingerie public domain",
+      "category": "glam",
+      "type": "Public website",
+      "symbol": "GL",
+      "accent": "purple",
+      "tags": [
+        "GLAM",
+        "lingerie",
+        "Public website"
+      ]
+    },
+    {
+      "id": "glam-preview",
+      "title": "GLAM — Studio Preview",
+      "url": "https://studio-preview.glam-lingerie.com/",
+      "description": "Studio preview for reviewing the boutique website",
+      "category": "glam",
+      "type": "Studio preview",
+      "symbol": "GL",
+      "accent": "purple",
+      "tags": [
+        "GLAM",
+        "lingerie",
+        "Studio preview"
+      ]
+    },
+    {
+      "id": "glam-staff",
+      "title": "GLAM — Staff Dashboard",
+      "url": "https://studio-preview.glam-lingerie.com/staff/",
+      "description": "Studio staff management dashboard; access may require sign-in",
+      "category": "glam",
+      "type": "Business tool",
+      "symbol": "GL",
+      "accent": "purple",
+      "tags": [
+        "GLAM",
+        "lingerie",
+        "Business tool"
+      ]
+    },
+    {
+      "id": "glam-original",
+      "title": "GLAM — Original Website",
+      "url": "https://www.glam.al/",
+      "description": "Original GLAM website",
+      "category": "glam",
+      "type": "Public website",
+      "symbol": "GL",
+      "accent": "purple",
+      "tags": [
+        "GLAM",
+        "lingerie",
+        "Public website"
+      ]
+    },
+    {
+      "id": "glam-instagram",
+      "title": "GLAM — Instagram",
+      "url": "https://www.instagram.com/glam.lingerieandscents/",
+      "description": "Official GLAM Instagram profile",
+      "category": "glam",
+      "type": "Social",
+      "symbol": "GL",
+      "accent": "purple",
+      "tags": [
+        "GLAM",
+        "lingerie",
+        "Social"
+      ]
+    },
+    {
+      "id": "glam-whatsapp",
+      "title": "GLAM — WhatsApp",
+      "url": "https://wa.me/355694009617",
+      "description": "GLAM customer WhatsApp contact",
+      "category": "glam",
+      "type": "Contact",
+      "symbol": "GL",
+      "accent": "purple",
+      "tags": [
+        "GLAM",
+        "lingerie",
+        "Contact"
       ]
     }
   ]
