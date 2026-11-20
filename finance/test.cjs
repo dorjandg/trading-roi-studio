@@ -28,6 +28,14 @@ assert.match(html,/id="gmailOverviewCard"/,'Financial overview displays a Gmail 
 assert.match(html,/id="gmailOverviewMetrics"/,'Financial overview includes an evidence KPI strip');
 assert.match(html,/id="gmailOverviewBreakdown"/,'Overview shows classified Gmail evidence by category');
 assert.match(html,/id="gmailOverviewReviewQueue"/,'Overview has automated financial review queue');
+assert.match(html,/id="gmailLiveFeedCard"/,'Overview includes live imported financial activity');
+assert.match(html,/function gmailLiveFeedGroups_\(rows\)/,'Live financial evidence is grouped automatically');
+assert.match(html,/function renderGmailLiveFeed_\(\)/,'Live evidence feed renders in Overview');
+assert.match(html,/gmailLiveFeedStatus_\('Updated '/,'Live sync reports the most recent successful update');
+assert.match(html,/60000\);/,'Gmail evidence refresh uses a one-minute interval');
+assert.match(html,/id="gmailLiveFeedRefresh"/,'User can refresh the latest imported financial evidence manually');
+assert.match(html,/Financial categories detected from Gmail/,'Provider category evidence is visible even when no amount is extracted');
+
 assert.match(html,/id="gmailDetectedMetrics"/,'Overview shows automatically detected financial activity independently of accounting');
 assert.match(html,/function gmailDetectedActivity_\(rows,currency,cutoff\)/,'Detected amounts are calculated from source evidence');
 assert.match(html,/function renderGmailDetected_\(\)/,'Detected activity updates dynamically');
