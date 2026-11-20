@@ -121,7 +121,7 @@
  <h2>Financial source records · audit before reporting</h2>
  <p class="hint">Check each source message before any pivot or accounting total. Email date is the Gmail received date, NOT necessarily the payment settlement date. Proposed type is not a verified transaction.</p>
  <div id="gmailAuditSummary" class="metric-strip"></div>
- <div class="provider-toolbar"><label for="gmailAuditFilter">Data quality</label><select id="gmailAuditFilter" style="width:auto"><option value="receipt_missing">Receipts missing amounts</option><option value="issues">All correction issues</option><option value="nontransaction">Non-transaction notices</option><option value="candidate">Complete candidates</option><option value="recorded">Linked to ledger</option><option value="all">All source rows</option></select><button type="button" class="mini-button" id="gmailAuditExport">Export audit CSV</button></div>
+ <div class="provider-toolbar"><label for="gmailAuditFilter">Data quality</label><select id="gmailAuditFilter" style="width:auto"><option value="all">All source rows</option><option value="receipt_missing">Receipts missing amounts</option><option value="issues">All correction issues</option><option value="nontransaction">Non-transaction notices</option><option value="candidate">Complete candidates</option><option value="recorded">Linked to ledger</option></select><button type="button" class="mini-button" id="gmailAuditExport">Export audit CSV</button></div>
  <div class="table-scroll"><table><thead><tr><th>Gmail received date</th><th>Source ID</th><th>Provider</th><th>Subject / evidence</th><th>Amount</th><th>Currency</th><th>Proposed direction</th><th>Evidence status</th><th>Audit result</th><th>Action</th></tr></thead><tbody id="gmailAuditRows"><tr><td colspan="10">Loading authenticated financial evidence…</td></tr></tbody></table></div>
  <p id="gmailAuditPageNote" class="hint"></p><button type="button" class="mini-button" id="gmailAuditMore">Show more audited rows</button>
 </div>
@@ -850,6 +850,20 @@ function renderGmailOverview_(){
 // Current Gmail evidence has no bank settlement date or signed debit/credit
 // direction; neither may be inferred as a verified transaction.
 let gmailAuditVisible_=100;
+// Reconcile the visible audit count against every unique source ID presently
+// loaded on this device. This is NOT a count of the entire private database.
+function gmailAuditCoverage_(){
+ const raw=new Map();
+ if(cloud.user?.id===gmailRemoteOwner)for(const r of gmailRemoteEvidence)if(r?.source_id)raw.set(r.source_id,r);
+ for(const r of gmailEvidence)if(r?.source_id)raw.set(r.source_id,r);
+ let excludedSecurity=0,excludedMarketing=0;
+ for(const r of raw.values()){
+  const subject=String(r.description||'');
+  if(GMAIL_SECURITY_SUBJECT.test(subject))excludedSecurity++;
+  else if(GMAIL_NONFINANCIAL_HEADLINE.test(subject))excludedMarketing++;
+ }
+ return {loaded:raw.size,excludedSecurity,excludedMarketing};
+}
 function gmailAuditRow_(r,linked){
  const errors=[];
  const date=String(r.date||'');
@@ -891,13 +905,14 @@ function renderGmailAudit_(rows){
  const output=document.getElementById('gmailAuditRows'),summary=document.getElementById('gmailAuditSummary');
  if(!output||!summary)return;
  const audit=gmailAuditData_(rows),missingReceipts=audit.filter(x=>x.quality==='receipt_missing').length,nontransactions=audit.filter(x=>x.quality==='nontransaction').length,issues=audit.filter(x=>x.quality==='issues'||x.quality==='receipt_missing').length,candidates=audit.filter(x=>x.quality==='candidate').length,recorded=audit.filter(x=>x.quality==='recorded').length;
- const figures=[['Source rows',audit.length],['Receipt amounts missing',missingReceipts],['Non-payment notices',nontransactions],['Complete candidates',candidates]];
+ const coverage=gmailAuditCoverage_();
+ const figures=[['Loaded source IDs',coverage.loaded],['Filtered notices',coverage.excludedSecurity+coverage.excludedMarketing],['Audited rows',audit.length],['With amounts',audit.filter(x=>Number(x.amount)>0&&x.currency).length],['Missing receipt amounts',missingReceipts],['Not payments',nontransactions],['Candidates',candidates],['Linked',recorded]];
  summary.innerHTML=figures.map(([label,value])=>'<div class="metric-tile"><small>'+clean(label)+'</small><strong>'+value+'</strong></div>').join('');
- const filter=document.getElementById('gmailAuditFilter')?.value||'receipt_missing';
+ const filter=document.getElementById('gmailAuditFilter')?.value||'all';
  const filtered=audit.filter(x=>filter==='all'||x.quality===filter||(filter==='issues'&&x.quality==='receipt_missing'));
  output.innerHTML=filtered.slice(0,gmailAuditVisible_).map(x=>'<tr><td>'+clean(x.r.date)+'</td><td>'+clean(x.r.source_id)+'</td><td>'+clean(x.r.provider)+'</td><td>'+clean(x.r.description)+'</td><td>'+clean(x.amount||'—')+'</td><td>'+clean(x.currency||'—')+'</td><td>'+clean(x.direction)+'</td><td>'+clean(x.r.status)+'</td><td>'+clean(x.flags.join('; ')||'Candidate, not verified')+'</td><td><button type="button" class="mini-button" data-audit-source="'+clean(x.r.source_id)+'">Review</button></td></tr>').join('')||'<tr><td colspan="10">No matching source records.</td></tr>';
  const note=document.getElementById('gmailAuditPageNote'),more=document.getElementById('gmailAuditMore');
- if(note)note.textContent='Showing '+Math.min(gmailAuditVisible_,filtered.length)+' of '+filtered.length+' audited records; all values remain traceable to source ID.';
+ if(note)note.textContent='Showing '+Math.min(gmailAuditVisible_,filtered.length)+' of '+filtered.length+' selected rows. Unique IDs currently loaded: '+coverage.loaded+'; security notices filtered: '+coverage.excludedSecurity+'; marketing notices filtered: '+coverage.excludedMarketing+'. Counts describe this browser’s loaded source data, not necessarily every row in the private database. Use Check Gmail sync to refresh.';
  if(more)more.style.display=filtered.length>gmailAuditVisible_?'inline-block':'none';
 }
 document.getElementById('gmailAuditFilter')?.addEventListener('change',()=>{gmailAuditVisible_=100;renderGmailAudit_(allGmailEvidence())});
