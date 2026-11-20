@@ -38,6 +38,24 @@ assert.match(gas,/payload:utf8Payload/,'Gmail payload uses the same bytes');
 assert.match(gas,/result\.inserted\+result\.duplicates\+ignored!==result\.accepted/,'Every scheduled batch audits duplicates plus ignored security messages');
 assert.match(gas,/function ensureEnrichmentVersion_\(store\)/,'Enrichment pass has resumable independent cursor');
 assert.match(gas,/function decodeFinanceHtml_\(markup\)/,'HTML-only financial receipt support is present');
+const parserContext={};vm.createContext(parserContext);
+vm.runInContext(gas+'\nthis.moneyFor=moneyFor_;this.html=decodeFinanceHtml_;',parserContext);
+const cases=[
+ ['Payment receipt','Total paid: AED 125.50','125.50','AED'],
+ ['Bank transfer','Amount: 250.00 EUR','250.00','EUR'],
+ ['Receipt','Your payment of $49.00 was successful','49.00','USD'],
+ ['Transfer executed','Amount: USD 1,235.60','1235.60','USD'],
+ ['Invoice','<tr><td>Grand Total</td><td>€39.99</td></tr>','39.99','EUR'],
+ ['Fee charged','amount | 15.25 | AED','15.25','AED'],
+ ['Trading account ready','Account size 50,000','','']
+];
+for(const [subject,source,amount,currency] of cases){
+ const text=source.startsWith('<')?parserContext.html(source):source;
+ const result=parserContext.moneyFor(subject,text);
+ assert.equal(result.amount,amount,'Amount extraction for '+subject);
+ assert.equal(result.currency,currency,'Currency extraction for '+subject);
+}
+
 assert.match(gas,/function runHistoryPass_\(store,config,phase,maxPages,deadline\)/,'History and enrichment run as distinct passes');
 assert.match(file,/UPDATE gmail_financial_evidence SET amount=\?, currency=\?/,'Only blank historical amounts are enriched');
 assert.match(gas,/function testGmailSyncSigning\(\)/,'Zero-record signature-only diagnostic is available');
