@@ -117,6 +117,14 @@
 <div class="actions"><button type="button" id="gmailEvidenceSync">Check Gmail sync</button><button type="button" id="gmailEvidenceExport">Export review CSV</button><button type="button" id="gmailEvidenceClear">Clear imported evidence</button></div>
 <p id="gmailEvidenceStatus" class="hint" role="status">No Gmail records imported. The website has no direct Gmail authorization.</p>
 <div id="gmailEvidenceMetrics" class="metric-strip"></div>
+<div class="card" id="gmailAuditCard" style="margin:12px 0">
+ <h2>Financial source records · audit before reporting</h2>
+ <p class="hint">Check each source message before any pivot or accounting total. Email date is the Gmail received date, NOT necessarily the payment settlement date. Proposed type is not a verified transaction.</p>
+ <div id="gmailAuditSummary" class="metric-strip"></div>
+ <div class="provider-toolbar"><label for="gmailAuditFilter">Data quality</label><select id="gmailAuditFilter" style="width:auto"><option value="issues">Needs correction</option><option value="all">All source rows</option><option value="candidate">Complete candidates</option><option value="recorded">Linked to ledger</option></select><button type="button" class="mini-button" id="gmailAuditExport">Export audit CSV</button></div>
+ <div class="table-scroll"><table><thead><tr><th>Gmail received date</th><th>Source ID</th><th>Provider</th><th>Subject / evidence</th><th>Amount</th><th>Currency</th><th>Proposed direction</th><th>Evidence status</th><th>Audit result</th><th>Action</th></tr></thead><tbody id="gmailAuditRows"><tr><td colspan="10">Loading authenticated financial evidence…</td></tr></tbody></table></div>
+ <p id="gmailAuditPageNote" class="hint"></p><button type="button" class="mini-button" id="gmailAuditMore">Show more audited rows</button>
+</div>
 <div class="card" style="margin:12px 0"><h3>Potentially related financial emails</h3><p class="hint">Review only. A notification and a payment confirmation might describe the same transfer. These are not automatic duplicates, and no cash totals change.</p><div id="gmailEvidenceReconcile" role="region" aria-label="Financial evidence reconciliation suggestions"></div></div>
 <div class="table-scroll"><table><thead><tr><th>Date</th><th>Provider</th><th>Evidence</th><th>Amount</th><th>Category</th><th>Status</th><th>Reference</th><th>Accounting</th></tr></thead><tbody id="gmailEvidenceRows"></tbody></table></div><button type="button" id="gmailEvidenceMore" style="display:none;margin-top:10px">Show next 250 records</button>
 <p class="hint">Email confirmations, bank approvals, refund notices and payout approvals are not all settled cash. Sources are never added to financial totals automatically. Saved evidence follows the signed-in user's private cloud snapshot where enabled.</p></div></section><section class="page" id="page-subscriptions"><div class="page-head"><div><h2>Recurring subscriptions</h2><p>Monitor renewals, software and recurring expenses</p></div></div><div class="grid" id="subscriptionKpis"></div><div class="card"><h2>Add subscription</h2><form id="subscriptionForm" class="form"><div><label>Service</label><input name="name" required placeholder="TradingView"></div><div><label>Owner</label><select name="owner"><option>Dori</option><option>Dona</option><option>Doen</option></select></div><div><label>Amount</label><input name="amount" type="number" min="0" step="0.01" required></div><div><label>Currency</label><select name="currency"><option>USD</option><option>EUR</option><option>AED</option><option>GBP</option></select></div><div><label>Billing</label><select name="frequency"><option>Monthly</option><option>Yearly</option><option>Weekly</option></select></div><div><label>Next renewal</label><input name="renewal" type="date" required></div><div style="align-self:end"><button>Add subscription</button></div></form></div><div class="card"><h2>Subscriptions register</h2><section><table><thead><tr><th>Service</th><th>Owner</th><th>Cost</th><th>Frequency</th><th>Next renewal</th><th></th></tr></thead><tbody id="subscriptionRows"></tbody></table></section></div></section><section class="page" id="page-invoices"><div class="page-head"><div><h2>Invoices & bills</h2><p>Track invoices, payments and outstanding amounts</p></div></div><div class="grid" id="invoiceKpis"></div><div class="card"><h2>Add invoice</h2><form id="invoiceForm" class="form"><div><label>Invoice / reference</label><input name="reference" required placeholder="INV-001"></div><div><label>Vendor / customer</label><input name="counterparty" required></div><div><label>Owner</label><select name="owner"><option>Dori</option><option>Dona</option><option>Doen</option></select></div><div><label>Amount</label><input name="amount" type="number" min="0" step="0.01" required></div><div><label>Currency</label><select name="currency"><option>USD</option><option>EUR</option><option>AED</option><option>GBP</option></select></div><div><label>Due date</label><input name="due" type="date" required></div><div><label>Status</label><select name="status"><option>Unpaid</option><option>Paid</option></select></div><div style="align-self:end"><button>Add invoice</button></div></form></div><div class="card"><h2>Invoice register</h2><section><table><thead><tr><th>Reference</th><th>Vendor / customer</th><th>Owner</th><th>Amount</th><th>Due</th><th>Status</th><th></th></tr></thead><tbody id="invoiceRows"></tbody></table></section></div></section><section class="page" id="page-accounts"><div class="page-head"><div><h2>Accounts & balances</h2><p>Track cash movements by provider and currency</p></div></div><div class="card"><h2>Account cash-flow summary</h2><p class="muted">Based on recorded transactions only. These are not verified broker or bank balances.</p><div id="accountBalances"></div></div></section><section class="page" id="page-profitloss"><div class="page-head"><div><h2>Profit & loss</h2><p>Review operating income, costs and net results</p></div></div><div class="card"><h2>Profit and loss statement</h2><div class="form"><div><label>Currency</label><select id="plCurrency"><option>USD</option><option>EUR</option><option>AED</option><option>GBP</option></select></div><div><label>Period</label><select id="plPeriod"><option value="all">All time</option><option value="month">This month</option><option value="year">This year</option></select></div></div><div id="plStatement"></div></div></section><section class="page" id="page-settings"><div class="page-head"><div><h2>Workspace settings</h2><p>Data storage, backup and access controls</p></div></div><div class="card" id="financeMemberAccess" hidden style="display:none"><h2>Authorized Finance Hub users</h2><p class="muted">Only the workspace owner or an administrator can register an invitation. Users must also be allowed by your Cloudflare Access policy. Each user has a separate private cloud backup.</p><div id="financeMembers" class="hint">Loading authorized workspace users…</div><form id="financeInviteForm" style="margin-top:16px;display:flex;gap:10px;align-items:end;flex-wrap:wrap"><label style="flex:1;min-width:220px">Invite Google account email<input id="financeInviteEmail" type="email" required autocomplete="off" placeholder="person@example.com"></label><button type="submit" style="width:auto">Register invitation</button></form><p id="financeInviteStatus" role="status" class="hint">Invitations expire after seven days. Registration does not send an email: securely share the site link with the person separately. Never share your own login.</p></div><div class="card" id="signedInAccountCard"><h2>Signed-in account</h2><p class="muted">This is the verified Google account currently accessing your private Finance Hub workspace.</p><div style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-top:16px"><div><small class="muted">Google email</small><p id="signedInEmail" style="overflow-wrap:anywhere;font-weight:700;margin:5px 0">Checking secure session…</p></div><div><small class="muted">Workspace role</small><p id="signedInRole" style="font-weight:700;margin:5px 0">—</p></div><div><small class="muted">Cloud account</small><p id="signedInCloud" style="font-weight:700;margin:5px 0">Checking…</p></div></div><p class="hint">Your financial records belong to this verified login, not the local user-name filter. Sign in with a different Google account to use that account's own private records.</p></div><div class="card"><h2>Private cloud backup</h2><p class="muted">Requires configured Cloudflare Access and D1. Cloud saves are manual and private to your authenticated account. No automatic merge or overwrite.</p><div class="actions"><button type="button" id="cloudConnect">Check cloud access</button><button type="button" id="cloudSave" disabled>Save to cloud</button><button type="button" id="cloudLoad" disabled>Restore from cloud</button><button type="button" id="cloudSync" disabled>Check for updates</button><button type="button" id="cloudAuto" disabled>Enable auto-save (off)</button></div><p id="cloudStatus" role="status" class="hint">Not connected. Local data is unchanged.</p></div><div class="card"><h2>Data & privacy</h2><p class="muted">This version stores data in this browser only. It does not provide user authentication, shared storage, encryption-at-rest on a server or automatic backups. Export your records regularly.</p><div class="actions"><button type="button" id="backupDownload">Download full backup (JSON)</button><button type="button" id="backupRestore">Restore full backup</button><input type="file" id="backupFile" accept=".json,application/json" hidden></div><p class="hint">A full backup includes transactions, prop accounts, subscriptions and invoices. Restoring replaces the local records in this browser after confirmation.</p><button style="width:auto" data-goto="transactions">Transaction CSV tools</button></div></section></main><script>
@@ -838,11 +846,74 @@ function renderGmailOverview_(){
    '</tbody></table></div>';
  }
 }
+// Source-of-truth validation precedes all accounting or pivot calculations.
+// Current Gmail evidence has no bank settlement date or signed debit/credit
+// direction; neither may be inferred as a verified transaction.
+let gmailAuditVisible_=100;
+function gmailAuditRow_(r,linked){
+ const errors=[];
+ const date=String(r.date||'');
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||new Date(date+'T00:00:00Z').toISOString?.()===undefined)errors.push('Invalid date');
+ else if(new Date(date+'T00:00:00Z').toISOString().slice(0,10)!==date)errors.push('Invalid date');
+ const amount=String(r.amount??'');
+ const currency=String(r.currency||'').toUpperCase();
+ if(!/^\d+(?:\.\d{1,8})?$/.test(amount)||!(Number(amount)>0))errors.push('Amount not verified');
+ if(!currency||!/^[A-Z]{3,5}$/.test(currency))errors.push('Missing/invalid currency');
+ if(!r.provider||!r.description)errors.push('Missing source details');
+ if(!r.source_id)errors.push('Missing source ID');
+ const subject=String(r.description||'').toLowerCase(),state=String(r.status||'').toLowerCase();
+ let direction='Unknown';
+ const settled=['payment_confirmed','withdrawal_confirmed','deposit_confirmed','transfer_confirmed','refund_issued','receipt'].includes(state);
+ if(['payout_approved','payout_processing','authorization_only','order_confirmed'].includes(state)||/\b(?:win up to|chance to win|giveaway|declined|failed|pending|payment due|approved|processing)\b/.test(subject))errors.push('Settlement unverified');
+ if(r.category==='Banking'||r.category==='Crypto & transfers'||r.category==='Broker investments'||state==='transfer_confirmed')direction='Transfer / unknown';
+ else if(state==='refund_issued')direction='Refund / review';
+ else if(r.category==='Prop firms'&&/\b(?:payout|profit split|profit share)\b/.test(subject)&&/\b(?:paid|received|settled|completed)\b/.test(subject))direction='Possible income';
+ else if(settled&&/\b(?:payment|paid|charged|purchase|receipt|order)\b/.test(subject))direction='Possible expense';
+ if(direction==='Unknown'||direction==='Transfer / unknown'||direction==='Refund / review')errors.push('Income/expense unverified');
+ if(!settled)errors.push('Payment status unverified');
+ if(linked.has(r.source_id))return {r,amount,currency,direction,flags:['Linked to approved ledger'],quality:'recorded'};
+ return {r,amount,currency,direction,flags:[...new Set(errors)],quality:errors.length?'issues':'candidate'};
+}
+function gmailAuditData_(rows){
+ const linked=new Set();
+ for(const item of items)for(const m of String(item.notes||'').matchAll(/\[Gmail (gmail:[^\]]+)\]/g))linked.add(m[1]);
+ return rows.map(r=>gmailAuditRow_(r,linked));
+}
+function renderGmailAudit_(rows){
+ const output=document.getElementById('gmailAuditRows'),summary=document.getElementById('gmailAuditSummary');
+ if(!output||!summary)return;
+ const audit=gmailAuditData_(rows),issues=audit.filter(x=>x.quality==='issues').length,candidates=audit.filter(x=>x.quality==='candidate').length,recorded=audit.filter(x=>x.quality==='recorded').length;
+ const figures=[['Source rows',audit.length],['Require validation',issues],['Complete candidates',candidates],['Ledger linked',recorded]];
+ summary.innerHTML=figures.map(([label,value])=>'<div class="metric-tile"><small>'+clean(label)+'</small><strong>'+value+'</strong></div>').join('');
+ const filter=document.getElementById('gmailAuditFilter')?.value||'issues';
+ const filtered=audit.filter(x=>filter==='all'||x.quality===filter);
+ output.innerHTML=filtered.slice(0,gmailAuditVisible_).map(x=>'<tr><td>'+clean(x.r.date)+'</td><td>'+clean(x.r.source_id)+'</td><td>'+clean(x.r.provider)+'</td><td>'+clean(x.r.description)+'</td><td>'+clean(x.amount||'—')+'</td><td>'+clean(x.currency||'—')+'</td><td>'+clean(x.direction)+'</td><td>'+clean(x.r.status)+'</td><td>'+clean(x.flags.join('; ')||'Candidate, not verified')+'</td><td><button type="button" class="mini-button" data-audit-source="'+clean(x.r.source_id)+'">Review</button></td></tr>').join('')||'<tr><td colspan="10">No matching source records.</td></tr>';
+ const note=document.getElementById('gmailAuditPageNote'),more=document.getElementById('gmailAuditMore');
+ if(note)note.textContent='Showing '+Math.min(gmailAuditVisible_,filtered.length)+' of '+filtered.length+' audited records; all values remain traceable to source ID.';
+ if(more)more.style.display=filtered.length>gmailAuditVisible_?'inline-block':'none';
+}
+document.getElementById('gmailAuditFilter')?.addEventListener('change',()=>{gmailAuditVisible_=100;renderGmailAudit_(allGmailEvidence())});
+document.getElementById('gmailAuditMore')?.addEventListener('click',()=>{gmailAuditVisible_+=100;renderGmailAudit_(allGmailEvidence())});
+document.getElementById('gmailAuditRows')?.addEventListener('click',e=>{
+ const id=e.target?.closest('[data-audit-source]')?.dataset?.auditSource;
+ if(!id)return;
+ q.value=id;cat.value='';gmailVisibleLimit=250;renderGmailEvidence();
+ document.getElementById('gmailEvidenceRows')?.scrollIntoView({behavior:'smooth',block:'center'});
+});
+document.getElementById('gmailAuditExport')?.addEventListener('click',()=>{
+ if(!cloud.user)return;
+ const header=['gmail_received_date','source_id','provider','subject','amount','currency','proposed_direction','evidence_status','audit_quality','audit_flags'];
+ const quote=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+ const records=gmailAuditData_(allGmailEvidence());
+ const body=[header,...records.map(x=>[x.r.date,x.r.source_id,x.r.provider,x.r.description,x.amount,x.currency,x.direction,x.r.status,x.quality,x.flags.join('; ')])].map(row=>row.map(quote).join(',')).join('\r\n');
+ const link=document.createElement('a');link.href=URL.createObjectURL(new Blob([body],{type:'text/csv;charset=utf-8'}));link.download='finance-hub-source-records-audit.csv';link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000);
+});
 function renderGmailEvidence(){
  renderGmailOverview_();
  if(!cloud.user){out.innerHTML='<tr><td colspan="8">Sign in to your private Finance Hub account to review Gmail evidence.</td></tr>';metric.textContent='';return;}
  const word=q.value.trim().toLowerCase(),category=cat.value;
  const records=allGmailEvidence();
+ renderGmailAudit_(records);
  renderGmailReconciliation_(records);
  const filtered=records.filter(r=>(!category||r.category===category)&&(!word||[r.provider,r.description,r.reference,r.source_id,r.status,r.currency].join(' ').toLowerCase().includes(word)));
  out.innerHTML=filtered.slice(0,gmailVisibleLimit).map(r=>'<tr><td>'+clean(r.date)+'</td><td>'+clean(r.provider)+'</td><td>'+clean(r.description)+'</td><td>'+clean(r.amount&&r.currency?r.amount+' '+r.currency:'—')+'</td><td><select class="mini-button" data-gmail-category="'+clean(r.source_id)+'">'+CATEGORIES.map(c=>'<option'+(c===r.category?' selected':'')+'>'+clean(c)+'</option>').join('')+'</select></td><td>'+clean(r.status)+'</td><td>'+clean(r.reference)+'</td><td>'+(items.some(t=>String(t.notes||'').includes('[Gmail '+r.source_id+']'))?'<span class="hint">Recorded</span>':(!['authorization_only','payout_processing','payout_approved'].includes(r.status)?'<button type="button" class="mini-button" data-gmail-review="'+clean(r.source_id)+'">Review to record</button>':'<span class="hint">Review evidence</span>'))+'</td></tr>').join('')||'<tr><td colspan="8">No matching financial evidence.</td></tr>';
