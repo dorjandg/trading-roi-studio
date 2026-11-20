@@ -31,6 +31,8 @@ jobs:
         run: node finance/test.cjs
       - name: Verify signed authentication, private snapshots, and revision conflicts
         run: node finance/auth-isolation.test.cjs
+      - name: Verify Gmail sync HMAC, user isolation and deduplication
+        run: node finance/gmail-sync.test.cjs
       - name: Check Cloudflare deployment credentials
         env:
           TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
