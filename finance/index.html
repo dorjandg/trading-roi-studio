@@ -232,7 +232,7 @@ let csvSource=null,csvCandidates=[];const csvAliases={date:['date','transaction 
    try{
      const latest=await cloudApi('snapshot-meta');
      if(latest.revision!==cloud.revision){
-       if(!hasSafeLocalBaseline(snapshot.data)){
+       if(cloudFingerprint()!==cloud.localFingerprint){
          paused=true;status('Sync paused: this browser has unsaved changes and another device has newer data. Export a JSON backup and resolve in Settings. Nothing was overwritten.');
        }else{
          const snapshot=await cloudApi('snapshot');
