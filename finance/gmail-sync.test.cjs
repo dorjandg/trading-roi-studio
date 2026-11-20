@@ -13,6 +13,13 @@ assert.match(financeUi,/allGmailEvidence\(\)/,'Full cloud evidence remains visib
 assert.match(financeUi,/gmailEvidenceMore/,'More than 250 matching records can be browsed');
 assert.match(gas,/function importGmailHistoryNow\(\)/,'Manual historical catch-up is available');
 assert.match(gas,/FINANCE_BACKFILL_PAGE_TOKEN/,'Historical catch-up saves its paging cursor');
+assert.match(gas,/const FINANCE_BACKFILL_PAGE = 10;/,'Historical Gmail reads use smaller pages');
+assert.match(gas,/function gmailQuotaError_\(err\)/,'Gmail API quota failures are recognized');
+assert.match(gas,/function pauseGmailQuota_\(store,err\)/,'Gmail quota failures trigger automatic cooldown');
+assert.match(gas,/rateLimited=true;break;/,'Historical importer retains cursor and pauses on quota');
+assert.match(gas,/Utilities\.sleep\(12000\)/,'Manual backfill throttles Google API requests');
+assert.match(gas,/if\(gmailCoolingDown_\(store\)\)return;/,'Scheduled runs honor quota cooldown');
+
 
 assert.match(gas,/Utilities\.newBlob\(data,'application\/json'\)\.getBytes\(\)/,'Apps Script sends explicit UTF-8 bytes');
 assert.match(gas,/Utilities\.computeHmacSha256Signature\(stamp\+'\\n'\+data,config\.FINANCE_SYNC_SECRET,Utilities\.Charset\.UTF_8\)/,'Apps Script signs explicit UTF-8 text');
