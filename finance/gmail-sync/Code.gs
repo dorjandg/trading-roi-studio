@@ -344,6 +344,8 @@ function syncGmailFinance(){
  const lock=LockService.getScriptLock();if(!lock.tryLock(1000))return;
  try{
   const config=config_(),store=PropertiesService.getScriptProperties();
+  // Publish only rows explicitly approved in Google Sheet; independent of Gmail quota.
+  try{pushApprovedFinanceSheet_()}catch(err){console.warn('Approved Sheet sync pending: '+String(err).slice(0,160))}
   if(gmailCoolingDown_(store))return;
   ensureEnrichmentVersion_(store);
   const recent='after:'+Utilities.formatDate(new Date(Date.now()-FINANCE_RECHECK_DAYS*86400000),'Etc/UTC','yyyy/MM/dd')+' '+FINANCE_QUERY;
@@ -416,4 +418,46 @@ function mirrorFinanceEvidenceSheet_(records){
  }
  if(added.length)tab.getRange(tab.getLastRow()+1,1,added.length,11).setValues(added);
  console.log('Sheet staging: new='+added.length+' enriched='+enriched+'; no automatic approval');
+}
+
+
+// Review-gated one-way bridge: Source Inbox -> Finance Hub ledger.
+// No row moves to the website until its Review State is exactly "Approved".
+// The spreadsheet ID lives in Script Properties, not in source control.
+function pushApprovedFinanceSheet_(){
+ const sheet=financeReviewSheet_();
+ if(!sheet||sheet.getLastRow()<=1)return;
+ const count=sheet.getLastRow()-1,rows=sheet.getRange(2,1,count,11).getDisplayValues();
+ const approved=[];
+ for(const row of rows){
+  if(String(row[8]).trim()!=='Approved')continue;
+  const amount=String(row[3]).replace(/,/g,'').trim();
+  const date=String(row[0]).trim();
+  if(!/^20[0-9]{2}-[0-9]{2}-[0-9]{2}$/.test(date)||!amount)continue;
+  approved.push({date,provider:String(row[1]),description:String(row[2]),
+   amount:Number(amount),currency:String(row[4]).toUpperCase(),direction:String(row[5]),
+   payment_status:String(row[6]),source_id:String(row[7]).toLowerCase(),
+   review_state:'Approved',category:String(row[9]),notes:String(row[10])});
+ }
+ if(!approved.length){console.log('Sheet approved ledger is empty; no accounting changes.');return}
+ const config=config_();
+ const endpoint='https://fin-kac.pages.dev/api/finance-sheet-sync';
+ let accepted=0,duplicates=0,held=0,imported=0;
+ for(let i=0;i<approved.length;i+=50){
+  const data=JSON.stringify({records:approved.slice(i,i+50)});
+  const stamp=String(Date.now());
+  const signature=Utilities.computeHmacSha256Signature(stamp+'\n'+data,config.FINANCE_SYNC_SECRET,Utilities.Charset.UTF_8)
+   .map(x=>(x<0?x+256:x).toString(16).padStart(2,'0')).join('');
+  const response=UrlFetchApp.fetch(endpoint,{method:'post',contentType:'application/json; charset=UTF-8',
+   payload:Utilities.newBlob(data,'application/json').getBytes(),muteHttpExceptions:true,
+   headers:{'x-finance-timestamp':stamp,'x-finance-signature':signature,
+    'CF-Access-Client-Id':config.FINANCE_ACCESS_CLIENT_ID,
+    'CF-Access-Client-Secret':config.FINANCE_ACCESS_CLIENT_SECRET}});
+  if(response.getResponseCode()!==200)throw Error('Sheet sync HTTP '+response.getResponseCode()+': '+response.getContentText().slice(0,150));
+  const result=JSON.parse(response.getContentText());
+  if(![result.imported,result.duplicates,result.held].every(x=>Number.isSafeInteger(x)&&x>=0))
+   throw Error('Sheet sync returned invalid reconciliation');
+  accepted+=Math.min(50,approved.length-i);imported+=result.imported;duplicates+=result.duplicates;held+=result.held;
+ }
+ console.log('Approved Sheet -> Finance Hub: sent='+accepted+' imported='+imported+' duplicate='+duplicates+' held='+held);
 }
