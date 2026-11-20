@@ -110,6 +110,9 @@ function statusFor_(subject,content){
   if(/declined|failed|suspended|cancelled|canceled|payment reminder/.test(s))return 'needs_review';
   if(/authorization|approve your transaction|securepass/.test(s))return 'authorization_only';
   if(/refund (has been )?(issued|sent|processed)/.test(s))return 'refund_issued';
+  // An activation charge explicitly reported as processed is an expense
+  // candidate, while account activation alone does not prove a payment.
+  if(/activation fee(?: of|:)?[\s\S]{0,60}(?:processed|charged|paid)/.test(s))return 'activation_fee_processed';
   if(/payout (has been )?approved/.test(s))return 'payout_approved';
   if(/payout.*(processing|being processed)/.test(s))return 'payout_processing';
   if(/withdrawal (success|completed|confirmed)|successfully withdrawn/.test(s))return 'withdrawal_confirmed';
