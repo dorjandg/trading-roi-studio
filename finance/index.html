@@ -519,7 +519,15 @@ async function fetchGmailEvidence(){
  const syncButton=document.getElementById('gmailEvidenceSync');if(syncButton)syncButton.disabled=true;
  try{
   let offset=0,newCount=0,got=0,setupRequired=false;
-  const existing=new Map(gmailEvidence.map(e=>[e.source_id,e]));
+  // The database rejects duplicate Gmail IDs. Reconcile older browser/backup
+  // duplicates too, even when there are no new messages to download.
+  const existing=new Map();
+  let localDuplicates=0;
+  for(const item of gmailEvidence){
+    if(!item||typeof item.source_id!=='string'||!item.source_id.trim())continue;
+    if(existing.has(item.source_id)){localDuplicates++;continue}
+    existing.set(item.source_id,item);
+  }
   do{
    const response=await cloudApi('gmail-evidence&offset='+offset);
    if(response.setupRequired){setupRequired=true;break}
@@ -532,14 +540,13 @@ async function fetchGmailEvidence(){
    }
    offset=response.nextOffset===null?null:response.nextOffset;
   }while(offset!==null&&got<3000);
-  if(newCount){
+  if(newCount||localDuplicates){
    const next=[...existing.values()];
    if(JSON.stringify(next).length<750000){gmailEvidence=next;persist()}
-   else status.textContent='Cloud evidence available, but local snapshot limit reached. Export older evidence before merging more.';
+   else{status.textContent='Cloud evidence exceeds local snapshot limit; original records were preserved.';return}
   }
   if(setupRequired)status.textContent='Gmail evidence table is not installed yet. Cloudflare database migration is required.';
-  else if(!newCount)status.textContent='Gmail evidence checked: no new items. '+gmailEvidence.length+' records available. No financial totals changed.';
-  else status.textContent=newCount+' new Gmail evidence record(s) synchronized. No accounting totals changed.';
+  else status.textContent='Gmail evidence checked: '+newCount+' new, '+localDuplicates+' repeated local Gmail IDs removed. '+gmailEvidence.length+' unique records available. No accounting totals changed.';
  }catch(e){status.textContent='Gmail sync unavailable: '+e.message+'. Existing records are preserved.'}
  finally{gmailEvidenceSyncBusy=false;if(syncButton)syncButton.disabled=false}
 }
