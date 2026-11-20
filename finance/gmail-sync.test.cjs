@@ -11,6 +11,7 @@ assert.match(financeUi,/existing\.has\(rec\.source_id\)/,'Downloaded Gmail recor
 assert.match(gas,/Utilities\.newBlob\(data,'application\/json'\)\.getBytes\(\)/,'Apps Script sends explicit UTF-8 bytes');
 assert.match(gas,/Utilities\.computeHmacSha256Signature\(stamp\+'\\n'\+data,config\.FINANCE_SYNC_SECRET,Utilities\.Charset\.UTF_8\)/,'Apps Script signs explicit UTF-8 text');
 assert.match(gas,/payload:utf8Payload/,'Gmail payload uses the same bytes');
+assert.match(gas,/result\.inserted\+result\.duplicates!==result\.accepted/,'Every scheduled batch audits duplicate accounting');
 assert.match(gas,/function testGmailSyncSigning\(\)/,'Zero-record signature-only diagnostic is available');
 assert.match(gas,/signedPost_\(\[\],config_\(\)\)/,'Diagnostic sends empty batch only');
 const records=new Map(),personId='dori-user-id',ownerEmail='owner@example.com';
