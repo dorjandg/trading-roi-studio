@@ -316,6 +316,10 @@ function importGmailHistoryNow(){
  if(!lock.tryLock(1000)){console.log('Another Gmail import is active; skipped concurrent run.');return}
  try{
   const config=config_(),store=PropertiesService.getScriptProperties();
+  if(store.getProperty('FINANCE_ALLMAIL_STARTED')&&store.getProperty('FINANCE_ALLMAIL_COMPLETE')!=='1'){
+   console.log('Full Gmail scan has priority. Historical keyword import postponed, cursor preserved.');
+   return;
+  }
   if(gmailCoolingDown_(store))return;
   const version='finance-search-20261120-v2';
   if(store.getProperty('FINANCE_QUERY_VERSION')!==version){
