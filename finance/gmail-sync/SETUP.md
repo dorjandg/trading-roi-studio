@@ -23,7 +23,9 @@ This integration does **not** read trading activity or execute trades. It scans 
 
 ## 3. Operation and privacy
 
-- Each scheduled run inspects recent financial messages and one page of older history. The historical backfill advances once each page is successfully accepted, and stops when it reaches the end.
+- Each scheduled run inspects recent financial messages plus up to five pages of older Gmail history within a time limit. The historical backfill advances once each page is successfully accepted, and stops when it reaches the end. The expanded query automatically restarts the backfill once; duplicates are safely skipped.
+- For a faster one-time historical catch-up, paste the latest `Code.gs`, save it, choose `importGmailHistoryNow` in the Apps Script function dropdown and click Run. It processes up to 60 pages or about three minutes and logs `complete=true` when the financial search reaches the end. If it reports `complete=false`, run the same function again, or let the existing 15-minute trigger finish the remaining pages. Never add a second trigger.
+- Finance Hub's Gmail Financial Inbox can now display paginated cloud records beyond the local browser snapshot cap. Click `Check Gmail sync`, use search/category filters, and `Show next 250 records`. Evidence is not posted to accounting totals without reconciliation.
 - Every message uses its Gmail ID as a deterministic reference. Rechecks and restarts do not create duplicate D1 records.
 - Unclear amounts and emails are stored for review only; they do not change account balances, expense totals or payouts.
 - The Finance Hub UI reads the evidence through the **already-authenticated user session**; it cannot read another user's records.
