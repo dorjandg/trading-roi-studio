@@ -4,6 +4,10 @@ const assert=require('node:assert/strict');
 const {webcrypto}=require('node:crypto');
 const file=fs.readFileSync(path.join(__dirname,'..','functions','api','gmail-ingest.js'),'utf8').replace('export async function onRequestPost','async function onRequestPost')+'\nglobalThis.gmailHandler=onRequestPost;';
 const gas=fs.readFileSync(path.join(__dirname,'gmail-sync','Code.gs'),'utf8');
+const financeUi=fs.readFileSync(path.join(__dirname,'index.html'),'utf8');
+assert.match(financeUi,/const existing=new Map\(\);\s*let localDuplicates=0;/,'Cloud refresh must reconcile local copies');
+assert.match(financeUi,/if\(newCount\|\|localDuplicates\)/,'Cloud refresh must persist cleanup even with zero new items');
+assert.match(financeUi,/existing\.has\(rec\.source_id\)/,'Downloaded Gmail records must be deduplicated');
 assert.match(gas,/Utilities\.newBlob\(data,'application\/json'\)\.getBytes\(\)/,'Apps Script sends explicit UTF-8 bytes');
 assert.match(gas,/Utilities\.computeHmacSha256Signature\(stamp\+'\\n'\+data,config\.FINANCE_SYNC_SECRET,Utilities\.Charset\.UTF_8\)/,'Apps Script signs explicit UTF-8 text');
 assert.match(gas,/payload:utf8Payload/,'Gmail payload uses the same bytes');
@@ -55,6 +59,11 @@ async function request(body,signature,proofOverride){
  res=await request(data);assert.equal(res.status,200);
  assert.equal((await res.json()).duplicates,1,'Re-imported Gmail source must not duplicate');
  assert.equal(records.size,1,'Only one private evidence row should exist');
+ // The same message can occur twice inside one upstream page, and can be retried
+ // again by the scheduled trigger. Neither case may create another database row.
+ res=await request(JSON.stringify({records:[row,row]}));assert.equal(res.status,200);
+ assert.deepEqual(await res.json(),{accepted:2,inserted:0,duplicates:2});
+ assert.equal(records.size,1,'Duplicate Gmail IDs inside a batch must not duplicate');
  res=await request(JSON.stringify({records:[{...row,source_id:'gmail:bad',date:'wrong'}]}));
  assert.equal(res.status,400,'Invalid data must be rejected');
  const hijack=JSON.stringify({target_user:'someone-else',records:[{...row,source_id:'gmail:another'}]});
