@@ -60,9 +60,11 @@ assert.ok(html.includes('id="finance-mobile-compact-2026"'),'Mobile compact styl
 assert.ok(html.includes('.grid#stats{grid-template-columns:repeat(2,minmax(0,1fr))}'),'Two-column small-screen dashboard present');
 assert.ok(html.includes('table{width:100%;min-width:max-content}'),'Wide financial tables remain horizontally scrollable');
 assert.ok(html.includes('.form{grid-template-columns:minmax(0,1fr)}'),'Narrow-screen form fields stack');
-assert.ok(html.includes('id="ftmoImportPanel"'),'FTMO read-only import panel exists');
-assert.ok(html.includes('id="ftmoHistoryFile"'),'FTMO local CSV input exists');
-assert.ok(html.includes('No live sync configured'),'FTMO integration does not falsely claim live connection');
-assert.ok(html.includes('chosen.size>2*1024*1024'),'FTMO CSV input size is bounded');
-assert.ok(html.includes('rows=matrix.slice(1,20001)'),'FTMO local preview row count is bounded');
+assert.ok(html.includes('id="ftmoCashPanel"'),'FTMO expenses and payouts summary exists');
+assert.ok(html.includes('id="ftmoCashSummary"'),'FTMO cash summary widget exists');
+assert.ok(html.includes('id="ftmoGoAccounts"'),'FTMO records link exists');
+assert.ok(html.includes('ftmo-cash-summary'),'FTMO summary uses existing financial records');
+assert.ok(!html.includes('ftmoHistoryFile'),'FTMO trade history importer removed');
+assert.ok(!html.includes('ftmo-read-only-history'),'FTMO trade analysis script removed');
+assert.ok(html.includes('Automatic FTMO billing/payout retrieval is'),'No false automatic payout-sync claim');
 console.log('PASS Finance Hub: JavaScript syntax, DOM references, 15-page navigation, financial fixtures, linked fee partition, payout dates, backup round trip.');
