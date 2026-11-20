@@ -232,6 +232,9 @@ function syncPage_(query,token,config){
   }
   // Send even empty batches; verified destination check precedes advancing cursor.
   const result=signedPost_(candidates,config);
+  // Mirror the same source IDs into the private review sheet; a Sheet failure
+  // never changes what the signed Gmail receipt ingestion already accepted.
+  try{mirrorFinanceEvidenceSheet_(candidates)}catch(err){console.warn('Sheet staging needs attention: '+String(err).slice(0,160))}
   return {pageToken:page.nextPageToken||'',result};
 }
 /**
@@ -371,4 +374,46 @@ function installGmailFinanceSync(){
 function resetGmailBackfill(){
   const p=PropertiesService.getScriptProperties();
   p.deleteProperty('FINANCE_BACKFILL_DONE');p.deleteProperty('FINANCE_BACKFILL_PAGE_TOKEN');
+}
+
+
+// Optional human-readable review layer for the Finance Hub pipeline.
+// Set FINANCE_SHEET_ID in Apps Script Properties; never put the ID or any
+// credentials in this public repository. Uses only metadata already parsed.
+function financeReviewSheet_(){
+ const id=PropertiesService.getScriptProperties().getProperty('FINANCE_SHEET_ID');
+ if(!id)return null;
+ const tab=SpreadsheetApp.openById(id).getSheetByName('Source Inbox');
+ if(!tab)throw Error('Missing Source Inbox tab');
+ return tab;
+}
+function mirrorFinanceEvidenceSheet_(records){
+ const tab=financeReviewSheet_();if(!tab||!records.length)return;
+ const count=Math.max(0,tab.getLastRow()-1);
+ const old=count?tab.getRange(2,1,count,11).getValues():[];
+ const byId=new Map();
+ for(let i=0;i<old.length;i++)if(old[i][7])byId.set(String(old[i][7]).toLowerCase(),i);
+ const added=[];let enriched=0;
+ for(const r of records){
+  if(!r?.source_id)continue;
+  const id=String(r.source_id).toLowerCase(),ix=byId.get(id);
+  if(ix!==undefined){
+   // Never overwrite owner edits or silently change a previously approved row.
+   if(!old[ix][3]&&r.amount&&String(old[ix][8])==='Review'){
+    tab.getRange(ix+2,4,1,2).setValues([[Number(r.amount),String(r.currency||'')]]);
+    enriched++;
+   }
+   continue;
+  }
+  const pending=/payout_approved|payout_processing|authorization_only|order_confirmed|needs_review/.test(String(r.status));
+  const direction=pending?'Unknown':/refund_issued/.test(String(r.status))?'Refund / review':
+   /deposit_confirmed|transfer_confirmed|withdrawal_confirmed/.test(String(r.status))?'Transfer / review':
+   'Expense candidate';
+  const review=pending?'Blocked':'Review';
+  const amount=r.amount&&Number.isFinite(Number(r.amount))?Number(r.amount):'';
+  const line=[r.date,r.provider,r.description,amount,r.currency||'',direction,r.status,id,review,r.category||'Other','Auto-captured; verify payment total, date, direction and duplicate before Approved'];
+  added.push(line);byId.set(id,old.length+added.length-1);
+ }
+ if(added.length)tab.getRange(tab.getLastRow()+1,1,added.length,11).setValues(added);
+ console.log('Sheet staging: new='+added.length+' enriched='+enriched+'; no automatic approval');
 }
