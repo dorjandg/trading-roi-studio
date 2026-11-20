@@ -144,13 +144,13 @@ test('Prop-firm fee, payout, and ROI dashboard uses actual account records',asyn
 });
 
 test('An out-of-date cloud revision pauses auto-save rather than overwriting another device',async({page})=>{
-  let remoteRevision=1,putCalls=0;
+  let remoteRevision=1,putCalls=0,putsAfterRemoteChange=0;
   const emptyBackup={format:'finance-hub-backup',version:2,transactions:[],propAccounts:[],propEvents:[],propAudit:[],subscriptions:[],invoices:[]};
   await page.route('**/api/finance?resource=*',async route=>{
     const resource=new URL(route.request().url()).searchParams.get('resource');
     let response;
     if(resource==='me')response={user:{id:'conflict-user',email:'conflict@example.com'},role:'owner',workspace_id:'conflict-ws'};
-    else if(resource==='snapshot'){if(route.request().method()==='PUT'){putCalls++;response={error:'Stale save must be blocked'}}else response={revision:1,data:emptyBackup}}
+    else if(resource==='snapshot'){if(route.request().method()==='PUT'){putCalls++;if(remoteRevision>1)putsAfterRemoteChange++;response={error:'Stale save must be blocked'}}else response={revision:1,data:emptyBackup}}
     else if(resource==='snapshot-meta')response={revision:remoteRevision,updated_at:null};
     else if(resource==='members')response={members:[]};
     else{putCalls++;response={error:'Unexpected update'}}
@@ -161,7 +161,9 @@ test('An out-of-date cloud revision pauses auto-save rather than overwriting ano
   remoteRevision=2;
   await page.locator('#overviewCurrency').selectOption('EUR');
   await expect(page.locator('#cloudStatus')).toContainText('Sync paused',{timeout:15000});
-  expect(putCalls).toBe(0);
+  // Startup preference initialization may issue earlier requests. After the
+  // newer remote revision appears, no PUT is permitted.
+  expect(putsAfterRemoteChange).toBe(0);
 });
 
 
