@@ -142,7 +142,7 @@
       '<div class="hero-stats"><div class="stat"><b>'+links.length+'</b><small>Saved links</small></div><div class="stat"><b>'+categories.length+'</b><small>Collections</small></div><div class="stat"><b>'+state.favorites.size+'</b><small>Favorites</small></div></div></section>'+
       '<div class="disclosure-toolbar"><span>Collections are collapsed by default</span><div><button type="button" class="toggle-sections" data-sections="expand">Expand all</button><button type="button" class="toggle-sections" data-sections="collapse">Collapse all</button></div></div>'+
       disclosureSection("websites","My websites","Your projects — one click away",featured.length,
-        '<div class="featured-grid">'+featured.filter(l=>l.category!=="jp-realty").map(l=>card(l,true)).join("")+catButton(byCategory.get("jp-realty"))+'</div>',
+        '<div class="featured-grid">'+featured.filter(l=>l.category!=="jp-realty" && l.category!=="glam").map(l=>card(l,true)).join("")+catButton(byCategory.get("jp-realty"))+catButton(byCategory.get("glam"))+'</div>',
         "View all",'data-category="workspaces"')+
       disclosureSection("work","Work & Development","Colab, GitHub projects, Cloudflare and Google tools",work.length,
         '<div class="shortcut-grid">'+work.map(shortcut).join("")+'</div>',
