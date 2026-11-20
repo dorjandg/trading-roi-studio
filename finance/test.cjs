@@ -9,6 +9,8 @@ assert.match(html,/<option value="all">All source rows<\/option><option value="r
 assert.match(html,/function gmailAuditCoverage_\(\)/,'Audit reports loaded source IDs and filtered notices');
 assert.doesNotMatch(html,/for\(const r of server\.amountSamples\|\|\[\]\)/,'A 40-item summary sample must not inflate the full Gmail receipt inventory');
 assert.match(html,/fullCloudReady=gmailRemoteOwner===cloud\.user\.id/,'Gmail Overview distinguishes full cloud load from cached evidence');
+assert.match(html,/if\(!fullCloudReady\)\{/,'Unloaded Gmail evidence displays loading rather than zero receipts');
+assert.match(html,/Cloud evidence could not be loaded; do not interpret this as zero/,'Gmail load errors are not shown as empty records');
 assert.match(html,/Private database reports/,'Gmail summary reports authoritative aggregate separately from loaded browser rows');
 assert.match(html,/Counts describe this browser’s loaded source data, not necessarily every row in the private database/,'Audit counts do not masquerade as total database counts');
 assert.match(html,/function sameAccountingAsSnapshot_\(data\)/,'Cloud reload compares actual accounting with owner snapshot');
