@@ -69,6 +69,9 @@ assert.equal(parserContext.financePaymentSubject_('Global Market Update – Key 
 assert.equal(parserContext.financePaymentSubject_('Order Confirmation of your 2-Step FTMO Challenge'),false,'FTMO order alone is not paid');
 assert.equal(parserContext.financePaymentSubject_('Your payment to FTMO Evaluation Global is complete'),true,'Confirmo FTMO payment recognized');
 assert.equal(parserContext.financePaymentSubject_('Your Express Funded Account is Activated'),true,'Topstep activation can be inspected for processed fee');
+assert.equal(parserContext.financePaymentSubject_('Order confirmed. Your Trading Combine is ready'),true,'Topstep charged purchase email must be inspected');
+assert.match(gas,/you have successfully been charged/,'Explicit Topstep charge is required before treating order as paid');
+assert.match(gas,/if\(paid\)\{m\.amount=paid\[1\]/,'One-time Topstep charge overrides future recurring amount');
 const cases=[
  ['Payment receipt','Total paid: AED 125.50','125.50','AED'],
  ['Bank transfer','Amount: 250.00 EUR','250.00','EUR'],
