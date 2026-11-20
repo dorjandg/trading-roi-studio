@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "updated": "2026-11-20",
+  "business": {
+    "name": "GLAM Lingerie & Scents",
+    "city": "Tirana",
+    "country": "Albania",
+    "address": "Bajram Curri Boulevard, Tirana, Albania",
+    "address_precision": "Boulevard only; building and map pin not verified",
+    "phone": "+355 69 400 9617",
+    "whatsapp": "https://wa.me/355694009617",
+    "instagram": "https://www.instagram.com/glam.lingerieandscents/",
+    "website": "https://glam-lingerie.com/",
+    "email": null,
+    "hours": {
+      "status": "third-party listing, not verified by owner",
+      "monday_saturday": "09:00–21:00",
+      "sunday": "09:00–13:30"
+    }
+  },
+  "catalog": {
+    "categories": [
+      "Lingerie",
+      "Bodywear",
+      "Home fragrances",
+      "Scents"
+    ],
+    "brands": [],
+    "products": [],
+    "pricing_currency": "EUR",
+    "note": "No specific product prices, catalog numbers, sizes, or stock have been verified yet. Do not claim availability."
+  },
+  "policies": {
+    "delivery": null,
+    "returns": null,
+    "payments": null,
+    "appointments": null
+  },
+  "assistant": {
+    "rules": [
+      "Use this knowledge base before answering factual questions.",
+      "Treat empty fields and empty lists as unknown, not as unavailable products or services.",
+      "Never invent an exact street number, catalog item, brand, price, size, stock, or policy.",
+      "When a verified answer exists, give it directly without claiming not to know.",
+      "If exact information is missing, offer the verified WhatsApp contact for confirmation.",
+      "Use the customer's language: English, Albanian or Italian.",
+      "Offer one relevant follow-up question when helpful."
+    ],
+    "suggested_questions": [
+      "Where is your boutique?",
+      "What are your opening hours?",
+      "How can I contact you?",
+      "What collections do you offer?",
+      "Can you help me choose a gift?",
+      "How can I ask about sizes and prices?"
+    ]
+  }
+}
