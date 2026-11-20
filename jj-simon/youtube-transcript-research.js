@@ -143,4 +143,14 @@ if(!jjYTResearch.sections.some(s=>s.title===jjVestTitle)){
  ],src:[]});
  jjYTResearchMeta.push({title:jjVestTitle,sources:[["4UGFy2Dz9Rc","00:50–02:55"],["4UGFy2Dz9Rc","02:55–04:10"],["4UGFy2Dz9Rc","04:10–06:45"],["4UGFy2Dz9Rc","08:10–13:25"]],status:"Public machine captions; course comparison is version-specific. Current firm terms, charts, backtest and actual returns not independently verified."});
 }
+/* Public caption comparison, 20 Nov 2026; course modules 18 primary. */
+jjYTResearch.sections.push({title:"Public video — Five trading rules versus course scaling thresholds",points:[
+"JJ's public five-rule summary (00:15–01:10) advocates one consistent trading model; the course's drawdown lesson (01:53–02:02) similarly cautions against changing styles after losses. Neither proves that the model has a positive out-of-sample edge.",
+"Public 01:12–01:58 describes evaluation attempts as having capped direct downside and encourages rapid passing. The total acquisition budget still includes repeat evaluation purchases, resets, activation and fees; a funded payout is contingent, not guaranteed.",
+"Public 01:34–02:04 treats a first payout as a scaling signal. The Module 18 course instead sets distinct historical milestones: first $10K trading earnings before adding firms (01:11–01:49) and a $30K PROFIT month before upgrading 50K slots toward 150K accounts (04:16–04:28). These are different gates, not a single verified statistical test.",
+"Public 01:59–03:26 recommends multiple funded accounts and daily profit/loss stop rules. The course recommends staggering initial funded trades across 2+2+1 days (03:23–04:05); copying identical positions increases correlated loss exposure, and current firm permissions need checking.",
+"Public 03:27–04:16 frames dollar risk as predefined units. Its $3,000 illustration is not a universal stop amount; contracts, stop points, instrument value and provider drawdown rules determine actual risk.",
+"Sources: public JJ video https://www.youtube.com/watch?v=RGYbTD1j628 ; Module 18 course timestamp references retained privately. Native captions are not chart-verified, and historical performance claims remain unverified."
+],src:[]});
+jjYTResearchMeta.push({title:"5 Rules Every Prop Firm Trader Must Know",sources:[["RGYbTD1j628","00:15–01:10"],["RGYbTD1j628","01:12–02:04"],["RGYbTD1j628","01:59–03:26"],["RGYbTD1j628","03:27–04:16"]],status:"Public machine captions; course milestone comparisons are version-specific. Charts, profitability and provider terms not independently verified."});
 renderNav();render();
