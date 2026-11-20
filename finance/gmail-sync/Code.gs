@@ -198,11 +198,40 @@ function syncPage_(query,token,config){
   return {pageToken:page.nextPageToken||'',result};
 }
 /**
- * Manual historical catch-up. Runs for up to ~3 minutes or 60 pages (up to
- * 1,200 Gmail candidates), whichever occurs first. Retains progress in Script
+ * Historical catch-up. Runs for up to ~3 minutes or 8 pages (up to
+ * 80 Gmail candidates), whichever occurs first. Retains progress in Script
  * Properties and safely skips duplicate Gmail IDs in D1. Can be run repeatedly.
  * The existing 15-minute trigger remains unchanged.
  */
+/**
+ * Start temporary, self-removing catch-up runs every five minutes.
+ * The normal 15-minute sync remains untouched. Safe to run more than once.
+ */
+function startGmailHistoryAutoImport(){
+  config_();
+  const store=PropertiesService.getScriptProperties();
+  if(store.getProperty('FINANCE_BACKFILL_DONE')==='1'){
+    stopGmailHistoryAutoImport_();
+    console.log('Historical Gmail import already complete; no catch-up trigger needed.');
+    return;
+  }
+  const existing=ScriptApp.getProjectTriggers().filter(t=>t.getHandlerFunction()==='importGmailHistoryNow');
+  if(!existing.length){
+    ScriptApp.newTrigger('importGmailHistoryNow').timeBased().everyMinutes(5).create();
+    console.log('Temporary 5-minute Gmail history catch-up enabled; regular 15-minute sync left intact.');
+  }else console.log('Gmail history catch-up trigger already installed; no duplicate created.');
+  importGmailHistoryNow();
+}
+/** Only delete the temporary history trigger. Never change the regular sync. */
+function stopGmailHistoryAutoImport_(){
+  for(const trigger of ScriptApp.getProjectTriggers()){
+    if(trigger.getHandlerFunction()==='importGmailHistoryNow')ScriptApp.deleteTrigger(trigger);
+  }
+}
+function stopGmailHistoryAutoImport(){
+  stopGmailHistoryAutoImport_();
+  console.log('Temporary Gmail history catch-up stopped. Regular 15-minute sync is unchanged.');
+}
 function importGmailHistoryNow(){
   const lock=LockService.getScriptLock();
   if(!lock.tryLock(1000)){console.log('Another Gmail import is active; no duplicate worker started.');return;}
@@ -219,6 +248,7 @@ function importGmailHistoryNow(){
     }
     const deadline=Date.now()+160000;
     let pages=0,accepted=0,inserted=0,duplicates=0,done=store.getProperty('FINANCE_BACKFILL_DONE')==='1',rateLimited=false;
+    if(done){stopGmailHistoryAutoImport_();console.log('Historical Gmail backfill already complete. Temporary trigger removed.');return;}
     while(!done&&pages<8&&Date.now()<deadline){
       const token=store.getProperty('FINANCE_BACKFILL_PAGE_TOKEN')||'';
       let page;
@@ -241,7 +271,8 @@ function importGmailHistoryNow(){
       }
       if(!done&&pages<8&&Date.now()+12000<deadline)Utilities.sleep(12000);
     }
-    console.log('Historical catch-up: pages='+pages+' accepted='+accepted+' inserted='+inserted+' duplicates='+duplicates+' complete='+done+' rateLimited='+rateLimited+'. '+(done?'The financial search backfill reached its end.':'Run importGmailHistoryNow again for the next pages.'));
+    console.log('Historical catch-up: pages='+pages+' accepted='+accepted+' inserted='+inserted+' duplicates='+duplicates+' complete='+done+' rateLimited='+rateLimited+'. '+(done?'The financial search backfill reached its end.':'Saved cursor; temporary trigger or existing regular sync will resume on schedule.'));
+    if(done){stopGmailHistoryAutoImport_();console.log('Historical import complete: temporary catch-up trigger deleted; regular 15-minute sync continues.');}
   }finally{lock.releaseLock()}
 }
 /** One cycle: recent changes plus bounded historical pages. Idempotent in D1 by message ID. */
@@ -276,7 +307,12 @@ function syncGmailFinance(){
         throw Error('Historical backfill page retry needed: '+err.message);
       }
       if(historic.pageToken)store.setProperty('FINANCE_BACKFILL_PAGE_TOKEN',historic.pageToken);
-      else{store.deleteProperty('FINANCE_BACKFILL_PAGE_TOKEN');store.setProperty('FINANCE_BACKFILL_DONE','1')}
+      else{
+        store.deleteProperty('FINANCE_BACKFILL_PAGE_TOKEN');
+        store.setProperty('FINANCE_BACKFILL_DONE','1');
+        stopGmailHistoryAutoImport_();
+        console.log('Historical import complete: temporary catch-up trigger removed.');
+      }
       console.log('Historical Gmail evidence page '+(pageIndex+1)+': '+JSON.stringify(historic.result));
     }
   }finally{lock.releaseLock()}
