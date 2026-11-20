@@ -155,9 +155,11 @@ function signedPost_(records,config){
   const result=JSON.parse(response.getContentText());
   // Every scheduled batch must receive an internally consistent deduplication
   // receipt from D1; stop paging if anything looks wrong.
+  const ignored=Number(result.ignoredSecurity||0);
   if(result.accepted!==records.length||!Number.isInteger(result.inserted)||
-      !Number.isInteger(result.duplicates)||result.inserted<0||result.duplicates<0||
-      result.inserted+result.duplicates!==result.accepted)
+      !Number.isInteger(result.duplicates)||!Number.isInteger(ignored)||
+      result.inserted<0||result.duplicates<0||ignored<0||
+      result.inserted+result.duplicates+ignored!==result.accepted)
     throw Error('Gmail duplicate audit failed: invalid database reconciliation receipt');
   return result;
 }
