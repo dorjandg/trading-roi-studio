@@ -132,7 +132,7 @@ function moneyFor_(subject,text){
    new RegExp('\\b'+label+'\\b\\s*(?:of|is|was|:|=|[-|])?\\s*([$€£])\\s*('+value+')\\b','i'),
    new RegExp('\\b'+label+'\\b\\s*(?:of|is|was|:|=|[-|])?\\s*('+value+')\\s*('+currency+')\\b','i'),
    new RegExp('\\b'+label+'\\b[\\s|:=-]{0,28}('+currency+')\\s*('+value+')\\b','i'),
-   new RegExp('\\b'+label+'\\b[\\s|:=-]{0,28}('+value+')\\s*('+currency+')\\b','i'),
+   new RegExp('\\b'+label+'\\b[\\s|:=-]{0,28}('+value+')[\\s|:=-]{0,12}('+currency+')\\b','i'),
    new RegExp('\\b('+currency+')\\s*('+value+')\\b','i'),
    new RegExp('([$€£])\\s*('+value+')\\b','i'),
    new RegExp('\\b('+value+')\\s*('+currency+')\\b','i')
