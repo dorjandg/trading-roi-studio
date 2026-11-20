@@ -43,7 +43,7 @@ assert.match(html,/id="gmailDraftNotice"/,'Gmail evidence review explains unpost
 assert.match(html,/Select currency/,'Missing receipt currencies require explicit selection');
 assert.match(html,/entry\.elements\.amount\.value=record\.amount\|\|''/,'Missing receipt amounts can be manually reviewed');
 
-assert.match(html,/entry\.elements\.type\.value='Expense'/,'Receipt review creates an editable expense draft');
+assert.match(html,/entry\.elements\.type\.value=''/,'Receipt review requires an explicit verified transaction direction');
 assert.match(html,/navigate\('transactions'\)/,'Receipt review opens transaction entry for confirmation');
 
 assert.match(html,/Collected financial evidence by category/,'Overview breakdown explains evidence rather than booked cash totals');
