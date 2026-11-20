@@ -3,6 +3,10 @@ const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const assert=require('node:assert/strict');
 const {webcrypto}=require('node:crypto');
 const file=fs.readFileSync(path.join(__dirname,'..','functions','api','gmail-ingest.js'),'utf8').replace('export async function onRequestPost','async function onRequestPost')+'\nglobalThis.gmailHandler=onRequestPost;';
+const gas=fs.readFileSync(path.join(__dirname,'gmail-sync','Code.gs'),'utf8');
+assert.match(gas,/Utilities\.newBlob\(data,'application\/json'\)\.getBytes\(\)/,'Apps Script sends explicit UTF-8 bytes');
+assert.match(gas,/Utilities\.computeHmacSha256Signature\(stamp\+'\\n'\+data,config\.FINANCE_SYNC_SECRET,Utilities\.Charset\.UTF_8\)/,'Apps Script signs explicit UTF-8 text');
+assert.match(gas,/payload:utf8Payload/,'Gmail payload uses the same bytes');
 const records=new Map(),personId='dori-user-id',ownerEmail='owner@example.com';
 const db={
  prepare(sql){
