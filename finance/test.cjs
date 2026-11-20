@@ -84,4 +84,7 @@ assert.ok(html.includes('id="gmail-financial-evidence"'),'Financial evidence imp
 assert.ok(html.includes("old.has(rec.source_id)"),'Duplicate Gmail source references skipped');
 assert.ok(html.includes("No accounting transactions were added."),'Gmail import does not auto-post cash movements');
 assert.ok(html.includes('id="gmailEvidenceExport"'),'Gmail evidence data can be exported');
+assert.ok(html.includes("[items,propAccounts,propEvents,propAudit,subscriptions,invoices,gmailEvidence]=[[],[],[],[],[],[],[]]"),'Gmail financial evidence cleared on account switch');
+assert.ok(html.includes('Sign in to your verified Finance Hub cloud account before importing Gmail evidence.'),'Gmail import requires verified login');
+assert.ok(html.includes('gmailEvidence=Array.isArray(b.gmailEvidence)?b.gmailEvidence:[]'),'Gmail evidence restores with signed-in cloud snapshot');
 console.log('PASS Finance Hub: JavaScript syntax, DOM references, 15-page navigation, financial fixtures, linked fee partition, payout dates, backup round trip.');
