@@ -85,7 +85,7 @@ async function main(){
  assert.equal(firstImport.data.reviewNeeded,3,'Payout approval, promotion and invalid date remain out of ledger');
  const afterImport=await req('owner-id','owner@example.com','snapshot');
  assert.equal(afterImport.data.data.transactions.length,2,'Two independent confirmed payment sources enter ledger');
- assert.equal(afterImport.data.data.transactions.every(x=>x.type==='Expense'),'No payout approval booked as income');
+ assert.ok(afterImport.data.data.transactions.every(x=>x.type==='Expense'),'No payout approval booked as income');
  assert.equal((await req('owner-id','owner@example.com','gmail-post-confirmed','POST',{expectedRevision:3})).data.imported,0,'Repeated import is idempotent');
  assert.equal((await req('owner-id','owner@example.com','gmail-post-confirmed','POST',{expectedRevision:2})).status,409,'Stale cloud import is blocked');
  assert.equal((await req('member-id','member@example.com','members')).status,403,'Member cannot enumerate others');
