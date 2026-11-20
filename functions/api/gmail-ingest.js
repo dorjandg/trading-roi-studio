@@ -32,9 +32,13 @@ export async function onRequestPost({request,env}){
  const email=String(env.FINANCE_GMAIL_SYNC_EMAIL).toLowerCase().trim();
  const person=await env.FINANCE_DB.prepare("SELECT u.id FROM users u JOIN memberships m ON m.user_id=u.id WHERE lower(u.email)=? LIMIT 1").bind(email).first();
  if(!person)return reply({error:"Configured Finance Hub user must first sign in"},403);
- const pending=[];for(const rec of data.records){
+ // Defense in depth: never store login/OTP notifications even if a stale
+ // Apps Script version sends them. Existing evidence stays in D1 for audit.
+ const securitySubject=/\b(?:authentication|verification|security|sign[ -]?in|login|access|one[ -]?time|two[ -]?factor|2fa)\s+(?:codes?|pins?|passwords?)\b|\botp\b|password reset|reset your password|magic link|verify your (?:email|account|identity)/i;
+ const pending=[];let ignoredSecurity=0;for(const rec of data.records){
   if(!rec||typeof rec!=="object"||Array.isArray(rec))return reply({error:"Invalid record"},400);
   const source=String(rec.source_id||""),date=String(rec.date||""),provider=String(rec.provider||"").trim(),description=String(rec.description||"").trim(),amount=String(rec.amount??""),currency=String(rec.currency||"").toUpperCase(),reference=String(rec.reference||"").trim();
+  if(securitySubject.test(description)){ignoredSecurity++;continue;}
   const category=categories.has(rec.category)?rec.category:"Unclassified",status=statuses.has(rec.status)?rec.status:"needs_review";
   if(!/^[a-zA-Z0-9._:-]{3,120}$/.test(source)||!/^(?:20|19)\d{2}-\d{2}-\d{2}$/.test(date)||!provider||provider.length>120||description.length>250||reference.length>130||amount.length>35||currency.length>10||!(/^-?\d+(\.\d{1,8})?$/.test(amount)||amount==="")||!(/^[A-Z0-9]{0,10}$/.test(currency)))return reply({error:"Invalid record fields"},400);
   pending.push({source,date,provider,description,amount,currency,category,status,reference});
@@ -44,5 +48,5 @@ export async function onRequestPost({request,env}){
   const result=await env.FINANCE_DB.prepare("INSERT OR IGNORE INTO gmail_financial_evidence(user_id,source_id,occurred_on,provider,description,amount,currency,category,status,reference) VALUES(?,?,?,?,?,?,?,?,?,?)").bind(person.id,r.source,r.date,r.provider,r.description,r.amount,r.currency,r.category,r.status,r.reference).run();
   inserted+=result.meta?.changes||0;
  }
- return reply({accepted:pending.length,inserted,duplicates:pending.length-inserted});
+ return reply({accepted:data.records.length,inserted,duplicates:pending.length-inserted,ignoredSecurity});
 }
