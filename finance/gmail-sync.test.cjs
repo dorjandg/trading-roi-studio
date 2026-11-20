@@ -121,6 +121,17 @@ async function request(body,signature,proofOverride){
  assert.equal(records.size,0,'Marketing and market news must not create financial evidence');
  assert.match(financeUi,/GMAIL_NONFINANCIAL_HEADLINE/,'Dashboard hides marketing headlines');
  assert.match(gas,/function nonFinancialHeadline_\(subject\)/,'Gmail importer ignores market news headlines');
+ assert.equal(vm.runInContext("nonFinancialHeadline_('Transfer in foreign currency for a chance to win up to AED 10,000 cashback')",parserContext),true,'Promotional cashback prize must be rejected');
+ assert.equal(vm.runInContext("nonFinancialHeadline_('$3.28M+ paid in rewards last month')",parserContext),true,'Global platform rewards must be rejected');
+ assert.equal(vm.runInContext("nonFinancialHeadline_('Your payment receipt AED 125.50')",parserContext),false,'Real receipt subject must remain eligible');
+ const promo={...security,source_id:'gmail:prize',reference:'gmail:prize',description:'Transfer in foreign currency for a chance to win up to AED 10,000 cashback',amount:'10000',currency:'AED'};
+ const promoResult=await request(JSON.stringify({records:[promo]}));
+ assert.equal((await promoResult.json()).ignoredSecurity,1,'Server rejects promotional prize as nonfinancial');
+ const reward={...security,source_id:'gmail:rewards',reference:'gmail:rewards',description:'$3.28M+ paid in rewards last month',amount:'3.28',currency:'USD'};
+ const rewardResult=await request(JSON.stringify({records:[reward]}));
+ assert.equal((await rewardResult.json()).ignoredSecurity,1,'Server rejects provider-wide reward announcement');
+ assert.match(financeUi,/chance to win/,'Older promotional emails are filtered in the browser');
+
 
  const row={source_id:'gmail:abc123',date:'2026-11-20',provider:'FTMO',description:'Payment receipt',amount:'100.01',currency:'USDT',category:'Prop firms',status:'payment_confirmed',reference:'gmail:abc123'};
  const data=JSON.stringify({records:[row]});
