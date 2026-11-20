@@ -31,6 +31,10 @@ assert.match(html,/id="gmailOverviewReviewQueue"/,'Overview has automated financ
 assert.match(html,/id="gmailLiveFeedCard"/,'Overview includes live imported financial activity');
 assert.match(html,/id="gmailAuditCard"/,'Gmail financial source records audit table exists before reporting');
 assert.match(html,/function gmailAuditRow_\(r,linked\)/,'Audit checks date amount currency and payment direction per source ID');
+assert.match(html,/quality:'nontransaction'/,'Closed accounts and nonfinancial notices are excluded from payment candidates');
+assert.match(html,/quality:errors\.length\?\(receiptSubject&&!amount\?'receipt_missing'/,'Missing amount receipt emails are prioritized separately');
+assert.match(html,/value="receipt_missing"/,'Financial audit defaults to outstanding receipt extraction work');
+
 assert.match(html,/function renderGmailAudit_\(rows\)/,'Authenticated Gmail records are displayed as auditable rows');
 assert.match(html,/gmail_received_date/,'CSV labels Gmail received date rather than unsupported settlement date');
 assert.match(html,/proposed_direction/,'Audit export includes provisional income or expense direction');
