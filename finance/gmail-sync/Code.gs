@@ -132,7 +132,14 @@ function signedPost_(records,config){
       'CF-Access-Client-Secret':config.FINANCE_ACCESS_CLIENT_SECRET}
   });
   if(response.getResponseCode()!==200)throw Error('Finance Hub rejected batch: HTTP '+response.getResponseCode()+' '+response.getContentText().slice(0,300));
-  return JSON.parse(response.getContentText());
+  const result=JSON.parse(response.getContentText());
+  // Every scheduled batch must receive an internally consistent deduplication
+  // receipt from D1; stop paging if anything looks wrong.
+  if(result.accepted!==records.length||!Number.isInteger(result.inserted)||
+      !Number.isInteger(result.duplicates)||result.inserted<0||result.duplicates<0||
+      result.inserted+result.duplicates!==result.accepted)
+    throw Error('Gmail duplicate audit failed: invalid database reconciliation receipt');
+  return result;
 }
 /**
  * Diagnostics only: signs and submits an empty ASCII-only record batch.
