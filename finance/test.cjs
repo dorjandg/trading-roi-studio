@@ -30,6 +30,9 @@ assert.match(html,/id="gmailOverviewBreakdown"/,'Overview shows classified Gmail
 assert.match(html,/id="gmailOverviewReviewQueue"/,'Overview has automated financial review queue');
 assert.match(html,/id="gmailLiveFeedCard"/,'Overview includes live imported financial activity');
 assert.match(html,/async function refreshGmailSummary_\(\)/,'Overview reads a lightweight database summary');
+assert.match(html,/server\.amountSamples\|\|\[\]/,'Live Overview displays amount-bearing records from primary server instead of stale cache');
+assert.match(html,/Recent financial emails with extracted amounts/,'Live activity panel shows actual recognized financial evidence');
+
 assert.match(html,/cloudApi\('gmail-summary'\)/,'Live Overview queries the authenticated server instead of relying on cached Gmail');
 assert.match(html,/gmailServerSummaryOwner_===cloud\.user\.id/,'Live evidence summary is scoped to the active signed-in user');
 assert.match(html,/renderGmailLiveFeed_\(\);\s*gmailLiveStatus_\('Updated '/,'Database summary refresh updates Overview and its timestamp');
@@ -145,6 +148,8 @@ assert.ok(html.includes("/^\\d{4}-\\d{2}-\\d{2}$/"),'Cash event ISO date validat
 
 const apiSource=fs.readFileSync(require('node:path').join(__dirname,'..','functions','api','finance.js'),'utf8');
 assert.match(apiSource,/resource"\)==="gmail-summary"/,'Authenticated finance API provides live summary');
+assert.match(apiSource,/amountSamples:amountSamples\.results\|\|\[\]/,'Server returns separately queried amount-bearing evidence');
+
 assert.match(apiSource,/FROM gmail_financial_evidence WHERE user_id=\?/,'Summary reads evidence for the authenticated owner only');
 assert.match(apiSource,/amountsIdentified:Number\(totals\?\.amounts_identified\|\|0\)/,'Live summary includes recognized amounts from D1');
 
