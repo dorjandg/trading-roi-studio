@@ -672,12 +672,13 @@ function renderGmailAutoAccounting_(){
  const cutoff=period==='all'?'0000-00':new Date(Date.UTC(now.getFullYear(),now.getMonth()-Number(period)+1,1)).toISOString().slice(0,7);
  const source=allGmailEvidence();
  const server=gmailServerSummaryOwner_===cloud.user.id?gmailServerSummary_:null;
- const complete=new Map(source.map(r=>[r.source_id,r]));
- if(server)for(const r of server.amountSamples||[]){
-  const old=complete.get(r.source_id);
-  complete.set(r.source_id,old?{...old,amount:r.amount||old.amount,currency:r.currency||old.currency}:r);
- }
- const rows=[...complete.values()].filter(r=>!GMAIL_NONFINANCIAL_HEADLINE.test(String(r.description||''))&&String(r.date||'').slice(0,7)>=cutoff);
+ // Do not union the server's bounded 40-row preview with cached/full
+ // evidence: that made totals jump between 37 and 79 as requests resolved.
+ // Full cloud evidence is loaded by fetchGmailEvidence; use that set alone.
+ const rows=source.filter(r=>!GMAIL_NONFINANCIAL_HEADLINE.test(String(r.description||''))&&String(r.date||'').slice(0,7)>=cutoff);
+ const fullCloudReady=gmailRemoteOwner===cloud.user.id;
+ const loadedLabel=fullCloudReady?'full cloud evidence loaded':'cached evidence · cloud loading';
+ const serverCount=server?Number(server.amountsIdentified||0):null;
  const inventory=gmailDetectedInventory_(rows,cutoff);
  const selectedRows=inventory.receipts.filter(r=>r.currency===selected&&!inventory.linked.has(r.source_id));
  const recognized=selectedRows.filter(r=>['payment_confirmed','withdrawal_confirmed','deposit_confirmed','transfer_confirmed','refund_issued','receipt'].includes(r.status));
@@ -685,7 +686,8 @@ function renderGmailAutoAccounting_(){
  const figures=[['Receipts with amounts',inventory.receipts.length],['In '+selected+' to review',selectedRows.length],['Payment-status candidates',recognized.length],['Posted accounting entries',items.length]];
  host.innerHTML=figures.map(([name,value])=>'<div class="metric-tile"><small>'+clean(name)+'</small><strong>'+value+'</strong></div>').join('');
  const sorted=[...selectedRows].sort((a,b)=>String(b.date).localeCompare(String(a.date)));
- details.innerHTML='<p class="hint">Automatically prepared: '+recognized.length+' '+clean(selected)+' payment-status candidate(s). Strict potential income '+clean(money(preliminary.income,selected))+'; expenses '+clean(money(preliminary.expense,selected))+'. Direction, settlement, and duplicate verification are still required before accounting posting.</p>'+
+ details.innerHTML='<p class="hint">'+clean(loadedLabel)+': '+inventory.receipts.length+' amount-bearing unique source IDs currently displayed.'+(serverCount!==null?' Private database reports '+serverCount+' amount-bearing notification(s) before browser filters.':'')+' These are different measures; neither is a verified ledger total.</p>'+
+ '<p class="hint">Automatically prepared: '+recognized.length+' '+clean(selected)+' payment-status candidate(s). Strict potential income '+clean(money(preliminary.income,selected))+'; expenses '+clean(money(preliminary.expense,selected))+'. Direction, settlement, and duplicate verification are still required before accounting posting.</p>'+
  '<div class="table-scroll"><table><thead><tr><th>Date</th><th>Provider</th><th>Amount</th><th>Evidence status</th><th>Action</th></tr></thead><tbody>'+
  sorted.slice(0,25).map(r=>'<tr><td>'+clean(r.date)+'</td><td>'+clean(r.provider)+'</td><td>'+clean(r.amount+' '+r.currency)+'</td><td>'+clean(r.status)+'</td><td><button type="button" class="mini-button" data-auto-review="'+clean(r.source_id)+'">Review</button></td></tr>').join('')+
  (sorted.length?'':'<tr><td colspan="5">No unrecorded amount-bearing emails in '+clean(selected)+'. Choose another currency or check Live Financial Activity below.</td></tr>')+
