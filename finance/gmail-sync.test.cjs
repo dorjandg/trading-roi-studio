@@ -12,6 +12,12 @@ assert.match(financeUi,/gmailRemoteOwner/,'Evidence preview is scoped to the aut
 assert.match(financeUi,/allGmailEvidence\(\)/,'Full cloud evidence remains visible beyond browser snapshot limits');
 assert.match(financeUi,/gmailEvidenceMore/,'More than 250 matching records can be browsed');
 assert.match(gas,/function importGmailHistoryNow\(\)/,'Manual historical catch-up is available');
+assert.match(gas,/function startGmailHistoryAutoImport\(\)/,'One-click unattended Gmail historical import exists');
+assert.match(gas,/everyMinutes\(5\)/,'Temporary catch-up scheduler is five-minute');
+assert.match(gas,/function stopGmailHistoryAutoImport_\(\)/,'History trigger has automatic cleanup');
+assert.match(gas,/trigger\.getHandlerFunction\(\)==='importGmailHistoryNow'/,'Cleanup only targets historical catch-up trigger');
+assert.match(gas,/if\(done\)\{stopGmailHistoryAutoImport_\(\)/,'Temporary trigger removed on historical completion');
+
 assert.match(gas,/FINANCE_BACKFILL_PAGE_TOKEN/,'Historical catch-up saves its paging cursor');
 assert.match(gas,/const FINANCE_BACKFILL_PAGE = 10;/,'Historical Gmail reads use smaller pages');
 assert.match(gas,/function gmailQuotaError_\(err\)/,'Gmail API quota failures are recognized');
