@@ -7,6 +7,9 @@ const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].m
 assert.match(html,/const accountingFingerprint=\(\)=>JSON\.stringify\(\[items,propAccounts,propEvents,propAudit,subscriptions,invoices\]\)/,'Cloud autosave ignores independently ingested Gmail evidence');
 assert.match(html,/<option value="all">All source rows<\/option><option value="receipt_missing">/,'Audit opens to all loaded Gmail sources, not just missing amounts');
 assert.match(html,/function gmailAuditCoverage_\(\)/,'Audit reports loaded source IDs and filtered notices');
+assert.doesNotMatch(html,/for\(const r of server\.amountSamples\|\|\[\]\)/,'A 40-item summary sample must not inflate the full Gmail receipt inventory');
+assert.match(html,/fullCloudReady=gmailRemoteOwner===cloud\.user\.id/,'Gmail Overview distinguishes full cloud load from cached evidence');
+assert.match(html,/Private database reports/,'Gmail summary reports authoritative aggregate separately from loaded browser rows');
 assert.match(html,/Counts describe this browser’s loaded source data, not necessarily every row in the private database/,'Audit counts do not masquerade as total database counts');
 assert.match(html,/function sameAccountingAsSnapshot_\(data\)/,'Cloud reload compares actual accounting with owner snapshot');
 assert.match(html,/hasSafeLocalBaseline\(snapshot\.data\)/,'Initial connection only falls back to verified snapshot data');
