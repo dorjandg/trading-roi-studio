@@ -200,3 +200,41 @@ test('Additional reset fees and dated payouts change net prop cash and ROI witho
   await expect(page.locator('#perfMetrics')).toContainText('233.3%');
   await expect(page.locator('#perfPayouts')).toContainText('2026-11-01');
 });
+
+test('Pivot presets reconcile cash flow and expose unresolved historical FX',async({page})=>{
+  const items=[
+    {id:'i',date:'2026-09-02',user:'Dori',category:'Food & Dining',provider:'Careem',type:'Expense',amount:60,currency:'EUR'},
+    {id:'r',date:'2026-09-02',user:'Dori',category:'Food & Dining',provider:'Careem',type:'Refund',amount:10,currency:'EUR'},
+    {id:'c',date:'2026-09-02',category:'Food & Dining',provider:'Careem',type:'Cancelled',amount:30,currency:'EUR'},
+    {id:'p',date:'2026-09-03',category:'Prop Firms',provider:'FTMO',type:'Income',amount:150,currency:'EUR'},
+    {id:'t',date:'2026-09-03',category:'Brokers & Trading',provider:'Liquid Brokers',type:'Transfer',amount:400,currency:'EUR'},
+    {id:'v',date:'2026-09-03',category:'Brokers & Trading',provider:'Liquid Brokers',type:'Investment',amount:40,currency:'EUR'},
+    {id:'f',date:'2026-09-03',category:'Food & Dining',provider:'Careem',type:'Expense',amount:20,currency:'AED'}
+  ];
+  await page.route(/currency-api|jsdelivr/,route=>route.fulfill({json:{date:'2026-09-04',usd:{eur:0.9,aed:3.67}}}));
+  await page.route('**/api/finance?resource=*',async route=>{
+    const resource=new URL(route.request().url()).searchParams.get('resource');
+    const data={format:'finance-hub-backup',version:2,transactions:items,propAccounts:[],propEvents:[],propAudit:[],subscriptions:[],invoices:[]};
+    const json=resource==='me'?{user:{id:'pivot-user',email:'pivot@example.com'},role:'owner',workspace_id:'pivot-workspace'}:
+      resource==='snapshot'?{revision:1,data}:resource==='members'?{members:[]}:{revision:1};
+    await route.fulfill({json});
+  });
+  await page.goto(url+'#reports');
+  await expect(page.locator('#pivotView')).toHaveValue('category');
+  await expect(page.locator('#pivotTable tfoot th')).toHaveText(['Grand total','€60.00','€160.00','€100.00','€40.00']);
+  await expect(page.locator('#pivotFxCount')).toHaveText('(1)');
+  await page.locator('#pivotFxReview summary').click();
+  await expect(page.locator('#pivotFxRows')).toContainText('AED');
+  const download=page.waitForEvent('download');
+  await page.locator('#pivotExport').click();
+  const fs=require('node:fs');
+  expect(fs.readFileSync(await (await download).path(),'utf8')).toContain('"Grand total","60.00","160.00","100.00","40.00"');
+  await page.getByRole('button',{name:'Food & Dining',exact:true}).click();
+  await page.getByRole('button',{name:'Careem',exact:true}).click();
+  await expect(page.locator('#pivotTable tbody tr')).toHaveCount(4);
+  await page.locator('#pivotView').selectOption('month');
+  await expect(page.locator('#pivotTable')).toContainText('2026-09');
+  await page.setViewportSize({width:390,height:844});
+  await expect(page.locator('#pivotView')).toBeVisible();
+  await expect(page.locator('#pivotExport')).toBeVisible();
+});
