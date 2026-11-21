@@ -35,7 +35,7 @@ export async function onRequestPost({request,env}){
  let snapshot;
  try{snapshot=current?JSON.parse(current.payload):{format:"finance-hub-backup",version:2,transactions:[],propAccounts:[],propEvents:[],propAudit:[],subscriptions:[],invoices:[]}}catch{return reply({error:"Existing snapshot unreadable"},409)}
  if(snapshot.format!=="finance-hub-backup"||snapshot.version!==2||!Array.isArray(snapshot.transactions))return reply({error:"Unsupported snapshot"},409);
- const existing=new Set(snapshot.transactions.flatMap(t=>[...String(t.notes||"").matchAll(/\[Gmail (gmail:[^\]]+)\]/g)].map(x=>x[1])));
+ const existing=new Set(snapshot.transactions.flatMap(t=>[...String(t.notes||"").matchAll(/\[Source ((?:gmail|apex):[^\]]+)\]|\[Gmail (gmail:[^\]]+)\]/g)].map(x=>x[1]||x[2])));
  let imported=0,duplicates=0,held=0;
  for(const raw of parsed.records){
   if(!raw||typeof raw!=="object"){held++;continue}
@@ -45,8 +45,8 @@ export async function onRequestPost({request,env}){
   const direction=String(raw.direction||"").trim();
   const paymentStatus=String(raw.payment_status||"").trim(),currency=String(raw.currency||"").toUpperCase();
   const amount=Number(raw.amount);
-  if(!["FTMO","Topstep"].includes(provider)){held++;continue}
-  if(String(raw.review_state)!=="Approved"||!/^gmail:[a-z0-9]{10,32}$/.test(source)||!sourceDate_(date)||
+  if(!["FTMO","Topstep","Apex Trader Funding"].includes(provider)){held++;continue}
+  if(String(raw.review_state)!=="Approved"||!(/^(?:gmail:[a-z0-9]{10,32}|apex:20\d{2}-\d{2}-\d{2}:[a-z0-9]{4,12})$/.test(source))||!sourceDate_(date)||
      !provider||provider.length>120||description.length>250||!["Expense","Income"].includes(direction)||
      !["USD","EUR","AED","GBP"].includes(currency)||!Number.isFinite(amount)||amount<=0||amount>100000000||
      Math.round(amount*100)!==amount*100&&Math.abs(Math.round(amount*100)-amount*100)>1e-6||
@@ -55,10 +55,10 @@ export async function onRequestPost({request,env}){
   if(existing.has(source)){duplicates++;continue}
   const category=categories.has(raw.category)?raw.category:"Other";
   // A matching manually entered transaction should be reconciled, not doubled.
-  if(snapshot.transactions.some(t=>!String(t.notes||"").includes("[Gmail ")&&String(t.date)===date&&
+  if(snapshot.transactions.some(t=>!/(?:\[Gmail |\[Source )/.test(String(t.notes||""))&&String(t.date)===date&&
     String(t.provider||"").toLowerCase()===provider.toLowerCase()&&String(t.currency)===currency&&
     String(t.type)===direction&&Math.abs(Number(t.amount)-amount)<0.005)){held++;continue}
-  const notes="[Gmail "+source+"] Google Sheet reviewed: "+description.slice(0,100)+"; "+String(raw.notes||"").slice(0,120);
+  const notes="[Source "+source+"] Google Sheet reviewed: "+description.slice(0,100)+"; "+String(raw.notes||"").slice(0,120);
   snapshot.transactions.push({id:crypto.randomUUID(),date,user:"Dori",provider,category,type:direction,amount,currency,notes});
   existing.add(source);imported++;
  }
