@@ -64,6 +64,7 @@ test('Mobile navigation and account panel remain usable',async({page})=>{
 });
 
 test('Financial totals exclude transfers, investments stay out of P&L, and currencies stay separate',async({page})=>{
+  await page.route(/currency-api|jsdelivr/,route=>route.fulfill({status:404,body:''}));
   await page.route('**/api/finance?resource=*',async route=>{
     const resource=new URL(route.request().url()).searchParams.get('resource');
     const response=resource==='me'?{user:{id:'math-user',email:'math@example.com'},role:'owner',workspace_id:'math-workspace'}:
