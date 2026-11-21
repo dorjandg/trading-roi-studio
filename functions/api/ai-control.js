@@ -30,7 +30,7 @@ async function authorize(request,env){
 }
 export async function onRequest({request,env}){
  if(env.AI_GATEWAY_ENABLED!=="true")return json({error:"Gateway disabled"},503);
- let principal;try{principal=await authorize(request,env)}catch{return json({error:"Unauthorized"},401,{"www-authenticate":"Bearer"})}
+ let principal;try{principal=await authorize(request,env)}catch{const origin=new URL(request.url).origin;const metadata=origin+"/.well-known/oauth-protected-resource";return json({error:"Unauthorized"},401,{"www-authenticate":'Bearer resource_metadata="'+metadata+'"'})}
  if(request.method!=="POST")return json({error:"Method not allowed"},405,{"allow":"POST"});
  let rpc;try{rpc=await request.json()}catch{return json({jsonrpc:"2.0",id:null,error:{code:-32700,message:"Parse error"}},400)}
  if(!rpc||rpc.jsonrpc!=="2.0"||typeof rpc.method!=="string")return json({jsonrpc:"2.0",id:rpc?.id??null,error:{code:-32600,message:"Invalid Request"}},400);
