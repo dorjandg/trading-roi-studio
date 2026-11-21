@@ -11,7 +11,7 @@ test('gateway disabled by default',async()=>{
 });
 test('gateway denies missing bearer token even when enabled',async()=>{
  const {onRequest}=await load();
- const response=await onRequest({request:new Request('https://example.test/api/ai-control',{method:'POST'}),env:{AI_GATEWAY_ENABLED:'true',AI_GATEWAY_ISSUER:'https://issuer.example.test',AI_GATEWAY_AUDIENCE:'finance',AI_GATEWAY_JWKS_URL:'https://issuer.example.test/jwks'}});
+ const response=await onRequest({request:new Request('https://example.test/api/ai-control',{method:'POST'}),env:{AI_GATEWAY_ENABLED:'true',AI_GATEWAY_AUTH_MODE:'jwt',AI_GATEWAY_ISSUER:'https://issuer.example.test',AI_GATEWAY_AUDIENCE:'finance',AI_GATEWAY_JWKS_URL:'https://issuer.example.test/jwks'}});
  assert.equal(response.status,401);
 });
 test('valid scoped signed JWT exposes only metadata MCP tool',async()=>{
@@ -23,7 +23,7 @@ test('valid scoped signed JWT exposes only metadata MCP tool',async()=>{
  const body=enc({iss:'https://issuer.example.test',aud:'finance',sub:'user1',scope:'finance:metadata:read',exp:Math.floor(Date.now()/1000)+300});
  const signing=header+'.'+body;
  const sig=Buffer.from(await webcrypto.subtle.sign('RSASSA-PKCS1-v1_5',pair.privateKey,Buffer.from(signing))).toString('base64url');
- const env={AI_GATEWAY_ENABLED:'true',AI_GATEWAY_ISSUER:'https://issuer.example.test',AI_GATEWAY_AUDIENCE:'finance',AI_GATEWAY_JWKS_URL:'https://issuer.example.test/jwks'};
+ const env={AI_GATEWAY_ENABLED:'true',AI_GATEWAY_AUTH_MODE:'jwt',AI_GATEWAY_ISSUER:'https://issuer.example.test',AI_GATEWAY_AUDIENCE:'finance',AI_GATEWAY_JWKS_URL:'https://issuer.example.test/jwks'};
  const oldFetch=globalThis.fetch;globalThis.fetch=async()=>new Response(JSON.stringify({keys:[jwk]}));
  try{
   const request=new Request('https://example.test/api/ai-control',{method:'POST',headers:{authorization:'Bearer '+signing+'.'+sig,'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/list'})});
@@ -40,7 +40,7 @@ test('rejects invalid signature and missing scope',async()=>{
  const jwk=await webcrypto.subtle.exportKey('jwk',pair.publicKey);jwk.kid='key2';
  const encode=o=>Buffer.from(JSON.stringify(o)).toString('base64url');
  const header=encode({alg:'RS256',kid:'key2'});
- const env={AI_GATEWAY_ENABLED:'true',AI_GATEWAY_ISSUER:'https://issuer.example.test',AI_GATEWAY_AUDIENCE:'finance',AI_GATEWAY_JWKS_URL:'https://issuer.example.test/jwks'};
+ const env={AI_GATEWAY_ENABLED:'true',AI_GATEWAY_AUTH_MODE:'jwt',AI_GATEWAY_ISSUER:'https://issuer.example.test',AI_GATEWAY_AUDIENCE:'finance',AI_GATEWAY_JWKS_URL:'https://issuer.example.test/jwks'};
  const oldFetch=globalThis.fetch;globalThis.fetch=async()=>new Response(JSON.stringify({keys:[jwk]}));
  try{
   for(const [scope,tamper] of [['other:scope',false],['finance:metadata:read',true]]){
@@ -61,7 +61,7 @@ test('rejects expired tokens and incorrect audience or issuer',async()=>{
  const jwk=await webcrypto.subtle.exportKey('jwk',pair.publicKey);jwk.kid='key3';
  const encode=o=>Buffer.from(JSON.stringify(o)).toString('base64url');
  const header=encode({alg:'RS256',kid:'key3'});
- const env={AI_GATEWAY_ENABLED:'true',AI_GATEWAY_ISSUER:'https://issuer.example.test',AI_GATEWAY_AUDIENCE:'finance',AI_GATEWAY_JWKS_URL:'https://issuer.example.test/jwks'};
+ const env={AI_GATEWAY_ENABLED:'true',AI_GATEWAY_AUTH_MODE:'jwt',AI_GATEWAY_ISSUER:'https://issuer.example.test',AI_GATEWAY_AUDIENCE:'finance',AI_GATEWAY_JWKS_URL:'https://issuer.example.test/jwks'};
  const oldFetch=globalThis.fetch;globalThis.fetch=async()=>new Response(JSON.stringify({keys:[jwk]}));
  try{
   const now=Math.floor(Date.now()/1000);
@@ -77,7 +77,7 @@ test('rejects expired tokens and incorrect audience or issuer',async()=>{
 
 test('unauthorized MCP client receives OAuth resource metadata location',async()=>{
  const {onRequest}=await load();
- const response=await onRequest({request:new Request('https://gateway.example.test/api/ai-control',{method:'POST'}),env:{AI_GATEWAY_ENABLED:'true',AI_GATEWAY_ISSUER:'https://issuer.example.test',AI_GATEWAY_AUDIENCE:'finance',AI_GATEWAY_JWKS_URL:'https://issuer.example.test/jwks'}});
+ const response=await onRequest({request:new Request('https://gateway.example.test/api/ai-control',{method:'POST'}),env:{AI_GATEWAY_ENABLED:'true',AI_GATEWAY_AUTH_MODE:'jwt',AI_GATEWAY_ISSUER:'https://issuer.example.test',AI_GATEWAY_AUDIENCE:'finance',AI_GATEWAY_JWKS_URL:'https://issuer.example.test/jwks'}});
  assert.equal(response.status,401);
  assert.equal(response.headers.get('www-authenticate'),'Bearer resource_metadata="https://gateway.example.test/.well-known/oauth-protected-resource"');
 });
