@@ -458,7 +458,10 @@ function mirrorFinanceEvidenceSheet_(records){
 // No row moves to the website until its Review State is exactly "Approved".
 // The spreadsheet ID lives in Script Properties, not in source control.
 function pushApprovedFinanceSheet_(){
- const sheet=financeReviewSheet_();
+ const sheetId=PropertiesService.getScriptProperties().getProperty('FINANCE_SHEET_ID');
+ if(!sheetId)throw Error('Missing FINANCE_SHEET_ID script property');
+ const sheet=SpreadsheetApp.openById(sheetId).getSheetByName('Approved Ledger');
+ if(!sheet)throw Error('Missing Approved Ledger tab');
  if(!sheet||sheet.getLastRow()<=1)return;
  const count=sheet.getLastRow()-1,rows=sheet.getRange(2,1,count,11).getDisplayValues();
  const approved=[];
@@ -699,4 +702,9 @@ function restartFullMailboxScan(){
 function stopFullMailboxScan(){
  stopFullMailboxScanTrigger_();
  fullMailboxScanStatusSheet_({...fullMailboxScanState_(),status:'Stopped manually'});
+}
+
+/** Manual one-click import of approved Finance Hub ledger transactions. */
+function runApexFinanceImport(){
+ pushApprovedFinanceSheet_();
 }
