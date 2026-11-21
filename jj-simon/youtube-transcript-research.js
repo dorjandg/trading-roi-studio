@@ -153,4 +153,13 @@ jjYTResearch.sections.push({title:"Public video — Five trading rules versus co
 "Sources: public JJ video https://www.youtube.com/watch?v=RGYbTD1j628 ; Module 18 course timestamp references retained privately. Native captions are not chart-verified, and historical performance claims remain unverified."
 ],src:[]});
 jjYTResearchMeta.push({title:"5 Rules Every Prop Firm Trader Must Know",sources:[["RGYbTD1j628","00:15–01:10"],["RGYbTD1j628","01:12–02:04"],["RGYbTD1j628","01:59–03:26"],["RGYbTD1j628","03:27–04:16"]],status:"Public machine captions; course milestone comparisons are version-specific. Charts, profitability and provider terms not independently verified."});
+
+// Course/public comparison (2026-11-21): concise paraphrase; paid transcript remains private.
+jjYTResearch.sections.push({title:"Public versus course: what actually changes fair price?",points:[
+"Public JJ video at 01:09–01:28 describes news and session opens as the main fair-price-changing events, while distinguishing an opening price move from a change in underlying fair value.",
+"Module 15 course lesson How Does Volume Change Fair Price (01:53–02:29) revises a working 9:30 reversion anchor after a 9:45 upward continuation and consolidation, despite no separate new session being described.",
+"Treat economic fair value and the working intraday trading anchor as potentially different concepts, not an established JJ-defined taxonomy. A large candle is used as an informal activity proxy; traded volume, chart chronology and the intended reconciliation remain unverified.",
+"Public video: https://www.youtube.com/watch?v=UVKVSWKFlvo&t=69s . Private source: How Does Volume Change Fair Price, 01:53–02:29 (course reference available in private research)."
+],src:[]});
+jjYTResearchMeta.push({title:"Fair-price definition: public/course version conflict",sources:[["UVKVSWKFlvo","01:09–01:28"]],status:"Public captions and private course transcript compared; chart/audio and intended definitions unverified."});
 renderNav();render();
