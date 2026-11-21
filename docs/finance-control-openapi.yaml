@@ -1,0 +1,76 @@
+openapi: 3.1.0
+info:
+  title: Finance Hub Control Discovery
+  version: 0.1.0
+  description: >
+    Internal API contract for the authenticated Finance Hub capability discovery.
+    Not a public API key interface or an MCP server. Cloudflare Access authentication
+    and existing workspace membership are mandatory.
+servers:
+  - url: https://fin-kac.pages.dev
+paths:
+  /api/finance:
+    get:
+      operationId: discoverFinanceCapabilities
+      summary: Discover authenticated user's Finance Hub API capabilities
+      security:
+        - cloudflareAccess: []
+      parameters:
+        - name: resource
+          in: query
+          required: true
+          schema:
+            type: string
+            const: control-capabilities
+      responses:
+        '200':
+          description: Authenticated, workspace-scoped capability summary
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [service, apiVersion, authenticated, workspaceScoped, role, capabilities, asOf]
+                properties:
+                  service:
+                    const: finance-hub
+                  apiVersion:
+                    type: integer
+                  authenticated:
+                    const: true
+                  workspaceScoped:
+                    const: true
+                  role:
+                    type: string
+                  capabilities:
+                    type: object
+                    required: [read, write, admin]
+                    properties:
+                      read:
+                        type: array
+                        items: {type: string}
+                      write:
+                        type: array
+                        items: {type: string}
+                      admin:
+                        type: array
+                        items: {type: string}
+                  asOf:
+                    type: string
+                    format: date-time
+        '401':
+          description: Missing or invalid Cloudflare Access identity
+        '403':
+          description: User has no workspace membership
+        '503':
+          description: Database unavailable
+components:
+  securitySchemes:
+    cloudflareAccess:
+      type: http
+      scheme: bearer
+      bearerFormat: Cloudflare Access JWT
+      description: >
+        The existing Pages Function verifies a signed Cloudflare Access JWT
+        supplied by the Cloudflare Access integration. Do not paste or share
+        JWTs with ChatGPT; an MCP gateway requires a separate approved OAuth
+        identity flow and secure server-to-server authorization.

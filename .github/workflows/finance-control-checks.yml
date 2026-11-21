@@ -1,0 +1,27 @@
+name: Finance Control API checks
+on:
+  pull_request:
+    paths:
+      - 'functions/api/finance.js'
+      - 'functions/api/ai-control.js'
+      - 'functions/.well-known/oauth-protected-resource.js'
+      - 'tests/finance-control.test.cjs'
+      - 'tests/ai-control-gateway.test.cjs'
+      - 'tests/ai-control-oauth-discovery.test.cjs'
+      - '.github/workflows/finance-control-checks.yml'
+  workflow_dispatch:
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check API syntax
+        run: |
+          node --check functions/api/finance.js
+          node --check functions/api/ai-control.js
+          node --check functions/.well-known/oauth-protected-resource.js
+      - name: Run control API tests
+        run: node --test tests/finance-control.test.cjs tests/ai-control-gateway.test.cjs tests/ai-control-oauth-discovery.test.cjs
