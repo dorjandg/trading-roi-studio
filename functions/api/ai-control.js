@@ -29,7 +29,7 @@ async function authorize(request,env){
  return {subject:claims.sub};
 }
 async function authorizeAccess(request,env){
- const domain=String(env.CF_ACCESS_TEAM_DOMAIN||"").replace(/\\/$/,"");
+ const domain=String(env.CF_ACCESS_TEAM_DOMAIN||"").replace(/\/$/,"");
  const audience=String(env.AI_GATEWAY_ACCESS_AUD||"");
  const token=request.headers.get("cf-access-jwt-assertion")||"";
  if(!domain.startsWith("https://")||!audience||!token)throw Error("Access identity unavailable");
