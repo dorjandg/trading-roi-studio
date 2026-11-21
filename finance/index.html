@@ -233,7 +233,7 @@ const rows=pivotDimensions('pivotRows'),cols=pivotDimensions('pivotCols'),measur
 const data=items.filter(x=>(!provider.value||x.provider===provider.value)&&(!$('pivotType').value||x.type===$('pivotType').value)&&(!$('pivotFrom').value||x.date>=$('pivotFrom').value)&&(!$('pivotTo').value||x.date<=$('pivotTo').value));
 const rk=[...new Set(data.map(x=>pivotKey(x,rows)))].sort(),ck=[...new Set(data.map(x=>pivotKey(x,cols)))].sort();
 const cells=new Map(),rowTotals=new Map(),colTotals=new Map();let grand=0,missing=0;
-for(const x of data){const val=measure==='count'?1:fxValue(x,target);if(val===null){missing++;continue}const a=pivotKey(x,rows),b=pivotKey(x,cols),key=JSON.stringify([a,b]);cells.set(key,(cells.get(key)||0)+val);const netVal=measure==='count'?val:(x.type==='Expense'?-val:x.type==='Income'?val:0);rowTotals.set(a,(rowTotals.get(a)||0)+netVal);colTotals.set(b,(colTotals.get(b)||0)+netVal);grand+=netVal}
+for(const x of data){const val=measure==='count'?1:fxValue(x,target);if(val===null){missing++;continue}const a=pivotKey(x,rows),b=pivotKey(x,cols),key=JSON.stringify([a,b]);cells.set(key,(cells.get(key)||0)+val);const netVal=measure==='count'?val:(x.type==='Expense'?-val:x.type==='Income'?val:0);rowTotals.set(a,(rowTotals.get(a)||0)+netVal);colTotals.set(b,(colTotals.get(b)||0)+val);grand+=netVal}
 const fmt=v=>measure==='count'?String(v):money(v,target);
 const header=[rows.map(f=>pivotFields[f]).join(' / ')||'All',...ck,measure==='count'?'Count':'Net (Income − Expenses)'];pivotExportRows=[header];
 let html='<table class="pivot-result"><thead><tr>'+header.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>';
