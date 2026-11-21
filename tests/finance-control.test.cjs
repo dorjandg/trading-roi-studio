@@ -29,3 +29,38 @@ test('missing database binding fails closed', async () => {
   const response=await onRequest({request:new Request('https://example.test/api/finance?resource=control-capabilities'),env:{}});
   assert.equal(response.status,503);
 });
+
+test('valid signed identity and membership return scoped capabilities without database writes', async () => {
+  const {webcrypto}=require('node:crypto');
+  const {onRequest}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+  const pair=await webcrypto.subtle.generateKey({name:'RSASSA-PKCS1-v1_5',modulusLength:2048,publicExponent:new Uint8Array([1,0,1]),hash:'SHA-256'},true,['sign','verify']);
+  const jwk=await webcrypto.subtle.exportKey('jwk',pair.publicKey);
+  jwk.kid='test-key';
+  const encode=obj=>Buffer.from(JSON.stringify(obj)).toString('base64url');
+  const head=encode({alg:'RS256',kid:'test-key'});
+  const body=encode({iss:'https://team.example.test',aud:['finance-audience'],exp:Math.floor(Date.now()/1000)+300,sub:'user-123',email:'user@example.test'});
+  const payload=head+'.'+body;
+  const signature=Buffer.from(await webcrypto.subtle.sign('RSASSA-PKCS1-v1_5',pair.privateKey,Buffer.from(payload))).toString('base64url');
+  const previousFetch=globalThis.fetch;
+  globalThis.fetch=async url=>{
+    assert.equal(url,'https://team.example.test/cdn-cgi/access/certs');
+    return new Response(JSON.stringify({keys:[jwk]}),{status:200});
+  };
+  let writes=0;
+  const db={prepare(sql){
+    assert.match(sql,/SELECT m.workspace_id,m.role FROM memberships/);
+    return {bind(...args){assert.deepEqual(args,['user-123']);return {async first(){return {workspace_id:'workspace-123',role:'member'}}}}};
+  },run(){writes++},batch(){writes++}};
+  try {
+    const request=new Request('https://example.test/api/finance?resource=control-capabilities',{headers:{'cf-access-jwt-assertion':payload+'.'+signature}});
+    const response=await onRequest({request,env:{FINANCE_DB:db,CF_ACCESS_TEAM_DOMAIN:'https://team.example.test',CF_ACCESS_AUD:'finance-audience'}});
+    assert.equal(response.status,200);
+    const data=await response.json();
+    assert.equal(data.service,'finance-hub');
+    assert.equal(data.workspaceScoped,true);
+    assert.equal(data.role,'member');
+    assert.ok(data.capabilities.read.includes('transactions'));
+    assert.deepEqual(data.capabilities.admin,[]);
+    assert.equal(writes,0);
+  } finally {globalThis.fetch=previousFetch}
+});
