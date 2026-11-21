@@ -53,7 +53,7 @@ assert.match(gas,/function decodeFinanceHtml_\(markup\)/,'HTML-only financial re
 assert.match(gas,/function financePaymentSubject_\(subject\)/,'Gmail uses payment-only subject gate');
 assert.match(gas,/!\['FTMO','Topstep'\]\.includes\(provider\[0\]\)/,'Gmail scanner discards non FTMO/Topstep companies');
 assert.match(gas,/!\['FTMO','Topstep'\]\.includes\(String\(r\.provider\)\)/,'Sheet staging skips other providers');
-assert.match(gas,/!\['FTMO','Topstep'\]\.includes\(String\(row\[1\]\)\.trim\(\)\)/,'Approved Sheet transfer is limited to two firms');
+assert.match(gas,/!\['FTMO','Topstep','Apex Trader Funding'\]\.includes\(String\(row\[1\]\)\.trim\(\)\)/,'Approved Sheet transfer is limited to FTMO, Topstep and Apex Trader Funding');
 assert.match(gas,/!financePaymentSubject_\(subject\)/,'Market alerts are excluded before body decoding');
 assert.match(gas,/order confirmation\|order placed/,'Unpaid order confirmations do not become settled expenses');
 
