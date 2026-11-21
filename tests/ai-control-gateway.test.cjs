@@ -81,3 +81,23 @@ test('unauthorized MCP client receives OAuth resource metadata location',async()
  assert.equal(response.status,401);
  assert.equal(response.headers.get('www-authenticate'),'Bearer resource_metadata="https://gateway.example.test/.well-known/oauth-protected-resource"');
 });
+
+test('Cloudflare Access mode verifies assertion and requires existing membership',async()=>{
+ const {onRequest}=await load();
+ const pair=await webcrypto.subtle.generateKey({name:'RSASSA-PKCS1-v1_5',modulusLength:2048,publicExponent:new Uint8Array([1,0,1]),hash:'SHA-256'},true,['sign','verify']);
+ const jwk=await webcrypto.subtle.exportKey('jwk',pair.publicKey);jwk.kid='access-key';
+ const encode=o=>Buffer.from(JSON.stringify(o)).toString('base64url');
+ const signing=encode({alg:'RS256',kid:'access-key'})+'.'+encode({iss:'https://team.cloudflareaccess.com',aud:['mcp-app-aud'],sub:'user-1',email:'member@example.test',exp:Math.floor(Date.now()/1000)+300});
+ const signature=Buffer.from(await webcrypto.subtle.sign('RSASSA-PKCS1-v1_5',pair.privateKey,Buffer.from(signing))).toString('base64url');
+ const env={AI_GATEWAY_ENABLED:'true',AI_GATEWAY_AUTH_MODE:'cloudflare-access',CF_ACCESS_TEAM_DOMAIN:'https://team.cloudflareaccess.com',AI_GATEWAY_ACCESS_AUD:'mcp-app-aud'};
+ let reads=0,writes=0;
+ env.FINANCE_DB={prepare(sql){assert.match(sql,/SELECT m.workspace_id/);reads++;return {bind(id){assert.equal(id,'user-1');return {async first(){return {workspace_id:'workspace-1',role:'member'}}}}}}};
+ const oldFetch=globalThis.fetch;globalThis.fetch=async()=>new Response(JSON.stringify({keys:[jwk]}));
+ try{
+  const request=new Request('https://gateway.example.test/api/ai-control',{method:'POST',headers:{'cf-access-jwt-assertion':signing+'.'+signature,'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/list'})});
+  const response=await onRequest({request,env});
+  assert.equal(response.status,200);assert.equal((await response.json()).result.tools.length,1);assert.equal(reads,1);assert.equal(writes,0);
+  env.FINANCE_DB={prepare(){return {bind(){return {async first(){return null}}}}}};
+  assert.equal((await onRequest({request:request.clone(),env})).status,401);
+ }finally{globalThis.fetch=oldFetch}
+});
