@@ -4,8 +4,10 @@ on:
     paths:
       - 'functions/api/finance.js'
       - 'functions/api/ai-control.js'
+      - 'functions/.well-known/oauth-protected-resource.js'
       - 'tests/finance-control.test.cjs'
       - 'tests/ai-control-gateway.test.cjs'
+      - 'tests/ai-control-oauth-discovery.test.cjs'
       - '.github/workflows/finance-control-checks.yml'
   workflow_dispatch:
 jobs:
@@ -20,5 +22,6 @@ jobs:
         run: |
           node --check functions/api/finance.js
           node --check functions/api/ai-control.js
+          node --check functions/.well-known/oauth-protected-resource.js
       - name: Run control API tests
-        run: node --test tests/finance-control.test.cjs tests/ai-control-gateway.test.cjs
+        run: node --test tests/finance-control.test.cjs tests/ai-control-gateway.test.cjs tests/ai-control-oauth-discovery.test.cjs
