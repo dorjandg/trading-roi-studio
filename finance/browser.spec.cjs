@@ -222,14 +222,14 @@ test('Pivot presets reconcile cash flow and expose unresolved historical FX',asy
   });
   await page.goto(url+'#reports');
   await expect(page.locator('#pivotView')).toHaveValue('category');
-  await expect(page.locator('#pivotTable tfoot th')).toHaveText(['Grand total','€60.00','€160.00','€100.00','€40.00']);
+  await expect(page.locator('#pivotTable tfoot th')).toHaveText(['Grand total','€60.00','€150.00','€100.00','€40.00','€10.00']);
   await expect(page.locator('#pivotFxCount')).toHaveText('(1)');
   await page.locator('#pivotFxReview summary').click();
   await expect(page.locator('#pivotFxRows')).toContainText('AED');
   const download=page.waitForEvent('download');
   await page.locator('#pivotExport').click();
   const fs=require('node:fs');
-  expect(fs.readFileSync(await (await download).path(),'utf8')).toContain('"Grand total","60.00","160.00","100.00","40.00"');
+  expect(fs.readFileSync(await (await download).path(),'utf8')).toContain('"Grand total","60.00","150.00","100.00","40.00","10.00"');
   await page.getByRole('button',{name:'Food & Dining',exact:true}).click();
   await page.getByRole('button',{name:'Careem',exact:true}).click();
   await expect(page.locator('#pivotTable tbody tr')).toHaveCount(4);
