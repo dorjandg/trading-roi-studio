@@ -216,7 +216,7 @@ function isCancelledTransaction(x){return /^(cancelled|canceled|void)$/i.test(x.
 function fxMissing(data,target){return data.filter(x=>!excludedFromReporting(x)&&fxValue(x,target)===null).length}
 async function fetchFxDate(date){if(fxDaily.has(date)||fxPending.has(date)||!/^(19|20)\d\d-\d\d-\d\d$/.test(date))return;if(Date.now()-(fxAttempted.get(date)||0)<300000)return;fxAttempted.set(date,Date.now());fxPending.add(date);
  try{let payload=null;for(const url of ['https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@'+date+'/v1/currencies/usd.min.json','https://'+date+'.currency-api.pages.dev/v1/currencies/usd.json']){try{const res=await fetch(url);if(!res.ok)continue;payload=await res.json();if(payload?.date===date&&payload.usd)break}catch(e){}}
- if(payload?.date===date&&payload.usd){const usd=payload.usd;const row={date:payload.date||date,source:'currency-api daily reference',usd};fxDaily.set(date,row);try{localStorage.setItem('finance-fx-daily-v1',JSON.stringify(Object.fromEntries(fxDaily)))}catch(e){}clearTimeout(fxTimer);fxTimer=setTimeout(()=>render(),300)}
+ if(payload?.date===date&&payload.usd){const usd=payload.usd;const row={date:payload.date||date,source:'currency-api daily reference',usd};fxDaily.set(date,row);try{localStorage.setItem('finance-fx-daily-v1',JSON.stringify(Object.fromEntries([...fxDaily].slice(-100))))}catch(e){}clearTimeout(fxTimer);fxTimer=setTimeout(()=>render(),300)}
  }finally{fxPending.delete(date)}
 }
 let fxQueueRunning=false;function fxCoverageDates(years=5){const cutoff=new Date();cutoff.setUTCFullYear(cutoff.getUTCFullYear()-years);const min=cutoff.toISOString().slice(0,10);return [...new Set(items.filter(x=>x.date&&x.currency&&x.date>=min&&x.date<=new Date().toISOString().slice(0,10)).map(x=>x.date))].sort()}
@@ -425,7 +425,15 @@ let status='Valid';if(issue||!/^\d{4}-\d{2}-\d{2}$/.test(x.date)||!Number.isFini
    if(!isValid(snapshot.data))throw Error('Cloud snapshot format is not supported.');
    const b=snapshot.data,values=[b.transactions,b.propAccounts,b.propEvents,b.propAudit,b.subscriptions,b.invoices,Array.isArray(b.gmailEvidence)?b.gmailEvidence:[]];
    const previous=keys.map(k=>localStorage.getItem(k));
-   try{keys.forEach((k,i)=>localStorage.setItem(k,JSON.stringify(values[i])))}
+   try{
+     const saveRows=()=>keys.forEach((k,i)=>localStorage.setItem(k,JSON.stringify(values[i])));
+     try{saveRows()}catch(e){
+       if(e.name!=='QuotaExceededError')throw e;
+       localStorage.removeItem('finance-fx-daily-v1');
+       localStorage.removeItem(markerKey(cloud.user.id));
+       saveRows();
+     }
+   }
    catch(e){keys.forEach((k,i)=>{try{if(previous[i]===null)localStorage.removeItem(k);else localStorage.setItem(k,previous[i])}catch{}});throw e}
    [items,propAccounts,propEvents,propAudit,subscriptions,invoices,gmailEvidence]=values;
    if(b.preferences&&typeof b.preferences==='object')for(const id of preferencesIds){const el=document.getElementById(id),v=b.preferences[id];if(el&&typeof v==='string'&&[...el.options].some(o=>o.value===v))el.value=v;}
