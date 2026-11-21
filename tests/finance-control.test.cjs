@@ -64,3 +64,19 @@ test('valid signed identity and membership return scoped capabilities without da
     assert.equal(writes,0);
   } finally {globalThis.fetch=previousFetch}
 });
+
+test('rejects malformed JWT without querying workspace membership', async () => {
+  const {onRequest}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+  let queries=0;
+  const db={prepare(){queries++;throw Error('database must not be queried')}};
+  const request=new Request('https://example.test/api/finance?resource=control-capabilities',{headers:{'cf-access-jwt-assertion':'malformed.token'}});
+  const response=await onRequest({request,env:{FINANCE_DB:db,CF_ACCESS_TEAM_DOMAIN:'https://team.example.test',CF_ACCESS_AUD:'finance-audience'}});
+  assert.equal(response.status,401);
+  assert.equal(queries,0);
+});
+test('capability discovery is not exposed to unauthenticated POST', async () => {
+  const {onRequest}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+  const request=new Request('https://example.test/api/finance?resource=control-capabilities',{method:'POST'});
+  const response=await onRequest({request,env:{FINANCE_DB:{}}});
+  assert.equal(response.status,401);
+});
