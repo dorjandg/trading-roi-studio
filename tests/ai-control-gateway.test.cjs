@@ -98,6 +98,6 @@ test('Cloudflare Access mode verifies assertion and requires existing membership
   const response=await onRequest({request,env});
   assert.equal(response.status,200);assert.equal((await response.json()).result.tools.length,1);assert.equal(reads,1);assert.equal(writes,0);
   env.FINANCE_DB={prepare(){return {bind(){return {async first(){return null}}}}}};
-  assert.equal((await onRequest({request:request.clone(),env})).status,401);
+  assert.equal((await onRequest({request:new Request('https://gateway.example.test/api/ai-control',{method:'POST',headers:{'cf-access-jwt-assertion':signing+'.'+signature,'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:2,method:'tools/list'})}),env})).status,401);
  }finally{globalThis.fetch=oldFetch}
 });
