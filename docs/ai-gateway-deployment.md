@@ -1,40 +1,62 @@
-# AI Control Gateway — Deployment prerequisites
+# AI Control Gateway — Cloudflare Access authentication plan
 
-**Status: prototype only. Do not enable or merge into production until reviewed.**
+**Status: development only. Gateway remains disabled; do not deploy or merge yet.**
 
-The endpoint `POST /api/ai-control` implements a limited JSON-RPC/MCP surface:
-`initialize`, `notifications/initialized`, `tools/list`, and `tools/call` for
-`finance_api_contract` only. It does not access Finance Hub D1 or financial data.
+## Decision
 
-## Required configuration
+Reuse the existing Cloudflare Access login as the **human identity and access-policy layer**.
+Finance Hub already verifies the `Cf-Access-Jwt-Assertion` JWT with Cloudflare's
+`/cdn-cgi/access/certs` signing keys and checks workspace membership in D1.
 
-- `AI_GATEWAY_ENABLED`: `true` only after the identity provider is configured and tested.
-- `AI_GATEWAY_ISSUER`: exact HTTPS issuer string in access-token `iss`.
-- `AI_GATEWAY_AUDIENCE`: expected token `aud` value.
-- `AI_GATEWAY_JWKS_URL`: trusted HTTPS JWKS URL for issuer's signing keys.
+**Important:** A Cloudflare Access application JWT is **not automatically an OAuth
+access token for a ChatGPT MCP client**. The existing Access JWT generally lacks
+the required OAuth `scope` claim, and Access login alone does not implement
+OAuth authorization-server discovery, authorization-code + PKCE, consent, and
+client registration. Do **not** set `AI_GATEWAY_ISSUER` to the Access team domain
+and assume ChatGPT OAuth will work.
 
-The access token must be a signed RS256 JWT with a `sub`, valid `exp`,
-matching issuer and audience, and `finance:metadata:read` in `scope`.
-All configuration must be set as trusted deployment environment variables,
-not supplied by callers. No tokens or secrets should be pasted into chat.
+## Architecture
 
-## Not yet supported
+1. ChatGPT connects to a purpose-built MCP OAuth resource endpoint.
+2. An OAuth authorization server performs authorization-code + PKCE with a
+   user-facing sign-in that delegates human authentication to Cloudflare Access.
+3. The authorization server issues **separate, audience-bound, scoped, short-lived**
+   tokens for the MCP resource (scope `finance:metadata:read` initially).
+4. The MCP endpoint verifies token signature, issuer, audience, expiry, and scope.
+5. Before exposing user-specific Finance Hub data, map the verified OAuth subject
+   to an authorized workspace member. Never trust a user-supplied workspace ID.
+6. Only after read-only staging validation, consider separately approved writes.
 
-- OAuth discovery and interactive consent/authorization flow for ChatGPT
-- RFC 9728 protected resource metadata, OAuth client registration
-- MCP session negotiation and complete transport compatibility
-- Authenticated finance data retrieval, workspace authorization propagation
-- Writes, deployments, or background jobs
-- Production smoke test and security review
+## Current implementation
 
-**Do not claim that ChatGPT is connected until a real client successfully
-authenticates and calls the gateway.**
+- `POST /api/ai-control`: JWT-verifying metadata-only MCP prototype, disabled
+  unless `AI_GATEWAY_ENABLED=true`.
+- `GET /.well-known/oauth-protected-resource`: protected-resource metadata,
+  disabled by default and tied to a configured same-origin resource URL.
+- `GET /api/finance?resource=control-capabilities`: existing Access-authenticated
+  workspace-scoped discovery endpoint; not a public MCP endpoint.
+- Automated tests cover JWT signature, issuer, audience, expiry, scope, and
+  fail-closed behavior. No financial database mutations.
 
-## Proposed rollout
+## Required environment configuration (future staging)
 
-1. Review identity provider and OAuth client registration options.
-2. Add OAuth protected resource metadata and enforce issuer binding.
-3. Validate MCP transport compatibility using a real client in staging.
-4. Deploy with gateway disabled, test 503 fail-closed behavior.
-5. Enable metadata-only access in staging and test valid/invalid tokens.
-6. Obtain explicit approval before exposing finance data or write operations.
+- `AI_GATEWAY_ENABLED`: leave unset until OAuth server and staging tests exist.
+- `AI_GATEWAY_ISSUER`: exact OAuth token issuer (not blindly Access team URL).
+- `AI_GATEWAY_AUDIENCE`: OAuth resource audience.
+- `AI_GATEWAY_JWKS_URL`: OAuth issuer's trusted signing keys.
+- `AI_GATEWAY_RESOURCE_URL`: full public HTTPS URL ending in `/api/ai-control`.
+
+Do not paste tokens, client secrets, or signing keys into chat or GitHub.
+
+## Outstanding before any live ChatGPT connection
+
+- Choose or build a standards-compliant OAuth authorization server that
+  delegates login to Cloudflare Access.
+- Provide authorization-server discovery, PKCE, client registration/consent
+  compatible with the ChatGPT MCP client.
+- Review MCP HTTP transport and protocol compliance, plus OAuth resource metadata.
+- Stage and test real client sign-in, denied access, and token renewal.
+- Security review, explicit approval, then deploy metadata-only integration.
+
+**Do not claim ChatGPT is connected until a real client successfully signs in
+and calls the gateway.**
