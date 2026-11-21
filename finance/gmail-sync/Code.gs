@@ -463,7 +463,7 @@ function pushApprovedFinanceSheet_(){
  const count=sheet.getLastRow()-1,rows=sheet.getRange(2,1,count,11).getDisplayValues();
  const approved=[];
  for(const row of rows){
-  if(String(row[8]).trim()!=='Approved'||!['FTMO','Topstep'].includes(String(row[1]).trim()))continue;
+  if(String(row[8]).trim()!=='Approved'||!['FTMO','Topstep','Apex Trader Funding'].includes(String(row[1]).trim()))continue;
   const amount=String(row[3]).replace(/,/g,'').trim();
   const date=String(row[0]).trim();
   if(!/^20[0-9]{2}-[0-9]{2}-[0-9]{2}$/.test(date)||!amount)continue;
