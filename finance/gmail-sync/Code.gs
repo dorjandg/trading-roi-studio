@@ -708,3 +708,49 @@ function stopFullMailboxScan(){
 function runApexFinanceImport(){
  pushApprovedFinanceSheet_();
 }
+
+/**
+ * One-time quota recovery: pause Gmail polling and schedule approved-ledger
+ * import retry. Does not delete transaction data or existing script properties.
+ * Install by running scheduleApexImportAfterQuotaReset once.
+ */
+function scheduleApexImportAfterQuotaReset(){
+ const p=PropertiesService.getScriptProperties();
+ const existing=ScriptApp.getProjectTriggers();
+ const paused=[];
+ for(const trigger of existing){
+  const fn=trigger.getHandlerFunction();
+  if(['syncGmailFinance','importGmailHistoryNow','continueFullMailboxScan'].includes(fn)){
+   paused.push(fn);
+   ScriptApp.deleteTrigger(trigger);
+  }
+  if(fn==='retryApexFinanceImport')ScriptApp.deleteTrigger(trigger);
+ }
+ p.setProperty('APEX_PAUSED_FINANCE_TRIGGERS',JSON.stringify([...new Set(paused)]));
+ ScriptApp.newTrigger('retryApexFinanceImport').timeBased().after(26*60*60*1000).create();
+ console.log('Scheduled Apex ledger import retry after 26 hours; paused Gmail triggers: '+paused.join(', '));
+}
+function retryApexFinanceImport(){
+ try{
+  pushApprovedFinanceSheet_();
+ }catch(err){
+  if(/Service invoked too many times for one day: urlfetch/i.test(String(err))){
+   console.warn('UrlFetch daily quota still exhausted; retry in 12 hours.');
+   for(const t of ScriptApp.getProjectTriggers())if(t.getHandlerFunction()==='retryApexFinanceImport')ScriptApp.deleteTrigger(t);
+   ScriptApp.newTrigger('retryApexFinanceImport').timeBased().after(12*60*60*1000).create();
+   return;
+  }
+  throw err;
+ }
+ for(const t of ScriptApp.getProjectTriggers())if(t.getHandlerFunction()==='retryApexFinanceImport')ScriptApp.deleteTrigger(t);
+ const p=PropertiesService.getScriptProperties();
+ const paused=JSON.parse(p.getProperty('APEX_PAUSED_FINANCE_TRIGGERS')||'[]');
+ const active=new Set(ScriptApp.getProjectTriggers().map(t=>t.getHandlerFunction()));
+ for(const fn of paused){
+  if(active.has(fn))continue;
+  if(fn==='syncGmailFinance')ScriptApp.newTrigger(fn).timeBased().everyMinutes(15).create();
+  else ScriptApp.newTrigger(fn).timeBased().everyMinutes(5).create();
+ }
+ p.deleteProperty('APEX_PAUSED_FINANCE_TRIGGERS');
+ console.log('Apex import completed; restored paused Gmail triggers: '+paused.join(', '));
+}
