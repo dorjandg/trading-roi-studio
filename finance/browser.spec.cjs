@@ -73,6 +73,7 @@ test('Financial totals exclude transfers, investments stay out of P&L, and curre
   await page.goto(url);
   await expect(page.locator('#signedInEmail')).toHaveText('math@example.com');
   await page.locator('[data-page="transactions"]').first().click();
+  await page.locator('#entry').evaluate(form=>form.closest('details').open=true);
   for(const [type,amount,currency] of [['Income','2000','USD'],['Expense','450','USD'],['Investment','300','USD'],['Transfer','999','USD'],['Expense','90','EUR']]){
     await page.locator('#entry [name="date"]').fill('2026-10-15');
     await page.locator('#entry [name="user"]').fill('Dori');
