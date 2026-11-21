@@ -60,3 +60,7 @@ Do not paste tokens, client secrets, or signing keys into chat or GitHub.
 
 **Do not claim ChatGPT is connected until a real client successfully signs in
 and calls the gateway.**
+
+## Staging readiness gate (2026-11-21)
+
+The GitHub checks passed at commit `47e8c9e`, but **this is not a production readiness sign-off**. Before staging, configure a separate Cloudflare Access MCP application and confirm Managed OAuth availability and exact ChatGPT OAuth callback URL from the actual client registration flow. The gateway's `AI_GATEWAY_AUTH_MODE=cloudflare-access` validates the signed `Cf-Access-Jwt-Assertion` with `CF_ACCESS_TEAM_DOMAIN` and the **dedicated** `AI_GATEWAY_ACCESS_AUD`; it also requires a pre-existing D1 membership. Never reuse the Finance Hub Access application audience as the MCP audience. Cloudflare must strip any incoming client-supplied Access assertion and inject its own verified assertion at the protected origin. Keep `AI_GATEWAY_ENABLED` unset until those controls and negative tests are verified. Opaque bearer tokens are validated by Cloudflare's Managed OAuth layer, not parsed by the origin. The existing JWT mode is for a separate JWT-issuing OAuth provider only.
