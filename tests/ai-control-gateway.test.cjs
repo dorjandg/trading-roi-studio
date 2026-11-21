@@ -33,3 +33,24 @@ test('valid scoped signed JWT exposes only metadata MCP tool',async()=>{
   assert.deepEqual(rpc.result.tools.map(t=>t.name),['finance_api_contract']);
  }finally{globalThis.fetch=oldFetch}
 });
+
+test('rejects invalid signature and missing scope',async()=>{
+ const {onRequest}=await load();
+ const pair=await webcrypto.subtle.generateKey({name:'RSASSA-PKCS1-v1_5',modulusLength:2048,publicExponent:new Uint8Array([1,0,1]),hash:'SHA-256'},true,['sign','verify']);
+ const jwk=await webcrypto.subtle.exportKey('jwk',pair.publicKey);jwk.kid='key2';
+ const encode=o=>Buffer.from(JSON.stringify(o)).toString('base64url');
+ const header=encode({alg:'RS256',kid:'key2'});
+ const env={AI_GATEWAY_ENABLED:'true',AI_GATEWAY_ISSUER:'https://issuer.example.test',AI_GATEWAY_AUDIENCE:'finance',AI_GATEWAY_JWKS_URL:'https://issuer.example.test/jwks'};
+ const oldFetch=globalThis.fetch;globalThis.fetch=async()=>new Response(JSON.stringify({keys:[jwk]}));
+ try{
+  for(const [scope,tamper] of [['other:scope',false],['finance:metadata:read',true]]){
+   const body=encode({iss:env.AI_GATEWAY_ISSUER,aud:'finance',sub:'user1',scope,exp:Math.floor(Date.now()/1000)+300});
+   const payload=header+'.'+body;
+   let signature=Buffer.from(await webcrypto.subtle.sign('RSASSA-PKCS1-v1_5',pair.privateKey,Buffer.from(payload))).toString('base64url');
+   if(tamper)signature=signature.slice(0,-2)+(signature.slice(-2)==='AA'?'BB':'AA');
+   const request=new Request('https://example.test/api/ai-control',{method:'POST',headers:{authorization:'Bearer '+payload+'.'+signature,'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/list'})});
+   const response=await onRequest({request,env});
+   assert.equal(response.status,401);
+  }
+ }finally{globalThis.fetch=oldFetch}
+});
