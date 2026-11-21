@@ -28,9 +28,29 @@ async function authorize(request,env){
  if(!scopes.includes("finance:metadata:read"))throw Error("Missing scope");
  return {subject:claims.sub};
 }
+async function authorizeAccess(request,env){
+ const domain=String(env.CF_ACCESS_TEAM_DOMAIN||"").replace(/\\/$/,"");
+ const audience=String(env.AI_GATEWAY_ACCESS_AUD||"");
+ const token=request.headers.get("cf-access-jwt-assertion")||"";
+ if(!domain.startsWith("https://")||!audience||!token)throw Error("Access identity unavailable");
+ const parts=token.split(".");
+ if(parts.length!==3)throw Error("Invalid assertion");
+ const [header,claims]=parts.slice(0,2).map(parse);
+ if(header.alg!=="RS256"||!header.kid||claims.iss!==domain||!(Array.isArray(claims.aud)&&claims.aud.includes(audience))||!claims.sub||!claims.email||!Number.isFinite(claims.exp)||claims.exp*1000<=Date.now()||(claims.nbf&&claims.nbf*1000>Date.now()))throw Error("Invalid Access claims");
+ const response=await fetch(domain+"/cdn-cgi/access/certs");
+ if(!response.ok)throw Error("Access keys unavailable");
+ const jwk=((await response.json()).keys||[]).find(k=>k.kid===header.kid&&k.kty==="RSA");
+ if(!jwk)throw Error("Unknown Access signing key");
+ const key=await crypto.subtle.importKey("jwk",jwk,{name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"},false,["verify"]);
+ if(!await crypto.subtle.verify("RSASSA-PKCS1-v1_5",key,decode(parts[2]),new TextEncoder().encode(parts[0]+"."+parts[1])))throw Error("Invalid Access signature");
+ if(!env.FINANCE_DB)throw Error("Membership store unavailable");
+ const member=await env.FINANCE_DB.prepare("SELECT m.workspace_id,m.role FROM memberships m JOIN users u ON u.id=m.user_id WHERE u.id=? LIMIT 1").bind(claims.sub).first();
+ if(!member||!member.workspace_id)throw Error("Workspace membership required");
+ return {subject:claims.sub,workspace:member.workspace_id,role:member.role};
+}
 export async function onRequest({request,env}){
  if(env.AI_GATEWAY_ENABLED!=="true")return json({error:"Gateway disabled"},503);
- let principal;try{principal=await authorize(request,env)}catch{const origin=new URL(request.url).origin;const metadata=origin+"/.well-known/oauth-protected-resource";return json({error:"Unauthorized"},401,{"www-authenticate":'Bearer resource_metadata="'+metadata+'"'})}
+ let principal;try{principal=env.AI_GATEWAY_AUTH_MODE==="cloudflare-access"?await authorizeAccess(request,env):env.AI_GATEWAY_AUTH_MODE==="jwt"?await authorize(request,env):(()=>{throw Error("Authentication mode not configured")})()}catch{const origin=new URL(request.url).origin;const metadata=origin+"/.well-known/oauth-protected-resource";return json({error:"Unauthorized"},401,{"www-authenticate":'Bearer resource_metadata="'+metadata+'"'})}
  if(request.method!=="POST")return json({error:"Method not allowed"},405,{"allow":"POST"});
  let rpc;try{rpc=await request.json()}catch{return json({jsonrpc:"2.0",id:null,error:{code:-32700,message:"Parse error"}},400)}
  if(!rpc||rpc.jsonrpc!=="2.0"||typeof rpc.method!=="string")return json({jsonrpc:"2.0",id:rpc?.id??null,error:{code:-32600,message:"Invalid Request"}},400);
