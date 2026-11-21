@@ -73,6 +73,11 @@ async function handler(ctx){
   }
   return json({error:"Method not allowed"},405);
  }
+ // Read-only discovery endpoint for the future AI Control Gateway.
+ // Inherits verified Cloudflare Access identity and workspace membership checks above.
+ if(method==="GET"&&url.searchParams.get("resource")==="control-capabilities"){
+  return json({service:"finance-hub",apiVersion:1,authenticated:true,workspaceScoped:true,role:member.role,capabilities:{read:["me","snapshot-meta","gmail-summary","gmail-evidence","connections","transactions"],write:write?["snapshot","connections"]:[],admin:["owner","admin"].includes(member.role)?["members","invitations"]:[]},asOf:new Date().toISOString()});
+ }
  if(method==="GET"&&url.searchParams.get("resource")==="me")return json({user:{email:user.email,id:user.id},workspace_id:ws,role:member.role});
  if(method==="GET"&&url.searchParams.get("resource")==="gmail-summary"){
   // Owner-scoped, read-only summary from primary D1 evidence. Never interpret
