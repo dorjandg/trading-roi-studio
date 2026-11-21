@@ -74,3 +74,10 @@ test('rejects expired tokens and incorrect audience or issuer',async()=>{
   }
  }finally{globalThis.fetch=oldFetch}
 });
+
+test('unauthorized MCP client receives OAuth resource metadata location',async()=>{
+ const {onRequest}=await load();
+ const response=await onRequest({request:new Request('https://gateway.example.test/api/ai-control',{method:'POST'}),env:{AI_GATEWAY_ENABLED:'true',AI_GATEWAY_ISSUER:'https://issuer.example.test',AI_GATEWAY_AUDIENCE:'finance',AI_GATEWAY_JWKS_URL:'https://issuer.example.test/jwks'}});
+ assert.equal(response.status,401);
+ assert.equal(response.headers.get('www-authenticate'),'Bearer resource_metadata="https://gateway.example.test/.well-known/oauth-protected-resource"');
+});
