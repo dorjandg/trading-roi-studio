@@ -73,6 +73,28 @@ async function handler(ctx){
   }
   return json({error:"Method not allowed"},405);
  }
+ // Finance Hub-authenticated preview for a single metadata correction.
+ // Deliberately read-only: it never accepts an entire replacement snapshot.
+ if(method==="POST"&&url.searchParams.get("resource")==="transaction-change-preview"){
+  let a;try{a=await request.json()}catch{return json({error:"Invalid JSON"},400)}
+  const fields=["category","provider","description"];
+  if(!a||typeof a.transaction_id!=="string"||!/^[a-f0-9-]{36}$/i.test(a.transaction_id)||
+     !Number.isSafeInteger(a.expected_revision)||a.expected_revision<1||
+     !fields.includes(a.field)||typeof a.expected_value!=="string"||
+     typeof a.new_value!=="string"||!a.new_value.trim()||a.new_value.length>300||
+     a.expected_value===a.new_value)return json({error:"Invalid correction request"},400);
+  const row=await db.prepare("SELECT revision,payload FROM finance_snapshots WHERE workspace_id=? AND user_id=?").bind(ws,user.id).first();
+  if(!row||row.revision!==a.expected_revision)return json({error:"Snapshot revision changed; refresh before continuing"},409);
+  let data;try{data=JSON.parse(row.payload)}catch{return json({error:"Snapshot unreadable"},409)}
+  if(data?.format!=="finance-hub-backup"||data?.version!==2||!Array.isArray(data.transactions))
+   return json({error:"Unsupported snapshot"},409);
+  const matches=data.transactions.filter(t=>t.id===a.transaction_id);
+  if(matches.length!==1)return json({error:"Transaction must match exactly one record"},409);
+  const before=matches[0][a.field]??"";
+  if(typeof before!=="string"||before!==a.expected_value)return json({error:"Transaction changed; refresh before continuing"},409);
+  return json({ok:true,previewOnly:true,saved:false,transaction_id:a.transaction_id,field:a.field,
+   before,after:a.new_value,revision:row.revision,requiresExplicitConfirmation:true});
+ }
  // Read-only discovery endpoint for the future AI Control Gateway.
  // Inherits verified Cloudflare Access identity and workspace membership checks above.
  if(method==="GET"&&url.searchParams.get("resource")==="control-capabilities"){
