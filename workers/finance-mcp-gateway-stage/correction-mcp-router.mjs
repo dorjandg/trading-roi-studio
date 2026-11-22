@@ -44,12 +44,34 @@ export async function routeMcp(payload,env,identityJwt,fetcher=fetch){
   return response(id,{content:[{type:"text",text:JSON.stringify(result)}]});
  }catch{return response(id,{isError:true,content:[{type:"text",text:"Finance API unavailable. Do not assume any change was saved."}]})}
 }
+// Verify the Access assertion before exposing even tool discovery.
+// Finance Hub still independently verifies the same assertion and its audience.
+async function verifyGatewayAccess(jwt,env,fetcher=fetch){
+ const domain=String(env.CF_ACCESS_TEAM_DOMAIN||"").replace(/\\/$/,"");
+ if(!domain.startsWith("https://")||!env.CF_ACCESS_AUD||typeof jwt!=="string")return false;
+ try{
+  const parts=jwt.split(".");if(parts.length!==3)return false;
+  const decode=x=>Uint8Array.from(atob(x.replace(/-/g,"+").replace(/_/g,"/").padEnd(Math.ceil(x.length/4)*4,"=")),c=>c.charCodeAt(0));
+  const head=JSON.parse(new TextDecoder().decode(decode(parts[0])));
+  const body=JSON.parse(new TextDecoder().decode(decode(parts[1])));
+  if(head.alg!=="RS256"||typeof head.kid!=="string"||body.iss!==domain||
+    !Array.isArray(body.aud)||!body.aud.includes(env.CF_ACCESS_AUD)||
+    !Number.isFinite(body.exp)||body.exp*1000<=Date.now()||
+    (body.nbf&&body.nbf*1000>Date.now())||!body.sub||!body.email)return false;
+  const certs=await fetcher(domain+"/cdn-cgi/access/certs");
+  if(!certs.ok)return false;
+  const jwk=(await certs.json()).keys?.find(k=>k.kid===head.kid&&k.kty==="RSA");
+  if(!jwk)return false;
+  const key=await crypto.subtle.importKey("jwk",jwk,{name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"},false,["verify"]);
+  return await crypto.subtle.verify("RSASSA-PKCS1-v1_5",key,decode(parts[2]),new TextEncoder().encode(parts[0]+"."+parts[1]));
+ }catch{return false}
+}
 export default {async fetch(request,env){
  // Cloudflare Access MUST also protect the gateway hostname. The forwarded JWT
  // is independently verified by Finance Hub. Never accept a JWT from tool args.
  if(request.method!=="POST")return new Response("Method not allowed",{status:405});
  const jwt=request.headers.get("cf-access-jwt-assertion");
- if(!jwt)return new Response("Cloudflare Access required",{status:401});
+ if(!jwt||!await verifyGatewayAccess(jwt,env))return new Response("Cloudflare Access required",{status:401});
  let payload;try{payload=await request.json()}catch{return new Response("Invalid JSON",{status:400})}
  const out=await routeMcp(payload,env,jwt);
  return out===null?new Response(null,{status:202}):new Response(JSON.stringify(out),{headers:{"content-type":"application/json","cache-control":"no-store"}});
