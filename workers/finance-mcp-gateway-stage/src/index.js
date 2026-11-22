@@ -1,4 +1,4 @@
-// Metadata-only MCP staging gateway. Never reads or modifies financial data.
+// Read-only MCP staging gateway. Never modifies financial data.
 // Cloudflare Access must protect all routes at the edge.
 const TEAM = "https://floral-river-0fbd.cloudflareaccess.com";
 const AUD = "aa652288029a24ffdf14eea9c732546a70dddd5bffda460e58272e1f6ac33d41";
@@ -10,6 +10,7 @@ const tools = [
  {name:"finance_api_contract",description:"Read gateway integration status; no financial records.",inputSchema:{type:"object",properties:{},additionalProperties:false}},
  {name:"finance_access_check",description:"Check whether the authenticated user has exactly one existing Finance Hub workspace membership; no financial data returned.",inputSchema:{type:"object",properties:{},additionalProperties:false}},
  {name:"finance_snapshot_meta",description:"Read the authenticated user's Finance Hub snapshot revision and record counts, only when read-only data access is configured.",inputSchema:{type:"object",properties:{},additionalProperties:false}},
+ {name:"finance_report_summary",description:"Diagnostic read-only transaction breakdown by month, currency, type, category and provider. Raw records only; NOT official dashboard totals or reconciliation.",inputSchema:{type:"object",properties:{from:{type:"string",description:"Inclusive YYYY-MM-DD"},to:{type:"string",description:"Inclusive YYYY-MM-DD"}},additionalProperties:false}},
  {name:"finance_transactions_list",description:"Read a limited page of the authenticated user's snapshot transactions; no writes or cross-user access.",inputSchema:{type:"object",properties:{limit:{type:"integer",minimum:1,maximum:50},offset:{type:"integer",minimum:0,maximum:100000}},additionalProperties:false}}
 ];
 const toolResult = value => ({content:[{type:"text",text:JSON.stringify(value)}]});
@@ -64,12 +65,31 @@ export default {
     return json({jsonrpc:"2.0",id,result:toolResult({status:count===1?"AUTHORIZED":count===0?"MEMBERSHIP_NOT_FOUND":"AMBIGUOUS_MEMBERSHIP",financialDataAccess:false})});
    }catch{return json({jsonrpc:"2.0",id,result:toolResult({status:"MEMBERSHIP_CHECK_FAILED"})})}
   }
-  if(rpc.method==="tools/call"&&["finance_snapshot_meta","finance_transactions_list"].includes(rpc.params?.name)){
+  if(rpc.method==="tools/call"&&["finance_snapshot_meta","finance_transactions_list","finance_report_summary"].includes(rpc.params?.name)){
    let snapshot;try{snapshot=await snapshotFor(principal,env)}catch{return json({jsonrpc:"2.0",id,result:toolResult({error:"Financial data unavailable",code:"READ_FAILED"})})}
    if(snapshot.error)return json({jsonrpc:"2.0",id,result:toolResult(snapshot)});
    if(rpc.params.name==="finance_snapshot_meta"){
     const counts=snapshot.data?Object.fromEntries(["transactions","propAccounts","propEvents","subscriptions","invoices"].map(k=>[k,Array.isArray(snapshot.data[k])?snapshot.data[k].length:0])):{};
     return json({jsonrpc:"2.0",id,result:toolResult({revision:snapshot.revision,updated_at:snapshot.updated_at,counts})});
+   }
+   if(rpc.params.name==="finance_report_summary"){
+    const args=rpc.params.arguments||{},from=args.from,to=args.to,valid=d=>typeof d==="string"&&/^\\d{4}-\\d{2}-\\d{2}$/.test(d)&&!Number.isNaN(Date.parse(d+"T00:00:00Z"));
+    if((from!==undefined&&!valid(from))||(to!==undefined&&!valid(to))||(from&&to&&from>to))return json({jsonrpc:"2.0",id,result:toolResult({code:"INVALID_DATE_RANGE"})});
+    const groups=new Map(),excluded={invalidDate:0,invalidAmount:0,missingCurrency:0},all=snapshot.data?.transactions||[];
+    let matched=0;
+    for(const t of all){
+     if(!valid(t.date)){excluded.invalidDate++;continue}
+     if((from&&t.date<from)||(to&&t.date>to))continue;
+     const amount=typeof t.amount==="number"?t.amount:typeof t.amount==="string"&&t.amount.trim()!==""?Number(t.amount):NaN;
+     if(!Number.isFinite(amount)){excluded.invalidAmount++;continue}
+     if(typeof t.currency!=="string"||!t.currency.trim()){excluded.missingCurrency++;continue}
+     matched++;
+     const key=[t.date.slice(0,7),t.currency.trim().toUpperCase(),String(t.type||"Unspecified"),String(t.category||"Unspecified"),String(t.provider||"Unspecified")];
+     const encoded=JSON.stringify(key),current=groups.get(encoded)||{month:key[0],currency:key[1],type:key[2],category:key[3],provider:key[4],count:0,amount:0};
+     current.count++;current.amount+=amount;groups.set(encoded,current);
+    }
+    const breakdown=[...groups.values()].sort((a,b)=>a.month.localeCompare(b.month)||a.currency.localeCompare(b.currency)||a.type.localeCompare(b.type)||a.category.localeCompare(b.category)||a.provider.localeCompare(b.provider));
+    return json({jsonrpc:"2.0",id,result:toolResult({revision:snapshot.revision,updated_at:snapshot.updated_at,from:from||null,to:to||null,totalRecords:all.length,matched,excluded,breakdown,notice:"Raw diagnostic totals only. Currency groups must not be combined. Transfer exclusions, reporting holds, credit notes, and dashboard classifications have not been reconciled; do not use as official income, expense, or profit totals."})});
    }
    const args=rpc.params.arguments||{},limit=args.limit===undefined?20:args.limit,offset=args.offset===undefined?0:args.offset;
    if(!Number.isInteger(limit)||limit<1||limit>50||!Number.isInteger(offset)||offset<0||offset>100000)return json({jsonrpc:"2.0",id,result:toolResult({error:"Invalid pagination",code:"INVALID_ARGUMENTS"})});
