@@ -97,3 +97,5 @@ jobs:
           fi
 
 # Redeploy staging gateway with audited read-only browser_page_links tool.
+
+# Redeploy with corrected Google OAuth Client ID verified in staging diagnostic run 45031476868.
