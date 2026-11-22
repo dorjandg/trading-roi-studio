@@ -25,3 +25,10 @@ test("requires matching backup and audit evidence",()=>{
  assert.equal(verifyBackupAndAudit({...args,backup:{...backup,snapshot_payload:"wrong"}}).code,"WRITE_EVIDENCE_MISMATCH");
  assert.equal(verifyBackupAndAudit({...args,audit:{...audit,new_revision:21}}).code,"WRITE_EVIDENCE_MISMATCH");
 });
+
+test("rejects approvals with overlong TTL and accepts equivalent timezone offsets",()=>{
+ const long={...approval(),expires_at:"2026-11-22T10:06:00Z"};
+ assert.equal(validateApproval(long,change,identity,now).code,"APPROVAL_EXPIRED_OR_INVALID");
+ const offset={...approval(),approved_at:"2026-11-22T11:00:00+01:00",expires_at:"2026-11-22T11:05:00+01:00"};
+ assert.equal(validateApproval(offset,change,identity,now).ok,true);
+});
