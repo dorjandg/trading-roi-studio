@@ -1,0 +1,70 @@
+name: Cloud Browser Agent — Protected MCP End-to-End Check
+
+on:
+  push:
+    branches:
+      - feature/cloud-browser-agent-phase1
+    paths:
+      - ".github/workflows/cloud-browser-mcp-e2e.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  protected-mcp-check:
+    if: github.ref == 'refs/heads/feature/cloud-browser-agent-phase1'
+    environment: browser-agent-staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+      BROWSER_AGENT_API_TOKEN: ${{ secrets.BROWSER_AGENT_API_TOKEN }}
+    steps:
+      - name: Verify deployed MCP through both authentication layers
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${CF_ACCESS_CLIENT_ID:?missing service client id}"
+          : "${CF_ACCESS_CLIENT_SECRET:?missing service client secret}"
+          : "${BROWSER_AGENT_API_TOKEN:?missing agent bearer}"
+          endpoint='https://cloud-browser-agent-stage.dorjan-gjoni-dg.workers.dev'
+          headers=(-H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET")
+          # A machine-to-machine service token must not bypass the Worker's own bearer auth.
+          denied=$(curl -sS --max-time 25 -o "$RUNNER_TEMP/denied.txt" -w '%{http_code}' "${headers[@]}" "$endpoint/health")
+          if [[ "$denied" != "401" ]]; then
+            echo "::error::Expected Worker bearer rejection HTTP 401; got $denied"
+            exit 1
+          fi
+          code=$(curl -sS --max-time 25 -o "$RUNNER_TEMP/health.json" -w '%{http_code}' "${headers[@]}" -H "Authorization: Bearer $BROWSER_AGENT_API_TOKEN" "$endpoint/health")
+          if [[ "$code" != "200" ]]; then
+            echo "::error::Protected health endpoint HTTP $code"
+            exit 1
+          fi
+          node -e 'const fs=require("fs");const d=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(d.service!=="cloud-browser-agent"||d.browserConfigured!==true)process.exit(1)' "$RUNNER_TEMP/health.json"
+
+          post_rpc() {
+            local label="$1" payload="$2"
+            local status
+            status=$(curl -sS --max-time 30 -o "$RUNNER_TEMP/$label.json" -w '%{http_code}' "${headers[@]}" \
+              -H "Authorization: Bearer $BROWSER_AGENT_API_TOKEN" -H "Content-Type: application/json" \
+              --data-binary "$payload" "$endpoint/mcp")
+            if [[ "$status" != "200" ]]; then
+              echo "::error::MCP $label failed HTTP $status"
+              exit 1
+            fi
+          }
+          post_rpc initialize '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"staging-check","version":"1"}}}'
+          post_rpc tools '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
+          post_rpc status '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"browser_agent_status","arguments":{}}}'
+          node - "$RUNNER_TEMP/initialize.json" "$RUNNER_TEMP/tools.json" "$RUNNER_TEMP/status.json" <<'NODE'
+          const fs=require('fs');
+          const [a,b,c]=process.argv.slice(2).map(p=>JSON.parse(fs.readFileSync(p,'utf8')));
+          if(a.result?.serverInfo?.name!=='cloud-browser-agent-staging')process.exit(1);
+          const tools=b.result?.tools?.map(t=>t.name);
+          if(JSON.stringify(tools)!==JSON.stringify(['browser_agent_status','browser_inspect']))process.exit(1);
+          if(JSON.parse(c.result?.content?.[0]?.text||'{}').mode!=='read-only')process.exit(1);
+          console.log('Protected deployed MCP handshake, read-only tool list and status passed.');
+          NODE
+          echo "Cloudflare Access Service Auth + Worker Bearer + deployed MCP verified." >> "$GITHUB_STEP_SUMMARY"
