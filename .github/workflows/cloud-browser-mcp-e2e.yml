@@ -39,6 +39,15 @@ jobs:
           fi
           code=$(curl -sS --max-time 25 -o "$RUNNER_TEMP/health.json" -w '%{http_code}' "${headers[@]}" -H "Authorization: Bearer $BROWSER_AGENT_API_TOKEN" "$endpoint/health")
           if [[ "$code" != "200" ]]; then
+            node - "$RUNNER_TEMP/denied.txt" "$RUNNER_TEMP/health.json" <<'NODE'
+          const fs=require("fs");
+          for(const [i,p] of process.argv.slice(2).entries()) {
+            const raw=fs.readFileSync(p,"utf8");
+            let obj;try{obj=JSON.parse(raw);}catch{}
+            const category=obj?.error==="Unauthorized" ? "Worker bearer rejected" : /cloudflare|access|login|unauthorized/i.test(raw) ? "Cloudflare Access page or rejection" : "Unknown rejection";
+            console.log((i===0?"Without bearer":"With bearer")+": "+category);
+          }
+          NODE
             echo "::error::Protected health endpoint HTTP $code"
             exit 1
           fi
