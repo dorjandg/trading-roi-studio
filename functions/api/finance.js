@@ -76,6 +76,7 @@ async function handler(ctx){
  // Finance Hub-authenticated preview for a single metadata correction.
  // Deliberately read-only: it never accepts an entire replacement snapshot.
  if(method==="POST"&&url.searchParams.get("resource")==="transaction-change-preview"){
+  if(!write)return json({error:"Read-only membership"},403);
   let a;try{a=await request.json()}catch{return json({error:"Invalid JSON"},400)}
   const fields=["category","provider","description"];
   if(!a||typeof a.transaction_id!=="string"||!/^[a-f0-9-]{36}$/i.test(a.transaction_id)||
