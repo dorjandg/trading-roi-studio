@@ -8,6 +8,7 @@ const bytes = s => Uint8Array.from(atob(s.replace(/-/g,"+").replace(/_/g,"/").pa
 const part = s => JSON.parse(new TextDecoder().decode(bytes(s)));
 const tools = [
  {name:"finance_api_contract",description:"Read gateway integration status; no financial records.",inputSchema:{type:"object",properties:{},additionalProperties:false}},
+ {name:"finance_access_check",description:"Check whether the authenticated user has exactly one existing Finance Hub workspace membership; no financial data returned.",inputSchema:{type:"object",properties:{},additionalProperties:false}},
  {name:"finance_snapshot_meta",description:"Read the authenticated user's Finance Hub snapshot revision and record counts, only when read-only data access is configured.",inputSchema:{type:"object",properties:{},additionalProperties:false}},
  {name:"finance_transactions_list",description:"Read a limited page of the authenticated user's snapshot transactions; no writes or cross-user access.",inputSchema:{type:"object",properties:{limit:{type:"integer",minimum:1,maximum:50},offset:{type:"integer",minimum:0,maximum:100000}},additionalProperties:false}}
 ];
@@ -55,6 +56,14 @@ export default {
   if(rpc.method==="ping")return json({jsonrpc:"2.0",id,result:{}});
   if(rpc.method==="tools/list")return json({jsonrpc:"2.0",id,result:{tools}});
   if(rpc.method==="tools/call"&&rpc.params?.name==="finance_api_contract")return json({jsonrpc:"2.0",id,result:toolResult({service:"finance-hub",gateway:"staging",financialDataAccess:env.FINANCE_MCP_READ_ENABLED==="true"&&!!env.FINANCE_DB,writeAccess:false,principalAuthenticated:true})});
+  if(rpc.method==="tools/call"&&rpc.params?.name==="finance_access_check"){
+   if(!env.FINANCE_DB)return json({jsonrpc:"2.0",id,result:toolResult({status:"DATABASE_NOT_CONFIGURED"})});
+   try{
+    const rows=await env.FINANCE_DB.prepare("SELECT m.workspace_id FROM users u JOIN memberships m ON m.user_id=u.id WHERE lower(u.email)=? LIMIT 2").bind(principal.email).all();
+    const count=rows.results?.length||0;
+    return json({jsonrpc:"2.0",id,result:toolResult({status:count===1?"AUTHORIZED":count===0?"MEMBERSHIP_NOT_FOUND":"AMBIGUOUS_MEMBERSHIP",financialDataAccess:false})});
+   }catch{return json({jsonrpc:"2.0",id,result:toolResult({status:"MEMBERSHIP_CHECK_FAILED"})})}
+  }
   if(rpc.method==="tools/call"&&["finance_snapshot_meta","finance_transactions_list"].includes(rpc.params?.name)){
    let snapshot;try{snapshot=await snapshotFor(principal,env)}catch{return json({jsonrpc:"2.0",id,result:toolResult({error:"Financial data unavailable",code:"READ_FAILED"})})}
    if(snapshot.error)return json({jsonrpc:"2.0",id,result:toolResult(snapshot)});
