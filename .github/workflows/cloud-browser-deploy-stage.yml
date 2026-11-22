@@ -61,3 +61,5 @@ jobs:
         run: printf '%s' "$BROWSER_AGENT_API_TOKEN" | npx wrangler secret put AGENT_API_TOKEN --name cloud-browser-agent-stage
       - name: Complete
         run: echo "Staging deployment completed. Browser inspection and screenshots require separate runtime smoke tests." >> "$GITHUB_STEP_SUMMARY"
+
+# Phase 2: redeploy staged read-only follow-link navigation after passing policy checks.
