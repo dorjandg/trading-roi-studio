@@ -11,6 +11,10 @@ class IntegrationContract(unittest.TestCase):
   self.assertIn('api("transaction-change-save"',PAGE)
  def test_write_is_off_by_default(self):
   self.assertIn('env.FINANCE_TRANSACTION_CORRECTIONS_ENABLED!=="true"',API)
+ def test_owner_admin_required_for_save(self):
+  save=API.split('resource")==="transaction-change-save"',1)[1]
+  self.assertIn('["owner","admin"].includes(member.role)',save)
+  self.assertIn('Owner or admin approval required',save)
  def test_confirm_and_revision_are_required(self):
   self.assertIn("a.confirmed!==true",API)
   self.assertIn("a.expected_revision",API)
