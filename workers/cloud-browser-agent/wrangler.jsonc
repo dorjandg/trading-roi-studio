@@ -1,0 +1,11 @@
+{
+  "name": "cloud-browser-agent-stage",
+  "main": "src/index.js",
+  "compatibility_date": "2026-11-21",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "browser": {"binding": "BROWSER"},
+  "vars": {
+    "ALLOWED_ORIGINS": "https://fin-kac.pages.dev,https://jp-realty.pages.dev,https://youtube-ai-academy.pages.dev,https://trading-roi-studio.pages.dev"
+  }
+}
