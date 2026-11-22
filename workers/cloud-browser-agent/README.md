@@ -54,3 +54,16 @@ curl -X POST "$AGENT_URL/inspect" -H "Authorization: Bearer $AGENT_API_TOKEN" -H
 - Draft PR #4: https://github.com/dorjandg/trading-roi-studio/pull/4
 - Local policy and mocked handler tests: 15 passed; no live browser validation.
 - No production deployment, no Cloudflare secrets committed, no trading integrations.
+
+## Alternative to ChatGPT Work: GitHub Actions deployment
+
+Cloudflare's GitHub integration is connected but its setup form does not offer a branch selector before creation. We therefore added `.github/workflows/cloud-browser-deploy-stage.yml` to deploy the development branch through GitHub Actions without changing the repository's default branch.
+
+The deploy job is deliberately **disabled by default** and runs only when:
+- GitHub repository variable `BROWSER_AGENT_DEPLOY_ENABLED=true` is configured.
+- GitHub environment `browser-agent-staging` contains scoped `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, and a newly generated `BROWSER_AGENT_API_TOKEN`.
+- Repository variable `BROWSER_AGENT_ACCESS_READY=true` is configured after verifying Cloudflare Access protects the stage Worker.
+
+Security note: an existing GitHub `finance-cloudflare` environment has Cloudflare credentials. **Do not copy or reuse the Finance environment automatically**; scope a separate stage deployment token to the intended Worker/account permissions. The browser staging environment currently has no secrets configured.
+
+No token values are stored in this repo. The deploy workflow cannot start paid browser execution on its own, and no live Browser Run checks occur until a user or MCP explicitly calls the protected Worker.
