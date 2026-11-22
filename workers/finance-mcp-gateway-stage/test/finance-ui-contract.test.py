@@ -21,6 +21,14 @@ class IntegrationContract(unittest.TestCase):
   self.assertIn('revision=revision+1',API)
   self.assertIn('finance_mcp_direct_backups',API)
   self.assertIn('finance_mcp_direct_audit',API)
+ def test_signed_short_lived_exact_change_ticket(self):
+  self.assertIn("FINANCE_CORRECTION_SIGNING_KEY",API)
+  self.assertIn("crypto.subtle.sign",API)
+  self.assertIn("crypto.subtle.verify",API)
+  self.assertIn("Date.now()+5*60*1000",API)
+  self.assertIn("verifyCorrectionTicket(env.FINANCE_CORRECTION_SIGNING_KEY,a.approval_ticket",API)
+  self.assertIn("approval_ticket:result.approval_ticket",PAGE)
+  self.assertIn("preview again",API)
  def test_page_never_offers_financial_fields(self):
   for field in ("amount","currency","date","type","reportingHold"):
    self.assertNotIn('<option value="'+field+'">',PAGE)
