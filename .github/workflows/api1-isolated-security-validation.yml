@@ -18,6 +18,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Install isolated Chromium test dependencies
+        working-directory: workers/cloud-browser-agent
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
       - name: Run Node tests
         working-directory: workers/cloud-browser-agent
         run: npm test
@@ -30,4 +35,5 @@ jobs:
           node --check src/interaction-policy.mjs
           node --check simulation/interaction-executor.mjs
           node --check simulation/browser-interaction-adapter.mjs
+          node --check simulation/local-playwright-harness.mjs
           node --test test/handler.test.mjs test/policy.test.mjs test/interaction-policy.test.mjs test/interaction-executor.test.mjs test/browser-interaction-adapter.test.mjs
