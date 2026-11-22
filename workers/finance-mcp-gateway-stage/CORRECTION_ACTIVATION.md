@@ -30,3 +30,10 @@ Disable `FINANCE_TRANSACTION_CORRECTIONS_ENABLED` immediately if audit/backup ve
 - The existing Finance Hub dashboard's own authenticated snapshot editing remains separate from this controlled-correction path.
 - The MCP plugin currently exposes read-only finance methods; this GitHub feature **does not add a ChatGPT-callable write action**. An authenticated, owner-approved write tool or workflow must be separately implemented and tested before claiming ChatGPT can directly save changes.
 - The signed preview ticket is tamper-evident and short-lived, but does not by itself prove the user personally clicked Confirm; that UI interaction and an explicit approval process remain necessary.
+
+## Isolated Cloudflare D1 schema verification (2026-11-22)
+- Created new empty D1 `finance-correction-isolated-test` (ID `c17bd16f-ff73-4b53-b8a5-5128d9d1b400`) with no production bindings.
+- Applied migration's two `CREATE TABLE IF NOT EXISTS` and two index statements to this isolated D1 only.
+- Verified both tables and both custom indexes in `sqlite_master`; verified audit foreign key references `finance_mcp_direct_backups(backup_id)` and `new_revision` is NOT NULL.
+- **Not yet verified:** actual D1 multi-statement batch rollback/concurrency and restoration against this database; schema verification alone does not authorize enabling writes.
+- Never bind this test database to the live Finance Hub site or staging gateway that currently references production D1.
