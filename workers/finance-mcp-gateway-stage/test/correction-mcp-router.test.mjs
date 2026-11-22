@@ -29,5 +29,6 @@ assert.equal(noJwt.status,401);
 const getRequest=await worker.fetch(new Request("https://gateway.example/mcp"),env);
 assert.equal(getRequest.status,405);
 const invalidJson=await worker.fetch(new Request("https://gateway.example/mcp",{method:"POST",headers:{"cf-access-jwt-assertion":"jwt"},body:"{"}),env);
-assert.equal(invalidJson.status,400);
+assert.equal(invalidJson.status,401); // malformed assertion rejected before body parsing
+assert.equal((await worker.fetch(new Request("https://gateway.example/mcp",{method:"POST",headers:{"cf-access-jwt-assertion":"bad.jwt.signature"},body:"{}"}),{...env,CF_ACCESS_TEAM_DOMAIN:"https://example.cloudflareaccess.com",CF_ACCESS_AUD:"isolated-audience"})).status,401);
 console.log("MCP router tests passed");
