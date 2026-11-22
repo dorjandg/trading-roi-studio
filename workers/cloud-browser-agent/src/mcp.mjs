@@ -1,5 +1,6 @@
 import { createHandler, authorized } from "./handler.mjs";
 import { validateTarget, validateReadOnlyLink } from "./policy.mjs";
+import { validateEditPreviewRequest } from "./edit-preview.mjs";
 
 const headers = {"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"};
 const json = (obj,status=200) => new Response(JSON.stringify(obj),{status,headers});
@@ -9,6 +10,7 @@ const tools = [
   {name:"browser_page_links",description:"Discover up to 30 unique same-origin HTTPS links on an approved page; no clicks or forms. Query strings removed.",inputSchema:{type:"object",properties:{url:{type:"string"}},required:["url"],additionalProperties:false}},
   {name:"browser_follow_link",description:"Read-only GET navigation to an exact same-origin anchor found on the source page; blocks form submissions, query-string URLs and action-like paths. Does not click or edit.",inputSchema:{type:"object",properties:{url:{type:"string"},linkUrl:{type:"string"}},required:["url","linkUrl"],additionalProperties:false}},
   {name:"browser_form_inventory",description:"List only non-sensitive website form field structure. Never reads form values, hidden fields, passwords, files or user data, and cannot edit or submit.",inputSchema:{type:"object",properties:{url:{type:"string"}},required:["url"],additionalProperties:false}},
+  {name:"browser_edit_preview",description:"Review proposed plain-text edits to a single non-sensitive field on an approved page. NEVER fills, clicks, submits, uploads or saves. No approval tokens issued.",inputSchema:{type:"object",properties:{url:{type:"string"},formIndex:{type:"integer"},fieldLabel:{type:"string"},proposedText:{type:"string"}},required:["url","formIndex","fieldLabel","proposedText"],additionalProperties:false}},
   {name:"browser_inspect",description:"Read-only inspection of a preapproved HTTPS website: title, headings, link count and HTTP status. No clicks, logins, forms or trading.",inputSchema:{type:"object",properties:{url:{type:"string",description:"Approved HTTPS URL to inspect"}},required:["url"],additionalProperties:false}}
 ];
 export function createMcpHandler(launch) {
@@ -33,6 +35,14 @@ export function createMcpHandler(launch) {
     if(!args||typeof args!=="object"||Array.isArray(args))return error(-32602,"Invalid arguments");
     if(name==="browser_agent_status"&&Object.keys(args).length===0){
       return reply(content({service:"cloud-browser-agent",mode:"read-only",browserConfigured:!!env.BROWSER}));
+    }
+    if(name==="browser_edit_preview"){
+      try { validateEditPreviewRequest(args,env.ALLOWED_ORIGINS); }
+      catch { return error(-32602,"Preview arguments rejected"); }
+      const internal=new Request(new URL("/edit-preview",request.url),{method:"POST",headers:{authorization:request.headers.get("authorization")||"","content-type":"application/json"},body:JSON.stringify(args)});
+      const response=await handler(internal,env);
+      const value=await response.json();
+      return reply({...content(value),isError:!response.ok});
     }
     if(name==="browser_follow_link"){
       if(Object.keys(args).sort().join(",")!=="linkUrl,url"||typeof args.url!=="string"||typeof args.linkUrl!=="string")return error(-32602,"Expected source URL and link URL only");
