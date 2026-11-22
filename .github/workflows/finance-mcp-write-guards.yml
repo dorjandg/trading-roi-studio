@@ -18,6 +18,9 @@ on:
       - 'workers/finance-mcp-gateway-stage/test/direct-confirmation.test.mjs'
       - 'workers/finance-mcp-gateway-stage/test/atomic-write-sqlite.test.py'
       - 'workers/finance-mcp-gateway-stage/test/migration-sqlite.test.py'
+      - 'workers/finance-mcp-gateway-stage/test/direct-save-sqlite.test.py'
+      - 'workers/finance-mcp-gateway-stage/migrations/0002_direct_corrections.sql'
+      - 'functions/api/finance.js'
       - 'workers/finance-mcp-gateway-stage/migrations/0001_controlled_writes.sql'
       - '.github/workflows/finance-mcp-write-guards.yml'
   pull_request:
@@ -42,3 +45,6 @@ jobs:
 
       - name: Validate migration in isolated SQLite
         run: python3 workers/finance-mcp-gateway-stage/test/migration-sqlite.test.py
+
+      - name: Test direct save backup and rollback in isolated SQLite
+        run: python3 workers/finance-mcp-gateway-stage/test/direct-save-sqlite.test.py
