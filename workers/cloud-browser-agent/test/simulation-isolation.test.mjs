@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {readFileSync} from "node:fs";
+import {readFileSync,existsSync} from "node:fs";
 import {fileURLToPath} from "node:url";
 const workerRoot=fileURLToPath(new URL("../",import.meta.url));
 const source=["src/index.js","src/handler.mjs","src/mcp.mjs","src/audit-store.mjs","src/edit-preview.mjs"];
@@ -24,4 +24,18 @@ test("durable write prototype never reaches staging MCP gateway or deployed agen
  }
  const deployed=readFileSync(new URL("../wrangler.jsonc",import.meta.url),"utf8");
  assert.doesNotMatch(deployed,/WRITE_ENABLED|write_service|persistent-write-prototype/);
+});
+
+test("Stage 4.9 scaffold has no Wrangler deploy config or active website write API",()=>{
+ const root=new URL("../../cloud-browser-write-stage/",import.meta.url);
+ for(const path of ["wrangler.jsonc","wrangler.toml","wrangler.json"]){
+  assert.equal(existsSync(new URL(path,root)),false);
+ }
+ const code=readFileSync(new URL("src/index.mjs",root),"utf8");
+ assert.doesNotMatch(code,/await\\s+(?:page\\.)?(?:fill|click|submit)|browser\\.newPage/);
+ assert.equal(code.includes("WRITE_SERVICE_BOOTSTRAP_ENABLED"),true);
+ assert.equal(code.includes('"/authorization-check"'),true);
+ for(const name of ["/execute","/approve","/upload","/rollback"]){
+  assert.equal(code.includes('url.pathname==="'+name+'"'),false);
+ }
 });
