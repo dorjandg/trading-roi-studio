@@ -14,7 +14,7 @@ test("MCP requires authentication",async()=>{
 test("MCP advertises only read-only tools",async()=>{
  const r=await createMcpHandler(async()=>{})(request("tools/list"),env);
  const x=await r.json();
- assert.deepEqual(x.result.tools.map(t=>t.name),["browser_agent_status","browser_page_links","browser_follow_link","browser_inspect"]);
+ assert.deepEqual(x.result.tools.map(t=>t.name),["browser_agent_status","browser_page_links","browser_follow_link","browser_form_inventory","browser_inspect"]);
 });
 test("MCP initializes and returns status without browser launch",async()=>{
  const handler=createMcpHandler(async()=>{throw Error("must not launch");});
@@ -46,4 +46,14 @@ test("follow link rejects cross origin and query based requests",async()=>{
   const r=await handler(request("tools/call",{name:"browser_follow_link",arguments:{url:"https://trading-roi-studio.pages.dev",linkUrl}}),env);
   assert.equal((await r.json()).error.code,-32602);
  }
+});
+
+test("form inventory rejects disallowed origins and extra action arguments",async()=>{
+ let count=0;
+ const handler=createMcpHandler(async()=>{count++;});
+ for(const args of [{url:"https://evil.test"},{url:"https://trading-roi-studio.pages.dev",submit:true}]){
+  const r=await handler(request("tools/call",{name:"browser_form_inventory",arguments:args}),env);
+  assert.equal((await r.json()).error.code,-32602);
+ }
+ assert.equal(count,0);
 });
