@@ -75,13 +75,13 @@ async function handler(ctx){
    const len=Number(request.headers.get("content-length")||0);
    if(len>1024*1024)return json({error:"Snapshot exceeds 1 MB"},413);
    let raw;try{raw=await request.text()}catch{return json({error:"Invalid body"},400)}
-   if(raw.length>1024*1024)return json({error:"Snapshot exceeds 1 MB"},413);
+   if(enc.encode(raw).length>1024*1024)return json({error:"Snapshot exceeds 1 MiB"},413);
    let body;try{body=JSON.parse(raw)}catch{return json({error:"Invalid JSON"},400)}
    if(!body||!Number.isSafeInteger(body.expectedRevision)||body.expectedRevision<0||!body.data||typeof body.data!=="object"||Array.isArray(body.data))return json({error:"Invalid snapshot"},400);
    const required=["transactions","propAccounts","propEvents","propAudit","subscriptions","invoices"];
    if(!required.every(k=>Array.isArray(body.data[k]))||body.data.format!=="finance-hub-backup"||body.data.version!==2)return json({error:"Unsupported snapshot format"},400);
    const payload=JSON.stringify(body.data);
-   if(payload.length>1024*1024)return json({error:"Snapshot exceeds 1 MB"},413);
+   if(enc.encode(payload).length>1024*1024)return json({error:"Snapshot exceeds 1 MiB"},413);
    if(body.expectedRevision===0){
     const inserted=await db.prepare("INSERT OR IGNORE INTO finance_snapshots(workspace_id,user_id,revision,payload) VALUES(?,?,1,?)").bind(ws,user.id,payload).run();
     if(inserted.meta?.changes===1)return json({revision:1});
