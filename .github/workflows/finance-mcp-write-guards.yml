@@ -6,8 +6,10 @@ on:
     paths:
       - 'workers/finance-mcp-gateway-stage/src/write-guards.js'
       - 'workers/finance-mcp-gateway-stage/src/write-approval.js'
+      - 'workers/finance-mcp-gateway-stage/src/write-plan.js'
       - 'workers/finance-mcp-gateway-stage/test/write-guards.test.mjs'
       - 'workers/finance-mcp-gateway-stage/test/write-approval.test.mjs'
+      - 'workers/finance-mcp-gateway-stage/test/write-plan.test.mjs'
       - '.github/workflows/finance-mcp-write-guards.yml'
   pull_request:
     paths:
