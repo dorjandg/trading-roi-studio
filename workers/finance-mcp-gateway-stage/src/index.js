@@ -73,7 +73,7 @@ export default {
     return json({jsonrpc:"2.0",id,result:toolResult({revision:snapshot.revision,updated_at:snapshot.updated_at,counts})});
    }
    if(rpc.params.name==="finance_report_summary"){
-    const args=rpc.params.arguments||{},from=args.from,to=args.to,valid=d=>typeof d==="string"&&/^\\d{4}-\\d{2}-\\d{2}$/.test(d)&&!Number.isNaN(Date.parse(d+"T00:00:00Z"));
+    const args=rpc.params.arguments||{},from=args.from,to=args.to,valid=d=>typeof d==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(d)&&!Number.isNaN(Date.parse(d+"T00:00:00Z"));
     if((from!==undefined&&!valid(from))||(to!==undefined&&!valid(to))||(from&&to&&from>to))return json({jsonrpc:"2.0",id,result:toolResult({code:"INVALID_DATE_RANGE"})});
     const groups=new Map(),excluded={invalidDate:0,invalidAmount:0,missingCurrency:0},all=snapshot.data?.transactions||[];
     let matched=0;
