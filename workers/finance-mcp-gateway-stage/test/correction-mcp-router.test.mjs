@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import {routeMcp} from "../correction-mcp-router.mjs";
+import worker,{routeMcp} from "../correction-mcp-router.mjs";
 const args={transaction_id:"11111111-1111-4111-8111-111111111111",field:"category",expected_revision:19,expected_value:"Old",new_value:"New"};
 const env={FINANCE_HUB_API_ORIGIN:"https://example.pages.dev"};
 const call=(name,arguments_)=>({jsonrpc:"2.0",id:1,method:"tools/call",params:{name,arguments:arguments_}});
@@ -24,4 +24,10 @@ const denied=await routeMcp(call("finance_correction_preview",args),env,"jwt",as
 assert.equal(denied.result.isError,true);
 const unconfirmed=await routeMcp(call("finance_correction_save",{...args,confirmed:true,approval_ticket:"signed-ticket-placeholder"}),enabled,"jwt",async()=>({ok:true,json:async()=>({saved:false})}));
 assert.equal(unconfirmed.result.isError,true);
+const noJwt=await worker.fetch(new Request("https://gateway.example/mcp",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(call("finance_correction_preview",args))}),env);
+assert.equal(noJwt.status,401);
+const getRequest=await worker.fetch(new Request("https://gateway.example/mcp"),env);
+assert.equal(getRequest.status,405);
+const invalidJson=await worker.fetch(new Request("https://gateway.example/mcp",{method:"POST",headers:{"cf-access-jwt-assertion":"jwt"},body:"{"}),env);
+assert.equal(invalidJson.status,400);
 console.log("MCP router tests passed");
