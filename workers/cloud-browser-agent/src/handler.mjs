@@ -81,7 +81,8 @@ export function createHandler(launch) {
         }catch{return false;}}))return json({error:"Destination is not a link on the source page"},400);
         stage="destination-navigation";
         const next=await page.goto(destination,{waitUntil:"domcontentloaded",timeout:20000});
-        if(page.url()!==destination)throw new Error("Unexpected redirect refused");
+        // Canonical redirects are acceptable only within the same exact origin and safe GET paths.
+        validateReadOnlyLink(target,page.url(),env.ALLOWED_ORIGINS);
         stage="extract-destination";
         const headings=await page.locator("h1, h2").allTextContents();
         return json({sourceUrl:target,finalUrl:page.url(),httpStatus:next?.status()??null,title:safeTitle(await page.title()),headings:headings.slice(0,12).map(s=>s.trim().slice(0,200)),readOnly:true,method:"GET",clicked:false});
