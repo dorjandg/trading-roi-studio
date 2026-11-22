@@ -1,5 +1,8 @@
 name: API1 isolated security validation
 on:
+  push:
+    branches:
+      - api1-security-validation-temp
   workflow_dispatch:
 permissions:
   contents: read
