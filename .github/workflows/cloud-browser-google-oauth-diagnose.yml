@@ -1,0 +1,58 @@
+name: Cloud Browser Agent — Google OAuth Client Diagnostics
+on:
+  push:
+    branches: [feature/cloud-browser-agent-phase1]
+    paths:
+      - ".github/workflows/cloud-browser-google-oauth-diagnose.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    environment: browser-agent-staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+    steps:
+      - name: Validate Google OAuth credentials without exposing their contents
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${GOOGLE_CLIENT_ID:-}" ] || [ -z "${GOOGLE_CLIENT_SECRET:-}" ]; then
+            echo "::error::Google OAuth staging ID or secret is missing"
+            exit 1
+          fi
+          if [[ "$GOOGLE_CLIENT_ID" != *.apps.googleusercontent.com ]]; then
+            echo "::error::GOOGLE_CLIENT_ID does not end with .apps.googleusercontent.com"
+            exit 1
+          fi
+          if [[ "$GOOGLE_CLIENT_ID" =~ [[:space:]] ]]; then
+            echo "::error::GOOGLE_CLIENT_ID includes whitespace"
+            exit 1
+          fi
+          if [[ "$GOOGLE_CLIENT_SECRET" == *.apps.googleusercontent.com ]]; then
+            echo "::error::GOOGLE_CLIENT_SECRET appears to be a Client ID rather than a secret"
+            exit 1
+          fi
+          echo "Google Client ID shape and separate Client Secret shape verified"
+      - name: Probe Google authorization registration without printing credentials or response
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os,urllib.parse,urllib.request
+          q=urllib.parse.urlencode(dict(client_id=os.environ['GOOGLE_CLIENT_ID'],redirect_uri='https://cloud-browser-chatgpt-stage.dorjan-gjoni-dg.workers.dev/callback',response_type='code',scope='openid email',state='diagnostic',nonce='diagnostic',code_challenge='Q'*43,code_challenge_method='S256'))
+          url='https://accounts.google.com/o/oauth2/v2/auth?'+q
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self,*args,**kwargs): return None
+          try:
+              with urllib.request.build_opener(NoRedirect()).open(url,timeout=15) as resp:
+                  body=resp.read(150000).decode('utf-8','replace')
+          except urllib.error.HTTPError as e:
+              body=e.read(150000).decode('utf-8','replace')
+          if 'invalid_client' in body or 'The OAuth client was not found' in body:
+              raise SystemExit('::error::Google OAuth rejects this client ID as invalid_client')
+          print('Google authorization did not report invalid_client (interactive consent not tested)')
+          PY
