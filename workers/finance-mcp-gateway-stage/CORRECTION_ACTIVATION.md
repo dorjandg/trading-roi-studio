@@ -37,3 +37,9 @@ Disable `FINANCE_TRANSACTION_CORRECTIONS_ENABLED` immediately if audit/backup ve
 - Verified both tables and both custom indexes in `sqlite_master`; verified audit foreign key references `finance_mcp_direct_backups(backup_id)` and `new_revision` is NOT NULL.
 - **Not yet verified:** actual D1 multi-statement batch rollback/concurrency and restoration against this database; schema verification alone does not authorize enabling writes.
 - Never bind this test database to the live Finance Hub site or staging gateway that currently references production D1.
+
+## D1 rollback probe (2026-11-22)
+- In `finance-correction-isolated-test` only, created disposable table `finance_correction_rollback_probe(id TEXT PRIMARY KEY,value TEXT NOT NULL)`.
+- Executed two INSERTs with the same primary key in a single console submission; second failed `SQLITE_CONSTRAINT_PRIMARYKEY`.
+- Follow-up `SELECT COUNT(*)` returned **0**, consistent with atomic rollback of the first insert.
+- This proves the observed probe behavior only; the actual Pages `db.batch` correction path still requires isolated end-to-end testing.
