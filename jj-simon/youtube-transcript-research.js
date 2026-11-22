@@ -186,3 +186,18 @@ jjYTResearch.sections.push({title:"Trading around a 9–5: Asia fair-price room 
 ],src:[]});
 jjYTResearchMeta.push({title:"Working 9–5: Asian-session room and payout math",sources:[["mrp4fPdfplU","01:58–04:16"],["mrp4fPdfplU","03:18–05:46"],["mrp4fPdfplU","05:46–08:32"],["mrp4fPdfplU","08:34–11:44"]],status:"JJ public native machine captions; private course variants compared. Chart, current firm terms and payouts not independently verified."});
 renderNav();render();
+
+
+// 2026-11-22: historical JJ-authored public tier-list cross-check; not a current firm recommendation.
+if (!jjYTResearch.sections.some(s=>s.title==="Public firm ranking: payout mechanics versus account headline size")) {
+ jjYTResearch.sections.push({title:"Public firm ranking: payout mechanics versus account headline size",points:[
+ "In his 13 April 2026 provider ranking (00:00–01:00; 22:30–24:50), JJ says provider preference depends on the trader's actual payout cadence and trading style. Treat this as a subjective historical account, not an independently verified firm ranking.",
+ "At 11:00–13:40 he describes an illustrative activation-fee decision and self-reported payouts. Compare total evaluation, reset, renewal and activation spending with eligible and settled withdrawal cash; an advertised 50K or 250K account size is not withdrawable capital.",
+ "At 15:00–16:00 he warns that intraday trailing drawdown can tighten after unrealized gains even if the trade later reverses. Exact breach calculations depend on dated provider-specific thresholds and lock rules, not on headline account size.",
+ "At 17:00–22:40 he describes live-account transitions and restricted purchasing as potential scaling bottlenecks. These are speaker-reported historical experiences, not confirmed provider misconduct or current policy. The course's funded/live and copying constraints must be evaluated separately for each stage.",
+ "Source: https://www.youtube.com/watch?v=5RzMu2B2E_0 . Original audio, payout receipts, firm policies and any accusations are unverified; company names in machine captions may be inaccurate."
+ ],src:[]});
+ jjYTResearchMeta.push({title:"Public firm ranking: payout mechanics versus account headline size",sources:[["5RzMu2B2E_0","00:00–01:00"],["5RzMu2B2E_0","11:00–13:40"],["5RzMu2B2E_0","15:00–16:00"],["5RzMu2B2E_0","17:00–24:50"]],status:"JJ public machine captions, 13 Apr 2026; personal anecdotes and historical provider rules not independently verified."});
+ jjYTVideoSources["5RzMu2B2E_0"]={title:"JJ Simon — Historical futures prop firm ranking (2026-04-13)",video:"https://www.youtube.com/watch?v=5RzMu2B2E_0",verified:"Public machine captions only; rankings, firm allegations, fees, receipts and current rules unverified."};
+ renderNav();render();
+}
