@@ -127,7 +127,18 @@ function jjYTMount(){if(active!==jjYTResearch.slug)return;const art=document.get
 const jjYTBeforeRender=render;
 render=function(){jjYTBeforeRender();jjYTMount()};
 if(new URLSearchParams(location.search).get('topic')===jjYTResearch.slug)active=jjYTResearch.slug;
-if(typeof jjRebuildMobileSelector==='function')jjRebuildMobileSelector();renderNav();render();
+if(typeof jjRebuildMobileSelector==='function')jjRebuildMobileSelector();
+// Source-reviewed 2026-11-22: JJ public video 9cd7FN0QbRw; private Module 7 course comparison.
+// Self-reported financial figures are historical anecdotes, not verified payout evidence.
+jjYTResearch.sections.push({title:"Public first-payout story — evaluation costs versus actual payout cash",points:[
+"JJ recounts buying historical $50 evaluations and allowing monthly renewal pressure to influence trading decisions (00:40–01:22). This is a retrospective account, not a current firm fee or recommended approach.",
+"He describes viewing evaluations as stochastic boundary problems rather than judging the strategy by live-account profit alone (03:17–04:42). The mathematical analogy does not establish a calibrated or profitable model.",
+"He self-reports $5,000 of evaluation spending and $17,000 in payouts in early 2025 (05:04–06:13). The arithmetic is 3.4 times gross receipts to evaluation spend, or 240% simple net return before activation, renewals, taxes and other costs. No receipts were independently verified.",
+"Later self-reported monthly spending/payout examples (06:51–08:00) are not a reproducible performance record. Course Module 7 Expected Value Variance (09:05–10:55) instead illustrates hypothetical probabilities and acquisition costs. A 25% evaluation pass rate alone cannot guarantee positive expected net cash: conditional payout probability and all fees also matter.",
+"Public video: https://www.youtube.com/watch?v=9cd7FN0QbRw . Historical provider conditions, audio accuracy, financial settlement and the underlying course dashboard remain unverified."
+],src:[]});
+jjYTResearchMeta.push({title:"First prop-firm payout: historical cash versus modeled EV",sources:[["9cd7FN0QbRw","00:40–01:22"],["9cd7FN0QbRw","03:17–04:42"],["9cd7FN0QbRw","05:04–06:13"],["9cd7FN0QbRw","06:51–08:00"]],status:"JJ-authored public machine captions cross-checked with private Module 7. Payouts, fees, firm rules and original audio not independently verified."});
+renderNav();render();
 
 // 2026-11-20: New public-video caption audit; historical plan examples, not current provider rules.
 jjYTVideoSources["4UGFy2Dz9Rc"]={title:"JJ Simon — Vest Markets optimization (2026-11)",video:"https://www.youtube.com/watch?v=4UGFy2Dz9Rc",verified:"Public native captions; provider prices, simulated pass odds, charts and payouts unverified."};
