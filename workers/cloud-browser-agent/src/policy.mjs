@@ -28,3 +28,10 @@ export function validateReadOnlyLink(sourceInput, linkInput, allowedOrigins) {
   if(unsafeNavigationPath.test(link.pathname))throw new Error("Action-like navigation path refused");
   return {source:source.href,link:link.href};
 }
+
+export function validateSafeReadUrl(input, allowedOrigins) {
+  const url = new URL(validateTarget(input, allowedOrigins));
+  if (url.search) throw new Error("Navigation query parameters refused");
+  if (unsafeNavigationPath.test(url.pathname)) throw new Error("Action-like navigation path refused");
+  return url.href;
+}
