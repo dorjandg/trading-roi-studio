@@ -49,3 +49,9 @@ Disable `FINANCE_TRANSACTION_CORRECTIONS_ENABLED` immediately if audit/backup ve
 - Seeded fake revision 19 / payload BEFORE; single console submission inserted backup, CAS-updated to revision 20 / AFTER, and inserted audit recording 19→20. Read-back confirmed all three records and exact values.
 - Submitted a stale expected revision 18 attempt; read-back confirmed revision remained 20 / AFTER and no stale backup or audit rows existed.
 - This was a D1 SQL Console test, **not** a deployed Worker `db.batch` integration test; do not equate the two.
+
+## Real isolated D1 restore verification (2026-11-22)
+- In dedicated `finance-correction-isolated-test`, read fake snapshot revision 20 / AFTER and backup revision 19 / BEFORE.
+- Revision-and-payload-guarded UPDATE restored fake snapshot to revision 19 / BEFORE (one row affected), leaving original audit record intact.
+- Simulated an intervening update to revision 21 / NEWER. Repeating guarded restore with expected revision 20 affected zero rows; revision 21 / NEWER remained intact.
+- Only fake `finance_correction_test_snapshots` changed. This does **not** verify the complete live production backup, deployed Worker `db.batch` or user-facing recovery endpoint.
