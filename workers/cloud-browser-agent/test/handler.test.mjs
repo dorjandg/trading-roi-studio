@@ -141,3 +141,14 @@ test("form endpoint returns field shape without values or sensitive inputs",asyn
  assert.equal(body.submissionsAllowed,false);
  assert.equal(mock.state.browserClosed,true);
 });
+
+test("edit preview never changes page and does not read values",async()=>{
+ const mock=browserMock();
+ const r=await createHandler(mock.launch)(req("/edit-preview",{url:"https://fin-kac.pages.dev",formIndex:1,fieldLabel:"Name",proposedText:"New label"}),env);
+ const v=await r.json();
+ assert.equal(r.status,200);
+ assert.equal(v.previewOnly,true);assert.equal(v.executionAllowed,false);
+ assert.equal(v.currentValue,"NOT_READ");
+ assert.equal(v.proposedText,"New label");
+ assert.equal(mock.state.browserClosed,true);
+});
