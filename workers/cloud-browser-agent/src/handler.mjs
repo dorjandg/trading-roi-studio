@@ -1,5 +1,6 @@
 import { validateTarget, validateReadOnlyLink, canRequest, safeTitle } from "./policy.mjs";
 import { inventoryBrowserScript, sanitizeFormInventory } from "./form-inventory.mjs";
+import { validateEditPreviewRequest, buildEditPreview } from "./edit-preview.mjs";
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
   status, headers: {
@@ -30,7 +31,7 @@ export function createHandler(launch) {
     const path = new URL(request.url).pathname;
     if (request.method === "GET" && path === "/health")
       return json({service:"cloud-browser-agent",mode:"read-only",browserConfigured:!!env.BROWSER});
-    if (request.method !== "POST" || !["/inspect","/screenshot","/links","/follow","/forms"].includes(path))
+    if (request.method !== "POST" || !["/inspect","/screenshot","/links","/follow","/forms","/edit-preview"].includes(path))
       return json({error:"Not found"},404);
 
     if (Number(request.headers.get("content-length") || "0") > 4096)
@@ -42,6 +43,11 @@ export function createHandler(launch) {
     let target;
     try { target = validateTarget(body?.url, env.ALLOWED_ORIGINS); }
     catch(e) { return json({error:e.message},400); }
+    let proposal;
+    if(path === "/edit-preview"){
+      try { proposal = validateEditPreviewRequest(body,env.ALLOWED_ORIGINS); }
+      catch(e){ return json({error:e.message},400); }
+    }
     let destination;
     if(path === "/follow") {
       try {
@@ -88,6 +94,12 @@ export function createHandler(launch) {
         return json({sourceUrl:target,finalUrl:page.url(),httpStatus:next?.status()??null,title:safeTitle(await page.title()),headings:headings.slice(0,12).map(s=>s.trim().slice(0,200)),readOnly:true,method:"GET",clicked:false});
       }
       const title = safeTitle(await page.title());
+      if(path === "/edit-preview") {
+        stage="preview-read-only-form-inventory";
+        const raw = await page.evaluate(inventoryBrowserScript);
+        try { return json(buildEditPreview(proposal,raw)); }
+        catch(e){ return json({error:e.message,executionAllowed:false},400); }
+      }
       if(path === "/forms"){
         const raw = await page.evaluate(inventoryBrowserScript);
         return json({requestedUrl:target,finalUrl:page.url(),title,...sanitizeFormInventory(raw)});
