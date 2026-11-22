@@ -115,3 +115,5 @@ jobs:
 # Redeploy staging gateway with audited read-only browser_page_links tool.
 
 # Redeploy with corrected Google OAuth Client ID verified in staging diagnostic run 45031476868.
+
+# Phase 2: deploy four OAuth-protected read-only MCP tools including strict follow-link.
