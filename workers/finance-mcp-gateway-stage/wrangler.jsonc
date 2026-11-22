@@ -5,5 +5,12 @@
   "workers_dev": true,
   "vars": {
     "AI_GATEWAY_ENABLED": "true"
-  }
+  },
+  "d1_databases": [
+    {
+      "binding": "FINANCE_DB",
+      "database_name": "finance-hub-db",
+      "database_id": "c5c75000-5118-4994-a8fb-1e06756b73a6"
+    }
+  ]
 }
