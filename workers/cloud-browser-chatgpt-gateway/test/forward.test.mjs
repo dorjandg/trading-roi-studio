@@ -14,6 +14,7 @@ test("only read-only MCP methods allowed",()=>{
  assert.equal(validateRpc(rpc("tools/list")),true);
  assert.equal(validateRpc(rpc("tools/call",{name:"browser_agent_status",arguments:{}})),true);
  assert.equal(validateRpc(rpc("tools/call",{name:"browser_inspect",arguments:{url:"https://trading-roi-studio.pages.dev"}})),true);
+ assert.equal(validateRpc(rpc("tools/call",{name:"browser_page_links",arguments:{url:"https://trading-roi-studio.pages.dev"}})),true);
  assert.equal(validateRpc(rpc("tools/call",{name:"browser_click",arguments:{url:"https://example.com"}})),false);
  assert.equal(validateRpc(rpc("tools/call",{name:"browser_inspect",arguments:{url:"ok",click:true}})),false);
 });
