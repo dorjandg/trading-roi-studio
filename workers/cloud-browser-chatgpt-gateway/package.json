@@ -4,10 +4,14 @@
   "type": "module",
   "scripts": {
     "test": "node --test",
-    "check": "node --check src/index.mjs && node --check src/forward.mjs && node --check src/oauth-authorization.mjs && node --check src/google-login.mjs && node --check src/consent.mjs"
+    "check": "node --check src/index.mjs && node --check src/forward.mjs && node --check src/oauth-authorization.mjs && node --check src/google-login.mjs && node --check src/consent.mjs",
+    "build": "wrangler deploy --dry-run --outdir /tmp/cloud-browser-oauth-bundle"
   },
   "dependencies": {
     "@cloudflare/workers-oauth-provider": "1.2.4",
     "jose": "^6.1.0"
+  },
+  "devDependencies": {
+    "wrangler": "^4.49.0"
   }
 }
