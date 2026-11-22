@@ -1,4 +1,4 @@
-import { AuthorizationError, CimdFetchError } from "@cloudflare/workers-oauth-provider";
+import { AuthorizationError, CimdFetchError, authorizationErrorRedirect } from "@cloudflare/workers-oauth-provider";
 import {buildGoogleLoginUrl,pkceChallenge,exchangeGoogleCode,verifyGoogleIdentity} from "./google-login.mjs";
 import {renderConsent} from "./consent.mjs";
 
@@ -44,7 +44,8 @@ export const oauthPages={
         const {request:original,data,headers}=await auth.finishUpstream(request);
         const query=new URL(request.url).searchParams;
         if(query.has("error")||!query.get("code")){
-          return text("Google authorization denied",403);
+          headers.set("Location",authorizationErrorRedirect(original,"access_denied"));
+          return redirect(headers);
         }
         const idToken=await exchangeGoogleCode({
           code:query.get("code"),verifier:data.verifier,clientId:env.GOOGLE_CLIENT_ID,
