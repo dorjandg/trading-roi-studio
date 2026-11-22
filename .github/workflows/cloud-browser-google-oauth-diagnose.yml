@@ -60,3 +60,5 @@ jobs:
               raise SystemExit('::error::Google OAuth rejects this client ID as invalid_client')
           print('Google authorization did not report invalid_client (interactive consent not tested)')
           PY
+
+# Recheck after GOOGLE_CLIENT_ID secret correction confirmed by user.
