@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import worker,{routeMcp,verifyGatewayAccess} from "../correction-mcp-router.mjs";
-import {generateKeyPairSync,sign,webcrypto} from "node:crypto";
+import {generateKeyPairSync,sign} from "node:crypto";
 const args={transaction_id:"11111111-1111-4111-8111-111111111111",field:"category",expected_revision:19,expected_value:"Old",new_value:"New"};
 const env={FINANCE_HUB_API_ORIGIN:"https://example.pages.dev"};
 const call=(name,arguments_)=>({jsonrpc:"2.0",id:1,method:"tools/call",params:{name,arguments:arguments_}});
@@ -33,7 +33,6 @@ const invalidJson=await worker.fetch(new Request("https://gateway.example/mcp",{
 assert.equal(invalidJson.status,401); // malformed assertion rejected before body parsing
 assert.equal((await worker.fetch(new Request("https://gateway.example/mcp",{method:"POST",headers:{"cf-access-jwt-assertion":"bad.jwt.signature"},body:"{}"}),{...env,CF_ACCESS_TEAM_DOMAIN:"https://example.cloudflareaccess.com",CF_ACCESS_AUD:"isolated-audience"})).status,401);
 // Real RS256 signed Access assertion: issuer, audience, expiry and tampering.
-globalThis.crypto=webcrypto;
 const {publicKey,privateKey}=generateKeyPairSync("rsa",{modulusLength:2048});
 const jwk=publicKey.export({format:"jwk"});
 jwk.kid="isolated-key";
