@@ -8,7 +8,7 @@
   "preview_urls": false,
   "vars": {
     "CF_ACCESS_TEAM_DOMAIN": "https://floral-river-0fbd.cloudflareaccess.com",
-    "CF_ACCESS_AUD": "REPLACE_WITH_ISOLATED_FINANCE_API_ACCESS_AUD",
+    "CF_ACCESS_AUD": "15b51a2b28df4eda4c3e86530ccb264c31a3d95385b5662428cf1e567748e5c3",
     "FINANCE_BOOTSTRAP_EMAIL": "dorjan.gjoni.dg@gmail.com",
     "FINANCE_MCP_DIRECT_WRITE_ENABLED": "false"
   },
