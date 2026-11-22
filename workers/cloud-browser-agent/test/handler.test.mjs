@@ -17,6 +17,7 @@ function browserMock() {
     goto:async url=>{state.navigated=url;return {status:()=>200};},
     url:()=>state.navigated,
     title:async()=>"Home",
+    evaluate:async()=>[{method:"POST",fields:[{type:"text",label:"Name",name:"name",value:"never-expose"},{type:"password",label:"Password",name:"password",value:"secret"}]}],
     locator:selector=>selector==="a[href]"?{count:async()=>3,evaluateAll:async()=>[
       {href:"https://fin-kac.pages.dev/summary?session=secret",text:"Summary"},
       {href:"https://evil.test/steal",text:"External"},
@@ -127,4 +128,16 @@ test("reject cross-origin, query and action-like navigation before launch",async
   assert.equal(r.status,400);
  }
  assert.equal(launches,0);
+});
+
+test("form endpoint returns field shape without values or sensitive inputs",async()=>{
+ const mock=browserMock();
+ const r=await createHandler(mock.launch)(req("/forms",{url:"https://fin-kac.pages.dev"}),env);
+ const body=await r.json();
+ assert.equal(r.status,200);
+ assert.equal(body.formCount,1);
+ assert.deepEqual(body.forms[0].fields.map(x=>x.label),["Name"]);
+ assert.equal(JSON.stringify(body).includes("never-expose"),false);
+ assert.equal(body.submissionsAllowed,false);
+ assert.equal(mock.state.browserClosed,true);
 });
