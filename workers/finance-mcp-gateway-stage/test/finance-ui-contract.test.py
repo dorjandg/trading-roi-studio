@@ -29,6 +29,12 @@ class IntegrationContract(unittest.TestCase):
   self.assertIn("verifyCorrectionTicket(env.FINANCE_CORRECTION_SIGNING_KEY,a.approval_ticket",API)
   self.assertIn("approval_ticket:result.approval_ticket",PAGE)
   self.assertIn("preview again",API)
+ def test_snapshot_put_utf8_byte_guard(self):
+  self.assertIn('enc.encode(raw).length>1024*1024',API)
+  self.assertIn('enc.encode(payload).length>1024*1024',API)
+  self.assertIn('new TextEncoder().encode(nextPayload).length>1024*1024',API)
+  self.assertNotIn('if(raw.length>1024*1024)',API)
+  self.assertNotIn('if(payload.length>1024*1024)',API)
  def test_page_never_offers_financial_fields(self):
   for field in ("amount","currency","date","type","reportingHold"):
    self.assertNotIn('<option value="'+field+'">',PAGE)
