@@ -1,0 +1,56 @@
+name: Cloud Browser Agent — Protected MCP End-to-End Check
+
+on:
+  push:
+    branches:
+      - feature/cloud-browser-agent-phase1
+    paths:
+      - ".github/workflows/cloud-browser-access-e2e.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  auth-and-mcp:
+    if: github.ref == 'refs/heads/feature/cloud-browser-agent-phase1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: browser-agent-staging
+    env:
+      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+      BROWSER_AGENT_API_TOKEN: ${{ secrets.BROWSER_AGENT_API_TOKEN }}
+    steps:
+      - name: Verify Access service authentication and MCP tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$CF_ACCESS_CLIENT_ID" || -z "$CF_ACCESS_CLIENT_SECRET" || -z "$BROWSER_AGENT_API_TOKEN" ]]; then
+            echo "::error::Staging Access or Worker credential missing"
+            exit 1
+          fi
+          base=https://cloud-browser-agent-stage.dorjan-gjoni-dg.workers.dev
+          response="$RUNNER_TEMP/agent-response"
+          code=$(curl -sS --max-time 30 -o "$response" -w '%{http_code}' \
+            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
+            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
+            -H "Authorization: Bearer $BROWSER_AGENT_API_TOKEN" \
+            "$base/health")
+          if [[ "$code" != "200" ]]; then
+            echo "::error::Protected staging health failed: HTTP $code (no response body printed)"
+            exit 1
+          fi
+          node -e 'const fs=require("fs");let x=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(x.service!=="cloud-browser-agent"||x.browserConfigured!==true)process.exit(1);console.log("Protected Worker health confirmed")' "$response"
+          code=$(curl -sS --max-time 30 -o "$response" -w '%{http_code}' \
+            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
+            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
+            -H "Authorization: Bearer $BROWSER_AGENT_API_TOKEN" \
+            -H 'Content-Type: application/json' \
+            -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' "$base/mcp")
+          if [[ "$code" != "200" ]]; then
+            echo "::error::Protected MCP list failed: HTTP $code (no response body printed)"
+            exit 1
+          fi
+          node -e 'const fs=require("fs");let x=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));let names=x.result?.tools?.map(t=>t.name);if(JSON.stringify(names)!==JSON.stringify(["browser_agent_status","browser_inspect"]))process.exit(1);console.log("Protected MCP tools/list validated")' "$response"
+          echo "Cloudflare Access service token + Worker bearer + read-only MCP: all authenticated successfully." >> "$GITHUB_STEP_SUMMARY"
