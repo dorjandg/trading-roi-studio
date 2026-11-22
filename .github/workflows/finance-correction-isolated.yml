@@ -7,6 +7,8 @@ on:
       - 'workers/finance-mcp-gateway-stage/migrations/0002_direct_corrections.sql'
       - 'workers/finance-mcp-gateway-stage/test/direct-save-sqlite.test.py'
       - 'workers/finance-mcp-gateway-stage/test/ledger-migration-synthetic.test.py'
+      - 'workers/finance-mcp-gateway-stage/correction-mcp-router.mjs'
+      - 'workers/finance-mcp-gateway-stage/test/correction-mcp-router.test.mjs'
       - 'workers/finance-mcp-gateway-stage/test/finance-ui-contract.test.py'
       - 'workers/finance-mcp-gateway-stage/test/correction-ticket.test.mjs'
       - 'workers/finance-mcp-gateway-stage/test/correction-api-integration.test.cjs'
@@ -29,6 +31,8 @@ jobs:
         run: python3 workers/finance-mcp-gateway-stage/test/direct-save-sqlite.test.py
       - name: Verify synthetic 1608-row ledger migration and rollback
         run: python3 workers/finance-mcp-gateway-stage/test/ledger-migration-synthetic.test.py
+      - name: Verify MCP correction router fails closed
+        run: node workers/finance-mcp-gateway-stage/test/correction-mcp-router.test.mjs
       - name: Verify signed approval token at runtime
         run: node workers/finance-mcp-gateway-stage/test/correction-ticket.test.mjs
       - name: Verify authenticated correction preview and blocked saves
