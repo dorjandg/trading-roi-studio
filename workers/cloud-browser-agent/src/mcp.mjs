@@ -8,6 +8,7 @@ const tools = [
   {name:"browser_agent_status",description:"Read staging browser-agent status; no website interactions.",inputSchema:{type:"object",properties:{},additionalProperties:false}},
   {name:"browser_page_links",description:"Discover up to 30 unique same-origin HTTPS links on an approved page; no clicks or forms. Query strings removed.",inputSchema:{type:"object",properties:{url:{type:"string"}},required:["url"],additionalProperties:false}},
   {name:"browser_follow_link",description:"Read-only GET navigation to an exact same-origin anchor found on the source page; blocks form submissions, query-string URLs and action-like paths. Does not click or edit.",inputSchema:{type:"object",properties:{url:{type:"string"},linkUrl:{type:"string"}},required:["url","linkUrl"],additionalProperties:false}},
+  {name:"browser_form_inventory",description:"List only non-sensitive website form field structure. Never reads form values, hidden fields, passwords, files or user data, and cannot edit or submit.",inputSchema:{type:"object",properties:{url:{type:"string"}},required:["url"],additionalProperties:false}},
   {name:"browser_inspect",description:"Read-only inspection of a preapproved HTTPS website: title, headings, link count and HTTP status. No clicks, logins, forms or trading.",inputSchema:{type:"object",properties:{url:{type:"string",description:"Approved HTTPS URL to inspect"}},required:["url"],additionalProperties:false}}
 ];
 export function createMcpHandler(launch) {
@@ -41,10 +42,10 @@ export function createMcpHandler(launch) {
       const value=await response.json();
       return reply({...content(value),isError:!response.ok});
     }
-    if(!["browser_inspect","browser_page_links"].includes(name))return error(-32602,"Unknown tool or invalid arguments");
+    if(!["browser_inspect","browser_page_links","browser_form_inventory"].includes(name))return error(-32602,"Unknown tool or invalid arguments");
     if(Object.keys(args).length!==1||typeof args.url!=="string")return error(-32602,"Expected only URL");
     try{validateTarget(args.url,env.ALLOWED_ORIGINS);}catch{return error(-32602,"URL not approved");}
-    const internal=new Request(new URL(name==="browser_page_links"?"/links":"/inspect",request.url),{method:"POST",headers:{authorization:request.headers.get("authorization")||"","content-type":"application/json"},body:JSON.stringify({url:args.url})});
+    const internal=new Request(new URL(name==="browser_page_links"?"/links":name==="browser_form_inventory"?"/forms":"/inspect",request.url),{method:"POST",headers:{authorization:request.headers.get("authorization")||"","content-type":"application/json"},body:JSON.stringify({url:args.url})});
     const response=await handler(internal,env);
     const value=await response.json();
     return reply({...content(value),isError:!response.ok});
