@@ -8,6 +8,13 @@ export function validateTarget(input, allowedOrigins) {
   url.hash = "";
   return url.href;
 }
-export function safeTitle(title) {
-  return String(title || "").slice(0, 300);
+// Phase 1 deliberately blocks third-party resources and redirected network requests.
+// This trades visual fidelity for a narrow network access policy.
+export function canRequest(requestUrl, targetUrl) {
+  try {
+    const url = new URL(requestUrl);
+    const target = new URL(targetUrl);
+    return url.protocol === "https:" && url.origin === target.origin && !url.username && !url.password;
+  } catch { return false; }
 }
+export function safeTitle(title) { return String(title || "").slice(0, 300); }
