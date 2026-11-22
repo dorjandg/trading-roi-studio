@@ -1,5 +1,10 @@
 name: Cloud Browser Agent — Provision isolated audit D1 (staging only)
 on:
+  push:
+    branches:
+      - feature/cloud-browser-agent-phase1
+    paths:
+      - ".github/workflows/cloud-browser-audit-db-stage.yml"
   workflow_dispatch:
 permissions:
   contents: read
