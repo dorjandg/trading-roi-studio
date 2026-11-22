@@ -99,3 +99,32 @@ test("discovers same-origin navigation without leaking query parameters or visit
   assert.equal(mock.state.navigated,"https://fin-kac.pages.dev/");
   assert.equal(mock.state.browserClosed,true);
 });
+
+test("follow an actual same-origin link using GET and close browser",async()=>{
+ const mock=browserMock();
+ const handler=createHandler(mock.launch);
+ const r=await handler(req("/follow",{url:"https://fin-kac.pages.dev",linkUrl:"https://fin-kac.pages.dev/reports"}),env);
+ const j=await r.json();
+ assert.equal(r.status,200);
+ assert.equal(j.finalUrl,"https://fin-kac.pages.dev/reports");
+ assert.equal(j.clicked,false);
+ assert.equal(j.readOnly,true);
+ assert.equal(j.method,"GET");
+ assert.equal(mock.state.browserClosed,true);
+});
+test("refuse links not present on source page",async()=>{
+ const mock=browserMock();
+ const r=await createHandler(mock.launch)(req("/follow",{url:"https://fin-kac.pages.dev",linkUrl:"https://fin-kac.pages.dev/not-listed"}),env);
+ assert.equal(r.status,400);
+ assert.equal(mock.state.navigated,"https://fin-kac.pages.dev/");
+ assert.equal(mock.state.browserClosed,true);
+});
+test("reject cross-origin, query and action-like navigation before launch",async()=>{
+ let launches=0;
+ const handler=createHandler(async()=>{launches++;});
+ for(const linkUrl of ["https://evil.test/","https://fin-kac.pages.dev/reports?delete=1","https://fin-kac.pages.dev/logout","https://fin-kac.pages.dev/delete/7"]){
+  const r=await handler(req("/follow",{url:"https://fin-kac.pages.dev",linkUrl}),env);
+  assert.equal(r.status,400);
+ }
+ assert.equal(launches,0);
+});
