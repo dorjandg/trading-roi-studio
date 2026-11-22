@@ -13,6 +13,8 @@ on:
       - 'workers/finance-mcp-gateway-stage/test/write-plan.test.mjs'
       - 'workers/finance-mcp-gateway-stage/test/approval-request.test.mjs'
       - 'workers/finance-mcp-gateway-stage/test/atomic-write-sqlite.test.py'
+      - 'workers/finance-mcp-gateway-stage/test/migration-sqlite.test.py'
+      - 'workers/finance-mcp-gateway-stage/migrations/0001_controlled_writes.sql'
       - '.github/workflows/finance-mcp-write-guards.yml'
   pull_request:
     paths:
@@ -33,3 +35,6 @@ jobs:
 
       - name: Test isolated SQLite atomic transaction rollback
         run: python3 workers/finance-mcp-gateway-stage/test/atomic-write-sqlite.test.py
+
+      - name: Validate migration in isolated SQLite
+        run: python3 workers/finance-mcp-gateway-stage/test/migration-sqlite.test.py
