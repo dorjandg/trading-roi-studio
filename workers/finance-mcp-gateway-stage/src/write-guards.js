@@ -29,7 +29,7 @@ export function applyChangeToCopy(snapshot, validated) {
   // A fresh copy ensures no changes to the input and preserves every unrelated field.
   const next=structuredClone(snapshot);
   const tx=next.data.transactions.find(t=>t.id===validated.transaction_id);
-  if(!tx||tx[validated.field]!==validated.before||next.revision!==validated.revision)
+  if(!tx||(tx[validated.field]??"")!==validated.before||next.revision!==validated.revision)
     throw Error("Stale preview");
   tx[validated.field]=validated.after;
   next.revision++;
