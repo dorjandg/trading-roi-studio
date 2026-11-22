@@ -47,7 +47,7 @@ export async function routeMcp(payload,env,identityJwt,fetcher=fetch){
 // Verify the Access assertion before exposing even tool discovery.
 // Finance Hub still independently verifies the same assertion and its audience.
 async function verifyGatewayAccess(jwt,env,fetcher=fetch){
- const domain=String(env.CF_ACCESS_TEAM_DOMAIN||"").replace(/\\/$/,"");
+ const domain=String(env.CF_ACCESS_TEAM_DOMAIN||"").replace(/\/$/,"");
  if(!domain.startsWith("https://")||!env.CF_ACCESS_AUD||typeof jwt!=="string")return false;
  try{
   const parts=jwt.split(".");if(parts.length!==3)return false;
