@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS fixture_events (
   if(!validText(value))deny("INVALID_FIXTURE");
   this.#db.prepare("INSERT OR IGNORE INTO fixture_fields(id,value,revision) VALUES('fixture:title',?,1)").run(value);
  }
- state(){const row=this.#db.prepare("SELECT value,revision FROM fixture_fields WHERE id='fixture:title'").get();if(!row)deny("NO_FIXTURE");return row}
+ state(){const row=this.#db.prepare("SELECT value,revision FROM fixture_fields WHERE id='fixture:title'").get();if(!row)deny("NO_FIXTURE");return {value:row.value,revision:row.revision}}
  propose(actor,nextValue,{ttlMs=60000}={}){
   this.#requireWrite();
   if(!validActor(actor,"creator")||!validText(nextValue))deny("ACTOR_OR_CHANGE_DENIED");
