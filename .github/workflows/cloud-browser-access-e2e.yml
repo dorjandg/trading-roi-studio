@@ -1,4 +1,5 @@
 name: Cloud Browser Agent — Protected MCP End-to-End Check
+# Verify policy attached to staging application before rerun.
 
 on:
   push:
