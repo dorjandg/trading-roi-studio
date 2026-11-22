@@ -1,0 +1,20 @@
+{
+  // Deployment candidate ONLY. Do not enable public workers.dev or preview URLs.
+  // Create an isolated Access application and replace the API audience placeholder.
+  "name": "finance-correction-api-isolated",
+  "main": "index.mjs",
+  "compatibility_date": "2026-11-01",
+  "workers_dev": false,
+  "preview_urls": false,
+  "vars": {
+    "CF_ACCESS_TEAM_DOMAIN": "https://floral-river-0fbd.cloudflareaccess.com",
+    "CF_ACCESS_AUD": "REPLACE_WITH_ISOLATED_FINANCE_API_ACCESS_AUD",
+    "FINANCE_BOOTSTRAP_EMAIL": "dorjan.gjoni.dg@gmail.com",
+    "FINANCE_MCP_DIRECT_WRITE_ENABLED": "false"
+  },
+  "d1_databases": [{
+    "binding": "FINANCE_DB",
+    "database_name": "finance-correction-isolated-test",
+    "database_id": "c17bd16f-ff73-4b53-b8a5-5128d9d1b400"
+  }]
+}
