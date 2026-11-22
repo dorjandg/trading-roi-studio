@@ -14,3 +14,13 @@ test("isolated edit simulation is never imported or exposed by deployed worker",
  const index=readFileSync(new URL("../src/index.js",import.meta.url),"utf8");
  assert.doesNotMatch(index,/write[-_]enabled|isolated-edit-lab/);
 });
+
+test("durable write prototype never reaches staging MCP gateway or deployed agent",()=>{
+ const sources=["src/index.js","src/handler.mjs","src/mcp.mjs"];
+ for(const path of sources){
+  const body=readFileSync(new URL("../"+path,import.meta.url),"utf8");
+  assert.doesNotMatch(body,/PersistentWritePrototype|persistent-write-prototype|node:sqlite|simulation\\//);
+ }
+ const deployed=readFileSync(new URL("../wrangler.jsonc",import.meta.url),"utf8");
+ assert.doesNotMatch(deployed,/WRITE_ENABLED|write_service|persistent-write-prototype/);
+});
