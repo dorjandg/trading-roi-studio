@@ -1,4 +1,5 @@
 import { validateTarget, validateReadOnlyLink, canRequest, safeTitle } from "./policy.mjs";
+import { inventoryBrowserScript, sanitizeFormInventory } from "./form-inventory.mjs";
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
   status, headers: {
@@ -29,7 +30,7 @@ export function createHandler(launch) {
     const path = new URL(request.url).pathname;
     if (request.method === "GET" && path === "/health")
       return json({service:"cloud-browser-agent",mode:"read-only",browserConfigured:!!env.BROWSER});
-    if (request.method !== "POST" || !["/inspect","/screenshot","/links","/follow"].includes(path))
+    if (request.method !== "POST" || !["/inspect","/screenshot","/links","/follow","/forms"].includes(path))
       return json({error:"Not found"},404);
 
     if (Number(request.headers.get("content-length") || "0") > 4096)
@@ -80,6 +81,10 @@ export function createHandler(launch) {
         return json({sourceUrl:target,finalUrl:page.url(),httpStatus:next?.status()??null,title:safeTitle(await page.title()),headings:headings.slice(0,12).map(s=>s.trim().slice(0,200)),readOnly:true,method:"GET",clicked:false});
       }
       const title = safeTitle(await page.title());
+      if(path === "/forms"){
+        const raw = await page.evaluate(inventoryBrowserScript);
+        return json({requestedUrl:target,finalUrl:page.url(),title,...sanitizeFormInventory(raw)});
+      }
       if (path === "/screenshot") {
         const bytes = await page.screenshot({type:"png",fullPage:false});
         return new Response(bytes,{headers:{"content-type":"image/png","cache-control":"no-store","x-content-type-options":"nosniff"}});
