@@ -27,3 +27,11 @@ test("rejects payload exceeding existing 1 MB API limit",()=>{
  const big=snapshot();big.data.propAccounts.push({data:"x".repeat(1024*1024)});
  assert.equal(prepareExistingSave(big,args()).code,"SNAPSHOT_TOO_LARGE");
 });
+
+test("adds a missing optional description without changing other records",()=>{
+ const original=snapshot();
+ const result=prepareExistingSave(original,{transaction_id:id,expected_revision:19,field:"description",expected_value:"",new_value:"Verified description"});
+ assert.equal(result.ok,true);
+ assert.equal(result.body.data.transactions[0].description,"Verified description");
+ assert.equal(Object.hasOwn(original.data.transactions[0],"description"),false);
+});
