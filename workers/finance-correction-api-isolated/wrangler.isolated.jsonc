@@ -8,7 +8,10 @@
   "preview_urls": false,
   "vars": {
     "CF_ACCESS_TEAM_DOMAIN": "https://floral-river-0fbd.cloudflareaccess.com",
-    "CF_ACCESS_AUD": "15b51a2b28df4eda4c3e86530ccb264c31a3d95385b5662428cf1e567748e5c3",
+    // Service-binding calls carry a gateway-issued user JWT. Validate that exact audience.
+    // The API Access app AUD is retained separately for a future direct-edge integration.
+    "CF_ACCESS_AUD": "bd462d04b3ae7f51551d9edb47f81d9b906ebca1d84c1bdb2eb4cf70a1d97cc0",
+    "CF_ACCESS_API_APP_AUD": "15b51a2b28df4eda4c3e86530ccb264c31a3d95385b5662428cf1e567748e5c3",
     "FINANCE_BOOTSTRAP_EMAIL": "dorjan.gjoni.dg@gmail.com",
     "FINANCE_MCP_DIRECT_WRITE_ENABLED": "false"
   },
