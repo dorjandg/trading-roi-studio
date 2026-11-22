@@ -10,6 +10,7 @@ on:
       - '.github/workflows/finance-correction-isolated.yml'
   push:
     branches:
+      - main
       - 'feature/finance-correction-isolated'
 jobs:
   isolated-correction:
