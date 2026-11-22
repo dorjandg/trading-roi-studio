@@ -201,3 +201,18 @@ if (!jjYTResearch.sections.some(s=>s.title==="Public firm ranking: payout mechan
  jjYTVideoSources["5RzMu2B2E_0"]={title:"JJ Simon — Historical futures prop firm ranking (2026-04-13)",video:"https://www.youtube.com/watch?v=5RzMu2B2E_0",verified:"Public machine captions only; rankings, firm allegations, fees, receipts and current rules unverified."};
  renderNav();render();
 }
+
+ 
+// 2026-11-22 public native-caption audit: discretionary news-repricing exception, not a new paid-course rule.
+if(typeof jjYTResearch!=="undefined" && typeof jjYTVideoSources!=="undefined" && !jjYTResearch.sections.some(s=>s.title==="Public video · News drift versus fair-price reversion and account copying")){
+ jjYTResearch.sections.push({title:"Public video · News drift versus fair-price reversion and account copying",points:[
+  "In his 10 April 2026 public NQ recap (01:54–03:40), JJ treats a major news announcement as a possible change in fair price, replacing the old session anchor with a newer consolidation before a continuation long. The approximate 30-minute consolidation is a discretionary example, not a chart-verified universal reset threshold.",
+  "For the later New York short (04:15–06:35), he admits entering before his preferred opening confirmation because of FOMO. He cannot recall the exact stop and says it may have been mental. This is an acknowledged exception, not a recommended BOS/displacement entry or validated risk model.",
+  "He describes fixed-point take-profit distances (03:20–03:45), with optional break-even stop changes around news or a session opening (06:45–07:25). Neither outcome nor a positive expectancy follows without execution and path data.",
+  "The first reported trade was 2 NQ contracts × 150 points × $20 per point = $6,000 gross per account on five copied accounts (00:00–00:32). These are correlated positions, not five independent bets. The headline $56,893.28 is self-reported account P&L; his possible 80% future payout is not verified settled cash.",
+  "Source: https://www.youtube.com/watch?v=RnwOqmEF6Rk . Public captions only; original chart frames, fills, stop, geopolitical event, provider terms, performance edge and payout receipts remain unverified."
+ ],src:[]});
+ jjYTResearchMeta.push({title:"Public video · News drift versus fair-price reversion and account copying",sources:[["RnwOqmEF6Rk","00:00–01:30"],["RnwOqmEF6Rk","01:54–03:45"],["RnwOqmEF6Rk","04:15–06:35"],["RnwOqmEF6Rk","06:45–07:25"]],status:"JJ public native captions, 10 Apr 2026; unverified account screenshots and discretionary chart interpretations."});
+ jjYTVideoSources["RnwOqmEF6Rk"]={title:"JJ Simon — News drift and funded NQ trade recap (2026-04-10)",video:"https://www.youtube.com/watch?v=RnwOqmEF6Rk",verified:"Public native captions; original charts, provider rules, reported P&L and payouts unverified."};
+ renderNav();render();
+}
