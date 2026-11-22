@@ -157,3 +157,17 @@ test("edit preview never changes page and does not read values",async()=>{
  assert.equal(JSON.stringify(v.audit).includes("New label"),false);
  assert.equal(mock.state.browserClosed,true);
 });
+
+test("audit D1 binding alone never causes writes",async()=>{
+ const mock=browserMock();let writes=0;
+ const db={prepare(){writes++;throw Error("should not write");},batch(){writes++;throw Error("should not write");}};
+ const r=await createHandler(mock.launch)(req("/edit-preview",{url:"https://fin-kac.pages.dev",formIndex:1,fieldLabel:"Name",proposedText:"New label"}),{...env,BROWSER_AGENT_AUDIT_DB:db});
+ assert.equal(r.status,200);assert.equal((await r.json()).persisted,false);assert.equal(writes,0);
+});
+test("unsafe inspection target rejected before browser launch",async()=>{
+ let launches=0;const handler=createHandler(async()=>{launches++;throw Error("unexpected");});
+ for(const url of ["https://fin-kac.pages.dev/logout","https://fin-kac.pages.dev/reports?delete=1"]){
+  const r=await handler(req("/inspect",{url}),env);assert.equal(r.status,400);
+ }
+ assert.equal(launches,0);
+});
