@@ -200,6 +200,7 @@ async function handler(ctx){
  // Exact, authenticated Finance Hub correction. Disabled by default.
  // A confirmed UI request is not permission to edit any other transaction.
  if(method==="POST"&&url.searchParams.get("resource")==="transaction-change-save"){
+  if(!["owner","admin"].includes(member.role))return json({error:"Owner or admin approval required"},403);
   if(env.FINANCE_TRANSACTION_CORRECTIONS_ENABLED!=="true")
    return json({error:"Transaction corrections are not enabled"},503);
   if(!write)return json({error:"Read-only membership"},403);
