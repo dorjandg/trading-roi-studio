@@ -1,4 +1,4 @@
-import { validateTarget, validateReadOnlyLink, canRequest, safeTitle } from "./policy.mjs";
+import { validateTarget, validateSafeReadUrl, validateReadOnlyLink, canRequest, safeTitle } from "./policy.mjs";
 import { inventoryBrowserScript, sanitizeFormInventory } from "./form-inventory.mjs";
 import { validateEditPreviewRequest, buildEditPreview } from "./edit-preview.mjs";
 import { buildPreviewAuditReceipt } from "./approval-audit.mjs";
@@ -43,7 +43,7 @@ export function createHandler(launch) {
     let body;
     try { body = JSON.parse(bodyText); } catch { return json({error:"Invalid JSON"},400); }
     let target;
-    try { target = validateTarget(body?.url, env.ALLOWED_ORIGINS); }
+    try { target = validateSafeReadUrl(body?.url, env.ALLOWED_ORIGINS); }
     catch(e) { return json({error:e.message},400); }
     let proposal;
     if(path === "/edit-preview"){
@@ -72,6 +72,10 @@ export function createHandler(launch) {
       await context.route("**/*", async route => {
         if (!canRequest(route.request().url(), target)) return route.abort();
         if (!["GET","HEAD"].includes(route.request().method())) return route.abort();
+        if (route.request().isNavigationRequest()) {
+          try { validateSafeReadUrl(route.request().url(), env.ALLOWED_ORIGINS); }
+          catch { return route.abort(); }
+        }
         return route.continue();
       });
       const started = Date.now();
@@ -104,7 +108,7 @@ export function createHandler(launch) {
           const receipt=await buildPreviewAuditReceipt(preview);
           // No audit DB binding: keep existing read-only, ephemeral behavior.
           // DB present but failing: return 503 and never claim durable persistence.
-          if(env.BROWSER_AGENT_AUDIT_DB) {
+          if(env.ENABLE_PREVIEW_AUDIT_WRITES === "true" && env.BROWSER_AGENT_AUDIT_DB) {
             try {
               const saved=await persistPreviewAudit(env.BROWSER_AGENT_AUDIT_DB,preview,receipt);
               return json({...preview,...saved});
