@@ -8,6 +8,7 @@ on:
       - 'workers/finance-mcp-gateway-stage/test/direct-save-sqlite.test.py'
       - 'workers/finance-mcp-gateway-stage/test/finance-ui-contract.test.py'
       - 'workers/finance-mcp-gateway-stage/test/correction-ticket.test.mjs'
+      - 'workers/finance-mcp-gateway-stage/test/correction-api-integration.test.cjs'
       - '.github/workflows/finance-correction-isolated.yml'
   push:
     branches:
@@ -27,5 +28,7 @@ jobs:
         run: python3 workers/finance-mcp-gateway-stage/test/direct-save-sqlite.test.py
       - name: Verify signed approval token at runtime
         run: node workers/finance-mcp-gateway-stage/test/correction-ticket.test.mjs
+      - name: Verify authenticated correction preview and blocked saves
+        run: node workers/finance-mcp-gateway-stage/test/correction-api-integration.test.cjs
       - name: Verify UI and API contract
         run: python3 workers/finance-mcp-gateway-stage/test/finance-ui-contract.test.py
