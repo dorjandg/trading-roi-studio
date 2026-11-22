@@ -38,6 +38,10 @@ class IntegrationContract(unittest.TestCase):
  def test_page_never_offers_financial_fields(self):
   for field in ("amount","currency","date","type","reportingHold"):
    self.assertNotIn('<option value="'+field+'">',PAGE)
+ def test_form_edit_invalidates_existing_approval(self):
+  self.assertIn('form.addEventListener("input"',PAGE)
+  self.assertIn('form.addEventListener("change"',PAGE)
+  self.assertIn('proposal=null;review.hidden=true;save.disabled=true;confirmBox.checked=false;',PAGE)
  def test_save_requires_ui_confirmation(self):
   self.assertIn("if(!confirmBox.checked||!proposal)return",PAGE)
   self.assertIn("confirmed:true",PAGE)
