@@ -1,0 +1,75 @@
+name: Cloud Browser Agent — Provision isolated audit D1 (staging only)
+on:
+  push:
+    branches:
+      - feature/cloud-browser-agent-phase1
+    paths:
+      - ".github/workflows/cloud-browser-audit-db-stage.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: cloud-browser-audit-db-stage
+  cancel-in-progress: false
+jobs:
+  provision:
+    if: github.ref == 'refs/heads/feature/cloud-browser-agent-phase1' && vars.BROWSER_AGENT_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: browser-agent-staging
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: workers/cloud-browser-agent
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check staging preconditions
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          test "${{ vars.BROWSER_AGENT_ACCESS_READY }}" = "true"
+          test "${{ github.ref }}" = "refs/heads/feature/cloud-browser-agent-phase1"
+      - name: Install pinned project dependencies
+        run: npm install --no-audit --no-fund
+      - name: Provision ONLY cloud-browser-audit-stage if missing
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx wrangler d1 list --json > /tmp/browser-audit-db-list.json
+          node -e '
+            const fs=require("fs");
+            const raw=JSON.parse(fs.readFileSync("/tmp/browser-audit-db-list.json","utf8"));
+            if(!Array.isArray(raw))throw Error("Unexpected D1 list response");
+            const db=raw.find(d=>d.name==="cloud-browser-audit-stage");
+            fs.writeFileSync("/tmp/browser-audit-db-present",db?"yes":"no");
+          '
+          if [ "$(cat /tmp/browser-audit-db-present)" = no ]; then
+            npx wrangler d1 create cloud-browser-audit-stage --jurisdiction eu
+          fi
+          npx wrangler d1 list --json > /tmp/browser-audit-db-final.json
+          node -e '
+            const fs=require("fs");
+            const db=JSON.parse(fs.readFileSync("/tmp/browser-audit-db-final.json","utf8")).find(d=>d.name==="cloud-browser-audit-stage");
+            if(!db || !/^[0-9a-f-]{36}$/i.test(db.uuid))throw Error("Could not resolve isolated audit database ID");
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,"\nIsolated audit database: cloud-browser-audit-stage\nDatabase ID: `"+db.uuid+"`\n");
+            console.log("Staging audit database ready: "+db.uuid);
+          '
+      - name: Apply only isolated audit schema
+        run: |
+          set -euo pipefail
+          npx wrangler d1 execute cloud-browser-audit-stage --remote --yes --file=migrations/0001_proposal_audit.sql
+          npx wrangler d1 execute cloud-browser-audit-stage --remote --json --command "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('edit_proposals','proposal_audit_events') ORDER BY name;" > /tmp/browser-audit-schema.json
+          node -e '
+            const fs=require("fs");
+            const response=JSON.parse(fs.readFileSync("/tmp/browser-audit-schema.json","utf8"));
+            const rows=Array.isArray(response)?response.flatMap(x=>x.results||[]):response.results||[];
+            const names=rows.map(r=>r.name).sort();
+            if(names.join(",")!=="edit_proposals,proposal_audit_events")throw Error("Audit schema not verified");
+            console.log("Isolated schema verified; existing business databases untouched");
+          '
