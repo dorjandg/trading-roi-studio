@@ -18,6 +18,26 @@ async function identity(req,env){
  if(!claims.email||!claims.sub)throw Error("Identity incomplete");
  return {id:claims.sub,email:claims.email.toLowerCase()};
 }
+// Short-lived, tamper-evident authorization for exactly one reviewed metadata change.
+// This is NOT a substitute for the human clicking Confirm in the UI.
+async function correctionTicket(secret,claims){
+ const key=await crypto.subtle.importKey("raw",enc.encode(secret),{name:"HMAC",hash:"SHA-256"},false,["sign"]);
+ const bytes=enc.encode(JSON.stringify(claims));
+ const sig=new Uint8Array(await crypto.subtle.sign("HMAC",key,bytes));
+ const url64=arr=>btoa(String.fromCharCode(...arr)).replace(/\\+/g,"-").replace(/\\//g,"_").replace(/=+$/,"");
+ return url64(bytes)+"."+url64(sig);
+}
+async function verifyCorrectionTicket(secret,ticket,expected){
+ if(typeof ticket!=="string"||ticket.length>4096||!ticket.includes("."))return false;
+ const parts=ticket.split(".");if(parts.length!==2)return false;
+ try{
+  const raw=b64(parts[0]);const claims=JSON.parse(new TextDecoder().decode(raw));
+  if(!claims||claims.exp<Date.now()||claims.exp>Date.now()+5*60*1000||
+     Object.keys(expected).some(k=>claims[k]!==expected[k]))return false;
+  const key=await crypto.subtle.importKey("raw",enc.encode(secret),{name:"HMAC",hash:"SHA-256"},false,["verify"]);
+  return await crypto.subtle.verify("HMAC",key,b64(parts[1]),raw);
+ }catch{return false}
+}
 async function handler(ctx){
  const {request,env}=ctx;if(!env.FINANCE_DB)return json({error:"Database not configured"},503);
  let user;try{user=await identity(request,env)}catch{return json({error:"Authentication required"},401)}
@@ -194,8 +214,11 @@ async function handler(ctx){
   if(matches.length!==1)return json({error:"Transaction must match exactly one record"},409);
   const before=matches[0][a.field]??"";
   if(typeof before!=="string"||before!==a.expected_value)return json({error:"Transaction changed; refresh before continuing"},409);
+  if(!env.FINANCE_CORRECTION_SIGNING_KEY||String(env.FINANCE_CORRECTION_SIGNING_KEY).length<32)
+   return json({error:"Correction approval signing key not configured"},503);
+  const approval_ticket=await correctionTicket(env.FINANCE_CORRECTION_SIGNING_KEY,{ws,user_id:user.id,transaction_id:a.transaction_id,field:a.field,expected_revision:row.revision,expected_value:before,new_value:a.new_value,exp:Date.now()+5*60*1000});
   return json({ok:true,previewOnly:true,saved:false,transaction_id:a.transaction_id,field:a.field,
-   before,after:a.new_value,revision:row.revision,requiresExplicitConfirmation:true});
+   before,after:a.new_value,revision:row.revision,approval_ticket,requiresExplicitConfirmation:true});
  }
  // Exact, authenticated Finance Hub correction. Disabled by default.
  // A confirmed UI request is not permission to edit any other transaction.
@@ -212,6 +235,10 @@ async function handler(ctx){
      !fields.includes(a.field)||typeof a.expected_value!=="string"||
      typeof a.new_value!=="string"||!a.new_value.trim()||a.new_value.length>300||
      a.new_value===a.expected_value)return json({error:"Exact transaction confirmation required"},400);
+  if(!env.FINANCE_CORRECTION_SIGNING_KEY||String(env.FINANCE_CORRECTION_SIGNING_KEY).length<32)
+   return json({error:"Correction approval signing key not configured"},503);
+  if(!await verifyCorrectionTicket(env.FINANCE_CORRECTION_SIGNING_KEY,a.approval_ticket,{ws,user_id:user.id,transaction_id:a.transaction_id,field:a.field,expected_revision:a.expected_revision,expected_value:a.expected_value,new_value:a.new_value}))
+   return json({error:"Preview expired or does not match exact correction; preview again"},403);
   const old=await db.prepare("SELECT revision,payload FROM finance_snapshots WHERE workspace_id=? AND user_id=?")
    .bind(ws,user.id).first();
   if(!old||old.revision!==a.expected_revision)return json({error:"Snapshot revision changed"},409);
