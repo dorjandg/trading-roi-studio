@@ -27,6 +27,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
       - name: Validate JavaScript syntax
         run: |
           node --check src/index.js
@@ -34,3 +36,5 @@ jobs:
           node --check src/policy.mjs
       - name: Unit tests (no cloud browser or billed sessions)
         run: npm test
+      - name: Verify Worker bundles without deployment
+        run: npx wrangler deploy --dry-run --outdir /tmp/cloud-browser-agent-bundle
