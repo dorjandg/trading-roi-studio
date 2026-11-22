@@ -55,3 +55,9 @@ Disable `FINANCE_TRANSACTION_CORRECTIONS_ENABLED` immediately if audit/backup ve
 - Revision-and-payload-guarded UPDATE restored fake snapshot to revision 19 / BEFORE (one row affected), leaving original audit record intact.
 - Simulated an intervening update to revision 21 / NEWER. Repeating guarded restore with expected revision 20 affected zero rows; revision 21 / NEWER remained intact.
 - Only fake `finance_correction_test_snapshots` changed. This does **not** verify the complete live production backup, deployed Worker `db.batch` or user-facing recovery endpoint.
+
+## Production read-only backup readiness audit (2026-11-22)
+- Inspected Cloudflare D1 `finance-hub-db` (ID `c5c75000-5118-4994-a8fb-1e06756b73a6`) without modifying data or settings.
+- D1 Time Travel page showed restore control, current bookmark capability and UI text describing a 30-day recovery period. The displayed available window began 2026-11-19 07:10 and ended 2026-11-22 04:32; **do not assume a full 30 days of actual history**.
+- Verified `finance_snapshots` and other application tables exist; no raw financial records were exported. `PRAGMA page_count` was denied by console authorization.
+- This is **not** a verified independent export of the complete production snapshot. Mandatory activation precondition 4 remains unmet. Never invoke Time Travel restore without a separate, reviewed authorization because it overwrites current database state.
