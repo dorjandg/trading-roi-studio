@@ -1,6 +1,7 @@
 import { OAuthProvider } from "@cloudflare/workers-oauth-provider";
 import { oauthPages } from "./oauth-authorization.mjs";
 import { forwardAuthorizedMcp } from "./forward.mjs";
+import { publicDiscovery } from "./discovery.mjs";
 
 const RESOURCE="https://cloud-browser-chatgpt-stage.dorjan-gjoni-dg.workers.dev/mcp";
 const ORIGIN="https://cloud-browser-chatgpt-stage.dorjan-gjoni-dg.workers.dev";
@@ -26,7 +27,7 @@ const authHandler={
 
 // No deployment until OAuth KV, a dedicated Google OAuth client,
 // an allowlisted Google account and approved staging hostname are configured.
-export default new OAuthProvider({
+const oauthProvider = new OAuthProvider({
   apiRoute:"/mcp",
   apiHandler,
   defaultHandler:authHandler,
@@ -37,3 +38,13 @@ export default new OAuthProvider({
   clientIdMetadataDocumentEnabled:true,
   resourceMetadata:{resource:RESOURCE,authorization_servers:[ORIGIN]}
 });
+
+// ChatGPT discovers schemas before OAuth. Only initialize and tools/list are public.
+// All tool invocations, including browser_agent_status, use OAuthProvider validation.
+export default {
+  async fetch(request,env,ctx){
+    const discovery=await publicDiscovery(request);
+    if(discovery)return discovery;
+    return oauthProvider.fetch(request,env,ctx);
+  }
+};
