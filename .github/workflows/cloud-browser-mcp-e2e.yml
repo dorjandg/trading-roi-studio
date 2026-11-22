@@ -1,4 +1,5 @@
 name: Cloud Browser Agent — Protected MCP End-to-End Check
+# Recheck Access service authentication following user-side GitHub credential update.
 on:
   push:
     branches:
