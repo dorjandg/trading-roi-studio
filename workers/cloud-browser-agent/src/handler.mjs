@@ -1,4 +1,4 @@
-import { validateTarget, canRequest, safeTitle } from "./policy.mjs";
+import { validateTarget, validateReadOnlyLink, canRequest, safeTitle } from "./policy.mjs";
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
   status, headers: {
@@ -29,7 +29,7 @@ export function createHandler(launch) {
     const path = new URL(request.url).pathname;
     if (request.method === "GET" && path === "/health")
       return json({service:"cloud-browser-agent",mode:"read-only",browserConfigured:!!env.BROWSER});
-    if (request.method !== "POST" || !["/inspect","/screenshot","/links"].includes(path))
+    if (request.method !== "POST" || !["/inspect","/screenshot","/links","/follow"].includes(path))
       return json({error:"Not found"},404);
 
     if (Number(request.headers.get("content-length") || "0") > 4096)
@@ -41,6 +41,13 @@ export function createHandler(launch) {
     let target;
     try { target = validateTarget(body?.url, env.ALLOWED_ORIGINS); }
     catch(e) { return json({error:e.message},400); }
+    let destination;
+    if(path === "/follow") {
+      try {
+        if(!body||typeof body.linkUrl!=="string"||Object.keys(body).sort().join(",")!=="linkUrl,url")throw new Error("Only source URL and link URL are permitted");
+        destination=validateReadOnlyLink(target,body.linkUrl,env.ALLOWED_ORIGINS).link;
+      } catch(e) { return json({error:e.message},400); }
+    }
     if (!env.BROWSER) return json({error:"Browser binding unavailable"},503);
 
     let browser;
@@ -53,11 +60,25 @@ export function createHandler(launch) {
       context.on("page", newPage => { if(newPage !== page) newPage.close().catch(()=>{}); });
       await context.route("**/*", async route => {
         if (!canRequest(route.request().url(), target)) return route.abort();
+        if (!["GET","HEAD"].includes(route.request().method())) return route.abort();
         return route.continue();
       });
       const started = Date.now();
       const response = await page.goto(target,{waitUntil:"domcontentloaded",timeout:20000});
       if (new URL(page.url()).origin !== new URL(target).origin) throw new Error("Cross-origin navigation refused");
+      if (path === "/follow") {
+        const sourceLinks = await page.locator("a[href]").evaluateAll(els =>
+          els.slice(0,500).map(el => el.href));
+        // Navigation is permitted only if an actual link on the source page exists.
+        if(!sourceLinks.some(href=>{try {
+          const u=new URL(href);
+          u.hash="";return u.href===destination;
+        }catch{return false;}}))return json({error:"Destination is not a link on the source page"},400);
+        const next=await page.goto(destination,{waitUntil:"domcontentloaded",timeout:20000});
+        if(page.url()!==destination)throw new Error("Unexpected redirect refused");
+        const headings=await page.locator("h1, h2").allTextContents();
+        return json({sourceUrl:target,finalUrl:page.url(),httpStatus:next?.status()??null,title:safeTitle(await page.title()),headings:headings.slice(0,12).map(s=>s.trim().slice(0,200)),readOnly:true,method:"GET",clicked:false});
+      }
       const title = safeTitle(await page.title());
       if (path === "/screenshot") {
         const bytes = await page.screenshot({type:"png",fullPage:false});
