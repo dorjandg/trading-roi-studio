@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - api1-browser-agent-release-candidate
+      - api1-browser-interaction-phase1
   workflow_dispatch:
 permissions:
   contents: read
