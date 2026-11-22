@@ -31,10 +31,10 @@ export async function routeMcp(payload,env,identityJwt,fetcher=fetch){
  if(forSave&&env.FINANCE_MCP_WRITE_TOOLS_ENABLED!=="true")return error(id,-32602,"Write tool disabled");
  if(!valid(a,forSave))return error(id,-32602,"Invalid correction arguments");
  if(!identityJwt||typeof identityJwt!=="string")return error(id,-32001,"Cloudflare Access authentication required");
- if(!env.FINANCE_HUB_API_ORIGIN||!/^https:\/\/[^/]+$/.test(env.FINANCE_HUB_API_ORIGIN))return error(id,-32002,"Finance API origin not configured");
+ if(!env.FINANCE_CORRECTION_API||typeof env.FINANCE_CORRECTION_API.fetch!=="function")return error(id,-32002,"Isolated Finance API service binding not configured");
  const resource=forSave?"transaction-change-save":"transaction-change-preview";
  try{
-  const upstream=await fetcher(env.FINANCE_HUB_API_ORIGIN+"/api/finance?resource="+resource,{method:"POST",headers:{"content-type":"application/json","cf-access-jwt-assertion":identityJwt},body:JSON.stringify(a),redirect:"manual"});
+  const upstream=await env.FINANCE_CORRECTION_API.fetch("https://finance-correction-api-isolated.internal/api/finance?resource="+resource,{method:"POST",headers:{"content-type":"application/json","cf-access-jwt-assertion":identityJwt},body:JSON.stringify(a),redirect:"manual"});
   if(!upstream.ok){
    return response(id,{isError:true,content:[{type:"text",text:"Finance API rejected request (HTTP "+upstream.status+"). No success reported."}]});
   }
