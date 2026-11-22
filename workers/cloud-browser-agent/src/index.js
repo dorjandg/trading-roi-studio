@@ -1,5 +1,5 @@
 import { launch } from "@cloudflare/playwright";
-import { validateTarget, safeTitle } from "./policy.mjs";
+import { validateTarget, canRequest, safeTitle } from "./policy.mjs";
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
   status, headers: { "content-type": "application/json", "cache-control": "no-store", "x-content-type-options": "nosniff" }
@@ -34,17 +34,17 @@ export default {
     catch(e) { return json({error:e.message},400); }
 
     let browser;
+    let context;
     try {
       browser=await launch(env.BROWSER);
-      const page=await browser.newPage();
-      // Navigation must remain on the same approved origin, including redirects.
-      await page.route("**/*", async route => {
-        const req=route.request();
-        if(req.isNavigationRequest() && req.frame() === page.mainFrame()) {
-          try {
-            if (new URL(req.url()).origin !== new URL(target).origin) return route.abort();
-          } catch { return route.abort(); }
-        }
+      context=await browser.newContext({serviceWorkers:"block",acceptDownloads:false});
+      const page=await context.newPage();
+      page.on("dialog", d => { d.dismiss().catch(()=>{}); });
+      context.on("page", newPage => { if(newPage!==page) newPage.close().catch(()=>{}); });
+      // Enforce same-origin network egress for all requests, not just navigation.
+      // Third-party images/styles may be missing in screenshots by design.
+      await context.route("**/*", async route => {
+        if (!canRequest(route.request().url(),target)) return route.abort();
         return route.continue();
       });
       const started=Date.now();
@@ -61,7 +61,10 @@ export default {
         title, headings:headings.slice(0,12).map(s=>s.trim().slice(0,200)),linkCount:links,
         durationMs:Date.now()-started,readOnly:true});
     } catch(e) {
-      return json({error:"Browser inspection failed",detail:String(e?.message||e).slice(0,200)},502);
-    } finally { if(browser) await browser.close().catch(()=>{}); }
+      return json({error:"Browser inspection failed",code:"INSPECTION_FAILED"},502);
+    } finally {
+      if(context) await context.close().catch(()=>{});
+      if(browser) await browser.close().catch(()=>{});
+    }
   }
 };
