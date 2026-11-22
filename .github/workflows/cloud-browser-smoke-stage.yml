@@ -1,4 +1,4 @@
-name: Cloud Browser Agent — Playwright Browser Smoke Test
+name: Cloud Browser Agent — Remote Worker Browser Smoke Test
 
 on:
   push:
@@ -31,14 +31,14 @@ jobs:
           node-version: "22"
       - name: Install dependencies
         run: npm install --no-audit --no-fund
-      - name: Test browser with local Wrangler binding
+      - name: Test Worker with Cloudflare remote browser binding
         shell: bash
         run: |
           set -euo pipefail
           # Wrangler dev requires an ephemeral local secret; deployed secrets are not loaded.
           umask 077
           printf 'AGENT_API_TOKEN=%s\n' "$BROWSER_AGENT_API_TOKEN" > .dev.vars
-          npx wrangler dev --port 8787 --ip 127.0.0.1 > "$RUNNER_TEMP/wrangler-smoke.log" 2>&1 &
+          npx wrangler dev --remote --port 8787 --ip 127.0.0.1 > "$RUNNER_TEMP/wrangler-smoke.log" 2>&1 &
           devpid=$!
           trap 'rm -f .dev.vars; kill "$devpid" 2>/dev/null || true' EXIT
           ready=0
@@ -61,4 +61,4 @@ jobs:
             exit 1
           fi
           node -e 'const x=require(process.argv[1]); if(x.readOnly!==true||!x.finalUrl?.startsWith("https://trading-roi-studio.pages.dev/")) process.exit(1); console.log("Remote browser smoke test passed; HTTP "+x.httpStatus)' "$RUNNER_TEMP/inspect.json"
-          echo "Local Playwright browser smoke inspected an approved website; deployed Cloudflare Browser Run remains unverified." >> "$GITHUB_STEP_SUMMARY"
+          echo "Remote Wrangler Worker successfully inspected an approved site via Cloudflare Browser Run; protected deployed Worker ingress still requires separate verification." >> "$GITHUB_STEP_SUMMARY"
