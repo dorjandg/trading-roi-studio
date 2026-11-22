@@ -8,6 +8,8 @@ on:
       - 'workers/finance-mcp-gateway-stage/test/direct-save-sqlite.test.py'
       - 'workers/finance-mcp-gateway-stage/test/ledger-migration-synthetic.test.py'
       - 'workers/finance-mcp-gateway-stage/correction-mcp-router.mjs'
+      - 'workers/finance-mcp-gateway-stage/wrangler.isolated.jsonc'
+      - 'workers/finance-correction-api-isolated/**'
       - 'workers/finance-mcp-gateway-stage/test/correction-mcp-router.test.mjs'
       - 'workers/finance-mcp-gateway-stage/test/finance-ui-contract.test.py'
       - 'workers/finance-mcp-gateway-stage/test/correction-ticket.test.mjs'
@@ -16,7 +18,7 @@ on:
   push:
     branches:
       - main
-      - 'feature/finance-correction-isolated'
+      - 'feature/finance-approved-corrections'
 jobs:
   isolated-correction:
     runs-on: ubuntu-latest
