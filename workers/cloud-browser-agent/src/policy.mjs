@@ -18,3 +18,13 @@ export function canRequest(requestUrl, targetUrl) {
   } catch { return false; }
 }
 export function safeTitle(title) { return String(title || "").slice(0, 300); }
+
+const unsafeNavigationPath = /(?:^|\/)(?:logout|log-out|signout|sign-out|delete|remove|destroy|unsubscribe|cancel|purchase|checkout|pay|transfer|withdraw|approve|confirm|execute|submit|publish|activate|disable|enable|trigger|run)(?:\/|$|[.-])/i;
+export function validateReadOnlyLink(sourceInput, linkInput, allowedOrigins) {
+  const source = new URL(validateTarget(sourceInput, allowedOrigins));
+  const link = new URL(validateTarget(linkInput, allowedOrigins));
+  if(source.origin!==link.origin)throw new Error("Cross-origin link refused");
+  if(source.search||link.search)throw new Error("Navigation query parameters refused");
+  if(unsafeNavigationPath.test(link.pathname))throw new Error("Action-like navigation path refused");
+  return {source:source.href,link:link.href};
+}
