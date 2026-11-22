@@ -5,6 +5,11 @@
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
   "browser": {"binding": "BROWSER"},
+  "d1_databases": [{
+    "binding": "BROWSER_AGENT_AUDIT_DB",
+    "database_name": "cloud-browser-audit-stage",
+    "database_id": "1a766c54-db47-4345-a001-d77be04fa886"
+  }],
   "vars": {
     "ALLOWED_ORIGINS": "https://fin-kac.pages.dev,https://jp-realty.pages.dev,https://youtube-ai-academy.pages.dev,https://trading-roi-studio.pages.dev"
   }
