@@ -150,5 +150,10 @@ test("edit preview never changes page and does not read values",async()=>{
  assert.equal(v.previewOnly,true);assert.equal(v.executionAllowed,false);
  assert.equal(v.currentValue,"NOT_READ");
  assert.equal(v.proposedText,"New label");
+ assert.match(v.proposalId,/^[0-9a-f]{64}$/);
+ assert.equal(v.audit.event,"EDIT_PREVIEW_GENERATED");
+ assert.equal(v.audit.durable,false);
+ assert.equal(v.approval.canExecute,false);
+ assert.equal(JSON.stringify(v.audit).includes("New label"),false);
  assert.equal(mock.state.browserClosed,true);
 });
