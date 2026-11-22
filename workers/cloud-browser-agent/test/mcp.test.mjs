@@ -14,7 +14,7 @@ test("MCP requires authentication",async()=>{
 test("MCP advertises only read-only tools",async()=>{
  const r=await createMcpHandler(async()=>{})(request("tools/list"),env);
  const x=await r.json();
- assert.deepEqual(x.result.tools.map(t=>t.name),["browser_agent_status","browser_inspect"]);
+ assert.deepEqual(x.result.tools.map(t=>t.name),["browser_agent_status","browser_page_links","browser_inspect"]);
 });
 test("MCP initializes and returns status without browser launch",async()=>{
  const handler=createMcpHandler(async()=>{throw Error("must not launch");});
@@ -31,4 +31,11 @@ test("MCP blocks unauthorized URL before browser launch",async()=>{
 test("MCP rejects unlisted actions",async()=>{
  const x=await (await createMcpHandler(async()=>{})(request("tools/call",{name:"browser_click",arguments:{}}),env)).json();
  assert.equal(x.error.code,-32602);
+});
+
+test("MCP blocks unapproved page link discovery before launch",async()=>{
+ let count=0;
+ const handler=createMcpHandler(async()=>{count++;});
+ const reply=await (await handler(request("tools/call",{name:"browser_page_links",arguments:{url:"https://evil.test/"}}),env)).json();
+ assert.equal(reply.error.code,-32602); assert.equal(count,0);
 });
