@@ -28,9 +28,11 @@ jobs:
         run: npm run check
       - name: Verify auth, scope, URL and consent security
         run: npm test
-      - name: Confirm gateway has no active Wrangler deployment config
+      - name: Dry-run bundle OAuth gateway only (no Cloudflare writes)
+        run: npm run build
+      - name: Ensure testing workflow has no deployment credentials
         run: |
-          if test -f wrangler.jsonc || test -f wrangler.toml; then
-            echo "::error::OAuth gateway must remain without an active deploy config until login credentials exist."
+          if [ -n "${CLOUDFLARE_API_TOKEN:-}" ] || [ -n "${GOOGLE_CLIENT_SECRET:-}" ]; then
+            echo "::error::Gateway CI must not load production or OAuth credentials"
             exit 1
           fi
