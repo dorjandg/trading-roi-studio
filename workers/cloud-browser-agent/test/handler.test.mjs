@@ -171,3 +171,43 @@ test("unsafe inspection target rejected before browser launch",async()=>{
  }
  assert.equal(launches,0);
 });
+
+test("intercepted navigation redirects reject query, action, cross-origin and non-GET",async()=>{
+ const cases=[
+  ["https://fin-kac.pages.dev/logout","GET",true,false],
+  ["https://fin-kac.pages.dev/delete/123","GET",true,false],
+  ["https://fin-kac.pages.dev/reports?confirm=1","GET",true,false],
+  ["https://evil.test/","GET",true,false],
+  ["https://fin-kac.pages.dev/reports","POST",true,false],
+  ["https://fin-kac.pages.dev/reports","GET",true,true],
+  ["https://fin-kac.pages.dev/assets/app.css?cache=1","GET",false,true]
+ ];
+ for(const [url,method,navigation,allowed] of cases){
+  let interceptor;let outcome="not-called";
+  const page={
+   on(){},url:()=> "https://fin-kac.pages.dev/",
+   goto:async()=>{const route={
+     request:()=>({url:()=>url,method:()=>method,isNavigationRequest:()=>navigation}),
+     abort:async()=>{outcome="aborted";},
+     continue:async()=>{outcome="continued";}
+   };await interceptor(route);return {status:()=>200};},
+   title:async()=> "Safe",locator:()=>({count:async()=>0,allTextContents:async()=>[]})
+  };
+  const browser={newContext:async()=>({
+    newPage:async()=>page,on(){},route:async(_pattern,callback)=>{interceptor=callback;},close:async()=>{}
+   }),close:async()=>{}};
+  const response=await createHandler(async()=>browser)(req("/inspect",{url:"https://fin-kac.pages.dev"}),env);
+  assert.equal(response.status,200);
+  assert.equal(outcome,allowed?"continued":"aborted",url+" "+method);
+ }
+});
+test("audit writes require exact opt-in string, not truthy values",async()=>{
+ for(const flag of [undefined,false,true,"false","TRUE","1",""]){
+  let calls=0;const db={prepare(){calls++;throw Error("database access forbidden");},batch(){calls++;throw Error("database access forbidden");}};
+  const mock=browserMock();
+  const response=await createHandler(mock.launch)(req("/edit-preview",{url:"https://fin-kac.pages.dev",formIndex:1,fieldLabel:"Name",proposedText:"New label"}),{...env,BROWSER_AGENT_AUDIT_DB:db,ENABLE_PREVIEW_AUDIT_WRITES:flag});
+  assert.equal(response.status,200,String(flag));
+  assert.equal((await response.json()).persisted,false);
+  assert.equal(calls,0);
+ }
+});
