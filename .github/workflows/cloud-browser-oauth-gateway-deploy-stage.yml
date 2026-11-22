@@ -74,6 +74,22 @@ jobs:
           fs.writeFileSync(process.argv[1],JSON.stringify(Object.fromEntries(names.map(n=>[n,process.env[n]]))));
           ' "$tmpfile"
           npx wrangler secret bulk "$tmpfile"
+      - name: Verify ChatGPT pre-auth MCP discovery and protected execution
+        shell: bash
+        run: |
+          set -euo pipefail
+          endpoint="https://cloud-browser-chatgpt-stage.dorjan-gjoni-dg.workers.dev/mcp"
+          init='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"staging-smoke","version":"0.1"}}}'
+          listing='{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
+          for payload in "$init" "$listing"; do
+            response=$(curl -sS --max-time 20 -H "content-type: application/json" -H "accept: application/json, text/event-stream" -d "$payload" "$endpoint")
+            printf '%s' "$response" | node -e 'let x="";process.stdin.on("data",v=>x+=v);process.stdin.on("end",()=>{const j=JSON.parse(x);if(j.error||!j.result)process.exit(1);if(j.id===2){const names=j.result.tools?.map(t=>t.name)||[];if(names.join(",")!=="browser_agent_status,browser_inspect,browser_page_links")process.exit(1);for(const t of j.result.tools){if(t.annotations?.readOnlyHint!==true||t._meta?.securitySchemes?.[0]?.type!=="oauth2")process.exit(1)}}console.log(j.id===2?"MCP tools discoverable with OAuth required":"MCP handshake discoverable")})'
+          done
+          status=$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -H "content-type: application/json" -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"browser_agent_status","arguments":{}}}' "$endpoint")
+          if [ "$status" != "401" ]; then
+            echo "::error::Tools/call must reject unauthenticated requests with 401, got $status"
+            exit 1
+          fi
       - name: Probe OAuth resource and authorization metadata (no credentials logged)
         shell: bash
         run: |
