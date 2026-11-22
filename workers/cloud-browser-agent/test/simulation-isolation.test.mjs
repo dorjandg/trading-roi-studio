@@ -19,7 +19,8 @@ test("durable write prototype never reaches staging MCP gateway or deployed agen
  const sources=["src/index.js","src/handler.mjs","src/mcp.mjs"];
  for(const path of sources){
   const body=readFileSync(new URL("../"+path,import.meta.url),"utf8");
-  assert.doesNotMatch(body,/PersistentWritePrototype|persistent-write-prototype|node:sqlite|simulation\\//);
+  assert.doesNotMatch(body,/PersistentWritePrototype|persistent-write-prototype|node:sqlite/);
+  assert.equal(body.includes("simulation/"),false);
  }
  const deployed=readFileSync(new URL("../wrangler.jsonc",import.meta.url),"utf8");
  assert.doesNotMatch(deployed,/WRITE_ENABLED|write_service|persistent-write-prototype/);
