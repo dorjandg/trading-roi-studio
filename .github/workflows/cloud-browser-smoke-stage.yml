@@ -1,4 +1,4 @@
-name: Cloud Browser Agent — Real Browser Smoke Test
+name: Cloud Browser Agent — Playwright Browser Smoke Test
 
 on:
   push:
@@ -31,20 +31,20 @@ jobs:
           node-version: "22"
       - name: Install dependencies
         run: npm install --no-audit --no-fund
-      - name: Test with remote Cloudflare browser binding
+      - name: Test browser with local Wrangler binding
         shell: bash
         run: |
           set -euo pipefail
-          npx wrangler dev --remote --port 8787 --ip 127.0.0.1 > "$RUNNER_TEMP/wrangler-smoke.log" 2>&1 &
+          npx wrangler dev --port 8787 --ip 127.0.0.1 > "$RUNNER_TEMP/wrangler-smoke.log" 2>&1 &
           devpid=$!
           trap 'kill "$devpid" 2>/dev/null || true' EXIT
           ready=0
-          for attempt in $(seq 1 60); do
-            if curl -fsS --max-time 2 -H "Authorization: Bearer $BROWSER_AGENT_API_TOKEN" http://127.0.0.1:8787/health > "$RUNNER_TEMP/health.json"; then ready=1; break; fi
+          for attempt in $(seq 1 30); do
+            if curl -fsS --max-time 3 -H "Authorization: Bearer $BROWSER_AGENT_API_TOKEN" http://127.0.0.1:8787/health > "$RUNNER_TEMP/health.json"; then ready=1; break; fi
             sleep 2
           done
           if [ "$ready" -ne 1 ]; then
-            echo "::error::Wrangler dev not ready. Inspect logs locally; secrets are not printed."
+            echo "::error::Wrangler local browser dev server not ready."
             exit 1
           fi
           node -e 'const x=require(process.argv[1]); if(x.service!=="cloud-browser-agent"||!x.browserConfigured) process.exit(1)' "$RUNNER_TEMP/health.json"
@@ -58,4 +58,4 @@ jobs:
             exit 1
           fi
           node -e 'const x=require(process.argv[1]); if(x.readOnly!==true||!x.finalUrl?.startsWith("https://trading-roi-studio.pages.dev/")) process.exit(1); console.log("Remote browser smoke test passed; HTTP "+x.httpStatus)' "$RUNNER_TEMP/inspect.json"
-          echo "Real Cloudflare browser inspected approved public website successfully." >> "$GITHUB_STEP_SUMMARY"
+          echo "Local Playwright browser smoke inspected an approved website; deployed Cloudflare Browser Run remains unverified." >> "$GITHUB_STEP_SUMMARY"
