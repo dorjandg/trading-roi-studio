@@ -62,9 +62,10 @@ export class IsolatedEditLab {
    const f=this.#fields.get(p.fieldId);
    if(!f||f.revision!==p.baseRevision||f.revision!==expectedRevision)fail("STALE_REVISION");
    const before=f.value;
-   // In-memory journal first. A real implementation must use atomic persisted state transitions.
+   // Consume one-shot grant synchronously before the first await to prevent double execution.
+   grant.unused=false;p.status="EXECUTING";
    await this.#event("EXECUTED",proposalId,{requestId,revisionBefore:f.revision,revisionAfter:f.revision+1,digest});
-   f.value=p.nextValue;f.revision++;grant.unused=false;p.status="EXECUTED";p.before=before;p.afterRevision=f.revision;
+   f.value=p.nextValue;f.revision++;p.status="EXECUTED";p.before=before;p.afterRevision=f.revision;
    return {status:"EXECUTED",proposalId,revision:f.revision,simulationOnly:true};
  }
  async rollback({proposalId,actorId,expectedRevision}){
@@ -73,6 +74,7 @@ export class IsolatedEditLab {
    if(!p||p.status!=="EXECUTED"||typeof actorId!=="string"||!noncePattern.test(actorId))fail("ROLLBACK_DENIED");
    const f=this.#fields.get(p.fieldId);
    if(f.revision!==expectedRevision||f.revision!==p.afterRevision)fail("STALE_REVISION");
+   p.status="ROLLING_BACK";
    await this.#event("ROLLED_BACK",proposalId,{actorId,revisionBefore:f.revision,revisionAfter:f.revision+1});
    f.value=p.before;f.revision++;p.status="ROLLED_BACK";
    return {status:"ROLLED_BACK",revision:f.revision,simulationOnly:true};
