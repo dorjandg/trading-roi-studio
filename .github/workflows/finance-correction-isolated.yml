@@ -7,6 +7,7 @@ on:
       - 'workers/finance-mcp-gateway-stage/migrations/0002_direct_corrections.sql'
       - 'workers/finance-mcp-gateway-stage/test/direct-save-sqlite.test.py'
       - 'workers/finance-mcp-gateway-stage/test/finance-ui-contract.test.py'
+      - 'workers/finance-mcp-gateway-stage/test/correction-ticket.test.mjs'
       - '.github/workflows/finance-correction-isolated.yml'
   push:
     branches:
@@ -24,5 +25,7 @@ jobs:
         run: node --check functions/api/finance.js
       - name: Verify isolated database rollback and backup
         run: python3 workers/finance-mcp-gateway-stage/test/direct-save-sqlite.test.py
+      - name: Verify signed approval token at runtime
+        run: node workers/finance-mcp-gateway-stage/test/correction-ticket.test.mjs
       - name: Verify UI and API contract
         run: python3 workers/finance-mcp-gateway-stage/test/finance-ui-contract.test.py
