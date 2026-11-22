@@ -46,6 +46,12 @@ async function main(){
   return{status:response.status,data:await response.json()};
  }
  const proposal={transaction_id:txid,field:'category',expected_revision:19,expected_value:'Prop firm',new_value:'Trading expenses'};
+ // A production deployment without a configured signing secret must fail closed.
+ delete env.FINANCE_CORRECTION_SIGNING_KEY;
+ assert.equal((await req('owner','transaction-change-preview',proposal)).status,503,'no signing secret must block preview');
+ env.FINANCE_CORRECTION_SIGNING_KEY='too-short';
+ assert.equal((await req('owner','transaction-change-preview',proposal)).status,503,'short signing secret must block preview');
+ env.FINANCE_CORRECTION_SIGNING_KEY='isolated-testing-secret-at-least-32-characters';
  const preview=await req('owner','transaction-change-preview',proposal);
  assert.equal(preview.status,200,JSON.stringify(preview.data));
  assert.equal(preview.data.saved,false);
