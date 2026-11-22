@@ -43,3 +43,9 @@ Disable `FINANCE_TRANSACTION_CORRECTIONS_ENABLED` immediately if audit/backup ve
 - Executed two INSERTs with the same primary key in a single console submission; second failed `SQLITE_CONSTRAINT_PRIMARYKEY`.
 - Follow-up `SELECT COUNT(*)` returned **0**, consistent with atomic rollback of the first insert.
 - This proves the observed probe behavior only; the actual Pages `db.batch` correction path still requires isolated end-to-end testing.
+
+## Production-shaped isolated D1 test (2026-11-22)
+- Used only `finance-correction-isolated-test` and disposable `finance_correction_test_snapshots`, never real `finance_snapshots`.
+- Seeded fake revision 19 / payload BEFORE; single console submission inserted backup, CAS-updated to revision 20 / AFTER, and inserted audit recording 19→20. Read-back confirmed all three records and exact values.
+- Submitted a stale expected revision 18 attempt; read-back confirmed revision remained 20 / AFTER and no stale backup or audit rows existed.
+- This was a D1 SQL Console test, **not** a deployed Worker `db.batch` integration test; do not equate the two.
