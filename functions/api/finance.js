@@ -31,11 +31,14 @@ async function verifyCorrectionTicket(secret,ticket,expected){
  if(typeof ticket!=="string"||ticket.length>4096||!ticket.includes("."))return false;
  const parts=ticket.split(".");if(parts.length!==2)return false;
  try{
-  const raw=b64(parts[0]);const claims=JSON.parse(new TextDecoder().decode(raw));
+  const canonical64=bytes=>btoa(String.fromCharCode(...bytes)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+  const raw=b64(parts[0]);const sigBytes=b64(parts[1]);
+  if(canonical64(raw)!==parts[0]||canonical64(sigBytes)!==parts[1])return false;
+  const claims=JSON.parse(new TextDecoder().decode(raw));
   if(!claims||claims.exp<Date.now()||claims.exp>Date.now()+5*60*1000||
      Object.keys(expected).some(k=>claims[k]!==expected[k]))return false;
   const key=await crypto.subtle.importKey("raw",enc.encode(secret),{name:"HMAC",hash:"SHA-256"},false,["verify"]);
-  return await crypto.subtle.verify("HMAC",key,b64(parts[1]),raw);
+  return await crypto.subtle.verify("HMAC",key,sigBytes,raw);
  }catch{return false}
 }
 async function handler(ctx){
