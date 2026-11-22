@@ -15,7 +15,7 @@ jobs:
   deploy-isolated:
     if: ${{ github.ref == 'refs/heads/feature/finance-approved-corrections' && inputs.confirm_isolated_only == 'ISOLATED-ONLY' }}
     runs-on: ubuntu-latest
-    environment: finance-cloudflare
+    environment: finance-isolated-deployment
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
