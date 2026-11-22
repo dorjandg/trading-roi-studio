@@ -9,11 +9,11 @@ test("anonymous initialization is metadata only",async()=>{
  assert.equal(j.result.capabilities.tools.listChanged,false);
  assert.ok(j.result.instructions.includes("OAuth"));
 });
-test("anonymous discovery returns exactly 3 OAuth-only read-only tools",async()=>{
+test("anonymous discovery returns exactly 4 OAuth-only read-only tools",async()=>{
  const r=await publicDiscovery(req("tools/list",{}));
  assert.equal(r.status,200);
  const j=await r.json();
- assert.deepEqual(j.result.tools.map(t=>t.name),["browser_agent_status","browser_inspect","browser_page_links"]);
+ assert.deepEqual(j.result.tools.map(t=>t.name),["browser_agent_status","browser_inspect","browser_follow_link","browser_page_links"]);
  for(const tool of j.result.tools){
   assert.equal(tool.annotations.readOnlyHint,true);
   assert.deepEqual(tool._meta.securitySchemes,[{type:"oauth2",scopes:["mcp:read"]}]);
