@@ -7,6 +7,6 @@
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "workers_dev": true,
   "kv_namespaces": [
-    { "binding": "OAUTH_KV", "id": "REPLACE_WITH_NEW_STAGING_OAUTH_KV_NAMESPACE_ID" }
+    { "binding": "OAUTH_KV", "id": "3e4203c6a00545df9ba0202343afb8d7" }
   ]
 }
