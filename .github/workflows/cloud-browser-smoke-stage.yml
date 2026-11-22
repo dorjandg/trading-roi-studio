@@ -1,0 +1,61 @@
+name: Cloud Browser Agent — Real Browser Smoke Test
+
+on:
+  push:
+    branches:
+      - feature/cloud-browser-agent-phase1
+    paths:
+      - ".github/workflows/cloud-browser-smoke-stage.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    if: github.ref == 'refs/heads/feature/cloud-browser-agent-phase1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: browser-agent-staging
+    defaults:
+      run:
+        working-directory: workers/cloud-browser-agent
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      BROWSER_AGENT_API_TOKEN: ${{ secrets.BROWSER_AGENT_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Test with remote Cloudflare browser binding
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx wrangler dev --remote --port 8787 --ip 127.0.0.1 > "$RUNNER_TEMP/wrangler-smoke.log" 2>&1 &
+          devpid=$!
+          trap 'kill "$devpid" 2>/dev/null || true' EXIT
+          ready=0
+          for attempt in $(seq 1 60); do
+            if curl -fsS --max-time 2 -H "Authorization: Bearer $BROWSER_AGENT_API_TOKEN" http://127.0.0.1:8787/health > "$RUNNER_TEMP/health.json"; then ready=1; break; fi
+            sleep 2
+          done
+          if [ "$ready" -ne 1 ]; then
+            echo "::error::Wrangler dev not ready. Inspect logs locally; secrets are not printed."
+            exit 1
+          fi
+          node -e 'const x=require(process.argv[1]); if(x.service!=="cloud-browser-agent"||!x.browserConfigured) process.exit(1)' "$RUNNER_TEMP/health.json"
+          status=$(curl -sS --max-time 75 -o "$RUNNER_TEMP/inspect.json" -w '%{http_code}' \
+            -H "Authorization: Bearer $BROWSER_AGENT_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"url":"https://trading-roi-studio.pages.dev/"}' \
+            http://127.0.0.1:8787/inspect)
+          if [ "$status" != "200" ]; then
+            echo "::error::Browser inspection failed: HTTP $status"
+            exit 1
+          fi
+          node -e 'const x=require(process.argv[1]); if(x.readOnly!==true||!x.finalUrl?.startsWith("https://trading-roi-studio.pages.dev/")) process.exit(1); console.log("Remote browser smoke test passed; HTTP "+x.httpStatus)' "$RUNNER_TEMP/inspect.json"
+          echo "Real Cloudflare browser inspected approved public website successfully." >> "$GITHUB_STEP_SUMMARY"
