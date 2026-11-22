@@ -1,0 +1,9 @@
+{
+  "name": "cloud-browser-chatgpt-gateway",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check src/index.mjs && node --check src/forward.mjs"
+  }
+}
