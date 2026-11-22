@@ -36,7 +36,11 @@ jobs:
             echo "::error::GOOGLE_CLIENT_SECRET appears to be a Client ID rather than a secret"
             exit 1
           fi
-          echo "Google Client ID shape and separate Client Secret shape verified"
+          if [[ "$GOOGLE_CLIENT_ID" != "654074542795-7k98q6ofhfa809qe1rkoshujc4g33273.apps.googleusercontent.com" ]]; then
+            echo "::error::Staging GOOGLE_CLIENT_ID does not match the enabled OAuth client in cloud-browser-mcp-staging"
+            exit 1
+          fi
+          echo "Google Client ID matches the enabled Google Cloud OAuth Web client"
       - name: Probe Google authorization registration without printing credentials or response
         shell: bash
         run: |
