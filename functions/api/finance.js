@@ -163,7 +163,7 @@ async function handler(ctx){
   }
   if(!imported)return json({imported:0,reviewNeeded,alreadyRecorded,revision});
   const payload=JSON.stringify(data);
-  if(payload.length>1024*1024)return json({error:"Snapshot capacity reached; nothing imported"},413);
+  if(enc.encode(payload).length>1024*1024)return json({error:"Snapshot capacity reached; nothing imported"},413);
   let result;
   if(revision===0)result=await db.prepare("INSERT OR IGNORE INTO finance_snapshots(workspace_id,user_id,revision,payload) VALUES(?,?,1,?)").bind(ws,user.id,payload).run();
   else result=await db.prepare("UPDATE finance_snapshots SET payload=?,revision=revision+1,updated_at=CURRENT_TIMESTAMP WHERE workspace_id=? AND user_id=? AND revision=?").bind(payload,ws,user.id,revision).run();
