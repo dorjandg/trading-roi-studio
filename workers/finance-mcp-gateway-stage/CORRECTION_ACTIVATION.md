@@ -61,3 +61,8 @@ Disable `FINANCE_TRANSACTION_CORRECTIONS_ENABLED` immediately if audit/backup ve
 - D1 Time Travel page showed restore control, current bookmark capability and UI text describing a 30-day recovery period. The displayed available window began 2026-11-19 07:10 and ended 2026-11-22 04:32; **do not assume a full 30 days of actual history**.
 - Verified `finance_snapshots` and other application tables exist; no raw financial records were exported. `PRAGMA page_count` was denied by console authorization.
 - This is **not** a verified independent export of the complete production snapshot. Mandatory activation precondition 4 remains unmet. Never invoke Time Travel restore without a separate, reviewed authorization because it overwrites current database state.
+
+## Production snapshot size and integrity read-only verification (2026-11-22)
+- In actual `finance-hub-db`, read-only JSON metadata showed one `finance_snapshots` row: revision 19, valid JSON, `finance-hub-backup` version 2, 1,608 transactions.
+- Snapshot size was 991,199 characters / **991,822 UTF-8 bytes**, leaving **56,754 bytes** before the correction endpoint's 1 MiB payload guard (1,048,576 bytes). **Capacity risk:** bulk imports or added metadata could exceed this guard; do not treat this as ample headroom.
+- No raw records, identities or secrets were retrieved, and no writes were made. This verifies live snapshot structure, **not** a separately recoverable full export or the uniqueness/field correctness of all 1,608 records.
