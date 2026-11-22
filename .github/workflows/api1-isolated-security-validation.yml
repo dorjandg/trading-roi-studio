@@ -1,0 +1,29 @@
+name: API1 isolated security validation
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies without scripts
+        working-directory: workers/cloud-browser-agent
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Run Node tests
+        working-directory: workers/cloud-browser-agent
+        run: npm test
+      - name: Check security policy and syntax
+        working-directory: workers/cloud-browser-agent
+        run: |
+          node --check src/handler.mjs
+          node --check src/policy.mjs
+          node --check src/mcp.mjs
+          node --test test/handler.test.mjs test/policy.test.mjs
