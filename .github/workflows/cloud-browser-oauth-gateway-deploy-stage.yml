@@ -83,7 +83,7 @@ jobs:
           listing='{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
           for payload in "$init" "$listing"; do
             response=$(curl -sS --max-time 20 -H "content-type: application/json" -H "accept: application/json, text/event-stream" -d "$payload" "$endpoint")
-            printf '%s' "$response" | node -e 'let x="";process.stdin.on("data",v=>x+=v);process.stdin.on("end",()=>{const j=JSON.parse(x);if(j.error||!j.result)process.exit(1);if(j.id===2){const names=j.result.tools?.map(t=>t.name)||[];if(names.join(",")!=="browser_agent_status,browser_inspect,browser_page_links")process.exit(1);for(const t of j.result.tools){if(t.annotations?.readOnlyHint!==true||t._meta?.securitySchemes?.[0]?.type!=="oauth2")process.exit(1)}}console.log(j.id===2?"MCP tools discoverable with OAuth required":"MCP handshake discoverable")})'
+            printf '%s' "$response" | node -e 'let x="";process.stdin.on("data",v=>x+=v);process.stdin.on("end",()=>{const j=JSON.parse(x);if(j.error||!j.result)process.exit(1);if(j.id===2){const names=j.result.tools?.map(t=>t.name)||[];if(names.join(",")!=="browser_agent_status,browser_inspect,browser_follow_link,browser_page_links")process.exit(1);for(const t of j.result.tools){if(t.annotations?.readOnlyHint!==true||t._meta?.securitySchemes?.[0]?.type!=="oauth2")process.exit(1)}}console.log(j.id===2?"MCP tools discoverable with OAuth required":"MCP handshake discoverable")})'
           done
           status=$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -H "content-type: application/json" -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"browser_agent_status","arguments":{}}}' "$endpoint")
           if [ "$status" != "401" ]; then
