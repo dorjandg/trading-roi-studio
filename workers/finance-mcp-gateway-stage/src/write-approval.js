@@ -6,11 +6,13 @@ export function validateApproval(approval, change, identity, nowISO) {
   if (typeof nowISO!=="string" || !Number.isFinite(Date.parse(nowISO)))
     return {ok:false,code:"INVALID_TIME"};
   if (approval.consumed_at) return {ok:false,code:"APPROVAL_REPLAY"};
+  const nowMs=Date.parse(nowISO);
   if (!approval.approval_id || !approval.approval_digest || !approval.approved_at ||
       !approval.expires_at || !Number.isFinite(Date.parse(approval.approved_at)) ||
       !Number.isFinite(Date.parse(approval.expires_at)) ||
-      approval.approved_at>nowISO || approval.expires_at<=nowISO ||
-      approval.expires_at<=approval.approved_at)
+      Date.parse(approval.approved_at)>nowMs || Date.parse(approval.expires_at)<=nowMs ||
+      Date.parse(approval.expires_at)<=Date.parse(approval.approved_at) ||
+      Date.parse(approval.expires_at)-Date.parse(approval.approved_at)>300000)
     return {ok:false,code:"APPROVAL_EXPIRED_OR_INVALID"};
   const expected={
     workspace_id:identity.workspace_id,user_id:identity.user_id,
