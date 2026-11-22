@@ -5,7 +5,9 @@ on:
       - feature/ai-control-api-phase1
     paths:
       - 'workers/finance-mcp-gateway-stage/src/write-guards.js'
+      - 'workers/finance-mcp-gateway-stage/src/write-approval.js'
       - 'workers/finance-mcp-gateway-stage/test/write-guards.test.mjs'
+      - 'workers/finance-mcp-gateway-stage/test/write-approval.test.mjs'
       - '.github/workflows/finance-mcp-write-guards.yml'
   pull_request:
     paths:
@@ -22,4 +24,4 @@ jobs:
         with:
           node-version: '22'
       - name: Run pure write guard tests without database access
-        run: node --experimental-default-type=module --test workers/finance-mcp-gateway-stage/test/write-guards.test.mjs
+        run: node --experimental-default-type=module --test workers/finance-mcp-gateway-stage/test/*.test.mjs
