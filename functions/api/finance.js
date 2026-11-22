@@ -137,7 +137,7 @@ async function handler(ctx){
       .bind(backupId,ws,user.id,old.revision,old.payload,stamp),
     db.prepare("UPDATE finance_snapshots SET payload=?,revision=revision+1,updated_at=CURRENT_TIMESTAMP WHERE workspace_id=? AND user_id=? AND revision=?")
       .bind(nextPayload,ws,user.id,old.revision),
-    db.prepare("INSERT INTO finance_mcp_direct_audit(audit_id,backup_id,workspace_id,user_id,transaction_id,field_name,old_value,new_value,old_revision,new_revision,created_at) VALUES(?,?,?,?,?,?,?,?,?,(SELECT revision FROM finance_snapshots WHERE workspace_id=? AND user_id=? AND revision=?),?)")
+    db.prepare("INSERT INTO finance_mcp_direct_audit(audit_id,backup_id,workspace_id,user_id,transaction_id,field_name,old_value,new_value,old_revision,new_revision,created_at) VALUES(?,?,?,?,?,?,?,?,?,(SELECT CASE WHEN changes()=1 THEN revision ELSE NULL END FROM finance_snapshots WHERE workspace_id=? AND user_id=? AND revision=?),?)")
       .bind(auditId,backupId,ws,user.id,a.transaction_id,a.field,a.expected_value,a.new_value,old.revision,ws,user.id,old.revision+1,stamp)
    ];
    const results=await db.batch(statements);
