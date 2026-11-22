@@ -70,3 +70,21 @@ No token values are stored in this repo. The deploy workflow cannot start paid b
 
 ## Staging activation checkpoint (2026-11-22)
 Dedicated GitHub environment secrets and the separate Cloudflare Access app were confirmed configured by names only; no credential values were read or committed. This documentation-only change triggers the opt-in deployment workflow on the isolated feature branch.
+
+## MCP staging interface (implemented, still separate from Finance Hub)
+Protected `POST /mcp` exposes JSON-RPC initialization and read-only tools:
+- `browser_agent_status`: returns browser binding status only
+- `browser_inspect`: inspects a preapproved HTTPS URL (title, headings, status and links)
+
+All MCP requests require both Cloudflare Access and the separate `AGENT_API_TOKEN` bearer token. No clicks, form submissions, logins, financial actions or trading are provided. This endpoint is **not yet registered** in the ChatGPT personal MCP connector and does not replace existing Finance Hub tools. Future central integration should authenticate machine-to-machine calls via a separately scoped Cloudflare Access service token and use a protected gateway route, not leak the bearer token to users or logs.
+
+## Verification checkpoints
+- 20 GitHub unit tests passed, including URL policy, protected endpoints and MCP tool validation.
+- Wrangler bundle build passed.
+- Isolated stage Worker deployed successfully.
+- GitHub local Playwright smoke test succeeded.
+- Cloudflare Browser Run REST API returned a successful real-browser request to an approved website.
+- Real invocation of `/inspect` or `/mcp` through the **deployed Access-protected Worker** has not yet been tested. Requires machine-to-machine Access credentials or an authenticated testing session.
+- Wrangler `dev --remote` preview failed to start in the GitHub runner; no changes to production were made.
+
+Do not merge this branch or enable broad automation until protected Worker end-to-end tests and MCP connection authentication are verified.
