@@ -1,44 +1,64 @@
 # Cloud Browser Agent — ChatGPT OAuth gateway (staging, NOT DEPLOYED)
 
-This is an **isolated, fail-closed prototype**. It does not replace the existing
-Finance Hub gateway or the Cloud Browser Agent Worker.
+## Current status (2026-11-22)
 
-## Existing verified infrastructure
-- `cloud-browser-agent-stage.dorjan-gjoni-dg.workers.dev/mcp` responds to
-  service-token authentication plus a separate Worker bearer token.
-- Two read-only actions: `browser_agent_status` and `browser_inspect`.
-- Secret names already exist in GitHub environment `browser-agent-staging`:
-  `CF_ACCESS_CLIENT_ID`, `CF_ACCESS_CLIENT_SECRET`, `BROWSER_AGENT_API_TOKEN`.
-- Do not disclose or commit credential values.
+- Verified Browser Agent worker: `cloud-browser-agent-stage.dorjan-gjoni-dg.workers.dev`.
+- Its protected MCP endpoint passed end-to-end tests using separate
+  Cloudflare Access service credentials and Worker bearer authentication.
+- A new, isolated OAuth gateway has been coded on the feature branch.
+- Current package: `@cloudflare/workers-oauth-provider@1.2.4` with Google
+  OpenID Connect, consent and PKCE, token validation and `mcp:read` restriction.
+- **NOT DEPLOYED.** A dedicated Google OAuth client, authorized account,
+  gateway credentials and final end-to-end tests are still required.
 
-## Scope
-`src/forward.mjs` validates an allowlist of JSON-RPC method/tool combinations,
-forwards to a **hard-coded** staging origin, refuses upstream redirects, and never
-returns upstream credentials. It **requires a verified OAuth user identity
-provided by a trusted server-side OAuth integration**. It does not itself
-authenticate a user.
+## Isolated Cloudflare OAuth storage
 
-`src/index.mjs` deliberately returns HTTP 503 for all requests. It is a
-security placeholder, **not a finished OAuth authorization server**.
+- KV namespace: `cloud-browser-chatgpt-oauth-stage-kv`
+- KV ID: `3e4203c6a00545df9ba0202343afb8d7`
+- Account ID: `e21cd8776c9beef277b3eb6f27ce5c58`
+- This is new and empty, not reused from Finance Hub.
+- An *example* Wrangler configuration exists; no active deployment config or
+  deployment workflow exists for this gateway.
 
-## Requirements before enabling any public endpoint
-1. Use an established provider, e.g. Cloudflare's maintained
-   `@cloudflare/workers-oauth-provider` library (OAuth 2.1, PKCE, CIMD/DCR,
-   state and consent, RFC 9728 discovery, token rotation/refresh).
-2. Configure dedicated staging hostname and KV namespace. Do not reuse Finance
-   Hub production application, its D1 database, Access policies, or OAuth secrets.
-3. Require Google/GitHub sign-in, verify identity and allowlist specific account,
-   present per-client consent, and bind audience/scope `mcp:read`.
-4. Only call `forwardAuthorizedMcp` **after** verifying OAuth token issuer,
-   audience, expiration, subject, consent and `mcp:read` scope.
-5. Test: unauthenticated 401 with resource metadata, OAuth discovery,
-   authorization code + PKCE, redirect URI allowlist, consent and deny,
-   refresh, revocation, scope and audience checks, and two tool calls.
-6. Add separate deployment workflow with opt-in and GitHub environment
-   restrictions. Keep it disabled until every authentication test passes.
-7. ChatGPT custom MCP connection availability depends on the user's plan and
-   workspace policy; verify that `Add custom MCP server` is available before
-   final connection.
+## Proposed staging URL
 
-Never publish this placeholder as a functioning ChatGPT integration or
-weaken Cloudflare Access to bypass authentication.
+`https://cloud-browser-chatgpt-stage.dorjan-gjoni-dg.workers.dev/mcp`
+
+Dedicated Google OAuth client settings:
+- Client type: Web application
+- Authorized redirect URI:
+  `https://cloud-browser-chatgpt-stage.dorjan-gjoni-dg.workers.dev/callback`
+- Authorized origin:
+  `https://cloud-browser-chatgpt-stage.dorjan-gjoni-dg.workers.dev`
+- Never reuse or change existing Finance Hub Google OAuth clients.
+- Required GitHub **browser-agent-staging** environment secrets when ready:
+  `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_ALLOWED_EMAIL`.
+- Existing forwarding secrets must stay in `browser-agent-staging`:
+  `CF_ACCESS_CLIENT_ID`, `CF_ACCESS_CLIENT_SECRET`,
+  `BROWSER_AGENT_API_TOKEN`.
+
+## Security gates before deployment
+
+1. Create a dedicated Google OAuth Web client, and allowlist the authorized
+   Google account. Never paste the Client Secret into ChatGPT.
+2. Validate initial sign-in, consent denial, provider errors, allowlisted
+   Google ID token signature, issuer, audience, nonce, account identity,
+   token expiry, refresh and revoke.
+3. Confirm provider metadata advertises the exact MCP resource, supports CIMD,
+   PKCE S256, and refresh-token behavior expected by ChatGPT.
+4. Create a restricted staging deployment workflow and active Wrangler config
+   after the Google credentials are securely saved; do not deploy before that.
+5. Run protected MCP `initialize`, `tools/list`,
+   `browser_agent_status`, `browser_inspect` and rejected write-action tests.
+6. Connect the ChatGPT custom MCP plugin only after successful browser OAuth
+   authorization and end-to-end testing.
+
+The gateway's `forwardAuthorizedMcp` function permits only those two
+read-only actions. All other tool calls are rejected before forwarding.
+Cloudflare OAuthProvider is responsible for verifying issued bearer tokens;
+the forwarding code requires the verified user ID and `mcp:read` scope.
+
+## Preserve the working systems
+
+Do not modify, merge or redeploy Finance Hub, its OAuth settings, its D1
+database, or the existing Browser Agent stage worker in this process.
