@@ -6,6 +6,7 @@ const json = (obj,status=200) => new Response(JSON.stringify(obj),{status,header
 const content = value => ({content:[{type:"text",text:JSON.stringify(value)}]});
 const tools = [
   {name:"browser_agent_status",description:"Read staging browser-agent status; no website interactions.",inputSchema:{type:"object",properties:{},additionalProperties:false}},
+  {name:"browser_page_links",description:"Discover up to 30 unique same-origin HTTPS links on an approved page; no clicks or forms. Query strings removed.",inputSchema:{type:"object",properties:{url:{type:"string"}},required:["url"],additionalProperties:false}},
   {name:"browser_inspect",description:"Read-only inspection of a preapproved HTTPS website: title, headings, link count and HTTP status. No clicks, logins, forms or trading.",inputSchema:{type:"object",properties:{url:{type:"string",description:"Approved HTTPS URL to inspect"}},required:["url"],additionalProperties:false}}
 ];
 export function createMcpHandler(launch) {
@@ -31,10 +32,10 @@ export function createMcpHandler(launch) {
     if(name==="browser_agent_status"&&Object.keys(args).length===0){
       return reply(content({service:"cloud-browser-agent",mode:"read-only",browserConfigured:!!env.BROWSER}));
     }
-    if(name!=="browser_inspect")return error(-32602,"Unknown tool or invalid arguments");
+    if(!["browser_inspect","browser_page_links"].includes(name))return error(-32602,"Unknown tool or invalid arguments");
     if(Object.keys(args).length!==1||typeof args.url!=="string")return error(-32602,"Expected only URL");
     try{validateTarget(args.url,env.ALLOWED_ORIGINS);}catch{return error(-32602,"URL not approved");}
-    const internal=new Request(new URL("/inspect",request.url),{method:"POST",headers:{authorization:request.headers.get("authorization")||"","content-type":"application/json"},body:JSON.stringify({url:args.url})});
+    const internal=new Request(new URL(name==="browser_page_links"?"/links":"/inspect",request.url),{method:"POST",headers:{authorization:request.headers.get("authorization")||"","content-type":"application/json"},body:JSON.stringify({url:args.url})});
     const response=await handler(internal,env);
     const value=await response.json();
     return reply({...content(value),isError:!response.ok});
