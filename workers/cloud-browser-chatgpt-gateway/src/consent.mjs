@@ -1,0 +1,6 @@
+const escape=(value)=>String(value??"").replace(/[&<>"']/g,char=>"&#"+char.charCodeAt(0)+";");
+export function renderConsent(details,handle){
+  const scopes=details.scope.map(x=>'<label><input type="checkbox" name="scope" value="'+escape(x)+'" checked> '+escape(x)+'</label>').join("");
+  const issuer=details.clientDomain?("Published by "+escape(details.clientDomain)):"Client identity not verified";
+  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Browser Agent access</title></head><body style="max-width:38rem;margin:3rem auto;font:16px system-ui;padding:1rem"><h1>Authorize Browser Agent access?</h1><p><strong>'+escape(details.clientName)+'</strong> requests read-only website inspection.</p><p>'+issuer+'</p><p>Connection redirects to: <strong>'+escape(details.redirectHost)+'</strong></p>'+(details.redirectIsLoopback?'<p><strong>Warning:</strong> This sends access to a local application.</p>':'')+'<form method="POST"><input type="hidden" name="handle" value="'+escape(handle)+'">'+scopes+'<p><button name="decision" value="approve">Allow</button> <button name="decision" value="deny">Deny</button></p></form></body></html>';
+}
