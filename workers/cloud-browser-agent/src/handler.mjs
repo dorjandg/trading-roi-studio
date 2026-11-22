@@ -1,6 +1,7 @@
 import { validateTarget, validateReadOnlyLink, canRequest, safeTitle } from "./policy.mjs";
 import { inventoryBrowserScript, sanitizeFormInventory } from "./form-inventory.mjs";
 import { validateEditPreviewRequest, buildEditPreview } from "./edit-preview.mjs";
+import { buildPreviewAuditReceipt } from "./approval-audit.mjs";
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
   status, headers: {
@@ -97,7 +98,11 @@ export function createHandler(launch) {
       if(path === "/edit-preview") {
         stage="preview-read-only-form-inventory";
         const raw = await page.evaluate(inventoryBrowserScript);
-        try { return json(buildEditPreview(proposal,raw)); }
+        try {
+          const preview=buildEditPreview(proposal,raw);
+          const receipt=await buildPreviewAuditReceipt(preview);
+          return json({...preview,...receipt});
+        }
         catch(e){ return json({error:e.message,executionAllowed:false},400); }
       }
       if(path === "/forms"){
