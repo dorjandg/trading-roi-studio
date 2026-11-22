@@ -174,3 +174,15 @@ jjYTResearch.sections.push({title:"Public versus course: what actually changes f
 ],src:[]});
 jjYTResearchMeta.push({title:"Fair-price definition: public/course version conflict",sources:[["UVKVSWKFlvo","01:09–01:28"]],status:"Public captions and private course transcript compared; chart/audio and intended definitions unverified."});
 renderNav();render();
+
+
+// Public JJ video 2026-11-13: employment-compatible Asia session and payout cash-flow cross-check.
+jjYTResearch.sections.push({title:"Trading around a 9–5: Asia fair-price room and payout-risk math",points:[
+"JJ's public 13 Nov 2026 lesson suggests choosing a session actually compatible with work hours, then testing that session rather than chasing missed New York entries. It uses the 8 PM Eastern Asian opening price as a working reference (01:58–02:56); private course lessons also discuss 6 PM/8 PM and volume-driven reanchoring, so the anchor is context-dependent.",
+"At 02:56–04:16 he describes waiting for displacement or a break of structure back toward the opening reference, skipping entries with too little room. His approximate 80% room-to-fair-price heuristic implies a 38-point planned target needs about 30.4 points to the reference under a literal distance interpretation; 25 points is insufficient. Original chart geometry is not independently verified.",
+"At 03:18–05:46 he matches the expected point move to a specific account's dollar target and stop capacity. One NQ contract at $20 per point yields $800 gross for 40 points; five NQ contracts at $100 per point would require 20 points for $2,000 or 40 for $4,000, before fees and losses. These are illustrative calculations, not provider-approved sizing.",
+"At 05:46–08:32 he models a $100 evaluation, 25% pass probability and one-third conditional funded payout probability: $400 expected evaluation cost per funded account, $1,200 expected evaluation cost per payout, and (11/12)^10 ≈ 41.9% chance of no payout in ten independent purchases. The spoken 'one in three evals get paid' is ambiguous; the actual calculation uses one-third of funded accounts.",
+"At 08:34–11:44 he advises avoiding recovery sizing after work, reviewing the actual session, and distinguishing evaluation spending from cash payouts. His illustrative $14K payouts minus $4K evaluation spending gives $10K before other costs, not guaranteed income. Historical payout figures and chart examples remain unverified. Public video: https://www.youtube.com/watch?v=mrp4fPdfplU ."
+],src:[]});
+jjYTResearchMeta.push({title:"Working 9–5: Asian-session room and payout math",sources:[["mrp4fPdfplU","01:58–04:16"],["mrp4fPdfplU","03:18–05:46"],["mrp4fPdfplU","05:46–08:32"],["mrp4fPdfplU","08:34–11:44"]],status:"JJ public native machine captions; private course variants compared. Chart, current firm terms and payouts not independently verified."});
+renderNav();render();
