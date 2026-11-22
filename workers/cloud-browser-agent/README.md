@@ -67,3 +67,6 @@ The deploy job is deliberately **disabled by default** and runs only when:
 Security note: an existing GitHub `finance-cloudflare` environment has Cloudflare credentials. **Do not copy or reuse the Finance environment automatically**; scope a separate stage deployment token to the intended Worker/account permissions. The browser staging environment currently has no secrets configured.
 
 No token values are stored in this repo. The deploy workflow cannot start paid browser execution on its own, and no live Browser Run checks occur until a user or MCP explicitly calls the protected Worker.
+
+## Staging activation checkpoint (2026-11-22)
+Dedicated GitHub environment secrets and the separate Cloudflare Access app were confirmed configured by names only; no credential values were read or committed. This documentation-only change triggers the opt-in deployment workflow on the isolated feature branch.
