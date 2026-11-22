@@ -1,0 +1,31 @@
+name: Cloud Browser Agent — OAuth Gateway Safety Checks
+on:
+  push:
+    branches:
+      - feature/cloud-browser-agent-phase1
+    paths:
+      - "workers/cloud-browser-chatgpt-gateway/**"
+      - ".github/workflows/cloud-browser-oauth-gateway-checks.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    if: github.ref == 'refs/heads/feature/cloud-browser-agent-phase1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: workers/cloud-browser-chatgpt-gateway
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate and test isolated gateway safety
+        run: |
+          npm run check
+          npm test
+      - name: Verify public gateway is disabled
+        run: |
+          node --input-type=module -e 'import gateway from "./src/index.mjs";const r=await gateway.fetch(new Request("https://localhost/mcp"));if(r.status!==503)process.exit(1);console.log("OAuth gateway fail-closed: HTTP 503");'
