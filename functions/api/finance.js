@@ -24,7 +24,7 @@ async function correctionTicket(secret,claims){
  const key=await crypto.subtle.importKey("raw",enc.encode(secret),{name:"HMAC",hash:"SHA-256"},false,["sign"]);
  const bytes=enc.encode(JSON.stringify(claims));
  const sig=new Uint8Array(await crypto.subtle.sign("HMAC",key,bytes));
- const url64=arr=>btoa(String.fromCharCode(...arr)).replace(/\\+/g,"-").replace(/\\//g,"_").replace(/=+$/,"");
+ const url64=arr=>btoa(String.fromCharCode(...arr)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
  return url64(bytes)+"."+url64(sig);
 }
 async function verifyCorrectionTicket(secret,ticket,expected){
