@@ -28,10 +28,9 @@ jobs:
         run: npm run check
       - name: Verify auth, scope, URL and consent security
         run: npm test
-      - name: Assert no gateway deployment credentials or deploy step
-        shell: bash
+      - name: Confirm gateway has no active Wrangler deployment config
         run: |
-          if grep -E 'wrangler deploy|cloudflare deploy|CLOUDFLARE_API_TOKEN' ../../.github/workflows/cloud-browser-oauth-gateway-checks.yml; then
-            echo "::error::Gateway testing workflow must never deploy or load deployment credentials."
+          if test -f wrangler.jsonc || test -f wrangler.toml; then
+            echo "::error::OAuth gateway must remain without an active deploy config until login credentials exist."
             exit 1
           fi
