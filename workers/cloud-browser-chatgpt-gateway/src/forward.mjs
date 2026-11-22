@@ -10,6 +10,7 @@ export function validateRpc(value){
   const {name,arguments:args={}}=value.params;
   if(name==="browser_agent_status")return args&&typeof args==="object"&&!Array.isArray(args)&&Object.keys(args).length===0;
   if(name==="browser_page_links"||name==="browser_inspect")return args&&typeof args==="object"&&!Array.isArray(args)&&Object.keys(args).length===1&&typeof args.url==="string";
+  if(name==="browser_follow_link")return args&&typeof args==="object"&&!Array.isArray(args)&&Object.keys(args).sort().join(",")==="linkUrl,url"&&typeof args.url==="string"&&typeof args.linkUrl==="string";
   return false;
 }
 
