@@ -11,6 +11,7 @@ const tools = [
  {name:"finance_access_check",description:"Check whether the authenticated user has exactly one existing Finance Hub workspace membership; no financial data returned.",inputSchema:{type:"object",properties:{},additionalProperties:false}},
  {name:"finance_snapshot_meta",description:"Read the authenticated user's Finance Hub snapshot revision and record counts, only when read-only data access is configured.",inputSchema:{type:"object",properties:{},additionalProperties:false}},
  {name:"finance_report_summary",description:"Diagnostic read-only transaction breakdown by month, currency, type, category and provider. Raw records only; NOT official dashboard totals or reconciliation.",inputSchema:{type:"object",properties:{from:{type:"string",description:"Inclusive YYYY-MM-DD"},to:{type:"string",description:"Inclusive YYYY-MM-DD"}},additionalProperties:false}},
+ {name:"finance_write_readiness",description:"Read-only status of controlled-write safeguards. Never changes financial records.",inputSchema:{type:"object",properties:{},additionalProperties:false}},
  {name:"finance_change_preview",description:"Preview a single transaction metadata correction without saving it. Requires exact transaction ID, expected snapshot revision, expected old value, and an allowlisted field. Never changes financial records.",inputSchema:{type:"object",properties:{transaction_id:{type:"string"},expected_revision:{type:"integer",minimum:1},field:{type:"string",enum:["category","provider","description"]},expected_value:{type:"string"},new_value:{type:"string"}},required:["transaction_id","expected_revision","field","expected_value","new_value"],additionalProperties:false}},
  {name:"finance_transactions_list",description:"Read a limited page of the authenticated user's snapshot transactions; no writes or cross-user access.",inputSchema:{type:"object",properties:{limit:{type:"integer",minimum:1,maximum:50},offset:{type:"integer",minimum:0,maximum:100000}},additionalProperties:false}}
 ];
@@ -66,6 +67,7 @@ export default {
     return json({jsonrpc:"2.0",id,result:toolResult({status:count===1?"AUTHORIZED":count===0?"MEMBERSHIP_NOT_FOUND":"AMBIGUOUS_MEMBERSHIP",financialDataAccess:false})});
    }catch{return json({jsonrpc:"2.0",id,result:toolResult({status:"MEMBERSHIP_CHECK_FAILED"})})}
   }
+  if(rpc.method==="tools/call"&&rpc.params?.name==="finance_write_readiness")return json({jsonrpc:"2.0",id,result:toolResult({writeAccess:false,writeFlagEnabled:false,previewAvailable:true,required:["trusted explicit approval","immutable backup","append-only audit","atomic conditional revision update","idempotency and rollback tests"],status:"NOT_READY",notice:"This action is read-only. No save tool exists and no financial writes are allowed."})});
   if(rpc.method==="tools/call"&&rpc.params?.name==="finance_change_preview"){
    let snapshot;try{snapshot=await snapshotFor(principal,env)}catch{return json({jsonrpc:"2.0",id,result:toolResult({code:"READ_FAILED"})})}
    if(snapshot.error)return json({jsonrpc:"2.0",id,result:toolResult(snapshot)});
