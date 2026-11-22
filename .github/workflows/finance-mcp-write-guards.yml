@@ -1,0 +1,25 @@
+name: Finance MCP controlled-write guard tests
+on:
+  push:
+    branches:
+      - feature/ai-control-api-phase1
+    paths:
+      - 'workers/finance-mcp-gateway-stage/src/write-guards.js'
+      - 'workers/finance-mcp-gateway-stage/test/write-guards.test.mjs'
+      - '.github/workflows/finance-mcp-write-guards.yml'
+  pull_request:
+    paths:
+      - 'workers/finance-mcp-gateway-stage/src/write-guards.js'
+      - 'workers/finance-mcp-gateway-stage/test/write-guards.test.mjs'
+jobs:
+  guard-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run pure write guard tests without database access
+        run: node --experimental-default-type=module --test workers/finance-mcp-gateway-stage/test/write-guards.test.mjs
