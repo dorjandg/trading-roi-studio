@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import worker,{routeMcp} from "../correction-mcp-router.mjs";
+import worker,{routeMcp,verifyGatewayAccess} from "../correction-mcp-router.mjs";
+import {generateKeyPairSync,sign,webcrypto} from "node:crypto";
 const args={transaction_id:"11111111-1111-4111-8111-111111111111",field:"category",expected_revision:19,expected_value:"Old",new_value:"New"};
 const env={FINANCE_HUB_API_ORIGIN:"https://example.pages.dev"};
 const call=(name,arguments_)=>({jsonrpc:"2.0",id:1,method:"tools/call",params:{name,arguments:arguments_}});
@@ -31,4 +32,24 @@ assert.equal(getRequest.status,405);
 const invalidJson=await worker.fetch(new Request("https://gateway.example/mcp",{method:"POST",headers:{"cf-access-jwt-assertion":"jwt"},body:"{"}),env);
 assert.equal(invalidJson.status,401); // malformed assertion rejected before body parsing
 assert.equal((await worker.fetch(new Request("https://gateway.example/mcp",{method:"POST",headers:{"cf-access-jwt-assertion":"bad.jwt.signature"},body:"{}"}),{...env,CF_ACCESS_TEAM_DOMAIN:"https://example.cloudflareaccess.com",CF_ACCESS_AUD:"isolated-audience"})).status,401);
+// Real RS256 signed Access assertion: issuer, audience, expiry and tampering.
+globalThis.crypto=webcrypto;
+const {publicKey,privateKey}=generateKeyPairSync("rsa",{modulusLength:2048});
+const jwk=publicKey.export({format:"jwk"});
+jwk.kid="isolated-key";
+const b64url=x=>Buffer.from(x).toString("base64url");
+const issue=(overrides={})=>{
+ const header=b64url(JSON.stringify({alg:"RS256",kid:"isolated-key"}));
+ const payload=b64url(JSON.stringify({iss:"https://isolated.cloudflareaccess.com",aud:["isolated-aud"],sub:"test-user",email:"test@example.com",exp:Math.floor(Date.now()/1000)+300,...overrides}));
+ const body=header+"."+payload;
+ return body+"."+sign("RSA-SHA256",Buffer.from(body),privateKey).toString("base64url");
+};
+const jwtEnv={CF_ACCESS_TEAM_DOMAIN:"https://isolated.cloudflareaccess.com/",CF_ACCESS_AUD:"isolated-aud"};
+const jwksFetch=async()=>({ok:true,json:async()=>({keys:[jwk]})});
+const validJwt=issue();
+assert.equal(await verifyGatewayAccess(validJwt,jwtEnv,jwksFetch),true);
+assert.equal(await verifyGatewayAccess(validJwt,{...jwtEnv,CF_ACCESS_AUD:"wrong-aud"},jwksFetch),false);
+assert.equal(await verifyGatewayAccess(issue({exp:Math.floor(Date.now()/1000)-10}),jwtEnv,jwksFetch),false);
+assert.equal(await verifyGatewayAccess(issue({iss:"https://other.cloudflareaccess.com"}),jwtEnv,jwksFetch),false);
+assert.equal(await verifyGatewayAccess(validJwt.slice(0,-2)+"AA",jwtEnv,jwksFetch),false);
 console.log("MCP router tests passed");
