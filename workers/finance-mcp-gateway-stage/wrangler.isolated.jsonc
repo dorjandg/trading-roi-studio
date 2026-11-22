@@ -1,0 +1,14 @@
+{
+  // Dedicated correction MCP gateway. This is an example, NOT an active deployment.
+  // No D1 binding: this gateway forwards to a separately authenticated Finance API.
+  // Never point FINANCE_HUB_API_ORIGIN at production for write testing.
+  "name": "finance-correction-mcp-isolated",
+  "main": "correction-mcp-router.mjs",
+  "compatibility_date": "2026-11-01",
+  "workers_dev": false,
+  "preview_urls": false,
+  "vars": {
+    "FINANCE_MCP_WRITE_TOOLS_ENABLED": "false",
+    "FINANCE_HUB_API_ORIGIN": "https://replace-with-isolated-finance-api.example"
+  }
+}
