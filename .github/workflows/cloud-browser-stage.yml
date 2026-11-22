@@ -30,6 +30,7 @@ jobs:
       - name: Validate JavaScript syntax
         run: |
           node --check src/index.js
+          node --check src/handler.mjs
           node --check src/policy.mjs
       - name: Unit tests (no cloud browser or billed sessions)
         run: npm test
