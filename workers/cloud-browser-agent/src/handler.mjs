@@ -29,7 +29,7 @@ export function createHandler(launch) {
     const path = new URL(request.url).pathname;
     if (request.method === "GET" && path === "/health")
       return json({service:"cloud-browser-agent",mode:"read-only",browserConfigured:!!env.BROWSER});
-    if (request.method !== "POST" || !["/inspect","/screenshot"].includes(path))
+    if (request.method !== "POST" || !["/inspect","/screenshot","/links"].includes(path))
       return json({error:"Not found"},404);
 
     if (Number(request.headers.get("content-length") || "0") > 4096)
@@ -62,6 +62,25 @@ export function createHandler(launch) {
       if (path === "/screenshot") {
         const bytes = await page.screenshot({type:"png",fullPage:false});
         return new Response(bytes,{headers:{"content-type":"image/png","cache-control":"no-store","x-content-type-options":"nosniff"}});
+      }
+      if (path === "/links") {
+        const hrefs = await page.locator("a[href]").evaluateAll(els =>
+          els.slice(0, 200).map(el => ({href:el.href, text:(el.innerText||el.textContent||"").trim().slice(0,100)})));
+        const origin = new URL(target).origin;
+        const seen = new Set(), links = [];
+        for (const item of hrefs) {
+          try {
+            const destination = new URL(item.href);
+            if (destination.origin !== origin || destination.protocol !== "https:" ||
+                destination.username || destination.password) continue;
+            destination.search=""; destination.hash="";
+            if (seen.has(destination.href)) continue;
+            seen.add(destination.href);
+            links.push({url:destination.href,text:String(item.text||"").slice(0,100)});
+            if (links.length === 30) break;
+          } catch { /* malformed link is skipped */ }
+        }
+        return json({requestedUrl:target,finalUrl:page.url(),title,links,readOnly:true,queryParametersRemoved:true});
       }
       const headings = await page.locator("h1, h2").allTextContents();
       const links = await page.locator("a[href]").count();
