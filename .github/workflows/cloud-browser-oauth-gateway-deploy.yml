@@ -51,8 +51,10 @@ jobs:
             echo "::error::Cloudflare Access service Client ID format invalid"
             exit 1
           fi
+          # Allow accidental surrounding whitespace on pasted client IDs; do not print the value.
+          GOOGLE_CLIENT_ID="$(printf '%s' "$GOOGLE_CLIENT_ID" | tr -d '\\r\\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
           if [[ "$GOOGLE_CLIENT_ID" != *.apps.googleusercontent.com ]]; then
-            echo "::error::Google OAuth Client ID format invalid"
+            echo "::error::Google OAuth Client ID does not end with .apps.googleusercontent.com, even after whitespace normalization. Check that the Client ID, not Client Secret, was saved in GOOGLE_CLIENT_ID."
             exit 1
           fi
       - name: Install dependencies, validate and test
