@@ -13,7 +13,7 @@ jobs:
   test:
     if: github.ref == 'refs/heads/feature/cloud-browser-agent-phase1'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 7
     defaults:
       run:
         working-directory: workers/cloud-browser-chatgpt-gateway
@@ -22,10 +22,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Validate and test isolated gateway safety
+      - name: Install pinned OAuth dependencies
+        run: npm install --no-audit --no-fund
+      - name: Validate OAuth gateway source
+        run: npm run check
+      - name: Verify auth, scope, URL and consent security
+        run: npm test
+      - name: Assert no gateway deployment credentials or deploy step
+        shell: bash
         run: |
-          npm run check
-          npm test
-      - name: Verify public gateway is disabled
-        run: |
-          node --input-type=module -e 'import gateway from "./src/index.mjs";const r=await gateway.fetch(new Request("https://localhost/mcp"));if(r.status!==503)process.exit(1);console.log("OAuth gateway fail-closed: HTTP 503");'
+          if grep -E 'wrangler deploy|cloudflare deploy|CLOUDFLARE_API_TOKEN' ../../.github/workflows/cloud-browser-oauth-gateway-checks.yml; then
+            echo "::error::Gateway testing workflow must never deploy or load deployment credentials."
+            exit 1
+          fi
