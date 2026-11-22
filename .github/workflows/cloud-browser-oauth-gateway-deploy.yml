@@ -1,4 +1,5 @@
 name: Cloud Browser Agent — OAuth Gateway Staging Deploy
+# Staging-only opt-in enabled after Google account allowlist and isolated OAuth build checks.
 on:
   push:
     branches:
