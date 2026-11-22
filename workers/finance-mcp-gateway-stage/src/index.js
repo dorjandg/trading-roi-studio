@@ -11,6 +11,7 @@ const tools = [
  {name:"finance_access_check",description:"Check whether the authenticated user has exactly one existing Finance Hub workspace membership; no financial data returned.",inputSchema:{type:"object",properties:{},additionalProperties:false}},
  {name:"finance_snapshot_meta",description:"Read the authenticated user's Finance Hub snapshot revision and record counts, only when read-only data access is configured.",inputSchema:{type:"object",properties:{},additionalProperties:false}},
  {name:"finance_report_summary",description:"Diagnostic read-only transaction breakdown by month, currency, type, category and provider. Raw records only; NOT official dashboard totals or reconciliation.",inputSchema:{type:"object",properties:{from:{type:"string",description:"Inclusive YYYY-MM-DD"},to:{type:"string",description:"Inclusive YYYY-MM-DD"}},additionalProperties:false}},
+ {name:"finance_change_preview",description:"Preview a single transaction metadata correction without saving it. Requires exact transaction ID, expected snapshot revision, expected old value, and an allowlisted field. Never changes financial records.",inputSchema:{type:"object",properties:{transaction_id:{type:"string"},expected_revision:{type:"integer",minimum:1},field:{type:"string",enum:["category","provider","description"]},expected_value:{type:"string"},new_value:{type:"string"}},required:["transaction_id","expected_revision","field","expected_value","new_value"],additionalProperties:false}},
  {name:"finance_transactions_list",description:"Read a limited page of the authenticated user's snapshot transactions; no writes or cross-user access.",inputSchema:{type:"object",properties:{limit:{type:"integer",minimum:1,maximum:50},offset:{type:"integer",minimum:0,maximum:100000}},additionalProperties:false}}
 ];
 const toolResult = value => ({content:[{type:"text",text:JSON.stringify(value)}]});
@@ -64,6 +65,18 @@ export default {
     const count=rows.results?.length||0;
     return json({jsonrpc:"2.0",id,result:toolResult({status:count===1?"AUTHORIZED":count===0?"MEMBERSHIP_NOT_FOUND":"AMBIGUOUS_MEMBERSHIP",financialDataAccess:false})});
    }catch{return json({jsonrpc:"2.0",id,result:toolResult({status:"MEMBERSHIP_CHECK_FAILED"})})}
+  }
+  if(rpc.method==="tools/call"&&rpc.params?.name==="finance_change_preview"){
+   let snapshot;try{snapshot=await snapshotFor(principal,env)}catch{return json({jsonrpc:"2.0",id,result:toolResult({code:"READ_FAILED"})})}
+   if(snapshot.error)return json({jsonrpc:"2.0",id,result:toolResult(snapshot)});
+   const a=rpc.params.arguments||{},allowed=["category","provider","description"];
+   if(typeof a.transaction_id!=="string"||!/^[a-f0-9-]{36}$/i.test(a.transaction_id)||!Number.isInteger(a.expected_revision)||!allowed.includes(a.field)||typeof a.expected_value!=="string"||typeof a.new_value!=="string"||a.new_value.length>300||a.new_value.trim()===""||a.new_value===a.expected_value)return json({jsonrpc:"2.0",id,result:toolResult({code:"INVALID_ARGUMENTS"})});
+   if(snapshot.revision!==a.expected_revision)return json({jsonrpc:"2.0",id,result:toolResult({code:"REVISION_CONFLICT",current_revision:snapshot.revision})});
+   const matches=(snapshot.data?.transactions||[]).filter(t=>t.id===a.transaction_id);
+   if(matches.length!==1)return json({jsonrpc:"2.0",id,result:toolResult({code:"TRANSACTION_NOT_UNIQUE"})});
+   const t=matches[0],old=t[a.field]??"";
+   if(typeof old!=="string"||old!==a.expected_value)return json({jsonrpc:"2.0",id,result:toolResult({code:"VALUE_CONFLICT"})});
+   return json({jsonrpc:"2.0",id,result:toolResult({status:"PREVIEW_ONLY",saved:false,revision:snapshot.revision,transaction_id:t.id,field:a.field,before:old,after:a.new_value,amount:t.amount,currency:t.currency,date:t.date,notice:"No database write. An explicit, audited commit workflow with backups and conflict protection is required before any changes can be saved."})});
   }
   if(rpc.method==="tools/call"&&["finance_snapshot_meta","finance_transactions_list","finance_report_summary"].includes(rpc.params?.name)){
    let snapshot;try{snapshot=await snapshotFor(principal,env)}catch{return json({jsonrpc:"2.0",id,result:toolResult({error:"Financial data unavailable",code:"READ_FAILED"})})}
