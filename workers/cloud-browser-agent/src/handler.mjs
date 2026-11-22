@@ -53,7 +53,9 @@ export function createHandler(launch) {
 
     let browser;
     let context;
+    let stage="launch";
     try {
+      stage="launch";
       browser = await launch(env.BROWSER);
       context = await browser.newContext({serviceWorkers:"block",acceptDownloads:false});
       const page = await context.newPage();
@@ -65,9 +67,11 @@ export function createHandler(launch) {
         return route.continue();
       });
       const started = Date.now();
+      stage="source-navigation";
       const response = await page.goto(target,{waitUntil:"domcontentloaded",timeout:20000});
       if (new URL(page.url()).origin !== new URL(target).origin) throw new Error("Cross-origin navigation refused");
       if (path === "/follow") {
+        stage="find-source-links";
         const sourceLinks = await page.locator("a[href]").evaluateAll(els =>
           els.slice(0,500).map(el => el.href));
         // Navigation is permitted only if an actual link on the source page exists.
@@ -75,8 +79,10 @@ export function createHandler(launch) {
           const u=new URL(typeof href==="string"?href:href?.href);
           u.hash="";return u.href===destination;
         }catch{return false;}}))return json({error:"Destination is not a link on the source page"},400);
+        stage="destination-navigation";
         const next=await page.goto(destination,{waitUntil:"domcontentloaded",timeout:20000});
         if(page.url()!==destination)throw new Error("Unexpected redirect refused");
+        stage="extract-destination";
         const headings=await page.locator("h1, h2").allTextContents();
         return json({sourceUrl:target,finalUrl:page.url(),httpStatus:next?.status()??null,title:safeTitle(await page.title()),headings:headings.slice(0,12).map(s=>s.trim().slice(0,200)),readOnly:true,method:"GET",clicked:false});
       }
@@ -116,7 +122,7 @@ export function createHandler(launch) {
         durationMs:Date.now()-started,readOnly:true
       });
     } catch {
-      return json({error:"Browser inspection failed",code:"INSPECTION_FAILED"},502);
+      return json({error:"Browser inspection failed",code:"INSPECTION_FAILED",stage},502);
     } finally {
       if(context) await context.close().catch(()=>{});
       if(browser) await browser.close().catch(()=>{});
