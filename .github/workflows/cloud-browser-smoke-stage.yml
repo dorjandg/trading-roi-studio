@@ -37,7 +37,7 @@ jobs:
           set -euo pipefail
           # Wrangler dev requires an ephemeral local secret; deployed secrets are not loaded.
           umask 077
-          printf 'AGENT_API_TOKEN=%s\\n' "$BROWSER_AGENT_API_TOKEN" > .dev.vars
+          printf 'AGENT_API_TOKEN=%s\n' "$BROWSER_AGENT_API_TOKEN" > .dev.vars
           npx wrangler dev --port 8787 --ip 127.0.0.1 > "$RUNNER_TEMP/wrangler-smoke.log" 2>&1 &
           devpid=$!
           trap 'rm -f .dev.vars; kill "$devpid" 2>/dev/null || true' EXIT
