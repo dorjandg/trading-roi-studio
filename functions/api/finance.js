@@ -96,6 +96,58 @@ async function handler(ctx){
   return json({ok:true,previewOnly:true,saved:false,transaction_id:a.transaction_id,field:a.field,
    before,after:a.new_value,revision:row.revision,requiresExplicitConfirmation:true});
  }
+ // Exact, authenticated Finance Hub correction. Disabled by default.
+ // A confirmed UI request is not permission to edit any other transaction.
+ if(method==="POST"&&url.searchParams.get("resource")==="transaction-change-save"){
+  if(env.FINANCE_TRANSACTION_CORRECTIONS_ENABLED!=="true")
+   return json({error:"Transaction corrections are not enabled"},503);
+  if(!write)return json({error:"Read-only membership"},403);
+  let a;try{a=await request.json()}catch{return json({error:"Invalid JSON"},400)}
+  const fields=["category","provider","description"];
+  if(!a||a.confirmed!==true||typeof a.transaction_id!=="string"||
+     !/^[a-f0-9-]{36}$/i.test(a.transaction_id)||
+     !Number.isSafeInteger(a.expected_revision)||a.expected_revision<1||
+     !fields.includes(a.field)||typeof a.expected_value!=="string"||
+     typeof a.new_value!=="string"||!a.new_value.trim()||a.new_value.length>300||
+     a.new_value===a.expected_value)return json({error:"Exact transaction confirmation required"},400);
+  const old=await db.prepare("SELECT revision,payload FROM finance_snapshots WHERE workspace_id=? AND user_id=?")
+   .bind(ws,user.id).first();
+  if(!old||old.revision!==a.expected_revision)return json({error:"Snapshot revision changed"},409);
+  let data;try{data=JSON.parse(old.payload)}catch{return json({error:"Snapshot unreadable"},409)}
+  const required=["transactions","propAccounts","propEvents","propAudit","subscriptions","invoices"];
+  if(data?.format!=="finance-hub-backup"||data?.version!==2||
+     !required.every(k=>Array.isArray(data[k])))return json({error:"Unsupported snapshot"},409);
+  const matches=data.transactions.filter(t=>t.id===a.transaction_id);
+  if(matches.length!==1||typeof (matches[0][a.field]??"")!=="string"||
+     (matches[0][a.field]??"")!==a.expected_value)
+   return json({error:"Transaction changed; preview again"},409);
+  const next=structuredClone(data);
+  const tx=next.transactions.find(t=>t.id===a.transaction_id);
+  tx[a.field]=a.new_value;
+  const nextPayload=JSON.stringify(next);
+  if(new TextEncoder().encode(nextPayload).length>1024*1024)
+   return json({error:"Snapshot exceeds 1 MB"},413);
+  const backupId=crypto.randomUUID(),auditId=crypto.randomUUID(),stamp=new Date().toISOString();
+  // The audit insert is deliberately dependent on a successful CAS revision update.
+  // Its NOT NULL new_revision constraint forces the entire D1 batch to roll back
+  // if the snapshot revision changed between read and write.
+  try{
+   const statements=[
+    db.prepare("INSERT INTO finance_mcp_direct_backups(backup_id,workspace_id,user_id,revision,snapshot_payload,created_at) VALUES(?,?,?,?,?,?)")
+      .bind(backupId,ws,user.id,old.revision,old.payload,stamp),
+    db.prepare("UPDATE finance_snapshots SET payload=?,revision=revision+1,updated_at=CURRENT_TIMESTAMP WHERE workspace_id=? AND user_id=? AND revision=?")
+      .bind(nextPayload,ws,user.id,old.revision),
+    db.prepare("INSERT INTO finance_mcp_direct_audit(audit_id,backup_id,workspace_id,user_id,transaction_id,field_name,old_value,new_value,old_revision,new_revision,created_at) VALUES(?,?,?,?,?,?,?,?,?,(SELECT revision FROM finance_snapshots WHERE workspace_id=? AND user_id=? AND revision=?),?)")
+      .bind(auditId,backupId,ws,user.id,a.transaction_id,a.field,a.expected_value,a.new_value,old.revision,ws,user.id,old.revision+1,stamp)
+   ];
+   const results=await db.batch(statements);
+   if(results[1]?.meta?.changes!==1)return json({error:"Revision conflict; refresh before retrying"},409);
+  }catch(e){
+   if(/no such table/i.test(String(e)))return json({error:"Controlled-write backup and audit schema not configured"},503);
+   return json({error:"Correction not saved; refresh and check current revision"},409);
+  }
+  return json({saved:true,transaction_id:a.transaction_id,field:a.field,revision:old.revision+1,backup_id:backupId});
+ }
  // Read-only discovery endpoint for the future AI Control Gateway.
  // Inherits verified Cloudflare Access identity and workspace membership checks above.
  if(method==="GET"&&url.searchParams.get("resource")==="control-capabilities"){
