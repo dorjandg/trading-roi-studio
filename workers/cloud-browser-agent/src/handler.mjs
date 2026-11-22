@@ -2,6 +2,7 @@ import { validateTarget, validateReadOnlyLink, canRequest, safeTitle } from "./p
 import { inventoryBrowserScript, sanitizeFormInventory } from "./form-inventory.mjs";
 import { validateEditPreviewRequest, buildEditPreview } from "./edit-preview.mjs";
 import { buildPreviewAuditReceipt } from "./approval-audit.mjs";
+import { persistPreviewAudit } from "./audit-store.mjs";
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
   status, headers: {
@@ -101,6 +102,16 @@ export function createHandler(launch) {
         try {
           const preview=buildEditPreview(proposal,raw);
           const receipt=await buildPreviewAuditReceipt(preview);
+          // No audit DB binding: keep existing read-only, ephemeral behavior.
+          // DB present but failing: return 503 and never claim durable persistence.
+          if(env.BROWSER_AGENT_AUDIT_DB) {
+            try {
+              const saved=await persistPreviewAudit(env.BROWSER_AGENT_AUDIT_DB,preview,receipt);
+              return json({...preview,...saved});
+            } catch {
+              return json({error:"Isolated audit storage unavailable",code:"AUDIT_STORAGE_FAILED",executionAllowed:false,persisted:false},503);
+            }
+          }
           return json({...preview,...receipt});
         }
         catch(e){ return json({error:e.message,executionAllowed:false},400); }
