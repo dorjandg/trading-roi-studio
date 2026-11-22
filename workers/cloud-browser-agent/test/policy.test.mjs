@@ -19,3 +19,11 @@ test("blocks third-party network requests, including redirects", () => {
  }
 });
 test("bounds title length", () => assert.equal(safeTitle("x".repeat(500)).length, 300));
+
+import { validateSafeReadUrl } from "../src/policy.mjs";
+test("safe navigation rejects action and query paths", () => {
+  for (const path of ["/logout","/delete/123","/transfer","/reports?delete=1"]) {
+    assert.throws(() => validateSafeReadUrl("https://fin-kac.pages.dev"+path, allow));
+  }
+  assert.equal(validateSafeReadUrl("https://fin-kac.pages.dev/reports", allow),"https://fin-kac.pages.dev/reports");
+});
