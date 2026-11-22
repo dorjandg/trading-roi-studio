@@ -1,0 +1,27 @@
+name: Finance correction isolated checks
+on:
+  pull_request:
+    paths:
+      - 'finance-correction.html'
+      - 'functions/api/finance.js'
+      - 'workers/finance-mcp-gateway-stage/migrations/0002_direct_corrections.sql'
+      - 'workers/finance-mcp-gateway-stage/test/direct-save-sqlite.test.py'
+      - 'workers/finance-mcp-gateway-stage/test/finance-ui-contract.test.py'
+      - '.github/workflows/finance-correction-isolated.yml'
+  push:
+    branches:
+      - 'feature/finance-correction-isolated'
+jobs:
+  isolated-correction:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check Finance API JavaScript syntax
+        run: node --check functions/api/finance.js
+      - name: Verify isolated database rollback and backup
+        run: python3 workers/finance-mcp-gateway-stage/test/direct-save-sqlite.test.py
+      - name: Verify UI and API contract
+        run: python3 workers/finance-mcp-gateway-stage/test/finance-ui-contract.test.py
