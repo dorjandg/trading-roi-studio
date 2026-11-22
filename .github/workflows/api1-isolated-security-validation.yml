@@ -29,4 +29,5 @@ jobs:
           node --check src/mcp.mjs
           node --check src/interaction-policy.mjs
           node --check simulation/interaction-executor.mjs
-          node --test test/handler.test.mjs test/policy.test.mjs test/interaction-policy.test.mjs test/interaction-executor.test.mjs
+          node --check simulation/browser-interaction-adapter.mjs
+          node --test test/handler.test.mjs test/policy.test.mjs test/interaction-policy.test.mjs test/interaction-executor.test.mjs test/browser-interaction-adapter.test.mjs
