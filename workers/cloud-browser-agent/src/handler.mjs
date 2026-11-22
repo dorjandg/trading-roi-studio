@@ -71,7 +71,7 @@ export function createHandler(launch) {
           els.slice(0,500).map(el => el.href));
         // Navigation is permitted only if an actual link on the source page exists.
         if(!sourceLinks.some(href=>{try {
-          const u=new URL(href);
+          const u=new URL(typeof href==="string"?href:href?.href);
           u.hash="";return u.href===destination;
         }catch{return false;}}))return json({error:"Destination is not a link on the source page"},400);
         const next=await page.goto(destination,{waitUntil:"domcontentloaded",timeout:20000});
