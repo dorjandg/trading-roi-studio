@@ -17,7 +17,12 @@ function browserMock() {
     goto:async url=>{state.navigated=url;return {status:()=>200};},
     url:()=>state.navigated,
     title:async()=>"Home",
-    locator:selector=>selector==="h1, h2"?
+    locator:selector=>selector==="a[href]"?{count:async()=>3,evaluateAll:async()=>[
+      {href:"https://fin-kac.pages.dev/summary?session=secret",text:"Summary"},
+      {href:"https://evil.test/steal",text:"External"},
+      {href:"https://fin-kac.pages.dev/summary?token=other",text:"Duplicate"},
+      {href:"https://fin-kac.pages.dev/reports",text:"Reports"}
+    ]}:selector==="h1, h2"?
       {allTextContents:async()=>["  Welcome  "]}:{count:async()=>3},
     screenshot:async()=>new Uint8Array([137,80,78,71])
   };
@@ -77,5 +82,20 @@ test("returns screenshot bytes and closes browser",async()=>{
   assert.equal(response.status,200);
   assert.equal(response.headers.get("content-type"),"image/png");
   assert.equal((await response.arrayBuffer()).byteLength,4);
+  assert.equal(mock.state.browserClosed,true);
+});
+
+test("discovers same-origin navigation without leaking query parameters or visiting links",async()=>{
+  const mock=browserMock();
+  const response=await createHandler(mock.launch)(req("/links",{url:"https://fin-kac.pages.dev"}),env);
+  const value=await response.json();
+  assert.equal(response.status,200);
+  assert.deepEqual(value.links.map(x=>x.url),[
+    "https://fin-kac.pages.dev/summary",
+    "https://fin-kac.pages.dev/reports"
+  ]);
+  assert.equal(value.queryParametersRemoved,true);
+  assert.equal(value.readOnly,true);
+  assert.equal(mock.state.navigated,"https://fin-kac.pages.dev/");
   assert.equal(mock.state.browserClosed,true);
 });
