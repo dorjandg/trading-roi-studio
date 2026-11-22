@@ -1,0 +1,17 @@
+{
+  "name": "finance-mcp-gateway-stage",
+  "main": "src/index.js",
+  "compatibility_date": "2026-11-02",
+  "workers_dev": true,
+  "vars": {
+    "AI_GATEWAY_ENABLED": "true",
+    "FINANCE_MCP_READ_ENABLED": "true"
+  },
+  "d1_databases": [
+    {
+      "binding": "FINANCE_DB",
+      "database_name": "finance-hub-db",
+      "database_id": "c5c75000-5118-4994-a8fb-1e06756b73a6"
+    }
+  ]
+}
