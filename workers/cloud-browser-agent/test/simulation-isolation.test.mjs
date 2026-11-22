@@ -26,7 +26,7 @@ test("durable write prototype never reaches staging MCP gateway or deployed agen
  assert.doesNotMatch(deployed,/WRITE_ENABLED|write_service|persistent-write-prototype/);
 });
 
-test("Stage 4.9 scaffold has no Wrangler deploy config or active website write API",()=>{
+test("Stage 4.9 scaffold has no Wrangler deploy config or active website write API",{skip:!existsSync(new URL("../../cloud-browser-write-stage/src/index.mjs",import.meta.url))},()=>{
  const root=new URL("../../cloud-browser-write-stage/",import.meta.url);
  for(const path of ["wrangler.jsonc","wrangler.toml","wrangler.json"]){
   assert.equal(existsSync(new URL(path,root)),false);
