@@ -10,7 +10,7 @@ const json = (body, status = 200) => new Response(JSON.stringify(body), {
 
 export async function authorized(request, env) {
   const header = request.headers.get("authorization") || "";
-  const token = /^Bearer ([A-Za-z0-9_\-\.~+/=]+)$/.exec(header)?.[1] || "";
+  const token = header.startsWith("Bearer ") ? header.slice(7) : "";
   if (!env.AGENT_API_TOKEN || !token || token.length > 512) return false;
   const enc = new TextEncoder();
   const [a,b] = await Promise.all([
