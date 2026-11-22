@@ -11,6 +11,7 @@
     "FINANCE_MCP_WRITE_TOOLS_ENABLED": "false",
     "CF_ACCESS_TEAM_DOMAIN": "https://floral-river-0fbd.cloudflareaccess.com",
     "CF_ACCESS_AUD": "bd462d04b3ae7f51551d9edb47f81d9b906ebca1d84c1bdb2eb4cf70a1d97cc0",
-    "FINANCE_HUB_API_ORIGIN": "https://replace-with-isolated-finance-api.example"
-  }
+    "FINANCE_CORRECTION_API_MODE": "service-binding"
+  },
+  "services": [{ "binding": "FINANCE_CORRECTION_API", "service": "finance-correction-api-isolated" }]
 }
