@@ -17,9 +17,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install dependencies without scripts
-        working-directory: workers/cloud-browser-agent
-        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Run Node tests
         working-directory: workers/cloud-browser-agent
         run: npm test
