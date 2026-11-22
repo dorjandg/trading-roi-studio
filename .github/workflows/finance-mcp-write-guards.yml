@@ -7,9 +7,11 @@ on:
       - 'workers/finance-mcp-gateway-stage/src/write-guards.js'
       - 'workers/finance-mcp-gateway-stage/src/write-approval.js'
       - 'workers/finance-mcp-gateway-stage/src/write-plan.js'
+      - 'workers/finance-mcp-gateway-stage/src/approval-request.js'
       - 'workers/finance-mcp-gateway-stage/test/write-guards.test.mjs'
       - 'workers/finance-mcp-gateway-stage/test/write-approval.test.mjs'
       - 'workers/finance-mcp-gateway-stage/test/write-plan.test.mjs'
+      - 'workers/finance-mcp-gateway-stage/test/approval-request.test.mjs'
       - 'workers/finance-mcp-gateway-stage/test/atomic-write-sqlite.test.py'
       - '.github/workflows/finance-mcp-write-guards.yml'
   pull_request:
