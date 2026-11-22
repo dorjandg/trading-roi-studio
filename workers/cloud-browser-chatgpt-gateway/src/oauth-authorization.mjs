@@ -10,7 +10,7 @@ function newSecret(){return crypto.randomUUID()+crypto.randomUUID();}
 async function beginGoogle(auth,request,env,headers){
   const verifier=newSecret(),nonce=newSecret();
   const upstream=await auth.beginUpstream(request,{data:{verifier,nonce},headers});
-  const url=buildGoogleLoginUrl({clientId:env.GOOGLE_CLIENT_ID,redirectUri:redirectUri(new Request(new URL("/",env.OAUTH_ISSUER))),state:upstream.state,verifier,nonce});
+  const url=buildGoogleLoginUrl({clientId:env.GOOGLE_CLIENT_ID,redirectUri:new URL("/callback",env.OAUTH_ISSUER).toString(),state:upstream.state,verifier,nonce});
   url.searchParams.set("code_challenge",await pkceChallenge(verifier));
   upstream.headers.set("Location",url.href);
   return redirect(upstream.headers);
@@ -44,7 +44,6 @@ export const oauthPages={
         const {request:original,data,headers}=await auth.finishUpstream(request);
         const query=new URL(request.url).searchParams;
         if(query.has("error")||!query.get("code")){
-          const result=await auth.completeAuthorization; // no grant on rejection
           return text("Google authorization denied",403);
         }
         const idToken=await exchangeGoogleCode({
