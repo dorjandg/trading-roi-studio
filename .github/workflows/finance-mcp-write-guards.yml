@@ -19,6 +19,8 @@ on:
       - 'workers/finance-mcp-gateway-stage/test/atomic-write-sqlite.test.py'
       - 'workers/finance-mcp-gateway-stage/test/migration-sqlite.test.py'
       - 'workers/finance-mcp-gateway-stage/test/direct-save-sqlite.test.py'
+      - 'workers/finance-mcp-gateway-stage/test/finance-ui-contract.test.py'
+      - 'finance-correction.html'
       - 'workers/finance-mcp-gateway-stage/migrations/0002_direct_corrections.sql'
       - 'functions/api/finance.js'
       - 'workers/finance-mcp-gateway-stage/migrations/0001_controlled_writes.sql'
@@ -48,3 +50,6 @@ jobs:
 
       - name: Test direct save backup and rollback in isolated SQLite
         run: python3 workers/finance-mcp-gateway-stage/test/direct-save-sqlite.test.py
+
+      - name: Verify Finance Hub correction UI and API contract
+        run: python3 workers/finance-mcp-gateway-stage/test/finance-ui-contract.test.py
