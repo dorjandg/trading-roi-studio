@@ -7,6 +7,7 @@ on:
     paths:
       - 'finance/**'
       - 'functions/api/finance.js'
+      - 'finance-correction.html'
       - 'functions/api/gmail-ingest.js'
       - 'functions/api/finance-sheet-sync.js'
       - '.github/workflows/finance-hub-deploy.yml'
@@ -98,6 +99,7 @@ jobs:
         run: |
           mkdir -p .finance-deploy/functions/api
           cp finance/index.html .finance-deploy/index.html
+          cp finance-correction.html .finance-deploy/finance-correction.html
           cp functions/api/finance.js .finance-deploy/functions/api/finance.js
           cp functions/api/gmail-ingest.js .finance-deploy/functions/api/gmail-ingest.js
           cp functions/api/finance-sheet-sync.js .finance-deploy/functions/api/finance-sheet-sync.js
