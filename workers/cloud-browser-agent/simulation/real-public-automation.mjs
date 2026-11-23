@@ -11,6 +11,22 @@ const safeUrl=raw=>{
  return u;
 };
 const validQuery=q=>typeof q==="string"&&q.length>=3&&q.length<=80&&/^[A-Za-z0-9 ,.'-]+$/.test(q);
+// Display-only comparison; never use this normalized value to form a browser URL.
+const normalizeTitle=value=>String(value||"").normalize("NFKC").trim().toLowerCase()
+ .replace(/_/g," ").replace(/\s+/g," ");
+const isSearchResultsPage=url=>{
+ const u=safeUrl(url),path=u.pathname.toLowerCase();
+ return path==="/wiki/special:search"||path==="/w/index.php";
+};
+const relevanceScore=(item,query)=>{
+ let linkTitle="";
+ try{linkTitle=decodeURIComponent(new URL(item.href).pathname.slice(6));}catch{}
+ const exact=normalizeTitle(query),title=normalizeTitle(linkTitle),label=normalizeTitle(item.text);
+ if(title===exact||label===exact)return 0;
+ if(title.startsWith(exact+" ")||label.startsWith(exact+" "))return 1;
+ if(title.includes(exact)||label.includes(exact))return 2;
+ return 3;
+};
 export async function runRealWikipediaAutomation(chromium,{query="James Webb Space Telescope",routeFixture,timeoutMs=20000}={}){
  if(!validQuery(query))throw Error("Invalid search query");
  if(!Number.isInteger(timeoutMs)||timeoutMs<1000||timeoutMs>60000)throw Error("Invalid timeout");
@@ -92,11 +108,9 @@ export async function runRealWikipediaAutomation(chromium,{query="James Webb Spa
    }catch{return false;}
   });
   if(!approved.length)throw Error("No approved visible article link");
-  const term=query.toLowerCase().replace(/\s+/g,"_");
-  approved.sort((a,b)=>{
-   const score=x=>x.href.toLowerCase().includes(term)?0:x.text.toLowerCase().includes(query.toLowerCase())?1:2;
-   return score(a)-score(b);
-  });
+  // Rank exact article titles above merely related titles; do not add new
+  // destinations or relax the existing Wikipedia-only allowlist.
+  approved.sort((a,b)=>relevanceScore(a,query)-relevanceScore(b,query));
   let clicked;
   for(const item of approved.slice(0,80)){
    const anchor=anchors.nth(item.index);
@@ -130,8 +144,18 @@ export async function runRealWikipediaAutomation(chromium,{query="James Webb Spa
    return {heading,paragraphs};
   });
   if(!extracted.heading||!extracted.paragraphs.length)throw Error("Article extraction failed");
+  const searched=steps[1],followUp=steps[2];
+  const sourceKind=isSearchResultsPage(searched.url)?"search-results":"article";
+  const navigationProvenance={
+   searchPage:{url:searched.url,heading:searched.heading,kind:sourceKind,
+    exactTitleMatch:sourceKind==="article"&&normalizeTitle(searched.heading)===normalizeTitle(query)},
+   clickedArticle:{url:followUp.url,heading:followUp.heading,linkLabel:clicked.label,
+    role:sourceKind==="search-results"?"search-result":"related-article",
+    exactTitleMatch:normalizeTitle(followUp.heading)===normalizeTitle(query),
+    selectionBasis:"Visible allowlisted Wikipedia article link ranked by title relevance"}
+  };
   return {status:"passed",task:"wikipedia-demo",source:"LIVE_CHROMIUM",website:HOST,query,
-   searchedWithVisibleInput:true,clickedLink:clicked,steps,screenshots,extracted,
+   searchedWithVisibleInput:true,clickedLink:clicked,navigationProvenance,steps,screenshots,extracted,
    approvedRequests,blockedRequests,readOnly:true,productionWritesAllowed:false,thirdPartyAutomationUsed:false};
  }finally{
   if(context)await context.close().catch(()=>{});
