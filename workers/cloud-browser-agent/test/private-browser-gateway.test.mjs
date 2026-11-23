@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {chromium} from "playwright";
+import {request as httpRequest} from "node:http";
 import {createPrivateBrowserGateway} from "../simulation/private-browser-gateway.mjs";
 const fixture=route=>{
  const req=route.request(),u=new URL(req.url());
@@ -18,7 +19,8 @@ test("private browser gateway denies unauthenticated access and controls safe Ch
   assert.equal((await request("/links",{key:null})).status,401);
   assert.equal((await request("/command",{key:null,method:"POST",body:{type:"back"}})).status,401);
   assert.equal((await request("/state",{headers:{origin:"https://evil.example"}})).status,403);
-  assert.equal((await request("/state",{headers:{host:"evil.example"}})).status,403);
+  const badHostStatus=await new Promise((resolve,reject)=>{const req=httpRequest(gateway.url+"/state",{headers:{host:"evil.example",authorization:"Bearer "+gateway.accessKey}},res=>{res.resume();resolve(res.statusCode);});req.on("error",reject);req.end();});
+  assert.equal(badHostStatus,403);
   assert.equal((await request("/health")).status,200);
   const first=await(await request("/state")).json();
   assert.match(first.url,/Main_Page/);
