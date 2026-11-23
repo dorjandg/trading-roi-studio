@@ -38,7 +38,7 @@ test("mock authenticated viewer UI is session-bound, read-only, CSRF protected a
   const png=Buffer.from(await(await request("/api/frame")).arrayBuffer());
   assert.equal(png.subarray(0,8).toString("hex"),"89504e470d0a1a0a");
   assert.equal((await request("/api/links")).status,200);
-  assert.equal((await request("/api/command",{method:"POST",headers:{"content-type":"application/json"},body:'{"type":"back"}'})).status,404);
+  assert.equal((await request("/api/command",{method:"POST",headers:{"content-type":"application/json"},body:'{"type":"back"}'})).status,403);
   assert.equal((await request("/logout",{method:"POST"})).status,403);
   assert.equal((await request("/api/state",{headers:{origin:"https://attacker.example"}})).status,403);
   time+=2001;
