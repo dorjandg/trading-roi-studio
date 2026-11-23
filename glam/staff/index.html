@@ -87,6 +87,14 @@ async function saveProductToCloud(form){
  form.elements.id.value=currentId;
  const previous=products.find(p=>p.id===currentId);
  const data={...(previous||{}),...formData(form),id:currentId};
+ // Derive a product-level main photo from the first configured color only when
+ // there is no explicit product-level photo. Preserve staff-selected main photos.
+ if(!data.image_url && !(Array.isArray(data.images)&&data.images.length)){
+  const firstColor=String(data.colors||'').split(',').map(x=>x.trim()).find(Boolean);
+  const gallery=firstColor && data.color_gallery?.[firstColor];
+  const colorMain=(Array.isArray(gallery)&&gallery[0])||data.color_images?.[firstColor];
+  if(colorMain){data.image_url=colorMain;data.images=[colorMain];form.elements.image_url.value=colorMain}
+ }
  if(!String(data.brand||'').trim()||!String(data.category||'').trim()||!String(data.price??'').trim()||!Number.isFinite(Number(data.price))||Number(data.price)<0){status.textContent='Complete brand, collection and valid price before cloud saving.';return false}
  delete data._online_readonly;delete data._cloud;
  data.catalog_status=previous?.catalog_status||'unpublished';
