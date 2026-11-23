@@ -103,3 +103,8 @@ CI installs Miniflare 3 and runs `test/miniflare-d1-integration.test.mjs` agains
 ## ChatGPT presentation adapter (offline, not registered)
 
 `simulation/chatgpt-frame-response-adapter.mjs` converts a bounded trusted synthetic export into validated PNG Buffer image blocks and a small metadata object explicitly marked `live:false` and `embeddedBrowser:false`. It rejects network-tainted exports, arbitrary tabs, malformed PNG signatures, oversized images and out-of-order frames. It does **not** register any MCP tool or expose a public endpoint. The adapter output could be mapped to image-capable connector results after a separate authorized integration, but currently cannot directly display frames from a remote persistent session in ChatGPT. No authentication tokens are included in metadata. Keep all integration development isolated.
+
+
+## MCP image-content feasibility (isolated)
+
+The connected read-only Cloud Browser Agent v2 reports `browserConfigured:true`. The existing deployed MCP code advertises six text-only tools, while its internal HTTP handler contains an authenticated PNG `/screenshot` route for approved HTTPS websites. That route is **not** exposed as an MCP tool and is not used for this experiment. `simulation/chatgpt-mcp-image-preview.mjs` demonstrates standard MCP-style `content` with `type:image`, `mimeType:image/png` and base64 data from synthetic offline Chromium fixtures only, capped at four images and three actions. This module is not imported by the deployed MCP handler, registered as a tool, or accessible from the current ChatGPT connector. No real websites, production changes, merge or deployment.
