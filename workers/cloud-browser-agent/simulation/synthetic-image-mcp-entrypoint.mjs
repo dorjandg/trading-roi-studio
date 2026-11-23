@@ -2,11 +2,14 @@ import {timingSafeEqual} from "node:crypto";
 // TEST ONLY: isolated JSON-RPC MCP entrypoint, never imported by deployed src/mcp.mjs.
 // No HTTP listener, real URLs, Cloudflare bindings, persistent sessions, or credentials.
 import {simulateChatGptImageToolCall} from "./chatgpt-mcp-image-preview.mjs";
+import {runBoundedPreview} from "./synthetic-preview-lifecycle.mjs";
 const MAX_RESPONSE_BYTES=8_000_000;
 const tool={name:"synthetic_frame_preview",description:"Offline synthetic Chromium PNG frames only; no real websites or live browser.",inputSchema:{type:"object",additionalProperties:false,properties:{actions:{type:"array",maxItems:3,items:{oneOf:[{type:"object",additionalProperties:false,properties:{type:{const:"switch"},tab:{enum:["google","youtube","github","staging"]}},required:["type","tab"]},{type:"object",additionalProperties:false,properties:{type:{const:"navigate"},index:{type:"integer",minimum:0,maximum:2}},required:["type","index"]},{type:"object",additionalProperties:false,properties:{type:{const:"history"},delta:{enum:[-1,1]}},required:["type","delta"]}]}},maxFrames:{type:"integer",minimum:1,maximum:4}}}};
-export function createSyntheticImageMcpHandler(chromium,{secret,maxResponseBytes=MAX_RESPONSE_BYTES}={}){
+export function createSyntheticImageMcpHandler(chromium,{secret,maxResponseBytes=MAX_RESPONSE_BYTES,timeoutMs=30000}={}){
  if(typeof secret!=="string"||secret.length<32)throw Error("Test-only bearer secret required");
  if(!Number.isSafeInteger(maxResponseBytes)||maxResponseBytes<256||maxResponseBytes>MAX_RESPONSE_BYTES)throw Error("Invalid response byte ceiling");
+ if(!Number.isSafeInteger(timeoutMs)||timeoutMs<10||timeoutMs>60000)throw Error("Invalid timeout");
+ let busy=false;
  return async function handle(request){
   const headers={"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"};
   const reply=(id,result)=>new Response(JSON.stringify({jsonrpc:"2.0",id,result}),{status:200,headers});
@@ -39,13 +42,16 @@ export function createSyntheticImageMcpHandler(chromium,{secret,maxResponseBytes
    const keys=Object.keys(action).sort().join(",");
    if(!((action.type==="switch"&&keys==="tab,type"&&["google","youtube","github","staging"].includes(action.tab))||(action.type==="navigate"&&keys==="index,type"&&Number.isInteger(action.index)&&action.index>=0&&action.index<=2)||(action.type==="history"&&keys==="delta,type"&&[-1,1].includes(action.delta))))return error(id,-32602,"Action refused");
   }
+  if(busy)return error(id,-32001,"Preview busy");
+  busy=true;
   try{
-   const result=await simulateChatGptImageToolCall(chromium,{actions,maxFrames});
+   const result=await runBoundedPreview(chromium,guarded=>simulateChatGptImageToolCall(guarded,{actions,maxFrames}),{timeoutMs,signal:request.signal});
    // Calculate UTF-8 response size before creating the final serialized RPC response.
    // JSON string length is not a byte limit when metadata contains non-ASCII text.
    const envelope=JSON.stringify({jsonrpc:"2.0",id,result});
    if(Buffer.byteLength(envelope,"utf8")>maxResponseBytes)return error(id,-32000,"Image response too large");
    return new Response(envelope,{status:200,headers});
-  }catch{return error(id,-32000,"Synthetic frame preview failed");}
+  }catch(e){return error(id,-32000,e?.message==="Preview timeout"?"Preview timeout":e?.message==="Preview cancelled"?"Preview cancelled":"Synthetic frame preview failed");}
+  finally{busy=false;}
  };
 }
