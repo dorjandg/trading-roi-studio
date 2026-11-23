@@ -47,7 +47,7 @@ test("fixture navigation is blocked and never receives an audit success receipt"
  try {
   const p={kind:"click",testId:"navigate-test"};
   const token=h.approve(p);
-  await assert.rejects(h.perform(p,token),/Fixture navigation forbidden/);
+  await assert.rejects(h.perform(p,token),/Unsafe fixture action prevented/);
   assert.equal(h.auditReceipts().length,0);
   await assert.rejects(h.perform(p,token),/One-time approval/);
  }finally{await h.close();}
@@ -93,7 +93,7 @@ test("dialog side effect blocks receipt and consumes approval",async()=>{
  try {
   const p={kind:"click",testId:"dialog-test"};
   const token=h.approve(p);
-  await assert.rejects(h.perform(p,token),/browser event forbidden/);
+  await assert.rejects(h.perform(p,token),/Unsafe fixture action prevented/);
   assert.equal(h.auditReceipts().length,0);
   await assert.rejects(h.perform(p,token),/One-time approval/);
  }finally{await h.close();}
@@ -116,4 +116,37 @@ test("an approval is never valid outside the issuing session",async()=>{
   assert.equal(second.auditReceipts().length,0);
   assert.equal((await first.perform(p,token)).sequence,1);
  }finally{await first.close();await second.close();}
+});
+
+test("pre-aborted action does not touch disposable input",async()=>{
+ const h=await createLocalPlaywrightHarness(chromium);
+ try {
+  const p={kind:"fill",testId:"search-input",value:"never"};
+  const controller=new AbortController();
+  controller.abort();
+  const token=h.approve(p);
+  await assert.rejects(h.perform(p,token,{signal:controller.signal}),/Fixture action cancelled/);
+  assert.equal(await h.read("search-input"),"");
+  assert.equal(h.auditReceipts().length,0);
+ }finally{await h.close();}
+});
+test("cancellation during settling prevents a successful receipt",async()=>{
+ const h=await createLocalPlaywrightHarness(chromium);
+ try {
+  const p={kind:"fill",testId:"search-input",value:"temporary"};
+  const controller=new AbortController();
+  const token=h.approve(p);
+  const pending=h.perform(p,token,{signal:controller.signal});
+  controller.abort();
+  await assert.rejects(pending,/Fixture action cancelled/);
+  assert.equal(h.auditReceipts().length,0);
+ }finally{await h.close();}
+});
+test("unrecognized cancellation options fail closed",async()=>{
+ const h=await createLocalPlaywrightHarness(chromium);
+ try {
+  const p={kind:"click",testId:"open-menu"};
+  await assert.rejects(h.perform(p,h.approve(p),{signal:"not-a-signal"}),/Invalid cancellation signal/);
+  assert.equal(h.auditReceipts().length,0);
+ }finally{await h.close();}
 });
