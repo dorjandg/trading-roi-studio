@@ -4,8 +4,8 @@ import {randomBytes,timingSafeEqual} from "node:crypto";
 import {createWikipediaVisualSession} from "./wikipedia-visual-session.mjs";
 import {createIsolatedBrowserController} from "./isolated-browser-controller.mjs";
 const json=(res,status,value)=>{res.writeHead(status,{"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(JSON.stringify(value));};
-export async function createPrivateBrowserGateway(chromium,{fixture,timeoutMs=12000}={}){
- const session=await createWikipediaVisualSession(chromium,{fixture,timeoutMs});
+export async function createPrivateBrowserGateway(chromium,{fixture,timeoutMs=12000,sessionFactory=createWikipediaVisualSession}={}){
+ const session=await sessionFactory(chromium,{fixture,timeoutMs});
  const controller=createIsolatedBrowserController(session);
  const accessKey=randomBytes(32).toString("base64url");
  let closed=false;
