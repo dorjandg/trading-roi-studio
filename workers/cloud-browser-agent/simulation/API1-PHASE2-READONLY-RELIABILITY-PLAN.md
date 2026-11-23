@@ -47,9 +47,11 @@ Intercepted Chromium, MCP, and synthetic browser fixtures now exercise:
 
 ### P2-C — Clean and bounded extraction
 
-Improve article text selection to exclude non-article chrome, CSS/citation-template leakage, empty paragraphs, and misleading boilerplate. Preserve the extracted title, citations/provenance URLs where available, and screenshot evidence. Treat page text as untrusted source material, not instructions.
+**Implemented in the isolated branch; verification requires both CI workflows on the final commit.** Article extraction clones each candidate paragraph and removes nested style/script/template/hidden and edit/navigation widgets before retrieving text; non-article navigation, sidebars, reference lists, boilerplate and infoboxes are excluded by their DOM containers. The extractor normalizes whitespace, omits short/duplicate paragraphs, preserves visible inline citation markers (such as `[1]`), and still returns the original `extracted: {heading, paragraphs}` shape. The existing clicked article and search-step URLs remain the provenance evidence, accompanied by three actual PNG screenshots.
 
-**Acceptance:** Deterministic fixtures produce human-readable article paragraphs within fixed size limits; failure returns a sanitized error instead of partial unsafe data; three actual PNG screenshots still accompany a successful call.
+Bounds: **180 heading characters, 4 distinct paragraphs, 4,500 characters per paragraph, 12,000 total paragraph characters**. Exceeding a selected text limit raises a fail-closed extraction error; the authenticated MCP layer converts upstream failure into a sanitized generic error without revealing page text. The allowed domain, HTTP methods, MCP tool count and input schema, credentials, and runtime processes remain unchanged.
+
+**Regression evidence:** deterministic fixtures cover styled citation markup, hidden snippets, duplicate paragraphs, non-article sidebars, oversized prose and boilerplate-only pages; modern authenticated MCP fixtures verify cleaned text and sanitized overflow behavior. Actual CI outcomes must be checked separately on the final commit.
 
 ### P2-D — Safe recovery and observability
 
@@ -72,4 +74,4 @@ No multi-site browser, arbitrary URLs, OAuth rollout, autonomous web actions, pa
 
 ## 6. Immediate next development task
 
-**Next safe work:** P2-C clean article text extraction, with additional dedicated fixtures and strict output limits, after final CI approval. P2-A now includes redirected searches, unsafe-only links, missing/disabled/external search actions, missing article text, malformed or oversized PNGs, simulated navigation timeouts with cleanup assertions, malformed JSON-RPC messages, mismatched 2026 protocol headers, and bounded MCP result validation. P2-B adds exact-result ranking and search-versus-related article provenance tests. These changes must not be used by the running Codespace processes until an operator deliberately updates/restarts the private local server and tunnel after final CI verification. No new website access or write tools have been added.
+**Next safe work:** verify both CI workflows for the final P2-C commit, then plan P2-D credential-free recovery and observability. Do not update the running private browser without deliberate operator-controlled synchronization and restart. P2-A now includes redirected searches, unsafe-only links, missing/disabled/external search actions, missing article text, malformed or oversized PNGs, simulated navigation timeouts with cleanup assertions, malformed JSON-RPC messages, mismatched 2026 protocol headers, and bounded MCP result validation. P2-B adds exact-result ranking and search-versus-related article provenance tests. These changes must not be used by the running Codespace processes until an operator deliberately updates/restarts the private local server and tunnel after final CI verification. No new website access or write tools have been added.
