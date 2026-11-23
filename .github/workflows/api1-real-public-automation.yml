@@ -29,7 +29,10 @@ jobs:
           node --check simulation/real-public-automation-api.mjs
           node --check simulation/run-real-public-automation-smoke.mjs
           node --check test/real-public-automation.test.mjs
-          node --test test/real-public-automation.test.mjs
+          node --check simulation/isolated-real-browser-mcp.mjs
+          node --check simulation/run-real-browser-mcp-smoke.mjs
+          node --check test/isolated-real-browser-mcp.test.mjs
+          node --test test/real-public-automation.test.mjs test/isolated-real-browser-mcp.test.mjs
   live-public-site-e2e:
     needs: isolated-api-e2e
     runs-on: ubuntu-latest
@@ -51,6 +54,19 @@ jobs:
         env:
           API1_REAL_AUTOMATION_DIR: /tmp/api1-real-public-automation
         run: node simulation/run-real-public-automation-smoke.mjs
+      - name: Real Wikipedia via authenticated MCP initialize, tools/list and tools/call
+        working-directory: workers/cloud-browser-agent
+        env:
+          API1_REAL_MCP_EVIDENCE_DIR: /tmp/api1-real-mcp-evidence
+        run: node simulation/run-real-browser-mcp-smoke.mjs
+      - name: Upload authenticated MCP browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api1-real-browser-mcp-tool-evidence
+          path: /tmp/api1-real-mcp-evidence/
+          if-no-files-found: warn
+          retention-days: 7
       - name: Upload real-site evidence (including failure manifest)
         if: always()
         uses: actions/upload-artifact@v4
