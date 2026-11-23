@@ -1,8 +1,8 @@
 // Local test viewer only: no arbitrary URLs, no real website controls.
 const $=id=>document.getElementById(id);
-let latest=-1,busy=false;
+let latest=-1,busy=false,commandQueue=Promise.resolve();
 async function request(path,options){const r=await fetch(path,{cache:"no-store",...options});if(!r.ok)throw Error("Local viewer request failed");return r;}
-async function command(value){if(busy)return;busy=true;try{const r=await request("/command",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(value)});await draw(await r.json());}catch(e){$("status").textContent=e.message;}finally{busy=false;}}
+function command(value){commandQueue=commandQueue.then(async()=>{busy=true;try{const r=await request("/command",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(value)});await draw(await r.json());}catch(e){$("status").textContent=e.message;}finally{busy=false;}});return commandQueue;}
 function button(label,selected,handler){const b=document.createElement("button");b.type="button";b.textContent=label;if(selected!==null)b.setAttribute("aria-selected",String(selected));b.addEventListener("click",handler);return b;}
 async function draw(s){
  $("tabs").replaceChildren(...s.tabs.map(name=>button(name,name===s.activeTab,()=>command({type:"switch",tab:name}))));
