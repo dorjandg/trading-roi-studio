@@ -71,7 +71,7 @@ async function loadOnlineCatalog(){
   window.dispatchEvent(new Event('glam-cloud-catalog-loaded'));
   banner.textContent='Cloud catalog loaded: '+payload.products.length+' products (including unpublished); '+imported+' added to this view. Online products are available for cloud editing.';
  }catch(e){
-  banner.textContent='Staff cloud catalog could not load ('+e.message+'). Checking published catalog…';
+  banner.textContent='Staff login required to edit and save. Checking public catalog…';
   try{
    const publicResponse=await fetch('/api/catalog',{cache:'no-store',credentials:'same-origin'});
    if(!publicResponse.ok)throw Error('Public catalog returned '+publicResponse.status);
@@ -80,7 +80,7 @@ async function loadOnlineCatalog(){
    const known=new Set(products.map(p=>String(p.id)));
    for(const record of publicData.products){if(!record||!record.id)continue;if(known.has(String(record.id)))continue;products.push({...record,_cloud:true});known.add(String(record.id))}
    renderProducts();window.dispatchEvent(new Event('glam-cloud-catalog-loaded'));
-   banner.textContent='Showing '+publicData.products.length+' published cloud products. Staff catalog could not load ('+e.message+'); unpublished products are temporarily unavailable. Please report this message.';
+   banner.replaceChildren(document.createTextNode('Showing '+publicData.products.length+' published products (read-only). To edit, reorder or save photos, '));const link=document.createElement('a');link.href='/api/staff/catalog';link.textContent='sign in to GLAM Staff API';link.style.cssText='font-weight:700;text-decoration:underline';banner.append(link,document.createTextNode(' and then return to this page.'));
   }catch(fallbackError){banner.textContent='Cloud catalog unavailable: '+e.message+'; public fallback: '+fallbackError.message+'. No cloud records were deleted. Please report this message.'}
  }
 }
@@ -132,7 +132,7 @@ async function saveProductToCloud(form){
     renderProducts();
    }
    return true;
-  }catch(e){if(sequence===productSaveSequence)status.textContent='Cloud save failed: '+e.message+'. Changes have NOT been saved online.';return false}
+  }catch(e){if(sequence===productSaveSequence){status.replaceChildren();status.append(document.createTextNode('Photo order NOT saved. '+e.message+'. '));const login=document.createElement('a');login.href='/api/staff/catalog';login.textContent='Sign in to GLAM Staff API';login.style.cssText='text-decoration:underline;font-weight:700';status.append(login)}return false}
  };
  productSaveQueue=productSaveQueue.then(task,task);
  return await productSaveQueue;
