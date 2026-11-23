@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { Buffer } from 'node:buffer';
+const source=await readFile(new URL('../functions/api/staff/upload.js',import.meta.url),'utf8');
+const api=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const png=Uint8Array.from([137,80,78,71,13,10,26,10,0,0,0,0]);
+let writes=[];
+const env={GLAM_IMAGES:{put:async(key,bytes,opts)=>{writes.push({key,bytes,opts})}}};
+async function send(bytes,type,storage=env){return api.onRequestPost({request:new Request('https://glam-lingerie.com/api/staff/upload',{method:'POST',headers:{'content-type':type,'Cf-Access-Jwt-Assertion':'test-verified-upstream'},body:bytes}),env:storage})}
+const ok=await send(png,'image/png');
+assert.equal(ok.status,200);const result=await ok.json();assert.equal(result.ok,true);
+assert.match(result.url,/^\/api\/product-image\/[a-f0-9-]{36}\.png$/);
+assert.equal(writes.length,1);assert.equal(writes[0].opts.httpMetadata.contentType,'image/png');
+assert.equal((await send(png,'image/jpeg')).status,415,'Reject mismatched image signature');
+assert.equal((await send(png,'text/plain')).status,415,'Reject non-images');
+assert.equal((await send(new Uint8Array(0),'image/png')).status,413,'Reject empty images');
+assert.equal((await send(png,'image/png',{})).status,503,'Reject missing R2 binding');
+const denied=await api.onRequestPost({request:new Request('https://glam-lingerie.com/api/staff/upload',{method:'POST',headers:{'content-type':'image/png'},body:png}),env});
+assert.equal(denied.status,401,'Reject requests without staff assertion');
+assert.equal(writes.length,1,'Invalid uploads must not reach R2');
+console.log('GLAM image upload API: 7 assertions passed; R2 mocked, no live objects created.');
