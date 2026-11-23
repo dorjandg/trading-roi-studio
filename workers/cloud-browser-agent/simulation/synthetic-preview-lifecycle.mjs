@@ -10,8 +10,17 @@ export async function runBoundedPreview(chromium,work,{timeoutMs=30000,signal}={
    if(controller.signal.aborted)throw Error("Preview cancelled");
    const browser=await chromium.launch(options);
    if(controller.signal.aborted){await browser.close().catch(()=>{});throw Error("Preview cancelled");}
-   activeBrowser=browser;
-   return browser;
+   let closePromise;
+   const wrapped=new Proxy(browser,{get(target,key){
+    if(key==="close")return ()=>{
+     if(!closePromise)closePromise=Promise.resolve().then(()=>target.close());
+     return closePromise;
+    };
+    const value=target[key];
+    return typeof value==="function"?value.bind(target):value;
+   }});
+   activeBrowser=wrapped;
+   return wrapped;
   }
  };
  const abort=()=>controller.abort();
