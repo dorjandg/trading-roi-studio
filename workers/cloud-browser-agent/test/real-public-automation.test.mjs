@@ -23,7 +23,8 @@ test("real Chromium fills a GET search field, clicks a Wikipedia result, extract
  assert.equal(result.status,"passed");
  assert.equal(result.searchedWithVisibleInput,true);
  assert.deepEqual(result.steps.map(x=>x.action),["navigate","search","click"]);
- assert.match(result.steps[1].url,/Special:Search/);
+ assert.match(result.steps[1].url,/^https:\/\/en\.wikipedia\.org\/wiki\//);
+ assert.notEqual(result.steps[1].url,result.steps[0].url);
  assert.match(result.clickedLink.href,/James_Webb_Space_Telescope/);
  assert.match(result.extracted.heading,/James Webb/);
  assert.match(result.extracted.paragraphs[0],/earliest galaxies/);
