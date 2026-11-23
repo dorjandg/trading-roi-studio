@@ -48,9 +48,9 @@ const status=document.getElementById('status');
 async function loadOnlineCatalog(){
  const banner=document.createElement('p');banner.id='glamOnlineCatalogNotice';banner.className='hint';
  document.getElementById('productList').before(banner);
- banner.textContent='Loading products from the public GLAM catalog…';
+ banner.textContent='Loading all products from the GLAM cloud catalog…';
  try{
-  const response=await fetch('/api/catalog',{cache:'no-store',credentials:'same-origin'});
+  const response=await fetch('/api/staff/catalog',{cache:'no-store',credentials:'same-origin'});
   if(!response.ok)throw Error('Catalog API returned '+response.status);
   const payload=await response.json();
   if(!Array.isArray(payload.products))throw Error('Unexpected catalog response');
@@ -62,7 +62,7 @@ async function loadOnlineCatalog(){
    localIds.add(record.id);imported++;
   }
   renderProducts();
-  banner.textContent='Public catalog loaded: '+payload.products.length+' online products; '+imported+' added to this view. Online products are read-only until secure cloud editing is enabled.';
+  banner.textContent='Cloud catalog loaded: '+payload.products.length+' products (including unpublished); '+imported+' added to this view. Online products are read-only until secure cloud editing is enabled.';
  }catch(e){banner.textContent='Could not load online products: '+e.message+'. Local drafts remain available.'}
 }
 
