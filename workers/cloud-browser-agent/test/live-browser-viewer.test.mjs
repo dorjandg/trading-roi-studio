@@ -32,7 +32,7 @@ test("offline multi-tab viewer navigates independently with back and forward",as
   await page.getByRole("button",{name:"Properties",exact:true}).click();
   assert.ok((await page.locator("#address").innerText()).includes("staging.example.invalid/properties"));
   await page.getByRole("button",{name:"YouTube",exact:true}).click();
-  assert.match(await page.locator("#address").innerText(),/youtube\\.example\\.invalid\\/channels/);
+  assert.ok((await page.locator("#address").innerText()).includes("youtube.example.invalid/channels"));
   await page.getByRole("button",{name:"GitHub",exact:true}).click();
   assert.ok((await page.locator("#address").innerText()).includes("github.example.invalid/issues"));
   assert.equal(await page.locator("#view").getAttribute("sandbox"),"");
