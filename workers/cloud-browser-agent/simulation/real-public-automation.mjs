@@ -79,8 +79,13 @@ export async function runRealWikipediaAutomation(chromium,{query="James Webb Spa
    return nodes.map((a,index)=>({index,href:a.href,text:(a.textContent||"").trim().slice(0,90),visible:!!a.getClientRects().length}))
     .filter(x=>x.visible&&x.text.length>=3&&x.href!==current);
   },page.url());
+  const current=safeUrl(page.url());
   const approved=candidates.filter(x=>{
-   try{const u=safeUrl(x.href);return u.pathname.startsWith("/wiki/")&&!u.pathname.slice(6).includes(":")&&!u.hash;}catch{return false;}
+   try{
+    const u=safeUrl(x.href);
+    return !x.href.includes("#")&&u.pathname.startsWith("/wiki/")&&!u.pathname.slice(6).includes(":")&&
+      (u.pathname!==current.pathname||u.search!==current.search);
+   }catch{return false;}
   });
   if(!approved.length)throw Error("No approved visible article link");
   const term=query.toLowerCase().replace(/\s+/g,"_");
@@ -95,11 +100,15 @@ export async function runRealWikipediaAutomation(chromium,{query="James Webb Spa
    const before=page.url();
    try{
     await Promise.all([
-     page.waitForURL(url=>url.href!==before,{timeout:Math.min(timeoutMs,8000)}),
+     page.waitForURL(url=>url.origin==="https://"+HOST&&
+       (url.pathname!==new URL(before).pathname||url.search!==new URL(before).search),
+       {timeout:Math.min(timeoutMs,8000)}),
      anchor.click({timeout:Math.min(timeoutMs,8000)})
     ]);
-    safeUrl(page.url());
-    clicked={label:item.text,href:page.url()};
+    const after=safeUrl(page.url());
+    const prev=safeUrl(before);
+    if(after.pathname===prev.pathname&&after.search===prev.search)throw Error("Fragment-only click refused");
+    clicked={label:item.text,href:after.href};
     break;
    }catch{
     // Never retry a new click after the page might have navigated.
