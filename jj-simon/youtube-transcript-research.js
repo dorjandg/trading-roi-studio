@@ -216,3 +216,20 @@ if(typeof jjYTResearch!=="undefined" && typeof jjYTVideoSources!=="undefined" &&
  jjYTVideoSources["RnwOqmEF6Rk"]={title:"JJ Simon — News drift and funded NQ trade recap (2026-04-10)",video:"https://www.youtube.com/watch?v=RnwOqmEF6Rk",verified:"Public native captions; original charts, provider rules, reported P&L and payouts unverified."};
  renderNav();render();
 }
+
+
+// Public caption audit 2026-11-23; private Module 17 course retains primacy.
+if(typeof jjYTResearch!=="undefined" && !jjYTResearch.sections.some(s=>s.title==="Public NQ weekly recap: conditional entries and news-anchor precedence")){
+ jjYTResearch.sections.push({title:"Public NQ weekly recap: conditional entries and news-anchor precedence",points:[
+ "JJ's 3 Apr 2026 weekly NQ recap (01:03–02:37) describes a failed first 9:30 continuation short, successful second short and failed reversion long; he stopped after three trades because wick structure weakened the case for further entries.",
+ "At 02:39–05:18 he marks the 9:29 pre-open candle body as a working fair-price area. He illustrates 25-point stop/38-point target for a 50K account versus roughly 50/75 for a 150K account; these are historical account-specific examples, not universal risk instructions.",
+ "At 03:35–04:35 he delays a reversion short until a stronger close below multiple wick lows while enough distance remains to the opening anchor. This discretionary BOS quality filter cannot be validated without original chart frames.",
+ "At 05:35–08:50 he prioritizes a pre-08:15 news anchor over a later 08:30 release in one example and describes a displacement-only reversion entry without BOS when a BOS would be too close to the target. This is a speaker-reported exception, not a replacement for the course's entry framework.",
+ "At 05:00–05:18 he usually stops at 11 AM New York time or after three trades, allowing an occasional fourth for an A+ setup. At 09:00–11:10 a 38-point scalp replaces a 75-point target when he expects a shorter move.",
+ "The Module 17 course (00:27–01:07) warns against cross-firm copying and recommends staggering five new funded accounts 2/2/1; the public weekly recap lists multiple provider results but does not establish whether they were copied. Headline $52,392.04 differs from spoken $52,394.04; neither is verified settled payout cash.",
+ "Public video: https://www.youtube.com/watch?v=Lep139B5EbU . Native captions only; chart, audio, fills, provider terms and profitability unverified."
+ ],src:[]});
+ jjYTResearchMeta.push({title:"Public NQ weekly recap: conditional entries and news-anchor precedence",sources:[["Lep139B5EbU","01:03–05:18"],["Lep139B5EbU","05:35–08:50"],["Lep139B5EbU","09:00–12:40"]],status:"Public native captions; chart, audio, firm terms and payouts not independently verified."});
+ jjYTVideoSources["Lep139B5EbU"]={title:"JJ Simon — NQ weekly trade recap (2026-04-03)",video:"https://www.youtube.com/watch?v=Lep139B5EbU",verified:"Native public captions; original charts, audio, fills, payouts and firm rules unverified."};
+ renderNav();render();
+}
