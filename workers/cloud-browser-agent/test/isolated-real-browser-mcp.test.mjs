@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import {request as httpRequest} from "node:http";
 import {chromium} from "playwright";
 import {createIsolatedBrowserMcpServer} from "../simulation/isolated-real-browser-mcp.mjs";
 
@@ -76,7 +77,18 @@ test("MCP authorization and request validation are strict; no unapproved calls l
   assert.equal((await send(server,rpc("tools/list"),{token:null})).status,401);
   assert.equal((await send(server,rpc("tools/list"),{token:"invalid"})).status,401);
   assert.equal((await send(server,rpc("tools/list"),{origin:"https://evil.example"})).status,403);
-  assert.equal((await send(server,rpc("tools/list"),{host:"external.example"})).status,403);
+  // Fetch normalizes Host: use raw HTTP to verify the server rejects a forged host.
+  const forgedHostStatus=await new Promise((resolve,reject)=>{
+   const url=new URL(server.url);
+   const request=httpRequest({hostname:"127.0.0.1",port:url.port,path:url.pathname,
+    method:"POST",headers:{host:"external.example",authorization:"Bearer "+server.accessToken,
+     "content-type":"application/json"}},response=>{
+    response.resume();response.once("end",()=>resolve(response.statusCode));
+   });
+   request.once("error",reject);
+   request.end(JSON.stringify(rpc("tools/list")));
+  });
+  assert.equal(forgedHostStatus,403);
   assert.equal((await send(server,rpc("tools/list"),{contentType:"text/plain"})).status,415);
   const spoof=await(await send(server,rpc("tools/call",{name:"browser_automate_wikipedia_demo",arguments:{query:QUERY,url:"https://example.com"}},20))).json();
   assert.equal(spoof.error.code,-32602);
