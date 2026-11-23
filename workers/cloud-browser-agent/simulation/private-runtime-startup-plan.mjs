@@ -7,6 +7,8 @@ import {planLifecycleTransition} from './private-runtime-lifecycle.mjs';
 
 const ID=/^[A-Za-z0-9][A-Za-z0-9._-]{1,127}$/;
 const obj=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
+const record=x=>obj(x)&&(Object.getPrototypeOf(x)===Object.prototype||Object.getPrototypeOf(x)===null);
+const owns=(x,required)=>required.every(k=>Object.hasOwn(x,k));
 const result=(decision,reasons,proposedState=null)=>Object.freeze({
   decision,reasons:Object.freeze([...new Set(reasons)]),proposedState,
   executionAuthorized:false,requiresExternalVerification:true,
@@ -23,8 +25,16 @@ export function planPrivateTunnelStartup({
   state,tunnelRef,ownershipInput,retiredProcessInspection,
   evidence={}
 }={}){
-  if(!obj(state)||typeof tunnelRef!=='string'||!ID.test(tunnelRef)||!obj(ownershipInput)||
-    !obj(retiredProcessInspection)||!obj(evidence)||
+  if(!record(state)||!owns(state,['phase','generationId','revision'])||
+    typeof tunnelRef!=='string'||!ID.test(tunnelRef)||
+    !record(ownershipInput)||!owns(ownershipInput,[
+      'purpose','tunnelRef','observations','inventoryComplete','crossHostEvidence',
+      'nowMs','inventoryObservedAtMs'])||
+    !record(retiredProcessInspection)||!owns(retiredProcessInspection,[
+      'decision','issues','executionAuthorized','requiresExternalVerification'])||
+    !record(evidence)||!owns(evidence,[
+      'generationId','approvalFresh','approvalVerifiedExternally',
+      'oldTunnelExitVerifiedExternally','noConflictingOwnerVerifiedExternally'])||
     Object.keys(evidence).some(k=>!['generationId','approvalFresh',
       'approvalVerifiedExternally','oldTunnelExitVerifiedExternally',
       'noConflictingOwnerVerifiedExternally'].includes(k))||
@@ -76,7 +86,10 @@ export function planPrivateTunnelStartup({
       noConflictingOwnerVerified:true,approvalFresh:true
     }
   });
-  return transition.decision==='PLAN_ELIGIBLE'?
-    result('PLAN_ELIGIBLE',[],transition.proposedState):
-    result('HOLD',['LIFECYCLE_HOLD']);
+  if(transition.decision!=='PLAN_ELIGIBLE')
+    return result('HOLD',['LIFECYCLE_HOLD']);
+  // A failed read is NOT proof of process exit. No independent, generation-
+  // bound retirement witness exists in P3-A, so the safe proposal is HOLD.
+  // Do not broaden this rule based solely on unverified caller booleans.
+  return result('HOLD',['RETIRED_PROCESS_UNOBSERVABLE']);
 }

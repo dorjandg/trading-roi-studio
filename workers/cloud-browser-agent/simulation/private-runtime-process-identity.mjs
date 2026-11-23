@@ -7,6 +7,8 @@ const PID=/^[1-9][0-9]{0,9}$/;
 const STAT_LIMIT=8192;
 const LINK_LIMIT=1024;
 const obj=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
+const record=x=>obj(x)&&(Object.getPrototypeOf(x)===Object.prototype||Object.getPrototypeOf(x)===null);
+const owns=(x,required)=>required.every(k=>Object.hasOwn(x,k));
 const keys=(x,allowed)=>Object.keys(x).every(k=>allowed.includes(k));
 const result=(decision,issues)=>Object.freeze({
   decision,issues:Object.freeze([...new Set(issues)]),
@@ -37,12 +39,13 @@ function parseStat(raw,pid){
  */
 export async function inspectProcessIdentity({pid,expected,readFile,readLink}={}){
   if(!Number.isSafeInteger(pid)||pid<1||pid>2147483647||
-    !obj(expected)||!keys(expected,['bootId','startTicks','executableLink'])||
+    !record(expected)||!owns(expected,['bootId','startTicks','executableLink'])||
+    !keys(expected,['bootId','startTicks','executableLink'])||
     typeof expected.bootId!=='string'||!UUID.test(expected.bootId)||
     typeof expected.startTicks!=='string'||!TICKS.test(expected.startTicks)||
     typeof expected.executableLink!=='string'||
     !expected.executableLink.startsWith('/')||
-    expected.executableLink.length>LINK_LIMIT||
+    Buffer.byteLength(expected.executableLink,'utf8')>LINK_LIMIT||
     /[\x00-\x1f\x7f]/.test(expected.executableLink)||
     typeof readFile!=='function'||typeof readLink!=='function')
     throw Error('Invalid read-only process identity input');
@@ -66,7 +69,7 @@ export async function inspectProcessIdentity({pid,expected,readFile,readLink}={}
   if([boot1,boot2,stat1,stat2,link1,link2].some(x=>typeof x!=='string'))
     return result('HOLD',['PROCESS_IDENTITY_MALFORMED']);
   if(Buffer.byteLength(stat1,'utf8')>STAT_LIMIT||Buffer.byteLength(stat2,'utf8')>STAT_LIMIT||
-    link1.length>LINK_LIMIT||link2.length>LINK_LIMIT||boot1.length>64||boot2.length>64)
+    Buffer.byteLength(link1,'utf8')>LINK_LIMIT||Buffer.byteLength(link2,'utf8')>LINK_LIMIT||boot1.length>64||boot2.length>64)
     return result('HOLD',['PROCESS_IDENTITY_MALFORMED']);
   const a=parseStat(stat1,pid),b=parseStat(stat2,pid);
   const id1=boot1.trim(),id2=boot2.trim();

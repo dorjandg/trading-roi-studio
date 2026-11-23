@@ -16,15 +16,16 @@ const plan=(changes={})=>planPrivateTunnelStartup({
   state,tunnelRef,ownershipInput,retiredProcessInspection,evidence,...changes
 });
 
-test('P3-A eligible synthetic startup is a proposal only, not a process command',()=>{
+test('P3-A unverifiable retired process holds, never grants a process command',()=>{
   const before=structuredClone({state,ownershipInput,retiredProcessInspection,evidence});
   const out=plan();
-  assert.equal(out.decision,'PLAN_ELIGIBLE');
-  assert.deepEqual(out.proposedState,{phase:'NEW_TUNNEL_STARTING',generationId,revision:8});
+  assert.equal(out.decision,'HOLD');
+  assert.deepEqual(out.reasons,['RETIRED_PROCESS_UNOBSERVABLE']);
+  assert.equal(out.proposedState,null);
   assert.equal(out.executionAuthorized,false);
   assert.equal(out.requiresExternalVerification,true);
   assert.equal(out.requiresOperatorControlledAtomicLease,true);
-  assert.ok(Object.isFrozen(out)&&Object.isFrozen(out.proposedState));
+  assert.ok(Object.isFrozen(out)&&Object.isFrozen(out.reasons));
   assert.deepEqual({state,ownershipInput,retiredProcessInspection,evidence},before);
 });
 
