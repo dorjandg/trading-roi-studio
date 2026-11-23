@@ -1,0 +1,42 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {chromium} from "playwright";
+import {createLocalVisualViewerServer} from "../simulation/local-visual-viewer-server.mjs";
+test("loopback visual viewer receives Chromium frames and navigates independent tabs",async()=>{
+ const server=await createLocalVisualViewerServer(chromium);
+ const browser=await chromium.launch({headless:true});
+ try{
+  assert.match(server.url,/^http:\/\/127\.0\.0\.1:\d+$/);
+  const context=await browser.newContext({serviceWorkers:"block",acceptDownloads:false});
+  const page=await context.newPage();
+  const errors=[];page.on("pageerror",e=>errors.push(e.message));
+  await page.goto(server.url);
+  await page.waitForFunction(()=>document.querySelector("#frame")?.naturalWidth>0);
+  assert.match(await page.locator("#status").innerText(),/google · Home · network requests 0/);
+  await page.getByRole("button",{name:"Search results"}).click();
+  await page.waitForFunction(()=>document.querySelector("#status")?.textContent.includes("Search results"));
+  const before=await page.locator("#frame").getAttribute("src");
+  await page.getByRole("button",{name:"youtube"}).click();
+  await page.waitForFunction(()=>document.querySelector("#status")?.textContent.includes("youtube · Home"));
+  await page.getByRole("button",{name:"Videos"}).click();
+  await page.waitForFunction(()=>document.querySelector("#status")?.textContent.includes("Videos"));
+  await page.getByRole("button",{name:"google"}).click();
+  await page.waitForFunction(()=>document.querySelector("#status")?.textContent.includes("google · Search results"));
+  await page.getByRole("button",{name:"Back"}).click();
+  await page.waitForFunction(()=>document.querySelector("#status")?.textContent.includes("google · Home"));
+  await page.waitForFunction(src=>document.querySelector("#frame")?.getAttribute("src")!==src,before);
+  assert.deepEqual(errors,[]);
+  const state=await(await fetch(server.url+"/state")).json();
+  assert.equal(state.externalRequests,0);
+  assert.equal(state.productionWritesAllowed,false);
+  assert.ok(state.sequence>=6);
+  const frame=await fetch(server.url+"/frame");
+  assert.equal(frame.headers.get("content-type"),"image/png");
+  assert.deepEqual([...new Uint8Array(await frame.arrayBuffer()).slice(0,8)],[137,80,78,71,13,10,26,10]);
+  const bad=await fetch(server.url+"/command",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({type:"navigate",url:"https://youtube.com"})});
+  assert.equal(bad.status,400);
+  const host=await fetch(server.url+"/state",{headers:{host:"evil.example"}});
+  assert.equal(host.status,403);
+  await context.close();
+ }finally{await browser.close();await server.close();}
+});
