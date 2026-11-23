@@ -65,6 +65,16 @@ jobs:
           path: /tmp/api1-nasa-click-smoke/
           if-no-files-found: warn
           retention-days: 1
+      - name: Verify offline interactive four-tab viewer in Chromium
+        working-directory: workers/cloud-browser-agent
+        run: node --test test/live-browser-viewer.test.mjs test/multi-tab-viewer-ui.e2e.test.mjs
+      - name: Upload standalone interactive offline viewer
+        uses: actions/upload-artifact@v4
+        with:
+          name: api1-interactive-offline-four-tab-viewer
+          path: workers/cloud-browser-agent/simulation/live-browser-viewer.html
+          if-no-files-found: error
+          retention-days: 7
       - name: Render isolated API1 viewer demo frames
         working-directory: workers/cloud-browser-agent
         env:
