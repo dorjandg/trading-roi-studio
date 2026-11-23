@@ -250,3 +250,15 @@ if(typeof jjYTResearch!=="undefined" && !jjYTVideoSources["3L8xdh3oPm4"]){
  jjYTVideoSources["3L8xdh3oPm4"]={title:"JJ Simon — Exact strategy public walkthrough (2026-03-28)",video:"https://www.youtube.com/watch?v=3L8xdh3oPm4",verified:"Native captions only; original video charts, reported payouts and provider terms unverified."};
  renderNav();render();
 }
+
+// Public native-caption numerical audit 2026-11-23; illustrative math, not validated trading returns.
+if(typeof jjYTResearch!=="undefined" && typeof jjYTResearchMeta!=="undefined" && !jjYTResearch.sections.some(s=>s.title==="Public EV correction: leverage, fees and daily throughput")){
+ jjYTResearch.sections.push({title:"Public EV correction: leverage, fees and daily throughput",points:[
+  "In JJ's 6 Nov 2026 public prop-firm planning video (approximately 11:42–12:49), a hypothetical 50% win rate with +$110 wins and −$100 losses has $5 gross expected value per trade, not the narrated $10: 0.5×110 − 0.5×100 = 5.",
+  "With $1 per-trade fees and three opportunities, the example yields ($5−$1)×3 = $12 daily EV, not $27. With $5 fees and 15 opportunities, ($5−$5)×15 = $0, not $75. This is an arithmetic correction to the hypothetical, not a claim about JJ's actual performance.",
+  "The supposed fivefold increase in completed opportunities with higher leverage is not independently established. Fees, slippage, liquidation, correlation, drawdown and payout restrictions must be modeled before comparing per-trade EV with per-day EV.",
+  "Source: https://www.youtube.com/watch?v=3tKaGoydZUM . Public machine captions only; verify original audio and visual example. Private course Module 7 remains primary."
+ ],src:[]});
+ jjYTResearchMeta.push({title:"Public EV correction: leverage, fees and daily throughput",sources:[["3tKaGoydZUM","11:42–12:49"]],status:"Public machine-caption hypothetical; original audio, leverage-throughput relationship and provider fees unverified."});
+ renderNav();render();
+}
