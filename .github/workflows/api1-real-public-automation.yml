@@ -35,7 +35,10 @@ jobs:
           node --check simulation/oauth-staging-readiness.mjs
           node --check simulation/run-oauth-staging-preflight.mjs
           node --check test/oauth-staging-readiness.test.mjs
-          node --test test/real-public-automation.test.mjs test/isolated-real-browser-mcp.test.mjs test/oauth-staging-readiness.test.mjs
+          node --check simulation/mock-oauth-jwt.mjs
+          node --check simulation/mock-oauth-mcp-gateway.mjs
+          node --check test/mock-oauth-mcp-gateway.test.mjs
+          node --test test/real-public-automation.test.mjs test/isolated-real-browser-mcp.test.mjs test/oauth-staging-readiness.test.mjs test/mock-oauth-mcp-gateway.test.mjs
       - name: Generate safe offline OAuth readiness report (no deployment)
         working-directory: workers/cloud-browser-agent
         env:
