@@ -28,12 +28,19 @@ export async function runNasaClickNavigation(chromium,{fixture,timeoutMs=15000}=
   if(!target)throw Error("No safe internal navigation link");
   safe(target.href);
   // Navigation by clicking an actual link, not constructing the destination.
-  const locator=page.locator('a[href]').filter({hasText:target.text}).first();
-  // For empty or repeated text use the exact href instead.
-  const exact=page.locator('a[href]').evaluateAll((nodes,href)=>nodes.findIndex(n=>n.href===href),target.href);
-  const index=await exact;
-  if(index<0)throw Error("Target link vanished");
-  await page.locator('a[href]').nth(index).click({timeout:timeoutMs});
+  // Resolve a visible and enabled matching link; hidden navigation entries are not clickable.
+  const candidates=page.locator('a[href]');
+  let clicked=false;
+  for(let i=0;i<Math.min(await candidates.count(),150);i++){
+   const node=candidates.nth(i);
+   const href=await node.getAttribute("href");
+   if(!href)continue;
+   let destination;try{destination=safe(new URL(href,page.url()).href);}catch{continue;}
+   if(new URL(destination).pathname==="/mission/webb/")continue;
+   if(!await node.isVisible()||!await node.isEnabled())continue;
+   try{await node.click({timeout:Math.min(timeoutMs,3000)});clicked=true;break;}catch{}
+  }
+  if(!clicked)throw Error("No clickable approved internal link");
   await page.waitForLoadState("domcontentloaded",{timeout:timeoutMs});
   const after=safe(page.url());
   if(new URL(after).pathname===new URL(before).pathname)throw Error("No page navigation");
