@@ -265,3 +265,68 @@ test("P2-B exact match outranks a related result without increasing permissions"
  assert.equal(visited.includes("/wiki/Ada_Lovelace_(microarchitecture)"),false);
  assert.equal(visited.length,3);
 });
+
+
+test("P2-C strips in-paragraph CSS and navigational chrome while retaining citation markers",{timeout:45000},async()=>{
+ const cleanFixture=route=>{
+  const u=new URL(route.request().url());
+  if(u.pathname==="/wiki/James_Webb_Space_Telescope")return route.fulfill({
+   status:200,contentType:"text/html",body:'<!doctype html><h1>James Webb Space Telescope</h1>'+
+    '<main id="mw-content-text">'+
+    '<nav><p>Navigation only: account settings and other boilerplate must never be extracted.</p></nav>'+
+    '<aside><p>Sidebar text should never be included in the article paragraphs.</p></aside>'+
+    '<div class="navbox"><p>Related navigation template should not enter the summary.</p></div>'+
+    '<p>The James Webb Space Telescope studies the early universe and remote galaxies. <sup class="reference">[1]</sup>'+
+    '<style>.mw-parser-output cite.citation{font-style:inherit}</style>'+
+    '<span aria-hidden="true">HIDDEN SCREEN READER-UNRELATED TEXT</span></p>'+
+    '<p>Its infrared instruments observe faint and distant sources from deep space.</p>'+
+    '<p>Its infrared instruments observe faint and distant sources from deep space.</p>'+
+    '</main>'
+  });
+  return fixture(route);
+ };
+ const result=await runRealWikipediaAutomation(chromium,{
+  query,routeFixture:cleanFixture,timeoutMs:12000
+ });
+ assert.equal(result.status,"passed");
+ assert.equal(result.extracted.heading,"James Webb Space Telescope");
+ assert.equal(result.extracted.paragraphs.length,2);
+ assert.match(result.extracted.paragraphs[0],/early universe/);
+ assert.match(result.extracted.paragraphs[0],/\[1\]/);
+ assert.doesNotMatch(result.extracted.paragraphs.join(" "),/mw-parser-output|font-style|Navigation only|Sidebar text|navigation template|HIDDEN SCREEN/);
+ assert.equal(result.screenshots.length,3);
+ assert.equal(result.navigationProvenance.clickedArticle.url,result.steps[2].url);
+ assert.equal(result.productionWritesAllowed,false);
+});
+
+test("P2-C refuses oversized article paragraphs instead of returning partial or truncated data",{timeout:45000},async()=>{
+ const oversized="Z".repeat(7000);
+ const hugeFixture=route=>{
+  const u=new URL(route.request().url());
+  if(u.pathname==="/wiki/James_Webb_Space_Telescope")return route.fulfill({
+   status:200,contentType:"text/html",body:'<h1>James Webb Space Telescope</h1>'+
+    '<main id="mw-content-text"><p>'+oversized+'</p></main>'
+  });
+  return fixture(route);
+ };
+ await assert.rejects(runRealWikipediaAutomation(chromium,{
+  query,routeFixture:hugeFixture,timeoutMs:12000
+ }),/Article text exceeds limit/);
+});
+
+test("P2-C refuses boilerplate-only pages with no genuine article paragraphs",{timeout:45000},async()=>{
+ const boilerplateFixture=route=>{
+  const u=new URL(route.request().url());
+  if(u.pathname==="/wiki/James_Webb_Space_Telescope")return route.fulfill({
+   status:200,contentType:"text/html",body:'<h1>James Webb Space Telescope</h1>'+
+    '<main id="mw-content-text"><nav><p>Navigation shortcuts and login instructions should be excluded.</p></nav>'+
+    '<aside><p>Sidebar text that does not belong to a Wikipedia article.</p></aside>'+
+    '<div class="hatnote"><p>Disambiguation and other navigation boilerplate should be ignored.</p></div>'+
+    '<p><style>.mw-parser-output cite.citation{font-style:inherit}</style></p></main>'
+  });
+  return fixture(route);
+ };
+ await assert.rejects(runRealWikipediaAutomation(chromium,{
+  query,routeFixture:boilerplateFixture,timeoutMs:12000
+ }),/Article extraction failed/);
+});
