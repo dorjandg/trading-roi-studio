@@ -27,3 +27,10 @@ Source-reviewed production `src/handler.mjs` and `src/mcp.mjs`: the HTTP and MCP
 ## Isolated signed-grant simulation (2026-11-23)
 
 `simulation/isolated-approval-grants.mjs` models HMAC-SHA256 signed, 60-second maximum, principal/session/action-digest/origin-scoped grants with one-time consumption through an injected atomic reserve-and-audit interface. Tests simulate replay races, tampering, scope changes, expiry, and audit failure. This is **not** an authentication service: the issuer accepts caller-supplied principal evidence, its signing key is supplied by tests, and the included audit store is in-memory rather than durable. Real deployment would require an independent identity provider, external trusted approval service, key lifecycle management, atomic durable storage, and separate security authorization. Even successful simulated verification returns `executionAllowed:false` and cannot operate a browser or website.
+
+
+## Offline file-backed ledger durability simulation (2026-11-23)
+
+`simulation/file-approval-ledger.mjs` uses a disposable local filesystem root, atomic per-grant directory creation, a synced audit file and a commit marker. A reserved grant is never automatically retried: interrupted transactions remain quarantined and replay attempts are rejected. Tests cover competing ledger instances, restart/reopen, and failures after reservation, audit write and commit acknowledgement. The simulator returns no execution authorization and has no browser integration.
+
+**Not a production durable ledger:** directory metadata is not explicitly fsynced, filesystem durability and distributed consistency vary, a local directory is not a shared database, there is no authenticated operator recovery protocol, and the caller controls the test root. A real design needs transactional shared storage with uniqueness constraints, verified atomic audit+reservation, disaster recovery, and independent security review. Never connect this file-backed simulator to deployed Workers, MCP or website actions.
