@@ -3,13 +3,13 @@
 import {validateInteractionProposal} from "../src/interaction-policy.mjs";
 import {prepareBrowserInteraction} from "./browser-interaction-adapter.mjs";
 import {createHash,randomUUID} from "node:crypto";
-const approvals=new WeakSet();
+const approvals=new WeakMap();
 const digest=proposal=>createHash("sha256").update(JSON.stringify(proposal)).digest("hex");
 const fixtureHTML=`<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"></head><body><button type="button" data-testid="open-menu">Menu</button><button type="button" data-testid="navigate-test">Navigation test</button><input type="search" data-testid="search-input"><output id="status">closed</output></body></html>`;
 export function approveFixtureAction(proposal) {
  const validated=validateInteractionProposal(proposal);
  const token=Object.freeze({kind:validated.kind,testId:validated.testId,value:validated.kind==="fill"?validated.value:null});
- approvals.add(token);
+ approvals.set(token,{sessionId:null});
  return token;
 }
 export async function createLocalPlaywrightHarness(chromium) {
@@ -20,6 +20,11 @@ export async function createLocalPlaywrightHarness(chromium) {
  const page=await context.newPage();
  const sessionId=randomUUID();
  const receipts=[];
+ let busy=false;
+ let blockedEvents=0;
+ page.on("dialog",dialog=>{blockedEvents++;void dialog.dismiss().catch(()=>{});});
+ page.on("popup",popup=>{blockedEvents++;void popup.close().catch(()=>{});});
+ page.on("download",download=>{blockedEvents++;void download.cancel().catch(()=>{});});
  let navigationAttempted=false;
  let networkRequests=0;
  page.on("framenavigated",frame=>{if(frame===page.mainFrame()&&frame.url()!=="about:blank")navigationAttempted=true;});
@@ -28,22 +33,36 @@ export async function createLocalPlaywrightHarness(chromium) {
  await page.getByTestId("navigate-test").evaluate(el=>el.addEventListener("click",()=>{location.href="https://example.com/forbidden"}));
  let closed=false;
  return Object.freeze({
-  async perform(proposal,token) {
+  approve(proposal){
    if(closed)throw new Error("Harness closed");
    const validated=validateInteractionProposal(proposal);
-   if(!token || !approvals.has(token))throw new Error("One-time approval required");
+   const token=Object.freeze({kind:validated.kind,testId:validated.testId,value:validated.kind==="fill"?validated.value:null});
+   approvals.set(token,{sessionId});
+   return token;
+  },
+  async perform(proposal,token) {
+   if(closed)throw new Error("Harness closed");
+   if(busy)throw new Error("Concurrent fixture action rejected");
+   busy=true;
+   try {
+   const validated=validateInteractionProposal(proposal);
+   const grant=token && approvals.get(token);
+   if(!grant || (grant.sessionId!==null && grant.sessionId!==sessionId))throw new Error("One-time approval required");
    approvals.delete(token);
    if(token.kind!==validated.kind || token.testId!==validated.testId ||
       token.value!==(validated.kind==="fill"?validated.value:null))throw new Error("Approval does not match action");
    if(page.url()!=="about:blank" || navigationAttempted)throw new Error("Fixture origin changed");
+   const beforeEvents=blockedEvents;
    await prepareBrowserInteraction(page,proposal,{approved:true,scope:"isolated-browser-test"});
    const locator=page.getByTestId(validated.testId);
    if(validated.kind==="click")await locator.click({timeout:1000});
    else await locator.fill(validated.value,{timeout:1000});
-   if(page.url()!=="about:blank" || navigationAttempted || networkRequests>0)throw new Error("Fixture navigation forbidden");
+   await page.waitForTimeout(40);
+   if(page.url()!=="about:blank" || navigationAttempted || networkRequests>0 || blockedEvents!==beforeEvents)throw new Error("Fixture navigation or browser event forbidden");
    const receipt=Object.freeze({id:randomUUID(),sessionId,sequence:receipts.length+1,kind:validated.kind,testId:validated.testId,proposalDigest:digest(validated),executedInDisposableFixture:true,productionWritesAllowed:false});
    receipts.push(receipt);
    return receipt;
+   } finally {busy=false;}
   },
   auditReceipts(){return Object.freeze([...receipts]);},
   async read(testId) {
