@@ -38,3 +38,18 @@ jobs:
           node --check simulation/browser-interaction-adapter.mjs
           node --check simulation/local-playwright-harness.mjs
           node --test test/handler.test.mjs test/policy.test.mjs test/interaction-policy.test.mjs test/interaction-executor.test.mjs test/browser-interaction-adapter.test.mjs
+      - name: Public read-only Chromium smoke (non-blocking external dependency)
+        id: public_smoke
+        continue-on-error: true
+        working-directory: workers/cloud-browser-agent
+        env:
+          API1_SCREENSHOT_DIR: /tmp/api1-public-browser-smoke
+        run: node simulation/run-public-search-smoke.mjs
+      - name: Upload public browser smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api1-public-browser-smoke
+          path: /tmp/api1-public-browser-smoke/
+          if-no-files-found: warn
+          retention-days: 1
