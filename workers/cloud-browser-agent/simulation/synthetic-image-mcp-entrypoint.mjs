@@ -1,3 +1,4 @@
+import {timingSafeEqual} from "node:crypto";
 // TEST ONLY: isolated JSON-RPC MCP entrypoint, never imported by deployed src/mcp.mjs.
 // No HTTP listener, real URLs, Cloudflare bindings, persistent sessions, or credentials.
 import {simulateChatGptImageToolCall} from "./chatgpt-mcp-image-preview.mjs";
@@ -10,18 +11,23 @@ export function createSyntheticImageMcpHandler(chromium,{secret}={}){
   const error=(id,code,message)=>new Response(JSON.stringify({jsonrpc:"2.0",id,error:{code,message}}),{status:200,headers});
   if(request.method!=="POST")return new Response("Method not allowed",{status:405,headers});
   if(request.headers.get("origin"))return new Response("Origin forbidden",{status:403,headers});
-  if(request.headers.get("authorization")!==`Bearer ${secret}`)return new Response("Unauthorized",{status:401,headers});
+  const supplied=request.headers.get("authorization")||"";
+  const expected=`Bearer ${secret}`;
+  const a=Buffer.from(supplied),b=Buffer.from(expected);
+  if(a.length!==b.length||!timingSafeEqual(a,b))return new Response("Unauthorized",{status:401,headers});
+  if(request.headers.get("content-type")!=="application/json")return new Response("JSON required",{status:415,headers});
   if(Number(request.headers.get("content-length")||0)>2048)return new Response("Request too large",{status:413,headers});
   let raw;try{raw=await request.text();}catch{return new Response("Invalid request",{status:400,headers});}
   if(raw.length>2048)return new Response("Request too large",{status:413,headers});
   let rpc;try{rpc=JSON.parse(raw);}catch{return new Response("Invalid JSON",{status:400,headers});}
-  if(!rpc||Array.isArray(rpc)||rpc.jsonrpc!=="2.0"||typeof rpc.method!=="string"||!Object.hasOwn(rpc,"id")||typeof rpc.id!=="number")return new Response("Invalid JSON-RPC",{status:400,headers});
+  if(!rpc||typeof rpc!=="object"||Array.isArray(rpc)||Object.keys(rpc).some(k=>!["jsonrpc","id","method","params"].includes(k))||rpc.jsonrpc!=="2.0"||typeof rpc.method!=="string"||!Object.hasOwn(rpc,"id")||!Number.isSafeInteger(rpc.id)||rpc.id<0)return new Response("Invalid JSON-RPC",{status:400,headers});
   const id=rpc.id;
+  if(["initialize","ping","tools/list"].includes(rpc.method)&&rpc.params!==undefined&&(!rpc.params||typeof rpc.params!=="object"||Array.isArray(rpc.params)||Object.keys(rpc.params).length!==0))return error(id,-32602,"Unexpected parameters");
   if(rpc.method==="initialize")return reply(id,{protocolVersion:"2025-06-18",capabilities:{tools:{listChanged:false}},serverInfo:{name:"synthetic-frame-test-only",version:"0.0.1"}});
   if(rpc.method==="ping")return reply(id,{});
   if(rpc.method==="tools/list")return reply(id,{tools:[tool]});
   if(rpc.method!=="tools/call")return error(id,-32601,"Method not found");
-  if(rpc.params?.name!=="synthetic_frame_preview"||Object.keys(rpc.params).sort().join(",")!=="arguments,name")return error(id,-32602,"Tool refused");
+  if(!rpc.params||typeof rpc.params!=="object"||Array.isArray(rpc.params)||rpc.params.name!=="synthetic_frame_preview"||Object.keys(rpc.params).sort().join(",")!=="arguments,name")return error(id,-32602,"Tool refused");
   const args=rpc.params.arguments;
   if(!args||typeof args!=="object"||Array.isArray(args)||Object.keys(args).some(k=>!["actions","maxFrames"].includes(k)))return error(id,-32602,"Invalid arguments");
   const actions=args.actions??[],maxFrames=args.maxFrames??4;
