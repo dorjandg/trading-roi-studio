@@ -14,7 +14,7 @@ export async function createLocalVisualViewerServer(chromium){
   if(!/^127\.0\.0\.1:\d+$/.test(host)){json(res,403,{error:"Loopback host required"});return;}
   if(req.headers.origin && req.headers.origin!==`http://${host}`){json(res,403,{error:"Cross-origin request refused"});return;}
   const path=new URL(req.url||"/","http://127.0.0.1").pathname;
-  res.setHeader("content-security-policy","default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'");
+  res.setHeader("content-security-policy","default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'");
   res.setHeader("x-frame-options","DENY");
   res.setHeader("referrer-policy","no-referrer");
   if(req.method==="GET" && path==="/"){
