@@ -57,16 +57,17 @@ async function loadOnlineCatalog(){
   const localIds=new Set(products.map(p=>String(p.id)));
   let imported=0;
   for(const record of payload.products){
-   if(!record||typeof record.id!=='string'||!record.id||localIds.has(record.id))continue;
-   products.push({...record,catalog_status:record.catalog_status||'published',_online_readonly:true});
+   if(!record||typeof record.id!=='string'||!record.id)continue;
+   if(localIds.has(record.id)){const index=products.findIndex(p=>p.id===record.id);if(index>=0)products[index]={...record,catalog_status:record.catalog_status||'unpublished',_cloud:true};continue;}
+   products.push({...record,catalog_status:record.catalog_status||'unpublished',_cloud:true});
    localIds.add(record.id);imported++;
   }
   renderProducts();
-  banner.textContent='Cloud catalog loaded: '+payload.products.length+' products (including unpublished); '+imported+' added to this view. Online products are read-only until secure cloud editing is enabled.';
+  banner.textContent='Cloud catalog loaded: '+payload.products.length+' products (including unpublished); '+imported+' added to this view. Online products are available for cloud editing.';
  }catch(e){banner.textContent='Could not load online products: '+e.message+'. Local drafts remain available.'}
 }
 
-function persist(type){try{localStorage.setItem(keys[type],JSON.stringify(type==='products'?products.filter(p=>!p._online_readonly):({categories,brands})[type]));status.textContent='Saved on this browser only — not published.';return true}catch(e){status.textContent='Could not save: browser storage may be full.';return false}}
+function persist(type){try{localStorage.setItem(keys[type],JSON.stringify(type==='products'?products.filter(p=>!p._cloud):({categories,brands})[type]));status.textContent='Saved on this browser only — not published.';return true}catch(e){status.textContent='Could not save: browser storage may be full.';return false}}
 function show(page){document.querySelectorAll('[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===page));['categories','brands','products'].forEach(p=>document.getElementById(p).classList.toggle('hidden',p!==page));document.getElementById('pageTitle').textContent=page[0].toUpperCase()+page.slice(1);document.getElementById('pageSubtitle').textContent=({categories:'Organize the boutique collections',brands:'Manage brand stories and product families',products:'Create products with sizes, prices and photographs'})[page];status.textContent='';if(page==='products')renderProducts();if(page==='brands')renderBrands();if(page==='categories')renderCategories();history.replaceState(null,'','#'+page)}
 document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>show(b.dataset.page));
 function option(select,value,text){const o=document.createElement('option');o.value=value;o.textContent=text;select.append(o)}
@@ -77,10 +78,49 @@ function renderProducts(){selectOptions();const list=document.getElementById('pr
 function fill(formId,data){const f=document.getElementById(formId);f.reset();Object.entries(data).forEach(([k,v])=>{const el=f.elements[k];if(el){if(el.type==='checkbox')el.checked=!!v;else el.value=v??''}});const type=formId.replace('Form','');document.getElementById(type+'FormTitle').textContent='Edit '+type;document.getElementById(type+'Preview').replaceChildren();if(window.innerWidth<851)f.scrollIntoView({behavior:'smooth',block:'start'})}
 function clear(formId){const f=document.getElementById(formId);f.reset();f.elements.id.value='';const type=formId.replace('Form','');document.getElementById(type+'FormTitle').textContent='New '+type;document.getElementById(type+'Preview').replaceChildren();if(window.innerWidth<851)f.scrollIntoView({behavior:'smooth',block:'start'})}
 function formData(form){const out={};new FormData(form).forEach((v,k)=>{if(typeof v==='string')out[k]=v});out.visible=!!form.elements.visible?.checked;out.id=out.id||id();return out}
-function wire(type,formId){const form=document.getElementById(formId);form.addEventListener('submit',e=>{e.preventDefault();if(type==='products'&&products.some(p=>p.id===form.elements.id.value&&p._online_readonly)){status.textContent='This online product is view-only until secure cloud editing is connected.';return}if(!form.reportValidity())return;const data=formData(form);if(type==='products'){data.catalog_status=data.catalog_status||'unpublished';if(data.catalog_status==='reference')data.reference_only=true;else data.reference_only=false;}if(type==='categories'&&data.parent===data.id){status.textContent='A category cannot be its own parent.';return}const array=({categories,brands,products})[type];const existing=array.findIndex(x=>x.id===data.id);if(existing>=0)array[existing]={...array[existing],...data};else array.unshift(data);if(persist(type)){form.elements.id.value=data.id;({categories:renderCategories,brands:renderBrands,products:renderProducts})[type]();}})}
+let productSaveTimer=null, productSaveSequence=0, productSaveQueue=Promise.resolve();
+async function saveProductToCloud(form){
+ if(!form.elements.name.value.trim()){status.textContent='Enter a product name to save.';return}
+ const currentId=form.elements.id.value||id();
+ form.elements.id.value=currentId;
+ const previous=products.find(p=>p.id===currentId);
+ const data={...(previous||{}),...formData(form),id:currentId};
+ delete data._online_readonly;delete data._cloud;
+ data.catalog_status=previous?.catalog_status||'unpublished';
+ const serialized=JSON.stringify(data);
+ if(serialized.length>49000){status.textContent='Product is too large to save. Upload photos separately.';return}
+ const sequence=++productSaveSequence;
+ status.textContent='Saving product to cloud…';
+ const task=async()=>{
+  try{
+   const response=await fetch('/api/staff/product',{method:'PUT',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({product:data})});
+   if(!response.ok){let detail={};try{detail=await response.json()}catch{}throw Error(detail.error||'HTTP '+response.status)}
+   const result=await response.json();
+   const index=products.findIndex(p=>p.id===currentId);
+   const saved={...data,catalog_status:result.status,_cloud:true};
+   if(index>=0)products[index]=saved;else products.unshift(saved);
+   // Never overwrite another product selected while a save was in flight.
+   if(form.elements.id.value===currentId&&sequence===productSaveSequence){
+    status.textContent='Saved automatically to GLAM cloud.';
+    renderProducts();
+   }
+  }catch(e){if(sequence===productSaveSequence)status.textContent='Cloud save failed: '+e.message+'. Changes have NOT been saved online.'}
+ };
+ productSaveQueue=productSaveQueue.then(task,task);
+ await productSaveQueue;
+}
+function queueProductSave(){
+ const form=document.getElementById('productForm');
+ if(!form.elements.name.value.trim())return;
+ clearTimeout(productSaveTimer);
+ productSaveTimer=setTimeout(()=>saveProductToCloud(form),750);
+}
+document.getElementById('productForm').addEventListener('input',queueProductSave);
+document.getElementById('productForm').addEventListener('change',queueProductSave);
+function wire(type,formId){const form=document.getElementById(formId);form.addEventListener('submit',e=>{e.preventDefault();if(type==='products'){saveProductToCloud(form);return}if(!form.reportValidity())return;const data=formData(form);if(type==='products'){data.catalog_status=data.catalog_status||'unpublished';if(data.catalog_status==='reference')data.reference_only=true;else data.reference_only=false;}if(type==='categories'&&data.parent===data.id){status.textContent='A category cannot be its own parent.';return}const array=({categories,brands,products})[type];const existing=array.findIndex(x=>x.id===data.id);if(existing>=0)array[existing]={...array[existing],...data};else array.unshift(data);if(persist(type)){form.elements.id.value=data.id;({categories:renderCategories,brands:renderBrands,products:renderProducts})[type]();}})}
 wire('categories','categoryForm');wire('brands','brandForm');wire('products','productForm');
 loadOnlineCatalog();
-function remove(type,formId){const form=document.getElementById(formId),target=form.elements.id.value;if(!target)return;const array=({categories,brands,products})[type];const item=array.find(x=>x.id===target);if(type==='products'&&item?._online_readonly){status.textContent='Online products cannot be deleted from this local editor.';return}if(item?.builtin){status.textContent='Built-in categories cannot be deleted here.';return}if(type==='categories'&&categories.some(c=>c.parent===target)){status.textContent='Move its subcategories before deleting.';return}if(!confirm('Delete this local draft?'))return;const index=array.findIndex(x=>x.id===target);if(index>=0)array.splice(index,1);persist(type);clear(formId);({categories:renderCategories,brands:renderBrands,products:renderProducts})[type]()}
+function remove(type,formId){const form=document.getElementById(formId),target=form.elements.id.value;if(!target)return;const array=({categories,brands,products})[type];const item=array.find(x=>x.id===target);if(type==='products'&&item?._cloud){status.textContent='Cloud products cannot be deleted from the browser. Cloud deletion is not enabled yet.';return}if(item?.builtin){status.textContent='Built-in categories cannot be deleted here.';return}if(type==='categories'&&categories.some(c=>c.parent===target)){status.textContent='Move its subcategories before deleting.';return}if(!confirm('Delete this local draft?'))return;const index=array.findIndex(x=>x.id===target);if(index>=0)array.splice(index,1);persist(type);clear(formId);({categories:renderCategories,brands:renderBrands,products:renderProducts})[type]()}
 document.getElementById('newCategory').onclick=()=>clear('categoryForm');document.getElementById('newBrand').onclick=()=>clear('brandForm');document.getElementById('newProduct').onclick=()=>clear('productForm');document.getElementById('deleteCategory').onclick=()=>remove('categories','categoryForm');document.getElementById('deleteBrand').onclick=()=>remove('brands','brandForm');document.getElementById('deleteProduct').onclick=()=>remove('products','productForm');
 document.getElementById('brandSearch').oninput=renderBrands;document.getElementById('productSearch').oninput=renderProducts;document.getElementById('productFilter').onchange=renderProducts;
 function preview(inputId,targetId){const el=document.getElementById(inputId),target=document.getElementById(targetId);let urls=[];el.onchange=()=>{urls.forEach(u=>URL.revokeObjectURL(u));urls=[];target.replaceChildren();for(const file of Array.from(el.files||[]).slice(0,12)){if(!file.type.startsWith('image/'))continue;const url=URL.createObjectURL(file);urls.push(url);const img=document.createElement('img');img.src=url;img.alt=file.name;target.append(img)}status.textContent='Photo preview only — images are not uploaded or saved.'}}
