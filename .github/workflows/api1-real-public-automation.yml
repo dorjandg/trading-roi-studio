@@ -1,0 +1,61 @@
+name: API1 real public website automation POC
+on:
+  push:
+    branches:
+      - api1-browser-interaction-phase1
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-api-e2e:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated browser test runtime
+        working-directory: workers/cloud-browser-agent
+        run: npm install --no-save --no-package-lock playwright@1.56.1
+      - name: Validate isolated source syntax and API test
+        working-directory: workers/cloud-browser-agent
+        run: |
+          node --check simulation/real-public-automation.mjs
+          node --check simulation/real-public-automation-api.mjs
+          node --check simulation/run-real-public-automation-smoke.mjs
+          node --check test/real-public-automation.test.mjs
+          node --test test/real-public-automation.test.mjs
+  live-public-site-e2e:
+    needs: isolated-api-e2e
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated Chromium
+        working-directory: workers/cloud-browser-agent
+        run: npm install --no-save --no-package-lock playwright@1.56.1
+      - name: Real Wikipedia browser automation via isolated token-protected API
+        working-directory: workers/cloud-browser-agent
+        env:
+          API1_REAL_AUTOMATION_DIR: /tmp/api1-real-public-automation
+        run: node simulation/run-real-public-automation-smoke.mjs
+      - name: Upload real-site evidence (including failure manifest)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api1-real-public-automation-evidence
+          path: /tmp/api1-real-public-automation/
+          if-no-files-found: error
+          retention-days: 7
