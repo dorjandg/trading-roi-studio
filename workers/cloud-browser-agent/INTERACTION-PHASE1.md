@@ -98,3 +98,8 @@ CI installs Miniflare 3 and runs `test/miniflare-d1-integration.test.mjs` agains
 ## Ephemeral authenticated frame bridge (offline only)
 
 `simulation/authenticated-frame-bridge.mjs` creates a local-only HTTP service on `127.0.0.1` with a per-session cryptographically random 256-bit bearer capability held in memory. GET `/state`, GET `/frame`, and strictly validated POST `/command` require that token. The bridge refuses cross-origin browser requests, arbitrary URL commands, and non-loopback host headers; frame screenshots remain synthetic Chromium fixtures with blocked network access. It is not an OAuth/MCP connector, is not remotely accessible from ChatGPT, and must not be proxied or deployed. A future remote connector needs independent authentication, session lifecycle, privacy/redaction, transport and access review before any deployment.
+
+
+## ChatGPT presentation adapter (offline, not registered)
+
+`simulation/chatgpt-frame-response-adapter.mjs` converts a bounded trusted synthetic export into validated PNG Buffer image blocks and a small metadata object explicitly marked `live:false` and `embeddedBrowser:false`. It rejects network-tainted exports, arbitrary tabs, malformed PNG signatures, oversized images and out-of-order frames. It does **not** register any MCP tool or expose a public endpoint. The adapter output could be mapped to image-capable connector results after a separate authorized integration, but currently cannot directly display frames from a remote persistent session in ChatGPT. No authentication tokens are included in metadata. Keep all integration development isolated.
