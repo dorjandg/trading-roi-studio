@@ -64,6 +64,13 @@ try{
   summary.thirdPartyAutomationUsed!==false||
   new URL(summary.steps[1].url).pathname===new URL(summary.steps[2].url).pathname)
   throw Error("Real MCP tool acceptance failed");
+ const nav=summary.navigationProvenance;
+ if(!nav||nav.searchPage?.url!==summary.steps[1].url||
+    nav.clickedArticle?.url!==summary.steps[2].url||
+    !["search-results","article"].includes(nav.searchPage?.kind)||
+    nav.clickedArticle?.role!==(nav.searchPage.kind==="search-results"?"search-result":"related-article")||
+    typeof nav.clickedArticle.exactTitleMatch!=="boolean")
+  throw Error("Wikipedia navigation provenance verification failed");
  const imageBlocks=result.content.filter(x=>x.type==="image");
  if(imageBlocks.length!==3||imageBlocks[1].data===imageBlocks[2].data)
   throw Error("MCP images missing or identical");
