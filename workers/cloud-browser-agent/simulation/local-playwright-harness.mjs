@@ -6,12 +6,6 @@ import {createHash,randomUUID} from "node:crypto";
 const approvals=new WeakMap();
 const digest=proposal=>createHash("sha256").update(JSON.stringify(proposal)).digest("hex");
 const fixtureHTML=`<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"></head><body><button type="button" data-testid="open-menu">Menu</button><button type="button" data-testid="navigate-test">Navigation test</button><button type="button" data-testid="dialog-test">Dialog test</button><input type="search" data-testid="search-input"><output id="status">closed</output></body></html>`;
-export function approveFixtureAction(proposal) {
- const validated=validateInteractionProposal(proposal);
- const token=Object.freeze({kind:validated.kind,testId:validated.testId,value:validated.kind==="fill"?validated.value:null});
- approvals.set(token,{sessionId:null});
- return token;
-}
 export async function createLocalPlaywrightHarness(chromium) {
  if(!chromium || typeof chromium.launch!=="function")throw new Error("Chromium required");
  const browser=await chromium.launch({headless:true});
@@ -33,22 +27,23 @@ export async function createLocalPlaywrightHarness(chromium) {
  await page.getByTestId("navigate-test").evaluate(el=>el.addEventListener("click",()=>{location.href="https://example.com/forbidden"}));
  await page.getByTestId("dialog-test").evaluate(el=>el.addEventListener("click",()=>alert("blocked")));
  let closed=false;
+ let closing=null;
  return Object.freeze({
   approve(proposal){
-   if(closed)throw new Error("Harness closed");
+   if(closed || closing)throw new Error("Harness closed");
    const validated=validateInteractionProposal(proposal);
    const token=Object.freeze({kind:validated.kind,testId:validated.testId,value:validated.kind==="fill"?validated.value:null});
    approvals.set(token,{sessionId});
    return token;
   },
   async perform(proposal,token) {
-   if(closed)throw new Error("Harness closed");
+   if(closed || closing)throw new Error("Harness closed");
    if(busy)throw new Error("Concurrent fixture action rejected");
    busy=true;
    try {
    const validated=validateInteractionProposal(proposal);
    const grant=token && approvals.get(token);
-   if(!grant || (grant.sessionId!==null && grant.sessionId!==sessionId))throw new Error("One-time approval required");
+   if(!grant || grant.sessionId!==sessionId)throw new Error("One-time approval required");
    approvals.delete(token);
    if(token.kind!==validated.kind || token.testId!==validated.testId ||
       token.value!==(validated.kind==="fill"?validated.value:null))throw new Error("Approval does not match action");
@@ -59,7 +54,7 @@ export async function createLocalPlaywrightHarness(chromium) {
    if(validated.kind==="click")await locator.click({timeout:1000});
    else await locator.fill(validated.value,{timeout:1000});
    await page.waitForTimeout(40);
-   if(page.url()!=="about:blank" || navigationAttempted || networkRequests>0 || blockedEvents!==beforeEvents)throw new Error("Fixture navigation forbidden or browser event forbidden");
+   if(closed || closing || page.url()!=="about:blank" || navigationAttempted || networkRequests>0 || blockedEvents!==beforeEvents)throw new Error("Fixture navigation forbidden or browser event forbidden");
    const receipt=Object.freeze({id:randomUUID(),sessionId,sequence:receipts.length+1,kind:validated.kind,testId:validated.testId,proposalDigest:digest(validated),executedInDisposableFixture:true,productionWritesAllowed:false});
    receipts.push(receipt);
    return receipt;
@@ -72,6 +67,6 @@ export async function createLocalPlaywrightHarness(chromium) {
    if(testId==="open-menu")return page.getByTestId(testId).evaluate(el=>el.dataset.testid);
    throw new Error("Unknown fixture field");
   },
-  async close(){if(!closed){closed=true;await context.close();await browser.close();}}
+  async close(){if(!closing){closed=true;closing=(async()=>{await context.close();await browser.close();})();}await closing;}
  });
 }
