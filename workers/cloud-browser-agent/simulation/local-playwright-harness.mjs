@@ -5,7 +5,7 @@ import {prepareBrowserInteraction} from "./browser-interaction-adapter.mjs";
 import {createHash,randomUUID} from "node:crypto";
 const approvals=new WeakMap();
 const digest=proposal=>createHash("sha256").update(JSON.stringify(proposal)).digest("hex");
-const fixtureHTML=`<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"></head><body><button type="button" data-testid="open-menu">Menu</button><button type="button" data-testid="navigate-test">Navigation test</button><input type="search" data-testid="search-input"><output id="status">closed</output></body></html>`;
+const fixtureHTML=`<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"></head><body><button type="button" data-testid="open-menu">Menu</button><button type="button" data-testid="navigate-test">Navigation test</button><button type="button" data-testid="dialog-test">Dialog test</button><input type="search" data-testid="search-input"><output id="status">closed</output></body></html>`;
 export function approveFixtureAction(proposal) {
  const validated=validateInteractionProposal(proposal);
  const token=Object.freeze({kind:validated.kind,testId:validated.testId,value:validated.kind==="fill"?validated.value:null});
@@ -31,6 +31,7 @@ export async function createLocalPlaywrightHarness(chromium) {
  await page.goto("about:blank");
  await page.setContent(fixtureHTML,{waitUntil:"domcontentloaded"});
  await page.getByTestId("navigate-test").evaluate(el=>el.addEventListener("click",()=>{location.href="https://example.com/forbidden"}));
+ await page.getByTestId("dialog-test").evaluate(el=>el.addEventListener("click",()=>alert("blocked")));
  let closed=false;
  return Object.freeze({
   approve(proposal){
