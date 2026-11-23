@@ -13,7 +13,7 @@ function equal(a,b){
  const x=Buffer.from(typeof a==="string"?a:""),y=Buffer.from(b);
  return x.length===y.length&&timingSafeEqual(x,y);
 }
-export async function createRealPublicAutomationApi(chromium,{routeFixture,timeoutMs=20000}={}){
+export async function createRealPublicAutomationApi(chromium,{routeFixture,timeoutMs=20000,diagnostics=false}={}){
  if(!chromium||typeof chromium.launch!=="function")throw Error("Chromium required");
  const apiKey=randomBytes(32).toString("base64url");
  let active=null,closed=false;
@@ -42,7 +42,7 @@ export async function createRealPublicAutomationApi(chromium,{routeFixture,timeo
    return json(res,200,result);
   }catch(e){
    const known=/^(Invalid|Request too large|Task refused)/.test(String(e?.message||""));
-   return json(res,known?400:502,{error:known?String(e.message).slice(0,90):"Isolated automation failed"});
+   return json(res,known?400:502,{error:known?String(e.message).slice(0,90):diagnostics?String(e?.message||e).slice(0,200):"Isolated automation failed"});
   }finally{active=null;}
  });
  await new Promise((resolve,reject)=>{server.once("error",reject);server.listen(0,"127.0.0.1",resolve);});
