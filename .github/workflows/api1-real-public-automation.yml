@@ -41,7 +41,9 @@ jobs:
           node --check simulation/private-tunnel-prep.mjs
           node --check simulation/launch-private-tunnel-target.mjs
           node --check test/private-tunnel-prep.test.mjs
-          node --test test/real-public-automation.test.mjs test/isolated-real-browser-mcp.test.mjs test/oauth-staging-readiness.test.mjs test/mock-oauth-mcp-gateway.test.mjs test/private-tunnel-prep.test.mjs
+          node --check simulation/private-tunnel-profile.mjs
+          node --check test/private-tunnel-profile.test.mjs
+          node --test test/real-public-automation.test.mjs test/isolated-real-browser-mcp.test.mjs test/oauth-staging-readiness.test.mjs test/mock-oauth-mcp-gateway.test.mjs test/private-tunnel-prep.test.mjs test/private-tunnel-profile.test.mjs
       - name: Generate safe offline OAuth readiness report (no deployment)
         working-directory: workers/cloud-browser-agent
         env:
