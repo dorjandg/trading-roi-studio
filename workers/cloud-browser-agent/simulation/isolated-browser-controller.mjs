@@ -17,6 +17,8 @@ export function createIsolatedBrowserController(session,{auth=createLocalControl
    if(command.type==="search"&&keys==="term,type")await session.search(command.term);
    else if(command.type==="click"&&keys==="href,type")await session.click(command.href);
    else if(command.type==="back"&&keys==="type")await session.back();
+   else if(command.type==="switch-tab"&&keys==="name,type"&&typeof session.switchTab==="function")await session.switchTab(command.name);
+   else if(command.type==="navigate-fixture"&&keys==="index,type"&&typeof session.navigate==="function")await session.navigate(command.index);
    else throw Error("Command refused");
    const state=session.state();
    history.push({type:command.type,sequence:state.sequence,at:Date.now()});
