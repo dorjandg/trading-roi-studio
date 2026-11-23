@@ -55,6 +55,11 @@ test("MCP client sequence: initialize, notification, ping, tools/list, authentic
   assert.equal(payload.result.structuredContent.status,"passed");
   assert.deepEqual(payload.result.structuredContent.steps.map(s=>s.action),["navigate","search","click"]);
   assert.equal(payload.result.structuredContent.extracted.heading,"James Webb Space Telescope");
+  assert.equal(payload.result.structuredContent.navigationProvenance.searchPage.kind,"search-results");
+  assert.equal(payload.result.structuredContent.navigationProvenance.clickedArticle.role,"search-result");
+  assert.equal(payload.result.structuredContent.navigationProvenance.clickedArticle.exactTitleMatch,true);
+  assert.equal(payload.result.structuredContent.navigationProvenance.clickedArticle.url,
+   payload.result.structuredContent.steps[2].url);
   assert.match(payload.result.structuredContent.extracted.paragraphs[0],/early galaxies/);
   assert.equal(payload.result.structuredContent.productionWritesAllowed,false);
   assert.equal(payload.result.structuredContent.thirdPartyAutomationUsed,false);
