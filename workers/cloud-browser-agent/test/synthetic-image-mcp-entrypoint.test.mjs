@@ -32,7 +32,7 @@ test("isolated MCP fails closed for missing auth, origins, real URLs and unknown
  assert.equal(invalid.error.code,-32602);
  const extra=await(await handler(request("tools/call",{name:"synthetic_frame_preview",arguments:{url:"https://google.com"}}))).json();
  assert.equal(extra.error.code,-32602);
- const huge=await handler(new Request("http://127.0.0.1/mcp",{method:"POST",headers:{authorization:"Bearer "+secret,"content-length":"9000"},body:"{}"}));
+ const huge=await handler(new Request("http://127.0.0.1/mcp",{method:"POST",headers:{authorization:"Bearer "+secret,"content-type":"application/json","content-length":"9000"},body:"{}"}));
  assert.equal(huge.status,413);
 });
 
