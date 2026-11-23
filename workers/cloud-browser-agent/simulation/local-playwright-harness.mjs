@@ -59,7 +59,7 @@ export async function createLocalPlaywrightHarness(chromium) {
    if(validated.kind==="click")await locator.click({timeout:1000});
    else await locator.fill(validated.value,{timeout:1000});
    await page.waitForTimeout(40);
-   if(page.url()!=="about:blank" || navigationAttempted || networkRequests>0 || blockedEvents!==beforeEvents)throw new Error("Fixture navigation or browser event forbidden");
+   if(page.url()!=="about:blank" || navigationAttempted || networkRequests>0 || blockedEvents!==beforeEvents)throw new Error("Fixture navigation forbidden or browser event forbidden");
    const receipt=Object.freeze({id:randomUUID(),sessionId,sequence:receipts.length+1,kind:validated.kind,testId:validated.testId,proposalDigest:digest(validated),executedInDisposableFixture:true,productionWritesAllowed:false});
    receipts.push(receipt);
    return receipt;
