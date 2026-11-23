@@ -31,12 +31,16 @@ export async function createLocalPlaywrightHarness(chromium) {
  return Object.freeze({
   approve(proposal){
    if(closed || closing)throw new Error("Harness closed");
+   if(!options || Object.getPrototypeOf(options)!==Object.prototype || Object.keys(options).some(k=>k!=="signal"))throw new Error("Invalid action options");
+   const signal=options.signal;
+   if(signal!==undefined && (!(signal instanceof AbortSignal)))throw new Error("Invalid cancellation signal");
+   if(signal?.aborted)throw new Error("Fixture action cancelled");
    const validated=validateInteractionProposal(proposal);
    const token=Object.freeze({kind:validated.kind,testId:validated.testId,value:validated.kind==="fill"?validated.value:null});
    approvals.set(token,{sessionId});
    return token;
   },
-  async perform(proposal,token) {
+  async perform(proposal,token,options={}) {
    if(closed || closing)throw new Error("Harness closed");
    if(busy)throw new Error("Concurrent fixture action rejected");
    busy=true;
@@ -48,13 +52,18 @@ export async function createLocalPlaywrightHarness(chromium) {
    if(token.kind!==validated.kind || token.testId!==validated.testId ||
       token.value!==(validated.kind==="fill"?validated.value:null))throw new Error("Approval does not match action");
    if(page.url()!=="about:blank" || navigationAttempted)throw new Error("Fixture origin changed");
+   // Only known inert fixture controls can be actuated. Test-only hostile controls never run.
+   if((validated.kind==="click" && validated.testId!=="open-menu") ||
+      (validated.kind==="fill" && validated.testId!=="search-input"))throw new Error("Unsafe fixture action prevented");
    const beforeEvents=blockedEvents;
    await prepareBrowserInteraction(page,proposal,{approved:true,scope:"isolated-browser-test"});
+   if(signal?.aborted || closed || closing)throw new Error("Fixture action cancelled");
    const locator=page.getByTestId(validated.testId);
    if(validated.kind==="click")await locator.click({timeout:1000});
    else await locator.fill(validated.value,{timeout:1000});
-   await page.waitForTimeout(40);
-   if(closed || closing || page.url()!=="about:blank" || navigationAttempted || networkRequests>0 || blockedEvents!==beforeEvents)throw new Error("Fixture navigation forbidden or browser event forbidden");
+   await page.waitForTimeout(100);
+   if(signal?.aborted || closed || closing)throw new Error("Fixture action cancelled");
+   if(page.url()!=="about:blank" || navigationAttempted || networkRequests>0 || blockedEvents!==beforeEvents)throw new Error("Fixture navigation forbidden or browser event forbidden");
    const receipt=Object.freeze({id:randomUUID(),sessionId,sequence:receipts.length+1,kind:validated.kind,testId:validated.testId,proposalDigest:digest(validated),executedInDisposableFixture:true,productionWritesAllowed:false});
    receipts.push(receipt);
    return receipt;
