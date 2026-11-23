@@ -9,8 +9,7 @@ const fixture=route=>{
  assert.equal(req.method(),"GET");
  assert.equal(u.hostname,"en.wikipedia.org");
  if(u.pathname==="/wiki/Main_Page")return route.fulfill({status:200,contentType:"text/html",
-  body:'<!doctype html><html><head><title>Wikipedia Home</title></head><body><h1>Main Page</h1><form method="get" action="/w/index.php"><input name="search" type="search"><button>Search</button></form><img src="https://unsafe.example.invalid/pixel"></body></html>'});
- if(u.pathname==="/w/index.php"&&u.searchParams.get("search")===query)return route.fulfill({status:302,headers:{location:"/wiki/Special:Search?search="+encodeURIComponent(query)}});
+  body:'<!doctype html><html><head><title>Wikipedia Home</title></head><body><h1>Main Page</h1><form method="get" action="/wiki/Special:Search"><input name="search" type="search"><button>Search</button></form><img src="https://unsafe.example.invalid/pixel"></body></html>'});
  if(u.pathname==="/wiki/Special:Search")return route.fulfill({status:200,contentType:"text/html",
   body:'<!doctype html><title>Search results</title><h1>Search results</h1><main id="mw-content-text"><a href="https://unsafe.example.invalid/bad">Bad external link</a><a href="/wiki/James_Webb_Space_Telescope">James Webb Space Telescope</a></main>'});
  if(u.pathname==="/wiki/James_Webb_Space_Telescope")return route.fulfill({status:200,contentType:"text/html",
