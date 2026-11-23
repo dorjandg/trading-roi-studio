@@ -142,10 +142,13 @@ document.getElementById('glamPhotoFiles').addEventListener('change',async event=
    message.textContent='Uploading photo '+(i+1)+' of '+files.length+'…';
    const response=await fetch('/api/staff/upload',{method:'POST',credentials:'same-origin',headers:{'content-type':file.type},body:file});
    const data=await response.json();if(!response.ok||!data.ok)throw Error(data.error||'Upload failed');
+   if(f.elements.id.value!==productId)throw Error('Product selection changed during upload');
+   product=products.find(p=>p.id===productId)||product;
+   product.images=Array.isArray(product.images)?product.images:[];
    if(!product.images.includes(data.url))product.images.push(data.url);
    if(!f.elements.image_url.value)f.elements.image_url.value=product.images[0];
    drawCloudGallery();
-   await saveProductToCloud(f);
+   if(!await saveProductToCloud(f))throw Error('Photo uploaded, but product record could not be saved');
   }
   message.textContent=files.length+' photo(s) uploaded and product saved to cloud.';
  }catch(error){message.textContent='Upload stopped: '+error.message+'; previously uploaded photos remain saved.'}
