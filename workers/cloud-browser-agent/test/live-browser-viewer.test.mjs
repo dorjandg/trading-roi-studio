@@ -25,16 +25,16 @@ test("offline multi-tab viewer navigates independently with back and forward",as
   assert.match(await page.locator("#address").innerText(),/search-results/);
   // Confirm the remaining tabs have independent page state and no real navigation.
   await page.getByRole("button",{name:"GitHub",exact:true}).click();
-  assert.match(await page.locator("#address").innerText(),/github\\.example\\.invalid\\/home/);
+  assert.ok((await page.locator("#address").innerText()).includes("github.example.invalid/home"));
   await page.getByRole("button",{name:"Issues",exact:true}).click();
-  assert.match(await page.locator("#address").innerText(),/github\\.example\\.invalid\\/issues/);
+  assert.ok((await page.locator("#address").innerText()).includes("github.example.invalid/issues"));
   await page.getByRole("button",{name:"Approved staging (mock)",exact:true}).click();
   await page.getByRole("button",{name:"Properties",exact:true}).click();
-  assert.match(await page.locator("#address").innerText(),/staging\\.example\\.invalid\\/properties/);
+  assert.ok((await page.locator("#address").innerText()).includes("staging.example.invalid/properties"));
   await page.getByRole("button",{name:"YouTube",exact:true}).click();
   assert.match(await page.locator("#address").innerText(),/youtube\\.example\\.invalid\\/channels/);
   await page.getByRole("button",{name:"GitHub",exact:true}).click();
-  assert.match(await page.locator("#address").innerText(),/github\\.example\\.invalid\\/issues/);
+  assert.ok((await page.locator("#address").innerText()).includes("github.example.invalid/issues"));
   assert.equal(await page.locator("#view").getAttribute("sandbox"),"");
   assert.equal(external,0);
   assert.match(await page.frameLocator("#view").locator("body").innerText(),/offline illustration/);
