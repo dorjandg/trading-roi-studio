@@ -27,9 +27,13 @@ Status: **NOT APPROVED FOR REGISTRATION OR DEPLOYMENT**. Applies only to `api1-b
 ## Acceptance checklist
 - [x] Existing connector and image prototype inspected.
 - [x] Security review and registration sequence documented.
-- [ ] Dedicated test-only MCP entrypoint implemented and locally tested.
-- [ ] Image response and isolation tests pass in CI.
+- [x] Dedicated test-only MCP entrypoint implemented with CI test coverage.
+- [ ] Image response and isolation tests pass in CI (pending latest run).
 - [ ] User explicitly approves any future connector registration or deployment.
 - [ ] Authenticated ChatGPT image rendering verified after that approval.
 
 No existing tool registration or deployed configuration is changed by this document.
+
+## Implemented test-only entrypoint
+
+`simulation/synthetic-image-mcp-entrypoint.mjs` exports an in-memory Request-to-Response JSON-RPC handler requiring a caller-supplied test bearer secret (minimum 32 characters). It advertises only `synthetic_frame_preview`; all browser actions use fixture identifiers and bounded integer indices. Requests with Origin headers, missing authorization, unknown tools, real URLs or oversized JSON are refused. It returns MCP image blocks generated in a new disposable Chromium session per call. No listener, production import, connector registration, deployment, or remote access is created. Test suite: `test/synthetic-image-mcp-entrypoint.test.mjs`.
