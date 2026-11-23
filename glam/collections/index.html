@@ -75,13 +75,44 @@ document.getElementById('return').onclick=back;window.addEventListener('popstate
     dialog.replaceChildren();
     const close=document.createElement('button');close.type='button';close.className='glam-detail-close';close.textContent='×';close.setAttribute('aria-label','Close product information');close.addEventListener('click',()=>dialog.close());dialog.appendChild(close);
     const wrap=document.createElement('div');wrap.className='glam-detail-layout';
-    if(p.image_url){const img=document.createElement('img');img.className='glam-detail-photo';img.src=p.image_url;img.alt=p.name||'Product';wrap.appendChild(img)}
+    const colors=String(p.colors||'').split(',').map(v=>v.trim()).filter(Boolean);
+    const sizes=String(p.sizes||'').split(',').map(v=>v.trim()).filter(Boolean);
+    const variants=p.variant_stock||{},colorPhotos=p.color_images||{};
+    const imageList=Array.isArray(p.images)&&p.images.length?p.images:(p.image_url?[p.image_url]:[]);
+    let selectedColor=colors[0]||'',selectedSize='';
+    const photo=document.createElement('img');photo.className='glam-detail-photo';photo.alt=p.name||'Product';
+    function changePhoto(){const url=colorPhotos[selectedColor]||imageList[0];if(url){photo.src=url;photo.hidden=false}else photo.hidden=true}
+    changePhoto();wrap.appendChild(photo);
     const info=document.createElement('div');info.className='glam-detail-info';
     function add(tag,value,className){if(value===undefined||value===null||value==='')return;const el=document.createElement(tag);el.textContent=String(value);if(className)el.className=className;info.appendChild(el)}
     add('small',(p.brand||'GLAM')+(p.reference_only?' · Manufacturer reference':''),'glam-detail-brand');
     add('h2',p.name||'Product');
     if(p.price!==undefined&&p.price!=='')add('strong',(p.currency==='EUR'?'€':p.currency==='USD'?'$':'')+p.price+' '+(p.currency||''),'glam-detail-price');
     add('p',p.description);
+    if(colors.length||sizes.length){
+      const selector=document.createElement('section');selector.className='glam-variant-selector';
+      const colorRow=document.createElement('div'),sizeRow=document.createElement('div'),stockMessage=document.createElement('p');
+      stockMessage.setAttribute('role','status');stockMessage.style.cssText='font-size:12px;color:#c9a99f';
+      function variantAvailable(color,size){return variants[JSON.stringify([color,size])]!=='out_of_stock'}
+      function updateStock(){
+        sizeRow.replaceChildren();
+        for(const size of sizes.length?sizes:['One size']){
+          const button=document.createElement('button');button.type='button';button.textContent=size;
+          const available=variantAvailable(selectedColor,size)&&p.catalog_status!=='sold_out'&&p.availability!=='out_of_stock';
+          button.disabled=!available;button.setAttribute('aria-pressed',String(selectedSize===size));button.style.cssText='margin:4px;padding:8px 12px;border:1px solid #88757a;background:'+(selectedSize===size?'#c9a99f':'transparent')+';color:'+(selectedSize===size?'#191619':'inherit');
+          button.onclick=()=>{selectedSize=size;updateStock()};sizeRow.append(button);
+        }
+        if(selectedSize&&!variantAvailable(selectedColor,selectedSize))selectedSize='';
+        const availableCount=(sizes.length?sizes:['One size']).filter(size=>variantAvailable(selectedColor,size)).length;
+        stockMessage.textContent=p.catalog_status==='sold_out'||p.availability==='out_of_stock'?'Out of stock':availableCount?'Select an available size':'Out of stock in this color';
+      }
+      if(colors.length){
+        const heading=document.createElement('p');heading.textContent='Color';selector.append(heading);
+        for(const color of colors){const button=document.createElement('button');button.type='button';button.textContent=color;button.style.cssText='margin:4px;padding:8px 12px;border:1px solid #88757a';button.onclick=()=>{selectedColor=color;selectedSize='';changePhoto();for(const b of colorRow.children)b.setAttribute('aria-pressed',String(b===button));updateStock()};button.setAttribute('aria-pressed',String(color===selectedColor));colorRow.append(button)}
+        selector.append(colorRow);
+      }
+      const sizeHeading=document.createElement('p');sizeHeading.textContent='Size / availability';selector.append(sizeHeading,sizeRow,stockMessage);info.append(selector);updateStock();
+    }
     const fields=[['Collection',p.category],['SKU',p.sku],['Sizes',p.sizes],['Colors',p.colors],['Materials',p.materials],['Care',p.care],['Availability',p.availability]];
     for(const field of fields){let value=field[1];if(Array.isArray(value))value=value.join(', ');if(value)add('p',field[0]+': '+value,'glam-detail-field')}
     if(p.reference_only)add('p','Manufacturer reference only. Availability at GLAM has not been confirmed.','glam-detail-note');
