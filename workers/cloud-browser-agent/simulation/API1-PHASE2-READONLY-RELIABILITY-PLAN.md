@@ -26,7 +26,7 @@ The end-to-end connection is now demonstrated. Expanding to other websites, logi
 
 The Ada Lovelace test showed a difference between *search intent* and *follow-up link*: the final article may not be the subject the user searched for. Phase 2 must disclose that distinction instead of making users assume the final article answers the original query.
 
-## 3. Proposed implementation sequence (not yet implemented)
+## 3. Phase 2 implementation sequence (P2-A partially started)
 
 ### P2-A — Baseline and fail-closed regression corpus
 
@@ -72,4 +72,4 @@ No multi-site browser, arbitrary URLs, OAuth rollout, autonomous web actions, pa
 
 ## 6. Immediate next development task
 
-Start with **P2-A deterministic regression tests** on this branch only. Prefer tests demonstrating current behavior before changing runtime logic. Then implement narrowly scoped P2-B/P2-C fixes only when a failing regression makes the deficiency clear. Preserve the working private tunnel and tool contract throughout.
+Continue **P2-A deterministic regression tests** on this branch only. Two read-only Chromium fixtures have been added (redirected search with an inert prompt-like paragraph, and refusal of unsafe-only article links). The current MCP and browser runtime logic has not changed. Expand the offline error/timeout corpus before implementing narrowly scoped P2-B/P2-C fixes, only when a failing regression makes the deficiency clear. Preserve the working private tunnel and tool contract throughout.
