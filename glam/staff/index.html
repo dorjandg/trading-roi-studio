@@ -127,14 +127,18 @@ async function reorderCloudPhoto(from,to,productId){
  if(form.elements.id.value!==productId||from===to||from<0||to<0)return;
  const item=products.find(p=>p.id===productId);
  if(!item||!Array.isArray(item.images)||from>=item.images.length||to>=item.images.length)return;
- const previous=[...item.images];
- const [moved]=item.images.splice(from,1);item.images.splice(to,0,moved);
- form.elements.image_url.value=item.images[0]||'';
+ clearTimeout(productSaveTimer);
+ await productSaveQueue;
+ const latest=products.find(p=>p.id===productId);
+ if(!latest||!Array.isArray(latest.images)||from>=latest.images.length||to>=latest.images.length)return;
+ const previous=[...latest.images];
+ const [moved]=latest.images.splice(from,1);latest.images.splice(to,0,moved);
+ form.elements.image_url.value=latest.images[0]||'';
  drawCloudGallery();
  if(!await saveProductToCloud(form)){
-  item.images=previous;form.elements.image_url.value=previous[0]||'';drawCloudGallery();
+  latest.images=previous;form.elements.image_url.value=previous[0]||'';drawCloudGallery();
   document.getElementById('glamPhotoStatus').textContent='Photo order could not be saved. Previous order restored.';
- }else document.getElementById('glamPhotoStatus').textContent='Photo order saved. First photo is the main image.';
+ }else {document.dispatchEvent(new CustomEvent('glam:product-selected'));document.getElementById('glamPhotoStatus').textContent='Photo order saved. First photo is the main image.';}
 }
 function drawCloudGallery(){
  const form=document.getElementById('productForm'),productId=form.elements.id.value;
@@ -316,9 +320,12 @@ function showImage(n){if(!images.length)return;active=(n+images.length)%images.l
 async function moveImage(from,to){
  if(from===null||from===to||from<0||to<0||from>=images.length||to>=images.length)return;
  const p=currentProduct();if(!p||!Array.isArray(p.images)||p.images.length!==images.length){document.getElementById('glamPhotoStatus').textContent='Upload and save photos before reordering.';return}
- const old=[...p.images];const [url]=p.images.splice(from,1);p.images.splice(to,0,url);
- form.elements.image_url.value=p.images[0]||'';refreshImages();showImage(to);
- if(!await window.glamEditorBridge.saveProduct(form)){p.images=old;form.elements.image_url.value=old[0]||'';refreshImages();document.getElementById('glamPhotoStatus').textContent='Could not save image order; previous order restored.'}
+ clearTimeout(productSaveTimer);
+ await productSaveQueue;
+ const latest=currentProduct();if(!latest||!Array.isArray(latest.images)||from>=latest.images.length||to>=latest.images.length)return;
+ const old=[...latest.images];const [url]=latest.images.splice(from,1);latest.images.splice(to,0,url);
+ form.elements.image_url.value=latest.images[0]||'';refreshImages();showImage(to);
+ if(!await window.glamEditorBridge.saveProduct(form)){latest.images=old;form.elements.image_url.value=old[0]||'';refreshImages();document.getElementById('glamPhotoStatus').textContent='Could not save image order; previous order restored.'}
  else document.getElementById('glamPhotoStatus').textContent='Image order saved. First image is the main photo.';
 }
 function refreshImages(){
