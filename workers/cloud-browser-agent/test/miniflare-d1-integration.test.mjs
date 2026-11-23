@@ -18,7 +18,7 @@ test("Miniflare disposable D1 executes approval schema, audit and replay rejecti
  assert.equal(result.productionWritesAllowed,false);
 }));
 test("Miniflare D1 enforces one grant consumption under concurrent requests",()=>localD1(async db=>{
- await db.exec(D1_APPROVAL_LEDGER_SCHEMA);
+ await db.exec(D1_APPROVAL_LEDGER_SCHEMA.replace(/\s*\n\s*/g,' '));
  const ledger=createD1ApprovalLedger(db);
  const event={...context,grantId};
  const results=await Promise.allSettled([ledger.reserveAndAudit(event),ledger.reserveAndAudit(event)]);
@@ -28,7 +28,7 @@ test("Miniflare D1 enforces one grant consumption under concurrent requests",()=
  assert.equal(row.n,1);
 }));
 test("Miniflare D1 audit readback matches committed scope and rejects replay",()=>localD1(async db=>{
- await db.exec(D1_APPROVAL_LEDGER_SCHEMA);
+ await db.exec(D1_APPROVAL_LEDGER_SCHEMA.replace(/\s*\n\s*/g,' '));
  const ledger=createD1ApprovalLedger(db);
  const event={...context,grantId};
  assert.equal((await ledger.reserveAndAudit(event)).executionAllowed,false);
