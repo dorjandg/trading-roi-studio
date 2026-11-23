@@ -32,7 +32,22 @@ jobs:
           node --check simulation/isolated-real-browser-mcp.mjs
           node --check simulation/run-real-browser-mcp-smoke.mjs
           node --check test/isolated-real-browser-mcp.test.mjs
-          node --test test/real-public-automation.test.mjs test/isolated-real-browser-mcp.test.mjs
+          node --check simulation/oauth-staging-readiness.mjs
+          node --check simulation/run-oauth-staging-preflight.mjs
+          node --check test/oauth-staging-readiness.test.mjs
+          node --test test/real-public-automation.test.mjs test/isolated-real-browser-mcp.test.mjs test/oauth-staging-readiness.test.mjs
+      - name: Generate safe offline OAuth readiness report (no deployment)
+        working-directory: workers/cloud-browser-agent
+        env:
+          API1_OAUTH_READINESS_DIR: /tmp/api1-oauth-staging-review
+        run: node simulation/run-oauth-staging-preflight.mjs
+      - name: Upload OAuth readiness and blockers (no credentials)
+        uses: actions/upload-artifact@v4
+        with:
+          name: api1-oauth-staging-readiness-no-deploy
+          path: /tmp/api1-oauth-staging-review/readiness.json
+          if-no-files-found: error
+          retention-days: 7
   live-public-site-e2e:
     needs: isolated-api-e2e
     runs-on: ubuntu-latest
