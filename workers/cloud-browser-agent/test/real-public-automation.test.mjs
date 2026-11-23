@@ -121,3 +121,105 @@ test("unsafe-only Wikipedia links fail closed without clicking a login or foreig
   routeFixture:noApprovedLinks,timeoutMs:12000}),/No approved visible article link/);
  assert.deepEqual(requested,["/wiki/Main_Page","/wiki/Special:Search"]);
 });
+
+
+const isolatedHtml=(body)=>'<!doctype html><html><head><title>Fixture</title></head><body><h1>Main Page</h1>'+body+'</body></html>';
+
+for(const scenario of [
+ {name:"missing search form",html:isolatedHtml('<p>No search form is available.</p>')},
+ {name:"disabled search input",html:isolatedHtml('<form method="get" action="/wiki/Special:Search"><input name="search" disabled></form>')},
+ {name:"external search action",html:isolatedHtml('<form method="get" action="https://unapproved.invalid/submit"><input name="search"></form>')}
+]){
+ test("P2-A refuses "+scenario.name+" before submitting any form",{timeout:30000},async()=>{
+  const requests=[];
+  const unavailableSearch=route=>{
+   const u=new URL(route.request().url());
+   requests.push({method:route.request().method(),url:u.href});
+   assert.equal(u.hostname,"en.wikipedia.org");
+   assert.equal(route.request().method(),"GET");
+   if(u.pathname==="/wiki/Main_Page")return route.fulfill({
+    status:200,contentType:"text/html",body:scenario.html
+   });
+   return route.abort();
+  };
+  await assert.rejects(runRealWikipediaAutomation(chromium,{
+   query:"Ada Lovelace",routeFixture:unavailableSearch,timeoutMs:10000
+  }),/Public GET search field unavailable/);
+  assert.equal(requests.length,1);
+ });
+}
+
+test("P2-A missing article paragraphs fails closed, without returning partial evidence",{timeout:30000},async()=>{
+ const missingText=route=>{
+  if(new URL(route.request().url()).pathname==="/wiki/James_Webb_Space_Telescope"){
+   return route.fulfill({status:200,contentType:"text/html",
+    body:isolatedHtml('<main id="mw-content-text"><p>Too short.</p></main>')});
+  }
+  return fixture(route);
+ };
+ await assert.rejects(runRealWikipediaAutomation(chromium,{
+  query,routeFixture:missingText,timeoutMs:10000
+ }),/Article extraction failed/);
+});
+
+function withInstrumentedPage(mutate){
+ return {async launch(options){
+  const browser=await chromium.launch(options);
+  return {
+   async newContext(config){
+    const ctx=await browser.newContext(config);
+    return {
+     route:(...args)=>ctx.route(...args),
+     async newPage(){const page=await ctx.newPage();mutate(page);return page;},
+     close:()=>ctx.close()
+    };
+   },
+   close:()=>browser.close()
+  };
+ }};
+}
+
+for(const scenario of [
+ {name:"invalid PNG signature",bytes:()=>Buffer.from("THIS IS NOT A PNG")},
+ {name:"oversized PNG",bytes:()=>{
+  const bytes=Buffer.alloc(2_000_001);
+  Buffer.from("89504e470d0a1a0a","hex").copy(bytes);
+  return bytes;
+ }}
+]){
+ test("P2-A refuses "+scenario.name+" without returning screenshot bytes",{timeout:30000},async()=>{
+  const instrumented=withInstrumentedPage(page=>{
+   page.screenshot=async()=>scenario.bytes();
+  });
+  await assert.rejects(runRealWikipediaAutomation(instrumented,{
+   query,routeFixture:fixture,timeoutMs:10000
+  }),/Invalid or oversized screenshot/);
+ });
+}
+
+test("P2-A navigational timeout error closes isolated browser context",{timeout:30000},async()=>{
+ let contextClosed=false,browserClosed=false;
+ const instrumented={async launch(options){
+  const browser=await chromium.launch(options);
+  return {
+   async newContext(config){
+    const ctx=await browser.newContext(config);
+    return {
+     route:(...args)=>ctx.route(...args),
+     async newPage(){
+      const page=await ctx.newPage();
+      page.goto=async()=>{throw new Error("Synthetic navigation timeout");};
+      return page;
+     },
+     async close(){contextClosed=true;await ctx.close();}
+    };
+   },
+   async close(){browserClosed=true;await browser.close();}
+  };
+ }};
+ await assert.rejects(runRealWikipediaAutomation(instrumented,{
+  query,routeFixture:fixture,timeoutMs:10000
+ }),/Synthetic navigation timeout/);
+ assert.equal(contextClosed,true);
+ assert.equal(browserClosed,true);
+});
