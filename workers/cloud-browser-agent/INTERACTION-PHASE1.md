@@ -66,3 +66,8 @@ Added `simulation/disposable-d1-acceptance.mjs` and its tests. The contract requ
 ## Cloudflare local D1 integration via Miniflare
 
 CI installs Miniflare 3 and runs `test/miniflare-d1-integration.test.mjs` against an in-memory, disposable local D1 binding (`TEST_ONLY_DB`). No Cloudflare account, Wrangler remote flag, production D1 database, deployment or website interaction is used. Tests cover schema creation, atomic grant replay rejection, audit readback and concurrent attempts. Miniflare exercises Cloudflare's local D1 implementation, but does not prove production remote D1 multi-region behavior, disaster recovery or availability. All test grants are synthetic.
+
+
+## Visible browser screenshot prototype (offline)
+
+`simulation/visible-browser-preview.mjs` renders a PNG from a disposable `about:blank` HTML fixture using isolated Playwright Chromium. Its network route aborts every external request; it accepts no website URL, credentials, existing page, browser profile, or interaction commands. `test/visible-browser-preview.test.mjs` checks the PNG signature and confirms zero network requests and no execution authorization. This prototype demonstrates screenshot capture only: **it is not a live browser window embedded in ChatGPT, nor a screenshot of an approved staging website**. The connected Browser Agent MCP tools currently expose no screenshot output. Real approved staging screenshots require separate explicit allowlisting, privacy review, and a safe screenshot-return interface. No production Worker or MCP code is changed.
