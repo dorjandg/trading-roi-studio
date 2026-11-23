@@ -53,3 +53,15 @@ jobs:
           path: /tmp/api1-public-browser-smoke/
           if-no-files-found: warn
           retention-days: 1
+      - name: NASA public link click smoke (non-blocking)
+        continue-on-error: true
+        working-directory: workers/cloud-browser-agent
+        run: node simulation/run-nasa-click-smoke.mjs
+      - name: Upload NASA click evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api1-nasa-click-smoke
+          path: /tmp/api1-nasa-click-smoke/
+          if-no-files-found: warn
+          retention-days: 1
