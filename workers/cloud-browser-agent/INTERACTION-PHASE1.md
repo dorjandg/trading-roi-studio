@@ -22,3 +22,8 @@ Source-reviewed production `src/handler.mjs` and `src/mcp.mjs`: the HTTP and MCP
 `simulation/staging-readiness-gate.mjs` is an isolated design-only checklist. It fails closed when evidence is missing and **never** returns execution permission even when every boolean is supplied. It does not verify the truth of supplied evidence and must not be treated as a production authorization mechanism.
 
 **Release boundary:** Do not import simulation modules into production handler/MCP, expose interaction tools, enable website writes, merge or deploy until independent authentication, origin-scoped single-use approvals, auditable fail-closed persistence, and a separate authorized staging review are implemented and verified.
+
+
+## Isolated signed-grant simulation (2026-11-23)
+
+`simulation/isolated-approval-grants.mjs` models HMAC-SHA256 signed, 60-second maximum, principal/session/action-digest/origin-scoped grants with one-time consumption through an injected atomic reserve-and-audit interface. Tests simulate replay races, tampering, scope changes, expiry, and audit failure. This is **not** an authentication service: the issuer accepts caller-supplied principal evidence, its signing key is supplied by tests, and the included audit store is in-memory rather than durable. Real deployment would require an independent identity provider, external trusted approval service, key lifecycle management, atomic durable storage, and separate security authorization. Even successful simulated verification returns `executionAllowed:false` and cannot operate a browser or website.
