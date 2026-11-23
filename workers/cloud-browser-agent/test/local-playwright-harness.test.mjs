@@ -166,9 +166,9 @@ test("close during an active action rejects the action without success receipt",
  const h=await createLocalPlaywrightHarness(chromium);
  const p={kind:"fill",testId:"search-input",value:"race"};
  const token=h.approve(p);
- const pending=h.perform(p,token);
+ const pending=assert.rejects(h.perform(p,token),/Fixture action cancelled/);
  await h.close();
- await assert.rejects(pending,/Fixture action cancelled/);
+ await pending;
  assert.equal(h.auditReceipts().length,0);
 });
 test("failed dispatched cancellation quarantines the session",async()=>{
