@@ -61,3 +61,8 @@ Added `simulation/disposable-d1-acceptance.mjs` and its tests. The contract requ
 ## Local disposable D1-shaped integration (2026-11-23)
 
 `simulation/local-d1-sqlite-binding.mjs` implements a restricted subset of the D1 `prepare/bind/first`, `batch`, and `exec` API using Node 22 SQLite on a temporary local file. CI tests execute the existing D1-shaped acceptance contract against an actual local SQLite database, verify replay rejection across independent connections and reopen, and reject unrelated SQL. This is **not the Cloudflare D1 runtime**, does not exercise remote or local Wrangler D1, and cannot prove Cloudflare D1 semantics. It is intentionally disconnected from production, real websites and all Cloudflare credentials. Further acceptance requires a separate disposable D1 instance and explicit non-production binding review.
+
+
+## Cloudflare local D1 integration via Miniflare
+
+CI installs Miniflare 3 and runs `test/miniflare-d1-integration.test.mjs` against an in-memory, disposable local D1 binding (`TEST_ONLY_DB`). No Cloudflare account, Wrangler remote flag, production D1 database, deployment or website interaction is used. Tests cover schema creation, atomic grant replay rejection, audit readback and concurrent attempts. Miniflare exercises Cloudflare's local D1 implementation, but does not prove production remote D1 multi-region behavior, disaster recovery or availability. All test grants are synthetic.
