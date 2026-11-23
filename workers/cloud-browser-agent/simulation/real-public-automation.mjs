@@ -39,8 +39,9 @@ export async function runRealWikipediaAutomation(chromium,{query="James Webb Spa
    const title=(await page.title()).slice(0,180);
    const heading=(await page.locator("h1").first().textContent().catch(()=>"")||"").trim().slice(0,180);
    // Wikipedia may load without external styles; move the article heading into the captured viewport.
-   const headingNode=page.locator("h1").first();
-   if(await headingNode.count())await headingNode.scrollIntoViewIfNeeded({timeout:timeoutMs});
+   // Use the currently attached heading in one DOM evaluation; Wikipedia may
+   // replace its heading during redirects, detaching Playwright locators.
+   await page.evaluate(()=>document.querySelector("h1")?.scrollIntoView({block:"center",inline:"nearest"}));
    const png=await page.screenshot({type:"png",animations:"disabled",timeout:timeoutMs});
    if(png.length>2_000_000||png.subarray(0,8).toString("hex")!==PNG_HEADER)throw Error("Invalid or oversized screenshot");
    const screenshot={action,mimeType:"image/png",base64:png.toString("base64"),bytes:png.length};
