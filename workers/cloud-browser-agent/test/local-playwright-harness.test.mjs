@@ -64,3 +64,37 @@ test("failed approvals leave no audit success and receipts are isolated per sess
   await assert.rejects(second.perform(p,token),/One-time approval/);
  }finally{await first.close();await second.close();}
 });
+
+test("session-bound approval cannot be used by another browser session",async()=>{
+ const first=await createLocalPlaywrightHarness(chromium);
+ const second=await createLocalPlaywrightHarness(chromium);
+ try {
+  const p={kind:"fill",testId:"search-input",value:"owned"};
+  const token=first.approve(p);
+  await assert.rejects(second.perform(p,token),/One-time approval/);
+  assert.equal(await second.read("search-input"),"");
+  const receipt=await first.perform(p,token);
+  assert.equal(receipt.sequence,1);
+ }finally{await first.close();await second.close();}
+});
+test("concurrent requests cannot execute using the same approval",async()=>{
+ const h=await createLocalPlaywrightHarness(chromium);
+ try {
+  const p={kind:"fill",testId:"search-input",value:"once"};
+  const token=h.approve(p);
+  const results=await Promise.allSettled([h.perform(p,token),h.perform(p,token)]);
+  assert.equal(results.filter(r=>r.status==="fulfilled").length,1);
+  assert.equal(results.filter(r=>r.status==="rejected").length,1);
+  assert.equal(h.auditReceipts().length,1);
+ }finally{await h.close();}
+});
+test("dialog side effect blocks receipt and consumes approval",async()=>{
+ const h=await createLocalPlaywrightHarness(chromium);
+ try {
+  const p={kind:"click",testId:"dialog-test"};
+  const token=h.approve(p);
+  await assert.rejects(h.perform(p,token),/browser event forbidden/);
+  assert.equal(h.auditReceipts().length,0);
+  await assert.rejects(h.perform(p,token),/One-time approval/);
+ }finally{await h.close();}
+});
