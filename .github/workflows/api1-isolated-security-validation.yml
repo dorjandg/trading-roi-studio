@@ -65,3 +65,15 @@ jobs:
           path: /tmp/api1-nasa-click-smoke/
           if-no-files-found: warn
           retention-days: 1
+      - name: Render isolated API1 viewer demo frames
+        working-directory: workers/cloud-browser-agent
+        env:
+          API1_DEMO_DIR: /tmp/api1-viewer-demo
+        run: node simulation/run-wikipedia-viewer-demo.mjs
+      - name: Upload isolated API1 viewer demo
+        uses: actions/upload-artifact@v4
+        with:
+          name: api1-offline-viewer-demo
+          path: /tmp/api1-viewer-demo/
+          if-no-files-found: error
+          retention-days: 7
