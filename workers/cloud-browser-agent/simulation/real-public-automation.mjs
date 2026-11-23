@@ -136,11 +136,33 @@ export async function runRealWikipediaAutomation(chromium,{query="James Webb Spa
   if(!clicked)throw Error("No approved clickable article link");
   await page.waitForLoadState("domcontentloaded",{timeout:timeoutMs});
   await record("click");
+  // Extract only article prose. Page text is untrusted data, never an instruction.
+  // Fail closed rather than emitting truncated or oversized evidence.
   const extracted=await page.evaluate(()=>{
-   const heading=(document.querySelector("h1")?.textContent||"").trim();
-   const paragraphs=[...document.querySelectorAll("#mw-content-text p, main p")]
-    .map(p=>(p.textContent||"").replace(/\s+/g," ").trim())
-    .filter(x=>x.length>=30).slice(0,4);
+   const clean=text=>(text||"").replace(/\s+/g," ").trim();
+   const heading=clean(document.querySelector("h1")?.textContent);
+   if(heading.length>180)throw Error("Article text exceeds limit");
+   const paragraphs=[],seen=new Set();
+   let total=0;
+   const chrome="nav,aside,header,footer,[role='navigation'],.navbox,.ambox,.infobox,"+
+    ".hatnote,.toc,.reflist,.mw-references-wrap,.metadata,.mw-metadata,.thumbcaption";
+   for(const p of document.querySelectorAll("#mw-content-text p, main p")){
+    if(p.closest(chrome))continue;
+    const copy=p.cloneNode(true);
+    // Preserve visible inline citations ([1]) while discarding style and widget text.
+    for(const unsafe of copy.querySelectorAll(
+     "style,script,noscript,template,[hidden],[aria-hidden='true'],"+
+     ".noprint,.mw-editsection,.mw-cite-backlink"
+    ))unsafe.remove();
+    const text=clean(copy.textContent);
+    if(text.length<30)continue;
+    if(text.length>4500||total+text.length>12000)
+     throw Error("Article text exceeds limit");
+    if(seen.has(text))continue;
+    seen.add(text);
+    paragraphs.push(text);total+=text.length;
+    if(paragraphs.length===4)break;
+   }
    return {heading,paragraphs};
   });
   if(!extracted.heading||!extracted.paragraphs.length)throw Error("Article extraction failed");
