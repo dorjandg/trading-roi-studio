@@ -8,6 +8,20 @@ import {randomBytes,timingSafeEqual} from "node:crypto";
 import {createRealPublicAutomationApi} from "./real-public-automation-api.mjs";
 
 const VERSION="2025-06-18";
+const MODERN_VERSION="2026-07-28";
+const SUPPORTED_VERSIONS=Object.freeze([MODERN_VERSION,VERSION]);
+const SERVER_INFO=Object.freeze({name:"api1-isolated-wikipedia-chromium",version:"0.1.0"});
+const MODERN_IDENTITY=Object.freeze({"io.modelcontextprotocol/serverInfo":SERVER_INFO});
+const isObject=value=>value!==null&&typeof value==="object"&&!Array.isArray(value);
+const modernResult=value=>({resultType:"complete",...value,_meta:MODERN_IDENTITY});
+function validModernMetadata(params){
+ if(!isObject(params)||!isObject(params._meta))return false;
+ const meta=params._meta,client=meta["io.modelcontextprotocol/clientInfo"];
+ return meta["io.modelcontextprotocol/protocolVersion"]===MODERN_VERSION&&
+  isObject(meta["io.modelcontextprotocol/clientCapabilities"])&&
+  (client===undefined||(isObject(client)&&typeof client.name==="string"&&
+   client.name.length>0&&typeof client.version==="string"&&client.version.length>0));
+}
 const TOOL_NAME="browser_automate_wikipedia_demo";
 const MAX_REQUEST_BYTES=4096;
 const MAX_RESPONSE_BYTES=9_000_000;
@@ -38,7 +52,8 @@ function send(res,status,payload){
  res.writeHead(status,header);res.end(data);
 }
 const reply=(id,result)=>({jsonrpc:"2.0",id,result});
-const error=(id,code,message)=>({jsonrpc:"2.0",id,error:{code,message}});
+const error=(id,code,message,data)=>({jsonrpc:"2.0",id,
+ error:{code,message,...(data===undefined?{}:{data})}});
 function validateQuery(value){
  return typeof value==="string"&&value.length>=3&&value.length<=80&&
   /^[A-Za-z0-9 ,.'-]+$/.test(value);
@@ -82,23 +97,53 @@ export async function createIsolatedBrowserMcpServer(chromium,{routeFixture,time
   if(!Object.hasOwn(rpc,"id")||
    !(typeof id==="string"&&id.length>0&&id.length<=64||Number.isSafeInteger(id)&&id>=0))
    return send(res,400,{error:"Invalid JSON-RPC id"});
+  const p=rpc.params;
+  const requestedVersion=isObject(p)&&isObject(p._meta)?
+   p._meta["io.modelcontextprotocol/protocolVersion"]:undefined;
+  const modern=rpc.method==="server/discover"||requestedVersion===MODERN_VERSION;
+  if(requestedVersion!==undefined&&!SUPPORTED_VERSIONS.includes(requestedVersion))
+   return send(res,400,error(id,-32022,"Unsupported protocol version",
+    {supported:SUPPORTED_VERSIONS,requested:requestedVersion}));
+  // The 2026 protocol is stateless; clients must repeat metadata on every call.
+  // Validate the three routing headers before dispatching to any method.
+  if(modern){
+   if(!validModernMetadata(p))
+    return send(res,400,error(id,-32602,"Invalid modern MCP metadata"));
+   if(req.headers["mcp-protocol-version"]!==MODERN_VERSION||
+      req.headers["mcp-method"]!==rpc.method||
+      (rpc.method==="tools/call"&&req.headers["mcp-name"]!==p.name))
+    return send(res,400,error(id,-32020,"MCP header mismatch"));
+  }
+  if(rpc.method==="server/discover"){
+   if(Object.keys(p).some(k=>k!=="_meta"))
+    return send(res,200,error(id,-32602,"Unexpected discovery parameters"));
+   return send(res,200,reply(id,modernResult({
+    supportedVersions:SUPPORTED_VERSIONS,capabilities:{tools:{listChanged:false}},
+    instructions:"Read-only English Wikipedia searches and article extraction only. No logins, arbitrary URLs, account actions or writes.",
+    ttlMs:0,cacheScope:"private"
+   })));
+  }
   if(rpc.method==="initialize"){
-   const p=rpc.params;
-   if(p!==undefined&&(!p||typeof p!=="object"||Array.isArray(p)||
+   if(modern)return send(res,404,error(id,-32601,"Method not found"));
+   if(p!==undefined&&(!isObject(p)||
     (p.protocolVersion!==undefined&&typeof p.protocolVersion!=="string")))
     return send(res,200,error(id,-32602,"Invalid initialization"));
    return send(res,200,reply(id,{protocolVersion:VERSION,
-    capabilities:{tools:{listChanged:false}},serverInfo:{name:"api1-isolated-wikipedia-chromium",version:"0.1.0"}}));
+    capabilities:{tools:{listChanged:false}},serverInfo:SERVER_INFO}));
   }
   if(rpc.method==="ping"||rpc.method==="tools/list"){
-   if(rpc.params!==undefined&&(!rpc.params||typeof rpc.params!=="object"||Array.isArray(rpc.params)||
-    Object.keys(rpc.params).length))return send(res,200,error(id,-32602,"Unexpected parameters"));
-   return send(res,200,reply(id,rpc.method==="ping"?{}:{tools:[TOOL]}));
+   if(p!==undefined&&(!isObject(p)||
+    Object.keys(p).some(k=>k!=="_meta")||
+    (p._meta!==undefined&&!isObject(p._meta))))
+    return send(res,200,error(id,-32602,"Unexpected parameters"));
+   const result=rpc.method==="ping"?{}:{tools:[TOOL]};
+   return send(res,200,reply(id,modern?
+    modernResult(rpc.method==="tools/list"?{...result,ttlMs:0,cacheScope:"private"}:result):result));
   }
-  if(rpc.method!=="tools/call")return send(res,200,error(id,-32601,"Method not found"));
-  const p=rpc.params;
-  if(!p||typeof p!=="object"||Array.isArray(p)||Object.keys(p).sort().join(",")!=="arguments,name"||
-   p.name!==TOOL_NAME||!p.arguments||typeof p.arguments!=="object"||Array.isArray(p.arguments)||
+  if(rpc.method!=="tools/call")
+   return send(res,modern?404:200,error(id,-32601,"Method not found"));
+  if(!isObject(p)||Object.keys(p).some(k=>!["arguments","name",...(modern?["_meta"]:[])].includes(k))||
+   p.name!==TOOL_NAME||!isObject(p.arguments)||
    Object.keys(p.arguments).join(",")!=="query"||!validateQuery(p.arguments.query))
    return send(res,200,error(id,-32602,"Tool refused"));
   if(busy)return send(res,200,error(id,-32001,"Isolated Chromium is busy"));
@@ -125,6 +170,7 @@ export async function createIsolatedBrowserMcpServer(chromium,{routeFixture,time
     readOnly:true,productionWritesAllowed:false,thirdPartyAutomationUsed:false
    };
    const toolResult={
+    ...(modern?{resultType:"complete",_meta:MODERN_IDENTITY}:{}),
     isError:false,structuredContent:summary,
     content:[{type:"text",text:JSON.stringify(summary)},
      ...result.screenshots.map((s,i)=>({type:"image",mimeType:"image/png",
