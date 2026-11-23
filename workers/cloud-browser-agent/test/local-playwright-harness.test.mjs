@@ -150,3 +150,37 @@ test("unrecognized cancellation options fail closed",async()=>{
   assert.equal(h.auditReceipts().length,0);
  }finally{await h.close();}
 });
+
+test("delayed navigation trigger is rejected before dispatch and stays inert",async()=>{
+ const h=await createLocalPlaywrightHarness(chromium);
+ try {
+  const p={kind:"click",testId:"delayed-test"};
+  await assert.rejects(h.perform(p,h.approve(p)),/Unsafe fixture action prevented/);
+  await new Promise(resolve=>setTimeout(resolve,220));
+  assert.equal(h.auditReceipts().length,0);
+  const good={kind:"click",testId:"open-menu"};
+  assert.equal((await h.perform(good,h.approve(good))).sequence,1);
+ }finally{await h.close();}
+});
+test("close during an active action rejects the action without success receipt",async()=>{
+ const h=await createLocalPlaywrightHarness(chromium);
+ const p={kind:"fill",testId:"search-input",value:"race"};
+ const token=h.approve(p);
+ const pending=h.perform(p,token);
+ await h.close();
+ await assert.rejects(pending,/Fixture action cancelled/);
+ assert.equal(h.auditReceipts().length,0);
+});
+test("failed dispatched cancellation quarantines the session",async()=>{
+ const h=await createLocalPlaywrightHarness(chromium);
+ try {
+  const p={kind:"fill",testId:"search-input",value:"cancel"};
+  const controller=new AbortController();
+  const pending=h.perform(p,h.approve(p),{signal:controller.signal});
+  await new Promise(resolve=>setTimeout(resolve,50));
+  controller.abort();
+  await assert.rejects(pending,/Fixture action cancelled/);
+  assert.equal(h.auditReceipts().length,0);
+  assert.throws(()=>h.approve(p),/Harness closed/);
+ }finally{await h.close();}
+});
