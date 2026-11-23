@@ -1,12 +1,29 @@
-// Future operator-start command. This is NOT invoked by CI, tunnel registration,
-// ChatGPT plugin setup, or deployment. It starts only a 127.0.0.1 MCP listener.
-// Credentials are written to a 0600 file, never displayed or committed.
+// Operator-start only: launches local MCP, creates an optional *secret-free*
+// official tunnel-client profile if CONTROL_PLANE_TUNNEL_ID has been approved.
+// NO tunnel-client execution, network exposure, OAuth, registration or deployment.
 import {chromium} from "playwright";
 import {createPrivateTunnelPrep} from "./private-tunnel-prep.mjs";
+import {savePrivateTunnelProfile} from "./private-tunnel-profile.mjs";
 const instance=await createPrivateTunnelPrep(chromium);
-console.log("API1_PRIVATE_MCP_LOCAL_READY",JSON.stringify(instance.info));
 let stop;
 const done=new Promise(resolve=>{stop=resolve;});
 process.once("SIGINT",stop);
 process.once("SIGTERM",stop);
-try{await done;}finally{await instance.close();}
+try{
+ let profilePath=null;
+ if(process.env.CONTROL_PLANE_TUNNEL_ID){
+  const profile=await savePrivateTunnelProfile(instance.info,{
+   tunnelId:process.env.CONTROL_PLANE_TUNNEL_ID
+  });
+  profilePath=profile.profilePath;
+ }
+ console.log("API1_PRIVATE_MCP_LOCAL_READY",JSON.stringify({
+  ...instance.info,
+  ...(profilePath?{profilePath}:{}),
+  tunnelStarted:false,
+  awaitingOperatorApprovalForRuntime:true
+ }));
+ await done;
+}finally{
+ await instance.close();
+}
