@@ -28,18 +28,22 @@ export async function createLocalPlaywrightHarness(chromium) {
  await page.getByTestId("dialog-test").evaluate(el=>el.addEventListener("click",()=>alert("blocked")));
  let closed=false;
  let closing=null;
+ let activeAction=null;
+ let poisoned=false;
  return Object.freeze({
   approve(proposal){
-   if(closed || closing)throw new Error("Harness closed");
+   if(closed || closing || poisoned)throw new Error("Harness closed");
    const validated=validateInteractionProposal(proposal);
    const token=Object.freeze({kind:validated.kind,testId:validated.testId,value:validated.kind==="fill"?validated.value:null});
    approvals.set(token,{sessionId});
    return token;
   },
   async perform(proposal,token,options={}) {
-   if(closed || closing)throw new Error("Harness closed");
+   if(closed || closing || poisoned)throw new Error("Harness closed");
    if(busy)throw new Error("Concurrent fixture action rejected");
    busy=true;
+   let finishAction;
+   activeAction=new Promise(resolve=>{finishAction=resolve;});
    try {
    if(!options || Object.getPrototypeOf(options)!==Object.prototype || Object.keys(options).some(k=>k!=="signal"))throw new Error("Invalid action options");
    const signal=options.signal;
@@ -67,7 +71,7 @@ export async function createLocalPlaywrightHarness(chromium) {
    const receipt=Object.freeze({id:randomUUID(),sessionId,sequence:receipts.length+1,kind:validated.kind,testId:validated.testId,proposalDigest:digest(validated),executedInDisposableFixture:true,productionWritesAllowed:false});
    receipts.push(receipt);
    return receipt;
-   } finally {busy=false;}
+   } catch(error) {poisoned=true;throw error;} finally {busy=false;finishAction();activeAction=null;}
   },
   auditReceipts(){return Object.freeze([...receipts]);},
   async read(testId) {
@@ -76,6 +80,6 @@ export async function createLocalPlaywrightHarness(chromium) {
    if(testId==="open-menu")return page.getByTestId(testId).evaluate(el=>el.dataset.testid);
    throw new Error("Unknown fixture field");
   },
-  async close(){if(!closing){closed=true;closing=(async()=>{await context.close();await browser.close();})();}await closing;}
+  async close(){if(!closing){closed=true;closing=(async()=>{if(activeAction)await activeAction;await context.close();await browser.close();})();}await closing;}
  });
 }
