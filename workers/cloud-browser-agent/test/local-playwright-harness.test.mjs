@@ -2,18 +2,18 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {chromium} from "playwright";
-import {approveFixtureAction,createLocalPlaywrightHarness} from "../simulation/local-playwright-harness.mjs";
+import {createLocalPlaywrightHarness} from "../simulation/local-playwright-harness.mjs";
 test("real Chromium performs approved local click and fill only",async()=>{
  const h=await createLocalPlaywrightHarness(chromium);
  try {
   const click={kind:"click",testId:"open-menu"}, fill={kind:"fill",testId:"search-input",value:"gold"};
-  const c=approveFixtureAction(click);
+  const c=h.approve(click);
   const receipt=await h.perform(click,c);
   assert.equal(receipt.executedInDisposableFixture,true);
   assert.equal(receipt.sequence,1);
   assert.equal(receipt.proposalDigest.length,64);
   await assert.rejects(h.perform(click,c),/One-time approval/);
-  const f=approveFixtureAction(fill);
+  const f=h.approve(fill);
   const fillReceipt=await h.perform(fill,f);
   assert.equal(fillReceipt.sequence,2);
   assert.equal(fillReceipt.sessionId,receipt.sessionId);
@@ -27,18 +27,18 @@ test("missing, mismatched and unsafe approvals cannot change fixture",async()=>{
  try {
   const fill={kind:"fill",testId:"search-input",value:"safe"};
   await assert.rejects(h.perform(fill,undefined),/approval/);
-  const token=approveFixtureAction(fill);
+  const token=h.approve(fill);
   await assert.rejects(h.perform({...fill,value:"changed"},token),/does not match/);
   await assert.rejects(h.perform(fill,token),/One-time approval/);
   assert.equal(await h.read("search-input"),"");
-  assert.throws(()=>approveFixtureAction({kind:"click",testId:"submitOrder"}));
+  assert.throws(()=>h.approve({kind:"click",testId:"submitOrder"}));
  }finally{await h.close();}
 });
 test("arbitrary browser targets and URLs are never accepted",async()=>{
  const h=await createLocalPlaywrightHarness(chromium);
  try {
   const bad={kind:"click",testId:"open-menu",url:"https://example.com"};
-  await assert.rejects(h.perform(bad,approveFixtureAction({kind:"click",testId:"open-menu"})));
+  await assert.rejects(h.perform(bad,h.approve({kind:"click",testId:"open-menu"})));
  }finally{await h.close();}
 });
 
@@ -46,7 +46,7 @@ test("fixture navigation is blocked and never receives an audit success receipt"
  const h=await createLocalPlaywrightHarness(chromium);
  try {
   const p={kind:"click",testId:"navigate-test"};
-  const token=approveFixtureAction(p);
+  const token=h.approve(p);
   await assert.rejects(h.perform(p,token),/Fixture navigation forbidden/);
   assert.equal(h.auditReceipts().length,0);
   await assert.rejects(h.perform(p,token),/One-time approval/);
@@ -57,7 +57,7 @@ test("failed approvals leave no audit success and receipts are isolated per sess
  const second=await createLocalPlaywrightHarness(chromium);
  try {
   const p={kind:"fill",testId:"search-input",value:"local"};
-  const token=approveFixtureAction(p);
+  const token=first.approve(p);
   await first.perform(p,token);
   assert.equal(first.auditReceipts().length,1);
   assert.equal(second.auditReceipts().length,0);
@@ -97,4 +97,23 @@ test("dialog side effect blocks receipt and consumes approval",async()=>{
   assert.equal(h.auditReceipts().length,0);
   await assert.rejects(h.perform(p,token),/One-time approval/);
  }finally{await h.close();}
+});
+
+test("closing session rejects approvals and action attempts",async()=>{
+ const h=await createLocalPlaywrightHarness(chromium);
+ await h.close();
+ assert.throws(()=>h.approve({kind:"click",testId:"open-menu"}),/Harness closed/);
+ await assert.rejects(h.perform({kind:"click",testId:"open-menu"},{}),/Harness closed/);
+ await h.close();
+});
+test("an approval is never valid outside the issuing session",async()=>{
+ const first=await createLocalPlaywrightHarness(chromium);
+ const second=await createLocalPlaywrightHarness(chromium);
+ try {
+  const p={kind:"click",testId:"open-menu"};
+  const token=first.approve(p);
+  await assert.rejects(second.perform(p,token),/One-time approval/);
+  assert.equal(second.auditReceipts().length,0);
+  assert.equal((await first.perform(p,token)).sequence,1);
+ }finally{await first.close();await second.close();}
 });
