@@ -2,7 +2,7 @@
 export async function runBoundedPreview(chromium,work,{timeoutMs=30000,signal}={}){
  if(!Number.isSafeInteger(timeoutMs)||timeoutMs<10||timeoutMs>60000)throw Error("Invalid timeout");
  if(signal?.aborted)throw Error("Preview cancelled");
- let settled=false,activeBrowser=null;
+ let activeBrowser=null;
  const controller=new AbortController();
  const closeBrowser=async()=>{if(activeBrowser){const b=activeBrowser;activeBrowser=null;await b.close().catch(()=>{});}};
  const guarded={
@@ -18,13 +18,12 @@ export async function runBoundedPreview(chromium,work,{timeoutMs=30000,signal}={
  signal?.addEventListener("abort",abort,{once:true});
  let timer;
  const deadline=new Promise((_,reject)=>{
-  timer=setTimeout(()=>{controller.abort();reject(Error("Preview timeout"));},timeoutMs);
+  timer=setTimeout(()=>{reject(Error("Preview timeout"));controller.abort();},timeoutMs);
   controller.signal.addEventListener("abort",()=>reject(Error("Preview cancelled")),{once:true});
  });
  const workPromise=Promise.resolve().then(()=>work(guarded));
  try{return await Promise.race([workPromise,deadline]);}
  finally{
-  settled=true;
   clearTimeout(timer);
   signal?.removeEventListener("abort",abort);
   controller.abort();
