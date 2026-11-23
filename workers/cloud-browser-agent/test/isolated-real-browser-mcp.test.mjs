@@ -116,3 +116,96 @@ test("MCP browser failure is sanitized and cannot leak secrets or internal error
   assert.doesNotMatch(JSON.stringify(r),/INTERNAL SECRET/);
  }finally{await server.close();}
 });
+
+
+const MODERN_VERSION="2026-07-28";
+const modernMeta=()=>({
+ "io.modelcontextprotocol/protocolVersion":MODERN_VERSION,
+ "io.modelcontextprotocol/clientInfo":{name:"api1-ci-modern",version:"1.0.0"},
+ "io.modelcontextprotocol/clientCapabilities":{}
+});
+async function modernRpc(server,method,params={},id=100,overrideHeaders={}){
+ return fetch(server.url,{method:"POST",headers:{
+  "content-type":"application/json",
+  "accept":"application/json, text/event-stream",
+  "authorization":"Bearer "+server.accessToken,
+  "mcp-protocol-version":MODERN_VERSION,
+  "mcp-method":method,
+  ...(method==="tools/call"?{"mcp-name":params.name}:{ }),
+  ...overrideHeaders
+ },body:JSON.stringify(rpc(method,{...params,_meta:modernMeta()},id))});
+}
+test("MCP 2026-07-28 discovery and read-only tools/list alongside legacy initialization",async()=>{
+ let launches=0;
+ const fakeChromium={launch(){launches++;throw Error("Browser must not launch for discovery");}};
+ const server=await createIsolatedBrowserMcpServer(fakeChromium);
+ try{
+  const discoveryResponse=await modernRpc(server,"server/discover",{},101);
+  assert.equal(discoveryResponse.status,200);
+  const discovery=await discoveryResponse.json();
+  assert.equal(discovery.id,101);
+  assert.equal(discovery.result.resultType,"complete");
+  assert.ok(discovery.result.supportedVersions.includes(MODERN_VERSION));
+  assert.ok(discovery.result.supportedVersions.includes("2025-06-18"));
+  assert.deepEqual(discovery.result.capabilities.tools,{listChanged:false});
+  assert.equal(discovery.result.cacheScope,"private");
+  assert.equal(discovery.result.ttlMs,0);
+  assert.equal(discovery.result._meta["io.modelcontextprotocol/serverInfo"].name,
+   "api1-isolated-wikipedia-chromium");
+  const listingResponse=await modernRpc(server,"tools/list",{},102);
+  assert.equal(listingResponse.status,200);
+  const listing=await listingResponse.json();
+  assert.equal(listing.result.resultType,"complete");
+  assert.equal(listing.result.cacheScope,"private");
+  assert.equal(listing.result.ttlMs,0);
+  assert.deepEqual(listing.result.tools.map(t=>t.name),["browser_automate_wikipedia_demo"]);
+  assert.equal(listing.result.tools[0].annotations.readOnlyHint,true);
+  const ping=await(await modernRpc(server,"ping",{},103)).json();
+  assert.equal(ping.result.resultType,"complete");
+  const legacyInit=await(await send(server,rpc("initialize",{protocolVersion:"2025-06-18",capabilities:{}},104))).json();
+  assert.equal(legacyInit.result.protocolVersion,"2025-06-18");
+  assert.equal(legacyInit.result.resultType,undefined);
+  const legacyList=await(await send(server,rpc("tools/list",{},105))).json();
+  assert.equal(legacyList.result.resultType,undefined);
+  assert.deepEqual(legacyList.result.tools.map(t=>t.name),["browser_automate_wikipedia_demo"]);
+  assert.equal(launches,0);
+ }finally{await server.close();}
+});
+test("MCP 2026-07-28 refuses inconsistent metadata, headers, unsupported versions and unsafe tools",async()=>{
+ let launches=0;
+ const server=await createIsolatedBrowserMcpServer({launch(){launches++;throw Error("Unexpected browser");}});
+ try{
+  const badHeader=await modernRpc(server,"tools/list",{},120,{"mcp-method":"tools/call"});
+  assert.equal(badHeader.status,400);
+  assert.equal((await badHeader.json()).error.code,-32020);
+  const badToolName=await modernRpc(server,"tools/call",{name:"browser_automate_wikipedia_demo",arguments:{query:QUERY}},121,{"mcp-name":"other"});
+  assert.equal(badToolName.status,400);
+  assert.equal((await badToolName.json()).error.code,-32020);
+  const unsafe=await(await modernRpc(server,"tools/call",{
+   name:"browser_automate_wikipedia_demo",
+   arguments:{query:QUERY,url:"https://evil.invalid"}
+  },122)).json();
+  assert.equal(unsafe.error.code,-32602);
+  const unknown=await modernRpc(server,"tools/wipe_database",{},123);
+  assert.equal(unknown.status,404);
+  assert.equal((await unknown.json()).error.code,-32601);
+  const noMetadata=await fetch(server.url,{
+   method:"POST",headers:{"content-type":"application/json","authorization":"Bearer "+server.accessToken,
+    "mcp-protocol-version":MODERN_VERSION,"mcp-method":"server/discover"},
+   body:JSON.stringify(rpc("server/discover",{},124))
+  });
+  assert.equal(noMetadata.status,400);
+  const unsupported=await fetch(server.url,{
+   method:"POST",headers:{"content-type":"application/json","authorization":"Bearer "+server.accessToken,
+    "mcp-protocol-version":"2099-01-01","mcp-method":"tools/list"},
+   body:JSON.stringify(rpc("tools/list",{_meta:{
+    ...modernMeta(),"io.modelcontextprotocol/protocolVersion":"2099-01-01"
+   }},125))
+  });
+  assert.equal(unsupported.status,400);
+  const unsupportedJSON=await unsupported.json();
+  assert.equal(unsupportedJSON.error.code,-32022);
+  assert.ok(unsupportedJSON.error.data.supported.includes(MODERN_VERSION));
+  assert.equal(launches,0);
+ }finally{await server.close();}
+});
