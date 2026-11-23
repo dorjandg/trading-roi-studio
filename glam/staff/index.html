@@ -70,7 +70,19 @@ async function loadOnlineCatalog(){
   renderProducts();
   window.dispatchEvent(new Event('glam-cloud-catalog-loaded'));
   banner.textContent='Cloud catalog loaded: '+payload.products.length+' products (including unpublished); '+imported+' added to this view. Online products are available for cloud editing.';
- }catch(e){banner.textContent='Could not load online products: '+e.message+'. Local drafts remain available.'}
+ }catch(e){
+  banner.textContent='Staff cloud catalog could not load ('+e.message+'). Checking published catalog…';
+  try{
+   const publicResponse=await fetch('/api/catalog',{cache:'no-store',credentials:'same-origin'});
+   if(!publicResponse.ok)throw Error('Public catalog returned '+publicResponse.status);
+   const publicData=await publicResponse.json();
+   if(!Array.isArray(publicData.products))throw Error('Invalid public catalog');
+   const known=new Set(products.map(p=>String(p.id)));
+   for(const record of publicData.products){if(!record||!record.id)continue;if(known.has(String(record.id)))continue;products.push({...record,_cloud:true});known.add(String(record.id))}
+   renderProducts();window.dispatchEvent(new Event('glam-cloud-catalog-loaded'));
+   banner.textContent='Showing '+publicData.products.length+' published cloud products. Staff catalog could not load ('+e.message+'); unpublished products are temporarily unavailable. Please report this message.';
+  }catch(fallbackError){banner.textContent='Cloud catalog unavailable: '+e.message+'; public fallback: '+fallbackError.message+'. No cloud records were deleted. Please report this message.'}
+ }
 }
 
 function persist(type){try{localStorage.setItem(keys[type],JSON.stringify(type==='products'?products.filter(p=>!p._cloud):({categories,brands})[type]));status.textContent='Saved on this browser only — not published.';return true}catch(e){status.textContent='Could not save: browser storage may be full.';return false}}
