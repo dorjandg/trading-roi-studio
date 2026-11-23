@@ -20,6 +20,8 @@ try{
    !result.extracted?.heading||!result.extracted?.paragraphs?.length||result.productionWritesAllowed!==false||
    result.thirdPartyAutomationUsed!==false)throw Error("Real-public automation acceptance failed");
  const shots=result.screenshots;
+ if(shots[1].base64===shots[2].base64)throw Error("Distinct article screenshot evidence required");
+ if(new URL(result.steps[1].url).pathname===new URL(result.steps[2].url).pathname)throw Error("Article path must change after click");
  for(let i=0;i<shots.length;i++)await writeFile(dir+"/frame-"+(i+1)+"-"+result.steps[i].action+".png",Buffer.from(shots[i].base64,"base64"));
  const {screenshots,...manifest}=result;
  await writeFile(dir+"/result.json",JSON.stringify({...manifest,realWebsite:true,mode:"live-public-site",screenshotFiles:result.steps.map((s,i)=>"frame-"+(i+1)+"-"+s.action+".png")},null,2));
