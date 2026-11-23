@@ -34,3 +34,30 @@ test("private browser gateway denies unauthenticated access and controls safe Ch
   assert.equal((await request("/command",{method:"POST",body:{type:"back"}})).status,200);
  }finally{await gateway.close();}
 });
+
+test("gateway rejects malformed commands, unsupported methods and non-JSON bodies without leaking access key",async()=>{
+ const gateway=await createPrivateBrowserGateway(chromium,{fixture,timeoutMs:10000});
+ try{
+  const headers={authorization:"Bearer "+gateway.accessKey};
+  const base=gateway.url;
+  const badType=await fetch(base+"/command",{method:"POST",headers:{...headers,"content-type":"text/plain"},body:"back"});
+  assert.equal(badType.status,415);
+  const badJSON=await fetch(base+"/command",{method:"POST",headers:{...headers,"content-type":"application/json"},body:"{"});
+  assert.equal(badJSON.status,400);
+  const large=await fetch(base+"/command",{method:"POST",headers:{...headers,"content-type":"application/json"},body:JSON.stringify({type:"search",term:"a".repeat(600)})});
+  assert.equal(large.status,400);
+  const badMethod=await fetch(base+"/state",{method:"POST",headers});
+  assert.equal(badMethod.status,404);
+  const unknown=await fetch(base+"/missing",{headers});
+  assert.equal(unknown.status,404);
+  const invalid=await fetch(base+"/command",{method:"POST",headers:{...headers,"content-type":"application/json"},body:JSON.stringify({type:"click",href:"https://example.org/"})});
+  assert.equal(invalid.status,400);
+  for(const response of [badType,badJSON,large,badMethod,unknown,invalid]){
+   assert.equal(response.headers.get("cache-control"),"no-store");
+   assert.equal(response.headers.get("x-frame-options"),"DENY");
+   assert.equal((await response.text()).includes(gateway.accessKey),false);
+  }
+  const state=await(await fetch(base+"/state",{headers})).json();
+  assert.match(state.url,/Main_Page/);
+ }finally{await gateway.close();}
+});
