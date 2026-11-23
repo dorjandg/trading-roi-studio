@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; frame-src 'self'; base-uri 'none'; form-action 'none'; connect-src 'none'; img-src 'none'">
+<title>API 1 · Offline Browser Viewer Prototype</title>
+<style>
+:root{font-family:system-ui,sans-serif;color-scheme:dark;background:#101722;color:#f0f4fa}
+body{margin:0}.shell{max-width:1150px;margin:22px auto;border:1px solid #435268;border-radius:14px;overflow:hidden}
+header{padding:14px 20px;background:#263449;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+small{color:#b4c4d6}.tabs{display:flex;gap:6px;padding:10px;background:#192538;overflow-x:auto}
+button{cursor:pointer;color:#f4f8ff;border:1px solid #536783;border-radius:7px;background:#334760;padding:10px 14px}
+button[aria-selected="true"]{background:#1c79a6;border-color:#82c9e8}
+.toolbar{display:flex;align-items:center;gap:8px;padding:10px;background:#263449}
+#address{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;background:#101b2b;padding:10px;border-radius:7px}
+#view{width:100%;height:550px;border:0;background:white}
+footer{padding:12px 18px;color:#b4c4d6;font-size:13px}
+</style></head><body>
+<div class="shell"><header><strong>API 1 · Visible Browser Prototype</strong><small>OFFLINE SIMULATION · READ ONLY · NO REAL WEBSITES</small></header>
+<nav class="tabs" id="tabs" aria-label="Browser tabs"></nav>
+<div class="toolbar"><button id="back" type="button" aria-label="Back">←</button><button id="forward" type="button" aria-label="Forward">→</button><span id="address" aria-label="Simulated address"></span></div>
+<iframe id="view" sandbox="" title="Simulated website preview" referrerpolicy="no-referrer"></iframe>
+<footer id="status" role="status">Disposable local pages only. No network, login, or real navigation.</footer></div>
+<script>
+"use strict";
+const sites=Object.freeze([
+ {name:"Google",host:"google.example.invalid",pages:["Home","Search results","About"]},
+ {name:"YouTube",host:"youtube.example.invalid",pages:["Home","Channels","Videos"]},
+ {name:"GitHub",host:"github.example.invalid",pages:["Home","Repositories","Issues"]},
+ {name:"Approved staging (mock)",host:"staging.example.invalid",pages:["Home","Properties","Contact"]}
+]);
+const state=sites.map(site=>({site,history:[0],cursor:0}));
+let active=0;
+const $=id=>document.getElementById(id);
+function escapeHTML(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function openPage(index){
+ const t=state[active];if(!Number.isInteger(index)||index<0||index>=t.site.pages.length)return;
+ t.history=t.history.slice(0,t.cursor+1);t.history.push(index);t.cursor++;render();
+}
+function move(delta){const t=state[active],next=t.cursor+delta;if(next>=0&&next<t.history.length){t.cursor=next;render();}}
+function render(){
+ $("tabs").replaceChildren();
+ state.forEach((t,i)=>{const b=document.createElement("button");b.type="button";b.textContent=t.site.name;b.setAttribute("aria-selected",String(i===active));b.addEventListener("click",()=>{active=i;render();});$("tabs").append(b);});
+ const t=state[active],idx=t.history[t.cursor];
+ $("address").textContent="https://"+t.site.host+"/"+t.site.pages[idx].toLowerCase().replaceAll(" ","-");
+ $("back").disabled=t.cursor===0;$("forward").disabled=t.cursor===t.history.length-1;
+ const title=escapeHTML(t.site.name),page=escapeHTML(t.site.pages[idx]);
+ const links=t.site.pages.map((p,i)=>'<button type="button" data-page="'+i+'">'+escapeHTML(p)+'</button>').join(" ");
+ // iframe has sandbox without allow-scripts; page buttons are illustrative only.
+ $("view").srcdoc='<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; form-action \'none\'"><style>body{font:18px system-ui;margin:40px;color:#26374b}h1{font-size:38px}button{padding:12px;margin:5px;border:1px solid #bccfe2;border-radius:6px;background:#f0f5fa}</style></head><body><p>LOCAL SIMULATED PAGE · NOT '+title.toUpperCase()+'</p><h1>'+title+' — '+page+'</h1><p>This page is an offline illustration, not content fetched from '+title+'.</p><div>'+links+'</div><p>Use the viewer controls below to simulate page navigation.</p></body></html>';
+ $("status").replaceChildren(document.createTextNode("Page navigation: "));
+ t.site.pages.forEach((p,i)=>{const b=document.createElement("button");b.type="button";b.textContent=p;b.addEventListener("click",()=>openPage(i));$("status").append(b);});
+}
+$("back").addEventListener("click",()=>move(-1));$("forward").addEventListener("click",()=>move(1));render();
+</script></body></html>
