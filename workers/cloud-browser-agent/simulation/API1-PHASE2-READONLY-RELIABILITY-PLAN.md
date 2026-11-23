@@ -26,11 +26,11 @@ The end-to-end connection is now demonstrated. Expanding to other websites, logi
 
 The Ada Lovelace test showed a difference between *search intent* and *follow-up link*: the final article may not be the subject the user searched for. Phase 2 must disclose that distinction instead of making users assume the final article answers the original query.
 
-## 3. Phase 2 implementation sequence (P2-A partially started)
+## 3. Phase 2 implementation sequence (P2-A and P2-B implemented on isolated branch)
 
 ### P2-A — Baseline and fail-closed regression corpus
 
-Add intercepted Chromium fixtures that explicitly exercise:
+Intercepted Chromium, MCP, and synthetic browser fixtures now exercise:
 - Direct Wikipedia article redirects versus a true search results page.
 - Missing/disabled search fields, non-GET forms, blocked external images, external URLs, namespace/edit/login links, and fragment-only links.
 - Missing article paragraphs, malformed/oversized browser output, browser launch errors, and timeouts.
@@ -41,7 +41,7 @@ Add intercepted Chromium fixtures that explicitly exercise:
 
 ### P2-B — Navigation relevance and provenance
 
-Keep exactly `navigate → search → click` and only existing Wikipedia GET/HEAD destinations. Add **non-authoritative, additive metadata** to distinguish an exact search match from a related follow-up article; include the searched page, clicked article URL, and why the link was eligible. Never claim the clicked article is the answer merely because it was linked.
+**Implemented on the isolated development branch, not yet loaded into the live Codespace processes:** The browser still follows exactly `navigate → search → click` over existing Wikipedia GET/HEAD destinations. Candidate links are ranked with exact Wikipedia article titles first, then titles beginning with the query, then looser matches, *after* the existing safety allowlist is applied. The tool returns additive `navigationProvenance.searchPage` and `navigationProvenance.clickedArticle`, reporting the search-page URL/heading/kind, exact title matches, whether the follow-up came from search results or a related article link, and the ranking basis. The original `clickedLink`, screenshot, and extracted-text fields are preserved. This metadata is descriptive, not evidence that a related article answers the original search.
 
 **Acceptance:** A fixture for the Ada Lovelace case accurately labels the hardware article as a related link, not the original search result. No user-selectable URL, arbitrary click selector, page script, or new tool is introduced.
 
@@ -72,4 +72,4 @@ No multi-site browser, arbitrary URLs, OAuth rollout, autonomous web actions, pa
 
 ## 6. Immediate next development task
 
-Continue **P2-A deterministic regression tests** on this branch only. Two read-only Chromium fixtures have been added (redirected search with an inert prompt-like paragraph, and refusal of unsafe-only article links). The current MCP and browser runtime logic has not changed. Expand the offline error/timeout corpus before implementing narrowly scoped P2-B/P2-C fixes, only when a failing regression makes the deficiency clear. Preserve the working private tunnel and tool contract throughout.
+**Next safe work:** P2-C clean article text extraction, with additional dedicated fixtures and strict output limits, after final CI approval. P2-A now includes redirected searches, unsafe-only links, missing/disabled/external search actions, missing article text, malformed or oversized PNGs, simulated navigation timeouts with cleanup assertions, malformed JSON-RPC messages, mismatched 2026 protocol headers, and bounded MCP result validation. P2-B adds exact-result ranking and search-versus-related article provenance tests. These changes must not be used by the running Codespace processes until an operator deliberately updates/restarts the private local server and tunnel after final CI verification. No new website access or write tools have been added.
