@@ -25,8 +25,37 @@ try{
  const tools=await call(2,"tools/list",{});
  if(tools.tools?.length!==1||tools.tools[0].name!=="browser_automate_wikipedia_demo")
   throw Error("Unexpected MCP tool discovery");
- const result=await call(3,"tools/call",{name:"browser_automate_wikipedia_demo",
+ // Exercise stateless 2026-07-28 discovery used by ChatGPT registration.
+ const modernMeta={
+  "io.modelcontextprotocol/protocolVersion":"2026-07-28",
+  "io.modelcontextprotocol/clientInfo":{name:"api1-live-ci",version:"0.1.0"},
+  "io.modelcontextprotocol/clientCapabilities":{}
+ };
+ const modernCall=async(id,method,args={})=>{
+  const response=await fetch(server.url,{method:"POST",headers:{
+   "content-type":"application/json","accept":"application/json, text/event-stream",
+   "authorization":"Bearer "+server.accessToken,
+   "mcp-protocol-version":"2026-07-28","mcp-method":method,
+   ...(method==="tools/call"?{"mcp-name":args.name}:{})
+  },body:JSON.stringify({jsonrpc:"2.0",id,method,params:{...args,_meta:modernMeta}}),
+   signal:AbortSignal.timeout(120000)});
+  if(!response.ok)throw Error("Modern MCP transport rejected "+method+": "+response.status);
+  const body=await response.json();
+  if(body.error)throw Error("Modern MCP error "+method+": "+body.error.code);
+  return body.result;
+ };
+ const discovered=await modernCall(40,"server/discover");
+ if(discovered.resultType!=="complete"||
+    !discovered.supportedVersions.includes("2026-07-28")||
+    discovered.capabilities?.tools===undefined)
+  throw Error("Modern server/discover incompatible");
+ const modernTools=await modernCall(41,"tools/list");
+ if(modernTools.resultType!=="complete"||modernTools.cacheScope!=="private"||
+    modernTools.tools?.length!==1||modernTools.tools[0].name!==tools.tools[0].name)
+  throw Error("Modern tools/list incompatible");
+ const result=await modernCall(42,"tools/call",{name:"browser_automate_wikipedia_demo",
   arguments:{query:"James Webb Space Telescope"}});
+ if(result.resultType!=="complete")throw Error("Modern tools/call missing resultType");
  const summary=result.structuredContent;
  if(result.isError!==false||!summary||summary.status!=="passed"||
   summary.steps?.map(s=>s.action).join(",")!=="navigate,search,click"||
@@ -48,7 +77,7 @@ try{
  await writeFile(dir+"/result.json",JSON.stringify({
   ...summary,mode:"real-wikipedia-mcp-tool",authenticated:true,
   screenshotFiles:["frame-1.png","frame-2.png","frame-3.png"],
-  protocolVersion:init.protocolVersion,discoveredTool:tools.tools[0].name
+  protocolVersion:init.protocolVersion,modernProtocolVersion:"2026-07-28",discoveredTool:tools.tools[0].name
  },null,2));
  console.log("API1_REAL_BROWSER_MCP_PASS",JSON.stringify({
   steps:summary.steps.map(x=>x.action),clicked:summary.clickedLink.href,
