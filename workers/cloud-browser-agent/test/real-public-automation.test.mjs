@@ -25,6 +25,8 @@ test("real Chromium fills a GET search field, clicks a Wikipedia result, extract
  assert.match(result.steps[1].url,/^https:\/\/en\.wikipedia\.org\/wiki\//);
  assert.notEqual(result.steps[1].url,result.steps[0].url);
  assert.match(result.clickedLink.href,/James_Webb_Space_Telescope/);
+ assert.notEqual(new URL(result.steps[1].url).pathname,new URL(result.steps[2].url).pathname);
+ assert.equal(result.clickedLink.href.includes("#"),false);
  assert.match(result.extracted.heading,/James Webb/);
  assert.match(result.extracted.paragraphs[0],/earliest galaxies/);
  assert.equal(result.productionWritesAllowed,false);
@@ -52,6 +54,7 @@ test("isolated API requires token, rejects arbitrary tasks, and returns complete
   assert.equal(result.task,"wikipedia-demo");
   assert.deepEqual(result.steps.map(s=>s.action),["navigate","search","click"]);
   assert.ok(result.extracted.paragraphs.length>0);
+  assert.notEqual(new URL(result.steps[1].url).pathname,new URL(result.steps[2].url).pathname);
   assert.equal(png(result.screenshots[2].base64),"89504e470d0a1a0a");
   assert.equal(result.productionWritesAllowed,false);
  }finally{await api.close();}
