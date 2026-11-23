@@ -233,3 +233,20 @@ if(typeof jjYTResearch!=="undefined" && !jjYTResearch.sections.some(s=>s.title==
  jjYTVideoSources["Lep139B5EbU"]={title:"JJ Simon — NQ weekly trade recap (2026-04-03)",video:"https://www.youtube.com/watch?v=Lep139B5EbU",verified:"Native public captions; original charts, audio, fills, payouts and firm rules unverified."};
  renderNav();render();
 }
+
+
+// Public caption cross-check 2026-11-23; private course remains primary.
+if(typeof jjYTResearch!=="undefined" && !jjYTVideoSources["3L8xdh3oPm4"]){
+ jjYTResearch.sections.push({title:"Public strategy walkthrough: stateful evaluation backtests and session gates",points:[
+ "In his 28 Mar 2026 public walkthrough, JJ distinguishes early New York opening-direction continuation (roughly the first 0–10 minutes) from later reversion toward the pre-open reference (approximately 10–90 minutes after an opening move). These are speaker-reported windows, not independently backtested boundaries.",
+ "The public narration lists 6 PM Eastern reopen, 8 PM Asian, 3 AM London, 8:30 AM news, 9:30 AM New York and 2 PM New York PM as possible session/news references. They are not demonstrated to be independent or equally profitable opportunities; time-zone and DST assumptions need verification.",
+ "A key testing distinction is to replay an evaluation as a sequence of account states and firm-specific drawdown transitions, not simply reuse a live-account equity curve. His historical 50K illustration targets 53K before a trailing floor, and simplifies the path to one trade per day; exact provider rules must be checked.",
+ "For an illustrative $100 evaluation with 1/3 pass probability, expected evaluation fees per funded account are $300 before activation, renewals, resets and any funded losses. This is an acquisition-cost identity, not a payout or profit guarantee.",
+ "The public copying discussion recommends knowing pass rate, conditional payout chance and payout size, mentions a less-than-5% bankroll-ruin target and an approximate $10K bankroll shortcut. The private Module 17 course instead outlines staged provider expansion and selective copying; these are distinct versions, not a verified universal threshold.",
+ "The video describes a pre-news reference for some reversions while also saying news can fundamentally change fair price. This unresolved contextual tension needs chart/audio verification; do not treat every news spike as a fade signal.",
+ "Source: https://www.youtube.com/watch?v=3L8xdh3oPm4 (approx. 02:13–08:23 and 28:12–35:16). Original charts, audio, claimed payouts, fees and firm rules are not independently verified."
+ ],src:[]});
+ jjYTResearchMeta.push({title:"Public strategy walkthrough: stateful evaluation backtests and session gates",sources:[["3L8xdh3oPm4","02:13–08:23"],["3L8xdh3oPm4","28:12–35:16"]],status:"Native public captions; course version comparisons remain conditional; charts, payouts and provider mechanics unverified."});
+ jjYTVideoSources["3L8xdh3oPm4"]={title:"JJ Simon — Exact strategy public walkthrough (2026-03-28)",video:"https://www.youtube.com/watch?v=3L8xdh3oPm4",verified:"Native captions only; original video charts, reported payouts and provider terms unverified."};
+ renderNav();render();
+}
