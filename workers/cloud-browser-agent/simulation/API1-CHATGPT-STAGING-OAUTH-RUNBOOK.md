@@ -105,3 +105,15 @@ The output of \`run-oauth-staging-preflight.mjs\` is intentionally \`BLOCKED_PEN
 - https://developers.openai.com/api/docs/guides/secure-mcp-tunnels
 
 No deployment commands are included or executed by this runbook.
+
+
+## Synthetic OAuth JWT resource-server simulation (isolated CI only)
+
+This phase adds:
+- \`simulation/mock-oauth-jwt.mjs\`: fixed-algorithm Ed25519 ("EdDSA", "at+jwt") JWT signature verifier against an injected **test public JWK**. Enforces exact synthetic issuer, singular resource audience, allowlisted subject, \`iat\`, \`nbf\`, \`exp\`, maximum token lifetime and exact \`browser:wikipedia.read\` scope.
+- \`simulation/mock-oauth-mcp-gateway.mjs\`: localhost-only **mock** OAuth resource-server boundary. Serves simulated RFC 9728 metadata and a \`WWW-Authenticate: Bearer\` challenge for unauthorized MCP requests. On unauthorized \`tools/call\`, emits an MCP \`isError\` result containing \`_meta["mcp/www_authenticate"]\`, with distinct \`invalid_token\` and \`insufficient_scope\` codes.
+- \`test/mock-oauth-mcp-gateway.test.mjs\`: CI-generated ephemeral Ed25519 key pair (private key never written). Tests valid token, incorrect issuer/audience/subject, expired/not-yet-valid tokens, scope mismatch, wrong signature/algorithm/kid, malformed JWT and invalid requests. Also proves authorized mock calls reach an isolated Chromium fixture, while rejected calls do not start Chromium.
+
+**Critical:** This is a simulation of the *resource server's* token verification and challenge contract, not a working OAuth 2.1 authorization server. No code-exchange or PKCE session is performed, no tokens are issued to a real browser or ChatGPT client, and no real JWKS fetched. Do not accept mock tokens in staging/production. A future live implementation must use a maintained OAuth/JWT verifier, real audience-specific issuer metadata, trusted JWKS rotation or introspection, revocation, and identity policy. The protected resource metadata in local tests references intentionally nonexistent \`.example.invalid\` addresses, not a deployed HTTPS server.
+
+After adding this mock, **the release remains blocked** until the separate staging and security checks above are approved.
