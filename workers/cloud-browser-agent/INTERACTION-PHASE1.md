@@ -56,3 +56,8 @@ Added `test/d1-approval-ledger-contract.test.mjs` to exercise the D1-shaped `pre
 ## Disposable D1 acceptance preparation
 
 Added `simulation/disposable-d1-acceptance.mjs` and its tests. The contract requires an explicitly supplied disposable D1-compatible binding and has no Wrangler command, network connection, remote fallback, production binding or browser execution path. It verifies schema setup, a single grant consumption and audit readback, and duplicate-grant rejection. Current CI exercises this contract against a fake D1-shaped binding only; **no actual Cloudflare D1 test database was created or tested**. A real local D1 test should be separately reviewed and run with an isolated ephemeral database and no `--remote`, account credentials or production bindings. Never use production D1 for acceptance tests.
+
+
+## Local disposable D1-shaped integration (2026-11-23)
+
+`simulation/local-d1-sqlite-binding.mjs` implements a restricted subset of the D1 `prepare/bind/first`, `batch`, and `exec` API using Node 22 SQLite on a temporary local file. CI tests execute the existing D1-shaped acceptance contract against an actual local SQLite database, verify replay rejection across independent connections and reopen, and reject unrelated SQL. This is **not the Cloudflare D1 runtime**, does not exercise remote or local Wrangler D1, and cannot prove Cloudflare D1 semantics. It is intentionally disconnected from production, real websites and all Cloudflare credentials. Further acceptance requires a separate disposable D1 instance and explicit non-production binding review.
