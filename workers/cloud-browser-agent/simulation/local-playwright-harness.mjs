@@ -28,7 +28,7 @@ export async function createLocalPlaywrightHarness(chromium) {
    if(token.kind!==validated.kind || token.testId!==validated.testId ||
       token.value!==(validated.kind==="fill"?validated.value:null))throw new Error("Approval does not match action");
    if(page.url()!=="about:blank")throw new Error("Fixture origin changed");
-   await prepareBrowserInteraction(page,validated,{approved:true,scope:"isolated-browser-test"});
+   await prepareBrowserInteraction(page,proposal,{approved:true,scope:"isolated-browser-test"});
    const locator=page.getByTestId(validated.testId);
    if(validated.kind==="click")await locator.click({timeout:1000});
    else await locator.fill(validated.value,{timeout:1000});
