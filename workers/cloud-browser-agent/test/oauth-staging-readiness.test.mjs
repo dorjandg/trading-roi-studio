@@ -70,7 +70,7 @@ test("no placeholder or production origin can pass staging release gate; no auto
   assert.equal(result.requiresHumanApproval,true);
   assert.equal(result.readyForDeployment,false);
  }
- const representative=assessStagingReleaseGate({...flags,stagingOrigin:"https://browser-stage.review-site.example.com"});
+ const representative=assessStagingReleaseGate({...flags,stagingOrigin:"https://browser-stage.review-site.partner-domain.net"});
  assert.equal(representative.configurationCompleteForReview,true);
  assert.equal(representative.readyForDeployment,false);
  assert.equal(representative.requiresHumanApproval,true);
