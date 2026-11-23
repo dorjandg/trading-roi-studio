@@ -26,23 +26,24 @@ export async function runPublicSearchPrototype(chromium,{query="James Webb Space
   const page=await context.newPage();
   page.setDefaultTimeout(timeoutMs);
   page.on("dialog",dialog=>dialog.dismiss().catch(()=>{}));
-  const record=async label=>{
+  const record=async (label,expectedPath)=>{
    const url=page.url();
-   approved(url);
+   const parsed=approved(url);
+   if(expectedPath&&parsed.pathname!==expectedPath)throw Error("Unexpected navigation or access challenge: "+label);
    const png=await page.screenshot({type:"png",animations:"disabled",timeout:timeoutMs});
    if(png.length>2_000_000)throw Error("Screenshot too large");
    screenshots.push({label,url,pngBase64:png.toString("base64"),mimeType:"image/png"});
    steps.push({label,url,title:await page.title()});
   };
   await page.goto("https://www.google.com/",{waitUntil:"domcontentloaded",timeout:timeoutMs});
-  await record("Google home");
+  await record("Google home","/");
   // Explicitly construct an encoded public GET search; never submit POST forms.
   await page.goto("https://www.google.com/search?q="+encodeURIComponent(query),{waitUntil:"domcontentloaded",timeout:timeoutMs});
-  await record("Google results");
+  await record("Google results","/search");
   await page.goto("https://www.google.com/search?udm=2&q="+encodeURIComponent(query),{waitUntil:"domcontentloaded",timeout:timeoutMs});
-  await record("Google Images");
+  await record("Google Images","/search");
   await page.goto("https://science.nasa.gov/mission/webb/",{waitUntil:"domcontentloaded",timeout:timeoutMs});
-  await record("Official NASA result");
+  await record("Official NASA result","/mission/webb/");
   return {steps,screenshots,readOnly:true,productionWritesAllowed:false};
  }finally{if(context)await context.close().catch(()=>{});await browser.close().catch(()=>{});}
 }
