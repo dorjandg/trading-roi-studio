@@ -5,7 +5,7 @@ import {prepareBrowserInteraction} from "./browser-interaction-adapter.mjs";
 import {createHash,randomUUID} from "node:crypto";
 const approvals=new WeakMap();
 const digest=proposal=>createHash("sha256").update(JSON.stringify(proposal)).digest("hex");
-const fixtureHTML=`<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"></head><body><button type="button" data-testid="open-menu">Menu</button><button type="button" data-testid="navigate-test">Navigation test</button><button type="button" data-testid="dialog-test">Dialog test</button><input type="search" data-testid="search-input"><output id="status">closed</output></body></html>`;
+const fixtureHTML=`<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"></head><body><button type="button" data-testid="open-menu">Menu</button><button type="button" data-testid="navigate-test">Navigation test</button><button type="button" data-testid="dialog-test">Dialog test</button><button type="button" data-testid="delayed-test">Delayed test</button><input type="search" data-testid="search-input"><output id="status">closed</output></body></html>`;
 export async function createLocalPlaywrightHarness(chromium) {
  if(!chromium || typeof chromium.launch!=="function")throw new Error("Chromium required");
  const browser=await chromium.launch({headless:true});
@@ -26,6 +26,7 @@ export async function createLocalPlaywrightHarness(chromium) {
  await page.setContent(fixtureHTML,{waitUntil:"domcontentloaded"});
  await page.getByTestId("navigate-test").evaluate(el=>el.addEventListener("click",()=>{location.href="https://example.com/forbidden"}));
  await page.getByTestId("dialog-test").evaluate(el=>el.addEventListener("click",()=>alert("blocked")));
+ await page.getByTestId("delayed-test").evaluate(el=>el.addEventListener("click",()=>setTimeout(()=>location.href="https://example.com/late",150)));
  let closed=false;
  let closing=null;
  let activeAction=null;
