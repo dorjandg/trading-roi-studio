@@ -12,7 +12,7 @@ export async function runDisposableD1Acceptance(db){
  if(!db||typeof db.prepare!=="function"||typeof db.batch!=="function"||
     typeof db.exec!=="function")throw Error("Disposable D1-compatible binding required");
  // Caller must provide a newly created disposable local database. No remote fallback.
- await db.exec(D1_APPROVAL_LEDGER_SCHEMA);
+ await db.exec(D1_APPROVAL_LEDGER_SCHEMA.replace(/\s*\n\s*/g,' '));
  const ledger=createD1ApprovalLedger(db);
  const receipt=await ledger.reserveAndAudit(testEvent);
  if(receipt.executionAllowed!==false||receipt.productionWritesAllowed!==false)throw Error("Unsafe acceptance receipt");
