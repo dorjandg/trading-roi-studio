@@ -51,3 +51,8 @@ Source-reviewed production `src/handler.mjs` and `src/mcp.mjs`: the HTTP and MCP
 ## D1 API contract review — offline follow-up (2026-11-23)
 
 Added `test/d1-approval-ledger-contract.test.mjs` to exercise the D1-shaped `prepare().bind()`, `batch()` and `first()` contract, including ambiguous commit acknowledgement, failed audit reads, and stored-field mismatches. The schema uses one `grant_id` primary-key row for both consumption and audit to avoid cross-table partial success. The tests run only against a fake binding; they are **not evidence of actual D1 compatibility or durability**. A future isolated real-D1 acceptance run must verify D1's batch rollback/atomicity, primary-key constraint errors, cross-request concurrent insert behavior, read-after-write consistency, and outage/retry semantics using a disposable database and no production bindings. Do not interpret a green local test as permission to enable website interactions.
+
+
+## Disposable D1 acceptance preparation
+
+Added `simulation/disposable-d1-acceptance.mjs` and its tests. The contract requires an explicitly supplied disposable D1-compatible binding and has no Wrangler command, network connection, remote fallback, production binding or browser execution path. It verifies schema setup, a single grant consumption and audit readback, and duplicate-grant rejection. Current CI exercises this contract against a fake D1-shaped binding only; **no actual Cloudflare D1 test database was created or tested**. A real local D1 test should be separately reviewed and run with an isolated ephemeral database and no `--remote`, account credentials or production bindings. Never use production D1 for acceptance tests.
