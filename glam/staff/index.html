@@ -139,7 +139,7 @@ async function reorderCloudPhoto(from,to,productId){
 function drawCloudGallery(){
  const form=document.getElementById('productForm'),productId=form.elements.id.value;
  const item=products.find(p=>p.id===productId);
- const images=Array.isArray(item?.images)?item.images:[];
+ const images=Array.isArray(item?.images)&&item.images.length?item.images:(item?.image_url?[item.image_url]:[]);
  const target=document.getElementById('glamPhotoGallery');target.replaceChildren();
  target.setAttribute('aria-label','Product photos. Drag to reorder, or use the move buttons.');
  images.forEach((url,i)=>{
@@ -274,7 +274,7 @@ async function moveImage(from,to){
 }
 function refreshImages(){
  const p=currentProduct();
- images=Array.isArray(p?.images)&&p.images.length?[...p.images]:Array.from(input.files||[]).filter(f=>f.type.startsWith('image/')).slice(0,12).map(URL.createObjectURL);
+ images=Array.isArray(p?.images)&&p.images.length?[...p.images]:(p?.image_url?[p.image_url]:Array.from(input.files||[]).filter(f=>f.type.startsWith('image/')).slice(0,12).map(URL.createObjectURL));
  thumbs.replaceChildren();dots.replaceChildren();
  images.forEach((url,i)=>{
   const tile=document.createElement('div');tile.dataset.index=String(i);tile.draggable=true;tile.style.cssText='position:relative;flex:0 0 92px;cursor:grab;touch-action:none';
