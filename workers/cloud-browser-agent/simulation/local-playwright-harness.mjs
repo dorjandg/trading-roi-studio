@@ -31,10 +31,6 @@ export async function createLocalPlaywrightHarness(chromium) {
  return Object.freeze({
   approve(proposal){
    if(closed || closing)throw new Error("Harness closed");
-   if(!options || Object.getPrototypeOf(options)!==Object.prototype || Object.keys(options).some(k=>k!=="signal"))throw new Error("Invalid action options");
-   const signal=options.signal;
-   if(signal!==undefined && (!(signal instanceof AbortSignal)))throw new Error("Invalid cancellation signal");
-   if(signal?.aborted)throw new Error("Fixture action cancelled");
    const validated=validateInteractionProposal(proposal);
    const token=Object.freeze({kind:validated.kind,testId:validated.testId,value:validated.kind==="fill"?validated.value:null});
    approvals.set(token,{sessionId});
@@ -45,6 +41,10 @@ export async function createLocalPlaywrightHarness(chromium) {
    if(busy)throw new Error("Concurrent fixture action rejected");
    busy=true;
    try {
+   if(!options || Object.getPrototypeOf(options)!==Object.prototype || Object.keys(options).some(k=>k!=="signal"))throw new Error("Invalid action options");
+   const signal=options.signal;
+   if(signal!==undefined && (!(signal instanceof AbortSignal)))throw new Error("Invalid cancellation signal");
+   if(signal?.aborted)throw new Error("Fixture action cancelled");
    const validated=validateInteractionProposal(proposal);
    const grant=token && approvals.get(token);
    if(!grant || grant.sessionId!==sessionId)throw new Error("One-time approval required");
