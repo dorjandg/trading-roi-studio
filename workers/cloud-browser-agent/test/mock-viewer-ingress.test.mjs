@@ -1,0 +1,53 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {chromium} from "playwright";
+import {createPrivateBrowserGateway} from "../simulation/private-browser-gateway.mjs";
+import {createReadOnlyViewerRelay} from "../simulation/read-only-viewer-relay.mjs";
+import {createMockViewerIngress} from "../simulation/mock-viewer-ingress.mjs";
+const fixture=route=>{
+ const u=new URL(route.request().url());
+ if(u.hostname!=="en.wikipedia.org"||route.request().method()!=="GET")return route.abort();
+ return route.fulfill({status:200,contentType:"text/html",body:"<title>Offline</title><h1>Disposable page</h1>"});
+};
+test("mock authenticated viewer UI is session-bound, read-only, CSRF protected and expires",async()=>{
+ let time=100000;
+ const gateway=await createPrivateBrowserGateway(chromium,{fixture,timeoutMs:10000});
+ const relay=await createReadOnlyViewerRelay(gateway);
+ const ingress=await createMockViewerIngress(relay,{ttlMs:2000,now:()=>time});
+ try{
+  const base=ingress.url;
+  assert.equal((await fetch(base+"/")).status,401);
+  assert.equal((await fetch(base+"/api/frame")).status,401);
+  assert.equal((await fetch(base+"/mock-login",{method:"POST",headers:{"x-mock-bootstrap":"wrong"}})).status,401);
+  const login=await fetch(base+"/mock-login",{method:"POST",headers:{"x-mock-bootstrap":ingress.mockBootstrap}});
+  assert.equal(login.status,200);
+  const set=login.headers.getSetCookie();
+  const cookie=set.map(x=>x.split(";")[0]).join("; ");
+  assert.ok(set.some(x=>x.includes("HttpOnly")));
+  assert.ok(set.every(x=>x.includes("SameSite=Strict")));
+  const csrf=/api1_csrf=([^;]+)/.exec(cookie)?.[1];
+  const request=(path,options={})=>fetch(base+path,{...options,headers:{cookie,...options.headers}});
+  const html=await(await request("/")).text();
+  assert.match(html,/Private browser viewer/);
+  assert.match(html,/viewer.js/);
+  assert.doesNotMatch(html,new RegExp(ingress.mockBootstrap));
+  const js=await(await request("/viewer.js")).text();
+  assert.match(js,/api\/frame/);
+  const state=await(await request("/api/state")).json();
+  assert.equal(state.sequence,1);
+  const png=Buffer.from(await(await request("/api/frame")).arrayBuffer());
+  assert.equal(png.subarray(0,8).toString("hex"),"89504e470d0a1a0a");
+  assert.equal((await request("/api/links")).status,200);
+  assert.equal((await request("/api/command",{method:"POST",headers:{"content-type":"application/json"},body:'{"type":"back"}'})).status,404);
+  assert.equal((await request("/logout",{method:"POST"})).status,403);
+  assert.equal((await request("/api/state",{headers:{origin:"https://attacker.example"}})).status,403);
+  time+=2001;
+  assert.equal((await request("/api/state")).status,401);
+  const again=await fetch(base+"/mock-login",{method:"POST",headers:{"x-mock-bootstrap":ingress.mockBootstrap}});
+  const newCookie=again.headers.getSetCookie().map(x=>x.split(";")[0]).join("; ");
+  const newCsrf=/api1_csrf=([^;]+)/.exec(newCookie)?.[1];
+  const logout=await fetch(base+"/logout",{method:"POST",headers:{cookie:newCookie,"x-csrf-token":newCsrf}});
+  assert.equal(logout.status,200);
+  assert.equal((await fetch(base+"/api/state",{headers:{cookie:newCookie}})).status,401);
+ }finally{await ingress.close();await relay.close();await gateway.close();}
+});
