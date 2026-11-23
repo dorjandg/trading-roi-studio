@@ -1,0 +1,42 @@
+name: GLAM catalog release checks
+on:
+  push:
+    branches: [glam-production-catalog-integration]
+  pull_request:
+    paths:
+      - 'glam/staff/**'
+      - 'glam/collections/**'
+      - 'functions/api/staff/**'
+      - 'functions/api/product-image/**'
+      - '.github/workflows/glam-catalog-check.yml'
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate all inline staff and public collection scripts
+        run: |
+          node <<'NODE'
+          const fs=require('node:fs');
+          const vm=require('node:vm');
+          for(const file of ['glam/staff/index.html','glam/collections/index.html']){
+            const html=fs.readFileSync(file,'utf8');
+            const scripts=[...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)]
+              .filter(m=>!m[1].includes('src=')&&!m[1].includes('application/ld+json'));
+            for(let i=0;i<scripts.length;i++){
+              const attrs=scripts[i][1],code=scripts[i][2];
+              if(!code.trim()||/type=["'](?:application\/json|importmap)["']/.test(attrs))continue;
+              try{new vm.Script(code,{filename:file+':inline-'+i})}
+              catch(e){console.error(e);process.exitCode=1}
+            }
+            console.log(file+': '+scripts.length+' inline scripts checked');
+          }
+          NODE
+      - name: Validate Cloudflare Pages Function module syntax
+        run: |
+          for f in functions/api/staff/*.js functions/api/product-image/*.js; do
+            node --check "$f" || exit 1
+          done
