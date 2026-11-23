@@ -160,12 +160,16 @@ export async function createIsolatedBrowserMcpServer(chromium,{routeFixture,time
     result.thirdPartyAutomationUsed!==false||!Array.isArray(result.steps)||
     result.steps.map(s=>s.action).join(",")!=="navigate,search,click"||
     !Array.isArray(result.screenshots)||result.screenshots.length!==3||
-    !result.extracted?.heading||!Array.isArray(result.extracted.paragraphs)||!result.extracted.paragraphs.length)
+    !result.extracted?.heading||!Array.isArray(result.extracted.paragraphs)||!result.extracted.paragraphs.length||
+    result.navigationProvenance?.searchPage?.url!==result.steps[1]?.url||
+    result.navigationProvenance?.clickedArticle?.url!==result.steps[2]?.url||
+    !["related-article","search-result"].includes(result.navigationProvenance?.clickedArticle?.role))
     throw Error("Invalid upstream evidence");
    for(const screenshot of result.screenshots)assertPng(screenshot.base64);
    const summary={
     task:result.task,status:result.status,source:result.source,website:result.website,
     query:result.query,steps:result.steps,clickedLink:result.clickedLink,
+    navigationProvenance:result.navigationProvenance,
     extracted:result.extracted,screenshotCount:result.screenshots.length,
     readOnly:true,productionWritesAllowed:false,thirdPartyAutomationUsed:false
    };
