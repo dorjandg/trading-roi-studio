@@ -33,6 +33,7 @@ test("real Chromium fills a GET search field, clicks a Wikipedia result, extract
  assert.equal(result.thirdPartyAutomationUsed,false);
  assert.equal(result.screenshots.length,3);
  for(const shot of result.screenshots)assert.equal(png(shot.base64),"89504e470d0a1a0a");
+ assert.notEqual(result.screenshots[1].base64,result.screenshots[2].base64,"Two distinct articles must have distinct visual frames");
 });
 test("isolated API requires token, rejects arbitrary tasks, and returns complete structured live-browser result",async()=>{
  const api=await createRealPublicAutomationApi(chromium,{routeFixture:fixture,timeoutMs:12000});
