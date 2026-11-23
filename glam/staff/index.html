@@ -184,7 +184,27 @@ function wire(type,formId){const form=document.getElementById(formId);form.addEv
 wire('categories','categoryForm');wire('brands','brandForm');wire('products','productForm');
 loadOnlineCatalog();
 function remove(type,formId){const form=document.getElementById(formId),target=form.elements.id.value;if(!target)return;const array=({categories,brands,products})[type];const item=array.find(x=>x.id===target);if(type==='products'&&item?._cloud){status.textContent='Cloud products cannot be deleted from the browser. Cloud deletion is not enabled yet.';return}if(item?.builtin){status.textContent='Built-in categories cannot be deleted here.';return}if(type==='categories'&&categories.some(c=>c.parent===target)){status.textContent='Move its subcategories before deleting.';return}if(!confirm('Delete this local draft?'))return;const index=array.findIndex(x=>x.id===target);if(index>=0)array.splice(index,1);persist(type);clear(formId);({categories:renderCategories,brands:renderBrands,products:renderProducts})[type]()}
-document.getElementById('newCategory').onclick=()=>clear('categoryForm');document.getElementById('newBrand').onclick=()=>clear('brandForm');document.getElementById('newProduct').onclick=()=>clear('productForm');document.getElementById('deleteCategory').onclick=()=>remove('categories','categoryForm');document.getElementById('deleteBrand').onclick=()=>remove('brands','brandForm');document.getElementById('deleteProduct').onclick=()=>remove('products','productForm');
+document.getElementById('newCategory').onclick=()=>clear('categoryForm');document.getElementById('newBrand').onclick=()=>clear('brandForm');document.getElementById('newProduct').onclick=()=>clear('productForm');document.getElementById('deleteCategory').onclick=()=>remove('categories','categoryForm');document.getElementById('deleteBrand').onclick=()=>remove('brands','brandForm');document.getElementById('deleteProduct').onclick=async()=>{
+ const form=document.getElementById('productForm'),productId=form.elements.id.value;
+ if(!productId)return;
+ clearTimeout(productSaveTimer);
+ await productSaveQueue;
+ const p=products.find(x=>x.id===productId);
+ if(!p)return;
+ if(!p._cloud){
+  const index=products.findIndex(x=>x.id===productId);
+  if(index>=0)products.splice(index,1);
+  persist('products');clear('productForm');renderProducts();return;
+ }
+ const button=document.getElementById('deleteProduct');button.disabled=true;
+ try{
+  const response=await fetch('/api/staff/delete',{method:'DELETE',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({id:productId})});
+  const result=await response.json();if(!response.ok||!result.ok)throw Error(result.error||'Deletion failed');
+  const index=products.findIndex(x=>x.id===productId);if(index>=0)products.splice(index,1);
+  clear('productForm');renderProducts();status.textContent='Product deleted from GLAM cloud.';
+ }catch(error){status.textContent='Product was NOT deleted: '+error.message}
+ finally{button.disabled=false}
+};
 document.getElementById('brandSearch').oninput=renderBrands;document.getElementById('productSearch').oninput=renderProducts;document.getElementById('productFilter').onchange=renderProducts;
 function preview(inputId,targetId){const el=document.getElementById(inputId),target=document.getElementById(targetId);let urls=[];el.onchange=()=>{urls.forEach(u=>URL.revokeObjectURL(u));urls=[];target.replaceChildren();for(const file of Array.from(el.files||[]).slice(0,12)){if(!file.type.startsWith('image/'))continue;const url=URL.createObjectURL(file);urls.push(url);const img=document.createElement('img');img.src=url;img.alt=file.name;target.append(img)}status.textContent='Photo preview only — images are not uploaded or saved.'}}
 preview('categoryPhoto','categoryPreview');preview('brandPhoto','brandPreview');preview('productPhotos','productPreview');
