@@ -35,7 +35,7 @@ test("CI-only authenticated viewer switches persistent Chromium tabs through its
   assert.equal((await(await fetch(ingress.url+"/api/state",{headers:{cookie:(await controller.cookies()).map(c=>c.name+"="+c.value).join("; ")}})).json()).activeTab,"youtube");
   await page.getByRole("button",{name:"github",exact:true}).click();
   await page.waitForFunction(()=>document.querySelector("#url")?.textContent?.includes("github.example.invalid"));
-  assert.equal(await page.locator("#frame").evaluate(img=>img.naturalWidth>0),true);
+  await page.waitForFunction(()=>{const img=document.querySelector("#frame");return img?.complete&&img.naturalWidth>0;});
   const viewer=await login(ingress.mockBootstrap);
   const readOnlyPage=await viewer.newPage();
   await readOnlyPage.goto(ingress.url+"/");
