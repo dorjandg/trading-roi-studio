@@ -43,6 +43,29 @@ const id=()=> 'draft-'+Date.now()+'-'+Math.random().toString(36).slice(2,7);
 const seedCategories=()=>rootCategories.flatMap(([name,children])=>[{id:name.toLowerCase(),name,parent:'',description:'',builtin:true},...children.map(child=>({id:name.toLowerCase()+'/'+child.toLowerCase().replace(/[^a-z0-9]+/g,'-'),name:child,parent:name.toLowerCase(),description:'',builtin:true}))]);
 let categories=read(keys.categories)||seedCategories(),brands=read(keys.brands)||[],products=read(keys.products)||[];
 const status=document.getElementById('status');
+// Read-only public catalog import. Never overwrite browser drafts or write imported records
+// to D1 merely because the editor was opened. Server-side editing requires authenticated APIs.
+async function loadOnlineCatalog(){
+ const banner=document.createElement('p');banner.id='glamOnlineCatalogNotice';banner.className='hint';
+ document.getElementById('productList').before(banner);
+ banner.textContent='Loading products from the public GLAM catalog…';
+ try{
+  const response=await fetch('/api/catalog',{cache:'no-store',credentials:'same-origin'});
+  if(!response.ok)throw Error('Catalog API returned '+response.status);
+  const payload=await response.json();
+  if(!Array.isArray(payload.products))throw Error('Unexpected catalog response');
+  const localIds=new Set(products.map(p=>String(p.id)));
+  let imported=0;
+  for(const record of payload.products){
+   if(!record||typeof record.id!=='string'||!record.id||localIds.has(record.id))continue;
+   products.push({...record,catalog_status:record.catalog_status||'published',_online_readonly:true});
+   localIds.add(record.id);imported++;
+  }
+  renderProducts();
+  banner.textContent='Public catalog loaded: '+payload.products.length+' online products; '+imported+' added to this view. Online products are read-only until secure cloud editing is enabled.';
+ }catch(e){banner.textContent='Could not load online products: '+e.message+'. Local drafts remain available.'}
+}
+
 function persist(type){try{localStorage.setItem(keys[type],JSON.stringify(({categories,brands,products})[type]));status.textContent='Saved on this browser only — not published.';return true}catch(e){status.textContent='Could not save: browser storage may be full.';return false}}
 function show(page){document.querySelectorAll('[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===page));['categories','brands','products'].forEach(p=>document.getElementById(p).classList.toggle('hidden',p!==page));document.getElementById('pageTitle').textContent=page[0].toUpperCase()+page.slice(1);document.getElementById('pageSubtitle').textContent=({categories:'Organize the boutique collections',brands:'Manage brand stories and product families',products:'Create products with sizes, prices and photographs'})[page];status.textContent='';if(page==='products')renderProducts();if(page==='brands')renderBrands();if(page==='categories')renderCategories();history.replaceState(null,'','#'+page)}
 document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>show(b.dataset.page));
@@ -56,6 +79,7 @@ function clear(formId){const f=document.getElementById(formId);f.reset();f.eleme
 function formData(form){const out={};new FormData(form).forEach((v,k)=>{if(typeof v==='string')out[k]=v});out.visible=!!form.elements.visible?.checked;out.id=out.id||id();return out}
 function wire(type,formId){const form=document.getElementById(formId);form.addEventListener('submit',e=>{e.preventDefault();if(!form.reportValidity())return;const data=formData(form);if(type==='products'){data.catalog_status=data.catalog_status||'unpublished';if(data.catalog_status==='reference')data.reference_only=true;else data.reference_only=false;}if(type==='categories'&&data.parent===data.id){status.textContent='A category cannot be its own parent.';return}const array=({categories,brands,products})[type];const existing=array.findIndex(x=>x.id===data.id);if(existing>=0)array[existing]={...array[existing],...data};else array.unshift(data);if(persist(type)){form.elements.id.value=data.id;({categories:renderCategories,brands:renderBrands,products:renderProducts})[type]();}})}
 wire('categories','categoryForm');wire('brands','brandForm');wire('products','productForm');
+loadOnlineCatalog();
 function remove(type,formId){const form=document.getElementById(formId),target=form.elements.id.value;if(!target)return;const array=({categories,brands,products})[type];const item=array.find(x=>x.id===target);if(item?.builtin){status.textContent='Built-in categories cannot be deleted here.';return}if(type==='categories'&&categories.some(c=>c.parent===target)){status.textContent='Move its subcategories before deleting.';return}if(!confirm('Delete this local draft?'))return;const index=array.findIndex(x=>x.id===target);if(index>=0)array.splice(index,1);persist(type);clear(formId);({categories:renderCategories,brands:renderBrands,products:renderProducts})[type]()}
 document.getElementById('newCategory').onclick=()=>clear('categoryForm');document.getElementById('newBrand').onclick=()=>clear('brandForm');document.getElementById('newProduct').onclick=()=>clear('productForm');document.getElementById('deleteCategory').onclick=()=>remove('categories','categoryForm');document.getElementById('deleteBrand').onclick=()=>remove('brands','brandForm');document.getElementById('deleteProduct').onclick=()=>remove('products','productForm');
 document.getElementById('brandSearch').oninput=renderBrands;document.getElementById('productSearch').oninput=renderProducts;document.getElementById('productFilter').onchange=renderProducts;
