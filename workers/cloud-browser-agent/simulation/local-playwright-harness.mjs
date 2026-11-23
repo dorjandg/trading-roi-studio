@@ -44,6 +44,7 @@ export async function createLocalPlaywrightHarness(chromium) {
    busy=true;
    let finishAction;
    activeAction=new Promise(resolve=>{finishAction=resolve;});
+   let dispatched=false;
    try {
    if(!options || Object.getPrototypeOf(options)!==Object.prototype || Object.keys(options).some(k=>k!=="signal"))throw new Error("Invalid action options");
    const signal=options.signal;
@@ -63,6 +64,7 @@ export async function createLocalPlaywrightHarness(chromium) {
    await prepareBrowserInteraction(page,proposal,{approved:true,scope:"isolated-browser-test"});
    if(signal?.aborted || closed || closing)throw new Error("Fixture action cancelled");
    const locator=page.getByTestId(validated.testId);
+   dispatched=true;
    if(validated.kind==="click")await locator.click({timeout:1000});
    else await locator.fill(validated.value,{timeout:1000});
    await page.waitForTimeout(100);
@@ -71,7 +73,7 @@ export async function createLocalPlaywrightHarness(chromium) {
    const receipt=Object.freeze({id:randomUUID(),sessionId,sequence:receipts.length+1,kind:validated.kind,testId:validated.testId,proposalDigest:digest(validated),executedInDisposableFixture:true,productionWritesAllowed:false});
    receipts.push(receipt);
    return receipt;
-   } catch(error) {poisoned=true;throw error;} finally {busy=false;finishAction();activeAction=null;}
+   } catch(error) {if(dispatched)poisoned=true;throw error;} finally {busy=false;finishAction();activeAction=null;}
   },
   auditReceipts(){return Object.freeze([...receipts]);},
   async read(testId) {
