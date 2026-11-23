@@ -265,3 +265,70 @@ test("P2-A MCP bounded responses reject oversized screenshot evidence without ex
   assert.equal(JSON.stringify(body).includes("89504e470d0a1a0a"),false);
  }finally{await server.close();}
 });
+
+
+test("P2-C cleans article text through modern MCP without changing tool or PNG contract",{timeout:90000},async()=>{
+ const proseFixture=route=>{
+  const u=new URL(route.request().url());
+  if(u.pathname==="/wiki/James_Webb_Space_Telescope")return route.fulfill({
+   status:200,contentType:"text/html",
+   body:'<!doctype html><h1>James Webb Space Telescope</h1><main id="mw-content-text">'+
+    '<aside><p>Unrelated sidebar warning should never appear in extracted article paragraphs.</p></aside>'+
+    '<p>The James Webb Space Telescope is an infrared space telescope observing distant galaxies. <sup class="reference">[1]</sup>'+
+    '<style>.mw-parser-output cite.citation{font-style:inherit}</style></p>'+
+    '<p>A second distinct article paragraph describes its instruments and observations.</p></main>'
+  });
+  return fixture(route);
+ };
+ const server=await createIsolatedBrowserMcpServer(chromium,{
+  routeFixture:proseFixture,timeoutMs:12000
+ });
+ try{
+  const response=await modernRpc(server,"tools/call",{
+   name:"browser_automate_wikipedia_demo",arguments:{query:QUERY}
+  },150);
+  assert.equal(response.status,200);
+  const payload=await response.json();
+  assert.equal(payload.result?.resultType,"complete");
+  assert.equal(payload.result?.isError,false);
+  assert.deepEqual(payload.result.content.map(item=>item.type),[
+   "text","image","image","image"
+  ]);
+  assert.equal(payload.result.structuredContent.extracted.paragraphs.length,2);
+  assert.match(payload.result.structuredContent.extracted.paragraphs[0],/\[1\]/);
+  assert.doesNotMatch(JSON.stringify(payload.result.structuredContent.extracted),
+   /mw-parser-output|font-style|Unrelated sidebar/);
+  assert.equal(payload.result.structuredContent.navigationProvenance.clickedArticle.url,
+   payload.result.structuredContent.steps[2].url);
+  assert.deepEqual(JSON.parse(payload.result.content[0].text),
+   payload.result.structuredContent);
+  assert.equal(payload.result.structuredContent.productionWritesAllowed,false);
+ }finally{await server.close();}
+});
+
+test("P2-C oversized source prose becomes a sanitized MCP error without leaking page text",{timeout:90000},async()=>{
+ const secretMarker="SHOULD_NOT_BE_RETURNED_IN_MCP_RESULT";
+ const hugeFixture=route=>{
+  const u=new URL(route.request().url());
+  if(u.pathname==="/wiki/James_Webb_Space_Telescope")return route.fulfill({
+   status:200,contentType:"text/html",
+   body:'<!doctype html><h1>James Webb Space Telescope</h1><main id="mw-content-text"><p>'+
+    secretMarker+"X".repeat(8000)+'</p></main>'
+  });
+  return fixture(route);
+ };
+ const server=await createIsolatedBrowserMcpServer(chromium,{
+  routeFixture:hugeFixture,timeoutMs:12000
+ });
+ try{
+  const response=await modernRpc(server,"tools/call",{
+   name:"browser_automate_wikipedia_demo",arguments:{query:QUERY}
+  },151);
+  assert.equal(response.status,200);
+  const body=await response.json();
+  assert.equal(body.error?.code,-32000);
+  assert.equal(body.error?.message,"Isolated public browser automation failed");
+  assert.equal(body.result,undefined);
+  assert.doesNotMatch(JSON.stringify(body),/SHOULD_NOT_BE_RETURNED_IN_MCP_RESULT/);
+ }finally{await server.close();}
+});
