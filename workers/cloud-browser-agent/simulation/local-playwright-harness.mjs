@@ -2,8 +2,10 @@
 // The harness owns its page; it accepts no URLs, existing pages, or network access.
 import {validateInteractionProposal} from "../src/interaction-policy.mjs";
 import {prepareBrowserInteraction} from "./browser-interaction-adapter.mjs";
+import {createHash,randomUUID} from "node:crypto";
 const approvals=new WeakSet();
-const fixtureHTML=`<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"></head><body><button type="button" data-testid="open-menu">Menu</button><input type="search" data-testid="search-input"><output id="status">closed</output></body></html>`;
+const digest=proposal=>createHash("sha256").update(JSON.stringify(proposal)).digest("hex");
+const fixtureHTML=`<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"></head><body><button type="button" data-testid="open-menu">Menu</button><button type="button" data-testid="navigate-test">Navigation test</button><input type="search" data-testid="search-input"><output id="status">closed</output></body></html>`;
 export function approveFixtureAction(proposal) {
  const validated=validateInteractionProposal(proposal);
  const token=Object.freeze({kind:validated.kind,testId:validated.testId,value:validated.kind==="fill"?validated.value:null});
@@ -14,10 +16,16 @@ export async function createLocalPlaywrightHarness(chromium) {
  if(!chromium || typeof chromium.launch!=="function")throw new Error("Chromium required");
  const browser=await chromium.launch({headless:true});
  const context=await browser.newContext({serviceWorkers:"block",acceptDownloads:false});
- await context.route("**/*",route=>route.abort());
+ await context.route("**/*",route=>{networkRequests++;return route.abort();});
  const page=await context.newPage();
+ const sessionId=randomUUID();
+ const receipts=[];
+ let navigationAttempted=false;
+ let networkRequests=0;
+ page.on("framenavigated",frame=>{if(frame===page.mainFrame()&&frame.url()!=="about:blank")navigationAttempted=true;});
  await page.goto("about:blank");
  await page.setContent(fixtureHTML,{waitUntil:"domcontentloaded"});
+ await page.getByTestId("navigate-test").evaluate(el=>el.addEventListener("click",()=>{location.href="https://example.com/forbidden"}));
  let closed=false;
  return Object.freeze({
   async perform(proposal,token) {
@@ -27,14 +35,17 @@ export async function createLocalPlaywrightHarness(chromium) {
    approvals.delete(token);
    if(token.kind!==validated.kind || token.testId!==validated.testId ||
       token.value!==(validated.kind==="fill"?validated.value:null))throw new Error("Approval does not match action");
-   if(page.url()!=="about:blank")throw new Error("Fixture origin changed");
+   if(page.url()!=="about:blank" || navigationAttempted)throw new Error("Fixture origin changed");
    await prepareBrowserInteraction(page,proposal,{approved:true,scope:"isolated-browser-test"});
    const locator=page.getByTestId(validated.testId);
    if(validated.kind==="click")await locator.click({timeout:1000});
    else await locator.fill(validated.value,{timeout:1000});
-   if(page.url()!=="about:blank")throw new Error("Fixture navigation forbidden");
-   return Object.freeze({executedInDisposableFixture:true,productionWritesAllowed:false,kind:validated.kind});
+   if(page.url()!=="about:blank" || navigationAttempted || networkRequests>0)throw new Error("Fixture navigation forbidden");
+   const receipt=Object.freeze({id:randomUUID(),sessionId,sequence:receipts.length+1,kind:validated.kind,testId:validated.testId,proposalDigest:digest(validated),executedInDisposableFixture:true,productionWritesAllowed:false});
+   receipts.push(receipt);
+   return receipt;
   },
+  auditReceipts(){return Object.freeze([...receipts]);},
   async read(testId) {
    if(closed)throw new Error("Harness closed");
    if(testId==="search-input")return page.getByTestId(testId).inputValue();
