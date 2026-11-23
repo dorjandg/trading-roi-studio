@@ -1,7 +1,7 @@
 name: GLAM catalog release checks
 on:
   push:
-    branches: [glam-production-catalog-integration]
+    branches: [main, glam-production-catalog-integration]
   pull_request:
     paths:
       - 'glam/staff/**'
@@ -40,3 +40,6 @@ jobs:
           for f in functions/api/staff/*.js functions/api/product-image/*.js; do
             node --check "$f" || exit 1
           done
+
+      - name: Test image upload validation and R2 persistence with mocked storage
+        run: node tests/glam-upload-api.mjs
