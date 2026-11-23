@@ -209,3 +209,54 @@ test("MCP 2026-07-28 refuses inconsistent metadata, headers, unsupported version
   assert.equal(launches,0);
  }finally{await server.close();}
 });
+
+
+test("P2-A malformed JSON, invalid ids, and mismatched modern routing refuse before browser launch",async()=>{
+ let launches=0;
+ const server=await createIsolatedBrowserMcpServer({launch(){
+  launches++;throw Error("Unapproved browser launch");
+ }});
+ try{
+  const headers={"content-type":"application/json","authorization":"Bearer "+server.accessToken};
+  const malformed=await fetch(server.url,{method:"POST",headers,body:"{invalid-json"});
+  assert.equal(malformed.status,400);
+  const negativeId=await send(server,rpc("tools/list",{},-1));
+  assert.equal(negativeId.status,400);
+  const callerData=await send(server,{...rpc("tools/list",{},5),admin:"enable"});
+  assert.equal(callerData.status,400);
+  const forgedMethod=await modernRpc(server,"server/discover",{},130,{
+   "mcp-method":"tools/call"
+  });
+  assert.equal(forgedMethod.status,400);
+  assert.equal((await forgedMethod.json()).error.code,-32020);
+  const wrongProtocol=await modernRpc(server,"tools/list",{},131,{
+   "mcp-protocol-version":"2025-06-18"
+  });
+  assert.equal(wrongProtocol.status,400);
+  assert.equal((await wrongProtocol.json()).error.code,-32020);
+  const readOnlyTool=await(await modernRpc(server,"tools/list",{},132)).json();
+  assert.deepEqual(readOnlyTool.result.tools.map(t=>t.name),[
+   "browser_automate_wikipedia_demo"
+  ]);
+  assert.equal(readOnlyTool.result.tools[0].annotations.readOnlyHint,true);
+  assert.equal(launches,0);
+ }finally{await server.close();}
+});
+
+test("P2-A MCP bounded responses reject oversized screenshot evidence without exposing payload",{timeout:90000},async()=>{
+ const server=await createIsolatedBrowserMcpServer(chromium,{
+  routeFixture:fixture,timeoutMs:12000,maxResponseBytes:1024
+ });
+ try{
+  const response=await modernRpc(server,"tools/call",{
+   name:"browser_automate_wikipedia_demo",arguments:{query:QUERY}
+  },140);
+  assert.equal(response.status,200);
+  const body=await response.json();
+  assert.equal(body.error.code,-32000);
+  assert.equal(body.error.message,"MCP image response exceeds ceiling");
+  assert.equal(body.result,undefined);
+  assert.equal(JSON.stringify(body).includes("data:image"),false);
+  assert.equal(JSON.stringify(body).includes("89504e470d0a1a0a"),false);
+ }finally{await server.close();}
+});
