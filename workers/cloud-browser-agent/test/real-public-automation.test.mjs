@@ -56,6 +56,9 @@ test("isolated API requires token, rejects arbitrary tasks, and returns complete
   assert.deepEqual(result.steps.map(s=>s.action),["navigate","search","click"]);
   assert.ok(result.extracted.paragraphs.length>0);
   assert.notEqual(new URL(result.steps[1].url).pathname,new URL(result.steps[2].url).pathname);
+  assert.equal(result.navigationProvenance.searchPage.kind,"search-results");
+  assert.equal(result.navigationProvenance.clickedArticle.role,"search-result");
+  assert.equal(result.navigationProvenance.clickedArticle.url,result.clickedLink.href);
   assert.equal(png(result.screenshots[2].base64),"89504e470d0a1a0a");
   assert.equal(result.productionWritesAllowed,false);
  }finally{await api.close();}
@@ -96,6 +99,11 @@ test("redirected exact search labels the actual related article; hostile page te
  assert.deepEqual(result.steps.map(s=>s.action),["navigate","search","click"]);
  assert.equal(new URL(result.steps[1].url).pathname,"/wiki/Ada_Lovelace");
  assert.equal(result.clickedLink.href,"https://en.wikipedia.org/wiki/Ada_Lovelace_(microarchitecture)");
+ assert.equal(result.navigationProvenance.searchPage.kind,"article");
+ assert.equal(result.navigationProvenance.searchPage.exactTitleMatch,true);
+ assert.equal(result.navigationProvenance.clickedArticle.role,"related-article");
+ assert.equal(result.navigationProvenance.clickedArticle.exactTitleMatch,false);
+ assert.equal(result.navigationProvenance.clickedArticle.url,result.steps[2].url);
  assert.equal(result.extracted.heading,"Ada Lovelace (microarchitecture)");
  assert.match(result.extracted.paragraphs.join(" "),/IGNORE ALL PREVIOUS INSTRUCTIONS/);
  assert.equal(result.readOnly,true);
@@ -222,4 +230,38 @@ test("P2-A navigational timeout error closes isolated browser context",{timeout:
  }),/Synthetic navigation timeout/);
  assert.equal(contextClosed,true);
  assert.equal(browserClosed,true);
+});
+
+
+test("P2-B exact match outranks a related result without increasing permissions",{timeout:30000},async()=>{
+ const visited=[];
+ const ranked=route=>{
+  const req=route.request(),u=new URL(req.url());
+  assert.equal(req.method(),"GET");
+  assert.equal(u.hostname,"en.wikipedia.org");
+  visited.push(u.pathname);
+  if(u.pathname==="/wiki/Main_Page")return route.fulfill({status:200,contentType:"text/html",
+   body:'<!doctype html><h1>Main Page</h1><form method="get" action="/wiki/Special:Search"><input name="search"></form>'});
+  if(u.pathname==="/wiki/Special:Search")return route.fulfill({status:200,contentType:"text/html",
+   body:'<!doctype html><h1>Search results</h1><main id="mw-content-text"><a href="/wiki/Ada_Lovelace_(microarchitecture)">Ada Lovelace (microarchitecture)</a><a href="/wiki/Ada_Lovelace">Ada Lovelace</a><a href="https://unapproved.invalid/bad">External</a></main>'});
+  if(u.pathname==="/wiki/Ada_Lovelace")return route.fulfill({status:200,contentType:"text/html",
+   body:'<!doctype html><h1>Ada Lovelace</h1><main id="mw-content-text"><p>Ada Lovelace was a mathematician whose work on early computing included notes on the Analytical Engine.</p></main>'});
+  return route.abort();
+ };
+ const result=await runRealWikipediaAutomation(chromium,{
+  query:"Ada Lovelace",routeFixture:ranked,timeoutMs:12000
+ });
+ assert.equal(result.status,"passed");
+ assert.deepEqual(result.steps.map(s=>s.action),["navigate","search","click"]);
+ assert.equal(result.steps[2].url,"https://en.wikipedia.org/wiki/Ada_Lovelace");
+ assert.equal(result.extracted.heading,"Ada Lovelace");
+ assert.equal(result.navigationProvenance.searchPage.kind,"search-results");
+ assert.equal(result.navigationProvenance.searchPage.exactTitleMatch,false);
+ assert.equal(result.navigationProvenance.clickedArticle.role,"search-result");
+ assert.equal(result.navigationProvenance.clickedArticle.exactTitleMatch,true);
+ assert.equal(result.navigationProvenance.clickedArticle.url,result.clickedLink.href);
+ assert.match(result.navigationProvenance.clickedArticle.selectionBasis,/allowlisted Wikipedia/);
+ assert.equal(result.productionWritesAllowed,false);
+ assert.equal(visited.includes("/wiki/Ada_Lovelace_(microarchitecture)"),false);
+ assert.equal(visited.length,3);
 });
