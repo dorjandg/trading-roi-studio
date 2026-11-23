@@ -2,6 +2,7 @@ import {timingSafeEqual} from "node:crypto";
 // TEST ONLY: isolated JSON-RPC MCP entrypoint, never imported by deployed src/mcp.mjs.
 // No HTTP listener, real URLs, Cloudflare bindings, persistent sessions, or credentials.
 import {simulateChatGptImageToolCall} from "./chatgpt-mcp-image-preview.mjs";
+const MAX_RESPONSE_BYTES=8_000_000;
 const tool={name:"synthetic_frame_preview",description:"Offline synthetic Chromium PNG frames only; no real websites or live browser.",inputSchema:{type:"object",additionalProperties:false,properties:{actions:{type:"array",maxItems:3,items:{oneOf:[{type:"object",additionalProperties:false,properties:{type:{const:"switch"},tab:{enum:["google","youtube","github","staging"]}},required:["type","tab"]},{type:"object",additionalProperties:false,properties:{type:{const:"navigate"},index:{type:"integer",minimum:0,maximum:2}},required:["type","index"]},{type:"object",additionalProperties:false,properties:{type:{const:"history"},delta:{enum:[-1,1]}},required:["type","delta"]}]}},maxFrames:{type:"integer",minimum:1,maximum:4}}}};
 export function createSyntheticImageMcpHandler(chromium,{secret}={}){
  if(typeof secret!=="string"||secret.length<32)throw Error("Test-only bearer secret required");
@@ -39,8 +40,11 @@ export function createSyntheticImageMcpHandler(chromium,{secret}={}){
   }
   try{
    const result=await simulateChatGptImageToolCall(chromium,{actions,maxFrames});
-   if(JSON.stringify(result).length>8_000_000)return error(id,-32000,"Image response too large");
-   return reply(id,result);
+   // Calculate UTF-8 response size before creating the final serialized RPC response.
+   // JSON string length is not a byte limit when metadata contains non-ASCII text.
+   const envelope=JSON.stringify({jsonrpc:"2.0",id,result});
+   if(Buffer.byteLength(envelope,"utf8")>MAX_RESPONSE_BYTES)return error(id,-32000,"Image response too large");
+   return new Response(envelope,{status:200,headers});
   }catch{return error(id,-32000,"Synthetic frame preview failed");}
  };
 }
