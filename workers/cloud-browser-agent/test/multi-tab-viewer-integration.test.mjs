@@ -19,7 +19,7 @@ test("offline four-tab Chromium integrates with authenticated viewer and scoped 
   };
   const viewer=await login(ingress.mockBootstrap),control=await login(ingress.mockControlBootstrap);
   assert.equal(viewer.role,"viewer");assert.equal(control.role,"controller");
-  const state=async cookie=viewer.cookies=>(await(await fetch(ingress.url+"/api/state",{headers:{cookie}})).json());
+  const state=async (cookie=viewer.cookies)=>(await(await fetch(ingress.url+"/api/state",{headers:{cookie}})).json());
   const cmd=async (auth,command,csrf=auth.csrf)=>fetch(ingress.url+"/api/command",{method:"POST",headers:{cookie:auth.cookies,"content-type":"application/json","x-csrf-token":csrf},body:JSON.stringify(command)});
   const initial=await state();
   assert.deepEqual(initial.tabs,["google","youtube","github","staging"]);
