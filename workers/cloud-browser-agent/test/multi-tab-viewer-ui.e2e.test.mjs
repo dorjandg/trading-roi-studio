@@ -27,7 +27,8 @@ test("CI-only authenticated viewer switches persistent Chromium tabs through its
   };
   const controller=await login(ingress.mockControlBootstrap);
   const page=await controller.newPage();
-  await page.goto(ingress.url+"/");
+  const documentResponse=await page.goto(ingress.url+"/");
+  assert.match(documentResponse.headers()["content-security-policy"],/img-src .*blob:/);
   await assert.doesNotReject(()=>page.locator("#tabs button").first().waitFor());
   assert.equal(await page.locator("#tabs button").count(),4);
   await page.getByRole("button",{name:"youtube",exact:true}).click();
