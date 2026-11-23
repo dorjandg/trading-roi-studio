@@ -169,26 +169,19 @@ function drawCloudGallery(){
  const item=products.find(p=>p.id===productId);
  const images=Array.isArray(item?.images)&&item.images.length?item.images:(item?.image_url?[item.image_url]:[]);
  const target=document.getElementById('glamPhotoGallery');target.replaceChildren();
- target.setAttribute('aria-label','Product photos. Drag to reorder, or use the move buttons.');
+ target.setAttribute('aria-label','Product photos. Drag and drop thumbnails to reorder. First photo is the main photo.');
  images.forEach((url,i)=>{
   const wrapper=document.createElement('div');
   wrapper.dataset.index=String(i);
   wrapper.draggable=true;
-  wrapper.style.cssText='flex:0 0 108px;position:relative;cursor:grab;touch-action:none;border:2px solid '+(i===0?'#e5bdb6':'#55444a')+';border-radius:10px;padding:4px;background:#20191c';
+  wrapper.style.cssText='flex:0 0 90px;position:relative;cursor:grab;touch-action:none;border:2px solid '+(i===0?'#e5bdb6':'#55444a')+';border-radius:10px;padding:4px;background:#20191c';
   const img=document.createElement('img');img.src=url;img.alt='Product photo '+(i+1);
-  img.draggable=false;img.style.cssText='width:100%;height:86px;object-fit:cover;border-radius:6px;pointer-events:none';
-  const label=document.createElement('div');label.textContent=i===0?'Main photo':'Photo '+(i+1);label.style.cssText='font-size:11px;text-align:center;margin:3px 0';
-  const controls=document.createElement('div');controls.style.cssText='display:flex;justify-content:space-between;gap:3px';
-  for(const [direction,delta] of [['Left',-1],['Right',1]]){
-   const button=document.createElement('button');button.type='button';button.textContent=delta<0?'←':'→';button.title='Move photo '+direction.toLowerCase();button.setAttribute('aria-label','Move photo '+(i+1)+' '+direction.toLowerCase());
-   button.disabled=i+delta<0||i+delta>=images.length;
-   button.style.cssText='min-width:35px;min-height:30px;padding:2px;cursor:pointer';
-   button.onclick=()=>reorderCloudPhoto(i,i+delta,productId);controls.append(button);
-  }
-  wrapper.append(img,label,controls);
+  img.draggable=false;img.style.cssText='width:100%;height:96px;object-fit:cover;border-radius:6px;pointer-events:none';
+  const label=document.createElement('div');label.textContent=i===0?'1 · MAIN':String(i+1);label.style.cssText='font-size:11px;text-align:center;margin:3px 0';
+  wrapper.append(img,label);
   wrapper.addEventListener('dragstart',e=>{galleryDragIndex=i;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',String(i));});
-  wrapper.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';});
-  wrapper.addEventListener('drop',e=>{e.preventDefault();const from=galleryDragIndex;galleryDragIndex=null;if(from!==null)reorderCloudPhoto(from,i,productId);});
+  wrapper.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';wrapper.style.outline='2px solid #e5bdb6';});wrapper.addEventListener('dragleave',()=>{wrapper.style.outline=''});
+  wrapper.addEventListener('drop',e=>{e.preventDefault();wrapper.style.outline='';const from=galleryDragIndex;galleryDragIndex=null;if(from!==null)reorderCloudPhoto(from,i,productId);});
   wrapper.addEventListener('dragend',()=>{galleryDragIndex=null});
   // Pointer gestures support touch screens where HTML drag-and-drop is unavailable.
   let pointerStart=null;
@@ -325,7 +318,7 @@ document.getElementById('exportCatalog').onclick=()=>{const data={format:'glam-c
    tile.append(img,label,controls);
    tile.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',String(i))});
    tile.addEventListener('dragover',e=>e.preventDefault());
-   tile.addEventListener('drop',e=>{e.preventDefault();const from=Number(e.dataTransfer.getData('text/plain'));if(Number.isInteger(from))move(from,i)});
+   tile.addEventListener('drop',e=>{e.preventDefault();tile.style.outline='';const from=Number(e.dataTransfer.getData('text/plain'));if(Number.isInteger(from))move(from,i)});
    gallery.append(tile);
   });section.append(gallery);
   if(!urls.length){const empty=document.createElement('p');empty.className='hint';empty.textContent='No photos for '+active+' yet. Upload below. The first photo will be the main image for this color.';section.append(empty)}
@@ -390,22 +383,13 @@ function refreshImages(){
  images=Array.isArray(p?.images)&&p.images.length?[...p.images]:(p?.image_url?[p.image_url]:Array.from(input.files||[]).filter(f=>f.type.startsWith('image/')).slice(0,12).map(URL.createObjectURL));
  thumbs.replaceChildren();dots.replaceChildren();
  images.forEach((url,i)=>{
-  const tile=document.createElement('div');tile.dataset.index=String(i);tile.draggable=true;tile.style.cssText='position:relative;flex:0 0 92px;cursor:grab;touch-action:none';
-  const img=document.createElement('img');img.src=url;img.alt='Image '+(i+1)+' — drag to reorder';img.draggable=false;img.style.cssText='width:100%;height:105px;object-fit:cover;pointer-events:none';img.onclick=()=>showImage(i);
-  const label=document.createElement('small');label.textContent=i===0?'MAIN':' '+(i+1);label.style.cssText='display:block;text-align:center';
+  const tile=document.createElement('div');tile.dataset.index=String(i);tile.draggable=true;tile.style.cssText='position:relative;flex:0 0 84px;cursor:grab;touch-action:none;border:1px solid #b7a7a8;border-radius:8px;overflow:hidden';
+  const img=document.createElement('img');img.src=url;img.alt='Image '+(i+1)+' — drag to reorder';img.draggable=false;img.style.cssText='width:100%;height:92px;object-fit:cover;pointer-events:none';img.onclick=()=>showImage(i);
+  const label=document.createElement('small');label.textContent=i===0?'1 · MAIN':String(i+1);label.style.cssText='display:block;text-align:center';
   tile.append(img,label);
-  const moveControls=document.createElement('div');moveControls.style.cssText='display:flex;justify-content:space-between;gap:3px';
-  for(const [direction,delta] of [['left',-1],['right',1]]){
-   const button=document.createElement('button');button.type='button';button.textContent=delta<0?'←':'→';
-   button.setAttribute('aria-label','Move photo '+(i+1)+' '+direction);button.title='Move photo '+direction;
-   button.disabled=i+delta<0||i+delta>=images.length;button.style.cssText='min-width:35px;min-height:32px;padding:2px';
-   button.onclick=e=>{e.stopPropagation();moveImage(i,i+delta)};
-   moveControls.append(button);
-  }
-  tile.append(moveControls);
   tile.addEventListener('click',e=>{if(!e.target.closest('button'))showImage(i)});
   tile.addEventListener('dragstart',e=>{dragFrom=i;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',String(i))});
-  tile.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move'});
+  tile.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';tile.style.outline='2px solid #caa6a1'});tile.addEventListener('dragleave',()=>{tile.style.outline=''});
   tile.addEventListener('drop',e=>{e.preventDefault();const from=dragFrom;dragFrom=null;moveImage(from,i)});
   tile.addEventListener('dragend',()=>{dragFrom=null});
   let start=null;
