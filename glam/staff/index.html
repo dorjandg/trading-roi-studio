@@ -152,10 +152,10 @@ document.getElementById('glamPhotoFiles').addEventListener('change',async event=
 });
 function refreshPublicationButton(){
  const form=document.getElementById('productForm'),p=products.find(x=>x.id===form.elements.id.value);
- const published=(p?.catalog_status||form.elements.catalog_status.value)==='published';
+ const productStatus=p?.catalog_status||form.elements.catalog_status.value;const published=productStatus==='published';
  const button=document.getElementById('glamPublishProduct');
  button.textContent=published?'Unpublish':'Publish';
- document.getElementById('glamPublicationState').textContent=published?'Published — visible on the public catalog':'Unpublished — hidden from the public catalog';
+ document.getElementById('glamPublicationState').textContent=published?'Published — visible on the public catalog':productStatus==='reference'?'Reference/demo product — hidden from customers until explicitly published':'Unpublished — hidden from the public catalog';
 }
 document.getElementById('glamPublishProduct').addEventListener('click',async()=>{
  const form=document.getElementById('productForm'),button=document.getElementById('glamPublishProduct');
