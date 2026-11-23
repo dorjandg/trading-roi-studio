@@ -386,19 +386,10 @@ function refreshImages(){
  images=Array.isArray(p?.images)&&p.images.length?[...p.images]:(p?.image_url?[p.image_url]:Array.from(input.files||[]).filter(f=>f.type.startsWith('image/')).slice(0,12).map(URL.createObjectURL));
  thumbs.replaceChildren();dots.replaceChildren();
  images.forEach((url,i)=>{
-  const tile=document.createElement('div');tile.dataset.index=String(i);tile.draggable=true;tile.style.cssText='position:relative;flex:0 0 84px;cursor:grab;touch-action:none;border:1px solid #b7a7a8;border-radius:8px;overflow:hidden';
-  const img=document.createElement('img');img.src=url;img.alt='Image '+(i+1)+' — drag to reorder';img.draggable=false;img.style.cssText='width:100%;height:92px;object-fit:cover;pointer-events:none';img.onclick=()=>showImage(i);
-  const label=document.createElement('small');label.textContent=i===0?'1 · MAIN':String(i+1);label.style.cssText='display:block;text-align:center';
-  tile.append(img,label);
-  tile.addEventListener('click',e=>{if(!e.target.closest('button'))showImage(i)});
-  tile.addEventListener('dragstart',e=>{dragFrom=i;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',String(i))});
-  tile.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';tile.style.outline='2px solid #caa6a1'});tile.addEventListener('dragleave',()=>{tile.style.outline=''});
-  tile.addEventListener('drop',e=>{e.preventDefault();const from=dragFrom;dragFrom=null;moveImage(from,i)});
-  tile.addEventListener('dragend',()=>{dragFrom=null});
-  let start=null;
-  tile.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse')start={x:e.clientX,y:e.clientY,id:e.pointerId}});
-  tile.addEventListener('pointerup',e=>{if(!start||e.pointerId!==start.id)return;const origin=start;start=null;if(Math.hypot(e.clientX-origin.x,e.clientY-origin.y)<18)return;const destination=document.elementFromPoint(e.clientX,e.clientY)?.closest('#liveProductThumbs [data-index]');if(destination)moveImage(i,Number(destination.dataset.index))});
-  tile.addEventListener('pointercancel',()=>{start=null});
+  const tile=document.createElement('button');tile.type='button';tile.dataset.index=String(i);tile.setAttribute('aria-label','View photo '+(i+1));tile.style.cssText='position:relative;flex:0 0 84px;cursor:pointer;border:1px solid #b7a7a8;border-radius:8px;overflow:hidden;padding:0;background:transparent;color:inherit';
+  const img=document.createElement('img');img.src=url;img.alt='Photo '+(i+1);img.draggable=false;img.style.cssText='width:100%;height:92px;object-fit:cover;display:block';
+  const label=document.createElement('small');label.textContent=String(i+1);label.style.cssText='display:block;text-align:center;padding:3px 0';
+  tile.append(img,label);tile.onclick=()=>showImage(i);
   thumbs.append(tile);
   const dot=document.createElement('button');dot.type='button';dot.setAttribute('aria-label','Show image '+(i+1));dot.onclick=()=>showImage(i);dots.append(dot);
  });
