@@ -8,7 +8,7 @@ const query="James Webb Space Telescope";
 await mkdir(dir,{recursive:true});
 let api;
 try{
- api=await createRealPublicAutomationApi(chromium,{timeoutMs:30000});
+ api=await createRealPublicAutomationApi(chromium,{timeoutMs:30000,diagnostics:true});
  const response=await fetch(api.url+"/run",{
   method:"POST",headers:{authorization:"Bearer "+api.apiKey,"content-type":"application/json"},
   body:JSON.stringify({task:"wikipedia-demo",query}),signal:AbortSignal.timeout(120000)
