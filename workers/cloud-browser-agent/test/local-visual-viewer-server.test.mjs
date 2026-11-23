@@ -35,7 +35,7 @@ test("loopback visual viewer receives Chromium frames and navigates independent 
   assert.deepEqual([...new Uint8Array(await frame.arrayBuffer()).slice(0,8)],[137,80,78,71,13,10,26,10]);
   const bad=await fetch(server.url+"/command",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({type:"navigate",url:"https://youtube.com"})});
   assert.equal(bad.status,400);
-  const host=await fetch(server.url+"/state",{headers:{host:"evil.example"}});
+  const host=await fetch(server.url+"/state",{headers:{origin:"https://evil.example"}});
   assert.equal(host.status,403);
   await context.close();
  }finally{await browser.close();await server.close();}
