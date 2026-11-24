@@ -21,7 +21,8 @@ function fields(value,allowed,required=allowed){
 function safeText(value,max){
   if(typeof value!=='string'||value.length<1||value.length>max
     ||/[\u0000-\u0008\u000b-\u001f\u007f]/.test(value)
-    ||new TextEncoder().encode(value).length>max*3)throw fail();
+    ||new TextEncoder().encode(value).length>max*3
+    ||new TextDecoder('utf-8',{fatal:true}).decode(new TextEncoder().encode(value))!==value)throw fail();
   return value;
 }
 function safeSelector(value){
