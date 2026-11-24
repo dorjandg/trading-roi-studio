@@ -1,0 +1,571 @@
+{
+  "site": {
+    "brand": "Vocal Mastery",
+    "coach": "Landi Kademi",
+    "phone": "+355 69 208 5923",
+    "whatsapp": "355692085923",
+    "instagram": "https://www.instagram.com/landikademi/",
+    "heroImage": "/assets/landi-hero.webp",
+    "biographyImage": "/assets/landi-shadow.webp",
+    "description": {
+      "en": "Vocal coaching with Landi Kademi. Discover your sound through focused technique, artistry and performance.",
+      "sq": "Trajnim vokal me Landi Kademin. Zbulo tingullin tënd përmes teknikës, interpretimit dhe përgatitjes për skenë."
+    }
+  },
+  "hero": {
+    "eyebrow": {
+      "en": "THE ART OF VOCAL EXCELLENCE",
+      "sq": "ARTI I MJESHTËRISË VOKALE"
+    },
+    "title": {
+      "en": "A voice that\nis truly yours.",
+      "sq": "Një zë që është\nvërtet i yti."
+    },
+    "subtitle": {
+      "en": "Find your sound. Refine your technique. Own the stage.",
+      "sq": "Zbulo tingullin tënd. Përsos teknikën. Zotëro skenën."
+    },
+    "note": {
+      "en": "Vocal coaching under the artistic direction of Landi Kademi.",
+      "sq": "Trajnim vokal nën drejtimin artistik të Landi Kademit."
+    },
+    "cta": {
+      "en": "Begin your vocal journey",
+      "sq": "Fillo rrugëtimin tënd vokal"
+    }
+  },
+  "home": {
+    "introLabel": {
+      "en": "A PERSONAL APPROACH",
+      "sq": "NJË QASJE PERSONALE"
+    },
+    "introTitle": {
+      "en": "Exceptional voices\nare developed.",
+      "sq": "Zërat e veçantë\nzhvillohen."
+    },
+    "introText": {
+      "en": "Your voice has its own character. Our work begins by listening — to your sound, your ambitions and the artist you want to become. Together, we turn that understanding into focused, purposeful practice.",
+      "sq": "Zëri yt ka karakterin e vet. Puna jonë fillon duke dëgjuar — tingullin tënd, ambiciet dhe artistin që dëshiron të bëhesh. Së bashku, e kthejmë këtë njohje në praktikë të përqendruar, me qëllim të qartë."
+    },
+    "programsTitle": {
+      "en": "The next chapter\nof your voice.",
+      "sq": "Kapitulli i radhës\ni zërit tënd."
+    },
+    "coachLabel": {
+      "en": "EXPERIENCE THAT LISTENS",
+      "sq": "PËRVOJË QË TË DËGJON"
+    },
+    "coachTitle": {
+      "en": "From the live stage.\nTo your next step.",
+      "sq": "Nga skena live.\nTe hapi yt i radhës."
+    },
+    "coachText": {
+      "en": "Years in music and television bring perspective. Landi Kademi brings that experience to the work that matters most: helping a singer understand their instrument and express something of their own.",
+      "sq": "Vitet në muzikë dhe televizion sjellin këndvështrim. Landi Kademi e vë këtë përvojë në shërbim të punës që ka më shumë rëndësi: të ndihmojë këngëtarin të njohë instrumentin e vet dhe të shprehë diçka personale."
+    },
+    "mediaTitle": {
+      "en": "The work behind\nthe performance.",
+      "sq": "Puna që qëndron\npas performancës."
+    },
+    "ctaTitle": {
+      "en": "Let’s hear\nyour potential.",
+      "sq": "Le të zbulojmë\npotencialin tënd."
+    },
+    "ctaText": {
+      "en": "Tell us where you are today and where you would like your voice to take you.",
+      "sq": "Na trego ku je sot dhe ku dëshiron të të çojë zëri yt."
+    }
+  },
+  "programs": [
+    {
+      "id": "foundations",
+      "eyebrow": {
+        "en": "BUILD YOUR FOUNDATION",
+        "sq": "NDËRTO BAZAT"
+      },
+      "title": {
+        "en": "Vocal foundations",
+        "sq": "Bazat e zërit"
+      },
+      "summary": {
+        "en": "A considered starting point for a stronger relationship with your voice.",
+        "sq": "Një pikënisje e menduar për një marrëdhënie më të mirë me zërin tënd."
+      },
+      "details": {
+        "en": "Explore breath coordination, pitch, rhythm, diction and the basics of vocal control. Work with practical exercises and songs that make each new idea tangible.",
+        "sq": "Puno me koordinimin e frymëmarrjes, intonacionin, ritmin, diksionin dhe bazat e kontrollit vokal. Ushtrime praktike dhe këngë të përzgjedhura e bëjnë çdo koncept të prekshëm."
+      },
+      "forWho": {
+        "en": "For new singers and those returning to the fundamentals.",
+        "sq": "Për këngëtarë të rinj dhe për ata që duan të rikthehen te bazat."
+      },
+      "price": {
+        "en": "Discuss your individual plan",
+        "sq": "Diskuto planin tënd individual"
+      }
+    },
+    {
+      "id": "development",
+      "eyebrow": {
+        "en": "REFINE YOUR INSTRUMENT",
+        "sq": "PËRSOS INSTRUMENTIN TËND"
+      },
+      "title": {
+        "en": "Advanced vocal development",
+        "sq": "Zhvillim vokal i avancuar"
+      },
+      "summary": {
+        "en": "More control. More nuance. More of the sound that makes you distinctive.",
+        "sq": "Më shumë kontroll. Më shumë nuanca. Më shumë nga tingulli që të bën të veçantë."
+      },
+      "details": {
+        "en": "Focused work on register transitions, resonance, dynamics, agility and phrasing. Connect technical exercises to repertoire and develop a practice routine with clear priorities.",
+        "sq": "Punë e përqendruar në kalimin mes regjistrave, rezonancën, dinamikën, shkathtësinë dhe frazimin. Lidhi ushtrimet teknike me repertorin dhe ndërto një rutinë praktike me përparësi të qarta."
+      },
+      "forWho": {
+        "en": "For singers ready to refine their technique and expand their expression.",
+        "sq": "Për këngëtarë që duan të përsosin teknikën dhe të zgjerojnë shprehjen artistike."
+      },
+      "price": {
+        "en": "Discuss your individual plan",
+        "sq": "Diskuto planin tënd individual"
+      }
+    },
+    {
+      "id": "performance",
+      "eyebrow": {
+        "en": "PREPARE FOR THE MOMENT",
+        "sq": "PËRGATITU PËR MOMENTIN"
+      },
+      "title": {
+        "en": "Audition & stage preparation",
+        "sq": "Audicione dhe përgatitje për skenë"
+      },
+      "summary": {
+        "en": "Bring the voice, the song and the performer into one clear statement.",
+        "sq": "Bashko zërin, këngën dhe interpretuesin në një shprehje të qartë."
+      },
+      "details": {
+        "en": "Choose repertoire with intention. Shape an interpretation, rehearse with a microphone and prepare a performance that communicates. Work towards an audition, concert or recording with a specific focus.",
+        "sq": "Zgjidh repertorin me qëllim. Ndërto interpretimin, provo me mikrofon dhe përgatit një performancë që komunikon. Puno drejt një audicioni, koncerti apo regjistrimi me fokus të qartë."
+      },
+      "forWho": {
+        "en": "For singers preparing for an audition, live stage or studio session.",
+        "sq": "Për këngëtarë që përgatiten për audicion, skenë live apo studio."
+      },
+      "price": {
+        "en": "Discuss your individual plan",
+        "sq": "Diskuto planin tënd individual"
+      }
+    },
+    {
+      "id": "artist",
+      "eyebrow": {
+        "en": "DEVELOP YOUR IDENTITY",
+        "sq": "ZHVILLO IDENTITETIN TËND"
+      },
+      "title": {
+        "en": "Artist mentoring",
+        "sq": "Mentorim artistik"
+      },
+      "summary": {
+        "en": "Make artistic choices that sound and feel like you.",
+        "sq": "Bëj zgjedhje artistike që tingëllojnë dhe ndihen si ti."
+      },
+      "details": {
+        "en": "Explore interpretation, style, repertoire and the connection between lyrics and sound. Receive direct feedback as you develop a coherent musical identity.",
+        "sq": "Eksploro interpretimin, stilin, repertorin dhe lidhjen mes tekstit dhe tingullit. Merr këshilla të drejtpërdrejta ndërsa zhvillon identitetin tënd muzikor."
+      },
+      "forWho": {
+        "en": "For developing artists seeking thoughtful, individual direction.",
+        "sq": "Për artistë në zhvillim që kërkojnë drejtim individual dhe të menduar."
+      },
+      "price": {
+        "en": "Discuss your individual plan",
+        "sq": "Diskuto planin tënd individual"
+      }
+    }
+  ],
+  "pages": {
+    "academy": {
+      "label": {
+        "en": "THE ACADEMY",
+        "sq": "AKADEMIA"
+      },
+      "title": {
+        "en": "Serious about\nyour voice.",
+        "sq": "Me përkushtim\npër zërin tënd."
+      },
+      "intro": {
+        "en": "Vocal Mastery brings technique and artistry together. A personal approach to vocal education, guided by the demands of real performance.",
+        "sq": "Vocal Mastery bashkon teknikën me artin. Një qasje personale ndaj edukimit vokal, e udhëhequr nga kërkesat e performancës së vërtetë."
+      },
+      "sections": [
+        {
+          "title": {
+            "en": "Listen before you lead.",
+            "sq": "Dëgjo përpara se të udhëheqësh."
+          },
+          "text": {
+            "en": "Every singer starts from a different place. We begin with your experience, musical interests and goals, then identify what deserves attention first.",
+            "sq": "Çdo këngëtar e nis nga një pikë e ndryshme. Fillojmë me përvojën, interesat muzikore dhe synimet e tua, pastaj përcaktojmë çfarë meriton vëmendje fillimisht."
+          }
+        },
+        {
+          "title": {
+            "en": "Technique with a purpose.",
+            "sq": "Teknikë me qëllim."
+          },
+          "text": {
+            "en": "Exercises matter when they help you sing. Breath, pitch, resonance and control are explored through practical work and connected to the songs you want to perform.",
+            "sq": "Ushtrimet kanë vlerë kur të ndihmojnë të këndosh. Frymëmarrja, intonacioni, rezonanca dhe kontrolli trajtohen në praktikë dhe lidhen me këngët që dëshiron të interpretosh."
+          }
+        },
+        {
+          "title": {
+            "en": "An artist, not an imitation.",
+            "sq": "Artist me identitetin tënd."
+          },
+          "text": {
+            "en": "A distinctive voice comes from informed choices. Develop phrasing, expression and stage presence while keeping the character that belongs to you.",
+            "sq": "Një zë i dallueshëm vjen nga zgjedhjet e menduara. Zhvillo frazimin, shprehjen dhe praninë skenike, duke ruajtur karakterin tënd."
+          }
+        },
+        {
+          "title": {
+            "en": "Progress you can recognise.",
+            "sq": "Përparim që mund ta dallosh."
+          },
+          "text": {
+            "en": "Clear feedback gives practice a direction. Revisit songs, notice what has changed and set the next priority with your coach. Progress is individual and depends on consistent work.",
+            "sq": "Këshillat e qarta i japin drejtim praktikës. Rikthehu te këngët, dallo çfarë ka ndryshuar dhe cakto përparësinë e radhës me trajnerin. Përparimi është individual dhe varet nga puna e vazhdueshme."
+          }
+        }
+      ]
+    },
+    "landi": {
+      "label": {
+        "en": "YOUR VOCAL COACH",
+        "sq": "TRAJNERI YT VOKAL"
+      },
+      "title": {
+        "en": "An artist’s instinct.\nA coach’s ear.",
+        "sq": "Instinkt artisti.\nVëmendje trajneri."
+      },
+      "intro": {
+        "en": "Landi Kademi combines a long career on stage with a deep commitment to the development of other voices.",
+        "sq": "Landi Kademi ndërthur një karrierë shumëvjeçare në skenë me përkushtimin ndaj zhvillimit të zërave të tjerë."
+      },
+      "sections": [
+        {
+          "title": {
+            "en": "Landi Kademi",
+            "sq": "Landi Kademi"
+          },
+          "text": {
+            "en": "Known professionally as Landi Kademi, Merland Kademi is a singer and vocal coach whose work spans live music and Albanian television. His perspective is shaped by the practical demands of rehearsal, interpretation and performance.",
+            "sq": "I njohur profesionalisht si Landi Kademi, Merland Kademi është këngëtar dhe trajner vokal me përvojë në muzikën live dhe televizionin shqiptar. Këndvështrimi i tij është formuar nga kërkesat praktike të provave, interpretimit dhe performancës."
+          }
+        },
+        {
+          "title": {
+            "en": "X Factor Albania",
+            "sq": "X Factor Albania"
+          },
+          "text": {
+            "en": "His vocal coaching work on X Factor Albania is documented in broadcaster coverage and live-show archives. In his BORDO profile, he discusses working with the girls’ team and The Chemicals, and describes teaching as a deep personal passion.",
+            "sq": "Puna e tij si trajner vokal në X Factor Albania dokumentohet në kronika televizive dhe arkivin e netëve live. Në profilin e tij në BORDO, ai flet për punën me grupin e vajzave dhe The Chemicals, si dhe e përshkruan mësimdhënien si një pasion të thellë personal."
+          }
+        },
+        {
+          "title": {
+            "en": "The Voice of Albania",
+            "sq": "The Voice of Albania"
+          },
+          "text": {
+            "en": "Top Channel’s 2017 coverage of The Voice of Albania identifies Landi as assistant coach to Xuxi during the Battles. This experience adds the focused preparation and close listening required by a televised vocal competition.",
+            "sq": "Kronika e Top Channel për The Voice of Albania në vitin 2017 e prezanton Landin si ndihmëstrajner të Xuxit gjatë Betejave. Kjo përvojë përfshin përgatitjen e përqendruar dhe vëmendjen që kërkon një konkurs vokal televiziv."
+          }
+        },
+        {
+          "title": {
+            "en": "The focus today: your voice.",
+            "sq": "Fokusi sot: zëri yt."
+          },
+          "text": {
+            "en": "At Vocal Mastery, that experience becomes a starting point for personal work. The focus is your technique, your interpretation and the decisions that help you move forward as a singer.",
+            "sq": "Në Vocal Mastery, kjo përvojë bëhet pikënisje për punën individuale. Fokusi është teknika jote, interpretimi yt dhe zgjedhjet që të ndihmojnë të ecësh përpara si këngëtar."
+          }
+        }
+      ]
+    },
+    "stories": {
+      "label": {
+        "en": "STUDENT JOURNEYS",
+        "sq": "RRUGËTIME ARTISTIKE"
+      },
+      "title": {
+        "en": "Behind every voice,\nthere is a journey.",
+        "sq": "Pas çdo zëri,\nka një rrugëtim."
+      },
+      "intro": {
+        "en": "The memorable performance is one moment. Listening, practice, feedback and the courage to try again are the work behind it.",
+        "sq": "Performanca që mbahet mend është një moment. Dëgjimi, praktika, këshillat dhe guximi për të provuar sërish janë puna që qëndron pas saj."
+      },
+      "sections": [
+        {
+          "title": {
+            "en": "From preparation to live performance.",
+            "sq": "Nga përgatitja te performanca live."
+          },
+          "text": {
+            "en": "Explore a documented moment from X Factor Albania: the girls’ team performing alongside their vocal coach, Landi Kademi. It offers a glimpse of a shared musical process in a television setting.",
+            "sq": "Zbulo një moment të dokumentuar nga X Factor Albania: grupi i vajzave interpreton përkrah trajnerit vokal, Landi Kademi. Një vështrim në një proces të përbashkët muzikor në televizion."
+          }
+        },
+        {
+          "title": {
+            "en": "Your progress deserves its own story.",
+            "sq": "Përparimi yt meriton historinë e vet."
+          },
+          "text": {
+            "en": "An assured first phrase. A more expressive song. An audition you feel prepared for. Meaningful progress looks different for every singer, and each journey deserves to be told in the singer’s own words.",
+            "sq": "Një frazë e parë më e sigurt. Një këngë më shprehëse. Një audicion për të cilin ndihesh i përgatitur. Përparimi ka pamje të ndryshme për çdo këngëtar dhe çdo rrugëtim meriton të tregohet me fjalët e vetë artistit."
+          }
+        },
+        {
+          "title": {
+            "en": "A space for real voices.",
+            "sq": "Një hapësirë për zëra të vërtetë."
+          },
+          "text": {
+            "en": "Personal student stories will appear here with the student’s permission. If you have worked with Landi and would like to share your experience, we would love to hear from you.",
+            "sq": "Historitë personale të studentëve do të publikohen këtu me miratimin e tyre. Nëse ke punuar me Landin dhe dëshiron të ndash përvojën tënde, do të na pëlqente të të dëgjonim."
+          }
+        }
+      ]
+    },
+    "voice": {
+      "label": {
+        "en": "THE POWER OF YOUR VOICE",
+        "sq": "FUQIA E ZËRIT TËND"
+      },
+      "title": {
+        "en": "More than a song.\nA way to be heard.",
+        "sq": "Më shumë se një këngë.\nNjë mënyrë për t’u dëgjuar."
+      },
+      "intro": {
+        "en": "Learning to sing can change how you listen, practise and express yourself. A vocal coach gives that exploration structure and a trained outside ear.",
+        "sq": "Të mësosh të këndosh mund të ndryshojë mënyrën si dëgjon, praktikon dhe shpreh veten. Një trajner vokal i jep këtij kërkimi strukturë dhe një vesh të stërvitur nga jashtë."
+      },
+      "sections": [
+        {
+          "title": {
+            "en": "Understand your instrument.",
+            "sq": "Njihe instrumentin tënd."
+          },
+          "text": {
+            "en": "It is difficult to change what you cannot identify. A coach helps you notice patterns in your singing and gives you specific things to work on, instead of leaving you to guess.",
+            "sq": "Është e vështirë të ndryshosh atë që nuk arrin ta dallosh. Trajneri të ndihmon të vësh re prirjet në këndimin tënd dhe të jep pika konkrete për të punuar."
+          }
+        },
+        {
+          "title": {
+            "en": "Turn repetition into intention.",
+            "sq": "Ktheje përsëritjen në punë me qëllim."
+          },
+          "text": {
+            "en": "Focused feedback can make your practice more purposeful. Rather than simply repeating a song, you can work on a phrase, a transition or an expressive choice, then hear the difference.",
+            "sq": "Këshillat e përqendruara mund ta bëjnë praktikën më të qëllimshme. Mund të punosh me një frazë, një kalim apo një zgjedhje shprehëse dhe më pas të dëgjosh ndryshimin."
+          }
+        },
+        {
+          "title": {
+            "en": "Find confidence in preparation.",
+            "sq": "Gjej siguri te përgatitja."
+          },
+          "text": {
+            "en": "Confidence often grows from knowing your material. Rehearsing the whole performance — voice, words, microphone and presence — helps make the next step feel more familiar.",
+            "sq": "Siguria shpesh rritet duke njohur mirë materialin. Prova e gjithë performancës — zërit, fjalëve, mikrofonit dhe pranisë — e bën hapin e radhës më të njohur."
+          }
+        },
+        {
+          "title": {
+            "en": "Say something of your own.",
+            "sq": "Shpreh diçka tënden."
+          },
+          "text": {
+            "en": "Technique opens possibilities; interpretation gives them meaning. Explore what a lyric means to you and make choices that let the listener feel it.",
+            "sq": "Teknika hap mundësi; interpretimi u jep kuptim. Eksploro çfarë do të thotë një tekst për ty dhe bëj zgjedhje që ia përcjellin këtë dëgjuesit."
+          }
+        }
+      ]
+    },
+    "apply": {
+      "label": {
+        "en": "YOUR FIRST STEP",
+        "sq": "HAPI YT I PARË"
+      },
+      "title": {
+        "en": "Every voice begins\nwith a conversation.",
+        "sq": "Çdo zë e nis\nme një bisedë."
+      },
+      "intro": {
+        "en": "Tell us a little about yourself. We will discuss your goals, the right direction and the practical details of working together.",
+        "sq": "Na trego pak për veten. Do të diskutojmë synimet e tua, drejtimin e përshtatshëm dhe detajet praktike të bashkëpunimit."
+      },
+      "sections": []
+    },
+    "contact": {
+      "label": {
+        "en": "LET’S TALK",
+        "sq": "LE TË FLASIM"
+      },
+      "title": {
+        "en": "Your next chapter\nstarts here.",
+        "sq": "Kapitulli yt i radhës\nfillon këtu."
+      },
+      "intro": {
+        "en": "For lesson enquiries, programme details and availability, contact Vocal Mastery directly.",
+        "sq": "Për mësimet, hollësitë e programeve dhe oraret e lira, kontakto drejtpërdrejt Vocal Mastery."
+      },
+      "sections": []
+    }
+  },
+  "media": [
+    {
+      "id": "_OwAh0p577I",
+      "title": {
+        "en": "Coaching meets the live stage",
+        "sq": "Nga puna me trajnerin në skenën live"
+      },
+      "description": {
+        "en": "The girls’ team performs with vocal coach Landi Kademi on X Factor Albania. A television performance from the 2025 live-show archive.",
+        "sq": "Grupi i vajzave interpreton me trajnerin vokal Landi Kademi në X Factor Albania. Një performancë televizive nga arkivi i netëve live të vitit 2025."
+      },
+      "source": "X Factor Albania · TV Klan · 2025",
+      "kind": "video",
+      "image": "/assets/xfactor-girls-2025.jpg"
+    },
+    {
+      "id": "p8J4DmkCCbI",
+      "title": {
+        "en": "The coaches before the live shows",
+        "sq": "Trajnerët para netëve live"
+      },
+      "description": {
+        "en": "Landi Kademi joins fellow X Factor vocal coaches on Rudina to discuss the preparation and anticipation behind the live shows.",
+        "sq": "Landi Kademi bashkohet me trajnerët e tjerë vokalë të X Factor në Rudina për të folur mbi përgatitjen dhe emocionet para netëve live."
+      },
+      "source": "Rudina · TV Klan · 2024",
+      "kind": "video",
+      "image": "/assets/rudina-coaches-2024.jpg"
+    },
+    {
+      "id": "E_l3JPZY74o",
+      "title": {
+        "en": "Behind the scenes at The Voice",
+        "sq": "Prapaskenat e The Voice"
+      },
+      "description": {
+        "en": "A look behind the scenes of the Battles in The Voice of Albania season six. An official programme archive that sets the coaching experience in context.",
+        "sq": "Një vështrim prapa skenave të Betejave në sezonin e gjashtë të The Voice of Albania. Një arkiv zyrtar i programit që vendos në kontekst përvojën e trajnimit."
+      },
+      "source": "The Voice of Albania · Top Channel · 2017",
+      "kind": "video",
+      "image": "/assets/voice-backstage.jpg"
+    },
+    {
+      "id": "3-MZidQK2ms",
+      "title": {
+        "en": "The coach behind the artist",
+        "sq": "Trajneri pas artistit"
+      },
+      "description": {
+        "en": "Landi discusses vocal coaching, the X Factor experience and his passion for teaching in an interview with BORDO.",
+        "sq": "Landi flet për trajnimin vokal, përvojën në X Factor dhe pasionin për mësimdhënien në një intervistë për BORDO."
+      },
+      "source": "BORDO · 2024",
+      "kind": "video",
+      "image": "/assets/bordo-interview.jpg"
+    }
+  ],
+  "sources": [
+    {
+      "title": {
+        "en": "The Voice of Albania: the Battles",
+        "sq": "The Voice of Albania: Betejat"
+      },
+      "publisher": "Top Channel · 2017",
+      "url": "https://top-channel.tv/2017/03/09/betejat-e-the-voice/",
+      "description": {
+        "en": "Broadcaster coverage identifies Landi as assistant coach to Xuxi.",
+        "sq": "Kronika e televizionit e prezanton Landin si ndihmëstrajner të Xuxit."
+      }
+    },
+    {
+      "title": {
+        "en": "A portrait of the vocal coach",
+        "sq": "Portret i trajnerit vokal"
+      },
+      "publisher": "BORDO · 2024",
+      "url": "https://bordo.al/celebrity/merland-kademi-vocal-coach-i-qe-gdhend-portretet-e-artisteve-i95039",
+      "description": {
+        "en": "A conversation about teaching, artistry and the X Factor experience.",
+        "sq": "Një bisedë për mësimdhënien, artin dhe përvojën në X Factor."
+      }
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "Do I need previous singing experience?",
+        "sq": "A duhet të kem përvojë në këndim?"
+      },
+      "a": {
+        "en": "You can enquire at any stage. Tell us about your experience and goals so we can discuss a suitable starting point.",
+        "sq": "Mund të interesohesh në çdo fazë. Na trego përvojën dhe synimet e tua që të diskutojmë një pikënisje të përshtatshme."
+      }
+    },
+    {
+      "q": {
+        "en": "How are lesson fees and schedules arranged?",
+        "sq": "Si përcaktohen tarifat dhe oraret?"
+      },
+      "a": {
+        "en": "Fees, lesson format and availability are confirmed directly with the academy. Contact us on WhatsApp for current details and a plan suited to your goals.",
+        "sq": "Tarifat, formati i mësimeve dhe oraret konfirmohen drejtpërdrejt me akademinë. Na kontakto në WhatsApp për detajet aktuale dhe një plan të përshtatur me synimet e tua."
+      }
+    },
+    {
+      "q": {
+        "en": "Can you help me prepare for an audition?",
+        "sq": "A mund të më ndihmoni të përgatitem për audicion?"
+      },
+      "a": {
+        "en": "Audition and performance preparation is one of our areas of focus. Share your audition date, requirements and repertoire when you enquire.",
+        "sq": "Përgatitja për audicione dhe performanca është një nga fushat tona të punës. Kur të na kontaktosh, trego datën, kërkesat dhe repertorin e audicionit."
+      }
+    },
+    {
+      "q": {
+        "en": "Are online lessons available?",
+        "sq": "A ofrohen mësime online?"
+      },
+      "a": {
+        "en": "Please tell us where you are based and which format you prefer. The academy will confirm the available options, location and schedule directly.",
+        "sq": "Na trego ku ndodhesh dhe cilin format preferon. Akademia do të konfirmojë drejtpërdrejt mundësitë, vendndodhjen dhe orarin."
+      }
+    }
+  ],
+  "footer": {
+    "line": {
+      "en": "Technique. Artistry. Your voice.",
+      "sq": "Teknikë. Art. Zëri yt."
+    },
+    "independent": {
+      "en": "Independent vocal education. Programme names and logos identify Landi’s documented professional experience; they do not imply endorsement.",
+      "sq": "Edukim vokal i pavarur. Emrat dhe logot e programeve identifikojnë përvojën profesionale të dokumentuar të Landit; nuk nënkuptojnë mbështetje zyrtare."
+    }
+  }
+}

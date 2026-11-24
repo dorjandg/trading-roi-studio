@@ -1,0 +1,14 @@
+{
+  "name": "vocal-mastery",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Vocal Mastery academy — bilingual site and private Website Studio",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/preview.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "deploy": "node scripts/deploy.mjs"
+  },
+  "engines": { "node": ">=22" }
+}
