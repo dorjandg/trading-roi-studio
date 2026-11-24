@@ -60,7 +60,7 @@ test('installation preflight refuses symlink and writable ancestry before any la
     const alias=dir+'/node';symlinkSync(realpathSync(process.execPath),alias);
     assert.throws(()=>inspectNativeInstallation({node:alias,chromium:target,playwrightCore:dir+'/playwright-core'}));
     assert.throws(()=>inspectNativeInstallation({node:realpathSync(process.execPath),chromium:target,playwrightCore:dir+'/playwright-core'}),
-      {code:'NATIVE_INSTALLATION_REFUSED'});
+      {code:process.version.startsWith('v24.')?'NATIVE_INSTALLATION_REFUSED':'NATIVE_HOST_UNSUPPORTED'});
   }finally{rmSync(dir,{recursive:true});}
 });
 
