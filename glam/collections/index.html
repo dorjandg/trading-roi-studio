@@ -7,7 +7,7 @@
 @media(max-width:650px){.glam-detail-layout{grid-template-columns:1fr;padding:15px;gap:12px}.glam-detail-photo{max-height:42dvh}#glamProductDialog{max-height:94dvh}}
 </style><style id="glam-consistent-brand">.glam-site-brand{display:inline-flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;text-decoration:none;line-height:1}.glam-site-brand strong{font:700 34px Georgia,serif;letter-spacing:-2px}.glam-site-brand small{font:9px Arial,sans-serif;letter-spacing:.16em;color:#c7ada5;white-space:nowrap}@media(max-width:700px){.glam-site-brand strong{font-size:27px}.glam-site-brand small{font-size:8px}}</style></head><body><header><a class="logo glam-site-brand" href="/" aria-label="GLAM Lingerie and Scents homepage"><strong>glam.</strong><small>LINGERIE &amp; SCENTS</small></a><a class="back" href="/">← HOME</a></header><main><div id="overview"><span class="eyebrow">GLAM · The curated edit</span><h1>Our collections.</h1><p class="lead">Explore the worlds of GLAM. Each collection has its own character, selected with care and discretion.</p><div class="grid" id="grid"></div></div><section class="detail" id="detail"><button class="return" id="return" type="button">← ALL COLLECTIONS</button> <a class="back" href="/" style="margin-left:14px">← HOME</a><div style="margin-top:35px"><span class="eyebrow">GLAM · Collection</span><h2 id="detailTitle"></h2><p class="description" id="detailDescription"></p><div class="subgrid" id="subgrid"></div><a class="inquire" id="inquire" target="_blank" rel="noopener noreferrer">ENQUIRE PRIVATELY ↗</a></div></section></main><footer>GLAM LINGERIE &amp; SCENTS · TIRANA</footer><script>
 const collections=[
-{id:'all',name:'All products',tag:'GLAM / SHOP THE EDIT',description:'Discover the current GLAM product catalog.',items:[]},
+{id:'glam',name:'GLAM Collection',tag:'GLAM / THE CURATED EDIT',description:'Discover the latest additions to the GLAM collection.',items:[]},
 {id:'lingerie',name:'Lingerie',tag:'01 / INTIMATE ELEGANCE',description:'Considered lingerie, designed for confidence and personal expression.',items:['Bras','Briefs & Sets','Fine Lingerie']},
 {id:'bodywear',name:'Bodywear',tag:'02 / SECOND SKIN',description:'Refined everyday layers and silhouettes, with comfort and versatility in mind.',items:['Bodysuits','Underwear','Loungewear']},
 {id:'home',name:'Home',tag:'03 / LIVING',description:'Textiles and thoughtful accents for an expressive interior.',items:['Home Textiles','Home Accessories']},
@@ -31,7 +31,7 @@ document.getElementById('return').onclick=back;window.addEventListener('popstate
   function render(id,resetBrand=true){
     if(active!==id){activeSub='';brandSelect.value=''}else if(resetBrand){brandSelect.value=''}
     active=id;grid.replaceChildren();
-    const all=products.filter(p=>['published','sold_out'].includes(p.catalog_status) && (id==='all'||String(p.category||'').split('/')[0]===id));
+    const all=products.filter(p=>['published','sold_out'].includes(p.catalog_status) && (id==='glam'? !collections.some(c=>c.id!=='glam'&&c.id===String(p.category||'').split('/')[0]):String(p.category||'').split('/')[0]===id));
     const collection=collections.find(c=>c.id===id);
     const slug=v=>v.toLowerCase().replace(/&/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
     const items=collection?.items||[];
