@@ -1,7 +1,7 @@
-/* Public GitHub repository: use only safe-to-share URLs and titles. Never add passwords or tokens. */
+/* Public repository: safe-to-share URLs only. */
 window.PERSONAL_HUB_DATA = {
-  "version": "1.4.0",
-  "updated": "2026-11-20",
+  "version": "1.5.0",
+  "updated": "2026-11-24",
   "title": "Personal Hub",
   "subtitle": "My websites, learning, dashboards and useful links.",
   "categories": [
@@ -35,7 +35,7 @@ window.PERSONAL_HUB_DATA = {
     },
     {
       "id": "trading",
-      "name": "Trading & Finance",
+      "name": "Trading",
       "icon": "chart",
       "description": "Trading platforms, analytics and financial tools",
       "order": 7
@@ -74,6 +74,41 @@ window.PERSONAL_HUB_DATA = {
       "icon": "grid",
       "description": "GLAM public store, studio preview and business shortcuts",
       "order": 3
+    },
+    {
+      "id": "finance",
+      "name": "Finance",
+      "icon": "chart",
+      "description": "Personal financial dashboards",
+      "order": 1.1
+    },
+    {
+      "id": "automation",
+      "name": "Automation",
+      "icon": "layers",
+      "description": "Personal automation projects",
+      "order": 1.2
+    },
+    {
+      "id": "education",
+      "name": "Education",
+      "icon": "book",
+      "description": "Personal learning websites",
+      "order": 1.3
+    },
+    {
+      "id": "pizza",
+      "name": "Peter's Pizza",
+      "icon": "grid",
+      "description": "Guest website",
+      "order": 3.1
+    },
+    {
+      "id": "gerti",
+      "name": "Gerti Gjoni · English Guitar",
+      "icon": "book",
+      "description": "Guest website",
+      "order": 3.2
     }
   ],
   "links": [
@@ -82,7 +117,7 @@ window.PERSONAL_HUB_DATA = {
       "title": "Trading ROI Studio",
       "url": "https://trading-roi-studio.pages.dev/",
       "description": "Trading account planning, prop-firm strategies, scenario comparisons and simulations.",
-      "category": "workspaces",
+      "category": "trading",
       "type": "My website",
       "symbol": "TR",
       "accent": "blue",
@@ -103,7 +138,7 @@ window.PERSONAL_HUB_DATA = {
       "title": "Finance Hub",
       "url": "https://fin-kac.pages.dev/",
       "description": "Private financial dashboard for transactions, expenses, prop-firm accounts, payouts and reports, with Google sign-in and automatic cloud synchronization.",
-      "category": "workspaces",
+      "category": "finance",
       "type": "My website",
       "symbol": "FH",
       "accent": "emerald",
@@ -124,7 +159,7 @@ window.PERSONAL_HUB_DATA = {
       "title": "YouTube AI Academy",
       "url": "https://youtube-ai-academy.pages.dev/",
       "description": "Multi-channel learning library with searchable academies and an AI chat interface; transcript-based answers are coming soon.",
-      "category": "workspaces",
+      "category": "education",
       "type": "My website",
       "symbol": "YT",
       "accent": "red",
@@ -143,7 +178,7 @@ window.PERSONAL_HUB_DATA = {
       "title": "JJ Simon Knowledge Hub",
       "url": "https://jj-simon-knowledge.pages.dev/",
       "description": "Organized course research, lessons, risk management, important concepts and searchable findings.",
-      "category": "workspaces",
+      "category": "trading",
       "type": "My website",
       "symbol": "JJ",
       "accent": "purple",
@@ -164,7 +199,7 @@ window.PERSONAL_HUB_DATA = {
       "title": "P4 Reverse Cost Calculator",
       "url": "https://trading-roi-studio.pages.dev/p4-reverse-cost-demo.html",
       "description": "Reverse P1–P4 pass rates, evaluation and activation fees, withdrawals, net profit and ROI. Separate local settings for Doen, Dori and Dona across Topstep, FTMO, Lucid and MFFU.",
-      "category": "workspaces",
+      "category": "trading",
       "type": "My website",
       "symbol": "P4",
       "accent": "green",
@@ -297,7 +332,7 @@ window.PERSONAL_HUB_DATA = {
       "title": "GitHub · MT5 Controller",
       "url": "https://github.com/dorjandg/mt5-portfolio-controller",
       "description": "Your private MT5 Portfolio Controller repository; requires GitHub access.",
-      "category": "worktools",
+      "category": "trading",
       "type": "Private repository",
       "symbol": "GH",
       "accent": "purple",
@@ -422,7 +457,7 @@ window.PERSONAL_HUB_DATA = {
       "title": "JJ Simon Trading Dashboard",
       "url": "https://tradingsite-production.up.railway.app/dashboard",
       "description": "Your JJ Simon course trading dashboard.",
-      "category": "learning",
+      "category": "trading",
       "type": "Course dashboard",
       "symbol": "JJ",
       "accent": "purple",
@@ -438,7 +473,7 @@ window.PERSONAL_HUB_DATA = {
       "title": "JJ Simon Website",
       "url": "https://jjsimontrades.com/",
       "description": "JJ Simon trading course website and study resources.",
-      "category": "learning",
+      "category": "trading",
       "type": "Course website",
       "symbol": "JJ",
       "accent": "blue",
@@ -847,7 +882,7 @@ window.PERSONAL_HUB_DATA = {
       "id": "glam-staff",
       "title": "GLAM — Staff Dashboard",
       "url": "https://studio-preview.glam-lingerie.com/staff/",
-      "description": "Studio staff management dashboard; access may require sign-in",
+      "description": "Previously saved staff link; confirm current access before use.",
       "category": "glam",
       "type": "Business tool",
       "symbol": "GL",
@@ -902,6 +937,46 @@ window.PERSONAL_HUB_DATA = {
         "lingerie",
         "Contact"
       ]
+    },
+    {
+      "id": "ai-trading-lab",
+      "title": "AI Trading Lab",
+      "url": "https://github.com/dorjandg/ai-trading-lab",
+      "category": "trading",
+      "description": "Private development repository; no verified live website yet.",
+      "type": "Development repository",
+      "symbol": "AI",
+      "accent": "purple"
+    },
+    {
+      "id": "omnipilot",
+      "title": "OmniPilot (API1)",
+      "url": "https://github.com/dorjandg/trading-roi-studio/tree/api1-browser-interaction-phase1",
+      "category": "automation",
+      "description": "Browser automation development branch.",
+      "type": "Development repository",
+      "symbol": "OP",
+      "accent": "blue"
+    },
+    {
+      "id": "pizza-demo",
+      "title": "Peter's Pizza — Demo",
+      "url": "https://peters-pizza-demo.pages.dev/",
+      "category": "pizza",
+      "description": "Guest pizzeria website demo.",
+      "type": "Guest website",
+      "symbol": "PP",
+      "accent": "red"
+    },
+    {
+      "id": "gerti-public",
+      "title": "English Guitar — Public Website",
+      "url": "https://learnguitarwithenglish.com/",
+      "category": "gerti",
+      "description": "Gerti Gjoni's guitar learning website.",
+      "type": "Guest website",
+      "symbol": "GG",
+      "accent": "green"
     }
   ]
 };
