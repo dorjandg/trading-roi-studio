@@ -39,6 +39,15 @@ main:has(#detail.open){padding-top:24px;max-width:1280px}
 @media(max-width:950px){#collectionProducts .product-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:700px){main:has(#detail.open){padding:18px 14px 60px}.glam-collection-intro{margin:17px 0 0;padding-bottom:13px;gap:10px}#detailTitle{font-size:clamp(29px,8vw,42px)}#collectionProducts{margin-top:12px}#collectionProducts .glam-collection-search{font-size:16px;height:40px}#collectionProducts .glam-type-filters .subitem,#collectionProducts .subfilters .subitem{font-size:11px;padding:7px 9px;min-height:32px}#collectionProducts .product-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}#collectionProducts .product-card .info{padding:7px 8px 9px}#collectionProducts .product-card strong{font-size:15px}#collectionProducts .glam-card-variants{padding:7px 8px 0}.glam-search-toolbar select{min-width:95px}.glam-product-controls{flex-wrap:nowrap}}
 @media(prefers-reduced-motion:reduce){#collectionProducts *{transition:none!important}}
+</style><style id="glam-size-stock-styling">
+#glamProductDialog .glam-size-options{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 10px}
+#glamProductDialog .glam-size-option{position:relative;isolation:isolate;overflow:hidden;min-width:42px;min-height:40px;padding:7px 12px;display:inline-flex;align-items:center;justify-content:center;color:inherit;background:transparent;border:1px solid #88757a;border-radius:2px;font:13px Arial,sans-serif;cursor:pointer}
+#glamProductDialog .glam-size-option[aria-pressed="true"]:not(:disabled){background:#c9a99f;border-color:#c9a99f;color:#191619}
+#glamProductDialog .glam-size-option:disabled{background:#1d181d;color:#8e8185;border-color:#665960;cursor:not-allowed;text-decoration:line-through}
+#glamProductDialog .glam-size-option:disabled::after{content:"";position:absolute;inset:0;background:linear-gradient(to bottom right,transparent calc(50% - .6px),#a09195 calc(50% - .6px),#a09195 calc(50% + .6px),transparent calc(50% + .6px));pointer-events:none}
+#glamProductDialog .glam-stock-message{display:flex;flex-wrap:wrap;gap:4px 12px;margin:4px 0 12px}
+#glamProductDialog .glam-stock-legend{font-size:11px;color:#b9aaa9}
+#glamProductDialog .glam-size-option:focus-visible{outline:2px solid #e2bfb4;outline-offset:2px}
 </style></head><body><header><a class="logo glam-site-brand" href="/" aria-label="GLAM Lingerie and Scents homepage"><strong>glam.</strong><small>LINGERIE &amp; SCENTS</small></a><a class="back" href="/">← HOME</a></header><main><div id="overview"><span class="eyebrow">GLAM · The curated edit</span><h1>Our collections.</h1><p class="lead">Explore the worlds of GLAM. Each collection has its own character, selected with care and discretion.</p><div class="grid" id="grid"></div></div><section class="detail" id="detail"><button class="return" id="return" type="button">← ALL COLLECTIONS</button> <a class="back" href="/" style="margin-left:14px">← HOME</a><div class="glam-collection-intro"><div class="glam-collection-title"><span class="eyebrow">GLAM · Collection</span><h2 id="detailTitle"></h2><p class="description" id="detailDescription"></p></div><a class="inquire" id="inquire" target="_blank" rel="noopener noreferrer">ENQUIRE ↗</a><div class="subgrid" id="subgrid"></div></div></section></main><footer>GLAM LINGERIE &amp; SCENTS · TIRANA</footer><script>
 const collections=[
 {id:'glam',name:'GLAM Collection',tag:'GLAM / THE CURATED EDIT',description:'Discover the latest additions to the GLAM collection.',items:[]},
@@ -262,18 +271,33 @@ document.getElementById('return').onclick=back;window.addEventListener('popstate
       const selector=document.createElement('section');selector.className='glam-variant-selector';
       const colorRow=document.createElement('div'),sizeRow=document.createElement('div'),stockMessage=document.createElement('p');
       stockMessage.setAttribute('role','status');stockMessage.style.cssText='font-size:12px;color:#c9a99f';
-      function variantAvailable(color,size){return variants[JSON.stringify([color,size])]!=='out_of_stock'}
+      sizeRow.className='glam-size-options';
+      stockMessage.className='glam-stock-message';
+      const availableSizes=[...new Set(sizes.length?sizes:['One size'])];
+      function variantAvailable(color,size){
+        if(p.catalog_status==='sold_out'||p.availability==='out_of_stock')return false;
+        const key=JSON.stringify([color,size]);
+        return variants[key]!=='out_of_stock';
+      }
       function updateStock(){
-        sizeRow.replaceChildren();
-        for(const size of sizes.length?sizes:['One size']){
-          const button=document.createElement('button');button.type='button';button.textContent=size;
-          const available=variantAvailable(selectedColor,size)&&p.catalog_status!=='sold_out'&&p.availability!=='out_of_stock';
-          button.disabled=!available;button.setAttribute('aria-pressed',String(selectedSize===size));button.style.cssText='margin:4px;padding:8px 12px;border:1px solid #88757a;background:'+(selectedSize===size?'#c9a99f':'transparent')+';color:'+(selectedSize===size?'#191619':'inherit');
-          button.onclick=()=>{selectedSize=size;updateStock()};sizeRow.append(button);
-        }
         if(selectedSize&&!variantAvailable(selectedColor,selectedSize))selectedSize='';
-        const availableCount=(sizes.length?sizes:['One size']).filter(size=>variantAvailable(selectedColor,size)).length;
-        stockMessage.textContent=p.catalog_status==='sold_out'||p.availability==='out_of_stock'?'Out of stock':availableCount?'Select an available size':'Out of stock in this color';
+        sizeRow.replaceChildren();
+        for(const size of availableSizes){
+          const available=variantAvailable(selectedColor,size);
+          const button=document.createElement('button');button.type='button';button.className='glam-size-option';button.textContent=size;
+          button.disabled=!available;button.setAttribute('aria-pressed',String(available&&selectedSize===size));
+          button.setAttribute('aria-label',size+(available?' — available':' — out of stock'));
+          button.title=available?size:size+' — Out of stock';
+          button.onclick=()=>{if(available){selectedSize=size;updateStock()}};sizeRow.append(button);
+        }
+        const availableCount=availableSizes.filter(size=>variantAvailable(selectedColor,size)).length;
+        stockMessage.replaceChildren();
+        const message=document.createElement('span');
+        message.textContent=availableCount?(selectedSize?'Selected: '+selectedSize:'Select an available size'):(p.catalog_status==='sold_out'||p.availability==='out_of_stock'?'Out of stock':'Out of stock in this color');
+        stockMessage.append(message);
+        if(availableCount&&availableCount<availableSizes.length){
+          const legend=document.createElement('span');legend.className='glam-stock-legend';legend.textContent='Slashed sizes are out of stock';stockMessage.append(legend);
+        }
       }
       if(colors.length){
         const heading=document.createElement('p');heading.textContent='Color';selector.append(heading);
