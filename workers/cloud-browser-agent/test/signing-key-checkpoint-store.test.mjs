@@ -6,10 +6,10 @@ import {createHash} from "node:crypto";
 import {mkdtempSync,rmSync,existsSync,statSync,chmodSync,symlinkSync,linkSync,
  unlinkSync,writeFileSync,readFileSync,copyFileSync,mkdirSync} from "node:fs";
 import {join} from "node:path";
-import {fileURLToPath} from "node:url";
+import {tmpdir} from "node:os";
 import {createSigningKeyCheckpointStore} from "../simulation/signing-key-checkpoint-store.mjs";
 
-const ROOT=fileURLToPath(new URL(".",import.meta.url));
+// A CI checkout may have an untrusted writable ancestor. Use the OS sticky temp root.\nconst ROOT=tmpdir();
 const STORE_ID="fixture-signing-checkpoint";
 const PAYLOAD='{"clock":1,"keys":["public-fixture-a"],"revoked":[]}';
 const NEXT='{"clock":2,"keys":["public-fixture-b"],"revoked":["public-fixture-a"]}';
