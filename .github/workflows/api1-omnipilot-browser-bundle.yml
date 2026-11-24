@@ -1,0 +1,40 @@
+name: OmniPilot isolated Browser Run Worker bundle check
+on:
+  push:
+    branches:
+      - api1-browser-interaction-phase1
+    paths:
+      - ".github/workflows/api1-omnipilot-browser-bundle.yml"
+      - "workers/cloud-browser-agent/src/**"
+      - "workers/cloud-browser-agent/wrangler.jsonc"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser-worker-dryrun:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies without scripts, deployment or credentials
+        working-directory: workers/cloud-browser-agent
+        run: npm install --no-package-lock --ignore-scripts --no-audit --no-fund
+      - name: Verify source syntax and bundled staging Worker
+        working-directory: workers/cloud-browser-agent
+        run: |
+          node --check src/index.js
+          node --check src/handler.mjs
+          node --check src/mcp.mjs
+          node --check src/omnipilot-managed-pilot.mjs
+          npm test
+          npx wrangler deploy --dry-run --outdir "$RUNNER_TEMP/omnipilot-browser-bundle"
+      - name: Verify deployable module exists (no deployment)
+        shell: bash
+        run: |
+          test -d "$RUNNER_TEMP/omnipilot-browser-bundle"
+          echo "OMNIPILOT_WORKER_DRY_RUN_SUCCESS"
