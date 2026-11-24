@@ -1,10 +1,25 @@
 import { createHandler, authorized } from "./handler.mjs";
+import { validateManagedPilot, executeManagedPilot } from "./omnipilot-managed-pilot.mjs";
 import { validateTarget, validateReadOnlyLink } from "./policy.mjs";
 import { validateEditPreviewRequest } from "./edit-preview.mjs";
 
 const headers = {"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"};
 const json = (obj,status=200) => new Response(JSON.stringify(obj),{status,headers});
 const content = value => ({content:[{type:"text",text:JSON.stringify(value)}]});
+const pilotTool = {
+  name:"omnipilot_managed_demo",
+  description:"Opt-in public TodoMVC interaction only. Executes real browser actions on the disposable demonstration website; not arbitrary websites, authenticated sites, files, credentials or production. Actions may modify the demo page; uncertain results must never be retried automatically.",
+  inputSchema:{type:"object",additionalProperties:false,required:["url","actions"],properties:{
+    url:{const:"https://demo.playwright.dev/todomvc/"},
+    actions:{type:"array",minItems:1,maxItems:5,items:{type:"object",additionalProperties:false,
+      required:["op","selector"],properties:{
+        op:{enum:["fill","press","click","wait"]},
+        selector:{type:"string",minLength:1,maxLength:120},
+        value:{type:"string",maxLength:256},
+        key:{enum:["Enter","Escape","Tab","Space"]}
+      }}}
+  }}
+};
 const tools = [
   {name:"browser_agent_status",description:"Read staging browser-agent status; no website interactions.",inputSchema:{type:"object",properties:{},additionalProperties:false}},
   {name:"browser_page_links",description:"Discover up to 30 unique same-origin HTTPS links on an approved page; no clicks or forms. Query strings removed.",inputSchema:{type:"object",properties:{url:{type:"string"}},required:["url"],additionalProperties:false}},
@@ -28,11 +43,17 @@ export function createMcpHandler(launch) {
     const error=(code,message)=>json({jsonrpc:"2.0",id:rpc.id??null,error:{code,message}});
     if(rpc.method==="initialize")return reply({protocolVersion:"2025-06-18",capabilities:{tools:{listChanged:false}},serverInfo:{name:"cloud-browser-agent-staging",version:"0.1.0"}});
     if(rpc.method==="ping")return reply({});
-    if(rpc.method==="tools/list")return reply({tools});
+    if(rpc.method==="tools/list")return reply({tools:env.OMNIPILOT_MANAGED_PILOT_ENABLED==="true"?[...tools,pilotTool]:tools});
     if(rpc.method!=="tools/call")return error(-32601,"Method not found");
     const name=rpc.params?.name;
     const args=rpc.params?.arguments??{};
     if(!args||typeof args!=="object"||Array.isArray(args))return error(-32602,"Invalid arguments");
+    if(name==="omnipilot_managed_demo"){
+      if(env.OMNIPILOT_MANAGED_PILOT_ENABLED!=="true")return error(-32602,"Unknown tool or invalid arguments");
+      try{validateManagedPilot(args);}catch{return error(-32602,"Managed pilot arguments refused");}
+      const outcome=await executeManagedPilot(env.BROWSER,args);
+      return reply({...content(outcome),isError:outcome.ok!==true});
+    }
     if(name==="browser_agent_status"&&Object.keys(args).length===0){
       return reply(content({service:"cloud-browser-agent",mode:"read-only",browserConfigured:!!env.BROWSER}));
     }
