@@ -1,6 +1,6 @@
 // Fixed namespace entrypoint. Importing this module does not open any resource.
 import {createServer,createConnection} from 'node:net';
-import {readFileSync,readlinkSync,readdirSync,statSync} from 'node:fs';
+import {readFileSync,readlinkSync,readdirSync,statSync,openSync,readSync,closeSync,constants} from 'node:fs';
 import {networkInterfaces} from 'node:os';
 import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
@@ -28,6 +28,22 @@ export function advanceNativeBridgeBudget(pair,phase,bytes=0){
   else throw Error('NATIVE_BRIDGE_PHASE');
   return true;
 }
+// Node's real process.env has an exotic prototype. Only this fixed trusted
+// process boundary snapshots it; caller records still require exactRecord.
+// Reject the key set before reading values, including in a misconfigured host.
+export function snapshotNativeChildEnvironment(){
+  const required=Object.keys(CHILD_ENV),allowed=[...required,'PWD'],keys=Reflect.ownKeys(process.env);
+  if(keys.length>allowed.length||keys.some(key=>typeof key!=='string'||!allowed.includes(key))||
+    required.some(key=>!keys.includes(key)))throw Error('NATIVE_ENVIRONMENT_REFUSED');
+  const snapshot=Object.create(null);
+  for(const key of keys){
+    const descriptor=Object.getOwnPropertyDescriptor(process.env,key);
+    if(!descriptor||!descriptor.enumerable||!Object.hasOwn(descriptor,'value')||
+      typeof descriptor.value!=='string'||descriptor.value.length>256)throw Error('NATIVE_ENVIRONMENT_REFUSED');
+    snapshot[key]=descriptor.value;
+  }
+  return Object.freeze(snapshot);
+}
 export function checkChildEnvironment(env,interfaces,namespaceIds){
   exactRecord(env,[...Object.keys(CHILD_ENV),'PWD'],Object.keys(CHILD_ENV));
   for(const [key,value] of Object.entries(CHILD_ENV))if(env[key]!==value)throw Error('NATIVE_ENVIRONMENT_REFUSED');
@@ -37,6 +53,51 @@ export function checkChildEnvironment(env,interfaces,namespaceIds){
   exactRecord(namespaceIds,['user','pid','mnt','net','ipc','uts','time']);
   for(const [kind,value] of Object.entries(namespaceIds))if(typeof value!=='string'||
     !new RegExp('^'+kind+':\\[[0-9]+\\]$').test(value))throw Error('NATIVE_NAMESPACE_REFUSED');
+}
+
+// Chromium must write its own nested UID/GID maps. Keep that private procfs
+// usable while verifying the read-only root and denial of fixed global controls.
+// This has no caller-supplied paths or operations and never writes control data.
+export function verifyNativeProcIsolation(){
+  let fd=null;
+  try{
+    const buffer=Buffer.alloc(65537);let size=0;
+    fd=openSync('/proc/self/mountinfo',constants.O_RDONLY);
+    while(size<buffer.length){
+      const count=readSync(fd,buffer,size,buffer.length-size,null);
+      if(count===0)break;size+=count;
+    }
+    if(size===buffer.length)throw Error();
+    const mountFd=fd;fd=null;closeSync(mountFd);
+    const text=new TextDecoder('utf-8',{fatal:true}).decode(buffer.subarray(0,size));
+    if(!text.endsWith('\n')||/[\0\r\t]/.test(text))throw Error();
+    const lines=text.slice(0,-1).split('\n');
+    if(lines.length<2||lines.length>256)throw Error();
+    let root,proc;
+    for(const line of lines){
+      if(line.length>4096)throw Error();
+      const fields=line.split(' '),separator=fields.indexOf('-');
+      if(fields.some(value=>value==='')||fields.length>32||separator<6||separator+4!==fields.length||
+        !/^\d+$/.test(fields[0])||!/^\d+$/.test(fields[1])||!/^\d+:\d+$/.test(fields[2]))throw Error();
+      const mount={root:fields[3],options:new Set(fields[5].split(',')),type:fields[separator+1],
+        superOptions:new Set(fields[separator+3].split(','))};
+      if(fields[4]==='/'){if(root)throw Error();root=mount;}
+      if(fields[4]==='/proc'){if(proc)throw Error();proc=mount;}
+    }
+    if(!root||root.options.has('rw')||!['ro','nosuid','nodev'].every(flag=>root.options.has(flag))||
+      !proc||proc.root!=='/'||proc.type!=='proc'||proc.options.has('ro')||proc.superOptions.has('ro')||
+      !['rw','nosuid','nodev','noexec'].every(flag=>proc.options.has(flag))||!proc.superOptions.has('rw')||
+      readlinkSync('/proc/self')!==String(process.pid))throw Error();
+  }catch{throw Error('NATIVE_PROC_REFUSED');}
+  finally{if(fd!==null)try{closeSync(fd);}catch{}}
+  for(const path of ['/proc/sys/kernel/randomize_va_space','/proc/sys/user/max_user_namespaces',
+    '/proc/sysrq-trigger','/proc/irq/default_smp_affinity']){
+    let opened;
+    try{opened=openSync(path,constants.O_WRONLY);}
+    catch(error){if(['EACCES','EPERM','EROFS'].includes(error?.code))continue;throw Error('NATIVE_PROC_REFUSED');}
+    // An acquired descriptor disproves the required denial. Close before refusal.
+    try{closeSync(opened);}finally{throw Error('NATIVE_PROC_REFUSED');}
+  }
 }
 
 // This bridge cannot choose an upstream destination: every accepted byte goes
@@ -108,10 +169,11 @@ async function provePrivateConnectRefusal(port){
 }
 function childObservations(){
   const namespaces=Object.fromEntries(['user','pid','mnt','net','ipc','uts','time'].map(name=>[name,readlinkSync('/proc/self/ns/'+name)]));
-  checkChildEnvironment(process.env,networkInterfaces(),namespaces);
+  checkChildEnvironment(snapshotNativeChildEnvironment(),networkInterfaces(),namespaces);
   if(process.pid!==2||process.ppid!==1)throw Error('NATIVE_PROCESS_REFUSED');
   const status=readFileSync('/proc/self/status','utf8');
   if(!/^CapEff:\s+0+$/m.test(status)||!/^NoNewPrivs:\s+1$/m.test(status))throw Error('NATIVE_CAPABILITIES_REFUSED');
+  verifyNativeProcIsolation();
   for(const path of ['/home/codespace','/workspaces','/root','/sys','/etc/resolv.conf']){
     try{statSync(path);}catch(error){if(error.code==='ENOENT')continue;throw error;}
     throw Error('NATIVE_FILESYSTEM_REFUSED');

@@ -87,7 +87,7 @@ export function nativeSandboxPlan({installation,stage,brokerSocket,controlSocket
     !stage.startsWith('/tmp/omnipilot-native-')||!brokerSocket.startsWith(stage+'/broker/')||
     !controlSocket.startsWith(stage+'/control/'))throw fail('NATIVE_PLAN_REFUSED');
   const args=['--unshare-all','--die-with-parent','--new-session','--cap-drop','ALL',
-    '--clearenv','--hostname','omnipilot','--info-fd','3','--proc','/proc','--remount-ro','/proc','--dev','/dev',
+    '--clearenv','--hostname','omnipilot','--info-fd','3','--proc','/proc','--dev','/dev',
     '--size','536870912','--perms','1777','--tmpfs','/tmp',
     '--size','67108864','--perms','1777','--tmpfs','/dev/shm',
     '--size','134217728','--perms','0700','--tmpfs','/home/omnipilot',
