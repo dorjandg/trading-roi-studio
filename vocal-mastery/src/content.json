@@ -10,7 +10,8 @@
     "description": {
       "en": "Vocal coaching with Landi Kademi. Discover your sound through focused technique, artistry and performance.",
       "sq": "Trajnim vokal me Landi Kademin. Zbulo tingullin tënd përmes teknikës, interpretimit dhe përgatitjes për skenë."
-    }
+    },
+    "email": ""
   },
   "hero": {
     "eyebrow": {
@@ -411,8 +412,8 @@
         "sq": "Çdo zë e nis\nme një bisedë."
       },
       "intro": {
-        "en": "Tell us a little about yourself. We will discuss your goals, the right direction and the practical details of working together.",
-        "sq": "Na trego pak për veten. Do të diskutojmë synimet e tua, drejtimin e përshtatshëm dhe detajet praktike të bashkëpunimit."
+        "en": "Choose online or in-person training at the academy. Tell us about your experience and goals so we can discuss a suitable plan.",
+        "sq": "Zgjidh trajnimin online ose me prani fizike në akademi. Na trego përvojën dhe synimet e tua që të diskutojmë një plan të përshtatshëm."
       },
       "sections": []
     },
@@ -549,12 +550,12 @@
     },
     {
       "q": {
-        "en": "Are online lessons available?",
-        "sq": "A ofrohen mësime online?"
+        "en": "Can I train online or at the academy?",
+        "sq": "A mund të ndjek trajnimin online ose në akademi?"
       },
       "a": {
-        "en": "Please tell us where you are based and which format you prefer. The academy will confirm the available options, location and schedule directly.",
-        "sq": "Na trego ku ndodhesh dhe cilin format preferon. Akademia do të konfirmojë drejtpërdrejt mundësitë, vendndodhjen dhe orarin."
+        "en": "Both are available: online vocal coaching and in-person training at the academy. Contact us to confirm your preferred format, lesson times and fees.",
+        "sq": "Ofrohen të dyja format: trajnim vokal online dhe trajnim me prani fizike në akademi. Na kontakto për të konfirmuar formatin e preferuar, oraret dhe tarifat."
       }
     }
   ],

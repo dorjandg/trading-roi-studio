@@ -20,6 +20,7 @@
   const frame=document.createElement('iframe');frame.className='video-frame';frame.src=`https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?autoplay=1&rel=0`;frame.title=button.dataset.videoTitle||'Video';frame.allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';frame.allowFullscreen=true;frame.referrerPolicy='strict-origin-when-cross-origin';button.replaceWith(frame);
  }));
  const appForm=document.getElementById('application-form');
+ if(appForm){const format=url.searchParams.get('format');if(['academy','online'].includes(format)){appForm.querySelectorAll('input[name="format"]').forEach(input=>{input.checked=input.dataset.formatKey===format;});}}
  appForm?.addEventListener('submit',event=>{
   event.preventDefault();if(!appForm.reportValidity())return;
   if(config.preview)return;
