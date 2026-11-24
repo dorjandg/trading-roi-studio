@@ -16,6 +16,6 @@ test('compact bilingual navigation keeps eight destinations and a dedicated appl
   assert.match(menu,/href="tel:\+355692085923"/);
   assert.match(menu,/href="https:\/\/wa.me\/355692085923"/);
   assert.ok(!menu.includes('menu-contact"><a href="https://wa.me/355692085923"'));
-  assert.match(html,/site\.css\?v=menu-2/);
+  assert.match(html,/site\.css\?v=form-3/);
  }
 });
