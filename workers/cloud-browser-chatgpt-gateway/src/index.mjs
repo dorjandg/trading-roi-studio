@@ -15,7 +15,7 @@ const apiHandler={
       JSON.stringify({error:"Insufficient OAuth permissions"}),
       {status:403,headers:{"content-type":"application/json","cache-control":"no-store"}}
     );
-    return forwardAuthorizedMcp(request,env,{userId:ctx.props.userId});
+    return forwardAuthorizedMcp(request,env,{userId:ctx.props.userId,scopes});
   }
 };
 const authHandler={
@@ -33,7 +33,7 @@ const oauthProvider = new OAuthProvider({
   defaultHandler:authHandler,
   authorizeEndpoint:"/authorize",
   tokenEndpoint:"/oauth/token",
-  scopesSupported:["mcp:read","offline_access"],
+  scopesSupported:["mcp:read","mcp:demo.interact","offline_access"],
   requiredScopes:["mcp:read"],
   clientIdMetadataDocumentEnabled:true,
   resourceMetadata:{resource:RESOURCE,authorization_servers:[ORIGIN]}
@@ -43,7 +43,7 @@ const oauthProvider = new OAuthProvider({
 // All tool invocations, including browser_agent_status, use OAuthProvider validation.
 export default {
   async fetch(request,env,ctx){
-    const discovery=await publicDiscovery(request);
+    const discovery=await publicDiscovery(request,env);
     if(discovery)return discovery;
     return oauthProvider.fetch(request,env,ctx);
   }

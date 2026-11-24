@@ -12,6 +12,10 @@ export function validateRpc(value){
   if(name==="browser_page_links"||name==="browser_inspect"||name==="browser_form_inventory")return args&&typeof args==="object"&&!Array.isArray(args)&&Object.keys(args).length===1&&typeof args.url==="string";
   if(name==="browser_edit_preview")return args&&typeof args==="object"&&!Array.isArray(args)&&Object.keys(args).sort().join(",")==="fieldLabel,formIndex,proposedText,url"&&typeof args.url==="string"&&Number.isSafeInteger(args.formIndex)&&typeof args.fieldLabel==="string"&&typeof args.proposedText==="string";
   if(name==="browser_follow_link")return args&&typeof args==="object"&&!Array.isArray(args)&&Object.keys(args).sort().join(",")==="linkUrl,url"&&typeof args.url==="string"&&typeof args.linkUrl==="string";
+  if(name==="omnipilot_managed_demo")return args&&typeof args==="object"&&!Array.isArray(args)&&
+    Object.keys(args).sort().join(",")==="actions,url"&&
+    args.url==="https://demo.playwright.dev/todomvc/"&&Array.isArray(args.actions)&&
+    args.actions.length>=1&&args.actions.length<=5;
   return false;
 }
 
@@ -25,6 +29,11 @@ export async function forwardAuthorizedMcp(request,env,authorizedUser,fetcher=fe
   if(body.length>MAX_BODY)return json({error:"Request too large"},413);
   let rpc;try{rpc=JSON.parse(body)}catch{return invalid("Invalid JSON");}
   if(!validateRpc(rpc))return invalid("Unsupported or invalid MCP action");
+  if(rpc.method==="tools/call"&&rpc.params.name==="omnipilot_managed_demo"){
+    if(env.OMNIPILOT_MANAGED_PILOT_ENABLED!=="true"||
+      !Array.isArray(authorizedUser.scopes)||!authorizedUser.scopes.includes("mcp:demo.interact"))
+      return json({error:"Separate demonstration-interaction scope required"},403);
+  }
   const response=await fetcher(BASE+"/mcp",{
     method:"POST",
     redirect:"manual",

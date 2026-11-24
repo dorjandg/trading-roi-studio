@@ -2,6 +2,7 @@
 // Browser actions NEVER execute here: OAuthProvider authenticates every tools/call.
 const readonly={readOnlyHint:true,destructiveHint:false,openWorldHint:true};
 const oauth={securitySchemes:[{type:"oauth2",scopes:["mcp:read"]}]};
+const interactOauth={securitySchemes:[{type:"oauth2",scopes:["mcp:demo.interact"]}]};
 const urlSchema={type:"object",properties:{url:{type:"string",description:"Approved HTTPS page URL; must belong to the staging allowlist"}},required:["url"],additionalProperties:false};
 export const advertisedTools=Object.freeze([
   {name:"browser_agent_status",title:"Check Browser Agent status",description:"Use to confirm an authorized read-only Browser Agent session and browser availability. Does not navigate websites.",inputSchema:{type:"object",properties:{},additionalProperties:false},annotations:{...readonly,openWorldHint:false},_meta:oauth},
@@ -11,9 +12,18 @@ export const advertisedTools=Object.freeze([
   {name:"browser_edit_preview",title:"Preview text edit (no changes)",description:"Preflight only: show proposed text change for one eligible field. Does not read current values or execute a write. Cannot approve, fill, click, submit, upload or save.",inputSchema:{type:"object",properties:{url:{type:"string",description:"Approved HTTPS page URL without query parameters"},formIndex:{type:"integer",minimum:1,maximum:12},fieldLabel:{type:"string",description:"Exact field label shown by browser_form_inventory"},proposedText:{type:"string",minLength:1,maxLength:1200}},required:["url","formIndex","fieldLabel","proposedText"],additionalProperties:false},annotations:{readOnlyHint:true,destructiveHint:false,openWorldHint:false},_meta:oauth},
   {name:"browser_page_links",title:"Discover approved website pages",description:"Use to discover up to 30 same-origin links on an approved HTTPS website. No clicks or submissions; output removes query parameters.",inputSchema:urlSchema,annotations:readonly,_meta:oauth}
 ]);
+const managedPilotTool=Object.freeze({name:"omnipilot_managed_demo",title:"OmniPilot public test interaction",
+  description:"Opt-in interaction on the disposable TodoMVC demo ONLY. Requires mcp:demo.interact OAuth permission. No arbitrary websites, logins, credentials, private data, downloads, or production actions.",
+  inputSchema:{type:"object",additionalProperties:false,required:["url","actions"],properties:{
+    url:{const:"https://demo.playwright.dev/todomvc/"},
+    actions:{type:"array",minItems:1,maxItems:5,items:{type:"object",additionalProperties:false,
+      required:["op","selector"],properties:{op:{enum:["fill","press","click","wait"]},
+        selector:{type:"string",minLength:1,maxLength:120},
+        value:{type:"string",maxLength:256},key:{enum:["Enter","Escape","Tab","Space"]}}}}
+  }},annotations:{readOnlyHint:false,destructiveHint:false,openWorldHint:false},_meta:interactOauth});
 const headers={"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"};
 const reply=(id,result)=>new Response(JSON.stringify({jsonrpc:"2.0",id,result}),{status:200,headers});
-export async function publicDiscovery(request){
+export async function publicDiscovery(request,env={}){
   const url=new URL(request.url);
   if(url.pathname!=="/mcp"||request.method!=="POST")return null;
   if(Number(request.headers.get("content-length")||0)>4096)return new Response("Request too large",{status:413});
@@ -26,8 +36,8 @@ export async function publicDiscovery(request){
     protocolVersion:"2025-06-18",
     capabilities:{tools:{listChanged:false}},
     serverInfo:{name:"cloud-browser-chatgpt-stage",version:"0.2.0"},
-    instructions:"This gateway offers only read-only website inspection on an exact HTTPS allowlist. All tool execution requires Google-backed OAuth mcp:read. Never use this service to click buttons, authenticate into websites, trade, change settings or write data."
+    instructions:"Read-only inspection requires Google-backed OAuth mcp:read. An optional disposable TodoMVC interaction requires separate mcp:demo.interact consent and a staging enablement flag. No account logins, financial actions or production writes."
   });
-  if(rpc.method==="tools/list")return reply(rpc.id,{tools:advertisedTools});
+  if(rpc.method==="tools/list")return reply(rpc.id,{tools:env.OMNIPILOT_MANAGED_PILOT_ENABLED==="true"?[...advertisedTools,managedPilotTool]:advertisedTools});
   return null; // Tool execution and all other methods are exclusively OAuth-protected.
 }
