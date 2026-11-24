@@ -13,7 +13,8 @@ test('premium bilingual footer retains all verified links and accessible disclos
   assert.match(footer,/href="tel:\+355692085923"/);
   assert.match(footer,/href="https:\/\/wa.me\/355692085923"/);
   assert.match(footer,/href="https:\/\/www.instagram.com\/landikademi\//);
-  assert.match(footer,/href="\/manage"/);
+  assert.doesNotMatch(html,/href="(?:https:\/\/vocalmastery\.net)?\/manage(?:[\/"?]|$)/);
+  assert.doesNotMatch(footer,/>Website studio</i);
   assert.match(footer,/<details><summary>/);
   assert.match(footer,/id="footer-chat-open"[^>]*aria-controls="chat-panel"/);
   assert.match(footer,/With Landi Kademi|Me Landi Kademin/);
