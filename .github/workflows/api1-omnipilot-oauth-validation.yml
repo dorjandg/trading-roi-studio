@@ -1,0 +1,33 @@
+name: API1 isolated OAuth gateway validation
+on:
+  push:
+    branches:
+      - api1-browser-interaction-phase1
+    paths:
+      - "workers/cloud-browser-chatgpt-gateway/**"
+      - ".github/workflows/api1-omnipilot-oauth-validation.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  gateway-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated gateway dependencies
+        working-directory: workers/cloud-browser-chatgpt-gateway
+        run: npm install --no-package-lock --ignore-scripts
+      - name: Validate gateway source and tests
+        working-directory: workers/cloud-browser-chatgpt-gateway
+        run: |
+          npm run check
+          npm test
+      - name: Wrangler bundle dry run (no deployment)
+        working-directory: workers/cloud-browser-chatgpt-gateway
+        run: npm run build
