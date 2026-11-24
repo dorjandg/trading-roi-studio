@@ -8,6 +8,7 @@ const input=()=>({url:'https://demo.playwright.dev/todomvc/',actions:[
   {op:'press',selector:'input.new-todo',key:'Enter'}
 ]});
 const denied=fn=>assert.throws(fn,{code:'PILOT_INPUT_REFUSED'});
+const fakeJpeg=Buffer.from([255,216,255,...Array(80).fill(0),255,217]).toString('base64');
 test('Cloudflare managed pilot accepts only bounded public fixture actions',()=>{
   const plan=validateManagedPilot(input());
   assert.equal(plan.url,'https://demo.playwright.dev/todomvc/');
@@ -47,6 +48,8 @@ test('generated script is a fixed function with the original strict plan as data
   assert.match(code,/req\.method\(\)/);
   assert.match(code,/PILOT_SENSITIVE_FIELD/);
   assert.match(code,/PILOT_ORIGIN_CHANGED/);
+  assert.match(code,/page\.screenshot/);
+  assert.match(code,/screenshotBase64/);
   assert.match(code,/page\.goto/);
   assert.doesNotMatch(code,/eval\s*\(|new Function/);
   const callable=Function('return ('+code+')')();
@@ -66,13 +69,14 @@ test('client acquires a domain-guarded session, runs once and closes it',async()
       calls.push({code,options});
       return new Response(JSON.stringify({success:true,result:{
         ok:true,origin:'https://demo.playwright.dev',title:'React • TodoMVC',
-        itemCount:1,items:['OmniPilot smoke']}}),{status:200});
+        itemCount:1,items:['OmniPilot smoke'],screenshotMime:'image/jpeg',screenshotBase64:fakeJpeg}}),{status:200});
     },
     async closeSession(id){closed.push(id);return {status:'closed'};}
   };
   const result=await executeManagedPilot(binding,input());
   assert.deepEqual(result,{ok:true,origin:'https://demo.playwright.dev',
-    title:'React • TodoMVC',itemCount:1,items:['OmniPilot smoke']});
+    title:'React • TodoMVC',itemCount:1,items:['OmniPilot smoke'],
+    screenshotMime:'image/jpeg',screenshotBase64:fakeJpeg});
   assert.deepEqual(acquired,[{guardrails:{allowedDomains:['demo.playwright.dev']},keepAlive:10000}]);
   assert.equal(calls.length,1);
   assert.deepEqual(closed,['pilot-session-abc123']);
@@ -128,4 +132,21 @@ test('failed acquisition and uncertain cleanup cannot be reported as completed',
   assert.equal(result.code,'PILOT_CLEANUP_UNVERIFIED');assert.equal(result.ok,false);
   assert.equal(result.outcomeUnknown,true);assert.equal(result.retrySafe,false);
   assert.equal(closed,1);
+});
+
+test('invalid or oversized images do not produce an apparently successful MCP action',async()=>{
+  for(const value of ['not a jpeg','/9j/','/9j/'+('A'.repeat(48000))]){
+    let closes=0;
+    const browser={
+      async acquire(){return {sessionId:'pilot-session-abc123'};},
+      async script(){return new Response(JSON.stringify({success:true,result:{
+        ok:true,origin:'https://demo.playwright.dev',title:'Demo',
+        itemCount:1,items:['testing'],screenshotMime:'image/jpeg',screenshotBase64:value
+      }}),{status:200});},
+      async closeSession(){closes++;return {status:'closed'};}
+    };
+    const result=await executeManagedPilot(browser,input());
+    assert.equal(result.ok,false);assert.equal(result.code,'PILOT_RESULT_INVALID');
+    assert.equal(result.retrySafe,false);assert.equal(closes,1);
+  }
 });
