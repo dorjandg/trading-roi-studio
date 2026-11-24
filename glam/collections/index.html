@@ -5,7 +5,7 @@
 #glamProductDialog{position:fixed;width:min(880px,94vw);max-width:94vw;max-height:90dvh;overflow:auto;background:#241e23;color:#f6eeea;border:1px solid #6e5c63;padding:0;box-shadow:0 20px 90px #000a}#glamProductDialog::backdrop{background:#000b}
 .glam-detail-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;padding:30px}.glam-detail-photo{width:100%;max-height:65dvh;object-fit:contain;background:#f0edeb}.glam-detail-info h2{font:clamp(25px,3vw,40px)/1.16 Georgia,serif;margin:10px 0 18px}.glam-detail-brand{color:#d5b5aa}.glam-detail-price{display:block;font-size:19px;margin:12px 0}.glam-detail-info p{line-height:1.6}.glam-detail-field{font-size:13px;color:#d8c9c7;margin:7px 0}.glam-detail-note{font-size:12px;color:#d5b5aa}.glam-detail-info a{display:block;color:#f6eeea;margin-top:18px;text-decoration:underline}.glam-detail-enquire{border:1px solid #ad8e84;padding:12px;text-align:center;text-decoration:none!important}.glam-detail-close{position:sticky;top:6px;float:right;z-index:2;margin:6px 6px -48px 0;width:36px;height:36px;border-radius:50%;border:1px solid #7c686d;background:#241e23;color:white;font-size:24px;cursor:pointer}
 @media(max-width:650px){.glam-detail-layout{grid-template-columns:1fr;padding:15px;gap:12px}.glam-detail-photo{max-height:42dvh}#glamProductDialog{max-height:94dvh}}
-</style><style id="glam-consistent-brand">.glam-site-brand{display:inline-flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;text-decoration:none;line-height:1}.glam-site-brand strong{font:700 34px Georgia,serif;letter-spacing:-2px}.glam-site-brand small{font:9px Arial,sans-serif;letter-spacing:.16em;color:#c7ada5;white-space:nowrap}@media(max-width:700px){.glam-site-brand strong{font-size:27px}.glam-site-brand small{font-size:8px}}</style></head><body><header><a class="logo glam-site-brand" href="/" aria-label="GLAM Lingerie and Scents homepage"><strong>glam.</strong><small>LINGERIE &amp; SCENTS</small></a><a class="back" href="/">← HOME</a></header><main><div id="overview"><span class="eyebrow">GLAM · The curated edit</span><h1>Our collections.</h1><p class="lead">Explore the worlds of GLAM. Each collection has its own character, selected with care and discretion.</p><div class="grid" id="grid"></div></div><section class="detail" id="detail"><button class="return" id="return" type="button">← ALL COLLECTIONS</button> <a class="back" href="/" style="margin-left:14px">← HOME</a><div style="margin-top:35px"><span class="eyebrow">GLAM · Collection</span><h2 id="detailTitle"></h2><p class="description" id="detailDescription"></p><div class="subgrid" id="subgrid"></div><a class="inquire" id="inquire" target="_blank" rel="noopener noreferrer">ENQUIRE PRIVATELY ↗</a></div></section></main><footer>GLAM LINGERIE &amp; SCENTS · TIRANA</footer><script>
+</style><style id="glam-consistent-brand">.glam-site-brand{display:inline-flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;text-decoration:none;line-height:1}.glam-site-brand strong{font:700 34px Georgia,serif;letter-spacing:-2px}.glam-site-brand small{font:9px Arial,sans-serif;letter-spacing:.16em;color:#c7ada5;white-space:nowrap}@media(max-width:700px){.glam-site-brand strong{font-size:27px}.glam-site-brand small{font-size:8px}}</style><style>.glam-detail-gallery{min-width:0;align-self:start}.glam-detail-gallery .glam-detail-photo{width:100%;display:block;object-fit:contain}.glam-detail-gallery .glam-detail-photo[hidden],.glam-detail-thumbs[hidden]{display:none}.glam-detail-thumbs{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.glam-detail-thumbs button{position:relative;width:58px;height:76px;padding:2px;border:1px solid #88757a;background:transparent;cursor:pointer;color:inherit}.glam-detail-thumbs button[aria-pressed=true]{border:2px solid #c9a99f}.glam-detail-thumbs img{width:100%;height:100%;object-fit:cover}.glam-detail-thumbs span{position:absolute;bottom:3px;right:3px;background:#282225;color:#fff;padding:1px 4px;font-size:10px}</style></head><body><header><a class="logo glam-site-brand" href="/" aria-label="GLAM Lingerie and Scents homepage"><strong>glam.</strong><small>LINGERIE &amp; SCENTS</small></a><a class="back" href="/">← HOME</a></header><main><div id="overview"><span class="eyebrow">GLAM · The curated edit</span><h1>Our collections.</h1><p class="lead">Explore the worlds of GLAM. Each collection has its own character, selected with care and discretion.</p><div class="grid" id="grid"></div></div><section class="detail" id="detail"><button class="return" id="return" type="button">← ALL COLLECTIONS</button> <a class="back" href="/" style="margin-left:14px">← HOME</a><div style="margin-top:35px"><span class="eyebrow">GLAM · Collection</span><h2 id="detailTitle"></h2><p class="description" id="detailDescription"></p><div class="subgrid" id="subgrid"></div><a class="inquire" id="inquire" target="_blank" rel="noopener noreferrer">ENQUIRE PRIVATELY ↗</a></div></section></main><footer>GLAM LINGERIE &amp; SCENTS · TIRANA</footer><script>
 const collections=[
 {id:'glam',name:'GLAM Collection',tag:'GLAM / THE CURATED EDIT',description:'Discover the latest additions to the GLAM collection.',items:[]},
 {id:'lingerie',name:'Lingerie',tag:'01 / INTIMATE ELEGANCE',description:'Considered lingerie, designed for confidence and personal expression.',items:['Bras','Briefs & Sets','Fine Lingerie']},
@@ -77,12 +77,24 @@ document.getElementById('return').onclick=back;window.addEventListener('popstate
     const wrap=document.createElement('div');wrap.className='glam-detail-layout';
     const colors=String(p.colors||'').split(',').map(v=>v.trim()).filter(Boolean);
     const sizes=String(p.sizes||'').split(',').map(v=>v.trim()).filter(Boolean);
-    const variants=p.variant_stock||{},colorPhotos=p.color_images||{};
-    const imageList=Array.isArray(p.images)&&p.images.length?p.images:(p.image_url?[p.image_url]:[]);
+    const variants=p.variant_stock||{},colorPhotos=p.color_images||{},colorGallery=p.color_gallery||{};
+    const urls=v=>(Array.isArray(v)?v:[v]).filter(x=>typeof x==='string'&&x.trim());
+    const unique=v=>[...new Set(v)];
+    const imageList=unique([...urls(p.images),...urls(p.image_url),...Object.values(colorGallery).flatMap(urls),...Object.values(colorPhotos).flatMap(urls)]);
     let selectedColor=colors[0]||'',selectedSize='';
+    const gallery=document.createElement('div');gallery.className='glam-detail-gallery';
     const photo=document.createElement('img');photo.className='glam-detail-photo';photo.alt=p.name||'Product';
-    function changePhoto(){const url=colorPhotos[selectedColor]||imageList[0];if(url){photo.src=url;photo.hidden=false}else photo.hidden=true}
-    changePhoto();wrap.appendChild(photo);
+    const thumbs=document.createElement('div');thumbs.className='glam-detail-thumbs';thumbs.setAttribute('aria-label','Product photos');
+    gallery.append(photo,thumbs);
+    function changePhoto(){
+      const preferred=unique([...urls(colorGallery[selectedColor]),...urls(colorPhotos[selectedColor])]);
+      const list=unique([...preferred,...imageList]);
+      thumbs.replaceChildren();
+      function show(i){photo.hidden=!list.length;if(list[i])photo.src=list[i];Array.from(thumbs.children).forEach((b,j)=>b.setAttribute('aria-pressed',String(i===j)))}
+      list.forEach((url,i)=>{const b=document.createElement('button');b.type='button';b.setAttribute('aria-label','View photo '+(i+1));const img=document.createElement('img');img.src=url;img.alt='';img.loading='lazy';const n=document.createElement('span');n.textContent=String(i+1);b.append(img,n);b.onclick=()=>show(i);thumbs.append(b)});
+      thumbs.hidden=list.length<2;show(0);
+    }
+    changePhoto();wrap.appendChild(gallery);
     const info=document.createElement('div');info.className='glam-detail-info';
     function add(tag,value,className){if(value===undefined||value===null||value==='')return;const el=document.createElement(tag);el.textContent=String(value);if(className)el.className=className;info.appendChild(el)}
     add('small',(p.brand||'GLAM')+(p.reference_only?' · Manufacturer reference':''),'glam-detail-brand');
@@ -113,7 +125,7 @@ document.getElementById('return').onclick=back;window.addEventListener('popstate
       }
       const sizeHeading=document.createElement('p');sizeHeading.textContent='Size / availability';selector.append(sizeHeading,sizeRow,stockMessage);info.append(selector);updateStock();
     }
-    const fields=[['Collection',p.category],['SKU',p.sku],['Sizes',p.sizes],['Colors',p.colors],['Materials',p.materials],['Care',p.care],['Availability',p.availability]];
+    const fields=[['Collection',p.category],['SKU',p.sku],['Materials',p.materials],['Care',p.care],['Availability',p.availability]];
     for(const field of fields){let value=field[1];if(Array.isArray(value))value=value.join(', ');if(value)add('p',field[0]+': '+value,'glam-detail-field')}
     if(p.reference_only)add('p','Manufacturer reference only. Availability at GLAM has not been confirmed.','glam-detail-note');
     if(p.source_url){const a=document.createElement('a');a.href=p.source_url;a.target='_blank';a.rel='noopener noreferrer';a.textContent='Manufacturer details ↗';info.appendChild(a)}
