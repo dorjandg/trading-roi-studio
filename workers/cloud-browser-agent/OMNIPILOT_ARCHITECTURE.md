@@ -22,7 +22,9 @@ provide that boundary.
 | Component | Implementation and limit |
 | --- | --- |
 | Access assertion, Managed OAuth policy, trusted ingress and identity boundary | Synthetic review boundaries; all admission/execution authorization flags remain false. |
-| `simulation/access-keyset-lifecycle.mjs` | In-memory key freshness, generations, rotation overlap, revocation and tombstones; no key-source authentication or durable rollback state. |
+| `simulation/access-keyset-lifecycle.mjs` | Key freshness, generations, rotation overlap, revocation and tombstones; canonical complete checkpoints and private forks. Restored state remains on hold until a fresh advancing publication. No I/O or authenticated key source. |
+| `simulation/signing-key-checkpoint-store.mjs` | Isolated local SQLite storage with complete-checkpoint compare-and-swap, explicit create/open, exact byte digests and acknowledged commits. Requires trusted private storage and a separately retained rollback floor. |
+| `simulation/durable-access-keyset-owner.mjs` | Stages each operation in a private fork, saves the complete checkpoint, then activates only an exactly acknowledged result. Persists clock-only observations and halts on conflicts or uncertain writes. Review-only; no runtime admission. |
 | `simulation/isolated-browser-controller.mjs` | Bounded immutable queue, dispatch-time grant recheck, pending cancellation and uncertain outcomes after dispatch; not browser termination or durable fencing. |
 | Private browser gateway and mock viewer ingress | Development-only loopback transport, bounded concurrent cleanup, synchronous failure-stop and validated uncertainty metadata across both hops. Mock login is not real user authentication. |
 | `simulation/omnipilot-generic-browser.mjs` | Generic transport-free primitives over a trusted injected context, opaque owner capability and externally installed egress lease. Not registered as an MCP tool or wired to an active browser. |
@@ -30,9 +32,10 @@ provide that boundary.
 | Existing isolated MCP and screenshot adapters | Reusable protocol and bounded image/evidence handling. Existing exposed real-browser workflows remain restricted to Wikipedia or owned fixtures. |
 | P3 ownership/coordinator/fencing modules | Advisory synthetic contracts. Do not treat structure validation as a live lease or execution grant. |
 
-A test using a fake session proves the tested contract, not real browser/network
-behavior. A source commit does not prove an active runtime or connector was
-updated.
+Tests use synthetic assertions, fake browser sessions and disposable local SQLite
+files. They do not establish live browser/network behavior, physical power-loss
+resilience or real account authentication. A source commit does not prove an
+active runtime or connector was updated.
 
 ## Ownership, dispatch and failure semantics
 
@@ -60,9 +63,21 @@ enforcement before exposing these primitives.
 ## Authentication and persistent accounts
 
 Keep key publication and lifecycle management private to the trusted owner.
-Before runtime use, authenticate the issuer/key-fetch path and persist the
-generation floor plus revocation/material history across restarts. Never use a
-timeless startup key snapshot as the finished lifecycle.
+The isolated durability prototype now saves the complete key history, generation,
+policy binding and clock high-water mark in one SQLite transaction. The owner
+stages a private copy and activates it only after exact commit acknowledgment.
+Reopening always restores a hold; a fresh, strictly advancing publication must
+pass the existing policy before the state is reviewable again. Refused requests
+and status checks also persist any clock observation.
+
+Before runtime use, authenticate the issuer/key-fetch path, provision protected
+runtime storage, retain an independent trusted revision/digest and lifecycle
+floor, and implement operational ownership fencing. A payload digest detects
+byte inconsistency; it does not authenticate provenance or prove that the newest
+state survived rollback. Never treat a timeless startup key snapshot or a
+caller-supplied generation as a finished lifecycle. See
+[ACCESS-KEYSET-PERSISTENCE.md](simulation/ACCESS-KEYSET-PERSISTENCE.md) for the
+internal contract and recovery limits.
 
 Use protected, isolated Chromium profiles and a friendly-name account registry.
 Credentials, MFA/recovery codes and session tokens stay outside chat, model
@@ -85,7 +100,8 @@ the universal controller. No new tool is enabled merely by adding source files.
 
 ## Shortest runtime integration path
 
-1. Finish trusted key-source integration and durable lifecycle state.
+1. Bind a verified key source to the durable owner and provision protected,
+   isolated runtime storage with independently retained rollback floors.
 2. Implement a real context-wide public-network boundary and operational owner.
 3. Wire the generic primitives behind that owner with bounded outcome handling.
 4. Test on disposable controlled fixtures, then an authorized isolated staging

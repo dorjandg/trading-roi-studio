@@ -756,3 +756,12 @@ Development continues on `api1-browser-interaction-phase1`. The user authorizes 
 P2-A trust-boundary checks and signing-key lifecycle assessments remain review-only. Generic browser primitives require a trusted owner and independently enforced public-network boundary before runtime use. Queue closure and a successful source commit do not prove browser termination or live connector acceptance. Preserve explicit unknown outcomes and prohibit automatic retry after possible dispatch.
 
 Repository-linked Pages projects currently preview all branches. Preserve the verified `[skip ci]` prefix on isolated development commits and verify skip flags/stage status afterward. Keep OmniPilot development separate from the trading simulator and Finance systems.
+
+
+## OmniPilot / API1 signing-key restart recovery (2026-11-24)
+
+The isolated authentication prototype now exports and restores canonical complete lifecycle checkpoints, including generation, policy binding, clock high-water mark, public-key material history and revocation/retirement tombstones. Restored instances remain on hold until a fresh, strictly advancing publication; an in-process fork cannot remove that hold.
+
+`signing-key-checkpoint-store.mjs` provides explicit local SQLite create/open and whole-checkpoint compare-and-swap. `durable-access-keyset-owner.mjs` stages a private lifecycle copy, persists it and checks the exact acknowledgment before replacing the current state. Denied operations and status checks also preserve clock observations. Conflicting, asynchronous or uncertain writes halt the owner without an automatic retry. See [ACCESS-KEYSET-PERSISTENCE.md](workers/cloud-browser-agent/simulation/ACCESS-KEYSET-PERSISTENCE.md).
+
+This is reviewed source with synthetic assertions and disposable-database evidence. Admission/execution flags remain false. Authenticated key fetching, independently retained rollback floors, protected runtime storage, operational ownership fencing and live MCP/browser acceptance remain separate integration work. No real credential, active runtime, Finance behavior, deployment configuration or production branch changes are part of this slice.
