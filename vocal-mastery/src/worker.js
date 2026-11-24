@@ -53,7 +53,16 @@ export default {
         const entries=PAGES.flatMap(p=>['en','sq'].map(lang=>`<url><loc>https://vocalmastery.net${p}?lang=${lang}</loc></url>`)).join('');
         return finish(new Response(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${entries}</urlset>`,{headers:{'Content-Type':'application/xml'}}),request);
       }
-      if (path.startsWith('/assets/') || path === '/favicon.ico') return finish(await env.ASSETS.fetch(request),request);
+      if (path.startsWith('/assets/') || path === '/favicon.ico') {
+        const asset = await env.ASSETS.fetch(request);
+        if (asset.ok && /^\/assets\/coaching-\d{2}-v1-(480|768|1152|1440)\.webp$/.test(path)) {
+          const headers = new Headers(asset.headers);
+          // Versioned photos can be reused on repeat visits without revalidation.
+          headers.set('Cache-Control', 'public, max-age=604800');
+          return finish(new Response(asset.body, { status:asset.status, headers }),request);
+        }
+        return finish(asset,request);
+      }
       if (path.endsWith('.html')) {
         const clean = path === '/index.html' ? '/' : path.slice(0,-5);
         if (PAGES.includes(clean)) { url.pathname=clean;return Response.redirect(url.href,301); }

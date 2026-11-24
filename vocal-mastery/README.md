@@ -12,9 +12,10 @@ Sign in to Website Studio using an authorized email. Describe a change in Englis
 
 ## Development and deployment
 
-Node.js 22 or later; no npm dependencies are required.
+Node.js 22 or later. Install dependencies before building. Sharp is used only during the build to resize the approved coaching PNGs into responsive WebP assets.
 
 ```
+npm install
 npm run build
 npm test
 npm run dev
@@ -23,6 +24,8 @@ npm run dev
 The canonical deployment source is repository `dorjandg/trading-roi-studio`, branch `vocal-mastery`, directory `/vocal-mastery`. Production code is deployed from that isolated branch and project directory through Cloudflare Workers Builds. The repository’s `main` and `personal-hub` branches are separate and are not changed by this website’s publishing workflow. Build: `npm run build && npm test`. Deploy: `npm run deploy`. The dedicated Cloudflare build token is supplied by the build environment; it is never committed. `scripts/deploy.mjs` uploads static assets using Cloudflare's documented direct-upload API, then deploys ES modules with the configuration in `deployment.json`.
 
 The initial deployment can also be made through the authenticated Cloudflare connector using the same multipart upload and metadata. Domains and access policies are separate infrastructure and are preserved on subsequent deployments.
+
+When replacing the source coaching images, update their version suffix in `scripts/build.mjs`, `src/site.js`, `src/worker.js`, `scripts/preview.mjs`, and the matching test so cached image URLs stay correct. The originals remain in `public/assets`; generated WebPs are created in `dist/public/assets`.
 
 ## Runtime
 
