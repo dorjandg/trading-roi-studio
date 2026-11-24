@@ -261,17 +261,25 @@ document.getElementById('glamPublishProduct').addEventListener('click',async()=>
  }catch(e){status.textContent='Publication failed: '+e.message}
  finally{button.disabled=false}
 });
-async function directoryRequest(method,kind,record){
- const response=await fetch('/api/staff/directory',{method,credentials:'same-origin',cache:'no-store',...(method==='GET'?{}:{headers:{'content-type':'application/json'},body:JSON.stringify({kind,record})})});
+async function directoryRequest(method,kind,record,createOnly=false){
+ const response=await fetch('/api/staff/directory',{method,credentials:'same-origin',cache:'no-store',...(method==='GET'?{}:{headers:{'content-type':'application/json'},body:JSON.stringify({kind,record,createOnly})})});
  const data=await response.json();if(!response.ok)throw Error(data.error||'Cloud directory unavailable');return data;
 }
 let directoryReady=false;
+const recoveryNotice=document.createElement('div');recoveryNotice.className='hint';document.getElementById('categoryList').before(recoveryNotice);
+function showCollectionRecovery(){
+ recoveryNotice.replaceChildren();const pending=categories.filter(x=>!x.builtin&&!x._online);if(!pending.length)return;
+ const message=document.createElement('p');message.textContent=pending.length+' existing collection(s) are stored only on this device: '+pending.map(x=>x.name).join(', ')+'. Save them online to display them publicly.';recoveryNotice.append(message);
+ const button=document.createElement('button');button.type='button';button.className='btn primary';button.textContent='Save existing collections online';recoveryNotice.append(button);
+ button.onclick=async()=>{if(!confirm('Save these existing collections online? Existing cloud records will not be overwritten.'))return;button.disabled=true;try{if(!directoryReady)await loadDirectory();if(!directoryReady)throw Error('Sign in to GLAM Staff API first');const candidates=categories.filter(x=>!x.builtin&&!x._online).sort((a,b)=>Number(!!a.parent)-Number(!!b.parent));let saved=0;const failed=[];for(const item of candidates){try{const result=await directoryRequest('PUT','categories',item,true);Object.assign(item,result.record,{_online:true});saved++}catch(e){failed.push(item.name+': '+e.message)}}renderCategories();renderProducts();showCollectionRecovery();status.textContent=saved+' collection(s) saved online.'+(failed.length?' Not saved: '+failed.join('; '):'');}catch(e){status.textContent=e.message}finally{button.disabled=false}};
+}
+
 async function loadDirectory(){
  try{const data=await directoryRequest('GET');for(const [type,records] of Object.entries({categories:data.categories,brands:data.brands})){
  const array=type==='categories'?categories:brands;
  for(const r of records){const i=array.findIndex(x=>x.id===r.id);if(i>=0)array[i]={...array[i],...r,_online:true};else array.push({...r,_online:true})}
- }directoryReady=true;renderCategories();renderBrands();renderProducts();
- }catch(e){status.textContent='Cloud directory unavailable. Sign in to the staff API before saving.'}
+ }directoryReady=true;renderCategories();renderBrands();renderProducts();showCollectionRecovery();
+ }catch(e){showCollectionRecovery();status.textContent='Cloud directory unavailable. Sign in to the staff API before saving.'}
 }
 async function saveDirectory(type,form){
  if(!form.reportValidity())return;
@@ -288,7 +296,7 @@ async function saveDirectory(type,form){
  const saved={...previous,...result.record,_online:true};const i=array.findIndex(x=>x.id===saved.id);if(i>=0)array[i]=saved;else array.unshift(saved);
  form.elements.id.value=saved.id;
  (type==='categories'?renderCategories:renderBrands)();fill(form.id,saved);
- status.textContent='Saved to GLAM cloud.';
+ showCollectionRecovery();status.textContent='Saved to GLAM cloud.';
  }catch(e){status.textContent='NOT saved: '+e.message}finally{button.disabled=false}
 }
 function wire(type,formId){const form=document.getElementById(formId);form.addEventListener('submit',e=>{e.preventDefault();if(type==='products'){saveProductToCloud(form);return}saveDirectory(type,form)})}
