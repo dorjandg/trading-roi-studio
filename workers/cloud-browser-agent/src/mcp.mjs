@@ -6,6 +6,14 @@ import { validateEditPreviewRequest } from "./edit-preview.mjs";
 const headers = {"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"};
 const json = (obj,status=200) => new Response(JSON.stringify(obj),{status,headers});
 const content = value => ({content:[{type:"text",text:JSON.stringify(value)}]});
+const pilotContent = outcome => {
+  if(outcome.ok!==true||typeof outcome.screenshotBase64!=="string")return content(outcome);
+  const {screenshotBase64,screenshotMime,...details}=outcome;
+  return {content:[
+    {type:"text",text:JSON.stringify(details)},
+    {type:"image",data:screenshotBase64,mimeType:screenshotMime}
+  ]};
+};
 const pilotTool = {
   name:"omnipilot_managed_demo",
   description:"Opt-in public TodoMVC interaction only. Executes real browser actions on the disposable demonstration website; not arbitrary websites, authenticated sites, files, credentials or production. Actions may modify the demo page; uncertain results must never be retried automatically.",
@@ -52,7 +60,7 @@ export function createMcpHandler(launch) {
       if(env.OMNIPILOT_MANAGED_PILOT_ENABLED!=="true")return error(-32602,"Unknown tool or invalid arguments");
       try{validateManagedPilot(args);}catch{return error(-32602,"Managed pilot arguments refused");}
       const outcome=await executeManagedPilot(env.BROWSER,args);
-      return reply({...content(outcome),isError:outcome.ok!==true});
+      return reply({...pilotContent(outcome),isError:outcome.ok!==true});
     }
     if(name==="browser_agent_status"&&Object.keys(args).length===0){
       return reply(content({service:"cloud-browser-agent",mode:"read-only",browserConfigured:!!env.BROWSER}));
