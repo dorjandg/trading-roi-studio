@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {createMcpHandler} from '../src/mcp.mjs';
 
 const token='isolated-demo-token-'+ 'x'.repeat(32);
+const fakeJpeg=Buffer.from([255,216,255,...Array(80).fill(0),255,217]).toString('base64');
 const demo={url:'https://demo.playwright.dev/todomvc/',actions:[
   {op:'fill',selector:'input.new-todo',value:'OmniPilot MCP demo'},
   {op:'press',selector:'input.new-todo',key:'Enter'}
@@ -47,7 +48,7 @@ test('authorized pilot tool acquires only a domain-guarded session',async()=>{
         calls.push({code,options});
         return new Response(JSON.stringify({success:true,result:{ok:true,
           origin:'https://demo.playwright.dev',title:'React • TodoMVC',
-          itemCount:1,items:['OmniPilot MCP demo']}}),{status:200});
+          itemCount:1,items:['OmniPilot MCP demo'],screenshotMime:'image/jpeg',screenshotBase64:fakeJpeg}}),{status:200});
       },
       async closeSession(id){closed.push(id);return {status:'closed'};}
     }};
@@ -58,6 +59,11 @@ test('authorized pilot tool acquires only a domain-guarded session',async()=>{
   assert.equal(body.result.isError,false);
   const data=JSON.parse(body.result.content[0].text);
   assert.deepEqual(data.items,['OmniPilot MCP demo']);
+  assert.equal(body.result.content.length,2);
+  assert.equal(body.result.content[1].type,'image');
+  assert.equal(body.result.content[1].mimeType,'image/jpeg');
+  assert.equal(body.result.content[1].data,fakeJpeg);
+  assert.equal(data.screenshotBase64,undefined);
   assert.deepEqual(acquisitions,[{guardrails:{allowedDomains:['demo.playwright.dev']},keepAlive:10000}]);
   assert.equal(calls.length,1);
   assert.deepEqual(closed,['pilot-session-abc123']);
