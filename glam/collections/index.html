@@ -22,13 +22,13 @@ function drawCollections(){
  grid.replaceChildren();
  if(collectionProducts===null){const p=document.createElement('p');p.className='empty';p.textContent='Loading collections…';grid.append(p);return}
  for(const c of collections){
- const rows=collectionRows(c.id);if(!rows.length)continue;
+ const rows=collectionRows(c.id);
  const group=document.createElement('div');group.className='collection-group';
  const b=document.createElement('button');b.className='collection';b.type='button';
- const cover=coverFor(c,rows);if(cover)b.style.setProperty('--collection-cover','url('+JSON.stringify(cover)+')');
+ const cover=coverFor(c,rows)||({"lingerie":"https://us.wolford.com/dw/image/v2/BKQM_PRD/on/demandware.static/-/Sites-master-catalog/default/dw6a566774/SS26/new/69964_7005_001_B2BL.jpg?sw=500&sh=667&q=100&strip=false","bodywear":"https://hanro.com/cdn/shop/files/HANRO_B_W_CottonSilk_LSLVPajama_074816_070101_010.jpg","home":"https://content.etro.com/Adaptations/560/UKAB000199KA518X0883_SF_01.jpg","scents":"https://content.etro.com/Adaptations/560/UGAA0005A5001T9994_SF_01.jpg","accessories":"https://us.wolford.com/dw/image/v2/BKQM_PRD/on/demandware.static/-/Sites-master-catalog/default/dw5e48a055/2023/18382_4004_100_001_B_X_B2BL.jpg?sw=500&sh=667&q=100&strip=false","solutions":"https://byebra.com/wp-content/uploads/2026/06/Ultra-Boost-Plungy-Bra-ULBOBR-Beige-1-768x1152.jpg"})[c.id]||'';if(cover)b.style.setProperty('--collection-cover','url('+JSON.stringify(cover)+')');
  const strong=document.createElement('strong'),span=document.createElement('span');strong.textContent=c.name;span.textContent='DISCOVER ↗';b.append(strong,span);
  b.onclick=()=>{window.location.href='/collections/?category='+encodeURIComponent(c.id)};group.append(b);
- const children=[...childDirectory.values()].filter(x=>x.parent===c.id&&collectionRows(x.id).length);
+ const children=[...childDirectory.values()].filter(x=>x.parent===c.id);
  if(children.length){const links=document.createElement('div');links.className='collection-children';for(const child of children){const link=document.createElement('a');link.href='/collections/?category='+encodeURIComponent(child.id);link.textContent=child.name;links.append(link)}group.append(links)}
  grid.append(group)
  }
@@ -58,7 +58,7 @@ document.getElementById('return').onclick=back;window.addEventListener('popstate
     const all=products.filter(p=>['published','sold_out'].includes(p.catalog_status)&&(childDirectory.has(id)?String(p.category||'')===id:rootFor(p.category)===id));
     const collection=collections.find(c=>c.id===id);
     const slug=v=>v.toLowerCase().replace(/&/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
-    const items=[...childDirectory.values()].filter(c=>c.parent===id&&all.some(p=>String(p.category||'')===c.id));
+    const items=[...childDirectory.values()].filter(c=>c.parent===id);
     sub.replaceChildren();
     for(const [label,value] of [['All products',''],...items.map(x=>[x.name,x.id])]){
       const button=document.createElement('button');button.type='button';button.className='subitem'+(activeSub===value?' selected':'');button.textContent=label;
