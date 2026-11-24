@@ -73,6 +73,7 @@ export function createManagedPilotScript(request){
     '  });',
     '  page.on("dialog", dialog => { dialog.dismiss().catch(()=>{}); });',
     '  context.on("page", p => { if(p!==page) p.close().catch(()=>{}); });',
+    '  await page.setViewportSize({width:900,height:620});',
     '  await page.goto(task.url,{waitUntil:"domcontentloaded",timeout:18000});',
     '  for (const action of task.actions) {',
     '    const locator=page.locator(action.selector);',
@@ -94,8 +95,14 @@ export function createManagedPilotScript(request){
     '  if(new URL(page.url()).origin!=="https://demo.playwright.dev")',
     '    throw Error("PILOT_ORIGIN_CHANGED");',
     '  const items=await page.locator(".todo-list li").allInnerTexts();',
+    '  const pixels=await page.screenshot({type:"jpeg",quality:45,fullPage:false});',
+    '  if(pixels.length<6||pixels.length>36000)throw Error("PILOT_SCREENSHOT_TOO_LARGE");',
+    '  let binary="";',
+    '  for(let i=0;i<pixels.length;i+=8192)binary+=String.fromCharCode(...pixels.subarray(i,i+8192));',
+    '  const screenshotBase64=btoa(binary);',
     '  return {ok:true,origin:"https://demo.playwright.dev",title:(await page.title()).slice(0,120),',
-    '    itemCount:Math.min(items.length,100),items:items.slice(0,12).map(x=>x.slice(0,256))};',
+    '    itemCount:Math.min(items.length,100),items:items.slice(0,12).map(x=>x.slice(0,256)),',
+    '    screenshotMime:"image/jpeg",screenshotBase64};',
     '}'
   ];
   return lines.join('\n');
@@ -129,10 +136,26 @@ export async function executeManagedPilot(browser,request){
            ||!Number.isSafeInteger(data.itemCount)||data.itemCount<0
            ||!Array.isArray(data.items)||data.items.length>12
            ||data.items.some(v=>typeof v!=='string'||v.length>256)
-           ||typeof data.title!=='string'||data.title.length>120)
+           ||typeof data.title!=='string'||data.title.length>120
+           ||data.screenshotMime!=='image/jpeg'
+           ||typeof data.screenshotBase64!=='string'
+           ||data.screenshotBase64.length<8||data.screenshotBase64.length>48000
+           ||!/^\/9j\/[A-Za-z0-9+/]*={0,2}$/.test(data.screenshotBase64))
           outcome=failure('PILOT_RESULT_INVALID');
-        else outcome=Object.freeze({ok:true,origin:data.origin,title:data.title,
-          itemCount:data.itemCount,items:[...data.items]});
+        else {
+          let validImage=false;
+          try {
+            const bytes=atob(data.screenshotBase64);
+            validImage=bytes.length>=6&&bytes.length<=36000
+              &&bytes.charCodeAt(0)===255&&bytes.charCodeAt(1)===216
+              &&bytes.charCodeAt(2)===255
+              &&bytes.charCodeAt(bytes.length-2)===255&&bytes.charCodeAt(bytes.length-1)===217;
+          } catch {}
+          outcome=validImage?Object.freeze({ok:true,origin:data.origin,title:data.title,
+            itemCount:data.itemCount,items:[...data.items],
+            screenshotMime:'image/jpeg',screenshotBase64:data.screenshotBase64})
+            :failure('PILOT_RESULT_INVALID');
+        }
       }
     }
   }catch{
