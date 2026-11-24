@@ -38,16 +38,19 @@ test('enabled tool is discoverable and malformed input cannot start browser',asy
   assert.equal(result.error.code,-32602);
   assert.equal(executed,0);
 });
-test('authorized pilot tool executes one bounded Browser Run command',async()=>{
-  const calls=[],closed=[];
+test('authorized pilot tool acquires only a domain-guarded session',async()=>{
+  const acquisitions=[],calls=[],closed=[];
   const env={OMNIPILOT_MANAGED_PILOT_ENABLED:'true',
-    BROWSER:{async script(code,options){
-      calls.push({code,options});
-      return new Response(JSON.stringify({success:true,result:{ok:true,
-        origin:'https://demo.playwright.dev',title:'React • TodoMVC',
-        itemCount:1,items:['OmniPilot MCP demo']}}),{status:200,
-        headers:{'cf-browser-session-id':'pilot-session-abc123'}});
-    },async closeSession(id){closed.push(id);return Response.json({status:'closed'});}}};
+    BROWSER:{
+      async acquire(opts){acquisitions.push(opts);return {sessionId:'pilot-session-abc123'};},
+      async script(code,options){
+        calls.push({code,options});
+        return new Response(JSON.stringify({success:true,result:{ok:true,
+          origin:'https://demo.playwright.dev',title:'React • TodoMVC',
+          itemCount:1,items:['OmniPilot MCP demo']}}),{status:200});
+      },
+      async closeSession(id){closed.push(id);return {status:'closed'};}
+    }};
   const [req,vars]=mk(rpc('tools/call',{name:'omnipilot_managed_demo',arguments:demo}),env);
   const response=await handler(req,vars);
   const body=await response.json();
@@ -55,14 +58,16 @@ test('authorized pilot tool executes one bounded Browser Run command',async()=>{
   assert.equal(body.result.isError,false);
   const data=JSON.parse(body.result.content[0].text);
   assert.deepEqual(data.items,['OmniPilot MCP demo']);
+  assert.deepEqual(acquisitions,[{guardrails:{allowedDomains:['demo.playwright.dev']},keepAlive:10000}]);
   assert.equal(calls.length,1);
   assert.deepEqual(closed,['pilot-session-abc123']);
-  assert.equal(calls[0].options.library,'playwright');
+  assert.deepEqual(calls[0].options,{sessionId:'pilot-session-abc123',library:'playwright',timeout:45000});
   assert.ok(calls[0].code.includes('demo.playwright.dev'));
 });
-test('MCP bearer boundary holds before exposing tool metadata or actions',async()=>{
+test('MCP bearer boundary holds before browser acquisition',async()=>{
   let called=0;
-  const env={OMNIPILOT_MANAGED_PILOT_ENABLED:'true',BROWSER:{async script(){called++;}}};
+  const env={OMNIPILOT_MANAGED_PILOT_ENABLED:'true',
+    BROWSER:{async acquire(){called++;},async script(){called++;}}};
   const [req,vars]=mk(rpc('tools/list'),env,'wrong-bearer');
   assert.equal((await handler(req,vars)).status,401);
   const [callReq,callEnv]=mk(rpc('tools/call',{name:'omnipilot_managed_demo',arguments:demo}),
