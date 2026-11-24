@@ -82,3 +82,6 @@ jobs:
 
 # Re-verify the protected staging endpoints after the guarded browser-pilot backend
 # rollout. The pilot feature remains disabled: no website interaction is exercised.
+
+# Confirm the existing deployed OAuth gateway remains unchanged and reachable
+# after the separate source-only staging rollout stopped at its credential gate.
