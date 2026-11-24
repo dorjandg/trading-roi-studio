@@ -39,14 +39,15 @@ test('enabled tool is discoverable and malformed input cannot start browser',asy
   assert.equal(executed,0);
 });
 test('authorized pilot tool executes one bounded Browser Run command',async()=>{
-  const calls=[];
+  const calls=[],closed=[];
   const env={OMNIPILOT_MANAGED_PILOT_ENABLED:'true',
     BROWSER:{async script(code,options){
       calls.push({code,options});
       return new Response(JSON.stringify({success:true,result:{ok:true,
         origin:'https://demo.playwright.dev',title:'React • TodoMVC',
-        itemCount:1,items:['OmniPilot MCP demo']}}),{status:200});
-    }}};
+        itemCount:1,items:['OmniPilot MCP demo']}}),{status:200,
+        headers:{'cf-browser-session-id':'pilot-session-abc123'}});
+    },async closeSession(id){closed.push(id);return Response.json({status:'closed'});}}};
   const [req,vars]=mk(rpc('tools/call',{name:'omnipilot_managed_demo',arguments:demo}),env);
   const response=await handler(req,vars);
   const body=await response.json();
@@ -55,6 +56,7 @@ test('authorized pilot tool executes one bounded Browser Run command',async()=>{
   const data=JSON.parse(body.result.content[0].text);
   assert.deepEqual(data.items,['OmniPilot MCP demo']);
   assert.equal(calls.length,1);
+  assert.deepEqual(closed,['pilot-session-abc123']);
   assert.equal(calls[0].options.library,'playwright');
   assert.ok(calls[0].code.includes('demo.playwright.dev'));
 });
