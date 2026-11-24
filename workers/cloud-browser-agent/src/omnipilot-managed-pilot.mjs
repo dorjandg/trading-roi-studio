@@ -102,41 +102,50 @@ export function createManagedPilotScript(request){
 }
 export async function executeManagedPilot(browser,request){
   const code=createManagedPilotScript(request); // Validate before any browser request.
-  if(!browser||typeof browser.script!=='function'||typeof browser.closeSession!=='function')
+  if(!browser||typeof browser.acquire!=='function'||typeof browser.script!=='function'
+     ||typeof browser.closeSession!=='function')
     return Object.freeze({ok:false,code:'PILOT_BROWSER_UNAVAILABLE',retrySafe:false});
   const failure=(code)=>Object.freeze({ok:false,code,outcomeUnknown:true,retrySafe:false});
-  let outcome=failure('PILOT_EXECUTION_UNCERTAIN');
-  let sessionId=null;
+  let outcome=failure('PILOT_EXECUTION_UNCERTAIN'),sessionId=null;
   try{
-    const response=await browser.script(code,{library:'playwright',timeout:45000,keepAlive:10000});
-    const reported=response?.headers?.get('cf-browser-session-id');
-    if(typeof reported==='string'&&/^[A-Za-z0-9-]{10,128}$/.test(reported))
-      sessionId=reported;
-    // The session must be identified so the Worker can close it explicitly.
-    // A successful script without a session receipt is NOT a successful action.
-    if(!sessionId) outcome=failure('PILOT_SESSION_UNTRACKED');
-    else if(!response.ok)outcome=failure('PILOT_EXECUTION_UNCERTAIN');
+    // This platform-enforced hostname allowlist is fixed at browser acquisition,
+    // BEFORE navigation and subresources. The script's route guard adds defense
+    // in depth but is not the primary egress security boundary.
+    const acquired=await browser.acquire({
+      guardrails:{allowedDomains:['demo.playwright.dev']},keepAlive:10000
+    });
+    const candidate=acquired?.sessionId;
+    if(typeof candidate==='string'&&/^[A-Za-z0-9-]{10,128}$/.test(candidate))
+      sessionId=candidate;
+    if(!sessionId)outcome=failure('PILOT_SESSION_UNTRACKED');
     else{
-      const raw=await response.json();
-      const data=raw?.result;
-      if(raw?.success!==true||data?.ok!==true||data.origin!=='https://demo.playwright.dev'
-         ||!Number.isSafeInteger(data.itemCount)||data.itemCount<0
-         ||!Array.isArray(data.items)||data.items.length>12
-         ||data.items.some(v=>typeof v!=='string'||v.length>256)
-         ||typeof data.title!=='string'||data.title.length>120)
-        outcome=failure('PILOT_RESULT_INVALID');
-      else outcome=Object.freeze({ok:true,origin:data.origin,title:data.title,
-        itemCount:data.itemCount,items:[...data.items]});
+      const response=await browser.script(code,{
+        sessionId,library:'playwright',timeout:45000
+      });
+      if(!response?.ok)outcome=failure('PILOT_EXECUTION_UNCERTAIN');
+      else{
+        const raw=await response.json(),data=raw?.result;
+        if(raw?.success!==true||data?.ok!==true||data.origin!=='https://demo.playwright.dev'
+           ||!Number.isSafeInteger(data.itemCount)||data.itemCount<0
+           ||!Array.isArray(data.items)||data.items.length>12
+           ||data.items.some(v=>typeof v!=='string'||v.length>256)
+           ||typeof data.title!=='string'||data.title.length>120)
+          outcome=failure('PILOT_RESULT_INVALID');
+        else outcome=Object.freeze({ok:true,origin:data.origin,title:data.title,
+          itemCount:data.itemCount,items:[...data.items]});
+      }
     }
   }catch{
     outcome=failure('PILOT_EXECUTION_UNCERTAIN');
   }finally{
-    // Browser Run does NOT close acquired sessions when /script completes.
-    // A known session must be closed regardless of success or failure.
+    // Close the owned session whether execution succeeded, failed or timed out.
+    // Never auto-retry a possibly dispatched website action.
     if(sessionId){
       try{
         const closed=await browser.closeSession(sessionId);
-        if(closed?.ok===false)outcome=failure('PILOT_CLEANUP_UNVERIFIED');
+        const status=typeof closed==='string'?closed:closed?.status??closed?.result?.status;
+        if(status!=='closed'&&status!=='closing')
+          outcome=failure('PILOT_CLEANUP_UNVERIFIED');
       }catch{
         outcome=failure('PILOT_CLEANUP_UNVERIFIED');
       }
