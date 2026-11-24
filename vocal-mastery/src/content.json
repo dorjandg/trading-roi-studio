@@ -31,8 +31,8 @@
       "sq": "Trajnim vokal nën drejtimin artistik të Landi Kademit."
     },
     "cta": {
-      "en": "Request a free session",
-      "sq": "Kërko seancën falas"
+      "en": "Request an assessment",
+      "sq": "Kërko një vlerësim"
     }
   },
   "home": {
@@ -69,12 +69,12 @@
       "sq": "Puna që qëndron\npas performancës."
     },
     "ctaTitle": {
-      "en": "Every voice.\nA unique path.",
-      "sq": "Çdo zë.\nNjë rrugëtim unik."
+      "en": "First, we listen.",
+      "sq": "Së pari, të dëgjojmë."
     },
     "ctaText": {
-      "en": "Start with a free 20-minute vocal assessment, online or at the academy. Meet Landi and explore the next step in your vocal development.",
-      "sq": "Fillo me një vlerësim vokal 20-minutësh falas, online ose në akademi. Njihu me Landin dhe zbulo hapin e radhës në zhvillimin e zërit tënd."
+      "en": "Every voice deserves an individual approach. Begin with an assessment to understand your needs and whether our academy is the right fit for you.",
+      "sq": "Çdo zë meriton një qasje individuale. Fillojmë me një vlerësim për të kuptuar nevojat e tua dhe nëse akademia jonë është e përshtatshme për ty."
     }
   },
   "programs": [
@@ -404,16 +404,16 @@
     },
     "apply": {
       "label": {
-        "en": "YOUR FIRST SESSION IS FREE",
-        "sq": "SEANCA E PARË ËSHTË FALAS"
+        "en": "INITIAL VOCAL ASSESSMENT",
+        "sq": "VLERËSIMI FILLESTAR VOKAL"
       },
       "title": {
-        "en": "Every voice.\nA unique path.",
-        "sq": "Çdo zë.\nNjë rrugëtim unik."
+        "en": "First, we listen.",
+        "sq": "Së pari, të dëgjojmë."
       },
       "intro": {
-        "en": "Meet Landi for an introductory vocal assessment. Explore your strengths, identify areas for improvement and discover a training path suited to your ambitions.",
-        "sq": "Njihu me Landin në një seancë vlerësimi vokal. Zbulo pikat e tua të forta, identifiko çfarë mund të përmirësosh dhe gjej drejtimin e duhur artistik."
+        "en": "Before recommending a training program, Landi takes time to understand your voice, your technique and your ambitions. Together, we evaluate whether the academy can genuinely help you and find the right direction for your development.",
+        "sq": "Para se të rekomandojë një program trajnimi, Landi merr kohë për të njohur zërin, teknikën dhe ambiciet e tua. Së bashku, vlerësojmë nëse akademia mund të të ndihmojë dhe gjejmë drejtimin e duhur për zhvillimin tënd."
       },
       "sections": []
     },
@@ -560,12 +560,12 @@
     },
     {
       "q": {
-        "en": "What happens in my free introductory session?",
-        "sq": "Çfarë ndodh në seancën e parë falas?"
+        "en": "How does the initial assessment work?",
+        "sq": "Si zhvillohet vlerësimi fillestar?"
       },
       "a": {
-        "en": "The free 20-minute introductory vocal assessment is for motivated singers at any level. Landi will listen to your voice, discuss your technique and goals, and explore an appropriate training direction. You can request the session online or at the academy; the time is confirmed personally via WhatsApp.",
-        "sq": "Vlerësimi i parë vokal, 20 minuta falas, u drejtohet këngëtarëve të motivuar të çdo niveli. Landi do të dëgjojë zërin tënd, do të diskutojë teknikën dhe synimet e tua dhe do të shqyrtojë drejtimin e përshtatshëm të trajnimit. Mund ta kërkosh seancën online ose në akademi; orari konfirmohet personalisht në WhatsApp."
+        "en": "Landi listens to your voice and discusses your current technique, goals and areas for development. The purpose is to evaluate whether the academy can genuinely help and agree on a suitable direction. The introductory assessment is provided without charge, online or at the academy. The time is arranged personally via WhatsApp; any ongoing training is discussed separately.",
+        "sq": "Landi dëgjon zërin tënd dhe diskuton teknikën, synimet dhe aspektet ku mund të zhvillohesh. Qëllimi është të vlerësojmë nëse akademia mund të të ndihmojë dhe të përcaktojmë drejtimin e përshtatshëm. Vlerësimi fillestar ofrohet pa pagesë, online ose në akademi. Orari caktohet personalisht në WhatsApp; trajnimi në vazhdim diskutohet veçmas."
       }
     }
   ],
@@ -582,12 +582,8 @@
   "assessment": {
     "durationMinutes": 20,
     "label": {
-      "en": "Your introductory vocal assessment",
-      "sq": "Vlerësimi yt i parë vokal"
-    },
-    "freeLabel": {
-      "en": "Free first session",
-      "sq": "Seanca e parë falas"
+      "en": "The initial vocal assessment",
+      "sq": "Vlerësimi fillestar vokal"
     },
     "formatLabel": {
       "en": "Online or at the academy",
@@ -597,37 +593,41 @@
       {
         "title": {
           "en": "Understand your voice",
-          "sq": "Njih zërin tënd"
+          "sq": "Të njohim zërin tënd"
         },
         "text": {
-          "en": "Explore your current technique, range, control and vocal strengths.",
-          "sq": "Zbulo teknikën, diapazonin, kontrollin dhe pikat e forta të zërit tënd."
+          "en": "Listen to your voice and assess your technique, range and control.",
+          "sq": "Dëgjojmë zërin tënd dhe vlerësojmë teknikën, diapazonin dhe kontrollin."
         }
       },
       {
         "title": {
-          "en": "Identify your priorities",
-          "sq": "Përcakto përparësitë e tua"
+          "en": "Identify your needs",
+          "sq": "Të kuptojmë nevojat e tua"
         },
         "text": {
-          "en": "Discuss challenges, ambitions and areas for focused improvement.",
-          "sq": "Diskuto sfidat, ambiciet dhe aspektet ku mund të përmirësohesh."
+          "en": "Discuss your ambitions, challenges and areas for focused development.",
+          "sq": "Diskutojmë ambiciet, sfidat dhe aspektet ku mund të përparosh."
         }
       },
       {
         "title": {
-          "en": "Find your direction",
-          "sq": "Gjej drejtimin tënd"
+          "en": "Evaluate the right fit",
+          "sq": "Të gjejmë qasjen e duhur"
         },
         "text": {
-          "en": "Explore a personal training approach aligned with your goals.",
-          "sq": "Zbulo një qasje personale trajnimi që përputhet me synimet e tua."
+          "en": "Determine whether the academy can support your goals and what training approach would be appropriate.",
+          "sq": "Vlerësojmë nëse akademia mund të të ndihmojë të arrish synimet e tua dhe cila qasje trajnimi të përshtatet."
         }
       }
     ],
     "note": {
-      "en": "For motivated singers at every level who are ready to work seriously on their voice. Your first session is free; ongoing training is arranged separately.",
-      "sq": "Për këngëtarë të motivuar të çdo niveli që duan të punojnë seriozisht me zërin e tyre. Seanca e parë është falas; trajnimi në vazhdim përcaktohet veçmas."
+      "en": "For singers at any level who are committed to developing their voice. We recommend training only when we believe we can make a meaningful contribution to your progress.",
+      "sq": "Për këngëtarë të çdo niveli që janë të përkushtuar ndaj zhvillimit të zërit. Rekomandojmë trajnimin vetëm kur besojmë se mund të kontribuojmë në mënyrë domethënëse në përparimin tënd."
+    },
+    "sessionLabel": {
+      "en": "Individual assessment",
+      "sq": "Vlerësim individual"
     }
   }
 }

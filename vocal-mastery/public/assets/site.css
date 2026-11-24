@@ -92,7 +92,7 @@ body.menu-open .concierge-launch{display:none}
 .assessment-overview{max-width:1600px;padding:0 var(--pad) 30px;margin:0 auto}
 .assessment-meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:14px}
 .assessment-meta>span{display:inline-flex;align-items:center;gap:6px;padding:8px 11px;border:1px solid #ffffff25;border-radius:7px;font-size:.75rem;color:var(--paper);line-height:1.3}
-.assessment-meta>span:first-child{background:#bd263d20;border-color:#bd263d88}
+.assessment-meta>span:first-child{background:#ffffff06;border-color:#ffffff25}
 .assessment-meta svg{width:15px;height:15px;color:var(--champagne)}
 .assessment-meta .assessment-duration{font-variant-numeric:tabular-nums}
 .assessment-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}

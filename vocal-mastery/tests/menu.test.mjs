@@ -11,11 +11,11 @@ test('compact bilingual navigation keeps eight destinations and a dedicated appl
   assert.equal((menu.match(/class="menu-item(?: menu-apply)?"/g)||[]).length,9);
   assert.match(menu,/class="menu-item menu-apply"/);
   assert.match(menu,lang==='sq'?/<span>Programet<\/span>/:/<span>Programs<\/span>/);
-  assert.match(menu,lang==='sq'?/<span>Seancë falas<\/span>/:/<span>Free session<\/span>/);
+  assert.match(menu,lang==='sq'?/<span>Vlerësim<\/span>/:/<span>Assessment<\/span>/);
   assert.equal((menu.match(/aria-current="page"/g)||[]).length,1);
   assert.match(menu,/href="tel:\+355692085923"/);
   assert.match(menu,/href="https:\/\/wa.me\/355692085923"/);
   assert.ok(!menu.includes('menu-contact"><a href="https://wa.me/355692085923"'));
-  assert.match(html,/site\.css\?v=assessment-5/);
+  assert.match(html,/site\.css\?v=assessment-6/);
  }
 });
