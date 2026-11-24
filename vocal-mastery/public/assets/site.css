@@ -102,3 +102,10 @@ body.menu-open .concierge-launch{display:none}
 .assessment-grid p{font-size:.8125rem;line-height:1.5;margin:5px 0 0}
 .assessment-note{font-size:.8125rem;margin:12px 0 0;max-width:800px}
 @media(max-width:600px){body[data-page="/apply"] .page-hero{padding-top:32px;padding-bottom:24px}body[data-page="/apply"] .page-hero h1{font-size:clamp(2.35rem,9.3vw,3.2rem);margin-bottom:15px}body[data-page="/apply"] .page-intro{font-size:.875rem;line-height:1.6;margin-bottom:0}.assessment-overview{padding-bottom:22px}.assessment-grid{grid-template-columns:1fr;gap:7px}.assessment-grid article{padding:11px;gap:10px}.assessment-grid h3{font-size:.875rem}.assessment-grid p{font-size:.75rem;margin-top:4px}.assessment-note{font-size:.75rem;line-height:1.6}.assessment-meta{gap:6px}.assessment-meta>span{font-size:.6875rem;padding:7px 8px}}
+
+/* Cinematic coaching scenes: decorative AI artwork, not student testimonials. */
+.coaching-scene{position:relative;max-width:var(--max);margin:12px auto 24px;overflow:hidden;isolation:isolate;height:clamp(190px,31vw,420px);background:#09090b;mask-image:linear-gradient(to bottom,transparent,#000 12%,#000 82%,transparent)}
+.coaching-scene img{display:block;width:100%;height:100%;object-fit:cover;object-position:center 46%;opacity:.88}
+.coaching-scene:after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,#09090b 0%,transparent 16%,transparent 84%,#09090b 100%)}
+.coaching-home{height:clamp(160px,25vw,340px);margin-bottom:0}.coaching-assessment{max-width:760px;height:clamp(140px,24vw,250px);margin:0 auto 20px}.coaching-voice{height:clamp(180px,28vw,360px)}
+@media(max-width:600px){.coaching-scene{height:auto;aspect-ratio:16/9;margin:0 0 12px;mask-image:linear-gradient(to bottom,transparent,#000 8%,#000 85%,transparent)}.coaching-scene img{height:100%;object-position:center}.coaching-scene:after{background:linear-gradient(90deg,#09090b55,transparent 15%,transparent 85%,#09090b55)}.coaching-assessment{aspect-ratio:2.5;margin-bottom:8px}}
