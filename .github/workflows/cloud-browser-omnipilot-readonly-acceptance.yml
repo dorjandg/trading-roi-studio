@@ -79,3 +79,6 @@ jobs:
           check('undeployed-interaction-rejected',()=>blocked.status===200&&!!blocked.body?.error&&blocked.body.error.code===-32602);
           console.log('OMNIPILOT_STAGING_READONLY_CHECKS: '+count+'/11');
           NODE
+
+# Re-verify the protected staging endpoints after the guarded browser-pilot backend
+# rollout. The pilot feature remains disabled: no website interaction is exercised.
