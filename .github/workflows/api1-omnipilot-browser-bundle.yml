@@ -31,7 +31,7 @@ jobs:
           node --check src/handler.mjs
           node --check src/mcp.mjs
           node --check src/omnipilot-managed-pilot.mjs
-          npm test
+          node --test test/omnipilot-managed-pilot.test.mjs test/omnipilot-managed-mcp.test.mjs test/mcp.test.mjs
           npx wrangler deploy --dry-run --outdir "$RUNNER_TEMP/omnipilot-browser-bundle"
       - name: Verify deployable module exists (no deployment)
         shell: bash
