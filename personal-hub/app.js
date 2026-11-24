@@ -71,6 +71,8 @@
   function renderNav() {
     $("#topNavigation").innerHTML =
       navButton("overview","Overview","home")+
+      navButton("personal","My Websites","grid")+
+      navButton("guests","Guest Websites","grid")+
       navButton("all","All links","grid",links.length)+
       navButton("favorites","Favorites","star",state.favorites.size)+
       navButton("recent","Recently opened","clock",state.recents.length);
@@ -129,7 +131,7 @@
       content+'</div></details>';
   }
   function renderOverview() {
-    const featured=links.filter(l=>l.featured);
+    
     const workIds=["colab-jj-transcription","github-trading-studio","github-jj-knowledge","github-personal-hub","github-mt5-controller","cloudflare-dashboard","google-drive","google-apps-script"];
     const jjIds=["jj-dashboard","discord","whop","zoom","skool","circle"];
     const quickIds=["tradingview","gemini-notebook","google-sheets","whoop","youtube","ftmo"];
@@ -141,9 +143,8 @@
       '<p class="hero-subtitle">Your websites, study material, dashboards and everyday resources — organized, searchable and always easy to reach.</p></div>'+
       '<div class="hero-stats"><div class="stat"><b>'+links.length+'</b><small>Saved links</small></div><div class="stat"><b>'+categories.length+'</b><small>Collections</small></div><div class="stat"><b>'+state.favorites.size+'</b><small>Favorites</small></div></div></section>'+
       '<div class="disclosure-toolbar"><span>Collections are collapsed by default</span><div><button type="button" class="toggle-sections" data-sections="expand">Expand all</button><button type="button" class="toggle-sections" data-sections="collapse">Collapse all</button></div></div>'+
-      disclosureSection("websites","My websites","Your projects — one click away",featured.length,
-        '<div class="featured-grid">'+featured.filter(l=>l.category!=="jp-realty" && l.category!=="glam").map(l=>card(l,true)).join("")+catButton(byCategory.get("jp-realty"))+catButton(byCategory.get("glam"))+'</div>',
-        "View all",'data-category="workspaces"')+
+      '<section class="section"><div class="filter-row" role="group" aria-label="Website ownership"><button type="button" class="filter-chip '+(state.guest?'':'active')+'" aria-pressed="'+!state.guest+'" data-nav="personal">My Websites</button><button type="button" class="filter-chip '+(state.guest?'active':'')+'" aria-pressed="'+!!state.guest+'" data-nav="guests">Guest Websites</button></div>'+
+      '<div style="display:flex;gap:12px;overflow-x:auto;padding:8px 0">'+(state.guest?["pizza","glam","jp-realty","gerti"]:["trading","finance","automation","education"]).map(id=>'<div style="flex:0 0 190px">'+catButton(byCategory.get(id))+'</div>').join("")+'</div></section>'+
       disclosureSection("work","Work & Development","Colab, GitHub projects, Cloudflare and Google tools",work.length,
         '<div class="shortcut-grid">'+work.map(shortcut).join("")+'</div>',
         "All work tools",'data-category="worktools"')+
@@ -151,7 +152,7 @@
         '<div class="shortcut-grid">'+jj.map(shortcut).join("")+'</div>',
         "All communities",'data-category="community"')+
       disclosureSection("collections","Browse collections","Everything has a place",categories.length,
-        '<div class="collection-grid">'+categories.map(catButton).join("")+'</div>')+
+        '<div class="collection-grid">'+categories.filter(c=>!["pizza","glam","jp-realty","gerti","workspaces"].includes(c.id)).map(catButton).join("")+'</div>')+
       (recents.length?disclosureSection("recent","Recently opened","Your recently visited links",recents.length,
         '<div class="shortcut-grid">'+recents.map(shortcut).join("")+'</div>',
         "See all",'data-nav="recent"'):"")+
@@ -191,6 +192,7 @@
     renderNav();
   }
   function navigate(view,category=null) {
+    if(view==="personal" || view==="guests"){state.guest=view==="guests";view="overview";}
     state.view=view;state.category=category;state.query="";$("#globalSearch").value="";
     $("#searchSuggestions").hidden=true;closeMenu();renderMain();window.scrollTo({top:0,behavior:"instant"});
   }
