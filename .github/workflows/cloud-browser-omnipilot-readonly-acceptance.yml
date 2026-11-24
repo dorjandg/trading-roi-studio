@@ -1,0 +1,81 @@
+name: OmniPilot protected staging read-only acceptance
+on:
+  push:
+    branches:
+      - feature/cloud-browser-agent-phase1
+    paths:
+      - ".github/workflows/cloud-browser-omnipilot-readonly-acceptance.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  acceptance:
+    if: github.ref == 'refs/heads/feature/cloud-browser-agent-phase1'
+    environment: browser-agent-staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+      BROWSER_AGENT_API_TOKEN: ${{ secrets.BROWSER_AGENT_API_TOKEN }}
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify existing staging OAuth and protected browser MCP (no writes)
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          const assert=(x,s)=>{if(!x)throw Error('STAGING_ACCEPTANCE_FAILED: '+s)};
+          const agent='https://cloud-browser-agent-stage.dorjan-gjoni-dg.workers.dev';
+          const gateway='https://cloud-browser-chatgpt-stage.dorjan-gjoni-dg.workers.dev';
+          const clientId=process.env.CF_ACCESS_CLIENT_ID;
+          const clientSecret=process.env.CF_ACCESS_CLIENT_SECRET;
+          const apiToken=process.env.BROWSER_AGENT_API_TOKEN;
+          assert(!!clientId&&clientId.endsWith('.access')&&!!clientSecret&&!!apiToken,'missing-staging-credentials');
+          const serviceHeaders={'CF-Access-Client-Id':clientId,'CF-Access-Client-Secret':clientSecret};
+          const authorized={...serviceHeaders,authorization:'Bearer '+apiToken};
+          const rpc=(method,id,params={})=>JSON.stringify({jsonrpc:'2.0',id,method,params});
+          const req=async(url,options={})=>{
+            const response=await fetch(url,{...options,redirect:'manual',signal:AbortSignal.timeout(25000)});
+            let body=null;
+            try{
+              const str=await response.text();
+              if(str.length<65536)body=JSON.parse(str);
+            }catch{}
+            return {status:response.status,body};
+          };
+          const mcp=(url,body,headers={})=>req(url,{
+            method:'POST',headers:{'content-type':'application/json',accept:'application/json, text/event-stream',...headers},
+            body:JSON.stringify(body)
+          });
+          let count=0;
+          const check=(label,fn)=>{assert(fn(),label);count++;console.log('PASS '+label);};
+          const meta=await req(gateway+'/.well-known/oauth-authorization-server');
+          check('oauth-metadata',()=>meta.status===200&&typeof meta.body?.issuer==='string');
+          const resource=await req(gateway+'/.well-known/oauth-protected-resource/mcp');
+          check('protected-resource',()=>resource.status===200&&typeof resource.body?.resource==='string');
+          const init=await mcp(gateway+'/mcp',{jsonrpc:'2.0',id:1,method:'initialize',params:{protocolVersion:'2025-06-18',capabilities:{},clientInfo:{name:'omnipilot-readonly-acceptance',version:'1'}}});
+          check('public-initialize',()=>init.status===200&&init.body?.result?.serverInfo?.name==='cloud-browser-chatgpt-stage');
+          const list=await mcp(gateway+'/mcp',{jsonrpc:'2.0',id:2,method:'tools/list',params:{}});
+          check('public-tools-read-only',()=>list.status===200&&Array.isArray(list.body?.result?.tools)&&list.body.result.tools.length===6&&list.body.result.tools.every(t=>t.annotations?.readOnlyHint===true));
+          const guest=await mcp(gateway+'/mcp',{jsonrpc:'2.0',id:3,method:'tools/call',params:{name:'browser_agent_status',arguments:{}}});
+          check('gateway-unauthorized-rejected',()=>guest.status===401);
+          const without=await req(agent+'/health',{headers:serviceHeaders});
+          check('worker-token-required',()=>without.status===401&&without.body?.error==='Unauthorized');
+          const health=await req(agent+'/health',{headers:authorized});
+          check('agent-health',()=>health.status===200&&health.body?.browserConfigured===true&&health.body?.mode==='read-only');
+          const serverInit=await mcp(agent+'/mcp',{jsonrpc:'2.0',id:4,method:'initialize',params:{}},authorized);
+          check('backend-initialize',()=>serverInit.status===200&&serverInit.body?.result?.serverInfo?.name==='cloud-browser-agent-staging');
+          const serverList=await mcp(agent+'/mcp',{jsonrpc:'2.0',id:5,method:'tools/list',params:{}},authorized);
+          const toolNames=serverList.body?.result?.tools?.map(t=>t.name);
+          check('backend-six-read-only-tools',()=>serverList.status===200&&Array.isArray(toolNames)&&toolNames.length===6&&!toolNames.includes('omnipilot_managed_demo'));
+          const status=await mcp(agent+'/mcp',{jsonrpc:'2.0',id:6,method:'tools/call',params:{name:'browser_agent_status',arguments:{}}},authorized);
+          let detail=null;
+          try{detail=JSON.parse(status.body?.result?.content?.[0]?.text||'null')}catch{}
+          check('status-read-only',()=>status.status===200&&detail?.mode==='read-only'&&detail?.browserConfigured===true);
+          const blocked=await mcp(agent+'/mcp',{jsonrpc:'2.0',id:7,method:'tools/call',params:{name:'omnipilot_managed_demo',arguments:{url:'https://demo.playwright.dev/todomvc/',actions:[{op:'click',selector:'body'}]}}},authorized);
+          check('undeployed-interaction-rejected',()=>blocked.status===200&&!!blocked.body?.error&&blocked.body.error.code===-32602);
+          console.log('OMNIPILOT_STAGING_READONLY_CHECKS: '+count+'/11');
+          NODE
