@@ -69,7 +69,7 @@ function stringArray(value) {
   }
   return Object.freeze(result);
 }
-function command(input) {
+export function normalizeGenericBrowserCommand(input) {
   const c = record(input), op = c.op;
   if (typeof op !== 'string' || !Object.hasOwn(SPEC,op)) throw fail('INVALID_INPUT');
   const allowed = ['op','timeoutMs',...SPEC[op],...(NO_TAB.has(op)?[]:['tabId'])];
@@ -381,7 +381,7 @@ export function createGenericBrowserOwner({context,egressGuard,maxPendingCommand
     });
   }
   async function execute(input) {
-    const normalized=command(input);
+    const normalized=normalizeGenericBrowserCommand(input);
     live();
     if (pending.length>=maxPendingCommands) throw fail('QUEUE_FULL');
     return new Promise((resolve,reject)=>{
