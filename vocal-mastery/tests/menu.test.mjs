@@ -17,7 +17,7 @@ test('compact bilingual navigation keeps eight destinations and a dedicated appl
   assert.match(menu,/href="tel:\+355692085923"/);
   assert.match(menu,/href="https:\/\/wa.me\/355692085923"/);
   assert.ok(!menu.includes('menu-contact"><a href="https://wa.me/355692085923"'));
-  assert.match(html,/site\.css\?v=footer-2/);
+  assert.match(html,/site\.css\?v=language-toggle-1/);
  }
 });
 
@@ -55,4 +55,24 @@ test('every approved coaching scene uses early responsive WebP loading in both l
   }
  }
  assert.ok(!renderPage('/landi',content,'en').includes('imagesrcset="/assets/coaching-'));
+});
+
+test('one accessible language switch toggles directly to the other language on the same page',()=>{
+ for(const page of ['/','/academy','/programs','/landi','/stories','/media','/voice','/apply','/contact','/privacy']){
+  for(const lang of ['en','sq']){
+   const html=renderPage(page,content,lang);
+   const header=html.match(/<header class="site-header">[\s\S]*?<\/header>/)?.[0];
+   assert.ok(header);
+   const toggles=header.match(/<a class="language-toggle"[^>]*>[\s\S]*?<\/a>/g)||[];
+   assert.equal(toggles.length,1);
+   const target=lang==='en'?'sq':'en';
+   assert.ok(toggles[0].includes('data-language="'+target+'"'));
+   assert.ok(toggles[0].includes('href="'+page+'?lang='+target+'"'));
+   assert.ok(toggles[0].endsWith((target==='sq'?'AL':'EN')+'</a>'));
+   assert.match(toggles[0],/aria-label="[^"]+"/);
+   assert.doesNotMatch(header,/class="language-switch"/);
+  }
+ }
+ const preview=renderPage('/academy',content,'en',{preview:true,draftId:'test'});
+ assert.match(preview,/class="language-toggle" data-language="sq" href="\/manage\/preview\?draft=test&page=%2Facademy&lang=sq"/);
 });

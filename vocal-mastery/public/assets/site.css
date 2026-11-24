@@ -185,3 +185,8 @@ body.chat-open .concierge-launch{visibility:hidden}
 body.footer-in-view .concierge-launch{visibility:hidden;pointer-events:none}
 @media(max-width:1100px){.site-footer .footer-top{grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 40px}.site-footer .footer-nav-links{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 15px}}
 @media(max-width:600px){.site-footer{padding:32px 20px max(16px,env(safe-area-inset-bottom,0px))}.site-footer .footer-top{grid-template-columns:repeat(2,minmax(0,1fr));gap:25px 18px;padding-bottom:25px}.site-footer .footer-identity,.site-footer .footer-assessment{grid-column:1/-1}.site-footer .footer-tagline{margin:12px 0 5px}.site-footer .footer-nav-links{grid-template-columns:1fr;gap:9px}.site-footer .footer-label{margin-bottom:10px}.site-footer .footer-assessment{border-top:1px solid #ffffff14;padding-top:20px}.site-footer .footer-assessment>p{max-width:none;margin-bottom:13px}.site-footer .footer-legal{flex-direction:column;gap:14px;padding:15px 0}.site-footer .footer-bottom{gap:12px;font-size:.66rem}.site-footer .footer-back-top{font-size:.71rem}}
+
+/* Single-tap language switch: shows the destination language, keeps the header uncluttered. */
+.header-actions .language-toggle{display:inline-grid;place-items:center;flex-shrink:0;width:44px;height:44px;padding:0;border:1px solid #d5bfa745;border-radius:7px;color:var(--champagne);background:#ffffff04;font:650 .75rem/1 'DM Sans',Arial,sans-serif;letter-spacing:.04em;transition:background .18s,border-color .18s}
+.header-actions .language-toggle:hover{background:#ffffff0b;border-color:var(--champagne);color:var(--paper)}
+@media(max-width:600px){.header-actions .language-toggle{width:44px;height:44px;font-size:.75rem}}
