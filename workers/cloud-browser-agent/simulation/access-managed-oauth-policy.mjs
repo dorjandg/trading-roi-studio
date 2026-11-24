@@ -49,9 +49,9 @@ export function assessAuthorizedMcpRequest(input = {}) {
       if (!record(meta) || version !== MODERN ||
         !record(meta['io.modelcontextprotocol/clientCapabilities']) ||
         headers['mcp-protocol-version'] !== MODERN || headers['mcp-method'] !== rpc.method ||
-        (rpc.method === 'tools/call' && headers['mcp-name'] !== TOOL))
+        (rpc.method === 'tools/call' ? headers['mcp-name'] !== TOOL : Object.hasOwn(headers, 'mcp-name')))
         return deny('INVALID_MODERN_BINDING');
-    } else if (headers['mcp-protocol-version'] || headers['mcp-method'] || headers['mcp-name']) {
+    } else if (['mcp-protocol-version','mcp-method','mcp-name'].some(k => Object.hasOwn(headers,k))) {
       return deny('UNEXPECTED_PROTOCOL_HEADERS');
     }
     if (notify || rpc.method === 'ping' || rpc.method === 'tools/list' ||

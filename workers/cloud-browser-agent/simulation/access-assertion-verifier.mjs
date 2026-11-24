@@ -18,10 +18,42 @@ function parsePart(part) {
   if (!bytes.length || bytes.toString('base64url') !== part || bytes.length > 8192) throw Error('bad encoding');
   return bytes;
 }
+export function parseStrictJson(raw) {
+  if (typeof raw !== "string" || Buffer.byteLength(raw, "utf8") > 8192 ||
+      Buffer.from(raw).toString("utf8") !== raw) throw Error("JSON");
+  const value = JSON.parse(raw);
+  const scalar = s => { if (Buffer.from(s).toString("utf8") !== s) throw Error("JSON"); return s; };
+  const token = /\s*(?:"(?:\\.|[^"\\])*"|[-0-9.eE+]+|true|false|null|[{}\[\],:])/gy;
+  let t;
+  const next = () => { const m=token.exec(raw); t=m?.[0].trim(); };
+  const take = expected => { if(t!==expected) throw Error('JSON'); next(); };
+  function walk(depth) {
+    if(depth>24 || t===undefined) throw Error('JSON');
+    if(t==='{') {
+      next(); const seen=new Set();
+      if(t!=='}') for(;;) {
+        if(!t?.startsWith('"')) throw Error('JSON');
+        const k=scalar(JSON.parse(t));
+        if(seen.has(k) || ['__proto__','constructor','prototype'].includes(k)) throw Error('JSON');
+        seen.add(k); next(); take(':'); walk(depth+1);
+        if(t!==',') break; next();
+      }
+      take('}');
+    } else if(t==='[') {
+      next(); if(t!==']') for(;;) { walk(depth+1); if(t!==',') break; next(); }
+      take(']');
+    } else {
+      if (t.startsWith('"')) scalar(JSON.parse(t));
+      if (/^[-0-9]/.test(t) && !Number.isFinite(Number(t))) throw Error("JSON");
+      next();
+    }
+  }
+  next(); walk(0); if(t!==undefined) throw Error('JSON');
+  if(!record(value)) throw Error('JSON');
+  return value;
+}
 function parseObject(part) {
-  const parsed = JSON.parse(utf8.decode(parsePart(part)));
-  if (!record(parsed)) throw Error('not object');
-  return parsed;
+  return parseStrictJson(utf8.decode(parsePart(part)));
 }
 function issuerUrl(value) {
   if (!string(value, 256)) return false;
@@ -79,7 +111,7 @@ export function verifyAccessAssertion(input = {}) {
       !Number.isSafeInteger(claims.iat) || !Number.isSafeInteger(claims.nbf) ||
       !Number.isSafeInteger(claims.exp) || claims.iat > nowSeconds + 30 ||
       claims.nbf > nowSeconds || claims.nbf < claims.iat - 30 ||
-      claims.exp <= nowSeconds || claims.exp <= claims.iat ||
+      claims.exp <= nowSeconds || claims.exp <= claims.iat || claims.nbf >= claims.exp ||
       claims.exp - claims.iat > maxLifetimeSeconds)
       return deny('INVALID_CLAIMS');
     if (claims.sub !== allowedSubjects[0]) return deny('UNAUTHORIZED_SUBJECT');
