@@ -31,8 +31,8 @@
       "sq": "Trajnim vokal nën drejtimin artistik të Landi Kademit."
     },
     "cta": {
-      "en": "Begin your vocal journey",
-      "sq": "Fillo rrugëtimin tënd vokal"
+      "en": "Request a free session",
+      "sq": "Kërko seancën falas"
     }
   },
   "home": {
@@ -69,12 +69,12 @@
       "sq": "Puna që qëndron\npas performancës."
     },
     "ctaTitle": {
-      "en": "Let’s hear\nyour potential.",
-      "sq": "Le të zbulojmë\npotencialin tënd."
+      "en": "Every voice.\nA unique path.",
+      "sq": "Çdo zë.\nNjë rrugëtim unik."
     },
     "ctaText": {
-      "en": "Tell us where you are today and where you would like your voice to take you.",
-      "sq": "Na trego ku je sot dhe ku dëshiron të të çojë zëri yt."
+      "en": "Start with a free 20-minute vocal assessment, online or at the academy. Meet Landi and explore the next step in your vocal development.",
+      "sq": "Fillo me një vlerësim vokal 20-minutësh falas, online ose në akademi. Njihu me Landin dhe zbulo hapin e radhës në zhvillimin e zërit tënd."
     }
   },
   "programs": [
@@ -404,16 +404,16 @@
     },
     "apply": {
       "label": {
-        "en": "YOUR FIRST STEP",
-        "sq": "HAPI YT I PARË"
+        "en": "YOUR FIRST SESSION IS FREE",
+        "sq": "SEANCA E PARË ËSHTË FALAS"
       },
       "title": {
-        "en": "Every voice begins\nwith a conversation.",
-        "sq": "Çdo zë e nis\nme një bisedë."
+        "en": "Every voice.\nA unique path.",
+        "sq": "Çdo zë.\nNjë rrugëtim unik."
       },
       "intro": {
-        "en": "Choose online or in-person training at the academy. Tell us about your experience and goals so we can discuss a suitable plan.",
-        "sq": "Zgjidh trajnimin online ose me prani fizike në akademi. Na trego përvojën dhe synimet e tua që të diskutojmë një plan të përshtatshëm."
+        "en": "Meet Landi for an introductory vocal assessment. Explore your strengths, identify areas for improvement and discover a training path suited to your ambitions.",
+        "sq": "Njihu me Landin në një seancë vlerësimi vokal. Zbulo pikat e tua të forta, identifiko çfarë mund të përmirësosh dhe gjej drejtimin e duhur artistik."
       },
       "sections": []
     },
@@ -557,6 +557,16 @@
         "en": "Both are available: online vocal coaching and in-person training at the academy. Contact us to confirm your preferred format, lesson times and fees.",
         "sq": "Ofrohen të dyja format: trajnim vokal online dhe trajnim me prani fizike në akademi. Na kontakto për të konfirmuar formatin e preferuar, oraret dhe tarifat."
       }
+    },
+    {
+      "q": {
+        "en": "What happens in my free introductory session?",
+        "sq": "Çfarë ndodh në seancën e parë falas?"
+      },
+      "a": {
+        "en": "The free 20-minute introductory vocal assessment is for motivated singers at any level. Landi will listen to your voice, discuss your technique and goals, and explore an appropriate training direction. You can request the session online or at the academy; the time is confirmed personally via WhatsApp.",
+        "sq": "Vlerësimi i parë vokal, 20 minuta falas, u drejtohet këngëtarëve të motivuar të çdo niveli. Landi do të dëgjojë zërin tënd, do të diskutojë teknikën dhe synimet e tua dhe do të shqyrtojë drejtimin e përshtatshëm të trajnimit. Mund ta kërkosh seancën online ose në akademi; orari konfirmohet personalisht në WhatsApp."
+      }
     }
   ],
   "footer": {
@@ -567,6 +577,57 @@
     "independent": {
       "en": "Independent vocal education. Programme names and logos identify Landi’s documented professional experience; they do not imply endorsement.",
       "sq": "Edukim vokal i pavarur. Emrat dhe logot e programeve identifikojnë përvojën profesionale të dokumentuar të Landit; nuk nënkuptojnë mbështetje zyrtare."
+    }
+  },
+  "assessment": {
+    "durationMinutes": 20,
+    "label": {
+      "en": "Your introductory vocal assessment",
+      "sq": "Vlerësimi yt i parë vokal"
+    },
+    "freeLabel": {
+      "en": "Free first session",
+      "sq": "Seanca e parë falas"
+    },
+    "formatLabel": {
+      "en": "Online or at the academy",
+      "sq": "Online ose në akademi"
+    },
+    "focus": [
+      {
+        "title": {
+          "en": "Understand your voice",
+          "sq": "Njih zërin tënd"
+        },
+        "text": {
+          "en": "Explore your current technique, range, control and vocal strengths.",
+          "sq": "Zbulo teknikën, diapazonin, kontrollin dhe pikat e forta të zërit tënd."
+        }
+      },
+      {
+        "title": {
+          "en": "Identify your priorities",
+          "sq": "Përcakto përparësitë e tua"
+        },
+        "text": {
+          "en": "Discuss challenges, ambitions and areas for focused improvement.",
+          "sq": "Diskuto sfidat, ambiciet dhe aspektet ku mund të përmirësohesh."
+        }
+      },
+      {
+        "title": {
+          "en": "Find your direction",
+          "sq": "Gjej drejtimin tënd"
+        },
+        "text": {
+          "en": "Explore a personal training approach aligned with your goals.",
+          "sq": "Zbulo një qasje personale trajnimi që përputhet me synimet e tua."
+        }
+      }
+    ],
+    "note": {
+      "en": "For motivated singers at every level who are ready to work seriously on their voice. Your first session is free; ongoing training is arranged separately.",
+      "sq": "Për këngëtarë të motivuar të çdo niveli që duan të punojnë seriozisht me zërin e tyre. Seanca e parë është falas; trajnimi në vazhdim përcaktohet veçmas."
     }
   }
 }

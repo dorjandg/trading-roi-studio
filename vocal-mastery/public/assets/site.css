@@ -87,3 +87,18 @@ body.menu-open .concierge-launch{display:none}
 .training-option:hover{border-color:var(--champagne);background:#1b191a}
 @media(max-width:600px){.training-modes{padding:24px var(--pad) 28px}.training-grid{gap:8px}.training-option{padding:12px;gap:8px;flex-wrap:wrap;align-content:start}.training-option>svg:first-child{width:19px;height:19px}.training-option>div{flex:1 1 75px}.training-option h3{font-size:.875rem}.training-option p{font-size:.75rem}.training-option>svg:last-child{width:14px;height:14px}.footer-contact .eyebrow{margin-bottom:12px}.contact-action-grid>a.contact-action{font-size:.8125rem;padding:10px 12px}.footer-top{gap:24px;padding-bottom:24px}}
 @media(max-width:350px){.training-option{padding:10px}.training-option>svg:last-child{display:none}}
+
+/* Free introductory vocal assessment. */
+.assessment-overview{max-width:1600px;padding:0 var(--pad) 30px;margin:0 auto}
+.assessment-meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:14px}
+.assessment-meta>span{display:inline-flex;align-items:center;gap:6px;padding:8px 11px;border:1px solid #ffffff25;border-radius:7px;font-size:.75rem;color:var(--paper);line-height:1.3}
+.assessment-meta>span:first-child{background:#bd263d20;border-color:#bd263d88}
+.assessment-meta svg{width:15px;height:15px;color:var(--champagne)}
+.assessment-meta .assessment-duration{font-variant-numeric:tabular-nums}
+.assessment-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.assessment-grid article{display:flex;align-items:flex-start;gap:12px;padding:16px;background:#141416;border:1px solid #ffffff20;border-radius:9px;min-width:0}
+.assessment-icon{color:var(--champagne);padding-top:2px}.assessment-icon svg{width:20px;height:20px}
+.assessment-grid h3{font-size:.9375rem;font-weight:600;line-height:1.35}
+.assessment-grid p{font-size:.8125rem;line-height:1.5;margin:5px 0 0}
+.assessment-note{font-size:.8125rem;margin:12px 0 0;max-width:800px}
+@media(max-width:600px){body[data-page="/apply"] .page-hero{padding-top:32px;padding-bottom:24px}body[data-page="/apply"] .page-hero h1{font-size:clamp(2.35rem,9.3vw,3.2rem);margin-bottom:15px}body[data-page="/apply"] .page-intro{font-size:.875rem;line-height:1.6;margin-bottom:0}.assessment-overview{padding-bottom:22px}.assessment-grid{grid-template-columns:1fr;gap:7px}.assessment-grid article{padding:11px;gap:10px}.assessment-grid h3{font-size:.875rem}.assessment-grid p{font-size:.75rem;margin-top:4px}.assessment-note{font-size:.75rem;line-height:1.6}.assessment-meta{gap:6px}.assessment-meta>span{font-size:.6875rem;padding:7px 8px}}
