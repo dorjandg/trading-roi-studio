@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
 import { readFile } from 'node:fs/promises';
 import { webcrypto } from 'node:crypto';
-import { applyContentEdits, authenticatedOwner, apiFetch, getPreviewContent, loadContent, SCHEMA_SQL } from '../src/api.js';
+import { normalizeModelEdits, applyContentEdits, authenticatedOwner, apiFetch, getPreviewContent, loadContent, SCHEMA_SQL } from '../src/api.js';
 
 // Execute the production SQL against SQLite, rather than simulate query outcomes.
 class TestD1 {
@@ -181,6 +181,37 @@ test('private draft does not change the live site; publishing requires explicit 
   assert.equal((await loadContent(env, fallback)).hero.title.en, 'Your next chapter in singing.');
   const revisions = env.DB.sqlite.prepare('SELECT count(*) AS n FROM vm_revisions').get();
   assert.equal(revisions.n, 2);
+});
+
+test('real model transport-prefixed bilingual edits become a valid private draft', async t => {
+  // Exact JSON observed from the production Workers AI model during integration QA.
+  const observed = { summary: 'Updated hero subtitle in English and Albanian', edits: [
+    { op: 'replace', path: '/content/hero/subtitle/en', value: 'Find your voice. Shape your sound.' },
+    { op: 'replace', path: '/content/hero/subtitle/sq', value: 'Zbulo zërin tënd. Formëso tingullin tënd.' },
+  ] };
+  const env = environment(t, observed);
+  const draft = await createDraft(env);
+  const preview = await getPreviewContent(await request(`/manage/preview?draft=${draft.id}`), env, ctx, fallback);
+  assert.equal(preview.content.hero.subtitle.en, observed.edits[0].value);
+  assert.equal(preview.content.hero.subtitle.sq, observed.edits[1].value);
+  assert.deepEqual(draft.changes.map(change => change.path).sort(), ['/hero/subtitle/en', '/hero/subtitle/sq']);
+  assert.deepEqual(await loadContent(env, fallback), fallback);
+  assert.match(env.calls[0].args.messages[0].content, /never \/content\/hero\/subtitle\/en/);
+});
+
+test('transport-prefix normalization preserves strict validation and genuine content keys', () => {
+  const badPaths = ['/content/__proto__/polluted', '/content/site/constructor/prototype/polluted', '/content/missing/en', '/content/content/hero/title/en', '/content/programs/length'];
+  for (const path of badPaths) {
+    const edits = normalizeModelEdits(fallback, [{ op: 'replace', path, value: 'unsafe' }]);
+    assert.throws(() => applyContentEdits(fallback, edits), path);
+  }
+  assert.throws(() => applyContentEdits(fallback, normalizeModelEdits(fallback, [{ op: 'replace', path: '/content/site/instagram', value: 'javascript:alert(1)' }])));
+  assert.throws(() => applyContentEdits(fallback, normalizeModelEdits(fallback, [{ op: 'replace', path: '/content/hero/title/en', value: '<script>unsafe</script>' }])));
+  const rootWithContent = { content: { title: { en: 'Original', sq: 'Fillimi' } } };
+  const edits = [{ op: 'replace', path: '/content/title/en', value: 'Changed' }];
+  assert.deepEqual(normalizeModelEdits(rootWithContent, edits), edits);
+  assert.equal(applyContentEdits(rootWithContent, normalizeModelEdits(rootWithContent, edits)).content.content.title.en, 'Changed');
+  assert.equal(Object.prototype.polluted, undefined);
 });
 
 test('source deployment invalidates an old draft instead of publishing stale source content', async t => {
