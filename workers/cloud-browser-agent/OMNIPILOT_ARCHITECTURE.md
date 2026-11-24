@@ -27,9 +27,10 @@ provide that boundary.
 | `simulation/durable-access-keyset-owner.mjs` | Stages each operation in a private fork, saves the complete checkpoint, then activates only an exactly acknowledged result. Persists clock-only observations and halts on conflicts or uncertain writes. Review-only; no runtime admission. |
 | `simulation/isolated-browser-controller.mjs` | Bounded immutable queue, dispatch-time grant recheck, pending cancellation and uncertain outcomes after dispatch; not browser termination or durable fencing. |
 | Private browser gateway and mock viewer ingress | Development-only loopback transport, bounded concurrent cleanup, synchronous failure-stop and validated uncertainty metadata across both hops. Mock login is not real user authentication. |
-| `simulation/omnipilot-generic-browser.mjs` | Generic transport-free primitives over a trusted injected context, opaque owner capability and externally installed egress lease. Its immutable command normalizer is shared with the private MCP transport. Not wired to an active browser. |
+| `simulation/omnipilot-generic-browser.mjs` | Generic transport-free primitives over a trusted injected context, opaque owner capability and externally installed egress lease. Its immutable command normalizer is shared with the private MCP transport. The explicit native composition supplies its disposable browser context; no general tools are installed in the active plugin. |
 | `simulation/omnipilot-tunnel-mcp.mjs` | Private loopback transport exposing `omnipilot_browser` and `omnipilot_stop` to one fixed owner, with exact backend bearer validation, bounded commands/results, modern and legacy MCP envelopes, and synchronous stop initiation on uncertain execution or local delivery. This source is not installed in the active plugin. |
 | `simulation/omnipilot-public-connect-proxy.mjs` | Host-side Unix-socket CONNECT broker. Validates every DNS answer, refuses special/private/local destinations, pins one numeric TCP/443 destination and checks the actual peer. The browser still needs independent namespace confinement and an owned bridge; this broker alone cannot enforce all browser traffic. |
+| `simulation/omnipilot-native-runtime.mjs`, `omnipilot-native-child.mjs` and `omnipilot-native-channel.mjs` | Explicit version-gated Linux composition with fresh namespaces, a narrow read-only filesystem, clean environment, Chromium pipe/sandbox, private CONNECT bridge, bounded control frames and verified owned-process shutdown. The original MCP admission expiry crosses the process boundary without renewal. Real host acceptance and audience verification remain required before exposure. |
 | Mock OAuth upstream routing | Preserves validated MCP routing headers with a separate gateway-owned bearer; no caller identity headers cross. This does not replace real OAuth/Access verification. |
 | Existing isolated MCP and screenshot adapters | Reusable protocol and bounded image/evidence handling. Existing exposed real-browser workflows remain restricted to Wikipedia or owned fixtures. |
 | P3 ownership/coordinator/fencing modules | Advisory synthetic contracts. Do not treat structure validation as a live lease or execution grant. |
@@ -38,7 +39,9 @@ Tests use synthetic assertions, fake browser sessions, disposable local SQLite
 files, test-owned TCP loopback listeners and fake destination sockets. They do
 not establish public browser/network behavior, production Unix-socket operation,
 physical power-loss resilience or real account authentication. A source commit
-does not prove an active runtime or connector was updated.
+does not prove an active runtime or connector was updated. The restricted local
+Wikipedia workflow passed with live Chromium on 2026-11-24; that evidence does
+not establish the new native general controller or a ChatGPT tunnel round trip.
 
 ## Ownership, dispatch and failure semantics
 

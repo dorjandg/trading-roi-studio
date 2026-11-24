@@ -228,12 +228,14 @@ export async function createOmniPilotMcpServer({adapter,stop,bearerToken,command
   const reply=(id,result)=>({jsonrpc:'2.0',id,result});
   const toolFailure=(id,modern,value)=>reply(id,complete({isError:true,structuredContent:value,
     content:[{type:'text',text:'Browser command refused: '+value.code}]},modern));
+  const expired=entry=>performance.now()>=entry.deadline||
+    entry.expiresNs!==null&&process.hrtime.bigint()>=entry.expiresNs;
   function send(res,status,payload,entry=null){
     let raw;
     try{
       raw=JSON.stringify(payload);
       if(Buffer.byteLength(raw)>maxResponseBytes)throw Error();
-      if(entry&&performance.now()>=entry.deadline){uncertain(entry,'MCP_COMMAND_TIMEOUT');return;}
+      if(entry&&expired(entry)){uncertain(entry,'MCP_COMMAND_TIMEOUT');return;}
       if(res.destroyed||res.writableEnded)throw Error();
       res.writeHead(status,HEADERS);res.end(raw);
     }catch{
@@ -247,7 +249,7 @@ export async function createOmniPilotMcpServer({adapter,stop,bearerToken,command
     const value=fail(code,entry.submitted,entry.submitted);lastFailure=value;
     halt(code); // Invalidate and attempt containment before any busy-state release.
     if(respond&&!entry.res.headersSent&&!entry.res.destroyed){
-      entry.deadline=Infinity;
+      entry.deadline=Infinity;entry.expiresNs=null;
       send(entry.res,200,toolFailure(entry.id,entry.modern,value),entry);
     }else{try{entry.res.destroy();}catch{}release(entry);}
   }
@@ -256,13 +258,15 @@ export async function createOmniPilotMcpServer({adapter,stop,bearerToken,command
     if(req.aborted||req.socket.destroyed||res.destroyed||res.writableEnded)return;
     if(closed||halted)return send(res,200,toolFailure(rpc.id,modern,fail('MCP_OWNER_STOPPED')));
     if(active)return send(res,200,toolFailure(rpc.id,modern,fail('MCP_BUSY')));
-    const entry={res,id:rpc.id,modern,submitted:false,done:false,
-      deadline:performance.now()+Math.min(commandTimeoutMs,normalized.timeoutMs),timer:null};
+    const duration=Math.min(commandTimeoutMs,normalized.timeoutMs),expiresNs=process.hrtime.bigint()+BigInt(duration)*1000000n;
+    const localStart=performance.now(),remaining=Number(expiresNs-process.hrtime.bigint())/1000000;
+    const entry={res,id:rpc.id,modern,submitted:false,done:false,expiresNs,
+      deadline:localStart+remaining,timer:null};
     active=entry;
-    entry.timer=setTimeout(()=>uncertain(entry,'MCP_COMMAND_TIMEOUT'),Math.min(commandTimeoutMs,normalized.timeoutMs));
+    entry.timer=setTimeout(()=>uncertain(entry,'MCP_COMMAND_TIMEOUT'),Math.max(0,remaining));
     res.once('finish',()=>{
       if(entry.done)return;
-      if(performance.now()>=entry.deadline){uncertain(entry,'MCP_COMMAND_TIMEOUT',false);return;}
+      if(expired(entry)){uncertain(entry,'MCP_COMMAND_TIMEOUT',false);return;}
       release(entry);
     });
     res.once('close',()=>{if(!entry.done)uncertain(entry,'MCP_RESPONSE_DISCONNECTED',false);});
@@ -270,7 +274,7 @@ export async function createOmniPilotMcpServer({adapter,stop,bearerToken,command
     // Incomplete close is observable; a loss after finish may be unobservable here.
     function settled(value,error){
       if(entry.done||active!==entry||res.writableEnded)return;
-      if(performance.now()>=entry.deadline){uncertain(entry,'MCP_COMMAND_TIMEOUT');return;}
+      if(expired(entry)){uncertain(entry,'MCP_COMMAND_TIMEOUT');return;}
       if(error){
         const failure=knownFailure(error);lastFailure=failure;
         if(failure.outcomeUnknown)halt(failure.code);
@@ -280,12 +284,16 @@ export async function createOmniPilotMcpServer({adapter,stop,bearerToken,command
         const result=browserResult(value,normalized,lastSequence);
         const payload=reply(rpc.id,complete(result,modern));
         if(Buffer.byteLength(JSON.stringify(payload))>maxResponseBytes)throw Error('response limit');
-        if(performance.now()>=entry.deadline){uncertain(entry,'MCP_COMMAND_TIMEOUT');return;}
+        if(expired(entry)){uncertain(entry,'MCP_COMMAND_TIMEOUT');return;}
         lastSequence=value.sequence;send(res,200,payload,entry);
       }catch{uncertain(entry,'MCP_RESULT_INVALID');}
     }
+    if(expired(entry)){uncertain(entry,'MCP_COMMAND_TIMEOUT');return;}
     entry.submitted=true;
-    try{Promise.resolve(execute(external)).then(value=>settled(value),error=>settled(null,error));}
+    // Owner-only scheduling metadata, never populated from HTTP JSON. Existing
+    // one-argument adapters remain compatible; process bridges preserve expiry.
+    const ownerDeadline=Object.freeze({expiresNs});
+    try{Promise.resolve(execute(external,ownerDeadline)).then(value=>settled(value),error=>settled(null,error));}
     catch(error){settled(null,error);}
   }
   function incomingHeaders(req){

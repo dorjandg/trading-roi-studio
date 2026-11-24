@@ -1,9 +1,11 @@
 # OmniPilot native runtime integration
 
-Status: development components with offline and local-loopback verification.
-The general controller is not yet installed in the ChatGPT plugin. The existing
-restricted Wikipedia tool reported `tunnel_client_not_seen` during the
-2026-11-24 check, including after its development Codespace was reopened.
+Status: development implementation; general-controller live acceptance and
+ChatGPT exposure remain separate gates. The restricted Wikipedia browser passed
+a real local Chromium navigation/search/click/text/PNG check on 2026-11-24. Its
+loopback MCP target is running, but a runtime credential is still required to
+start the tunnel client. The general tools are not installed in the ChatGPT
+plugin. A successful local check is not a ChatGPT round trip.
 
 ## Chosen connection path
 
@@ -57,6 +59,12 @@ before admission can reopen. Errors preserve `dispatched`, `outcomeUnknown` and
 does not prove remote receipt; the tunnel/client must preserve outcome uncertainty
 and must not automatically repeat an action after a lost response.
 
+At command admission, the transport creates a frozen owner-only absolute
+monotonic expiry and passes it as the second `adapter.execute` argument. This
+context is never read from caller JSON. The native adapter can shorten that
+expiry but cannot restart the budget across process boundaries. The host verifies
+that the child shares its Linux time namespace before using this clock contract.
+
 PNG screenshots are bounded and returned once as an MCP image block, with
 separate structured metadata. Page text and image evidence remain untrusted.
 Control masking does not guarantee that visible page content contains no secret.
@@ -96,14 +104,49 @@ destination work. `close()` immediately revokes admission, aborts pending work
 and requests socket destruction; its bounded receipt reports remaining resources.
 It does not assert browser isolation or termination.
 
-## Required composition and live acceptance
+## Native composition
 
-The browser launcher and namespace bridge are not implemented by these modules.
-A trusted composition root must create and verify the complete boundary before
-issuing the generic owner's egress lease. A caller flag or URL predicate cannot
-substitute for it. The intended host boundary uses a fresh network namespace,
-private filesystem/environment and a narrow proxy bridge to this broker. The
-owner must control browser processes, pipes and shutdown, including failure.
+`createNativeOmniPilotRuntime({installation, bearerToken})` in
+`omnipilot-native-runtime.mjs` is an explicit trusted Linux/x64 composition root.
+`installation` contains canonical `node`, `chromium` and `playwrightCore` paths.
+It validates Node 24, bubblewrap 0.9.0, Playwright 1.56.1 and Chromium build 1194;
+these version checks are intentional compatibility gates. The returned object
+contains `url`, `close` and `diagnostics`. Importing the modules starts no service.
+No request can select installations, environment variables, launch arguments,
+broker test seams or a different browser owner.
+
+The host creates fresh private source, metadata, broker and control directories.
+The sandbox receives only fixed read-only runtime/system paths, the required
+source files and the two socket leaf mounts. Host home/workspace directories,
+the host root, tunnel credentials and the MCP bearer are not mounted or inherited.
+Fresh user, PID, mount, network, IPC and UTS namespaces separate the child; the
+host checks the actual namespace-init PID/start identity and namespace links.
+The child verifies a clean environment, a fresh home and loopback-only interfaces
+before the host authorizes browser startup. No unconfined fallback is provided.
+
+`omnipilot-native-child.mjs` owns a loopback CONNECT bridge to the sole mounted
+host broker socket. Chromium uses Playwright's private pipe, its sandbox and
+normal certificate verification. It creates a disposable browser context with
+service workers and downloads blocked. The generic adapter continues to reject
+credential/file inputs. The control channel is established before Chromium
+launch; channel loss, startup revocation, uncertain results and boundary failure
+initiate containment. The host revokes the broker before releasing pending work
+and signals only its verified owned namespace/wrapper.
+
+`omnipilot-native-channel.mjs` uses bounded canonical JSON frames, one in-flight
+command, exact message/result bindings and the original monotonic expiry.
+Encoding and write completion are checked against the remaining deadline.
+Shutdown receipts report observed process/namespace disappearance, broker close
+and directory cleanup separately. They do not assert rollback, durable fencing,
+complete live confinement acceptance or remote result receipt.
+
+## Required live acceptance
+
+The implemented boundary must pass on the actual target host before the general
+tools are exposed. A caller flag, URL predicate or synthetic test cannot supply
+that evidence. `run-omnipilot-native-acceptance.mjs` exercises the production
+composition on a blank browser and records its exact limited scope. It does not
+establish public HTTPS, direct TCP/UDP refusal or forced-parent-death behavior.
 
 1. Inspect the existing development host, actual branch/HEAD and dirty filenames.
    Identify the owned browser/MCP/tunnel processes using sanitized metadata.
@@ -115,7 +158,7 @@ owner must control browser processes, pipes and shutdown, including failure.
 3. Verify the audience described above and host support for namespaces, private
    Unix sockets, interface inventory, Chromium and the runtime bridge. Refuse
    generic launch if any required capability is absent.
-4. Implement the owned launcher/bridge and test on disposable controlled pages.
+4. Run the owned launcher/bridge and test on disposable controlled pages.
    Verify redirects, subresources, DNS rebinding/mixed answers, direct networking,
    UDP/WebRTC, service workers and shutdown/error paths against the real boundary.
 5. Connect the accepted owner to the new MCP transport. Refresh the authorized
@@ -128,18 +171,23 @@ multi-user access remain later work. Do not enable them by widening this MVP.
 ## Evidence limits
 
 The focused tests use real test-owned loopback TCP listeners, fake browser
-adapters, synthetic DNS answers and fake upstream Duplexes. They do not dial
-public or unrelated private destinations and do not prove production UDS or
-browser confinement. They are separate from earlier fake-browser and disposable
-SQLite test evidence.
+adapters, synthetic DNS answers, fake upstream Duplexes, synthetic process
+messages and disposable local files. They do not dial public or unrelated private
+destinations and do not prove production UDS or browser confinement. They are
+separate from earlier fake-browser and disposable SQLite test evidence.
 
 The current chat execution host can create an empty network namespace and a TCP
 loopback listener. It denies namespace loopback NETLINK_ROUTE setup, Unix-socket
 binding, Chromium's singleton socket and Node interface enumeration. Full browser
 acceptance cannot run there, and no weaker public-network fallback is permitted.
-Codespace UI opening alone is not shell or process evidence; terminal checks
-were blocked by Workspace Trust. Runtime availability must be observed after
-access is resolved, not inferred from source/test success.
+After the user trusted the development workspace, actual Codespace terminal
+checks confirmed Unix-socket binding, host-interface inventory and a working
+bubblewrap namespace probe. The official tunnel client was installed with its
+release checksum verified, and the restricted browser passed its local live
+workflow. The original checkout and its untracked files were preserved; further
+source testing uses a separate detached worktree. Automatic port forwards were
+removed. These observations do not establish general-controller isolation or
+an active ChatGPT tunnel connection.
 
 ## Primary references
 
