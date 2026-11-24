@@ -41,7 +41,7 @@ test("CI-only authenticated viewer switches persistent Chromium tabs through its
   const readOnlyPage=await viewer.newPage();
   await readOnlyPage.goto(ingress.url+"/");
   await readOnlyPage.getByRole("button",{name:"staging",exact:true}).click();
-  await readOnlyPage.getByText("Viewer-only permission").waitFor();
+  // The viewer lacks controller permission: the mock UI displays a bounded refusal.\n  await readOnlyPage.locator("#status").getByText("Navigation refused").waitFor();
   const after=await fetch(ingress.url+"/api/state",{headers:{cookie:(await viewer.cookies()).map(c=>c.name+"="+c.value).join("; ")}});
   assert.equal((await after.json()).activeTab,"github");
   await viewer.close();
