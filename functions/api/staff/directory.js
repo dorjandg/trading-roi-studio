@@ -44,6 +44,11 @@ export async function onRequest({request,env}){
  if(clean.parent&&await db.prepare("SELECT id FROM glam_directory WHERE kind='categories' AND json_extract(data,'$.parent')=? LIMIT 1").bind(clean.id).first())return json({error:'Move subcollections first'},409);
  }
  const old=await db.prepare('SELECT data FROM glam_directory WHERE kind=? AND id=?').bind(kind,p.id).first();
+ if(body.createOnly===true){
+ await db.prepare('INSERT INTO glam_directory(kind,id,data) VALUES(?,?,?) ON CONFLICT(kind,id) DO NOTHING').bind(kind,p.id,JSON.stringify(clean)).run();
+ const saved=await db.prepare('SELECT data FROM glam_directory WHERE kind=? AND id=?').bind(kind,p.id).first();
+ return json({ok:true,record:JSON.parse(saved.data)});
+ }
  const statements=[db.prepare('INSERT INTO glam_directory(kind,id,data) VALUES(?,?,?) ON CONFLICT(kind,id) DO UPDATE SET data=excluded.data').bind(kind,p.id,JSON.stringify(clean))];
  if(kind==='brands'&&old&&JSON.parse(old.data).name!==clean.name)statements.push(db.prepare("UPDATE glam_catalog SET data=json_set(data,'$.brand',?) WHERE json_extract(data,'$.brand')=?").bind(clean.name,JSON.parse(old.data).name));
  await db.batch(statements);
