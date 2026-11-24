@@ -44,7 +44,7 @@ const seedCategories=()=>rootCategories.flatMap(([name,children])=>[{id:name.toL
 let categories=read(keys.categories)||seedCategories(),brands=read(keys.brands)||[],products=(read(keys.products)||[]).filter(p=>!p.reference_only&&!String(p.id||'').startsWith('brand-demo-')&&!String(p.name||'').startsWith('GLAM QA '));
 const defaultCollection={id:'glam',name:'GLAM Collection',parent:'',description:'Default collection for unassigned products',builtin:true};
 const publicCollectionIds=new Set(seedCategories().map(c=>c.id.split('/')[0]));
-const effectiveCollection=value=>publicCollectionIds.has(String(value||'').split('/')[0])?value:'glam';
+const effectiveCollection=value=>{const v=String(value||'').trim();return v&&(v==='glam'||publicCollectionIds.has(v.split('/')[0])||categories.some(c=>c.id===v))?v:'glam'};
 function ensureDefaultCollection(){if(!categories.some(c=>c.id==='glam'))categories.unshift({...defaultCollection});for(const seed of seedCategories())if(!categories.some(c=>c.id===seed.id))categories.push(seed)}
 ensureDefaultCollection();
 // Explicit bridge for the product preview script; top-level let bindings are not window properties.
@@ -109,6 +109,7 @@ async function saveProductToCloud(form){
  const previous=products.find(p=>p.id===currentId);
  const data={...(previous||{}),...formData(form),id:currentId};
  data.category=effectiveCollection(data.category);
+ data.category_name=categories.find(c=>c.id===data.category)?.name||'';
  // Derive a product-level main photo from the first configured color only when
  // there is no explicit product-level photo. Preserve staff-selected main photos.
  if(!data.image_url && !(Array.isArray(data.images)&&data.images.length)){
@@ -138,7 +139,7 @@ async function saveProductToCloud(form){
     renderProducts();
    }
    return true;
-  }catch(e){if(sequence===productSaveSequence){status.replaceChildren();status.append(document.createTextNode('Photo order NOT saved. '+e.message+'. '));const login=document.createElement('a');login.href='/api/staff/catalog';login.textContent='Sign in to GLAM Staff API';login.style.cssText='text-decoration:underline;font-weight:700';status.append(login)}return false}
+  }catch(e){if(sequence===productSaveSequence){status.replaceChildren();status.append(document.createTextNode('Product changes NOT saved. '+e.message+'. '));const login=document.createElement('a');login.href='/api/staff/catalog';login.textContent='Sign in to GLAM Staff API';login.style.cssText='text-decoration:underline;font-weight:700';status.append(login)}return false}
  };
  productSaveQueue=productSaveQueue.then(task,task);
  return await productSaveQueue;
