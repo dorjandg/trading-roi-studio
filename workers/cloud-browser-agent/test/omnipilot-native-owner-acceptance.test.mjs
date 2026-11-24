@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
-import {parseIdentity,matchesOwnedSignalTarget,assessCanaries,assessDeathAcceptance,canObserveClosedSockets,NAMESPACE_PROBE}
+import {parseIdentity,matchesOwnedSignalTarget,assessCanaries,assessDeathAcceptance,canObserveClosedSockets,NAMESPACE_PROBE,
+  knownNamespaceEntryRefusal,canContinueAfterUnverifiedCanary,ownerAcceptanceStatus}
   from '../simulation/run-omnipilot-native-owner-acceptance.mjs';
 
 // Pure synthetic observations. The embedded namespace program is syntax checked
@@ -86,4 +87,38 @@ test('the fixed namespace probe parses as a module without executing any of its 
   const result=spawnSync(process.execPath,['--input-type=module','--check'],{input:NAMESPACE_PROBE,encoding:'utf8',timeout:3000,
     maxBuffer:8192,env:{PATH:'/usr/bin:/bin',LANG:'C.UTF-8',LC_ALL:'C.UTF-8'},stdio:['pipe','pipe','pipe']});
   assert.equal(result.status,0);assert.equal(result.signal,null);assert.equal(result.error,undefined);assert.equal(result.stderr,'');
+});
+
+test('only the exact timely nsenter IPC entry refusal is classified as an unverified diagnostic gate',()=>{
+  const stderr="nsenter: reassociate to namespace 'ns/ipc' failed: Operation not permitted\n";
+  assert.equal(knownNamespaceEntryRefusal(1,null,stderr,0,false),true);
+  for(const args of [[0,null,stderr,0,false],[2,null,stderr,0,false],[1,'SIGKILL',stderr,0,false],
+    [1,null,stderr,1,false],[1,null,stderr,0,true],[1,null,stderr.trim(),0,false],
+    [1,null,stderr.replace('ns/ipc','ns/net'),0,false],[1,null,stderr+'extra output\n',0,false],
+    [1,null,'Error: PROBE_NAMESPACE_REFUSED\n',0,false],[1,null,'',0,false]])
+    assert.equal(knownNamespaceEntryRefusal(...args),false);
+});
+
+test('independent work after entry refusal requires verified normal cleanup and cannot accept a breach or unrelated error',()=>{
+  const canary={passed:false,status:'unverified',code:'ACCEPTANCE_NSENTER_ENTRY_REFUSED'};
+  const cleanup={passed:true,forcedFallback:false,productionCleanupVerified:true,
+    stageCleanup:{alreadyAbsent:true,removedByAcceptanceObserver:false}};
+  assert.equal(canContinueAfterUnverifiedCanary(canary,cleanup),true);
+  for(const changed of [{passed:true},{status:'failed'},{code:'ACCEPTANCE_NSENTER_UNAVAILABLE'},
+    {code:'ACCEPTANCE_PROBE_OUTPUT'},{code:'ACCEPTANCE_CANARIES_FAILED'}])
+    assert.equal(canContinueAfterUnverifiedCanary({...canary,...changed},cleanup),false);
+  for(const changed of [{passed:false},{forcedFallback:true},{productionCleanupVerified:false},
+    {stageCleanup:{alreadyAbsent:false,removedByAcceptanceObserver:true}}])
+    assert.equal(canContinueAfterUnverifiedCanary(canary,{...cleanup,...changed}),false);
+});
+
+test('later HTTPS and death passes cannot turn the unverified canary gate into aggregate success',()=>{
+  const other={publicHttps:{passed:true},parentDeath:{passed:true},childDeath:{passed:true}};
+  const unverified={passed:false,status:'unverified',code:'ACCEPTANCE_NSENTER_ENTRY_REFUSED'};
+  assert.equal(ownerAcceptanceStatus({...other,canaries:unverified}),'incomplete');
+  assert.equal(ownerAcceptanceStatus({...other,canaries:{passed:true}}),'passed');
+  assert.equal(ownerAcceptanceStatus({...other,canaries:{...unverified,code:'ACCEPTANCE_PROBE_OUTPUT'}}),'failed');
+  for(const name of ['publicHttps','parentDeath','childDeath'])
+    assert.equal(ownerAcceptanceStatus({...other,canaries:unverified,[name]:{passed:false}}),'failed');
+  assert.equal(ownerAcceptanceStatus(other),'failed');
 });

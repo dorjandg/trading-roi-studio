@@ -381,6 +381,22 @@ export function assessDeathAcceptance(evidence,cleanup,signalVerified){
   return signalVerified===true&&evidence?.passed===true&&cleanup?.containmentComplete===true&&
     cleanup.forcedFallback===false&&cleanup.stageRemoved===true&&cleanup.passed===true;
 }
+export function knownNamespaceEntryRefusal(code,signal,stderr,stdoutBytes,deadlineExceeded){
+  return code===1&&signal===null&&stdoutBytes===0&&deadlineExceeded===false&&
+    stderr==="nsenter: reassociate to namespace 'ns/ipc' failed: Operation not permitted\n";
+}
+export function canContinueAfterUnverifiedCanary(canary,cleanup){
+  return canary?.passed===false&&canary.status==='unverified'&&canary.code==='ACCEPTANCE_NSENTER_ENTRY_REFUSED'&&
+    cleanup?.passed===true&&cleanup.forcedFallback===false&&cleanup.productionCleanupVerified===true&&
+    cleanup.stageCleanup?.alreadyAbsent===true&&cleanup.stageCleanup.removedByAcceptanceObserver===false;
+}
+export function ownerAcceptanceStatus(checks){
+  if(['canaries','publicHttps','parentDeath','childDeath'].every(name=>checks?.[name]?.passed===true))return 'passed';
+  if(checks?.canaries?.passed===false&&checks.canaries.status==='unverified'&&
+    checks.canaries.code==='ACCEPTANCE_NSENTER_ENTRY_REFUSED'&&
+    ['publicHttps','parentDeath','childDeath'].every(name=>checks?.[name]?.passed===true))return 'incomplete';
+  return 'failed';
+}
 
 async function runNamespaceProbe(owned,ports,markerPath,marker){
   const executable='/usr/bin/nsenter';if(!safePath(executable).isFile())throw error('ACCEPTANCE_NSENTER_UNAVAILABLE');
@@ -404,7 +420,7 @@ async function runNamespaceProbe(owned,ports,markerPath,marker){
       cwd:'/',stdio:['ignore','pipe','pipe',...fds]});
     child.on('error',()=>{});
     if(!Number.isSafeInteger(child.pid)||child.pid<1)throw error('ACCEPTANCE_NSENTER_UNAVAILABLE');
-    const proc={...identity(child.pid),ns:namespaceIds(child.pid),allowedNs:owned.namespaces};let output=Buffer.alloc(0),errors=0;
+    const proc={...identity(child.pid),ns:namespaceIds(child.pid),allowedNs:owned.namespaces};let output=Buffer.alloc(0),errors=Buffer.alloc(0);
     if(proc.ppid!==process.pid||proc.uid!==process.getuid())throw error('ACCEPTANCE_IDENTITY_REFUSED');
     return await new Promise((resolve,reject)=>{
       let done=false;const deadline=performance.now()+2500;
@@ -412,10 +428,13 @@ async function runNamespaceProbe(owned,ports,markerPath,marker){
         if(code){killOwned(proc);reject(error(code));}else resolve(value);};
       const timer=setTimeout(()=>finish('ACCEPTANCE_PROBE_TIMEOUT'),2500);
       child.stdout.on('data',part=>{if(output.length+part.length>8192)finish('ACCEPTANCE_PROBE_OUTPUT');else output=Buffer.concat([output,part]);});
-      child.stderr.on('data',part=>{errors+=part.length;if(errors>8192)finish('ACCEPTANCE_PROBE_OUTPUT');});
+      child.stderr.on('data',part=>{if(errors.length+part.length>8192)finish('ACCEPTANCE_PROBE_OUTPUT');else errors=Buffer.concat([errors,part]);});
       child.once('error',()=>finish('ACCEPTANCE_NSENTER_UNAVAILABLE'));
-      child.once('close',code=>{
-        if(code!==0||performance.now()>=deadline)return finish('ACCEPTANCE_NSENTER_UNAVAILABLE');
+      child.once('close',(code,signal)=>{
+        const deadlineExceeded=performance.now()>=deadline;
+        if(knownNamespaceEntryRefusal(code,signal,errors.toString('utf8'),output.length,deadlineExceeded))
+          return finish('ACCEPTANCE_NSENTER_ENTRY_REFUSED');
+        if(code!==0||deadlineExceeded)return finish('ACCEPTANCE_NSENTER_UNAVAILABLE');
         try{finish(null,JSON.parse(output.toString('utf8')));}catch{finish('ACCEPTANCE_PROBE_OUTPUT');}
       });
     });
@@ -476,7 +495,16 @@ async function runCanaries(owned,markerPath,marker){
     await positiveTcp(ports.tcp);await positiveUdp(ports.udp);await delay(50);
     const before={...counts},positiveControls={tcpNonceRoundTrip:true,udpNonceRoundTrip:true};
     if(!healthy||Object.values(before).some(value=>value!==1))throw error('ACCEPTANCE_CANARY_CONTROL_FAILED');
-    const probe=await runNamespaceProbe(owned,ports,markerPath,marker);await delay(300);
+    let probe;
+    try{probe=await runNamespaceProbe(owned,ports,markerPath,marker);}
+    catch(cause){
+      if(cause.code!=='ACCEPTANCE_NSENTER_ENTRY_REFUSED')throw cause;
+      if(!healthy||Object.keys(before).some(key=>counts[key]!==before[key]))throw error('ACCEPTANCE_CANARY_CONTROL_FAILED');
+      return {passed:false,status:'unverified',code:'ACCEPTANCE_NSENTER_ENTRY_REFUSED',positiveControls,
+        baseline:before,namespaceCanaryExecuted:false,udpSendResultUsedAsRefusalProof:false,
+        scope:'Host refused the fixed IPC namespace entry. Positive host controls passed; direct namespace TCP/UDP isolation was not tested.'};
+    }
+    await delay(300);
     const report=assessCanaries(probe,before,{...counts},{...owned.namespaces,hostNet:owned.hostNamespaces.net,healthy},positiveControls);
     return {...report,positiveControls,baseline:before,after:{...counts},observationAfterProbeMs:300,probe};
   }finally{
@@ -506,7 +534,16 @@ export async function runOwnedNativeAcceptance({runtimeModule,installation}){
   try{
     let session=await startSession(runtimeModule,installation,marker,register);observeSession(session,'canaries-and-public-https');
     report.checks.canaries=await runCanaries(session.owned,markerPath,marker);
-    if(!report.checks.canaries.passed||interrupted)throw error('ACCEPTANCE_CANARIES_FAILED');
+    if(interrupted)throw error('ACCEPTANCE_INTERRUPTED');
+    if(!report.checks.canaries.passed){
+      if(report.checks.canaries.status!=='unverified'||report.checks.canaries.code!=='ACCEPTANCE_NSENTER_ENTRY_REFUSED')
+        throw error('ACCEPTANCE_CANARIES_FAILED');
+      const refusedCleanup=await session.cleanup();report.cleanup.push(refusedCleanup);
+      if(!canContinueAfterUnverifiedCanary(report.checks.canaries,refusedCleanup))throw error('ACCEPTANCE_CLEANUP_FAILED');
+      if(interrupted)throw error('ACCEPTANCE_INTERRUPTED');
+      // The refused diagnostic session is fully closed before independent work.
+      session=await startSession(runtimeModule,installation,marker,register);observeSession(session,'independent-public-https');
+    }
     report.checks.publicHttps=await session.ask('public-check');
     if(report.checks.publicHttps?.passed!==true)throw error('ACCEPTANCE_PUBLIC_HTTPS_FAILED');
     report.cleanup.push(await session.cleanup());if(!report.cleanup.at(-1).passed||report.cleanup.at(-1).forcedFallback)throw error('ACCEPTANCE_CLEANUP_FAILED');
@@ -534,7 +571,7 @@ export async function runOwnedNativeAcceptance({runtimeModule,installation}){
     report.checks.childDeath.initialObservationPassed=report.checks.childDeath.passed;
     report.checks.childDeath.passed=assessDeathAcceptance(report.checks.childDeath,childCleanup,driverSignal);
     if(!report.checks.childDeath.passed||interrupted)throw error('ACCEPTANCE_CHILD_DEATH_FAILED');
-    report.status='passed';return report;
+    report.status=ownerAcceptanceStatus(report.checks);return report;
   }catch(cause){report.status='failed';report.failure=/^ACCEPTANCE_[A-Z_]+$/.test(cause.code??'')?cause.code:'ACCEPTANCE_FAILED';return report;
   }finally{
     clearTimeout(overall);process.off('SIGTERM',interrupt);process.off('SIGINT',interrupt);
