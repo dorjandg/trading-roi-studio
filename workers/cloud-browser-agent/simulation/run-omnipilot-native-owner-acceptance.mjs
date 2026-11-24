@@ -222,15 +222,16 @@ async function ownedHelper(runtimeModule,installation){
     try{
       if(message.kind==='public-check'){
         const status=await mcpCommand(runtime,token,{op:'status'},1),tabId=status.structuredContent.data.selectedTabId;
-        await mcpCommand(runtime,token,{op:'navigate',tabId,url:'https://example.com/',timeoutMs:15000},2);
-        const tabs=await mcpCommand(runtime,token,{op:'tabs.list'},3);
-        const snapshot=await mcpCommand(runtime,token,{op:'snapshot',tabId,maxChars:2000},4);
-        const picture=await mcpCommand(runtime,token,{op:'screenshot',tabId,width:640,height:360},5);
+        await mcpCommand(runtime,token,{op:'navigate',tabId,url:'https://demo.playwright.dev/todomvc/',timeoutMs:15000},2);
+        await mcpCommand(runtime,token,{op:'wait',tabId,selector:'h1',state:'visible',timeoutMs:5000},3);
+        const tabs=await mcpCommand(runtime,token,{op:'tabs.list'},4);
+        const snapshot=await mcpCommand(runtime,token,{op:'snapshot',tabId,maxChars:2000},5);
+        const picture=await mcpCommand(runtime,token,{op:'screenshot',tabId,width:640,height:360},6);
         const png=picture.content.find(block=>block.type==='image'),image=png&&Buffer.from(png.data,'base64');
-        if(!tabs.structuredContent.data.tabs.some(tab=>tab.id===tabId&&tab.origin==='https://example.com')||
-          !snapshot.structuredContent.data.text.includes('Example Domain')||!image||image.length>2000000||
+        if(!tabs.structuredContent.data.tabs.some(tab=>tab.id===tabId&&tab.origin==='https://demo.playwright.dev')||
+          !snapshot.structuredContent.data.text.includes('todos')||!image||image.length>2000000||
           image.subarray(0,8).toString('hex')!=='89504e470d0a1a0a')throw Error();
-        await helperSend({kind:'result',id:message.id,value:{passed:true,origin:'https://example.com',expectedHeadingSeen:true,
+        await helperSend({kind:'result',id:message.id,value:{passed:true,origin:'https://demo.playwright.dev',expectedHeadingSeen:true,
           screenshotBytes:image.length,screenshotSha256:createHash('sha256').update(image).digest('hex'),
           redactionComplete:false,tlsValidationConfigured:true,negativeCertificateTest:false,diagnostics:runtime.diagnostics()}});
       }else if(message.kind==='diagnostics'){
