@@ -17,7 +17,7 @@ test('compact bilingual navigation keeps eight destinations and a dedicated appl
   assert.match(menu,/href="tel:\+355692085923"/);
   assert.match(menu,/href="https:\/\/wa.me\/355692085923"/);
   assert.ok(!menu.includes('menu-contact"><a href="https://wa.me/355692085923"'));
-  assert.match(html,/site\.css\?v=language-toggle-1/);
+  assert.match(html,/site\.css\?v=hero-balance-1/);
  }
 });
 
@@ -75,4 +75,29 @@ test('one accessible language switch toggles directly to the other language on t
  }
  const preview=renderPage('/academy',content,'en',{preview:true,draftId:'test'});
  assert.match(preview,/class="language-toggle" data-language="sq" href="\/manage\/preview\?draft=test&page=%2Facademy&lang=sq"/);
+});
+
+test('bilingual welcome preserves approved title, image and equal CTA structure',()=>{
+ for(const lang of ['en','sq']){
+  const html=renderPage('/',content,lang);
+  const hero=html.match(/<section class="hero">[\s\S]*?<\/section>/)?.[0];
+  assert.ok(hero);
+  assert.equal((hero.match(/<h1>/g)||[]).length,1);
+  assert.ok(hero.includes(content.hero.title[lang].replace('\n','<br>')));
+  assert.ok(hero.includes('src="'+content.site.heroImage+'"'));
+  assert.match(hero,/class="button button-primary"/);
+  assert.ok(hero.includes('href="/apply?lang='+lang+'"'));
+  assert.ok(hero.includes('href="/programs?lang='+lang+'"'));
+  assert.match(html,/site\.css\?v=hero-balance-1/);
+ }
+});
+test('mobile portrait is in normal flow and both languages use one shared type and CTA size',async()=>{
+ const css=await readFile(new URL('../public/assets/site.css',import.meta.url),'utf8');
+ const rules=css.slice(css.indexOf('/* Equal bilingual hero geometry'));
+ assert.match(rules,/\.hero-copy\{position:relative;container-type:inline-size/);
+ assert.match(rules,/\.hero\{display:flex;flex-direction:column;min-height:0;height:auto/);
+ assert.match(rules,/\.hero-portrait\{position:relative;top:auto;bottom:auto/);
+ assert.match(rules,/\.hero-signature\{position:static/);
+ assert.match(rules,/\.hero-actions \.button\{width:min\(100%,270px\);min-width:0;min-height:50px/);
+ assert.doesNotMatch(rules,/\[lang=/);
 });
