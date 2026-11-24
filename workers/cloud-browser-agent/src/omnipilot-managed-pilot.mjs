@@ -102,21 +102,45 @@ export function createManagedPilotScript(request){
 }
 export async function executeManagedPilot(browser,request){
   const code=createManagedPilotScript(request); // Validate before any browser request.
-  if(!browser||typeof browser.script!=='function')
+  if(!browser||typeof browser.script!=='function'||typeof browser.closeSession!=='function')
     return Object.freeze({ok:false,code:'PILOT_BROWSER_UNAVAILABLE',retrySafe:false});
+  const failure=(code)=>Object.freeze({ok:false,code,outcomeUnknown:true,retrySafe:false});
+  let outcome=failure('PILOT_EXECUTION_UNCERTAIN');
+  let sessionId=null;
   try{
     const response=await browser.script(code,{library:'playwright',timeout:45000,keepAlive:10000});
-    if(!response?.ok)return Object.freeze({ok:false,code:'PILOT_EXECUTION_UNCERTAIN',
-      outcomeUnknown:true,retrySafe:false});
-    const raw=await response.json();
-    const data=raw?.result;
-    if(raw?.success!==true||data?.ok!==true||data.origin!=='https://demo.playwright.dev'
-       ||!Number.isSafeInteger(data.itemCount)||data.itemCount<0
-       ||!Array.isArray(data.items)||data.items.length>12)
-      return Object.freeze({ok:false,code:'PILOT_RESULT_INVALID',outcomeUnknown:true,retrySafe:false});
-    return Object.freeze({ok:true,origin:data.origin,title:String(data.title||'').slice(0,120),
-      itemCount:data.itemCount,items:data.items.map(v=>String(v).slice(0,256))});
+    const reported=response?.headers?.get('cf-browser-session-id');
+    if(typeof reported==='string'&&/^[A-Za-z0-9-]{10,128}$/.test(reported))
+      sessionId=reported;
+    // The session must be identified so the Worker can close it explicitly.
+    // A successful script without a session receipt is NOT a successful action.
+    if(!sessionId) outcome=failure('PILOT_SESSION_UNTRACKED');
+    else if(!response.ok)outcome=failure('PILOT_EXECUTION_UNCERTAIN');
+    else{
+      const raw=await response.json();
+      const data=raw?.result;
+      if(raw?.success!==true||data?.ok!==true||data.origin!=='https://demo.playwright.dev'
+         ||!Number.isSafeInteger(data.itemCount)||data.itemCount<0
+         ||!Array.isArray(data.items)||data.items.length>12
+         ||data.items.some(v=>typeof v!=='string'||v.length>256)
+         ||typeof data.title!=='string'||data.title.length>120)
+        outcome=failure('PILOT_RESULT_INVALID');
+      else outcome=Object.freeze({ok:true,origin:data.origin,title:data.title,
+        itemCount:data.itemCount,items:[...data.items]});
+    }
   }catch{
-    return Object.freeze({ok:false,code:'PILOT_EXECUTION_UNCERTAIN',outcomeUnknown:true,retrySafe:false});
+    outcome=failure('PILOT_EXECUTION_UNCERTAIN');
+  }finally{
+    // Browser Run does NOT close acquired sessions when /script completes.
+    // A known session must be closed regardless of success or failure.
+    if(sessionId){
+      try{
+        const closed=await browser.closeSession(sessionId);
+        if(closed?.ok===false)outcome=failure('PILOT_CLEANUP_UNVERIFIED');
+      }catch{
+        outcome=failure('PILOT_CLEANUP_UNVERIFIED');
+      }
+    }
   }
+  return outcome;
 }
