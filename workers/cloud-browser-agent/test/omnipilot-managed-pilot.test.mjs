@@ -59,18 +59,19 @@ test('generated script is a fixed function with the original strict plan as data
   assert.ok(safe.includes(JSON.stringify(tricky.actions[0].value).slice(1,-1)));
 });
 test('client sends one bounded script and parses only validated response',async()=>{
-  const calls=[];
+  const calls=[],closed=[];
   const binding={async script(code,options){
     calls.push({code,options});
     return new Response(JSON.stringify({success:true,result:{
       ok:true,origin:'https://demo.playwright.dev',title:'React • TodoMVC',
       itemCount:1,items:['OmniPilot smoke']}}),{
-      status:200,headers:{'content-type':'application/json'}});
-  }};
+      status:200,headers:{'content-type':'application/json','cf-browser-session-id':'pilot-session-abc123'}});
+  },async closeSession(id){closed.push(id);return Response.json({status:'closed'});}};
   const result=await executeManagedPilot(binding,input());
   assert.deepEqual(result,{ok:true,origin:'https://demo.playwright.dev',
     title:'React • TodoMVC',itemCount:1,items:['OmniPilot smoke']});
   assert.equal(calls.length,1);
+  assert.deepEqual(closed,['pilot-session-abc123']);
   assert.deepEqual(calls[0].options,{library:'playwright',timeout:45000,keepAlive:10000});
   denied(()=>createManagedPilotScript({...input(),url:'https://example.com'}));
 });
@@ -78,7 +79,7 @@ test('unavailable bindings and unexpected outcomes fail closed and are not retri
   assert.deepEqual(await executeManagedPilot(null,input()),
     {ok:false,code:'PILOT_BROWSER_UNAVAILABLE',retrySafe:false});
   let calls=0;
-  const broken={async script(){calls++;throw Error('private-details-must-not-leak');}};
+  const broken={async script(){calls++;throw Error('private-details-must-not-leak');},async closeSession(){throw Error('not used');}};
   const result=await executeManagedPilot(broken,input());
   assert.deepEqual(result,{ok:false,code:'PILOT_EXECUTION_UNCERTAIN',
     outcomeUnknown:true,retrySafe:false});
@@ -86,8 +87,29 @@ test('unavailable bindings and unexpected outcomes fail closed and are not retri
   for(const payload of [{success:false},{success:true,result:{ok:true,origin:'https://bad.invalid',
     itemCount:1,items:['x']}},{success:true,result:{ok:true,origin:'https://demo.playwright.dev',
     itemCount:3,items:'not-array'}}]){
-    const binding={async script(){return new Response(JSON.stringify(payload),{status:200});}};
+    const binding={async script(){return new Response(JSON.stringify(payload),{status:200,
+      headers:{'cf-browser-session-id':'pilot-session-abc123'}});},
+      async closeSession(){return Response.json({status:'closed'});}};
     const actual=await executeManagedPilot(binding,input());
     assert.equal(actual.ok,false);assert.equal(actual.retrySafe,false);
   }
+});
+
+test('untracked sessions and failed cleanup cannot be reported as completed actions',async()=>{
+ const response=new Response(JSON.stringify({success:true,result:{ok:true,
+  origin:'https://demo.playwright.dev',title:'Demo',itemCount:0,items:[]}}),{status:200});
+ const noReceipt={async script(){return response;},async closeSession(){throw Error('no session');}};
+ const missing=await executeManagedPilot(noReceipt,input());
+ assert.equal(missing.code,'PILOT_SESSION_UNTRACKED');assert.equal(missing.retrySafe,false);
+ let closed=0;
+ const badClose={async script(){return new Response(JSON.stringify({success:true,result:{ok:true,
+  origin:'https://demo.playwright.dev',title:'Demo',itemCount:0,items:[]}}),{
+   status:200,headers:{'cf-browser-session-id':'pilot-session-abc123'}});},
+   async closeSession(){closed++;throw Error('close unavailable');}};
+ const result=await executeManagedPilot(badClose,input());
+ assert.equal(result.code,'PILOT_CLEANUP_UNVERIFIED');
+ assert.equal(result.ok,false);
+ assert.equal(result.outcomeUnknown,true);
+ assert.equal(result.retrySafe,false);
+ assert.equal(closed,1);
 });
