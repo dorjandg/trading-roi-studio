@@ -16,7 +16,7 @@ test('chat has a compact header, transcript, bottom composer and keyboard-aware 
   assert.match(html,/id="chat-reset"/);
   assert.match(html,/id="chat-question" rows="1"[^>]*enterkeyhint="send"/);
   assert.ok(html.indexOf('id="chat-form"')>html.indexOf('class="chat-footer"'));
-  assert.match(html,/site\.js\?v=chat-viewport-1/);
+  assert.match(html,/site\.js\?v=footer-2/);
  }
  assert.match(css,/\.chat-messages\{flex:1 1 0;min-height:0;max-height:none/);
  assert.match(css,/\.chat-panel\{position:fixed;z-index:300;left:var\(--chat-vv-left/);
@@ -58,4 +58,5 @@ test('mobile chat uses visible viewport, never steals keyboard focus and restore
  element('chat-close').fire('click');assert.equal(panel.hidden,true);assert.deepEqual(restored,[0,326]);assert.equal(active.id,'chat-open');
  assert.equal(focusCalls.filter(([id])=>id==='chat-question').length,1);
  assert.ok(!doc.body.classList.contains('chat-open'));
+ element('footer-chat-open').fire('click');assert.equal(panel.hidden,false);element('chat-close').fire('click');assert.equal(active.id,'footer-chat-open');
 });

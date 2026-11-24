@@ -30,8 +30,9 @@
   location.assign(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`);
  });
  const panel=document.getElementById('chat-panel'),open=document.getElementById('chat-open'),close=document.getElementById('chat-close'),question=document.getElementById('chat-question'),chatForm=document.getElementById('chat-form'),messages=document.getElementById('chat-messages');
+ const footerOpen=document.getElementById('footer-chat-open'),footer=document.getElementById('site-footer');
  const reset=document.getElementById('chat-reset'),greeting=document.getElementById('chat-greeting'),suggestions=panel?.querySelector('.chat-suggestions'),submit=chatForm?.querySelector('button[type="submit"]');
- let history=[],busy=false,frame=0,lockedX=0,lockedY=0,previousGeometry='',blocked=[];
+ let history=[],busy=false,frame=0,lockedX=0,lockedY=0,previousGeometry='',blocked=[],chatOpener=open;
  const root=document.documentElement;
  const mobile=()=>window.matchMedia('(pointer: coarse)').matches;
  const nearTail=()=>!messages||messages.scrollHeight-messages.clientHeight-messages.scrollTop<64;
@@ -50,31 +51,35 @@
   if(follow)tail();
  }
  const queueViewport=()=>{if(panel&&!panel.hidden&&!frame)frame=window.requestAnimationFrame(syncChatViewport);};
- function setChat(isOpen){
+ function setChat(isOpen,opener=open){
   if(!panel||config.preview||panel.hidden===!isOpen)return;
   if(isOpen){
-   setMenu(false);lockedX=window.scrollX;lockedY=window.scrollY;previousGeometry='';
+   chatOpener=opener;setMenu(false);lockedX=window.scrollX;lockedY=window.scrollY;previousGeometry='';
    document.body.style.setProperty('--chat-page-top',(-lockedY)+'px');
    root.classList.add('chat-locked');document.body.classList.add('chat-open');
    blocked=[...document.querySelectorAll('.site-header,#site-menu,#main,.site-footer,#chat-open')].map(el=>[el,el.inert]);
    blocked.forEach(([el])=>{el.inert=true;});
-   panel.hidden=false;open?.setAttribute('aria-expanded','true');syncChatViewport();
+   panel.hidden=false;open?.setAttribute('aria-expanded','true');footerOpen?.setAttribute('aria-expanded','true');syncChatViewport();
    // Opening the conversation must not open the keyboard or scroll the page.
    close?.focus({preventScroll:true});
   }else{
-   question?.blur();panel.hidden=true;open?.setAttribute('aria-expanded','false');
+   question?.blur();panel.hidden=true;open?.setAttribute('aria-expanded','false');footerOpen?.setAttribute('aria-expanded','false');
    if(frame)window.cancelAnimationFrame(frame);frame=0;previousGeometry='';
    blocked.forEach(([el,wasInert])=>{el.inert=wasInert;});blocked=[];
    document.body.classList.remove('chat-open');document.body.style.removeProperty('--chat-page-top');
    window.scrollTo(lockedX,lockedY);root.classList.remove('chat-locked');
-   open?.focus({preventScroll:true});
+   chatOpener?.focus({preventScroll:true});
   }
  }
  window.visualViewport?.addEventListener('resize',queueViewport);
  window.visualViewport?.addEventListener('scroll',queueViewport);
  window.addEventListener('resize',queueViewport);
  question?.addEventListener('input',resizeQuestion);
- open?.addEventListener('click',()=>setChat(true));close?.addEventListener('click',()=>setChat(false));
+ open?.addEventListener('click',()=>setChat(true,open));footerOpen?.addEventListener('click',()=>setChat(true,footerOpen));close?.addEventListener('click',()=>setChat(false));
+ if(footer&&footerOpen&&!config.preview&&window.IntersectionObserver){
+  const observer=new window.IntersectionObserver(entries=>{document.body.classList.toggle('footer-in-view',entries.some(entry=>entry.isIntersecting));},{threshold:0});
+  observer.observe(footer);
+ }
  panel?.addEventListener('keydown',event=>{
   if(event.key==='Escape'){event.preventDefault();setChat(false);return;}
   if(event.key==='Tab'){
