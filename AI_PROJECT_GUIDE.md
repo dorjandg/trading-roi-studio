@@ -745,3 +745,14 @@ Suggested new-chat handoff: "Continue 4Ds Trading Studio from GitHub dorjandg/tr
 - `portfolio-engine.js`: preserve `everTargetHit`, `everPayoutRequested`, `everPaid` per purchased account across funded payout recycling. Keep `paid` as payout-cycle count for cash receipts, and separately aggregate `paidAccounts` for the unique first-payout conversion funnel. Do not reset milestone flags in `newStage` or funded recycling. Existing saved simulations remain historical and are not recalculated until rerun.
 - `portfolio-simulator.html`: tighter account comparison card padding/gaps/labels/inputs and cache-busted engine. Syntax checked; production browser behavior not verified.
 - IMPORTANT remaining modeled blocker: Topstep funded strategy with R3=0 cannot accumulate five $150 qualifying winning days after target when the engine forces R3. `validatePlan` already warns. Do not invent or change user risk to work around it. Topstep payout eligibility and external firm rules still require independent validation.
+
+
+## OmniPilot / API1 development (2026-11-24)
+
+OmniPilot — Universal Remote Controller is the public name of the existing API1 browser project. Internal identifiers remain unchanged. Its source and runtime limits are documented in [OMNIPILOT_ARCHITECTURE.md](workers/cloud-browser-agent/OMNIPILOT_ARCHITECTURE.md).
+
+Development continues on `api1-browser-interaction-phase1`. The user authorizes isolated implementation, synthetic tests and development-branch commits without per-patch confirmation. Production, Finance, real credentials, tunnels, active service restarts, merges and deployments retain their separate authorization boundaries.
+
+P2-A trust-boundary checks and signing-key lifecycle assessments remain review-only. Generic browser primitives require a trusted owner and independently enforced public-network boundary before runtime use. Queue closure and a successful source commit do not prove browser termination or live connector acceptance. Preserve explicit unknown outcomes and prohibit automatic retry after possible dispatch.
+
+Repository-linked Pages projects currently preview all branches. Preserve the verified `[skip ci]` prefix on isolated development commits and verify skip flags/stage status afterward. Keep OmniPilot development separate from the trading simulator and Finance systems.

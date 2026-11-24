@@ -41,22 +41,46 @@ function stoppedError(dispatched){
  error.retrySafe=false;
  return error;
 }
+function commandError(source,dispatched){
+ let message;
+ try{message=Object.getOwnPropertyDescriptor(source,"message")?.value;}catch{}
+ const error=Error(typeof message==="string"?message.slice(0,160):"Controller command failed");
+ error.code=dispatched?"CONTROLLER_OPERATION_FAILED":"CONTROLLER_COMMAND_REJECTED";
+ error.dispatched=dispatched;
+ error.outcomeUnknown=dispatched;
+ error.retrySafe=false;
+ return error;
+}
 
-export function createIsolatedBrowserController(session,{auth=createLocalControllerAuth(),maxPendingCommands=32}={}){
+export function createIsolatedBrowserController(session,{auth=createLocalControllerAuth(),maxPendingCommands=32,stopOnDispatchedFailure=false,monotonicNow=()=>performance.now()}={}){
  if(!session||!["state","search","click","back"].every(k=>typeof session[k]==="function"))
   throw Error("Browser session required");
  if(!auth||typeof auth.issue!=="function"||typeof auth.verify!=="function")throw Error("Controller authentication required");
  if(!Number.isSafeInteger(maxPendingCommands)||maxPendingCommands<1||maxPendingCommands>256)
   throw Error("Invalid pending command limit");
- let closed=false,generation=0,scheduled=false,active=null;
+ if(typeof stopOnDispatchedFailure!=="boolean")throw Error("Invalid failure-stop policy");
+ if(typeof monotonicNow!=="function")throw Error("Invalid monotonic clock");
+ let closed=false,generation=0,scheduled=false,active=null,outcomeUnknown=false;
  const pending=[],history=[];
  const verify=(token,consume=false)=>{
   try{return typeof token==="string"&&token.length<=1024&&
    auth.verify(token,"viewer:control",{consume})===true;}catch{return false;}
  };
+ function checkDeadline(entry){
+  if(entry.deadlineAt===undefined)return;
+  let observed;
+  try{observed=monotonicNow();}catch{}
+  if(!Number.isFinite(observed)||observed<0||
+    entry.lastObservedAt!==null&&observed<entry.lastObservedAt||observed>=entry.deadlineAt){
+   entry.deadlineFailed=true;
+   throw Error("Controller command deadline exceeded or unavailable");
+  }
+  entry.lastObservedAt=observed;
+ }
  function eligible(entry){
   // Local invalidation only: this generation is not a durable runtime lease.
   if(closed||entry.generation!==generation)throw stoppedError(entry.dispatched);
+  checkDeadline(entry);
  }
  function schedule(){
   if(scheduled||active||closed||pending.length===0)return;
@@ -87,8 +111,16 @@ export function createIsolatedBrowserController(session,{auth=createLocalControl
    history.push({type:command.type,sequence:state.sequence,at:Date.now()});
    entry.resolve(state);
   }catch(error){
-   entry.reject(closed||entry.generation!==generation?stoppedError(entry.dispatched):error);
+   const failure=closed||entry.generation!==generation?stoppedError(entry.dispatched):commandError(error,entry.dispatched);
+   if(entry.dispatched)outcomeUnknown=true;
+   // A gateway opts into fail-stop before any later queued adapter can run.
+   if((entry.deadlineFailed||entry.dispatched&&stopOnDispatchedFailure)&&!closed)close();
+   entry.reject(failure);
   }finally{
+   // The HTTP owner must classify the result and invalidate on uncertainty
+   // before this queue can dispatch another effect. A clock sample alone
+   // cannot close the gap before the owner's promise continuation runs.
+   if(entry.ownerSettled)await entry.ownerSettled;
    active=null;
    schedule();
   }
@@ -97,29 +129,45 @@ export function createIsolatedBrowserController(session,{auth=createLocalControl
   if(closed||!auth.verify(token,"viewer:read"))throw Error("Unauthorized");
   return session.state();
  }
- async function execute(token,input){
+ async function execute(token,input,execution={}){
+  try{
   if(closed||!verify(token))throw Error("Unauthorized or grant used");
   const command=snapshotCommand(input);
+  // This separate context is supplied only by the trusted owner. It is never
+  // read from caller command JSON. Deadlines require owner acknowledgment so
+  // the queue stays held until the HTTP outcome has been classified.
+  if(!execution||typeof execution!=="object"||Array.isArray(execution)||
+    Object.keys(execution).some(key=>!["deadlineAt","ownerSettled"].includes(key))||
+    execution.deadlineAt===undefined&&execution.ownerSettled!==undefined||
+    execution.deadlineAt!==undefined&&(!Number.isFinite(execution.deadlineAt)||execution.deadlineAt<0||
+      !(execution.ownerSettled instanceof Promise)))
+   throw Error("Invalid execution deadline");
+  const deadlineState={deadlineAt:execution.deadlineAt,lastObservedAt:null,deadlineFailed:false};
+  try{checkDeadline(deadlineState);}catch(error){close();throw error;}
   if(command.type==="switch-tab"&&typeof session.switchTab!=="function"||
     command.type==="navigate-fixture"&&typeof session.navigate!=="function")throw Error("Command refused");
   if(pending.length>=maxPendingCommands)throw Error("Controller queue full");
   if(closed||!verify(token,true)||closed)throw Error("Unauthorized or grant used");
   return new Promise((resolve,reject)=>{
-   pending.push({command,token,generation,dispatched:false,resolve,reject});
+   // Observe rejection now, including while the adapter is still pending.
+   const ownerSettled=execution.ownerSettled?.then(()=>{},()=>{close();});
+   pending.push({command,token,generation,dispatched:false,resolve,reject,ownerSettled,...deadlineState});
    schedule();
   });
+  }catch(error){throw commandError(error,false);}
  }
  function issue(scope,ttlMs){
   if(closed)throw Error("Unauthorized");
   return auth.issue({scope,ttlMs});
  }
  function close(){
+  if(active?.dispatched)outcomeUnknown=true;
   if(!closed){closed=true;generation++;}
   const cancelledPending=pending.length;
   for(const entry of pending.splice(0))entry.reject(stoppedError(false));
   return Object.freeze({closed:true,cancelledPending,controllerDrained:active===null,
    activeOutcome:active?(active.dispatched?"unknown":"not-dispatched"):"none",
-   adapterCancellationRequested:false});
+   adapterCancellationRequested:false,outcomeUnknown});
  }
  return Object.freeze({
   issueReadGrant:()=>issue("viewer:read",60000),

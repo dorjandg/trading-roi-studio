@@ -52,12 +52,20 @@ test("gateway rejects malformed commands, unsupported methods and non-JSON bodie
   assert.equal(unknown.status,404);
   const invalid=await fetch(base+"/command",{method:"POST",headers:{...headers,"content-type":"application/json"},body:JSON.stringify({type:"click",href:"https://example.org/"})});
   assert.equal(invalid.status,400);
+  const failure=await invalid.clone().json();
+  assert.equal(failure.code,"CONTROLLER_OPERATION_FAILED");
+  assert.equal(failure.dispatched,true);
+  assert.equal(failure.outcomeUnknown,true);
+  assert.equal(failure.retrySafe,false);
   for(const response of [badType,badJSON,large,badMethod,unknown,invalid]){
    assert.equal(response.headers.get("cache-control"),"no-store");
    assert.equal(response.headers.get("x-frame-options"),"DENY");
    assert.equal((await response.text()).includes(gateway.accessKey),false);
   }
-  const state=await(await fetch(base+"/state",{headers})).json();
-  assert.match(state.url,/Main_Page/);
+  // The adapter was invoked. Conservatively stop, even if this particular
+  // adapter rejected the destination before any page action.
+  const shutdown=await gateway.close();
+  assert.equal(shutdown.outcomeUnknown,true);
+  assert.equal(shutdown.retrySafe,false);
  }finally{await gateway.close();}
 });

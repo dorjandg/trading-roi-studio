@@ -6,6 +6,7 @@ import {createServer} from "node:http";
 import {createIsolatedBrowserMcpServer} from "./isolated-real-browser-mcp.mjs";
 import {createMockJwtVerifier,TEST_SCOPE} from "./mock-oauth-jwt.mjs";
 import {buildProtectedResourcePlan,withOAuthSecurityScheme} from "./oauth-staging-readiness.mjs";
+import {buildMockMcpUpstreamHeaders} from "./mock-oauth-upstream-headers.mjs";
 
 const JSON_HEADER={"content-type":"application/json; charset=utf-8",
  "cache-control":"no-store","x-content-type-options":"nosniff",
@@ -70,8 +71,7 @@ export async function createMockOauthMcpGateway(chromium,{
    // Forward to the previously tested internal MCP on its own 127.0.0.1
    // port; the external synthetic bearer never leaves this wrapper.
    const forwarded=await fetch(upstream.url,{
-    method:"POST",headers:{"content-type":"application/json",
-     authorization:"Bearer "+upstream.accessToken},
+    method:"POST",headers:buildMockMcpUpstreamHeaders(req.headers,upstream.accessToken),
     body:raw,signal:AbortSignal.timeout(Math.min(120000,timeoutMs*5))
    });
    if(forwarded.status===202){res.writeHead(202,{"cache-control":"no-store"});return res.end();}
