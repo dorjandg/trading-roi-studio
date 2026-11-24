@@ -1,6 +1,6 @@
 /* Public repository: safe-to-share URLs only. */
 window.PERSONAL_HUB_DATA = {
-  "version": "1.5.0",
+  "version": "1.5.1",
   "updated": "2026-11-24",
   "title": "Personal Hub",
   "subtitle": "My websites, learning, dashboards and useful links.",
@@ -109,6 +109,13 @@ window.PERSONAL_HUB_DATA = {
       "icon": "book",
       "description": "Guest website",
       "order": 3.2
+    },
+    {
+      "id": "vocal-mastery",
+      "name": "Vocal Mastery · Landi Kademi",
+      "icon": "book",
+      "description": "Guest vocal academy website",
+      "order": 3.3
     }
   ],
   "links": [
@@ -977,6 +984,40 @@ window.PERSONAL_HUB_DATA = {
       "type": "Guest website",
       "symbol": "GG",
       "accent": "green"
+    },
+    {
+      "id": "vocal-mastery-public",
+      "title": "Vocal Mastery — Public Website",
+      "url": "https://vocalmastery.net/",
+      "category": "vocal-mastery",
+      "description": "Landi Kademi’s bilingual vocal academy, programs, coaching archive and AI concierge.",
+      "type": "Guest website",
+      "symbol": "VM",
+      "accent": "red",
+      "tags": [
+        "Landi Kademi",
+        "vocal lessons",
+        "academy",
+        "music",
+        "English",
+        "Albanian"
+      ]
+    },
+    {
+      "id": "vocal-mastery-studio",
+      "title": "Vocal Mastery — Website Studio",
+      "url": "https://vocalmastery.net/manage",
+      "category": "vocal-mastery",
+      "description": "Private AI content editor with preview, approved publication and revision history. Authorized sign-in required.",
+      "type": "Business tool",
+      "symbol": "VM",
+      "accent": "purple",
+      "tags": [
+        "Landi Kademi",
+        "website editor",
+        "AI",
+        "private"
+      ]
     }
   ]
 };
