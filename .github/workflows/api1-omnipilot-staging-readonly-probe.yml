@@ -1,0 +1,80 @@
+name: OmniPilot staging read-only MCP acceptance
+on:
+  push:
+    branches:
+      - api1-browser-interaction-phase1
+    paths:
+      - ".github/workflows/api1-omnipilot-staging-readonly-probe.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    environment: browser-agent-staging
+    timeout-minutes: 8
+    env:
+      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+      BROWSER_AGENT_API_TOKEN: ${{ secrets.BROWSER_AGENT_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check existing staging gateways without changes or secret output
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          const base='https://cloud-browser-chatgpt-stage.dorjan-gjoni-dg.workers.dev';
+          const backend='https://cloud-browser-agent-stage.dorjan-gjoni-dg.workers.dev';
+          const access=process.env.CF_ACCESS_CLIENT_ID;
+          const secret=process.env.CF_ACCESS_CLIENT_SECRET;
+          const bearer=process.env.BROWSER_AGENT_API_TOKEN;
+          if(!access||!secret||!bearer||!access.endsWith('.access')){
+            console.error('STAGING_PROBE_PREREQUISITES_MISSING');
+            process.exit(2);
+          }
+          const rpc=(method,id,params={})=>JSON.stringify({jsonrpc:'2.0',id,method,params});
+          const request=async(label,url,headers={},body)=>{
+            let response;
+            try{response=await fetch(url,{
+              method:body===undefined?'GET':'POST',
+              headers:body===undefined?headers:{'content-type':'application/json',...headers},
+              ...(body===undefined?{}:{body}),redirect:'manual',
+              signal:AbortSignal.timeout(20000)
+            });}catch{console.error(label+': UNREACHABLE');process.exitCode=1;return null;}
+            let data=null;
+            try{const raw=await response.text();if(raw.length<100000)data=JSON.parse(raw);}catch{}
+            console.log(label+': HTTP '+response.status);
+            return {status:response.status,data};
+          };
+          const discoveryHeaders={'accept':'application/json, text/event-stream'};
+          const gatewayInitialize=await request('GATEWAY_INITIALIZE',base+'/mcp',discoveryHeaders,
+            rpc('initialize',1,{protocolVersion:'2025-06-18',capabilities:{},clientInfo:{name:'omnipilot-stage-probe',version:'1'}}));
+          const gatewayList=await request('GATEWAY_TOOLS_LIST',base+'/mcp',discoveryHeaders,rpc('tools/list',2));
+          const unauthorized=await request('GATEWAY_TOOL_REQUIRES_OAUTH',base+'/mcp',discoveryHeaders,
+            rpc('tools/call',3,{name:'browser_agent_status',arguments:{}}));
+          const oauth=await request('GATEWAY_OAUTH_METADATA',base+'/.well-known/oauth-authorization-server');
+          const resource=await request('GATEWAY_RESOURCE_METADATA',base+'/.well-known/oauth-protected-resource/mcp');
+          const authHeaders={'CF-Access-Client-Id':access,'CF-Access-Client-Secret':secret,
+            'Authorization':'Bearer '+bearer};
+          const health=await request('BROWSER_STAGE_AUTH_HEALTH',backend+'/health',authHeaders);
+          const list=await request('BROWSER_STAGE_AUTH_TOOLS',backend+'/mcp',authHeaders,rpc('tools/list',4));
+          const checks=[
+            gatewayInitialize?.status===200&&gatewayInitialize?.data?.result?.serverInfo,
+            gatewayList?.status===200&&Array.isArray(gatewayList?.data?.result?.tools),
+            unauthorized?.status===401,
+            oauth?.status===200&&oauth?.data?.issuer,
+            resource?.status===200&&resource?.data?.resource,
+            health?.status===200&&health?.data?.browserConfigured===true,
+            list?.status===200&&Array.isArray(list?.data?.result?.tools)
+          ];
+          console.log('MCP_BROWSER_STAGE_CHECKS: '+checks.filter(Boolean).length+'/'+checks.length);
+          console.log('PUBLIC_TOOL_COUNT: '+(gatewayList?.data?.result?.tools?.length??0));
+          console.log('BACKEND_TOOL_COUNT: '+(list?.data?.result?.tools?.length??0));
+          if(!checks.every(Boolean))process.exitCode=1;
+          NODE
