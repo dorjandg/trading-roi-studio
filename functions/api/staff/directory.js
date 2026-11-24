@@ -7,9 +7,11 @@ export async function onRequest({request,env}){
  const db=env.GLAM_DB;
  try{
  await db.prepare('CREATE TABLE IF NOT EXISTS glam_directory (kind TEXT NOT NULL,id TEXT NOT NULL,data TEXT NOT NULL,PRIMARY KEY(kind,id))').run();
+ await db.prepare('CREATE TABLE IF NOT EXISTS glam_directory_deleted (kind TEXT NOT NULL,id TEXT NOT NULL,PRIMARY KEY(kind,id))').run();
  if(request.method==='GET'){
  const rows=(await db.prepare('SELECT kind,data FROM glam_directory ORDER BY id').all()).results;
- return json({categories:rows.filter(r=>r.kind==='categories').map(r=>JSON.parse(r.data)),brands:rows.filter(r=>r.kind==='brands').map(r=>JSON.parse(r.data))});
+ const deleted=(await db.prepare('SELECT kind,id FROM glam_directory_deleted').all()).results;
+ return json({deleted,categories:rows.filter(r=>r.kind==='categories').map(r=>JSON.parse(r.data)),brands:rows.filter(r=>r.kind==='brands').map(r=>JSON.parse(r.data))});
  }
  if(!['PUT','DELETE'].includes(request.method))return json({error:'Method not allowed'},405);
  if(request.headers.get('origin')!==new URL(request.url).origin)return json({error:'Invalid origin'},403);
@@ -20,14 +22,15 @@ export async function onRequest({request,env}){
  const old=await db.prepare('SELECT data FROM glam_directory WHERE kind=? AND id=?').bind(kind,p.id).first();
  if(!old)return json({error:'Record not found online'},404);
  const existing=JSON.parse(old.data);
+ const tombstone=db.prepare('INSERT OR IGNORE INTO glam_directory_deleted(kind,id) VALUES(?,?)').bind(kind,p.id);
  if(kind==='categories'){
  const child=await db.prepare("SELECT id FROM glam_directory WHERE kind='categories' AND json_extract(data,'$.parent')=? LIMIT 1").bind(p.id).first();
  if(child)return json({error:'Move subcollections before deleting'},409);
- await db.batch([db.prepare("UPDATE glam_catalog SET data=json_set(data,'$.category','glam','$.category_name','GLAM Collection') WHERE json_extract(data,'$.category')=?").bind(p.id),db.prepare('DELETE FROM glam_directory WHERE kind=? AND id=?').bind(kind,p.id)]);
+ await db.batch([db.prepare("UPDATE glam_catalog SET data=json_set(data,'$.category','glam','$.category_name','GLAM Collection') WHERE json_extract(data,'$.category')=?").bind(p.id),db.prepare('DELETE FROM glam_directory WHERE kind=? AND id=?').bind(kind,p.id),tombstone]);
  }else{
  const used=await db.prepare("SELECT id FROM glam_catalog WHERE json_extract(data,'$.brand')=? LIMIT 1").bind(existing.name).first();
  if(used)return json({error:'Brand is assigned to products. Move them first.'},409);
- await db.prepare('DELETE FROM glam_directory WHERE kind=? AND id=?').bind(kind,p.id).run();
+ await db.batch([db.prepare('DELETE FROM glam_directory WHERE kind=? AND id=?').bind(kind,p.id),tombstone]);
  }
  return json({ok:true});
  }
@@ -45,10 +48,12 @@ export async function onRequest({request,env}){
  }
  const old=await db.prepare('SELECT data FROM glam_directory WHERE kind=? AND id=?').bind(kind,p.id).first();
  if(body.createOnly===true){
- await db.prepare('INSERT INTO glam_directory(kind,id,data) VALUES(?,?,?) ON CONFLICT(kind,id) DO NOTHING').bind(kind,p.id,JSON.stringify(clean)).run();
+ await db.prepare('INSERT INTO glam_directory(kind,id,data) SELECT ?,?,? WHERE NOT EXISTS (SELECT 1 FROM glam_directory_deleted WHERE kind=? AND id=?) ON CONFLICT(kind,id) DO NOTHING').bind(kind,p.id,JSON.stringify(clean),kind,p.id).run();
  const saved=await db.prepare('SELECT data FROM glam_directory WHERE kind=? AND id=?').bind(kind,p.id).first();
+ if(!saved)return json({ok:true,deleted:true});
  return json({ok:true,record:JSON.parse(saved.data)});
  }
+ if(await db.prepare('SELECT id FROM glam_directory_deleted WHERE kind=? AND id=?').bind(kind,p.id).first())return json({error:'This entry was deleted. Create a new entry instead.'},409);
  const statements=[db.prepare('INSERT INTO glam_directory(kind,id,data) VALUES(?,?,?) ON CONFLICT(kind,id) DO UPDATE SET data=excluded.data').bind(kind,p.id,JSON.stringify(clean))];
  if(kind==='brands'&&old&&JSON.parse(old.data).name!==clean.name)statements.push(db.prepare("UPDATE glam_catalog SET data=json_set(data,'$.brand',?) WHERE json_extract(data,'$.brand')=?").bind(clean.name,JSON.parse(old.data).name));
  await db.batch(statements);
