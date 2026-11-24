@@ -1,4 +1,4 @@
-name: OmniPilot protected staging read-only acceptance
+name: OmniPilot protected staging read-only and demo-scope acceptance
 on:
   push:
     branches:
@@ -59,8 +59,8 @@ jobs:
           const init=await mcp(gateway+'/mcp',{jsonrpc:'2.0',id:1,method:'initialize',params:{protocolVersion:'2025-06-18',capabilities:{},clientInfo:{name:'omnipilot-readonly-acceptance',version:'1'}}});
           check('public-initialize',()=>init.status===200&&init.body?.result?.serverInfo?.name==='cloud-browser-chatgpt-stage');
           const list=await mcp(gateway+'/mcp',{jsonrpc:'2.0',id:2,method:'tools/list',params:{}});
-          check('public-tools-read-only',()=>list.status===200&&Array.isArray(list.body?.result?.tools)&&list.body.result.tools.length===6&&list.body.result.tools.every(t=>t.annotations?.readOnlyHint===true));
-          const guest=await mcp(gateway+'/mcp',{jsonrpc:'2.0',id:3,method:'tools/call',params:{name:'browser_agent_status',arguments:{}}});
+          check('public-six-read-only-plus-demo-scope',()=>{const all=list.body?.result?.tools||[];const demo=all.find(t=>t.name==='omnipilot_managed_demo');return list.status===200&&all.length===7&&demo?.annotations?.readOnlyHint===false&&demo?._meta?.securitySchemes?.[0]?.scopes?.[0]==='mcp:demo.interact'&&all.filter(t=>t.name!=='omnipilot_managed_demo').every(t=>t.annotations?.readOnlyHint===true)});
+          const guest=await mcp(gateway+'/mcp',{jsonrpc:'2.0',id:3,method:'tools/call',params:{name:'omnipilot_managed_demo',arguments:{url:'https://demo.playwright.dev/todomvc/',actions:[{op:'click',selector:'body'}]}}});
           check('gateway-unauthorized-rejected',()=>guest.status===401);
           const without=await req(agent+'/health',{headers:serviceHeaders});
           check('worker-token-required',()=>without.status===401&&without.body?.error==='Unauthorized');
@@ -70,18 +70,13 @@ jobs:
           check('backend-initialize',()=>serverInit.status===200&&serverInit.body?.result?.serverInfo?.name==='cloud-browser-agent-staging');
           const serverList=await mcp(agent+'/mcp',{jsonrpc:'2.0',id:5,method:'tools/list',params:{}},authorized);
           const toolNames=serverList.body?.result?.tools?.map(t=>t.name);
-          check('backend-six-read-only-tools',()=>serverList.status===200&&Array.isArray(toolNames)&&toolNames.length===6&&!toolNames.includes('omnipilot_managed_demo'));
+          check('backend-seven-tools-with-demo',()=>serverList.status===200&&Array.isArray(toolNames)&&toolNames.length===7&&toolNames.includes('omnipilot_managed_demo'));
           const status=await mcp(agent+'/mcp',{jsonrpc:'2.0',id:6,method:'tools/call',params:{name:'browser_agent_status',arguments:{}}},authorized);
           let detail=null;
           try{detail=JSON.parse(status.body?.result?.content?.[0]?.text||'null')}catch{}
           check('status-read-only',()=>status.status===200&&detail?.mode==='read-only'&&detail?.browserConfigured===true);
-          const blocked=await mcp(agent+'/mcp',{jsonrpc:'2.0',id:7,method:'tools/call',params:{name:'omnipilot_managed_demo',arguments:{url:'https://demo.playwright.dev/todomvc/',actions:[{op:'click',selector:'body'}]}}},authorized);
-          check('undeployed-interaction-rejected',()=>blocked.status===200&&!!blocked.body?.error&&blocked.body.error.code===-32602);
+          const blocked=await mcp(agent+'/mcp',{jsonrpc:'2.0',id:7,method:'tools/call',params:{name:'omnipilot_managed_demo',arguments:{url:'https://example.com/',actions:[{op:'click',selector:'body'}]}}},authorized);
+          check('unapproved-domain-interaction-rejected',()=>blocked.status===200&&!!blocked.body?.error&&blocked.body.error.code===-32602);
           console.log('OMNIPILOT_STAGING_READONLY_CHECKS: '+count+'/11');
           NODE
 
-# Re-verify the protected staging endpoints after the guarded browser-pilot backend
-# rollout. The pilot feature remains disabled: no website interaction is exercised.
-
-# Confirm the existing deployed OAuth gateway remains unchanged and reachable
-# after the separate source-only staging rollout stopped at its credential gate.
