@@ -11,6 +11,8 @@ on:
       - "workers/cloud-browser-chatgpt-gateway/test/omnipilot-subject-*.test.mjs"
       - "workers/cloud-browser-chatgpt-gateway/test/omnipilot-operator-*.test.mjs"
       - "workers/cloud-browser-chatgpt-gateway/test/omnipilot-revocation-*.test.mjs"
+      - "workers/cloud-browser-chatgpt-gateway/migrations/0002_omnipilot_operator_nonces.sql"
+      - "workers/cloud-browser-chatgpt-gateway/test/omnipilot_operator_nonce_sqlite_test.py"
       - "workers/cloud-browser-chatgpt-gateway/migrations/0001_omnipilot_subject_grants.sql"
       - "workers/cloud-browser-chatgpt-gateway/test/omnipilot_subject_sqlite_test.py"
       - "workers/cloud-browser-agent/src/omnipilot-site-grants.mjs"
@@ -36,12 +38,13 @@ jobs:
           node --check src/omnipilot-subject-ledger.mjs
           node --check src/omnipilot-subject-store.mjs
           node --check src/omnipilot-operator-proof.mjs
+          node --check src/omnipilot-operator-nonce-store.mjs
           node --check src/omnipilot-revocation-fence.mjs
-          node --test test/omnipilot-subject-authority.test.mjs test/omnipilot-subject-ledger.test.mjs test/omnipilot-subject-store.test.mjs test/omnipilot-operator-proof.test.mjs test/omnipilot-revocation-fence.test.mjs
+          node --test test/omnipilot-subject-authority.test.mjs test/omnipilot-subject-ledger.test.mjs test/omnipilot-subject-store.test.mjs test/omnipilot-operator-proof.test.mjs test/omnipilot-operator-nonce-store.test.mjs test/omnipilot-revocation-fence.test.mjs
       - name: Prove grant CAS, append-only audit and revocation in isolated SQLite memory
         working-directory: workers/cloud-browser-chatgpt-gateway
         run: |
-          python3 -B -m unittest discover -s test -p 'omnipilot_subject_sqlite_test.py' -v
+          python3 -B -m unittest discover -s test -p 'omnipilot_*_sqlite_test.py' -v
       - name: Confirm legacy OAuth tests and protected Worker dry-run build
         working-directory: workers/cloud-browser-chatgpt-gateway
         run: |
