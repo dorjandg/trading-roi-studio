@@ -52,15 +52,23 @@ window.glamEditorBridge={findProduct:productId=>products.find(p=>p.id===productI
 const status=document.getElementById('status');
 // Read-only public catalog import. Never overwrite browser drafts or write imported records
 // to D1 merely because the editor was opened. Server-side editing requires authenticated APIs.
+let staffCatalogReady=false,catalogLoading=false;
+function reconnectActions(target,message,retry){
+ target.replaceChildren(document.createTextNode(message+' '));
+ const signIn=document.createElement('a');signIn.href='/staff/';signIn.target='_blank';signIn.rel='noopener';signIn.textContent='Reconnect staff session';signIn.style.cssText='font-weight:700;text-decoration:underline';target.append(signIn);
+ if(retry){const button=document.createElement('button');button.type='button';button.className='btn';button.textContent='Retry sync';button.style.marginLeft='8px';button.onclick=retry;target.append(button)}
+}
 async function loadOnlineCatalog(){
- const banner=document.createElement('p');banner.id='glamOnlineCatalogNotice';banner.className='hint';
- document.getElementById('productList').before(banner);
+ if(catalogLoading)return;catalogLoading=true;
+ let banner=document.getElementById('glamOnlineCatalogNotice');
+ if(!banner){banner=document.createElement('p');banner.id='glamOnlineCatalogNotice';banner.className='hint';document.getElementById('productList').before(banner)}
  banner.textContent='Loading all products from the GLAM cloud catalog…';
  try{
-  const response=await fetch('/api/staff/catalog',{cache:'no-store',credentials:'same-origin'});
+  const response=await fetch('/staff/api/catalog',{cache:'no-store',credentials:'same-origin'});
   if(!response.ok)throw Error('Catalog API returned '+response.status);
   const payload=await response.json();
   if(!Array.isArray(payload.products))throw Error('Unexpected catalog response');
+  staffCatalogReady=true;
   // Remove locally cached cloud products that were deleted from the server, while retaining genuine local drafts.
   const serverIds=new Set(payload.products.map(p=>String(p.id)));
   products=products.filter(p=>!p._cloud||serverIds.has(String(p.id)));
@@ -76,7 +84,7 @@ async function loadOnlineCatalog(){
   window.dispatchEvent(new Event('glam-cloud-catalog-loaded'));
   banner.textContent='Cloud catalog loaded: '+payload.products.length+' products (including unpublished); '+imported+' added to this view. Online products are available for cloud editing.';
  }catch(e){
-  banner.textContent='Staff login required to edit and save. Checking public catalog…';
+  staffCatalogReady=false;banner.textContent='Staff cloud unavailable. Checking public catalog…';
   try{
    const publicResponse=await fetch('/api/catalog',{cache:'no-store',credentials:'same-origin'});
    if(!publicResponse.ok)throw Error('Public catalog returned '+publicResponse.status);
@@ -85,9 +93,9 @@ async function loadOnlineCatalog(){
    const known=new Set(products.map(p=>String(p.id)));
    for(const record of publicData.products){if(!record||!record.id)continue;if(known.has(String(record.id)))continue;products.push({...record,_cloud:true});known.add(String(record.id))}
    renderProducts();window.dispatchEvent(new Event('glam-cloud-catalog-loaded'));
-   banner.replaceChildren(document.createTextNode('Showing '+publicData.products.length+' published products (read-only). To edit, reorder or save photos, '));const link=document.createElement('a');link.href='/api/staff/catalog';link.textContent='sign in to GLAM Staff API';link.style.cssText='font-weight:700;text-decoration:underline';banner.append(link,document.createTextNode(' and then return to this page.'));
-  }catch(fallbackError){banner.textContent='Cloud catalog unavailable: '+e.message+'; public fallback: '+fallbackError.message+'. No cloud records were deleted. Please report this message.'}
- }
+   reconnectActions(banner,'Showing '+publicData.products.length+' published products (read-only). Unsaved work remains in this tab.',loadOnlineCatalog);
+  }catch(fallbackError){reconnectActions(banner,'Cloud catalog unavailable. Existing entries are preserved; changes may not be saved.',loadOnlineCatalog)}
+ }finally{catalogLoading=false}
 }
 
 function persist(type){try{localStorage.setItem(keys[type],JSON.stringify(type==='products'?products.filter(p=>!p._cloud):({categories,brands})[type]));status.textContent='Saved on this browser only — not published.';return true}catch(e){status.textContent='Could not save: browser storage may be full.';return false}}
@@ -127,7 +135,7 @@ async function saveProductToCloud(form){
  status.textContent='Saving product to cloud…';
  const task=async()=>{
   try{
-   const response=await fetch('/api/staff/product',{method:'PUT',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({product:data})});
+   const response=await fetch('/staff/api/product',{method:'PUT',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({product:data})});
    if(!response.ok){let detail={};try{detail=await response.json()}catch{}throw Error(detail.error||'HTTP '+response.status)}
    const result=await response.json();
    const index=products.findIndex(p=>p.id===currentId);
@@ -139,7 +147,7 @@ async function saveProductToCloud(form){
     renderProducts();
    }
    return true;
-  }catch(e){if(sequence===productSaveSequence){status.replaceChildren();status.append(document.createTextNode('Product changes NOT saved. '+e.message+'. '));const login=document.createElement('a');login.href='/api/staff/catalog';login.textContent='Sign in to GLAM Staff API';login.style.cssText='text-decoration:underline;font-weight:700';status.append(login)}return false}
+  }catch(e){if(sequence===productSaveSequence){reconnectActions(status,'Product changes NOT saved. '+e.message+'. Keep this tab open; reconnect, then save again.')}return false}
  };
  productSaveQueue=productSaveQueue.then(task,task);
  return await productSaveQueue;
@@ -221,7 +229,7 @@ document.getElementById('glamPhotoFiles').addEventListener('change',async event=
    const file=files[i];
    if(file.size>10*1024*1024||!/^image\/(jpeg|png|webp|gif|avif)$/.test(file.type))throw Error('Unsupported photo or file over 10 MB: '+file.name);
    message.textContent='Uploading photo '+(i+1)+' of '+files.length+'…';
-   const response=await fetch('/api/staff/upload',{method:'POST',credentials:'same-origin',headers:{'content-type':file.type},body:file});
+   const response=await fetch('/staff/api/upload',{method:'POST',credentials:'same-origin',headers:{'content-type':file.type},body:file});
    const data=await response.json();if(!response.ok||!data.ok)throw Error(data.error||'Upload failed');
    if(f.elements.id.value!==productId)throw Error('Product selection changed during upload');
    product=products.find(p=>p.id===productId)||product;
@@ -253,7 +261,7 @@ document.getElementById('glamPublishProduct').addEventListener('click',async()=>
   const current=products.find(x=>x.id===form.elements.id.value);
   if(!current?._cloud)throw Error('Cloud save must succeed before publishing');
   const next=current.catalog_status==='published'?'unpublished':'published';
-  const response=await fetch('/api/staff/publication',{method:'PUT',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({id:current.id,status:next})});
+  const response=await fetch('/staff/api/publication',{method:'PUT',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({id:current.id,status:next})});
   const result=await response.json();if(!response.ok||!result.ok)throw Error(result.error||'Publication failed');
   current.catalog_status=result.status;form.elements.catalog_status.value=result.status;
   refreshPublicationButton();renderProducts();
@@ -262,7 +270,8 @@ document.getElementById('glamPublishProduct').addEventListener('click',async()=>
  finally{button.disabled=false}
 });
 async function directoryRequest(method,kind,record,createOnly=false){
- const response=await fetch('/api/staff/directory',{method,credentials:'same-origin',cache:'no-store',...(method==='GET'?{}:{headers:{'content-type':'application/json'},body:JSON.stringify({kind,record,createOnly})})});
+ const response=await fetch('/staff/api/directory',{method,credentials:'same-origin',cache:'no-store',...(method==='GET'?{}:{headers:{'content-type':'application/json'},body:JSON.stringify({kind,record,createOnly})})});
+ if(!response.headers.get('content-type')?.includes('application/json'))throw Error('Staff cloud session unavailable');
  const data=await response.json();if(!response.ok)throw Error(data.error||'Cloud directory unavailable');return data;
 }
 let directoryReady=false,directoryLoad=null;
@@ -298,13 +307,14 @@ async function loadDirectory(){
  directoryLoad=(async()=>{
  try{
  const data=await directoryRequest('GET');
+ if(!Array.isArray(data.categories)||!Array.isArray(data.brands)||!Array.isArray(data.deleted))throw Error('Invalid directory response');
  for(const [type,records] of Object.entries({categories:data.categories,brands:data.brands})){
  const array=type==='categories'?categories:brands;
  for(const item of (data.deleted||[]).filter(x=>x.kind===type)){const i=array.findIndex(x=>x.id===item.id);if(i>=0)array.splice(i,1);removeLegacyEntry(type,item.id)}
  for(const r of records){const i=array.findIndex(x=>x.id===r.id);if(i>=0)array[i]={...array[i],...r,_online:true};else array.push({...r,_online:true})}
  }
  showCollectionRecovery();await recoverDirectory();directoryReady=true;
- }catch(e){directoryReady=false;recoveryNotice.textContent='Cloud synchronization unavailable. Existing entries are preserved. Staff API login may be required.'}
+ }catch(e){directoryReady=false;reconnectActions(recoveryNotice,'Cloud synchronization unavailable. Existing entries are preserved. Keep this tab open.',loadDirectory)}
  })();
  try{await directoryLoad}finally{directoryLoad=null}
 }
@@ -318,17 +328,27 @@ async function saveDirectory(type,form){
  const record={...previous,...data};
  if(type==='categories'&&record.id===record.parent)throw Error('Choose another parent collection');
  const file=document.getElementById(type==='categories'?'categoryPhoto':'brandPhoto').files?.[0];
- if(file){const response=await fetch('/api/staff/upload',{method:'POST',credentials:'same-origin',headers:{'content-type':file.type},body:file});const result=await response.json();if(!response.ok||!result.ok)throw Error(result.error||'Photo upload failed');record.image_url=result.url}
+ if(file){const response=await fetch('/staff/api/upload',{method:'POST',credentials:'same-origin',headers:{'content-type':file.type},body:file});const result=await response.json();if(!response.ok||!result.ok)throw Error(result.error||'Photo upload failed');record.image_url=result.url}
  const result=await directoryRequest('PUT',type,record);
  const saved={...previous,...result.record,_online:true};const i=array.findIndex(x=>x.id===saved.id);if(i>=0)array[i]=saved;else array.unshift(saved);
  form.elements.id.value=saved.id;
  (type==='categories'?renderCategories:renderBrands)();fill(form.id,saved);
  removeLegacyEntry(type,saved.id);recoveryNotice.textContent='';status.textContent='Saved to GLAM cloud.';
- }catch(e){status.textContent='NOT saved: '+e.message}finally{button.disabled=false}
+ }catch(e){reconnectActions(status,'NOT saved: '+e.message+'. Keep this tab open; reconnect, then save again.')}finally{button.disabled=false}
 }
 function wire(type,formId){const form=document.getElementById(formId);form.addEventListener('submit',e=>{e.preventDefault();if(type==='products'){saveProductToCloud(form);return}saveDirectory(type,form)})}
 wire('categories','categoryForm');wire('brands','brandForm');wire('products','productForm');
 loadOnlineCatalog();loadDirectory();
+let lastReconnect=0;
+function retryStaffCloud(){
+ if(document.visibilityState==='hidden'||navigator.onLine===false||Date.now()-lastReconnect<1500)return;
+ lastReconnect=Date.now();
+ if(!directoryReady)loadDirectory();
+ if(!staffCatalogReady)loadOnlineCatalog();
+}
+window.addEventListener('online',retryStaffCloud);
+window.addEventListener('focus',retryStaffCloud);
+document.addEventListener('visibilitychange',retryStaffCloud);
 async function remove(type,formId){
  const form=document.getElementById(formId),target=form.elements.id.value;if(!target)return;
  const array=type==='categories'?categories:brands,item=array.find(x=>x.id===target);
@@ -350,7 +370,7 @@ document.getElementById('newCategory').onclick=()=>clear('categoryForm');documen
  }
  const button=document.getElementById('deleteProduct');button.disabled=true;
  try{
-  const response=await fetch('/api/staff/delete',{method:'DELETE',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({id:productId})});
+  const response=await fetch('/staff/api/delete',{method:'DELETE',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({id:productId})});
   const result=await response.json();if(!response.ok||!result.ok)throw Error(result.error||'Deletion failed');
   const index=products.findIndex(x=>x.id===productId);if(index>=0)products.splice(index,1);
   clear('productForm');renderProducts();status.textContent='Product deleted from GLAM cloud.';
@@ -414,7 +434,7 @@ document.getElementById('exportCatalog').onclick=()=>{const data={format:'glam-c
     for(let i=0;i<files.length;i++){
      const f=files[i];if(f.size>10*1024*1024||!/^image\/(jpeg|png|webp|gif|avif)$/.test(f.type))throw Error('Unsupported image or over 10 MB');
      notice.textContent='Uploading '+color+' photo '+(i+1)+' of '+files.length+'…';
-     const response=await fetch('/api/staff/upload',{method:'POST',credentials:'same-origin',headers:{'content-type':f.type},body:f});
+     const response=await fetch('/staff/api/upload',{method:'POST',credentials:'same-origin',headers:{'content-type':f.type},body:f});
      const result=await response.json();if(!response.ok||!result.ok)throw Error(result.error||'Upload failed');
      photos[color]=[...imagesFor(color),result.url];
      if(!await save())throw Error('Uploaded but product record could not be saved');
