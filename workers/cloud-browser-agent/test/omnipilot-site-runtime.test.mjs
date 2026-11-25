@@ -43,7 +43,7 @@ test('draft source prevents form submit, sensitive input and off-site clicks',()
   assert.match(script,/SITE_CLICK_NOT_APPROVED/);
   assert.match(script,/SITE_FILL_NOT_APPROVED/);
   assert.match(script,/checked\.insideForm/);
-  assert.match(script,/destination\.origin!==origin/);
+  assert.match(script,/navigationAllowed\(destination\)/);
   assert.match(script,/SITE_ORIGIN_CHANGED/);
   assert.doesNotMatch(script,/eval\s*\(|new Function/);
   assert.equal(typeof Function('return ('+script+')')(),'function');
