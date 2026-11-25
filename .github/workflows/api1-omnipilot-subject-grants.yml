@@ -29,7 +29,8 @@ jobs:
         run: |
           node --check src/omnipilot-subject-authority.mjs
           node --check src/omnipilot-subject-ledger.mjs
-          node --test test/omnipilot-subject-authority.test.mjs test/omnipilot-subject-ledger.test.mjs
+          node --check src/omnipilot-subject-store.mjs
+          node --test test/omnipilot-subject-authority.test.mjs test/omnipilot-subject-ledger.test.mjs test/omnipilot-subject-store.test.mjs
       - name: Prove grant CAS, append-only audit and revocation in isolated SQLite memory
         working-directory: workers/cloud-browser-chatgpt-gateway
         run: |
