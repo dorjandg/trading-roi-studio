@@ -42,8 +42,20 @@ jobs:
           npm run check
           node --test test/omnipilot-site-oauth.test.mjs test/omnipilot-gateway-pilot.test.mjs
           npx wrangler deploy --dry-run --outdir "$RUNNER_TEMP/omnipilot-subject-gateway-only"
-      - name: No staging, Finance, production or credential access
+      - name: Prevent unreviewed gateway wiring or new live D1 bindings
         shell: bash
         run: |
+          set -euo pipefail
+          if grep -E 'omnipilot-subject-(authority|ledger|store)' \
+            workers/cloud-browser-chatgpt-gateway/src/index.mjs \
+            workers/cloud-browser-chatgpt-gateway/src/forward.mjs; then
+            echo "UNREVIEWED_SUBJECT_GRANT_WIRING_REFUSED"
+            exit 1
+          fi
+          if grep -q 'OMNIPILOT_GRANT_DB' \
+            workers/cloud-browser-chatgpt-gateway/wrangler.jsonc; then
+            echo "UNREVIEWED_SUBJECT_D1_BINDING_REFUSED"
+            exit 1
+          fi
           test -d "$RUNNER_TEMP/omnipilot-subject-gateway-only"
           echo "OMNIPILOT_SUBJECT_GRANTS_ISOLATED_SYNTHETIC_ONLY"
