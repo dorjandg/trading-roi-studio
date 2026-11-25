@@ -56,10 +56,11 @@ const siteBrowserScript=async ({page,context})=>{
       }else throw Error('SITE_CLICK_NOT_APPROVED');
     }
     const next=new URL(page.url());
-    if(next.origin!==origin||next.search||next.hash)throw Error('SITE_NAVIGATION_REFUSED');
+    if(next.origin!==origin||next.search)throw Error('SITE_NAVIGATION_REFUSED');
   }
   const current=new URL(page.url());
-  if(current.origin!==origin||current.search||current.hash)throw Error('SITE_ORIGIN_CHANGED');
+  if(current.origin!==origin||current.search)throw Error('SITE_ORIGIN_CHANGED');
+  current.hash=''; // Same-document SPA fragments are not network destinations.
   const headings=(await page.locator('h1,h2').allTextContents()).slice(0,10)
     .map(x=>x.trim().slice(0,160));
   const pixels=await page.screenshot({type:'jpeg',quality:30,fullPage:false});
@@ -67,7 +68,7 @@ const siteBrowserScript=async ({page,context})=>{
   let binary='';
   for(let i=0;i<pixels.length;i+=8192)
     binary+=String.fromCharCode(...pixels.subarray(i,i+8192));
-  return {ok:true,url:page.url(),origin,mode:plan.mode,
+  return {ok:true,url:current.href,origin,mode:plan.mode,
     title:(await page.title()).slice(0,120),headings,
     actionCount:plan.actions.length,submitted:false,persisted:false,
     screenshotMime:'image/jpeg',screenshotBase64:btoa(binary)};
