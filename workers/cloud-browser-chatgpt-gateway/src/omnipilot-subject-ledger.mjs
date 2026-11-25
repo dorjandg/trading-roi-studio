@@ -23,7 +23,7 @@ function makeId(idFactory){
 }
 const canonicalEvent=e=>JSON.stringify([
   'omnipilot:grant-audit:v1',e.eventId,e.grantId,e.revision,
-  e.type,e.actorKey,e.subjectKey,e.targetDigest,e.occurredAtMs,e.previousHash
+  e.type,e.actorKey,e.subjectKey,e.targetDigest,e.termsDigest,e.occurredAtMs,e.previousHash
 ]);
 async function newEvent({type,record,actorKey,revision,previousHash,nowMs,auditKey,idFactory}){
   if(!['REQUESTED','APPROVED','DENIED','REVOKED'].includes(type)
@@ -31,9 +31,13 @@ async function newEvent({type,record,actorKey,revision,previousHash,nowMs,auditK
     ||!HEX.test(previousHash))fail();
   const targetDigest=await mac(auditKey,
     'omnipilot:grant-target:v1\0'+record.origin+'\0'+record.pathPrefix);
+  const termsDigest=await mac(auditKey,'omnipilot:grant-terms:v1\0'+JSON.stringify([
+    record.grantId,record.subjectKey,record.requestedByKey,
+    record.origin,record.pathPrefix,record.mode,record.expiresAtMs,record.maxActions
+  ]));
   const event={eventId:makeId(idFactory),grantId:record.grantId,revision,
     type,actorKey:validIdentity(actorKey),subjectKey:validIdentity(record.subjectKey),
-    targetDigest,occurredAtMs:nowMs,previousHash};
+    targetDigest,termsDigest,occurredAtMs:nowMs,previousHash};
   const hash=await mac(auditKey,canonicalEvent(event));
   return Object.freeze({...event,hash});
 }
@@ -64,21 +68,26 @@ export async function verifySubjectAudit(state,auditKey){
   if(!UUID.test(record.grantId||'')||!HEX.test(record.subjectKey||'')||
     !Number.isSafeInteger(record.revision)||record.revision!==state.events.length||
     !HEX.test(record.auditHead||''))return false;
-  let previous=ZERO,types=[];
+  let previous=ZERO,types=[],ids=new Set();
   const expectedTarget=await mac(auditKey,
     'omnipilot:grant-target:v1\0'+record.origin+'\0'+record.pathPrefix);
+  const expectedTerms=await mac(auditKey,'omnipilot:grant-terms:v1\0'+JSON.stringify([
+    record.grantId,record.subjectKey,record.requestedByKey,
+    record.origin,record.pathPrefix,record.mode,record.expiresAtMs,record.maxActions
+  ]));
   for(let i=0;i<state.events.length;i++){
     const e=state.events[i];
-    if(!e||!UUID.test(e.eventId||'')||e.grantId!==record.grantId||
+    if(!e||!UUID.test(e.eventId||'')||ids.has(e.eventId)||e.grantId!==record.grantId||
       e.revision!==i+1||e.subjectKey!==record.subjectKey||
-      e.targetDigest!==expectedTarget||e.previousHash!==previous||
+      e.targetDigest!==expectedTarget||e.termsDigest!==expectedTerms||
+      e.previousHash!==previous||
       !HEX.test(e.actorKey||'')||!HEX.test(e.hash||'')||
       !safeTime(e.occurredAtMs)||!['REQUESTED','APPROVED','DENIED','REVOKED'].includes(e.type)||
       i===0&&e.type!=='REQUESTED'||i>0&&e.type==='REQUESTED'||
       i>0&&e.occurredAtMs<state.events[i-1].occurredAtMs)return false;
     const calculated=await mac(auditKey,canonicalEvent(e));
     if(calculated!==e.hash)return false;
-    previous=e.hash;types.push(e.type);
+    previous=e.hash;types.push(e.type);ids.add(e.eventId);
   }
   if(previous!==record.auditHead||
     types.filter(x=>x==='APPROVED').length>1||
@@ -91,7 +100,11 @@ export async function verifySubjectAudit(state,auditKey){
   if(types.includes('DENIED')&&types.includes('APPROVED'))return false;
   if(types.includes('DENIED')&&types.includes('REVOKED'))return false;
   if(types.includes('REVOKED')&&types.at(-1)!=='REVOKED')return false;
-  if(record.updatedAtMs!==state.events.at(-1).occurredAtMs)return false;
+  if(record.updatedAtMs!==state.events.at(-1).occurredAtMs||
+    record.createdAtMs!==state.events[0].occurredAtMs||
+    record.requestedByKey!==state.events[0].actorKey)return false;
+  const approved=state.events.find(e=>e.type==='APPROVED');
+  if((approved?.actorKey||null)!==(record.approvedByKey??null))return false;
   return true;
 }
 export async function transitionSubjectGrant({
