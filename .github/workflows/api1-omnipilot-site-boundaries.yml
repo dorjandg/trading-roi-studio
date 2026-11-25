@@ -1,0 +1,50 @@
+name: API1 isolated approved-site browser boundaries
+on:
+  push:
+    branches:
+      - api1-browser-interaction-phase1
+    paths:
+      - ".github/workflows/api1-omnipilot-site-boundaries.yml"
+      - "workers/cloud-browser-agent/src/omnipilot-site-*.mjs"
+      - "workers/cloud-browser-agent/test/omnipilot-site-*.test.mjs"
+      - "workers/cloud-browser-agent/src/mcp.mjs"
+      - "workers/cloud-browser-chatgpt-gateway/src/forward.mjs"
+      - "workers/cloud-browser-chatgpt-gateway/src/discovery.mjs"
+      - "workers/cloud-browser-chatgpt-gateway/src/index.mjs"
+      - "workers/cloud-browser-chatgpt-gateway/src/consent.mjs"
+      - "workers/cloud-browser-chatgpt-gateway/test/omnipilot-site-oauth.test.mjs"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-site-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate browser grant, execution and MCP boundaries
+        working-directory: workers/cloud-browser-agent
+        run: |
+          npm install --no-package-lock --ignore-scripts --no-audit --no-fund
+          node --check src/omnipilot-site-grants.mjs
+          node --check src/omnipilot-site-runtime.mjs
+          node --check src/mcp.mjs
+          node --test test/omnipilot-site-grants.test.mjs test/omnipilot-site-runtime.test.mjs test/omnipilot-site-mcp.test.mjs
+          npx wrangler deploy --dry-run --outdir "$RUNNER_TEMP/omnipilot-site-backend"
+      - name: Validate independent read and interaction OAuth scopes
+        working-directory: workers/cloud-browser-chatgpt-gateway
+        run: |
+          npm install --no-package-lock --ignore-scripts --no-audit --no-fund
+          npm run check
+          node --test test/omnipilot-site-oauth.test.mjs test/omnipilot-gateway-pilot.test.mjs
+          npm run build
+      - name: Confirm dry-run artifacts and no deployment
+        shell: bash
+        run: |
+          test -d "$RUNNER_TEMP/omnipilot-site-backend"
+          echo "OMNIPILOT_SITE_BOUNDARIES_DRY_RUN_PASSED"
