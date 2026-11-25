@@ -1,0 +1,16 @@
+{
+  "name": "cloud-browser-chatgpt-stage",
+  "main": "src/index.mjs",
+  "compatibility_date": "2026-11-21",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "global_fetch_strictly_public"
+  ],
+  "workers_dev": true,
+  "kv_namespaces": [
+    {
+      "binding": "OAUTH_KV",
+      "id": "3e4203c6a00545df9ba0202343afb8d7"
+    }
+  ]
+}

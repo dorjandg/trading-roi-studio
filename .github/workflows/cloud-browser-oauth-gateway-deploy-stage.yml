@@ -1,0 +1,123 @@
+name: Cloud Browser Agent — Deploy isolated ChatGPT OAuth gateway (staging)
+on:
+  push:
+    branches:
+      - feature/cloud-browser-agent-phase1
+    paths:
+      - ".github/workflows/cloud-browser-oauth-gateway-deploy-stage.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: cloud-browser-oauth-gateway-stage
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/feature/cloud-browser-agent-phase1' && vars.BROWSER_AGENT_DEPLOY_ENABLED == 'true'
+    environment: browser-agent-staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: workers/cloud-browser-chatgpt-gateway
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      GOOGLE_ALLOWED_EMAIL: ${{ vars.GOOGLE_ALLOWED_EMAIL }}
+      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+      BROWSER_AGENT_API_TOKEN: ${{ secrets.BROWSER_AGENT_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate all staging-only prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET GOOGLE_ALLOWED_EMAIL CF_ACCESS_CLIENT_ID CF_ACCESS_CLIENT_SECRET BROWSER_AGENT_API_TOKEN; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Required staging input missing: $name"
+              exit 1
+            fi
+          done
+          if [[ "$CF_ACCESS_CLIENT_ID" != *.access ]]; then
+            echo "::error::Staging Access service Client ID format invalid"
+            exit 1
+          fi
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Run security checks and dry-run build
+        run: |
+          npm run check
+          npm test
+          npm run build
+      - name: Deploy isolated staging gateway
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx wrangler deploy --var "GOOGLE_ALLOWED_EMAIL:$GOOGLE_ALLOWED_EMAIL"
+      - name: Attach existing credentials as Worker secrets without printing values
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +x
+          tmpfile=$(mktemp)
+          chmod 600 "$tmpfile"
+          trap 'rm -f "$tmpfile"' EXIT
+          node --input-type=module -e '
+          import fs from "node:fs";
+          const names=["GOOGLE_CLIENT_ID","GOOGLE_CLIENT_SECRET","CF_ACCESS_CLIENT_ID","CF_ACCESS_CLIENT_SECRET","BROWSER_AGENT_API_TOKEN"];
+          fs.writeFileSync(process.argv[1],JSON.stringify(Object.fromEntries(names.map(n=>[n,process.env[n]]))));
+          ' "$tmpfile"
+          npx wrangler secret bulk "$tmpfile"
+      - name: Verify ChatGPT pre-auth MCP discovery and protected execution
+        shell: bash
+        run: |
+          set -euo pipefail
+          endpoint="https://cloud-browser-chatgpt-stage.dorjan-gjoni-dg.workers.dev/mcp"
+          init='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"staging-smoke","version":"0.1"}}}'
+          listing='{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
+          for payload in "$init" "$listing"; do
+            response=$(curl -sS --max-time 20 -H "content-type: application/json" -H "accept: application/json, text/event-stream" -d "$payload" "$endpoint")
+            printf '%s' "$response" | node -e 'let x="";process.stdin.on("data",v=>x+=v);process.stdin.on("end",()=>{const j=JSON.parse(x);if(j.error||!j.result)process.exit(1);if(j.id===2){const names=j.result.tools?.map(t=>t.name)||[];if(names.join(",")!=="browser_agent_status,browser_inspect,browser_follow_link,browser_form_inventory,browser_edit_preview,browser_page_links")process.exit(1);for(const t of j.result.tools){if(t.annotations?.readOnlyHint!==true||t._meta?.securitySchemes?.[0]?.type!=="oauth2")process.exit(1)}}console.log(j.id===2?"MCP tools discoverable with OAuth required":"MCP handshake discoverable")})'
+          done
+          status=$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -H "content-type: application/json" -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"browser_agent_status","arguments":{}}}' "$endpoint")
+          if [ "$status" != "401" ]; then
+            echo "::error::Tools/call must reject unauthenticated requests with 401, got $status"
+            exit 1
+          fi
+      - name: Probe OAuth resource and authorization metadata (no credentials logged)
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="https://cloud-browser-chatgpt-stage.dorjan-gjoni-dg.workers.dev"
+          for path in /.well-known/oauth-authorization-server /.well-known/oauth-protected-resource/mcp; do
+            echo "Checking $path"
+            response=$(curl --silent --show-error --max-time 20 --write-out '\n%{http_code}' "$url$path")
+            status="${response##*$'\n'}"
+            body="${response%$'\n'*}"
+            if [[ "$status" != 200 ]]; then
+              echo "::error::OAuth metadata endpoint returned $status"
+              exit 1
+            fi
+            printf '%s' "$body" | node -e 'let data="";process.stdin.on("data",x=>data+=x);process.stdin.on("end",()=>{const v=JSON.parse(data);if(!v.issuer&&!v.resource)process.exit(1);console.log("OAuth metadata JSON verified")})'
+          done
+          status=$(curl --silent --show-error --max-time 20 --output /dev/null --write-out '%{http_code}' "$url/mcp")
+          if [[ "$status" != "401" ]]; then
+            echo "::error::Unauthenticated MCP endpoint must return HTTP 401, got $status"
+            exit 1
+          fi
+
+# Redeploy staging gateway with audited read-only browser_page_links tool.
+
+# Redeploy with corrected Google OAuth Client ID verified in staging diagnostic run 45031476868.
+
+# Phase 2: deploy four OAuth-protected read-only MCP tools including strict follow-link.
+
+# Phase 2.1: include OAuth-protected privacy-safe form inventory in five-tool smoke test.
+
+# Stage 4 gate: deploy the sixth tool as preview-only. No edit execution tools allowed.

@@ -1,0 +1,44 @@
+name: Cloud Browser Agent — Disposable Chromium E2E (staging branch)
+on:
+  push:
+    branches: [feature/cloud-browser-agent-phase1]
+    paths:
+      - "workers/cloud-browser-agent/simulation/**"
+      - ".github/workflows/cloud-browser-disposable-e2e.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: browser-disposable-e2e
+  cancel-in-progress: true
+jobs:
+  browser-e2e:
+    if: github.ref == 'refs/heads/feature/cloud-browser-agent-phase1'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: workers/cloud-browser-agent
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install isolated test dependencies
+        run: |
+          npm install --no-audit --no-fund
+          npm install --no-save --no-package-lock --no-audit --no-fund playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Unit tests and safety boundary
+        run: |
+          npm test
+          node --check simulation/disposable-site.mjs
+          node --check simulation/disposable-browser.e2e.mjs
+      - name: Run real Chromium against localhost-only disposable website
+        env:
+          CI: "true"
+        run: node --test simulation/disposable-browser.e2e.mjs
+      - name: Report fixture isolation
+        run: |
+          echo "Chromium tested only 127.0.0.1 disposable fixture." >> "$GITHUB_STEP_SUMMARY"
+          echo "No Cloudflare token, production hostname, D1 binding or write-capable MCP tool used." >> "$GITHUB_STEP_SUMMARY"

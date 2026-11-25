@@ -1,0 +1,113 @@
+name: OmniPilot protected public-demo backend activation
+on:
+  push:
+    branches: [feature/cloud-browser-agent-phase1]
+    paths: [".github/workflows/omnipilot-demo-backend-enable.yml"]
+permissions:
+  contents: read
+jobs:
+  demo-backend:
+    if: github.ref == 'refs/heads/feature/cloud-browser-agent-phase1'
+    environment: browser-agent-staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+      BROWSER_AGENT_API_TOKEN: ${{ secrets.BROWSER_AGENT_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Require existing staging Access and deploy flags
+        shell: bash
+        run: |
+          if [[ "${{ vars.BROWSER_AGENT_ACCESS_READY }}" != 'true' ]] || [[ "${{ vars.BROWSER_AGENT_DEPLOY_ENABLED }}" != 'true' ]]; then
+            echo STAGING_ACCESS_OR_DEPLOY_GATE_NOT_READY
+            exit 1
+          fi
+      - name: Validate bindings before staging feature activation
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import {writeFile} from 'node:fs/promises';
+          import {createHash} from 'node:crypto';
+          const account=process.env.CLOUDFLARE_ACCOUNT_ID;
+          const token=process.env.CLOUDFLARE_API_TOKEN;
+          const name='cloud-browser-agent-stage';
+          const r=await fetch('https://api.cloudflare.com/client/v4/accounts/'+account+'/workers/scripts/'+name+'/settings',{headers:{authorization:'Bearer '+token},signal:AbortSignal.timeout(15000)});
+          if(!r.ok)throw Error('BROWSER_BINDING_PRECHECK_FAILED');
+          const b=(await r.json()).result?.bindings||[];
+          for(const [n,t] of [['AGENT_API_TOKEN','secret_text'],['ALLOWED_ORIGINS','plain_text'],['BROWSER','browser'],['BROWSER_AGENT_AUDIT_DB','d1']]){
+            if(!b.some(x=>x.name===n&&x.type===t))throw Error('REQUIRED_BINDING_MISSING_'+n);
+          }
+          const plain=b.find(x=>x.name==='ALLOWED_ORIGINS');
+          await writeFile(process.env.RUNNER_TEMP+'/omnipilot-backend-bindings.json',
+            JSON.stringify({names:b.filter(x=>x.name!=='OMNIPILOT_MANAGED_PILOT_ENABLED').map(x=>x.name+':'+x.type).sort(),
+              allowlistHash:createHash('sha256').update(String(plain?.text||'')).digest('hex')}),{mode:0o600});
+          console.log('BACKEND_BINDINGS_VERIFIED_WITHOUT_READING_SECRETS');
+          NODE
+      - name: Install and verify limited public-demo browser tool
+        working-directory: workers/cloud-browser-agent
+        run: |
+          npm install --no-audit --no-fund
+          node --test test/omnipilot-managed-pilot.test.mjs test/omnipilot-managed-mcp.test.mjs
+          npx wrangler deploy --dry-run --outdir "$RUNNER_TEMP/omnipilot-test-bundle"
+      - name: Enable test-only browser interaction on protected staging
+        working-directory: workers/cloud-browser-agent
+        run: npx wrangler deploy --keep-vars --var "OMNIPILOT_MANAGED_PILOT_ENABLED:true"
+      - name: Verify actual protected MCP navigation typing clicking and JPEG
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          const url='https://cloud-browser-agent-stage.dorjan-gjoni-dg.workers.dev/mcp';
+          const headers={'content-type':'application/json','CF-Access-Client-Id':process.env.CF_ACCESS_CLIENT_ID,
+            'CF-Access-Client-Secret':process.env.CF_ACCESS_CLIENT_SECRET,
+            authorization:'Bearer '+process.env.BROWSER_AGENT_API_TOKEN};
+          const rpc=async(id,method,params={})=>{
+            const r=await fetch(url,{method:'POST',headers,body:JSON.stringify({jsonrpc:'2.0',id,method,params}),redirect:'manual',signal:AbortSignal.timeout(70000)});
+            if(r.status!==200)throw Error('BACKEND_MCP_HTTP_'+r.status);
+            return r.json();
+          };
+          const tools=(await rpc(1,'tools/list')).result?.tools;
+          if(!Array.isArray(tools)||tools.length!==7||!tools.some(x=>x.name==='omnipilot_managed_demo'))throw Error('PILOT_TOOL_NOT_ENABLED');
+          const marker='OmniPilot protected screenshot demo';
+          const req={url:'https://demo.playwright.dev/todomvc/',actions:[
+            {op:'fill',selector:'input.new-todo',value:marker},
+            {op:'press',selector:'input.new-todo',key:'Enter'},
+            {op:'click',selector:'.todo-list li .toggle'}
+          ]};
+          const result=(await rpc(2,'tools/call',{name:'omnipilot_managed_demo',arguments:req})).result;
+          if(result?.isError!==false||result.content?.length!==2)throw Error('PILOT_BROWSER_ACTION_FAILED');
+          const data=JSON.parse(result.content[0]?.text||'{}'),img=result.content[1];
+          if(data.ok!==true||!data.items?.some(x=>x.includes(marker))||
+            img?.type!=='image'||img.mimeType!=='image/jpeg'||!img.data?.startsWith('/9j/')||
+            Buffer.from(img.data,'base64').length<1000)throw Error('PILOT_SCREENSHOT_INVALID');
+          const invalid=await rpc(3,'tools/call',{name:'omnipilot_managed_demo',
+            arguments:{...req,url:'https://example.com/'}});
+          if(invalid.error?.code!==-32602)throw Error('ARBITRARY_ORIGIN_WAS_NOT_REJECTED');
+          console.log('OMNIPILOT_PROTECTED_BACKEND_PILOT_PASS: navigation, fill, Enter, click, read, screenshot');
+          NODE
+      - name: Verify original bindings retained, including Access allowlist
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import {readFile} from 'node:fs/promises';
+          import {createHash} from 'node:crypto';
+          const previous=JSON.parse(await readFile(process.env.RUNNER_TEMP+'/omnipilot-backend-bindings.json','utf8'));
+          const r=await fetch('https://api.cloudflare.com/client/v4/accounts/'+process.env.CLOUDFLARE_ACCOUNT_ID+'/workers/scripts/cloud-browser-agent-stage/settings',{
+            headers:{authorization:'Bearer '+process.env.CLOUDFLARE_API_TOKEN},signal:AbortSignal.timeout(15000)});
+          if(!r.ok)throw Error('POST_DEPLOY_SETTINGS_MISSING');
+          const bindings=(await r.json()).result?.bindings||[];
+          const names=bindings.filter(x=>x.name!=='OMNIPILOT_MANAGED_PILOT_ENABLED').map(x=>x.name+':'+x.type).sort();
+          const hash=createHash('sha256').update(String(bindings.find(x=>x.name==='ALLOWED_ORIGINS')?.text||'')).digest('hex');
+          if(JSON.stringify(names)!==JSON.stringify(previous.names)||hash!==previous.allowlistHash||
+             bindings.find(x=>x.name==='OMNIPILOT_MANAGED_PILOT_ENABLED')?.text!=='true')
+            throw Error('ORIGINAL_BACKEND_BINDINGS_NOT_PRESERVED');
+          console.log('ORIGINAL_BACKEND_BINDINGS_PRESERVED');
+          NODE

@@ -1,0 +1,67 @@
+name: Cloud Browser Agent — Protected MCP End-to-End Check
+# Recheck Access service authentication following user-side GitHub credential update.
+on:
+  push:
+    branches:
+      - feature/cloud-browser-agent-phase1
+    paths:
+      - ".github/workflows/cloud-browser-mcp-e2e.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  protected-mcp-check:
+    if: github.ref == 'refs/heads/feature/cloud-browser-agent-phase1'
+    environment: browser-agent-staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+      BROWSER_AGENT_API_TOKEN: ${{ secrets.BROWSER_AGENT_API_TOKEN }}
+    steps:
+      - name: Verify deployed MCP through Cloudflare Access and Worker authentication
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${CF_ACCESS_CLIENT_ID:?Missing Cloudflare Access Client ID}"
+          : "${CF_ACCESS_CLIENT_SECRET:?Missing Cloudflare Access Client Secret}"
+          : "${BROWSER_AGENT_API_TOKEN:?Missing Worker bearer token}"
+          if [[ "$CF_ACCESS_CLIENT_ID" != *.access ]]; then
+            echo "::error::Client ID does not have expected .access suffix."
+            exit 1
+          fi
+          endpoint='https://cloud-browser-agent-stage.dorjan-gjoni-dg.workers.dev'
+          access_headers=(-H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET")
+          classify() {
+            local file="$1"
+            node -e 'const fs=require("fs");const s=fs.readFileSync(process.argv[1],"utf8");let d={};try{d=JSON.parse(s)}catch{};console.log(d.error==="Unauthorized"?"WORKER_UNAUTHORIZED":s.includes("cloudflare")||s.includes("Cloudflare")||s.includes("Access")?"ACCESS_GATEWAY":"UNKNOWN_RESPONSE")' "$file"
+          }
+          code=$(curl --silent --show-error --max-time 30 -o "$RUNNER_TEMP/without.json" -w '%{http_code}' "${access_headers[@]}" "$endpoint/health")
+          category=$(classify "$RUNNER_TEMP/without.json")
+          echo "Without Worker bearer: HTTP $code category $category"
+          if [[ "$code" != 401 || "$category" != WORKER_UNAUTHORIZED ]]; then
+            echo "::error::Cloudflare Access service token not accepted by Worker origin."
+            exit 1
+          fi
+          code=$(curl --silent --show-error --max-time 30 -o "$RUNNER_TEMP/health.json" -w '%{http_code}' "${access_headers[@]}" -H "Authorization: Bearer $BROWSER_AGENT_API_TOKEN" "$endpoint/health")
+          if [[ "$code" != 200 ]]; then
+            category=$(classify "$RUNNER_TEMP/health.json")
+            echo "::error::Protected Worker health failed: HTTP $code category $category"
+            exit 1
+          fi
+          node -e 'const fs=require("fs");const d=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(d.service!=="cloud-browser-agent"||d.browserConfigured!==true)process.exit(1)' "$RUNNER_TEMP/health.json"
+          rpc() {
+            local label="$1" payload="$2"
+            local status
+            status=$(curl --silent --show-error --max-time 30 -o "$RUNNER_TEMP/$label.json" -w '%{http_code}' "${access_headers[@]}" -H "Authorization: Bearer $BROWSER_AGENT_API_TOKEN" -H "Content-Type: application/json" --data-binary "$payload" "$endpoint/mcp")
+            if [[ "$status" != 200 ]]; then
+              echo "::error::MCP $label failed HTTP $status"
+              exit 1
+            fi
+          }
+          rpc init '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"staging-check","version":"1"}}}'
+          rpc tools '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
+          rpc status '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"browser_agent_status","arguments":{}}}'
+          node -e 'const fs=require("fs");const files=process.argv.slice(1);const [a,b,c]=files.map(p=>JSON.parse(fs.readFileSync(p,"utf8")));if(a.result?.serverInfo?.name!=="cloud-browser-agent-staging")process.exit(1);if(JSON.stringify(b.result?.tools?.map(t=>t.name))!==JSON.stringify(["browser_agent_status","browser_inspect"]))process.exit(1);if(JSON.parse(c.result?.content?.[0]?.text||"{}").mode!=="read-only")process.exit(1);console.log("Protected MCP handshake and two read-only actions verified")' "$RUNNER_TEMP/init.json" "$RUNNER_TEMP/tools.json" "$RUNNER_TEMP/status.json"
+          echo "Access Service Token and Worker Bearer verified with read-only MCP." >> "$GITHUB_STEP_SUMMARY"

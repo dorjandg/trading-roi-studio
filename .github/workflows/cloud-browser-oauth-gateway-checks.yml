@@ -1,0 +1,38 @@
+name: Cloud Browser Agent — OAuth Gateway Safety Checks
+on:
+  push:
+    branches:
+      - feature/cloud-browser-agent-phase1
+    paths:
+      - "workers/cloud-browser-chatgpt-gateway/**"
+      - ".github/workflows/cloud-browser-oauth-gateway-checks.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    if: github.ref == 'refs/heads/feature/cloud-browser-agent-phase1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    defaults:
+      run:
+        working-directory: workers/cloud-browser-chatgpt-gateway
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install pinned OAuth dependencies
+        run: npm install --no-audit --no-fund
+      - name: Validate OAuth gateway source
+        run: npm run check
+      - name: Verify auth, scope, URL and consent security
+        run: npm test
+      - name: Dry-run bundle OAuth gateway only (no Cloudflare writes)
+        run: npm run build
+      - name: Ensure testing workflow has no deployment credentials
+        run: |
+          if [ -n "${CLOUDFLARE_API_TOKEN:-}" ] || [ -n "${GOOGLE_CLIENT_SECRET:-}" ]; then
+            echo "::error::Gateway CI must not load production or OAuth credentials"
+            exit 1
+          fi

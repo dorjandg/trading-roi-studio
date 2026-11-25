@@ -1,0 +1,108 @@
+name: Cloud Browser Agent — Staging Deploy
+
+on:
+  push:
+    branches:
+      - feature/cloud-browser-agent-phase1
+    paths:
+      - "workers/cloud-browser-agent/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: browser-agent-stage-deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # Deployment is opt-in and isolated from Finance Hub.
+    if: github.ref == 'refs/heads/feature/cloud-browser-agent-phase1' && vars.BROWSER_AGENT_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: browser-agent-staging
+    defaults:
+      run:
+        working-directory: workers/cloud-browser-agent
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      BROWSER_AGENT_API_TOKEN: ${{ secrets.BROWSER_AGENT_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify required credentials are configured
+        shell: bash
+        run: |
+          if [[ -z "$CLOUDFLARE_API_TOKEN" || -z "$CLOUDFLARE_ACCOUNT_ID" || -z "$BROWSER_AGENT_API_TOKEN" ]]; then
+            echo "::error::Missing deployment secrets. Configure CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID and BROWSER_AGENT_API_TOKEN."
+            exit 1
+          fi
+          if [[ "${{ vars.BROWSER_AGENT_ACCESS_READY }}" != "true" ]]; then
+            echo "::error::Cloudflare Access must be configured for the staging Worker before deployment."
+            exit 1
+          fi
+      - name: Install cloud browser dependencies
+        run: npm install --no-audit --no-fund
+      - name: Validate code and run tests
+        run: |
+          node --check src/index.js
+          node --check src/handler.mjs
+          node --check src/policy.mjs
+          npm test
+      - name: Verify existing staging secrets and feature flags before deploy
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import {writeFile} from 'node:fs/promises';
+          import {createHash} from 'node:crypto';
+          const name='cloud-browser-agent-stage';
+          const url='https://api.cloudflare.com/client/v4/accounts/'+process.env.CLOUDFLARE_ACCOUNT_ID+'/workers/scripts/'+name+'/settings';
+          const res=await fetch(url,{headers:{authorization:'Bearer '+process.env.CLOUDFLARE_API_TOKEN},signal:AbortSignal.timeout(15000)});
+          if(!res.ok)throw Error('STAGING_BINDINGS_NOT_ACCESSIBLE');
+          const bindings=(await res.json()).result?.bindings;
+          if(!Array.isArray(bindings))throw Error('STAGING_BINDINGS_INVALID');
+          for(const [n,t] of [['AGENT_API_TOKEN','secret_text'],['BROWSER','browser'],['BROWSER_AGENT_AUDIT_DB','d1'],
+            ['ALLOWED_ORIGINS','plain_text'],['OMNIPILOT_MANAGED_PILOT_ENABLED','plain_text']]){
+            if(!bindings.some(x=>x.name===n&&x.type===t))throw Error('STAGING_BINDING_MISSING_'+n);
+          }
+          if(bindings.find(x=>x.name==='OMNIPILOT_MANAGED_PILOT_ENABLED')?.text!=='true')
+            throw Error('EXISTING_DEMO_NOT_ENABLED');
+          const snapshot=bindings.map(x=>({
+            name:x.name,type:x.type,db:x.type==='d1'?x.id:null,
+            hash:x.type==='plain_text'?createHash('sha256').update(String(x.text||'')).digest('hex'):null
+          })).sort((a,b)=>a.name.localeCompare(b.name));
+          await writeFile(process.env.RUNNER_TEMP+'/omnipilot-bindings-before.json',JSON.stringify(snapshot),{mode:0o600});
+          console.log('OMNIPILOT_PREDEPLOY_BINDINGS_PRESERVED');
+          NODE
+      - name: Deploy isolated staging code without replacing existing secrets or flags
+        run: npx wrangler deploy --keep-vars
+      - name: Verify original bindings and demo flag preserved after deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import {readFile} from 'node:fs/promises';
+          import {createHash} from 'node:crypto';
+          const name='cloud-browser-agent-stage';
+          const before=JSON.parse(await readFile(process.env.RUNNER_TEMP+'/omnipilot-bindings-before.json','utf8'));
+          const url='https://api.cloudflare.com/client/v4/accounts/'+process.env.CLOUDFLARE_ACCOUNT_ID+'/workers/scripts/'+name+'/settings';
+          const res=await fetch(url,{headers:{authorization:'Bearer '+process.env.CLOUDFLARE_API_TOKEN},signal:AbortSignal.timeout(15000)});
+          if(!res.ok)throw Error('STAGING_BINDINGS_POSTDEPLOY_UNREADABLE');
+          const bindings=(await res.json()).result?.bindings;
+          if(!Array.isArray(bindings))throw Error('STAGING_BINDINGS_POSTDEPLOY_INVALID');
+          const after=bindings.map(x=>({
+            name:x.name,type:x.type,db:x.type==='d1'?x.id:null,
+            hash:x.type==='plain_text'?createHash('sha256').update(String(x.text||'')).digest('hex'):null
+          })).sort((a,b)=>a.name.localeCompare(b.name));
+          if(JSON.stringify(before)!==JSON.stringify(after))throw Error('STAGING_BINDINGS_CHANGED');
+          console.log('OMNIPILOT_EXISTING_SECRETS_FLAGS_AND_STORAGE_PRESERVED');
+          NODE
+      - name: Complete
+        run: echo "Staging deployment completed. Browser inspection and screenshots require separate runtime smoke tests." >> "$GITHUB_STEP_SUMMARY"
+
+# Phase 2: redeploy staged read-only follow-link navigation after passing policy checks.

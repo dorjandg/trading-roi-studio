@@ -1,0 +1,41 @@
+name: Cloud Browser Agent Stage Checks
+
+on:
+  push:
+    branches:
+      - feature/cloud-browser-agent-phase1
+    paths:
+      - "workers/cloud-browser-agent/**"
+      - ".github/workflows/cloud-browser-stage.yml"
+  pull_request:
+    paths:
+      - "workers/cloud-browser-agent/**"
+      - ".github/workflows/cloud-browser-stage.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  policy-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: workers/cloud-browser-agent
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Validate JavaScript syntax
+        run: |
+          node --check src/index.js
+          node --check src/handler.mjs
+          node --check src/mcp.mjs
+          node --check src/policy.mjs
+      - name: Unit tests (no cloud browser or billed sessions)
+        run: npm test
+      - name: Verify Worker bundles without deployment
+        run: npx wrangler deploy --dry-run --outdir /tmp/cloud-browser-agent-bundle

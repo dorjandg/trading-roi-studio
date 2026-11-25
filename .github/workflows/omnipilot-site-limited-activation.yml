@@ -1,0 +1,280 @@
+name: OmniPilot safe multi-site pilot staging activation
+on:
+  push:
+    branches:
+      - feature/cloud-browser-agent-phase1
+    paths:
+      - ".github/workflows/omnipilot-site-limited-activation.yml"
+permissions:
+  contents: read
+concurrency:
+  group: omnipilot-isolated-multi-site-stage
+  cancel-in-progress: false
+jobs:
+  limited-sites:
+    if: github.ref == 'refs/heads/feature/cloud-browser-agent-phase1'
+    environment: browser-agent-staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+      BROWSER_AGENT_API_TOKEN: ${{ secrets.BROWSER_AGENT_API_TOKEN }}
+      SITE_GRANTS: '{"version":1,"sites":[{"origin":"https://www.wikipedia.org","mode":"read"},{"origin":"https://en.wikipedia.org","mode":"draft"},{"origin":"https://demo.playwright.dev","mode":"draft"}]}'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Confirm protected staging flags and existing service credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ vars.BROWSER_AGENT_ACCESS_READY }}" != 'true' || "${{ vars.CLOUD_BROWSER_OAUTH_DEPLOY_ENABLED }}" != 'true' ]]; then
+            echo "OMNIPILOT_STAGING_ACCESS_NOT_READY"
+            exit 1
+          fi
+          node --input-type=module <<'NODE'
+          const names=['CLOUDFLARE_API_TOKEN','CLOUDFLARE_ACCOUNT_ID','CF_ACCESS_CLIENT_ID',
+            'CF_ACCESS_CLIENT_SECRET','BROWSER_AGENT_API_TOKEN'];
+          for(const name of names)if(!process.env[name])throw Error('STAGING_REQUIRED_BINDING_MISSING_'+name);
+          if(!process.env.CF_ACCESS_CLIENT_ID.endsWith('.access'))throw Error('STAGING_ACCESS_ID_INVALID');
+          const policy=JSON.parse(process.env.SITE_GRANTS);
+          if(policy.version!==1||policy.sites?.length!==3||
+            policy.sites.some(s=>!['www.wikipedia.org','en.wikipedia.org','demo.playwright.dev']
+              .includes(new URL(s.origin).hostname)))
+            throw Error('STAGING_EXPLICIT_SITE_GRANTS_CHANGED');
+          console.log('THREE_EXPLICIT_PUBLIC_REFERENCE_DOMAINS_APPROVED');
+          NODE
+      - name: Snapshot original staging Worker bindings without accessing secret values
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import {writeFile} from 'node:fs/promises';
+          import {createHash} from 'node:crypto';
+          const account=process.env.CLOUDFLARE_ACCOUNT_ID,token=process.env.CLOUDFLARE_API_TOKEN;
+          const names=['cloud-browser-agent-stage','cloud-browser-chatgpt-stage'];
+          const required={
+            'cloud-browser-agent-stage':{BROWSER:'browser',AGENT_API_TOKEN:'secret_text',
+              BROWSER_AGENT_AUDIT_DB:'d1',ALLOWED_ORIGINS:'plain_text',
+              OMNIPILOT_MANAGED_PILOT_ENABLED:'plain_text'},
+            'cloud-browser-chatgpt-stage':{GOOGLE_CLIENT_ID:'secret_text',
+              GOOGLE_CLIENT_SECRET:'secret_text',GOOGLE_ALLOWED_EMAIL:'plain_text',
+              CF_ACCESS_CLIENT_ID:'secret_text',CF_ACCESS_CLIENT_SECRET:'secret_text',
+              BROWSER_AGENT_API_TOKEN:'secret_text',OAUTH_KV:'kv_namespace',
+              OMNIPILOT_MANAGED_PILOT_ENABLED:'plain_text'}
+          };
+          const baseline={};
+          for(const name of names){
+            const r=await fetch('https://api.cloudflare.com/client/v4/accounts/'+account+'/workers/scripts/'+name+'/settings',{
+              headers:{authorization:'Bearer '+token},signal:AbortSignal.timeout(15000)});
+            if(!r.ok)throw Error('WORKER_BINDINGS_UNREADABLE_'+name);
+            const b=(await r.json()).result?.bindings;
+            if(!Array.isArray(b))throw Error('WORKER_BINDINGS_MISSING_'+name);
+            for(const [key,type] of Object.entries(required[name]))
+              if(!b.some(x=>x.name===key&&x.type===type))throw Error('ORIGINAL_BINDING_MISSING_'+key);
+            if(b.find(x=>x.name==='OMNIPILOT_MANAGED_PILOT_ENABLED')?.text!=='true')
+              throw Error('EXISTING_DEMO_MUST_REMAIN_ENABLED');
+            if(b.some(x=>x.name==='OMNIPILOT_SITE_CONTROL_ENABLED'&&x.text==='true'))
+              throw Error('NEW_SITE_CONTROL_ALREADY_ENABLED');
+            baseline[name]=b.filter(x=>!['OMNIPILOT_SITE_CONTROL_ENABLED','OMNIPILOT_SITE_GRANTS'].includes(x.name))
+              .map(x=>({name:x.name,type:x.type,
+                plainHash:x.type==='plain_text'?createHash('sha256').update(String(x.text||'')).digest('hex'):null,
+                id:x.type==='d1'?x.id:x.type==='kv_namespace'?x.namespace_id:null
+              })).sort((a,b)=>a.name.localeCompare(b.name));
+          }
+          await writeFile(process.env.RUNNER_TEMP+'/omnipilot-site-original-bindings.json',
+            JSON.stringify(baseline),{mode:0o600});
+          console.log('ORIGINAL_STAGING_BINDINGS_SNAPSHOTTED');
+          NODE
+      - name: Test the exact-origin backend and Wrangler bundle without deploying
+        working-directory: workers/cloud-browser-agent
+        run: |
+          npm install --no-audit --no-fund
+          node --test test/omnipilot-site-grants.test.mjs test/omnipilot-site-runtime.test.mjs test/omnipilot-site-mcp.test.mjs
+          npx wrangler deploy --dry-run --outdir "$RUNNER_TEMP/omnipilot-site-approved-bundle"
+      - name: Activate only three public reference origins on protected browser staging
+        working-directory: workers/cloud-browser-agent
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx wrangler deploy --keep-vars \
+            --var "OMNIPILOT_MANAGED_PILOT_ENABLED:true" \
+            --var "OMNIPILOT_SITE_CONTROL_ENABLED:true" \
+            --var "OMNIPILOT_SITE_GRANTS:$SITE_GRANTS"
+      - name: Run real protected backend navigation, draft, same-site click and screenshot tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          const url='https://cloud-browser-agent-stage.dorjan-gjoni-dg.workers.dev/mcp';
+          const headers={'content-type':'application/json',
+            'CF-Access-Client-Id':process.env.CF_ACCESS_CLIENT_ID,
+            'CF-Access-Client-Secret':process.env.CF_ACCESS_CLIENT_SECRET,
+            authorization:'Bearer '+process.env.BROWSER_AGENT_API_TOKEN};
+          const rpc=async(id,method,params={})=>{
+            const r=await fetch(url,{method:'POST',headers,redirect:'manual',
+              body:JSON.stringify({jsonrpc:'2.0',id,method,params}),
+              signal:AbortSignal.timeout(85000)});
+            if(r.status!==200)throw Error('BACKEND_HTTP_'+r.status);
+            return r.json();
+          };
+          let tools=null;
+          for(let attempt=0;attempt<10;attempt++){
+            try{tools=(await rpc(1,'tools/list')).result?.tools?.map(t=>t.name);}catch{tools=null;}
+            if(Array.isArray(tools)&&tools.length===9&&
+              ['omnipilot_managed_demo','omnipilot_site_read','omnipilot_site_draft']
+                .every(n=>tools.includes(n)))break;
+            console.log('BACKEND_SITE_TOOL_NOT_YET_ACTIVE_CHECK_'+(attempt+1));
+            if(attempt<9)await new Promise(resolve=>setTimeout(resolve,4000));
+          }
+          if(!Array.isArray(tools)||tools.length!==9||
+            !['omnipilot_managed_demo','omnipilot_site_read','omnipilot_site_draft']
+              .every(n=>tools.includes(n)))
+            throw Error('BACKEND_SITE_TOOL_DISCOVERY_FAILED_COUNT_'+(tools?.length??'unknown'));
+          const verify=(value,mode,expectedUrl)=>{
+            if(value?.isError!==false||value.content?.length!==2)
+              throw Error('WEBSITE_ACTION_FAILED_OR_UNCERTAIN');
+            const data=JSON.parse(value.content[0].text||'{}'),image=value.content[1];
+            const bytes=Buffer.from(image?.data||'','base64');
+            if(data.ok!==true||data.url!==expectedUrl||data.mode!==mode||
+              data.submitted!==false||data.persisted!==false||image.type!=='image'||
+              image.mimeType!=='image/jpeg'||!image.data.startsWith('/9j/')||
+              bytes.length<1000||bytes.length>36000)
+              throw Error('WEBSITE_SCREENSHOT_OR_RESULT_INVALID');
+            return data;
+          };
+          const read=(await rpc(2,'tools/call',{name:'omnipilot_site_read',
+            arguments:{url:'https://www.wikipedia.org/'}})).result;
+          verify(read,'read','https://www.wikipedia.org/');
+          console.log('PASS EXACT_SITE_READ_AND_SCREENSHOT');
+          const draft=(await rpc(3,'tools/call',{name:'omnipilot_site_draft',
+            arguments:{url:'https://demo.playwright.dev/todomvc/',actions:[
+              {op:'fill',selector:'input.new-todo',value:'OmniPilot safe public draft'},
+              {op:'press',selector:'input.new-todo',key:'Tab'}]}})).result;
+          const draftData=verify(draft,'draft','https://demo.playwright.dev/todomvc/');
+          if(draftData.actionCount!==2)throw Error('DRAFT_ACTION_COUNT_WRONG');
+          console.log('PASS SAFE_NON_SUBMITTING_FORM_DRAFT');
+          const wiki=(await rpc(4,'tools/call',{name:'omnipilot_site_draft',
+            arguments:{url:'https://en.wikipedia.org/wiki/Headless_browser',actions:[
+              {op:'click',selector:'a[href="/wiki/Category:Web_browsers"]'}]}})).result;
+          verify(wiki,'draft','https://en.wikipedia.org/wiki/Category:Web_browsers');
+          console.log('PASS EXACT_SITE_LINK_CLICK_AND_SCREENSHOT');
+          for(const bad of ['https://fin-kac.pages.dev/','https://trading-roi-studio.pages.dev/',
+            'https://127.0.0.1/','https://not-approved.example.com/']){
+            const result=await rpc(5,'tools/call',{name:'omnipilot_site_read',arguments:{url:bad}});
+            if(result.error?.code!==-32602)throw Error('UNAPPROVED_SITE_WAS_NOT_REJECTED');
+          }
+          const denied=await rpc(6,'tools/call',{name:'omnipilot_site_draft',
+            arguments:{url:'https://www.wikipedia.org/',actions:[
+              {op:'fill',selector:'input',value:'not permitted'}]}});
+          if(denied.error?.code!==-32602)throw Error('READ_GRANT_ESCALATED_TO_INTERACTION');
+          console.log('BACKEND_SITE_ACCEPTANCE_PASS: 9 tools, 3 public sites, blocked Finance/production');
+          NODE
+      - name: Validate protected OAuth gateway source and existing permission checks
+        working-directory: workers/cloud-browser-chatgpt-gateway
+        run: |
+          npm install --no-audit --no-fund
+          npm run check
+          node --test test/omnipilot-site-oauth.test.mjs test/omnipilot-gateway-pilot.test.mjs
+          npm run build
+      - name: Enable separate read and draft OAuth tools on staging gateway, preserve secrets
+        working-directory: workers/cloud-browser-chatgpt-gateway
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx wrangler deploy --keep-vars \
+            --var "OMNIPILOT_MANAGED_PILOT_ENABLED:true" \
+            --var "OMNIPILOT_SITE_CONTROL_ENABLED:true"
+      - name: Verify public MCP discovery and denial without individual OAuth consent
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          const base='https://cloud-browser-chatgpt-stage.dorjan-gjoni-dg.workers.dev';
+          const call=async(id,method,params={})=>{
+            const r=await fetch(base+'/mcp',{method:'POST',redirect:'manual',
+              headers:{'content-type':'application/json','accept':'application/json, text/event-stream'},
+              body:JSON.stringify({jsonrpc:'2.0',id,method,params}),
+              signal:AbortSignal.timeout(20000)});
+            let data=null;try{data=await r.json()}catch{}
+            return {status:r.status,data};
+          };
+          let listed=null,items=null;
+          for(let attempt=0;attempt<10;attempt++){
+            try{listed=await call(1,'tools/list');items=listed.data?.result?.tools;}catch{items=null;}
+            if(listed?.status===200&&Array.isArray(items)&&items.length===9)break;
+            console.log('GATEWAY_SITE_TOOL_NOT_YET_ACTIVE_CHECK_'+(attempt+1));
+            if(attempt<9)await new Promise(resolve=>setTimeout(resolve,4000));
+          }
+          if(listed?.status!==200||!Array.isArray(items)||items.length!==9)
+            throw Error('GATEWAY_TOOL_DISCOVERY_FAILED_COUNT_'+(items?.length??'unknown'));
+          for(const [name,scopes] of [
+            ['omnipilot_site_read',['mcp:read','mcp:site.read']],
+            ['omnipilot_site_draft',['mcp:read','mcp:site.read','mcp:site.interact']]
+          ]){
+            const tool=items.find(t=>t.name===name);
+            if(!tool||JSON.stringify(tool._meta?.securitySchemes?.[0]?.scopes)!==JSON.stringify(scopes))
+              throw Error('GATEWAY_SITE_SCOPE_MISMATCH_'+name);
+          }
+          if(items.find(t=>t.name==='omnipilot_managed_demo')?._meta?.securitySchemes?.[0]?.scopes?.[1]!=='mcp:demo.interact')
+            throw Error('ORIGINAL_DEMO_PERMISSION_REGRESSION');
+          const without=await call(2,'tools/call',{name:'omnipilot_site_draft',arguments:{
+            url:'https://demo.playwright.dev/todomvc/',
+            actions:[{op:'fill',selector:'input.new-todo',value:'unauthorized'}]}});
+          if(without.status!==401)throw Error('UNAUTHORIZED_SITE_DRAFT_EXECUTED');
+          console.log('GATEWAY_SITE_OAUTH_ACCEPTANCE_PASS: 9 tools, independent scopes and HTTP 401');
+          NODE
+      - name: Verify every existing secret, allowlist and storage binding remains intact
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import {readFile} from 'node:fs/promises';
+          import {createHash} from 'node:crypto';
+          const baseline=JSON.parse(await readFile(process.env.RUNNER_TEMP+'/omnipilot-site-original-bindings.json','utf8'));
+          const account=process.env.CLOUDFLARE_ACCOUNT_ID,token=process.env.CLOUDFLARE_API_TOKEN;
+          for(const name of Object.keys(baseline)){
+            const r=await fetch('https://api.cloudflare.com/client/v4/accounts/'+account+'/workers/scripts/'+name+'/settings',{
+              headers:{authorization:'Bearer '+token},signal:AbortSignal.timeout(15000)});
+            if(!r.ok)throw Error('BINDING_POSTCHECK_UNAVAILABLE_'+name);
+            const b=(await r.json()).result?.bindings;
+            if(!Array.isArray(b))throw Error('BINDING_POSTCHECK_INVALID_'+name);
+            const old=b.filter(x=>!['OMNIPILOT_SITE_CONTROL_ENABLED','OMNIPILOT_SITE_GRANTS'].includes(x.name))
+              .map(x=>({name:x.name,type:x.type,
+                plainHash:x.type==='plain_text'?createHash('sha256').update(String(x.text||'')).digest('hex'):null,
+                id:x.type==='d1'?x.id:x.type==='kv_namespace'?x.namespace_id:null
+              })).sort((a,b)=>a.name.localeCompare(b.name));
+            if(JSON.stringify(old)!==JSON.stringify(baseline[name]))
+              throw Error('EXISTING_BINDINGS_CHANGED_'+name);
+            if(b.find(x=>x.name==='OMNIPILOT_SITE_CONTROL_ENABLED')?.text!=='true')
+              throw Error('NEW_SITE_FLAG_NOT_SET_'+name);
+            if(name==='cloud-browser-agent-stage'){
+              const grants=b.find(x=>x.name==='OMNIPILOT_SITE_GRANTS');
+              if(grants?.type!=='plain_text'||grants.text!==process.env.SITE_GRANTS)
+                throw Error('SITE_GRANTS_CHANGED');
+            }
+          }
+          console.log('ALL_ORIGINAL_OAUTH_SECRETS_STORAGE_AND_DEMO_GRANTS_PRESERVED');
+          NODE
+      - name: Fail closed by disabling only the new site controls if any step fails
+        if: failure()
+        shell: bash
+        run: |
+          set +e
+          if test -x workers/cloud-browser-agent/node_modules/.bin/wrangler; then
+            (cd workers/cloud-browser-agent && npx wrangler deploy --keep-vars \
+              --var "OMNIPILOT_MANAGED_PILOT_ENABLED:true" \
+              --var "OMNIPILOT_SITE_CONTROL_ENABLED:false") || true
+          fi
+          if test -x workers/cloud-browser-chatgpt-gateway/node_modules/.bin/wrangler; then
+            (cd workers/cloud-browser-chatgpt-gateway && npx wrangler deploy --keep-vars \
+              --var "OMNIPILOT_MANAGED_PILOT_ENABLED:true" \
+              --var "OMNIPILOT_SITE_CONTROL_ENABLED:false") || true
+          fi
+          echo "NEW_SITE_CONTROLS_ROLLBACK_ATTEMPTED_NO_FINANCE_OR_PRODUCTION"
