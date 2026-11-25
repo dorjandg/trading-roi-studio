@@ -44,23 +44,45 @@ function selector(value){
   if(/(?:password|secret|token|otp|credit|card|csrf|submit|payment|hidden|file|confirm|delete|purchase)/i.test(value))fail();
   return value;
 }
-export function parseSiteGrants(raw){
+export function parseSiteGrants(raw,nowMs=Date.now()){
   if(typeof raw!=='string'||raw.length<2||raw.length>5000)fail();
   let value;try{value=JSON.parse(raw)}catch{fail()}
-  if(!exact(value,['version','sites'])||value.version!==1
+  if(!exact(value,['version','sites'])||![1,2].includes(value.version)
     ||!Array.isArray(value.sites)||value.sites.length<1||value.sites.length>16
     ||Object.keys(value.sites).length!==value.sites.length)fail();
+  if(value.version===2&&(!Number.isSafeInteger(nowMs)||nowMs<0))fail();
   const seen=new Set();
   const sites=value.sites.map(item=>{
-    if(!exact(item,['origin','mode'])||!['read','draft'].includes(item.mode))fail();
+    const expected=value.version===1?['origin','mode']:
+      ['origin','mode','pathPrefix','expiresAt','maxActions'];
+    if(!exact(item,expected)||!['read','draft'].includes(item.mode))fail();
     const origin=validateOrigin(item.origin);
     if(seen.has(origin.origin))fail();
     seen.add(origin.origin);
-    return Object.freeze({...origin,mode:item.mode});
+    if(value.version===1)return Object.freeze({...origin,mode:item.mode});
+    // Version 2 is operator-configured and time-limited, never a user-granted
+    // persistent permission. Draft grants expire within 24h; reads within 30d.
+    const prefix=item.pathPrefix;
+    if(typeof prefix!=='string'||prefix.length<1||prefix.length>128
+      ||!prefix.startsWith('/')||!prefix.endsWith('/')
+      ||prefix.includes('//')||prefix.includes('..')
+      ||/[%\\?#]/.test(prefix)
+      ||!/^\/(?:[A-Za-z0-9._~-]+\/)*$/.test(prefix))fail();
+    if(typeof item.expiresAt!=='string'
+       ||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(item.expiresAt))fail();
+    const expires=Date.parse(item.expiresAt);
+    const maxLifetime=item.mode==='read'?30*86400000:86400000;
+    if(!Number.isSafeInteger(expires)||new Date(expires).toISOString()!==item.expiresAt
+      ||expires<=nowMs||expires-nowMs>maxLifetime)fail();
+    if(!Number.isSafeInteger(item.maxActions)
+      ||(item.mode==='read'?item.maxActions!==0:
+          item.maxActions<1||item.maxActions>3))fail();
+    return Object.freeze({...origin,mode:item.mode,
+      pathPrefix:prefix,expiresAtMs:expires,maxActions:item.maxActions});
   });
   return Object.freeze(sites);
 }
-export function planSiteControl(request,rawGrants){
+export function planSiteControl(request,rawGrants,nowMs=Date.now()){
   if(!request||typeof request!=='object'||Array.isArray(request)
     ||Object.getPrototypeOf(request)!==Object.prototype)fail();
   const keys=Object.keys(request).sort().join(',');
@@ -68,11 +90,13 @@ export function planSiteControl(request,rawGrants){
   if(request.mode==='read'&&keys!=='mode,url')fail();
   if(request.mode==='draft'&&keys!=='actions,mode,url')fail();
   const url=validateSiteUrl(request.url);
-  const permit=parseSiteGrants(rawGrants).find(g=>g.origin===url.origin);
+  const permit=parseSiteGrants(rawGrants,nowMs).find(g=>g.origin===url.origin);
   if(!permit||(request.mode==='draft'&&permit.mode!=='draft'))fail();
+  if(permit.pathPrefix&&!url.pathname.startsWith(permit.pathPrefix))fail();
   let actions=[];
   if(request.mode==='draft'){
     if(!Array.isArray(request.actions)||request.actions.length<1||request.actions.length>5
+      ||(permit.maxActions!==undefined&&request.actions.length>permit.maxActions)
       ||Object.keys(request.actions).length!==request.actions.length)fail();
     actions=request.actions.map(x=>{
       if(!x||typeof x!=='object'||Array.isArray(x)||Object.getPrototypeOf(x)!==Object.prototype)fail();
@@ -91,6 +115,8 @@ export function planSiteControl(request,rawGrants){
       fail();
     });
   }
+  const bounded=permit.pathPrefix?{pathPrefix:permit.pathPrefix,
+    expiresAtMs:permit.expiresAtMs,maxActions:permit.maxActions}:{};
   return Object.freeze({url:url.href,origin:permit.origin,hostname:permit.hostname,
-    mode:request.mode,actions:Object.freeze(actions)});
+    mode:request.mode,actions:Object.freeze(actions),...bounded});
 }
