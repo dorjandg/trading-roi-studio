@@ -78,7 +78,8 @@ export function parseSiteGrants(raw,nowMs=Date.now()){
       ||!prefix.startsWith('/')||!prefix.endsWith('/')
       ||prefix.includes('//')||prefix.includes('..')
       ||/[%\\?#]/.test(prefix)
-      ||!/^\/(?:[A-Za-z0-9._~-]+\/)*$/.test(prefix))fail();
+      ||!/^\/(?:[A-Za-z0-9._~-]+\/)*$/.test(prefix)
+      ||/(?:^|\/)(?:api|admin|auth|login|logout|token|delete|remove|save|submit|order|checkout|buy|purchase|transfer|confirm|upload|download)(?:\/|$)/i.test(prefix))fail();
     if(typeof item.expiresAt!=='string'
        ||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(item.expiresAt))fail();
     const expires=Date.parse(item.expiresAt);
