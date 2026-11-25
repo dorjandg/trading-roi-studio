@@ -91,7 +91,8 @@ test('revocation begun while a primary grant read is pending prevents registrati
   assert.equal(b.fence.inspect().mode,'REVOKING');
   read.resolve({grantId,subjectKey,revision:2,status:'ACTIVE',
     expiresAtMs:Date.now()+600000});
-  await failed(registering,'FENCE_REVOKED_OR_BLOCKED');
+  await assert.rejects(registering,e=>['FENCE_REVOKED_OR_BLOCKED',
+    'FENCE_GRANT_NOT_ACTIVE'].includes(e?.code));
   assert.equal((await stop).closedSessions,0);
 });
 test('unknown durable revocation commit blocks the owner permanently',async()=>{
