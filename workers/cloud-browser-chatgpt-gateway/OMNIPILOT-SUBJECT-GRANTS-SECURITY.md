@@ -1,0 +1,89 @@
+# OmniPilot OAuth-subject grant isolation — development handover
+
+Status: **isolated source and synthetic tests only. Not deployed.**
+
+The new modules are deliberately NOT imported by the live gateway entrypoint
+or MCP forwarding handler. They do not add tools, expose endpoints, access OAuth
+credentials, update storage, authorize websites, or affect the current nine-tool
+OmniPilot staging connection.
+
+## Trust boundaries
+
+1. The existing OAuthProvider validates the access token, scopes and audience.
+   Google OIDC verifies issuer, nonce, Google client, and the allowed login.
+   Identity for future grants may come ONLY from the verified OAuthProvider
+   ctx.props.userId, never HTTP headers, MCP tool arguments or browser content.
+2. A separate server-managed HMAC key converts the verified Google subject
+   and canonical issuer into a pseudonymous subject key. Never log raw IDs,
+   email addresses, OAuth tokens, form values, cookies or passwords.
+3. The OAuth scopes mcp:read, mcp:site.read and mcp:site.interact are
+   necessary but insufficient. Approval also requires a current, subject-bound
+   grant narrower than the existing operator-controlled v2 site policy.
+4. Operator approval must be independently verified. The approver cannot be
+   the same subject as the grant recipient. The existing single-account
+   Google login does NOT yet support independent operator approval.
+5. Per-user grants may never widen the exact HTTPS origin, slash-terminated
+   path prefix, expiration or non-submitting action budget. Protected Finance,
+   production and private infrastructure origins remain hard-denied.
+6. The backend Cloudflare Access service token is not a user identity.
+   Enforce all subject grants at the verified OAuth gateway before forwarding.
+
+## Lifecycle and audit
+
+The pure ledger supports REQUESTED, APPROVED, DENIED and REVOKED transitions.
+The requester can only request its own grant. Independent operator approval
+requires the exact current revision and a still-active global site policy.
+The grant owner or verified operator may revoke; a duplicate revocation does
+not create another audit event or reinstate permission.
+
+Audit events are HMAC-linked with an audit key separate from the subject-key
+key. They contain only pseudonymous actor/subject keys, opaque grant/event IDs,
+revision, event type, time, previous hash, target digest and immutable terms
+digest. The chain detects modification, truncation, incorrect ordering, or
+attempted grant widening. It never includes raw IDs, emails, credentials,
+screenshots or browser text.
+
+Revocation prevents subsequent fresh authorizations. It DOES NOT YET cancel
+a browser operation already in flight; an ownership/revocation fence and
+session cancellation are required before promising immediate in-flight abort.
+
+## Isolated storage and deployment restrictions
+
+The migration at migrations/0001_omnipilot_subject_grants.sql is a proposal
+only and was NEVER applied. It creates new OmniPilot-specific grant and audit
+tables with compare-and-swap revision constraints, append-only audit triggers,
+and a unique open grant per subject and origin. The separate adapter at
+src/omnipilot-subject-store.mjs requires a dedicated isolated D1 binding,
+uses parameterized SQL, and reads through withSession('first-primary').
+Uncertain commits are never blindly retried.
+
+Do not apply the migration to any Finance, production, existing browser audit
+or OAuth KV database. Do not add a binding to existing staging until separately
+reviewed. Do not insert a broad grant into existing public site controls.
+
+## Next secure integration gate
+
+1. Provision an independent, isolated OmniPilot grant database and deploy the
+   reviewed schema there only. Keep Finance D1 and all existing services intact.
+2. Install separate subject-HMAC and audit-HMAC secrets through an authorized,
+   non-exfiltrating secret workflow, never source or OAuth KV.
+3. Verify a distinct operator identity through a supported trusted OAuth/
+   policy channel, not a user-supplied isAdmin flag. Define explicit consent.
+4. Connect the pure grant authorization and store to the OAuth gateway with a
+   separate disabled-by-default feature flag. Enforce fresh reads for every
+   action and preserve original OAuth scopes and tools.
+5. Add transactional revocation barriers for in-flight browser actions,
+   request-level audit receipts, reliable rollback and append-only off-system
+   audit anchoring. Retention and access review remain outstanding.
+6. Only after all tests and independent review consider enabling any new
+   website grant. Authenticated browser profiles, vaults, form submissions and
+   persistent writes remain excluded.
+
+## Tests
+
+The isolated workflow in .github/workflows/api1-omnipilot-subject-grants.yml
+runs Node synthetic tests for subject binding, operator approval, revocation,
+cross-subject denial, stale revision checks, audit integrity, fresh-primary
+reads and storage failure safety. It also runs Python SQLite in-memory
+tests for database triggers and atomic update semantics, plus a Wrangler
+dry-run build. No deployed service, credential or Finance database is touched.
