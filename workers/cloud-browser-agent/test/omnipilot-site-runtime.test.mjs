@@ -30,6 +30,7 @@ test('read-only script is self-contained with strict GET, exact-origin and popup
   assert.match(script,/u\.origin!==origin/);
   assert.match(script,/page\.screenshot/);
   assert.match(script,/SITE_REDIRECT_REFUSED/);
+  assert.match(script,/current\.hash='';/); // SPA fragments are normalized, not treated as cross-origin.
   assert.match(script,/submitted:false,persisted:false/);
   const callable=Function('return ('+script+')')();
   assert.equal(typeof callable,'function');
