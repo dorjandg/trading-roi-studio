@@ -26,7 +26,7 @@ test('read-only script is self-contained with strict GET, exact-origin and popup
   const script=createSiteControlScript(read(),grants);
   assert.doesNotMatch(script,/allowedDomains/); // host guard enforced at acquire, not script.
   assert.match(script,/context\.route/);
-  assert.match(script,/r\.method\(\)/);
+  assert.match(script,/req\.method\(\)/);
   assert.match(script,/u\.origin!==origin/);
   assert.match(script,/page\.screenshot/);
   assert.match(script,/SITE_REDIRECT_REFUSED/);
