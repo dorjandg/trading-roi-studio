@@ -37,8 +37,9 @@ export async function issueOperatorNonce({
   const expiresAtMs=nowMs+5*MINUTE;
   if(!Number.isSafeInteger(expiresAtMs))fail('NONCE_STORE_UNAVAILABLE');
   try{
-    await db.prepare(insertSql).bind(nonceDigest,operatorKey,sessionKey,
+    const saved=await db.prepare(insertSql).bind(nonceDigest,operatorKey,sessionKey,
       nowMs,expiresAtMs,'ISSUED').run();
+    if(saved?.success!==true)fail('NONCE_ISSUE_UNCERTAIN_NO_RETRY');
   }catch{
     // Unknown commit outcome: do not auto-retry or return an unverified token.
     fail('NONCE_ISSUE_UNCERTAIN_NO_RETRY');
