@@ -61,6 +61,47 @@ Do not apply the migration to any Finance, production, existing browser audit
 or OAuth KV database. Do not add a binding to existing staging until separately
 reviewed. Do not insert a broad grant into existing public site controls.
 
+## Independent operator evidence (new isolated module)
+
+The prototype at `src/omnipilot-operator-proof.mjs` checks an RS256
+Google-signed ID token with a pinned/trusted Google verification key, exact
+configured OAuth audience, allowed issuer, short-lived issuance/expiry,
+verified email, and a server-issued one-time nonce. It derives a pseudonymous
+Google subject key using the same dedicated HMAC as the grant recipient.
+A server-owned operator allowlist must contain that key, and operator
+and recipient must be **different Google subject keys**.
+
+This module is not a second live sign-in flow: the existing gateway allows
+one Google account, so a genuinely independent operator still requires a
+separate, reviewed login and consent path. An operator cannot self-assign
+its own role, supply a verification key or bypass the nonce from browser
+content. The nonce-consumption callback in this module must be backed by an
+isolated atomic one-time store **before** any production use. Current tests
+use generated synthetic RSA key pairs and fake one-time nonce state; no
+actual Google credentials or real operator identity were used.
+
+## Browser-session cancellation fence (new synthetic module)
+
+The pure `src/omnipilot-revocation-fence.mjs` models a per-grant serialized
+owner with fresh authorization reads and exact session ownership.
+Revocation blocks new registrations/actions **before** committing the grant's
+revoked state. Once the durable revision update is confirmed, it closes all
+known owned sessions. Unknown storage results or incomplete session cleanup
+fail closed and never announce success. Any action already running when
+revocation begins cannot return a successful result afterward.
+
+The coordinator is **in-memory and synthetic**. It does **not** establish
+durable cross-worker serialization, distributed revocation, restart recovery,
+or rollback of already executed browser effects. Build a crash-consistent
+single-owner coordinator with durable epochs and observed close receipts
+before enabling the module in an actual browser execution path. The
+revocation guarantee currently remains **no new grants/actions after a
+confirmed fresh read**, not instant undo of any in-flight website action.
+
+The isolated GitHub workflow also asserts none of the new modules is imported
+from live `index.mjs` or `forward.mjs`, and that the existing gateway
+Wrangler configuration has no new grant-database binding.
+
 ## Next secure integration gate
 
 1. Provision an independent, isolated OmniPilot grant database and deploy the
