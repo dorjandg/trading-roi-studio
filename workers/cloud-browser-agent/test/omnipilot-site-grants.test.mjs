@@ -48,6 +48,9 @@ test('block private/IP, production and Finance sites even if operator JSON is ma
     'https://127.0.0.1','https://[::1]','https://service.internal',
     'https://device.local','https://foo.nip.io','https://a.sslip.io',
     'https://fin-kac.pages.dev','https://trading-roi-studio.pages.dev',
+    'https://hub.immamarketing.com','https://www.glam-lingerie.com',
+    'https://cloud-browser-agent-stage.dorjan-gjoni-dg.workers.dev',
+    'https://finance-mcp-gateway-stage.dorjan-gjoni-dg.workers.dev',
     'https://a.xip.io','https://xn--bcher-kva.example','https://www.wikipedia.org:444',
     'https://www.wikipedia.org/','https://username:secret@www.wikipedia.org'])
     refused(()=>validateOrigin(origin));
