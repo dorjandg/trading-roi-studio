@@ -37,7 +37,7 @@ export async function onRequest({request,env}){
  const clean={id:p.id};
  for(const key of ['name','description','parent','types','website','image_url'])if(typeof p[key]==='string')clean[key]=p[key].trim();
  if(!clean.name||clean.name.length>300||JSON.stringify(clean).length>20000)return json({error:'Invalid name or record size'},400);
- if(clean.image_url&&!/^\/images\/catalog\/[a-zA-Z0-9._-]+$/.test(clean.image_url))return json({error:'Invalid photo URL'},400);
+ if(clean.image_url&&!/^\/(?:images\/catalog\/[a-zA-Z0-9._-]+|api\/product-image\/[a-f0-9-]{36}\.(?:jpg|png|webp|gif|avif))$/i.test(clean.image_url))return json({error:'Invalid photo URL'},400);
  if(kind==='categories'){
  if(clean.parent===clean.id||((roots.includes(clean.id))&&clean.parent))return json({error:'Invalid parent'},400);
  if(clean.parent&&!roots.includes(clean.parent)){
