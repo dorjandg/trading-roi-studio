@@ -1,5 +1,7 @@
 import { createHandler, authorized } from "./handler.mjs";
 import { validateManagedPilot, executeManagedPilot } from "./omnipilot-managed-pilot.mjs";
+import { parseSiteGrants, planSiteControl } from "./omnipilot-site-grants.mjs";
+import { executeSiteControl } from "./omnipilot-site-runtime.mjs";
 import { validateTarget, validateReadOnlyLink } from "./policy.mjs";
 import { validateEditPreviewRequest } from "./edit-preview.mjs";
 
@@ -28,6 +30,29 @@ const pilotTool = {
       }}}
   }}
 };
+const siteReadTool={
+  name:"omnipilot_site_read",
+  description:"Read a separately permitted public HTTPS site using a hostname-guarded browser session, returning page headings and a bounded screenshot. No form values, submissions or saved changes. Disabled without an explicit site grant and feature flag.",
+  inputSchema:{type:"object",additionalProperties:false,required:["url"],properties:{
+    url:{type:"string",minLength:9,maxLength:1024}
+  }}
+};
+const siteDraftTool={
+  name:"omnipilot_site_draft",
+  description:"Opt-in DOM-only drafting on an explicitly approved origin: non-sensitive text/search fills, harmless key presses, same-origin navigation links or checkboxes outside forms. No Enter, form submission, credential fields, purchases or persistent write claims. Requires separate interaction OAuth consent.",
+  inputSchema:{type:"object",additionalProperties:false,required:["url","actions"],properties:{
+    url:{type:"string",minLength:9,maxLength:1024},
+    actions:{type:"array",minItems:1,maxItems:5,items:{type:"object",additionalProperties:false,
+      required:["op","selector"],properties:{
+        op:{enum:["fill","click","press","wait"]},selector:{type:"string",minLength:1,maxLength:120},
+        value:{type:"string",minLength:1,maxLength:256},key:{enum:["Tab","Escape"]}
+      }}}
+  }}
+};
+function siteControlEnabled(env){
+  if(env.OMNIPILOT_SITE_CONTROL_ENABLED!=="true")return false;
+  try {parseSiteGrants(env.OMNIPILOT_SITE_GRANTS);return true;}catch{return false;}
+}
 const tools = [
   {name:"browser_agent_status",description:"Read staging browser-agent status; no website interactions.",inputSchema:{type:"object",properties:{},additionalProperties:false}},
   {name:"browser_page_links",description:"Discover up to 30 unique same-origin HTTPS links on an approved page; no clicks or forms. Query strings removed.",inputSchema:{type:"object",properties:{url:{type:"string"}},required:["url"],additionalProperties:false}},
@@ -51,7 +76,7 @@ export function createMcpHandler(launch) {
     const error=(code,message)=>json({jsonrpc:"2.0",id:rpc.id??null,error:{code,message}});
     if(rpc.method==="initialize")return reply({protocolVersion:"2025-06-18",capabilities:{tools:{listChanged:false}},serverInfo:{name:"cloud-browser-agent-staging",version:"0.1.0"}});
     if(rpc.method==="ping")return reply({});
-    if(rpc.method==="tools/list")return reply({tools:env.OMNIPILOT_MANAGED_PILOT_ENABLED==="true"?[...tools,pilotTool]:tools});
+    if(rpc.method==="tools/list")return reply({tools:[...tools,...(env.OMNIPILOT_MANAGED_PILOT_ENABLED==="true"?[pilotTool]:[]),...(siteControlEnabled(env)?[siteReadTool,siteDraftTool]:[])]});
     if(rpc.method!=="tools/call")return error(-32601,"Method not found");
     const name=rpc.params?.name;
     const args=rpc.params?.arguments??{};
@@ -60,6 +85,15 @@ export function createMcpHandler(launch) {
       if(env.OMNIPILOT_MANAGED_PILOT_ENABLED!=="true")return error(-32602,"Unknown tool or invalid arguments");
       try{validateManagedPilot(args);}catch{return error(-32602,"Managed pilot arguments refused");}
       const outcome=await executeManagedPilot(env.BROWSER,args);
+      return reply({...pilotContent(outcome),isError:outcome.ok!==true});
+    }
+    if(name==="omnipilot_site_read"||name==="omnipilot_site_draft"){
+      if(!siteControlEnabled(env))return error(-32602,"Site control disabled");
+      const mode=name==="omnipilot_site_read"?"read":"draft";
+      const request=mode==="read"?{mode,url:args.url}:{mode,url:args.url,actions:args.actions};
+      try{planSiteControl(request,env.OMNIPILOT_SITE_GRANTS);}
+      catch{return error(-32602,"Site or action has no explicit authorization");}
+      const outcome=await executeSiteControl(env.BROWSER,request,env.OMNIPILOT_SITE_GRANTS);
       return reply({...pilotContent(outcome),isError:outcome.ok!==true});
     }
     if(name==="browser_agent_status"&&Object.keys(args).length===0){
