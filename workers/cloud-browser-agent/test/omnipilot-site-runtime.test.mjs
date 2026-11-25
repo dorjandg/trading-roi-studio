@@ -24,7 +24,7 @@ const browser=(response=payload())=>{
 };
 test('read-only script is self-contained with strict GET, exact-origin and popup guards',()=>{
   const script=createSiteControlScript(read(),grants);
-  assert.match(script,/allowedDomains/)==null; // host guard enforced at acquire, not script.
+  assert.doesNotMatch(script,/allowedDomains/); // host guard enforced at acquire, not script.
   assert.match(script,/context\.route/);
   assert.match(script,/r\.method\(\)/);
   assert.match(script,/u\.origin!==origin/);
