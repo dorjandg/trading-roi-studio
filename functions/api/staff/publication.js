@@ -16,9 +16,10 @@ export async function onRequestPut({request,env}){
   const colorMain=(Array.isArray(gallery)&&gallery[0])||(firstColor&&product.color_images?.[firstColor]);
   const hasMain=Boolean((Array.isArray(product.images)&&product.images.length)||product.image_url||product.image);
   if(!hasMain&&colorMain){product.image_url=colorMain;product.images=[colorMain]}
-  if(status==='published'&&(!String(product.name||'').trim()||!String(product.category||'').trim()||!Number.isFinite(Number(product.price))||Number(product.price)<0||!(Array.isArray(product.images)&&product.images.length||product.image_url||product.image)))return reply({error:'Name, collection, valid price and image are required before publishing'},400);
+  if(status==='published'&&(!String(product.name||'').trim()||!String(product.brand||'').trim()||!String(product.category||'').trim()||!String(product.price??'').trim()||!Number.isFinite(Number(product.price))||Number(product.price)<0||!(Array.isArray(product.images)&&product.images.length||product.image_url||product.image)))return reply({error:'Name, brand, collection, valid price and image are required before publishing. Your draft is preserved.'},400);
   const updated={...product,catalog_status:status};
-  await env.GLAM_DB.prepare('UPDATE glam_catalog SET data=?,status=?,updated_at=? WHERE id=?').bind(JSON.stringify(updated),status,new Date().toISOString(),id).run();
+  const changed=await env.GLAM_DB.prepare('UPDATE glam_catalog SET data=?,status=?,updated_at=? WHERE id=? AND data=? AND status=?').bind(JSON.stringify(updated),status,new Date().toISOString(),id,row.data,row.status).run();
+  if(changed.meta?.changes===0)return reply({error:'Product changed during publication; reload and retry'},409);
   return reply({ok:true,id,status});
  }catch{return reply({error:'Could not change publication status'},503)}
 }
