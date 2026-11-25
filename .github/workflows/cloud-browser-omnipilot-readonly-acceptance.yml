@@ -59,7 +59,7 @@ jobs:
           const init=await mcp(gateway+'/mcp',{jsonrpc:'2.0',id:1,method:'initialize',params:{protocolVersion:'2025-06-18',capabilities:{},clientInfo:{name:'omnipilot-readonly-acceptance',version:'1'}}});
           check('public-initialize',()=>init.status===200&&init.body?.result?.serverInfo?.name==='cloud-browser-chatgpt-stage');
           const list=await mcp(gateway+'/mcp',{jsonrpc:'2.0',id:2,method:'tools/list',params:{}});
-          check('public-six-read-only-plus-demo-scope',()=>{const all=list.body?.result?.tools||[];const demo=all.find(t=>t.name==='omnipilot_managed_demo');return list.status===200&&all.length===7&&demo?.annotations?.readOnlyHint===false&&demo?._meta?.securitySchemes?.[0]?.scopes?.[0]==='mcp:demo.interact'&&all.filter(t=>t.name!=='omnipilot_managed_demo').every(t=>t.annotations?.readOnlyHint===true)});
+          check('public-six-read-only-plus-demo-scope',()=>{const all=list.body?.result?.tools||[];const demo=all.find(t=>t.name==='omnipilot_managed_demo');return list.status===200&&all.length===7&&demo?.annotations?.readOnlyHint===false&&demo?._meta?.securitySchemes?.[0]?.scopes?.includes('mcp:read')&&demo?._meta?.securitySchemes?.[0]?.scopes?.includes('mcp:demo.interact')&&all.filter(t=>t.name!=='omnipilot_managed_demo').every(t=>t.annotations?.readOnlyHint===true)});
           const guest=await mcp(gateway+'/mcp',{jsonrpc:'2.0',id:3,method:'tools/call',params:{name:'omnipilot_managed_demo',arguments:{url:'https://demo.playwright.dev/todomvc/',actions:[{op:'click',selector:'body'}]}}});
           check('gateway-unauthorized-rejected',()=>guest.status===401);
           const without=await req(agent+'/health',{headers:serviceHeaders});
