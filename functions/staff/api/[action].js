@@ -25,12 +25,13 @@ async function verifyStaff({request,next}){
    const origin=request.headers.get('origin');
    if(origin!==new URL(request.url).origin)return reject(403,'Cross-origin changes are not permitted');
   }
-  return next();
+  return next(String(claims.email).toLowerCase());
  }catch{return reject(401,'Could not verify staff authentication')}
 }
 
 // Staff dashboard and API share the existing /staff/* Access application.
 // The legacy /api/staff/* routes remain protected by their original audience.
+import {activity,auditStaff} from '../../_shared/glam-audit.js';
 import {onRequestGet as catalog} from '../../api/staff/catalog.js';
 import {onRequestPut as product} from '../../api/staff/product.js';
 import {onRequestPost as upload} from '../../api/staff/upload.js';
@@ -40,10 +41,11 @@ import {onRequest as directory} from '../../api/staff/directory.js';
 const handlers=new Map([['GET catalog',catalog],['PUT product',product],['POST upload',upload],['PUT publication',publication],['DELETE delete',remove],['GET directory',directory],['PUT directory',directory],['DELETE directory',directory]]);
 export async function onRequest(context){
  const {request}=context;
- return verifyStaff({request,next:()=>{
-  const action=new URL(request.url).pathname.match(/^\/staff\/api\/(catalog|product|upload|publication|delete|directory)\/?$/)?.[1];
+ return verifyStaff({request,next:(actor)=>{
+  const action=new URL(request.url).pathname.match(/^\/staff\/api\/(catalog|product|upload|publication|delete|directory|activity)\/?$/)?.[1];
   if(!action)return reject(404,'Unknown staff operation');
+  if(action==='activity')return activity(context,actor);
   const handler=handlers.get(request.method+' '+action);
-  return handler?handler(context):reject(405,'Method not allowed');
+  return handler?auditStaff(context,actor,action,()=>handler(context)):reject(405,'Method not allowed');
  }});
 }
