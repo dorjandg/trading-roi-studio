@@ -3,6 +3,23 @@ const MAX_BODY=4096;
 const json=(value,status)=>new Response(JSON.stringify(value),{status,headers:{"content-type":"application/json","cache-control":"no-store","x-content-type-options":"nosniff"}});
 const invalid=(msg)=>json({jsonrpc:"2.0",id:null,error:{code:-32600,message:msg}},400);
 
+const INTERACTION_RESOURCE="https://cloud-browser-chatgpt-stage.dorjan-gjoni-dg.workers.dev/.well-known/oauth-protected-resource/mcp";
+// The MCP tool result challenge is needed for ChatGPT to request incremental
+// OAuth consent. A bare HTTP 403 denies safely but cannot trigger step-up auth.
+const requestInteractionConsent=(id)=>json({
+  jsonrpc:"2.0",id:id??null,
+  result:{
+    content:[{type:"text",text:"OmniPilot needs a separate OAuth permission for its public demonstration actions."}],
+    isError:true,
+    _meta:{
+      "mcp/www_authenticate":[
+        'Bearer resource_metadata="'+INTERACTION_RESOURCE+'", scope="mcp:read mcp:demo.interact", error="insufficient_scope", error_description="Authorize OmniPilot demonstration interaction separately"'
+      ]
+    }
+  }
+},200);
+
+
 export function validateRpc(value){
   if(!value||typeof value!=="object"||Array.isArray(value)||value.jsonrpc!=="2.0"||typeof value.method!=="string")return false;
   if(["initialize","ping","tools/list","notifications/initialized"].includes(value.method))return true;
@@ -30,9 +47,12 @@ export async function forwardAuthorizedMcp(request,env,authorizedUser,fetcher=fe
   let rpc;try{rpc=JSON.parse(body)}catch{return invalid("Invalid JSON");}
   if(!validateRpc(rpc))return invalid("Unsupported or invalid MCP action");
   if(rpc.method==="tools/call"&&rpc.params.name==="omnipilot_managed_demo"){
-    if(env.OMNIPILOT_MANAGED_PILOT_ENABLED!=="true"||
-      !Array.isArray(authorizedUser.scopes)||!authorizedUser.scopes.includes("mcp:demo.interact"))
-      return json({error:"Separate demonstration-interaction scope required"},403);
+    if(env.OMNIPILOT_MANAGED_PILOT_ENABLED!=="true")
+      return json({error:"Demonstration interaction is disabled"},403);
+    if(!Array.isArray(authorizedUser.scopes)||
+       !authorizedUser.scopes.includes("mcp:read")||
+       !authorizedUser.scopes.includes("mcp:demo.interact"))
+      return requestInteractionConsent(rpc.id);
   }
   const response=await fetcher(BASE+"/mcp",{
     method:"POST",
