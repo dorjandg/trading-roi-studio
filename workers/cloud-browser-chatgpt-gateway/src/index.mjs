@@ -33,7 +33,7 @@ const oauthProvider = new OAuthProvider({
   defaultHandler:authHandler,
   authorizeEndpoint:"/authorize",
   tokenEndpoint:"/oauth/token",
-  scopesSupported:["mcp:read","mcp:demo.interact","offline_access"],
+  scopesSupported:["mcp:read","mcp:demo.interact","mcp:site.read","mcp:site.interact","offline_access"],
   requiredScopes:["mcp:read"],
   clientIdMetadataDocumentEnabled:true,
   resourceMetadata:{resource:RESOURCE,authorization_servers:[ORIGIN]}
