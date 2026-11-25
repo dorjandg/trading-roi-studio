@@ -1,4 +1,3 @@
-/* Public repository: safe-to-share URLs only. */
 window.PERSONAL_HUB_DATA = {
   "version": "1.5.1",
   "updated": "2026-11-25",
@@ -118,10 +117,10 @@ window.PERSONAL_HUB_DATA = {
       "order": 3.3
     },
     {
-      "id": "guests",
-      "name": "New Guest Websites",
+      "id": "pavin",
+      "name": "Pavin Caffè",
       "icon": "grid",
-      "description": "Recently created guest projects",
+      "description": "Coffee brand website",
       "order": 3.3
     }
   ],
@@ -1034,7 +1033,7 @@ window.PERSONAL_HUB_DATA = {
       "symbol": "PC",
       "accent": "green",
       "type": "Guest preview",
-      "category": "guests"
+      "category": "pavin"
     }
   ]
 };
