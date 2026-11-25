@@ -39,7 +39,7 @@ function selector(value){
   safeString(value,120);
   // Exact same-origin link selectors may contain a slash, but not wildcards,
   // query strings, fragments, encoded paths, or parent-directory segments.
-  const exactLink=/^a\[href="\/[a-zA-Z0-9_:./\-]{1,95}"\]$/.test(value)&&!value.includes('..');
+  const exactLink=/^a\[href="\/[a-zA-Z0-9_:.\/\-]{1,95}"\]$/.test(value)&&!value.includes('..');
   if(!exactLink&&!/^[a-zA-Z0-9_#. >:[\]="'\-]+$/.test(value))fail();
   if(/(?:password|secret|token|otp|credit|card|csrf|submit|payment|hidden|file|confirm|delete|purchase)/i.test(value))fail();
   return value;
