@@ -28,6 +28,6 @@ export async function onRequest(context){
    if(origin!==new URL(request.url).origin)return reject(403,'Cross-origin changes are not permitted');
   }
   const action=new URL(request.url).pathname.match(/^\/api\/staff\/(catalog|product|upload|publication|delete|directory)\/?$/)?.[1];
-  return action?auditStaff(context,String(claims.email).toLowerCase(),action,()=>next()):next();
+  return action?auditStaff(context,String(claims.email).toLowerCase(),action==='product'&&request.method==='DELETE'?'photo_delete':action,()=>next()):next();
  }catch{return reject(401,'Could not verify staff authentication')}
 }

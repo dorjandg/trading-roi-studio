@@ -33,12 +33,12 @@ async function verifyStaff({request,next}){
 // The legacy /api/staff/* routes remain protected by their original audience.
 import {activity,auditStaff} from '../../_shared/glam-audit.js';
 import {onRequestGet as catalog} from '../../api/staff/catalog.js';
-import {onRequestPut as product} from '../../api/staff/product.js';
+import {onRequestPut as product,onRequestDelete as photoDelete} from '../../api/staff/product.js';
 import {onRequestPost as upload} from '../../api/staff/upload.js';
 import {onRequestPut as publication} from '../../api/staff/publication.js';
 import {onRequestDelete as remove} from '../../api/staff/delete.js';
 import {onRequest as directory} from '../../api/staff/directory.js';
-const handlers=new Map([['GET catalog',catalog],['PUT product',product],['POST upload',upload],['PUT publication',publication],['DELETE delete',remove],['GET directory',directory],['PUT directory',directory],['DELETE directory',directory]]);
+const handlers=new Map([['GET catalog',catalog],['PUT product',product],['DELETE product',photoDelete],['POST upload',upload],['PUT publication',publication],['DELETE delete',remove],['GET directory',directory],['PUT directory',directory],['DELETE directory',directory]]);
 export async function onRequest(context){
  const {request}=context;
  return verifyStaff({request,next:(actor)=>{
@@ -46,6 +46,6 @@ export async function onRequest(context){
   if(!action)return reject(404,'Unknown staff operation');
   if(action==='activity')return activity(context,actor);
   const handler=handlers.get(request.method+' '+action);
-  return handler?auditStaff(context,actor,action,()=>handler(context)):reject(405,'Method not allowed');
+  return handler?auditStaff(context,actor,action==='product'&&request.method==='DELETE'?'photo_delete':action,()=>handler(context)):reject(405,'Method not allowed');
  }});
 }

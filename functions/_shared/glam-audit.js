@@ -2,7 +2,7 @@
 const json=(body,status=200)=>new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json','cache-control':'private, no-store','x-content-type-options':'nosniff'}});
 const OWNER='dorjan.gjoni.dg@gmail.com';
 const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
-const ACTIONS=new Set(['upload','product','publication','delete','directory','catalog']);
+const ACTIONS=new Set(['upload','product','publication','delete','directory','catalog','photo_delete']);
 const CLIENT_PHASES=new Set(['client_started','client_failed','client_completed']);
 const CLIENT_REASONS=new Set(['missing_fields','unsupported_format','too_large','empty_file','compression_failed','network_or_session','upload_rejected','save_failed','selection_changed','busy','validation','http_error']);
 const text=(v,max)=>typeof v==='string'?v.slice(0,max):null;
