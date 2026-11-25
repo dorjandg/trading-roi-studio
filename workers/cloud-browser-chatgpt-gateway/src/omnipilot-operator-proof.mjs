@@ -15,7 +15,7 @@ const keyIsTrusted=k=>k&&((typeof k==='function')||
   (typeof k==='object'&&typeof k.type==='string'));
 export async function verifyIndependentOperator({
   idToken,expectedNonce,requesterSubjectKey,configuration,
-  consumeNonce,nowMs=Date.now(),verify=jwtVerify
+  consumeNonce,nowMs=Date.now()
 }){
   if(typeof idToken!=='string'||idToken.length<40||idToken.length>8192||
     !/^[A-Za-z0-9_.-]+$/.test(idToken)||
@@ -29,12 +29,11 @@ export async function verifyIndependentOperator({
     !keyIsTrusted(configuration.googleJwks)||
     !configuration.subjectHmacKey||!Array.isArray(configuration.operatorKeys)||
     configuration.operatorKeys.length<1||configuration.operatorKeys.length>8||
-    configuration.operatorKeys.some(v=>!HASH.test(v))||
-    typeof verify!=='function')fail('OPERATOR_PROOF_UNCONFIGURED');
+    configuration.operatorKeys.some(v=>!HASH.test(v)))fail('OPERATOR_PROOF_UNCONFIGURED');
 
   let payload;
   try{
-    ({payload}=await verify(idToken,configuration.googleJwks,{
+    ({payload}=await jwtVerify(idToken,configuration.googleJwks,{
       issuer:ISSUERS,audience:configuration.googleClientId,
       algorithms:['RS256'],clockTolerance:0,
       currentDate:new Date(nowMs)
