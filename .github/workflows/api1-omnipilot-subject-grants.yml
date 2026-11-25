@@ -6,7 +6,9 @@ on:
     paths:
       - ".github/workflows/api1-omnipilot-subject-grants.yml"
       - "workers/cloud-browser-chatgpt-gateway/src/omnipilot-subject-*.mjs"
+      - "workers/cloud-browser-chatgpt-gateway/src/omnipilot-operator-*.mjs"
       - "workers/cloud-browser-chatgpt-gateway/test/omnipilot-subject-*.test.mjs"
+      - "workers/cloud-browser-chatgpt-gateway/test/omnipilot-operator-*.test.mjs"
       - "workers/cloud-browser-chatgpt-gateway/migrations/0001_omnipilot_subject_grants.sql"
       - "workers/cloud-browser-chatgpt-gateway/test/omnipilot_subject_sqlite_test.py"
       - "workers/cloud-browser-agent/src/omnipilot-site-grants.mjs"
@@ -27,10 +29,12 @@ jobs:
       - name: Validate OAuth subject and grant lifecycle modules
         working-directory: workers/cloud-browser-chatgpt-gateway
         run: |
+          npm install --no-package-lock --ignore-scripts --no-audit --no-fund
           node --check src/omnipilot-subject-authority.mjs
           node --check src/omnipilot-subject-ledger.mjs
           node --check src/omnipilot-subject-store.mjs
-          node --test test/omnipilot-subject-authority.test.mjs test/omnipilot-subject-ledger.test.mjs test/omnipilot-subject-store.test.mjs
+          node --check src/omnipilot-operator-proof.mjs
+          node --test test/omnipilot-subject-authority.test.mjs test/omnipilot-subject-ledger.test.mjs test/omnipilot-subject-store.test.mjs test/omnipilot-operator-proof.test.mjs
       - name: Prove grant CAS, append-only audit and revocation in isolated SQLite memory
         working-directory: workers/cloud-browser-chatgpt-gateway
         run: |
