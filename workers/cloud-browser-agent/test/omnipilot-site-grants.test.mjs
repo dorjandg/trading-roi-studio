@@ -101,3 +101,21 @@ test('untrusted objects cannot execute getters or inherited fields during planni
   refused(()=>planSiteControl(Object.assign(Object.create({mode:'read'}),{
     url:'https://www.wikipedia.org/'}),policy));
 });
+
+test('a granted site may draft a uniquely targeted same-origin anchor without wildcard or query',()=>{
+  const p=JSON.stringify({version:1,sites:[{origin:'https://en.wikipedia.org',mode:'draft'}]});
+  const plan=planSiteControl({mode:'draft',
+    url:'https://en.wikipedia.org/wiki/Headless_browser',
+    actions:[{op:'click',selector:'a[href="/wiki/Category:Web_browsers"]'}]},p);
+  assert.deepEqual(plan.actions,[{op:'click',selector:'a[href="/wiki/Category:Web_browsers"]'}]);
+  for(const selector of [
+    'a[href="/wiki/Foo?secret=x"]',
+    'a[href="/api/delete"]',
+    'a[href="/wiki/../admin"]',
+    'a[href="https://evil.example.com/"]'
+  ]){
+    refused(()=>planSiteControl({mode:'draft',
+      url:'https://en.wikipedia.org/wiki/Headless_browser',
+      actions:[{op:'click',selector}]},p));
+  }
+});
