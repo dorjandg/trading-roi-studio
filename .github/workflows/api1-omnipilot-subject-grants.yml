@@ -7,6 +7,8 @@ on:
       - ".github/workflows/api1-omnipilot-subject-grants.yml"
       - "workers/cloud-browser-chatgpt-gateway/src/omnipilot-subject-*.mjs"
       - "workers/cloud-browser-chatgpt-gateway/test/omnipilot-subject-*.test.mjs"
+      - "workers/cloud-browser-chatgpt-gateway/migrations/0001_omnipilot_subject_grants.sql"
+      - "workers/cloud-browser-chatgpt-gateway/test/omnipilot_subject_sqlite_test.py"
       - "workers/cloud-browser-agent/src/omnipilot-site-grants.mjs"
   workflow_dispatch:
 permissions:
@@ -28,6 +30,10 @@ jobs:
           node --check src/omnipilot-subject-authority.mjs
           node --check src/omnipilot-subject-ledger.mjs
           node --test test/omnipilot-subject-authority.test.mjs test/omnipilot-subject-ledger.test.mjs
+      - name: Prove grant CAS, append-only audit and revocation in isolated SQLite memory
+        working-directory: workers/cloud-browser-chatgpt-gateway
+        run: |
+          python3 -B -m unittest discover -s test -p 'omnipilot_subject_sqlite_test.py' -v
       - name: Confirm legacy OAuth tests and protected Worker dry-run build
         working-directory: workers/cloud-browser-chatgpt-gateway
         run: |
