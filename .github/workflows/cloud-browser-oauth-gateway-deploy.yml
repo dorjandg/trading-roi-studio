@@ -1,12 +1,8 @@
 name: Cloud Browser Agent — OAuth Gateway Staging Deploy
 # Staging-only opt-in enabled after Google account allowlist and isolated OAuth build checks.
+# Manual legacy credential-reinstallation path only. Existing staging OAuth
+# deployments use the separate secret-preserving code-only workflow.
 on:
-  push:
-    branches:
-      - feature/cloud-browser-agent-phase1
-    paths:
-      - "workers/cloud-browser-chatgpt-gateway/**"
-      - ".github/workflows/cloud-browser-oauth-gateway-deploy.yml"
   workflow_dispatch:
 permissions:
   contents: read
