@@ -144,7 +144,7 @@
       '<div class="hero-stats"><div class="stat"><b>'+links.length+'</b><small>Saved links</small></div><div class="stat"><b>'+categories.length+'</b><small>Collections</small></div><div class="stat"><b>'+state.favorites.size+'</b><small>Favorites</small></div></div></section>'+
       '<div class="disclosure-toolbar"><span>Collections are collapsed by default</span><div><button type="button" class="toggle-sections" data-sections="expand">Expand all</button><button type="button" class="toggle-sections" data-sections="collapse">Collapse all</button></div></div>'+
       '<section class="section"><div class="website-tabs" role="group" aria-label="Website ownership"><button type="button" class="filter-chip '+(state.guest?'':'active')+'" aria-pressed="'+!state.guest+'" data-nav="personal">My Websites</button><button type="button" class="filter-chip '+(state.guest?'active':'')+'" aria-pressed="'+!!state.guest+'" data-nav="guests">Guest Websites</button></div>'+
-      '<div class="website-category-row">'+(state.guest?["pizza","glam","jp-realty","gerti","vocal-mastery"]:["trading","finance","automation","education"]).map(id=>catButton(byCategory.get(id))).join("")+'</div></section>'+
+      '<div class="website-category-row">'+(state.guest?["pizza","glam","jp-realty","gerti","vocal-mastery","pavin"]:["trading","finance","automation","education"]).map(id=>catButton(byCategory.get(id))).join("")+'</div></section>'+
       disclosureSection("work","Work & Development","Colab, GitHub projects, Cloudflare and Google tools",work.length,
         '<div class="shortcut-grid">'+work.map(shortcut).join("")+'</div>',
         "All work tools",'data-category="worktools"')+
@@ -152,7 +152,7 @@
         '<div class="shortcut-grid">'+jj.map(shortcut).join("")+'</div>',
         "All communities",'data-category="community"')+
       disclosureSection("collections","Browse collections","Everything has a place",categories.length,
-        '<div class="collection-grid">'+categories.filter(c=>!["pizza","glam","jp-realty","gerti","vocal-mastery","workspaces"].includes(c.id)).map(catButton).join("")+'</div>')+
+        '<div class="collection-grid">'+categories.filter(c=>!["pizza","glam","jp-realty","gerti","vocal-mastery","pavin","workspaces"].includes(c.id)).map(catButton).join("")+'</div>')+
       (recents.length?disclosureSection("recent","Recently opened","Your recently visited links",recents.length,
         '<div class="shortcut-grid">'+recents.map(shortcut).join("")+'</div>',
         "See all",'data-nav="recent"'):"")+
