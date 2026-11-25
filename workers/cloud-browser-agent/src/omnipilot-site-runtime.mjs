@@ -4,11 +4,18 @@ import {planSiteControl,validateSiteUrl} from './omnipilot-site-grants.mjs';
 const siteBrowserScript=async ({page,context})=>{
   const plan = null; // Exactly replaced with JSON-encoded validated plan.
   const origin=new URL(plan.url).origin;
+  const expired=()=>Number.isSafeInteger(plan.expiresAtMs)&&Date.now()>=plan.expiresAtMs;
+  const navigationAllowed=u=>u.protocol==='https:'&&u.origin===origin&&!u.search
+    &&(!plan.pathPrefix||u.pathname.startsWith(plan.pathPrefix))
+    &&!u.pathname.includes('//')&&!/[%\\]/.test(u.pathname)
+    &&!/(?:^|\/)(?:api|admin|auth|login|logout|token|delete|remove|save|submit|order|checkout|buy|purchase|transfer|confirm|upload|download)(?:\/|$)/i.test(u.pathname);
+  if(expired())throw Error('SITE_GRANT_EXPIRED');
   await context.route('**/*',async route=>{
     const req=route.request();
     let u;try{u=new URL(req.url())}catch{return route.abort()}
     if(u.protocol!=='https:'||u.origin!==origin||
       !['GET','HEAD'].includes(req.method()))return route.abort();
+    if(req.isNavigationRequest()&&(!navigationAllowed(u)||expired()))return route.abort();
     return route.continue();
   });
   page.on('dialog',d=>{d.dismiss().catch(()=>{})});
@@ -17,7 +24,9 @@ const siteBrowserScript=async ({page,context})=>{
   await page.setViewportSize({width:800,height:520});
   await page.goto(plan.url,{waitUntil:'domcontentloaded',timeout:18000});
   if(page.url().split(/[?#]/)[0]!==plan.url)throw Error('SITE_REDIRECT_REFUSED');
+  if(!navigationAllowed(new URL(page.url()))||expired())throw Error('SITE_NAVIGATION_REFUSED');
   for(const action of plan.actions){
+    if(expired())throw Error('SITE_GRANT_EXPIRED');
     const locator=page.locator(action.selector);
     if(await locator.count()!==1)throw Error('SITE_TARGET_NOT_UNIQUE');
     await locator.waitFor({state:'visible',timeout:4000});
@@ -48,18 +57,16 @@ const siteBrowserScript=async ({page,context})=>{
         let destination;try{destination=new URL(checked.href,page.url())}catch{
           throw Error('SITE_CLICK_URL_INVALID');
         }
-        if(destination.origin!==origin||destination.search||destination.hash||
-          /[%\\]/.test(destination.pathname)||
-          /(?:^|\/)(?:api|admin|auth|login|logout|delete|remove|save|submit|order|checkout|buy|purchase|transfer|confirm|upload)(?:\/|$)/i.test(destination.pathname))
+        if(!navigationAllowed(destination)||destination.hash)
           throw Error('SITE_CLICK_NOT_APPROVED');
         await locator.click({timeout:4000});
       }else throw Error('SITE_CLICK_NOT_APPROVED');
     }
     const next=new URL(page.url());
-    if(next.origin!==origin||next.search)throw Error('SITE_NAVIGATION_REFUSED');
+    if(!navigationAllowed(next)||expired())throw Error('SITE_NAVIGATION_REFUSED');
   }
   const current=new URL(page.url());
-  if(current.origin!==origin||current.search)throw Error('SITE_ORIGIN_CHANGED');
+  if(!navigationAllowed(current)||expired())throw Error('SITE_ORIGIN_CHANGED');
   current.hash=''; // Same-document SPA fragments are not network destinations.
   const headings=(await page.locator('h1,h2').allTextContents()).slice(0,10)
     .map(x=>x.trim().slice(0,160));
