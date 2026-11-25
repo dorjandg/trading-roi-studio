@@ -75,8 +75,15 @@ This module is not a second live sign-in flow: the existing gateway allows
 one Google account, so a genuinely independent operator still requires a
 separate, reviewed login and consent path. An operator cannot self-assign
 its own role, supply a verification key or bypass the nonce from browser
-content. The nonce-consumption callback in this module must be backed by an
-isolated atomic one-time store **before** any production use. Current tests
+content. The isolated nonce module at `src/omnipilot-operator-nonce-store.mjs`
+now supplies a **proposed** D1-backed callback: cryptographically random
+operator nonces are stored only as HMAC digests, bound to the expected
+operator key and authorization session, and consumed by an atomic
+single-use UPDATE within five minutes. Its SQLite contract is in
+`migrations/0002_omnipilot_operator_nonces.sql`. Both modules have
+synthetic tests but **are not wired, applied or deployed**. The eventual
+trusted OAuth session owner must issue the nonce and pass a verified,
+server-held session key; user-controlled identifiers are never acceptable. Current tests
 use generated synthetic RSA key pairs and fake one-time nonce state; no
 actual Google credentials or real operator identity were used.
 
