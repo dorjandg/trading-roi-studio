@@ -124,11 +124,19 @@ jobs:
             if(r.status!==200)throw Error('BACKEND_HTTP_'+r.status);
             return r.json();
           };
-          const tools=(await rpc(1,'tools/list')).result?.tools?.map(t=>t.name);
+          let tools=null;
+          for(let attempt=0;attempt<10;attempt++){
+            try{tools=(await rpc(1,'tools/list')).result?.tools?.map(t=>t.name);}catch{tools=null;}
+            if(Array.isArray(tools)&&tools.length===9&&
+              ['omnipilot_managed_demo','omnipilot_site_read','omnipilot_site_draft']
+                .every(n=>tools.includes(n)))break;
+            console.log('BACKEND_SITE_TOOL_NOT_YET_ACTIVE_CHECK_'+(attempt+1));
+            if(attempt<9)await new Promise(resolve=>setTimeout(resolve,4000));
+          }
           if(!Array.isArray(tools)||tools.length!==9||
             !['omnipilot_managed_demo','omnipilot_site_read','omnipilot_site_draft']
               .every(n=>tools.includes(n)))
-            throw Error('BACKEND_SITE_TOOL_DISCOVERY_FAILED');
+            throw Error('BACKEND_SITE_TOOL_DISCOVERY_FAILED_COUNT_'+(tools?.length??'unknown'));
           const verify=(value,mode,expectedUrl)=>{
             if(value?.isError!==false||value.content?.length!==2)
               throw Error('WEBSITE_ACTION_FAILED_OR_UNCERTAIN');
@@ -197,10 +205,15 @@ jobs:
             let data=null;try{data=await r.json()}catch{}
             return {status:r.status,data};
           };
-          const listed=await call(1,'tools/list');
-          const items=listed.data?.result?.tools;
-          if(listed.status!==200||!Array.isArray(items)||items.length!==9)
-            throw Error('GATEWAY_TOOL_DISCOVERY_FAILED');
+          let listed=null,items=null;
+          for(let attempt=0;attempt<10;attempt++){
+            try{listed=await call(1,'tools/list');items=listed.data?.result?.tools;}catch{items=null;}
+            if(listed?.status===200&&Array.isArray(items)&&items.length===9)break;
+            console.log('GATEWAY_SITE_TOOL_NOT_YET_ACTIVE_CHECK_'+(attempt+1));
+            if(attempt<9)await new Promise(resolve=>setTimeout(resolve,4000));
+          }
+          if(listed?.status!==200||!Array.isArray(items)||items.length!==9)
+            throw Error('GATEWAY_TOOL_DISCOVERY_FAILED_COUNT_'+(items?.length??'unknown'));
           for(const [name,scopes] of [
             ['omnipilot_site_read',['mcp:read','mcp:site.read']],
             ['omnipilot_site_draft',['mcp:read','mcp:site.read','mcp:site.interact']]
