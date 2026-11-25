@@ -20,6 +20,16 @@ const requestInteractionConsent=(id)=>json({
 },200);
 
 
+const requestSiteConsent=(id,mode)=>{
+  const scopes=mode==="draft"?"mcp:read mcp:site.read mcp:site.interact":"mcp:read mcp:site.read";
+  const description=mode==="draft"?"Authorize explicitly granted, non-submitting site actions":"Authorize read-only browsing on individually granted sites";
+  return json({jsonrpc:"2.0",id:id??null,result:{
+    content:[{type:"text",text:description}],isError:true,
+    _meta:{"mcp/www_authenticate":[
+      'Bearer resource_metadata="'+INTERACTION_RESOURCE+'", scope="'+scopes+'", error="insufficient_scope", error_description="'+description+'"'
+    ]}
+  }},200);
+};
 export function validateRpc(value){
   if(!value||typeof value!=="object"||Array.isArray(value)||value.jsonrpc!=="2.0"||typeof value.method!=="string")return false;
   if(["initialize","ping","tools/list","notifications/initialized"].includes(value.method))return true;
@@ -29,6 +39,12 @@ export function validateRpc(value){
   if(name==="browser_page_links"||name==="browser_inspect"||name==="browser_form_inventory")return args&&typeof args==="object"&&!Array.isArray(args)&&Object.keys(args).length===1&&typeof args.url==="string";
   if(name==="browser_edit_preview")return args&&typeof args==="object"&&!Array.isArray(args)&&Object.keys(args).sort().join(",")==="fieldLabel,formIndex,proposedText,url"&&typeof args.url==="string"&&Number.isSafeInteger(args.formIndex)&&typeof args.fieldLabel==="string"&&typeof args.proposedText==="string";
   if(name==="browser_follow_link")return args&&typeof args==="object"&&!Array.isArray(args)&&Object.keys(args).sort().join(",")==="linkUrl,url"&&typeof args.url==="string"&&typeof args.linkUrl==="string";
+  if(name==="omnipilot_site_read")return args&&typeof args==="object"&&!Array.isArray(args)&&
+    Object.keys(args).sort().join(",")==="url"&&typeof args.url==="string"&&args.url.length<=1024;
+  if(name==="omnipilot_site_draft")return args&&typeof args==="object"&&!Array.isArray(args)&&
+    Object.keys(args).sort().join(",")==="actions,url"&&typeof args.url==="string"&&
+    args.url.length<=1024&&Array.isArray(args.actions)&&
+    args.actions.length>=1&&args.actions.length<=5;
   if(name==="omnipilot_managed_demo")return args&&typeof args==="object"&&!Array.isArray(args)&&
     Object.keys(args).sort().join(",")==="actions,url"&&
     args.url==="https://demo.playwright.dev/todomvc/"&&Array.isArray(args.actions)&&
@@ -53,6 +69,15 @@ export async function forwardAuthorizedMcp(request,env,authorizedUser,fetcher=fe
        !authorizedUser.scopes.includes("mcp:read")||
        !authorizedUser.scopes.includes("mcp:demo.interact"))
       return requestInteractionConsent(rpc.id);
+  }
+  if(rpc.method==="tools/call"&&
+    ["omnipilot_site_read","omnipilot_site_draft"].includes(rpc.params.name)){
+    if(env.OMNIPILOT_SITE_CONTROL_ENABLED!=="true")
+      return json({error:"Site control is disabled"},403);
+    const mode=rpc.params.name==="omnipilot_site_draft"?"draft":"read";
+    const needed=mode==="draft"?["mcp:read","mcp:site.read","mcp:site.interact"]:["mcp:read","mcp:site.read"];
+    if(!Array.isArray(authorizedUser.scopes)||needed.some(x=>!authorizedUser.scopes.includes(x)))
+      return requestSiteConsent(rpc.id,mode);
   }
   const response=await fetcher(BASE+"/mcp",{
     method:"POST",
