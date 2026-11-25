@@ -1,7 +1,7 @@
 /* Public repository: safe-to-share URLs only. */
 window.PERSONAL_HUB_DATA = {
   "version": "1.5.1",
-  "updated": "2026-11-24",
+  "updated": "2026-11-25",
   "title": "Personal Hub",
   "subtitle": "My websites, learning, dashboards and useful links.",
   "categories": [
@@ -115,6 +115,13 @@ window.PERSONAL_HUB_DATA = {
       "name": "Vocal Mastery · Landi Kademi",
       "icon": "book",
       "description": "Guest vocal academy website",
+      "order": 3.3
+    },
+    {
+      "id": "guests",
+      "name": "New Guest Websites",
+      "icon": "grid",
+      "description": "Recently created guest projects",
       "order": 3.3
     }
   ],
@@ -1018,6 +1025,16 @@ window.PERSONAL_HUB_DATA = {
         "AI",
         "private"
       ]
+    },
+    {
+      "id": "pavin-caffe",
+      "title": "Pavin Caffè Albania",
+      "url": "https://pavin-caffe-albania-review.dorjan-gjoni-dg.workers.dev/",
+      "description": "Coffee brand website — review version.",
+      "symbol": "PC",
+      "accent": "green",
+      "type": "Guest preview",
+      "category": "guests"
     }
   ]
 };
