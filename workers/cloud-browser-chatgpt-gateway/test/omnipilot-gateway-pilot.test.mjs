@@ -19,16 +19,36 @@ test('pilot discovery requires opt-in and declares separate OAuth scope',async()
  const r=await publicDiscovery(req(rpc('tools/list')),env);
  const item=(await r.json()).result.tools.find(x=>x.name==='omnipilot_managed_demo');
  assert.ok(item);assert.equal(item.annotations.readOnlyHint,false);
- assert.deepEqual(item._meta.securitySchemes,[{type:'oauth2',scopes:['mcp:demo.interact']}]);
+ assert.deepEqual(item._meta.securitySchemes,[{type:'oauth2',scopes:['mcp:read','mcp:demo.interact']}]);
  assert.equal(validateRpc(call),true);
  assert.equal(validateRpc(rpc('tools/call',{name:'omnipilot_managed_demo',arguments:{...demo,url:'https://127.0.0.1/'}})),false);
 });
-test('read-only grants and disabled flag cannot dispatch demo actions',async()=>{
+test('read-only grants trigger MCP step-up OAuth challenge, not a website action',async()=>{
+ let called=0;
+ const fake=async()=>{called++;return Response.json({});};
+ const readOnly=await forwardAuthorizedMcp(req(call),env,
+   {userId:'fixed-subject',scopes:['mcp:read']},fake);
+ assert.equal(readOnly.status,200);
+ const payload=await readOnly.json();
+ assert.equal(payload.jsonrpc,'2.0');
+ assert.equal(payload.id,8);
+ assert.equal(payload.result.isError,true);
+ assert.equal(Array.isArray(payload.result._meta?.['mcp/www_authenticate']),true);
+ const challenges=payload.result._meta['mcp/www_authenticate'];
+ assert.equal(challenges.length,1);
+ assert.match(challenges[0],/^Bearer resource_metadata="https:\/\/cloud-browser-chatgpt-stage\.[^"]+\/\.well-known\/oauth-protected-resource\/mcp"/);
+ assert.match(challenges[0],/scope="mcp:read mcp:demo\.interact"/);
+ assert.match(challenges[0],/error="insufficient_scope"/);
+ assert.equal(called,0);
+});
+test('pilot disabled flag remains a hard denial with no OAuth escalation',async()=>{
  let sent=0;
  const fake=async()=>{sent++;return Response.json({});};
- for(const [vars,scopes] of [[env,['mcp:read']],[{...env,OMNIPILOT_MANAGED_PILOT_ENABLED:'false'},['mcp:read','mcp:demo.interact']]]){
-  const response=await forwardAuthorizedMcp(req(call),vars,{userId:'trusted',scopes},fake);
-  assert.equal(response.status,403);
+ for(const scopes of [undefined,['mcp:read'],['mcp:read','mcp:demo.interact']]){
+   const result=await forwardAuthorizedMcp(req(call),
+    {...env,OMNIPILOT_MANAGED_PILOT_ENABLED:'false'},
+    {userId:'fixed-subject',scopes},fake);
+   assert.equal(result.status,403);
  }
  assert.equal(sent,0);
 });

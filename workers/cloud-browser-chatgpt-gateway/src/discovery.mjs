@@ -2,7 +2,7 @@
 // Browser actions NEVER execute here: OAuthProvider authenticates every tools/call.
 const readonly={readOnlyHint:true,destructiveHint:false,openWorldHint:true};
 const oauth={securitySchemes:[{type:"oauth2",scopes:["mcp:read"]}]};
-const interactOauth={securitySchemes:[{type:"oauth2",scopes:["mcp:demo.interact"]}]};
+const interactOauth={securitySchemes:[{type:"oauth2",scopes:["mcp:read","mcp:demo.interact"]}]};
 const urlSchema={type:"object",properties:{url:{type:"string",description:"Approved HTTPS page URL; must belong to the staging allowlist"}},required:["url"],additionalProperties:false};
 export const advertisedTools=Object.freeze([
   {name:"browser_agent_status",title:"Check Browser Agent status",description:"Use to confirm an authorized read-only Browser Agent session and browser availability. Does not navigate websites.",inputSchema:{type:"object",properties:{},additionalProperties:false},annotations:{...readonly,openWorldHint:false},_meta:oauth},
