@@ -34,7 +34,7 @@ jobs:
           node --check src/omnipilot-site-grants.mjs
           node --check src/omnipilot-site-runtime.mjs
           node --check src/mcp.mjs
-          node --test test/omnipilot-site-grants.test.mjs test/omnipilot-site-runtime.test.mjs test/omnipilot-site-mcp.test.mjs
+          node --test test/omnipilot-site-grants.test.mjs test/omnipilot-site-runtime.test.mjs test/omnipilot-site-mcp.test.mjs test/omnipilot-site-grants-v2.test.mjs
           npx wrangler deploy --dry-run --outdir "$RUNNER_TEMP/omnipilot-site-backend"
       - name: Validate independent read and interaction OAuth scopes
         working-directory: workers/cloud-browser-chatgpt-gateway
