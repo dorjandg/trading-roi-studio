@@ -70,7 +70,17 @@ const siteBrowserScript=async ({page,context})=>{
   current.hash=''; // Same-document SPA fragments are not network destinations.
   const headings=(await page.locator('h1,h2').allTextContents()).slice(0,10)
     .map(x=>x.trim().slice(0,160));
-  const pixels=await page.screenshot({type:'jpeg',quality:30,fullPage:false});
+  let pixels=await page.screenshot({type:'jpeg',quality:25,fullPage:false});
+  // Keep MCP image payload bounded even when complex websites compress poorly.
+  // Never increase the 36 KB limit or return a partial base64 payload.
+  if(pixels.length>36000){
+    await page.setViewportSize({width:640,height:360});
+    pixels=await page.screenshot({type:'jpeg',quality:12,fullPage:false});
+  }
+  if(pixels.length>36000){
+    await page.setViewportSize({width:512,height:320});
+    pixels=await page.screenshot({type:'jpeg',quality:7,fullPage:false});
+  }
   if(pixels.length<6||pixels.length>36000)throw Error('SITE_IMAGE_LIMIT');
   let binary='';
   for(let i=0;i<pixels.length;i+=8192)
