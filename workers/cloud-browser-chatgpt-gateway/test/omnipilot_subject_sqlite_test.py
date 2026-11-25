@@ -95,8 +95,9 @@ class SubjectGrantsSqliteTest(unittest.TestCase):
         self.assertEqual([x[0] for x in self.db.execute(
             "SELECT event_type FROM omnipilot_subject_grant_audit ORDER BY revision")],
             ["REQUESTED","APPROVED","REVOKED"])
-        self.assertIsNone(self.transition(status="ACTIVE", revision=4,
-            previous="3"*64,head="4"*64,event=1103,expected=3))
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.transition(status="ACTIVE", revision=4,
+                previous="3"*64,head="4"*64,event=1103,expected=3)
         self.assertEqual(self.counts(), (1, 3))
 
     def test_untrusted_self_approval_and_grant_mutation_are_rejected(self):
