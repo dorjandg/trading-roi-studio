@@ -80,7 +80,11 @@ class SubjectGrantsSqliteTest(unittest.TestCase):
         for name in names:
             if name != "omnipilot_subject_grants" and name != "omnipilot_subject_grant_audit":
                 self.fail(f"unexpected unrelated table: {name}")
-        self.assertNotIn("email", SCHEMA.read_text().lower().split("CREATE TABLE")[1].split("CREATE TABLE")[0].replace("no google sub, email", ""))
+        for name in names:
+            columns = [row[1] for row in self.db.execute(
+                "PRAGMA table_info(" + name + ")")]
+            for forbidden in ("email","password","token","raw_subject","form_value"):
+                self.assertFalse(any(forbidden in col.lower() for col in columns))
 
     def test_approval_and_revocation_are_audited_at_revision_cas_boundaries(self):
         self.insert()
