@@ -23,7 +23,7 @@ const siteBrowserScript=async ({page,context})=>{
     await locator.waitFor({state:'visible',timeout:4000});
     if(action.op==='wait')continue;
     const checked=await locator.evaluate(el=>{
-      const tag=el.tagName.toLowerCase(),type=(el.getAttribute('type')||'').toLowerCase(),
+      const tag=el.tagName.toLowerCase(),type=(el.getAttribute('type')||el.type||'').toLowerCase(),
         ac=(el.getAttribute('autocomplete')||'').toLowerCase();
       const info=(el.getAttribute('name')||'')+' '+(el.getAttribute('id')||'')+' '+(el.getAttribute('aria-label')||'');
       return {tag,type,ac,info,readonly:el.readOnly===true,disabled:el.disabled===true,
