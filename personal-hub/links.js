@@ -1028,11 +1028,11 @@ window.PERSONAL_HUB_DATA = {
     {
       "id": "pavin-caffe",
       "title": "Pavin Caffè Albania",
-      "url": "https://pavin-caffe-albania-review.dorjan-gjoni-dg.workers.dev/",
-      "description": "Coffee brand website — review version.",
+      "url": "https://www.pavincaffe.al/",
+      "description": "Official Pavin Caffè Albania website.",
       "symbol": "PC",
       "accent": "green",
-      "type": "Guest preview",
+      "type": "Guest website",
       "category": "pavin"
     }
   ]
