@@ -10,8 +10,6 @@ export async function onRequestPut({request,env}){
  const allowed=new Set(['published','unpublished','pending','sold_out','archived','reference']);
  if(!allowed.has(p.catalog_status))return json({error:'Invalid product status'},400);
  if(typeof p.name!=='string'||!p.name.trim()||p.name.length>300)return json({error:'Product name required'},400);
- const serialized=JSON.stringify(p);
- if(serialized.length>50000)return json({error:'Product data too large'},413);
  try{
   const existing=await env.GLAM_DB.prepare('SELECT status FROM glam_catalog WHERE id=?').bind(p.id).first();
   // Editing an existing published product does not silently change its visibility.

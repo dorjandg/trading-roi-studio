@@ -7,7 +7,7 @@ const CLIENT_PHASES=new Set(['client_started','client_failed','client_completed'
 const CLIENT_REASONS=new Set(['missing_fields','unsupported_format','too_large','empty_file','compression_failed','network_or_session','upload_rejected','save_failed','selection_changed','busy','validation','http_error']);
 const text=(v,max)=>typeof v==='string'?v.slice(0,max):null;
 const entity=v=>typeof v==='string'&&/^[-a-zA-Z0-9_/]{1,200}$/.test(v)?v:null;
-const bytes=v=>Number.isSafeInteger(v)&&v>=0&&v<=100*1024*1024?v:null;
+const bytes=v=>Number.isSafeInteger(v)&&v>=0?v:null;
 const mime=v=>typeof v==='string'&&/^[a-zA-Z0-9.+/-]{1,80}$/.test(v)?v:null;
 const number=v=>v!==null&&v!==''&&Number.isSafeInteger(Number(v))?Number(v):null;
 const op=v=>typeof v==='string'&&UUID.test(v)?v:crypto.randomUUID();
@@ -25,7 +25,7 @@ export async function auditStaff(context,actor,action,handler){
  await write(env,{...row,phase:'server_started'});
  let response;
  try{response=await handler()}catch{response=json({error:'Staff operation unavailable'},503)}
- let detail={};try{if(response.headers.get('content-type')?.includes('application/json'))detail=await response.clone().json()}catch{}
+ let detail={};try{if((!response.ok||action==='upload')&&response.headers.get('content-type')?.includes('application/json'))detail=await response.clone().json()}catch{}
  await write(env,{...row,entity_id:entity(row.entity_id)||entity(detail.id),file_bytes:action==='upload'?bytes(detail.bytes)??row.file_bytes:null,phase:response.ok?'server_succeeded':'server_failed',http_status:response.status,reason:response.ok?null:text(detail.error,180)||'HTTP '+response.status});
  return response;
 }
