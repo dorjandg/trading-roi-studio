@@ -3,6 +3,8 @@
 const readonly={readOnlyHint:true,destructiveHint:false,openWorldHint:true};
 const oauth={securitySchemes:[{type:"oauth2",scopes:["mcp:read"]}]};
 const interactOauth={securitySchemes:[{type:"oauth2",scopes:["mcp:read","mcp:demo.interact"]}]};
+const siteReadOauth={securitySchemes:[{type:"oauth2",scopes:["mcp:read","mcp:site.read"]}]};
+const siteDraftOauth={securitySchemes:[{type:"oauth2",scopes:["mcp:read","mcp:site.read","mcp:site.interact"]}]};
 const urlSchema={type:"object",properties:{url:{type:"string",description:"Approved HTTPS page URL; must belong to the staging allowlist"}},required:["url"],additionalProperties:false};
 export const advertisedTools=Object.freeze([
   {name:"browser_agent_status",title:"Check Browser Agent status",description:"Use to confirm an authorized read-only Browser Agent session and browser availability. Does not navigate websites.",inputSchema:{type:"object",properties:{},additionalProperties:false},annotations:{...readonly,openWorldHint:false},_meta:oauth},
@@ -21,6 +23,25 @@ const managedPilotTool=Object.freeze({name:"omnipilot_managed_demo",title:"OmniP
         selector:{type:"string",minLength:1,maxLength:120},
         value:{type:"string",maxLength:256},key:{enum:["Enter","Escape","Tab","Space"]}}}}
   }},annotations:{readOnlyHint:false,destructiveHint:false,openWorldHint:false},_meta:interactOauth});
+const siteReadTool=Object.freeze({
+  name:"omnipilot_site_read",title:"Inspect explicitly granted public website",
+  description:"Read only on exact HTTPS origins separately granted by the OmniPilot operator. Returns page title, headings and a bounded JPEG screenshot. No credentials, queries, form values, production or Finance.",
+  inputSchema:{type:"object",additionalProperties:false,required:["url"],properties:{
+    url:{type:"string",minLength:9,maxLength:1024}}},
+  annotations:{readOnlyHint:true,destructiveHint:false,openWorldHint:false},_meta:siteReadOauth
+});
+const siteDraftTool=Object.freeze({
+  name:"omnipilot_site_draft",title:"Draft actions on a separately authorized website",
+  description:"Explicitly granted public-site DOM drafting only; typed fields, harmless key presses, same-origin navigation links or checkboxes outside forms. No Enter, credentials, file uploads, form submits or persistent writes. Requires mcp:site.interact in addition to mcp:site.read.",
+  inputSchema:{type:"object",additionalProperties:false,required:["url","actions"],properties:{
+    url:{type:"string",minLength:9,maxLength:1024},
+    actions:{type:"array",minItems:1,maxItems:5,items:{type:"object",additionalProperties:false,required:["op","selector"],properties:{
+      op:{enum:["fill","click","press","wait"]},selector:{type:"string",minLength:1,maxLength:120},
+      value:{type:"string",minLength:1,maxLength:256},key:{enum:["Tab","Escape"]}
+    }}}
+  }},
+  annotations:{readOnlyHint:false,destructiveHint:true,openWorldHint:false},_meta:siteDraftOauth
+});
 const headers={"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"};
 const reply=(id,result)=>new Response(JSON.stringify({jsonrpc:"2.0",id,result}),{status:200,headers});
 export async function publicDiscovery(request,env={}){
@@ -38,6 +59,6 @@ export async function publicDiscovery(request,env={}){
     serverInfo:{name:"cloud-browser-chatgpt-stage",version:"0.2.0"},
     instructions:"Read-only inspection requires Google-backed OAuth mcp:read. An optional disposable TodoMVC interaction requires separate mcp:demo.interact consent and a staging enablement flag. No account logins, financial actions or production writes."
   });
-  if(rpc.method==="tools/list")return reply(rpc.id,{tools:env.OMNIPILOT_MANAGED_PILOT_ENABLED==="true"?[...advertisedTools,managedPilotTool]:advertisedTools});
+  if(rpc.method==="tools/list")return reply(rpc.id,{tools:[...advertisedTools,...(env.OMNIPILOT_MANAGED_PILOT_ENABLED==="true"?[managedPilotTool]:[]),...(env.OMNIPILOT_SITE_CONTROL_ENABLED==="true"?[siteReadTool,siteDraftTool]:[])]});
   return null; // Tool execution and all other methods are exclusively OAuth-protected.
 }
