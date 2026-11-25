@@ -6,9 +6,20 @@ const fail=()=>{throw refused()};
 const exact=(o,keys)=>o&&typeof o==='object'&&!Array.isArray(o)
   &&Object.getPrototypeOf(o)===Object.prototype
   &&Object.keys(o).sort().join(',')===keys.slice().sort().join(',');
+// Independent deny boundary: these operator-owned production and infrastructure
+// resources can never be promoted by simply adding a site grant.
+const protectedHosts=new Set([
+  'fin-kac.pages.dev','trading-roi-studio.pages.dev',
+  'hub.immamarketing.com','glam-lingerie.com'
+]);
+const protectedSuffixes=[
+  '.fin-kac.pages.dev','.trading-roi-studio.pages.dev',
+  '.immamarketing.com','.glam-lingerie.com',
+  '.dorjan-gjoni-dg.workers.dev'
+];
 const denyHostname=host=>
   /(^localhost$|\.localhost$|\.local$|\.internal$|\.invalid$|\.test$|\.onion$|\.nip\.io$|\.sslip\.io$|\.xip\.io$)/i.test(host)
-  ||host==='fin-kac.pages.dev'||host==='trading-roi-studio.pages.dev';
+  ||protectedHosts.has(host)||protectedSuffixes.some(suffix=>host.endsWith(suffix));
 export function validateOrigin(value){
   if(typeof value!=='string'||value.length>200||!value.startsWith('https://'))fail();
   let u;try{u=new URL(value)}catch{fail()}
