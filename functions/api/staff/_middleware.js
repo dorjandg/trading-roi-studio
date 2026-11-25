@@ -1,10 +1,12 @@
+import {auditStaff} from '../../_shared/glam-audit.js';
 // Defense in depth: independently verify Cloudflare Access JWT, audience and staff email.
 const issuer='https://floral-river-0fbd.cloudflareaccess.com';
 const audience='c95832c1b52ae98da0a2fed0d7d0e8dc4814b70e2f9ad01e4db4829bba022bb3';
 const allowed=new Set(['dorjan.gjoni.dg@gmail.com','glamlingerie1@gmail.com']);
 const reject=(code,message)=>new Response(JSON.stringify({error:message}),{status:code,headers:{'content-type':'application/json','cache-control':'no-store'}});
 function decode(s){const raw=atob(s.replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(raw,c=>c.charCodeAt(0))}
-export async function onRequest({request,next}){
+export async function onRequest(context){
+ const {request,next}=context;
  const token=request.headers.get('Cf-Access-Jwt-Assertion');
  if(!token)return reject(401,'Staff authentication required');
  const parts=token.split('.');if(parts.length!==3)return reject(401,'Invalid staff authentication');
@@ -25,6 +27,7 @@ export async function onRequest({request,next}){
    const origin=request.headers.get('origin');
    if(origin!==new URL(request.url).origin)return reject(403,'Cross-origin changes are not permitted');
   }
-  return next();
+  const action=new URL(request.url).pathname.match(/^\/api\/staff\/(catalog|product|upload|publication|delete|directory)\/?$/)?.[1];
+  return action?auditStaff(context,String(claims.email).toLowerCase(),action,()=>next()):next();
  }catch{return reject(401,'Could not verify staff authentication')}
 }
