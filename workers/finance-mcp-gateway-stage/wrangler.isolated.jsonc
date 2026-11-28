@@ -1,0 +1,17 @@
+{
+  // Dedicated correction MCP gateway. This is an example, NOT an active deployment.
+  // No D1 binding: this gateway forwards to a separately authenticated Finance API.
+  // Only the dedicated isolated Finance API service binding is permitted.
+  "name": "finance-correction-mcp-isolated",
+  "main": "correction-mcp-router.mjs",
+  "compatibility_date": "2026-11-01",
+  "workers_dev": false,
+  "preview_urls": false,
+  "vars": {
+    "FINANCE_MCP_WRITE_TOOLS_ENABLED": "false",
+    "CF_ACCESS_TEAM_DOMAIN": "https://floral-river-0fbd.cloudflareaccess.com",
+    "CF_ACCESS_AUD": "bd462d04b3ae7f51551d9edb47f81d9b906ebca1d84c1bdb2eb4cf70a1d97cc0",
+    "FINANCE_CORRECTION_API_MODE": "service-binding"
+  },
+  "services": [{ "binding": "FINANCE_CORRECTION_API", "service": "finance-correction-api-isolated" }]
+}

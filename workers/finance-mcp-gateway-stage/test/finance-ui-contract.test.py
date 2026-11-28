@@ -21,9 +21,27 @@ class IntegrationContract(unittest.TestCase):
   self.assertIn('revision=revision+1',API)
   self.assertIn('finance_mcp_direct_backups',API)
   self.assertIn('finance_mcp_direct_audit',API)
+ def test_signed_short_lived_exact_change_ticket(self):
+  self.assertIn("FINANCE_CORRECTION_SIGNING_KEY",API)
+  self.assertIn("crypto.subtle.sign",API)
+  self.assertIn("crypto.subtle.verify",API)
+  self.assertIn("Date.now()+5*60*1000",API)
+  self.assertIn("verifyCorrectionTicket(env.FINANCE_CORRECTION_SIGNING_KEY,a.approval_ticket",API)
+  self.assertIn("approval_ticket:result.approval_ticket",PAGE)
+  self.assertIn("preview again",API)
+ def test_snapshot_put_utf8_byte_guard(self):
+  self.assertIn('enc.encode(raw).length>1024*1024',API)
+  self.assertIn('enc.encode(payload).length>1024*1024',API)
+  self.assertIn('new TextEncoder().encode(nextPayload).length>1024*1024',API)
+  self.assertNotIn('if(raw.length>1024*1024)',API)
+  self.assertNotIn('if(payload.length>1024*1024)',API)
  def test_page_never_offers_financial_fields(self):
   for field in ("amount","currency","date","type","reportingHold"):
    self.assertNotIn('<option value="'+field+'">',PAGE)
+ def test_form_edit_invalidates_existing_approval(self):
+  self.assertIn('form.addEventListener("input"',PAGE)
+  self.assertIn('form.addEventListener("change"',PAGE)
+  self.assertIn('proposal=null;review.hidden=true;save.disabled=true;confirmBox.checked=false;',PAGE)
  def test_save_requires_ui_confirmation(self):
   self.assertIn("if(!confirmBox.checked||!proposal)return",PAGE)
   self.assertIn("confirmed:true",PAGE)
